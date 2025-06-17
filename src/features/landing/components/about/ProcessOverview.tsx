@@ -18,7 +18,8 @@ const processSteps = [
       "Material selection and sourcing",
     ],
     icon: "🔍",
-    color: "from-blue-500 to-blue-600",
+    bgColor: "from-blue-900 to-neutral-950",
+    color: "bg-blue-300",
   },
   {
     phase: "Pre-Construction",
@@ -33,7 +34,8 @@ const processSteps = [
       "Project timeline finalization",
     ],
     icon: "📋",
-    color: "from-orange-500 to-orange-600",
+    bgColor: "from-orange-900 to-neutral-950",
+    color: "bg-orange-300",
   },
   {
     phase: "Construction",
@@ -48,7 +50,8 @@ const processSteps = [
       "Continuous safety monitoring",
     ],
     icon: "🏗️",
-    color: "from-green-500 to-green-600",
+    bgColor: "from-green-900 to-neutral-950",
+    color: "bg-green-300",
   },
   {
     phase: "Completion & Handover",
@@ -63,7 +66,8 @@ const processSteps = [
       "Project completion celebration",
     ],
     icon: "✅",
-    color: "from-purple-500 to-purple-600",
+    bgColor: "from-purple-900 to-neutral-950",
+    color: "bg-purple-300",
   },
 ];
 
@@ -101,7 +105,7 @@ export default function ProcessOverview() {
   return (
     <section
       ref={ref}
-      className="py-20 lg:py-32 bg-gradient-to-br from-muted/30 to-white"
+      className="py-20 lg:py-32"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -111,7 +115,7 @@ export default function ProcessOverview() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-6">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our Proven <span className="text-secondary">Process</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -121,7 +125,7 @@ export default function ProcessOverview() {
         </motion.div>
 
         {/* Process Steps */}
-        <div className="space-y-12 mb-20">
+        <div className="space-y-24 mb-20">
           {processSteps.map((step, index) => (
             <motion.div
               key={step.phase}
@@ -130,22 +134,19 @@ export default function ProcessOverview() {
               transition={{ duration: 0.6, delay: index * 0.2 }}
               className="relative"
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div
+                className={`grid grid-cols-1 lg:grid-cols-2 items-center ${index % 2 === 0 ? "bg-gradient-to-tr" : "bg-gradient-to-tl"} ${step.bgColor} rounded-lg`}
+              >
                 {/* Content */}
                 <div
-                  className={`${index % 2 === 1 ? "lg:order-2" : ""} space-y-6`}
+                  className={`${index % 2 === 0 ? "lg:order-2" : ""} space-y-6 p-8 h-full relative`}
                 >
                   <div className="flex items-center space-x-4">
-                    <div
-                      className={`w-16 h-16 bg-gradient-to-br ${step.color} rounded-full flex items-center justify-center text-white text-2xl`}
-                    >
-                      {step.icon}
-                    </div>
                     <div>
-                      <div className="text-sm font-semibold text-secondary uppercase tracking-wide">
+                      <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         {step.duration}
                       </div>
-                      <h3 className="font-serif text-2xl lg:text-3xl font-bold text-primary">
+                      <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">
                         {step.phase}
                       </h3>
                     </div>
@@ -171,44 +172,46 @@ export default function ProcessOverview() {
                         }}
                         className="flex items-start space-x-3"
                       >
-                        <div className="w-2 h-2 bg-secondary rounded-full flex-shrink-0 mt-2" />
+                        <div className="w-2 h-2 bg-foreground rounded-full flex-shrink-0 mt-2" />
                         <span className="text-muted-foreground">
                           {activity}
                         </span>
                       </motion.div>
                     ))}
                   </div>
-                </div>
-
-                {/* Visual Element */}
-                <div
-                  className={`${index % 2 === 1 ? "lg:order-1" : ""} relative`}
-                >
-                  <div className="bg-white rounded-2xl p-8 shadow-xl border border-border/20">
-                    <div className="text-center">
-                      <div
-                        className={`w-24 h-24 bg-gradient-to-br ${step.color} rounded-full flex items-center justify-center text-white text-4xl mx-auto mb-6`}
-                      >
-                        {step.icon}
-                      </div>
-                      <div className="text-6xl font-bold text-secondary/20 mb-2">
-                        {index + 1}
-                      </div>
-                      <div className="font-serif text-xl font-bold text-primary">
-                        {step.phase}
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Connecting Line */}
                   {index < processSteps.length - 1 && (
                     <motion.div
                       initial={{ height: 0 }}
-                      animate={isInView ? { height: "100px" } : { height: 0 }}
+                      animate={isInView ? { height: "200px" } : { height: 0 }}
                       transition={{ duration: 0.8, delay: index * 0.2 + 0.5 }}
-                      className="absolute left-1/2 -bottom-12 w-1 bg-gradient-to-b from-secondary to-primary rounded-full transform -translate-x-1/2 hidden lg:block"
+                      className="absolute left-1/2 top-full w-1 bg-gradient-to-b from-white to-neutral-500 rounded-full transform -translate-x-1/2 hidden lg:block z-[-1]"
                     />
                   )}
+                </div>
+
+                {/* Visual Element */}
+                <div
+                  className={`${index % 2 === 1 ? "lg:order-1" : ""} h-full shadow-2xl`}
+                >
+                  <div
+                    className={`${step.color} rounded-lg p-8 shadow-xl border border-border/20 h-full flex items-center justify-center`}
+                  >
+                    <div className="text-center">
+                      <div
+                        className={`w-24 h-24 bg-gradient-to-br ${step.bgColor} rounded-full flex items-center justify-center text-white text-4xl mx-auto mb-6`}
+                      >
+                        {step.icon}
+                      </div>
+                      <div className="text-6xl font-bold text-background/60 mb-2">
+                        {index + 1}
+                      </div>
+                      <div className="font-serif text-xl font-bold text-background">
+                        {step.phase}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -220,10 +223,10 @@ export default function ProcessOverview() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="bg-white rounded-2xl p-8 lg:p-12 shadow-xl border border-border/20"
+          className="bg-transparent rounded-2xl p-8 lg:p-12 shadow-xl border border-border"
         >
           <div className="text-center mb-12">
-            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-primary mb-4">
+            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-4">
               Quality Assurance Measures
             </h3>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
@@ -241,12 +244,12 @@ export default function ProcessOverview() {
                   isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }
                 }
                 transition={{ duration: 0.6, delay: index * 0.1 + 0.8 }}
-                className="text-center p-6 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 transition-colors duration-300"
+                className="select-none text-center p-6 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 transition-colors duration-300"
               >
                 <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">{measure.icon}</span>
                 </div>
-                <h4 className="font-semibold text-primary mb-2">
+                <h4 className="font-semibold text-foreground mb-2">
                   {measure.title}
                 </h4>
                 <p className="text-sm text-muted-foreground">
@@ -264,7 +267,7 @@ export default function ProcessOverview() {
           transition={{ duration: 0.6, delay: 1 }}
           className="text-center mt-16"
         >
-          <h3 className="font-serif text-2xl font-bold text-primary mb-4">
+          <h3 className="font-serif text-2xl font-bold text-foreground mb-4">
             Ready to Experience Our Process?
           </h3>
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">

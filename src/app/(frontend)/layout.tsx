@@ -3,6 +3,7 @@ import { Playfair_Display, Inter, Dancing_Script } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/navigation/Navigation";
 import Footer from "@/components/Footer";
+import { TRPCReactProvider } from "@/trpc/client";
 
 const playfair = Playfair_Display({
   variable: "--font-serif",
@@ -66,13 +67,15 @@ export default function RootLayout({
       lang="en"
       className="dark"
     >
-      <body
-        className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased`}
-      >
-        <Navigation />
-        {children}
-        <Footer />
-      </body>
+      <TRPCReactProvider>
+        <body
+          className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased`}
+        >
+          <Navigation />
+          {children}
+          <Footer />
+        </body>
+      </TRPCReactProvider>
     </html>
   );
 }

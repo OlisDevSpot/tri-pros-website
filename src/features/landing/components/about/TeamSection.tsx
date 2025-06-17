@@ -4,73 +4,8 @@ import { motion } from "motion/react";
 import { useInView } from "motion/react";
 import { useRef } from "react";
 import Image from "next/image";
-
-const teamMembers = [
-  {
-    name: "Robert Elite",
-    position: "Founder & CEO",
-    bio: "Master craftsman with over 35 years of experience. Robert founded Elite Construction with a vision to create architectural masterpieces that stand the test of time.",
-    specializations: [
-      "Luxury Construction",
-      "Project Leadership",
-      "Quality Assurance",
-    ],
-    image: "/api/placeholder/300/400",
-    email: "robert@eliteconstruction.com",
-  },
-  {
-    name: "Michael Elite",
-    position: "President & Head of Operations",
-    bio: "Second-generation leader bringing modern innovation to traditional craftsmanship. Michael oversees all construction operations and client relationships.",
-    specializations: [
-      "Operations Management",
-      "Client Relations",
-      "Technology Integration",
-    ],
-    image: "/api/placeholder/300/400",
-    email: "michael@eliteconstruction.com",
-  },
-  {
-    name: "Sarah Elite-Martinez",
-    position: "Chief Design Officer",
-    bio: "Award-winning architect and designer specializing in luxury residential and commercial projects. Sarah leads our design-build initiatives.",
-    specializations: [
-      "Architectural Design",
-      "Interior Design",
-      "Sustainable Building",
-    ],
-    image: "/api/placeholder/300/400",
-    email: "sarah@eliteconstruction.com",
-  },
-  {
-    name: "James Thompson",
-    position: "Master Carpenter & Foreman",
-    bio: "30+ years of fine carpentry and construction expertise. James leads our on-site teams and ensures every detail meets our exacting standards.",
-    specializations: ["Fine Carpentry", "Team Leadership", "Quality Control"],
-    image: "/api/placeholder/300/400",
-    email: "james@eliteconstruction.com",
-  },
-  {
-    name: "Maria Rodriguez",
-    position: "Project Manager",
-    bio: "Licensed project management professional with expertise in large-scale residential and commercial construction projects.",
-    specializations: ["Project Management", "Scheduling", "Budget Control"],
-    image: "/api/placeholder/300/400",
-    email: "maria@eliteconstruction.com",
-  },
-  {
-    name: "David Kim",
-    position: "Head of Business Development",
-    bio: "Strategic business leader focused on expanding our reach while maintaining our commitment to quality and client satisfaction.",
-    specializations: [
-      "Business Strategy",
-      "Client Acquisition",
-      "Partnership Development",
-    ],
-    image: "/api/placeholder/300/400",
-    email: "david@eliteconstruction.com",
-  },
-];
+import DecorativeLine from "@/components/DecorativeLine";
+import { teamMembers } from "../../data/team-members";
 
 export default function TeamSection() {
   const ref = useRef(null);
@@ -79,7 +14,7 @@ export default function TeamSection() {
   return (
     <section
       ref={ref}
-      className="py-20 lg:py-32 bg-gradient-to-br from-muted/30 to-white"
+      className="py-20 lg:py-32"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -89,7 +24,7 @@ export default function TeamSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-6">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Meet Our <span className="text-secondary">Expert Team</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -112,7 +47,7 @@ export default function TeamSection() {
               <motion.div
                 whileHover={{ y: -5 }}
                 transition={{ duration: 0.3 }}
-                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="bg-card rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col"
               >
                 {/* Image */}
                 <div className="relative overflow-hidden">
@@ -147,20 +82,20 @@ export default function TeamSection() {
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                  <h3 className="font-serif text-xl font-bold text-primary mb-1">
+                <div className="p-6 flex flex-col flex-grow">
+                  <h3 className="font-serif text-xl font-bold text-foreground mb-1">
                     {member.name}
                   </h3>
-                  <p className="text-secondary font-semibold mb-3">
+                  <p className="text-muted-foreground font-bold mb-3">
                     {member.position}
                   </p>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-4 flex-grow">
                     {member.bio}
                   </p>
 
                   {/* Specializations */}
                   <div className="space-y-2">
-                    <h4 className="text-sm font-semibold text-primary">
+                    <h4 className="text-sm font-semibold text-foreground">
                       Specializations:
                     </h4>
                     <div className="flex flex-wrap gap-2">
@@ -186,11 +121,9 @@ export default function TeamSection() {
                   </div>
 
                   {/* Bottom border animation */}
-                  <motion.div
-                    initial={{ width: 0 }}
+                  <DecorativeLine
                     animate={isInView ? { width: "100%" } : { width: 0 }}
                     transition={{ duration: 0.8, delay: index * 0.1 + 0.5 }}
-                    className="h-1 bg-gradient-to-r from-secondary to-primary mt-4 rounded-full"
                   />
                 </div>
               </motion.div>
@@ -203,7 +136,7 @@ export default function TeamSection() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-16 bg-primary rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="mt-16 bg-linear-to-br from-blue-900 to-neutral-950 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
           <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-8">
             Our Team by the Numbers
@@ -243,7 +176,7 @@ export default function TeamSection() {
           transition={{ duration: 0.6, delay: 1 }}
           className="text-center mt-16"
         >
-          <h3 className="font-serif text-2xl font-bold text-primary mb-4">
+          <h3 className="font-serif text-2xl font-bold text-foreground mb-4">
             Join Our Elite Team
           </h3>
           <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">

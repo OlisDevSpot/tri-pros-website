@@ -1,11 +1,13 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function AboutHero() {
   return (
-    <section className="relative pt-20 pb-16 lg:pb-24 bg-gradient-to-br overflow-hidden">
+    <section className="relative pt-28 pb-16 lg:pb-24 bg-gradient-to-br overflow-hidden min-h-screen flex items-center justify-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Content */}
@@ -22,7 +24,7 @@ export default function AboutHero() {
             >
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
                 Three Generations of{" "}
-                <span className="text-primary">Master Craftsmanship</span>
+                <span className="text-secondary">Master Craftsmanship</span>
               </h1>
             </motion.div>
 
@@ -46,19 +48,19 @@ export default function AboutHero() {
               className="grid grid-cols-3 gap-6 pt-6"
             >
               <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+                <div className="text-3xl lg:text-4xl font-bold text-muted-foreground mb-2">
                   1998
                 </div>
                 <div className="text-sm text-muted-foreground">Founded</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+                <div className="text-3xl lg:text-4xl font-bold text-muted-foreground mb-2">
                   500+
                 </div>
                 <div className="text-sm text-muted-foreground">Projects</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+                <div className="text-3xl lg:text-4xl font-bold text-muted-foreground mb-2">
                   3
                 </div>
                 <div className="text-sm text-muted-foreground">Generations</div>
@@ -71,22 +73,26 @@ export default function AboutHero() {
               transition={{ duration: 0.8, delay: 0.8 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <motion.a
-                href="/contact"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-secondary/90 transition-colors duration-200 text-center"
-              >
-                Meet Our Team
-              </motion.a>
-              <motion.a
-                href="/portfolio"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 border-primary text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-primary hover:text-primary-foreground transition-colors duration-200 text-center"
-              >
-                View Our Legacy
-              </motion.a>
+              <motion.div>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="text-lg h-16"
+                >
+                  <Link href="/contact">Meet Our Team</Link>
+                </Button>
+              </motion.div>
+              <motion.div>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="text-lg h-16"
+                >
+                  <Link href="/portfolio">View Our Legacy</Link>
+                </Button>
+              </motion.div>
             </motion.div>
           </motion.div>
 
@@ -95,15 +101,15 @@ export default function AboutHero() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative"
+            className="relative h-full"
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl h-full">
               <Image
                 src="/hero-photos/modern-house-2.png"
                 alt="Elite Construction founder and team"
                 width={600}
                 height={700}
-                className="object-cover"
+                className="object-cover h-full"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
@@ -113,13 +119,13 @@ export default function AboutHero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1 }}
-              className="absolute -bottom-6 -left-6 bg-white rounded-xl p-6 shadow-xl border border-border/20"
+              className="absolute -bottom-6 -left-6 bg-white rounded-xl p-10 shadow-xl border border-border/20"
             >
               <div className="text-center">
-                <div className="text-2xl font-bold text-secondary mb-1">
+                <div className="text-4xl font-bold text-secondary mb-1">
                   25+
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-lg text-secondary">
                   Years of Excellence
                 </div>
               </div>
@@ -130,11 +136,11 @@ export default function AboutHero() {
               initial={{ opacity: 0, y: -30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 1.2 }}
-              className="absolute -top-6 -right-6 bg-secondary text-secondary-foreground rounded-xl p-4 shadow-xl"
+              className="absolute -top-6 -right-6 bg-white text-secondary rounded-xl p-10 shadow-xl"
             >
               <div className="text-center">
-                <div className="text-lg font-bold mb-1">A+ BBB</div>
-                <div className="text-xs opacity-90">Rating</div>
+                <div className="text-2xl font-bold mb-1">A+ BBB</div>
+                <div className="text-base">Rating</div>
               </div>
             </motion.div>
           </motion.div>

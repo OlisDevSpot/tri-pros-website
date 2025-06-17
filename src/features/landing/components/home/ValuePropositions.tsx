@@ -6,6 +6,7 @@ import { useInView } from "motion/react";
 import { useRef } from "react";
 import { valueProps } from "../../data/value-prop";
 import { Button } from "@/components/ui/button";
+import DecorativeLine from "@/components/DecorativeLine";
 
 export default function ValuePropositions() {
   const ref = useRef(null);
@@ -76,11 +77,9 @@ export default function ValuePropositions() {
                 </p>
 
                 {/* Decorative Element */}
-                <motion.div
-                  initial={{ width: 0 }}
+                <DecorativeLine
                   animate={isInView ? { width: "60%" } : { width: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.2 + 0.4 }}
-                  className="h-1 bg-gradient-to-r from-secondary to-primary mx-auto mt-6 rounded-full"
                 />
               </motion.div>
             </motion.div>

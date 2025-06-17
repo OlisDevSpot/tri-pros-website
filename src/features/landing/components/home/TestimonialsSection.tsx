@@ -7,6 +7,7 @@ import Image from "next/image";
 import { testimonials } from "@/features/landing/data/testimonials";
 import { companyInfo } from "@/features/landing/data/company-info";
 import millify from "millify";
+import DecorativeLine from "@/components/DecorativeLine";
 
 export default function TestimonialsSection() {
   const ref = useRef(null);
@@ -162,11 +163,9 @@ export default function TestimonialsSection() {
                 </div>
 
                 {/* Decorative Element */}
-                <motion.div
-                  initial={{ width: 0 }}
+                <DecorativeLine
                   animate={isInView ? { width: "100%" } : { width: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.2 + 0.5 }}
-                  className="h-1 bg-gradient-to-r from-secondary to-primary mt-6 rounded-full"
                 />
               </motion.div>
             </motion.div>

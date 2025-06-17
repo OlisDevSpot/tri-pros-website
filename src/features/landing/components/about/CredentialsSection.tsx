@@ -3,68 +3,9 @@
 import { motion } from "motion/react";
 import { useInView } from "motion/react";
 import { useRef } from "react";
-
-const credentials = [
-  {
-    category: "Licenses & Certifications",
-    items: [
-      "Licensed General Contractor (State of California - License #123456)",
-      "NARI Certified Professional (National Association of the Remodeling Industry)",
-      "LEED Accredited Professional (Green Building)",
-      "OSHA 30-Hour Construction Safety Certification",
-      "EPA Lead-Safe Certified",
-    ],
-    icon: "📋",
-  },
-  {
-    category: "Insurance Coverage",
-    items: [
-      "General Liability Insurance - $2M Coverage",
-      "Workers' Compensation Insurance - Full Coverage",
-      "Professional Liability Insurance - $1M Coverage",
-      "Bonded for Projects up to $5M",
-      "Commercial Auto Insurance",
-    ],
-    icon: "🛡️",
-  },
-  {
-    category: "Industry Memberships",
-    items: [
-      "Better Business Bureau (A+ Rating)",
-      "National Association of the Remodeling Industry (NARI)",
-      "Associated General Contractors of America (AGC)",
-      "U.S. Green Building Council (USGBC)",
-      "Home Builders Association",
-    ],
-    icon: "🏛️",
-  },
-  {
-    category: "Awards & Recognition",
-    items: [
-      "2023 Best Luxury Home Builder - Local Business Awards",
-      "2022 Excellence in Construction - AGC Chapter",
-      "2021 Customer Choice Award - Home Improvement",
-      "2020 Green Building Excellence Award",
-      "Multiple Parade of Homes Awards (2018-2023)",
-    ],
-    icon: "🏆",
-  },
-];
-
-const stats = [
-  { number: "A+", label: "BBB Rating", description: "Accredited since 2001" },
-  {
-    number: "100%",
-    label: "Licensed & Bonded",
-    description: "Fully compliant",
-  },
-  {
-    number: "$5M",
-    label: "Bonding Capacity",
-    description: "Large project coverage",
-  },
-  { number: "22", label: "Years Accredited", description: "BBB membership" },
-];
+import DecorativeLine from "@/components/DecorativeLine";
+import { stats } from "@/features/landing/data/stats";
+import { credentials } from "@/features/landing/data/credentials";
 
 export default function CredentialsSection() {
   const ref = useRef(null);
@@ -73,7 +14,7 @@ export default function CredentialsSection() {
   return (
     <section
       ref={ref}
-      className="py-20 lg:py-32 bg-white"
+      className="py-20 lg:py-32"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -83,7 +24,7 @@ export default function CredentialsSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-6">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our <span className="text-secondary">Credentials</span> &
             Recognition
           </h2>
@@ -108,12 +49,12 @@ export default function CredentialsSection() {
                 isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }
               }
               transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
-              className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-xl p-6 text-center"
+              className="bg-gradient-to-br from-secondary/15 to-secondary/25 rounded-xl p-6 text-center"
             >
-              <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+              <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
                 {stat.number}
               </div>
-              <div className="font-semibold text-primary mb-1">
+              <div className="font-bold text-muted-foreground mb-1">
                 {stat.label}
               </div>
               <div className="text-sm text-muted-foreground">
@@ -131,7 +72,7 @@ export default function CredentialsSection() {
               initial={{ opacity: 0, y: 50 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-white rounded-2xl p-8 shadow-lg border border-border/20 hover:shadow-xl transition-shadow duration-300"
+              className="bg-card rounded-2xl p-8 shadow-lg border border-border/20 hover:shadow-xl transition-shadow duration-300"
             >
               {/* Header */}
               <div className="flex items-center space-x-4 mb-6">
@@ -139,7 +80,7 @@ export default function CredentialsSection() {
                   <span className="text-3xl">{credential.icon}</span>
                 </div>
                 <div>
-                  <h3 className="font-serif text-xl font-bold text-primary">
+                  <h3 className="font-serif text-xl font-bold text-foreground">
                     {credential.category}
                   </h3>
                 </div>
@@ -169,11 +110,9 @@ export default function CredentialsSection() {
               </div>
 
               {/* Bottom border animation */}
-              <motion.div
-                initial={{ width: 0 }}
+              <DecorativeLine
                 animate={isInView ? { width: "100%" } : { width: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.1 + 0.6 }}
-                className="h-1 bg-gradient-to-r from-secondary to-primary mt-6 rounded-full"
               />
             </motion.div>
           ))}
@@ -184,7 +123,7 @@ export default function CredentialsSection() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-16 bg-gradient-to-br from-primary to-primary/90 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="mt-16 bg-gradient-to-br from-blue-900 to-neutral-950 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
           <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-6">
             Verify Our Credentials

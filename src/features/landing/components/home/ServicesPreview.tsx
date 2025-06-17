@@ -6,6 +6,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import DecorativeLine from "@/components/DecorativeLine";
 
 const services = [
   {
@@ -79,11 +80,9 @@ export default function ServicesPreview() {
             From custom luxury homes to commercial masterpieces, we deliver
             exceptional results across all construction disciplines.
           </p>
-          <motion.div
-            initial={{ width: 0 }}
+          <DecorativeLine
             animate={isInView ? { width: "200px" } : { width: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
-            className="h-1 bg-gradient-to-r from-secondary to-primary mx-auto rounded-full"
           />
         </motion.div>
 
@@ -163,11 +162,9 @@ export default function ServicesPreview() {
                     </div>
 
                     {/* Bottom border animation */}
-                    <motion.div
-                      initial={{ width: 0 }}
+                    <DecorativeLine
                       animate={isInView ? { width: "100%" } : { width: 0 }}
                       transition={{ duration: 0.8, delay: index * 0.2 + 0.6 }}
-                      className="h-1 bg-gradient-to-r from-secondary to-primary mt-6 rounded-full"
                     />
                   </div>
                 </motion.div>

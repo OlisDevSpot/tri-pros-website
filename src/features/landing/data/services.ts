@@ -1,0 +1,78 @@
+export const services = [
+  {
+    title: "Custom Home Construction",
+    subtitle: "Build Your Dream Home from the Ground Up",
+    description:
+      "Create the luxury home you&apos;ve always envisioned with our comprehensive custom home construction services. From initial design through final walkthrough, we handle every detail.",
+    features: [
+      "Architectural design consultation",
+      "Permit acquisition and management",
+      "Site preparation and foundation",
+      "Complete construction management",
+      "Interior design coordination",
+      "Landscape architecture integration",
+    ],
+    timeline: "8-18 months",
+    priceRange: "$500k - $3M+",
+    image: "/hero-photos/modern-house-1.png",
+    href: "/services/custom-homes",
+    icon: "🏠",
+  },
+  {
+    title: "Luxury Renovations",
+    subtitle: "Transform Your Space with Premium Upgrades",
+    description:
+      "Elevate your existing home with our luxury renovation services. Whether it&apos;s a complete makeover or targeted improvements, we deliver exceptional results.",
+    features: [
+      "Kitchen and bathroom remodeling",
+      "Whole-home renovations",
+      "Historic restoration",
+      "Room additions and extensions",
+      "Smart home technology integration",
+      "Energy efficiency upgrades",
+    ],
+    timeline: "3-12 months",
+    priceRange: "$100k - $1M+",
+    image: "/hero-photos/modern-house-2.png",
+    href: "/services/renovations",
+    icon: "🔨",
+  },
+  {
+    title: "Commercial Construction",
+    subtitle: "Professional Buildings for Growing Businesses",
+    description:
+      "From office buildings to retail spaces, we construct commercial properties that enhance business success and provide lasting value.",
+    features: [
+      "Office buildings and complexes",
+      "Retail and restaurant spaces",
+      "Medical and professional facilities",
+      "Warehouse and industrial buildings",
+      "Mixed-use developments",
+      "Tenant improvement projects",
+    ],
+    timeline: "6-24 months",
+    priceRange: "$250k - $5M+",
+    image: "/hero-photos/commercial-construction-2.jpg",
+    href: "/services/commercial",
+    icon: "🏢",
+  },
+  {
+    title: "Design-Build Services",
+    subtitle: "Streamlined Process from Concept to Completion",
+    description:
+      "Our integrated design-build approach ensures seamless coordination between architects, designers, and builders for optimal results.",
+    features: [
+      "Comprehensive design development",
+      "Single-source responsibility",
+      "Faster project delivery",
+      "Enhanced quality control",
+      "Better cost management",
+      "Simplified communication",
+    ],
+    timeline: "4-16 months",
+    priceRange: "$200k - $2M+",
+    image: "/hero-photos/modern-house-4.webp",
+    href: "/services/design-build",
+    icon: "📐",
+  },
+];

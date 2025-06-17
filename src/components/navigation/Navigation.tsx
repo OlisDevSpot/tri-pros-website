@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import Logo from "../Logo";
 import { useIsScrolled } from "@/hooks/useIsScrolled";
 import { MobileNav } from "./mobile-nav";
+import { usePathname } from "next/navigation";
 
 const navigationItems = [
   { name: "About", href: "/about" },
@@ -19,6 +20,9 @@ const navigationItems = [
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const scrolled = useIsScrolled(10);
+  const pathname = usePathname();
+
+  const isActive = (href: string) => pathname === href;
 
   return (
     <motion.nav
@@ -51,8 +55,9 @@ export default function Navigation() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "relative hover:text-primary transition-colors duration-200 font-medium",
-                    scrolled ? "text-foreground" : "text-foreground"
+                    "relative hover:text-neutral-300 transition-colors duration-200 font-medium",
+                    scrolled ? "text-foreground" : "text-foreground",
+                    isActive(item.href) ? "text-primary-light" : ""
                   )}
                 >
                   {item.name}

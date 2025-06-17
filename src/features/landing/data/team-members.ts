@@ -1,0 +1,70 @@
+export const teamMembers = [
+  {
+    name: "Oliver Porat",
+    position: "Founder & CEO",
+    bio: "Master craftsman with over 35 years of experience. Robert founded Elite Construction with a vision to create architectural masterpieces that stand the test of time.",
+    specializations: [
+      "Luxury Construction",
+      "Project Leadership",
+      "Quality Assurance",
+    ],
+    image: "/api/placeholder/300/400",
+    email: "robert@eliteconstruction.com",
+  },
+  {
+    name: "Sean Phil",
+    position: "Founder & CEO",
+    bio: "Second-generation leader bringing modern innovation to traditional craftsmanship. Michael oversees all construction operations and client relationships.",
+    specializations: [
+      "Luxury Construction",
+      "Project Leadership",
+      "Quality Assurance",
+    ],
+    image: "/api/placeholder/300/400",
+    email: "robert@eliteconstruction.com",
+  },
+  {
+    name: "Mordi Bill",
+    position: "President & Head of Operations",
+    bio: "Renowned for his exceptional craftsmanship and attention to detail, Mordi Bill is a master of all trades. He is the driving force behind our team's success and the heart of our company.",
+    specializations: [
+      "Operations Management",
+      "Client Relations",
+      "Technology Integration",
+    ],
+    image: "/api/placeholder/300/400",
+    email: "michael@eliteconstruction.com",
+  },
+  {
+    name: "Sarah Elite-Martinez",
+    position: "Chief Design Officer",
+    bio: "Award-winning architect and designer specializing in luxury residential and commercial projects. Sarah leads our design-build initiatives.",
+    specializations: [
+      "Architectural Design",
+      "Interior Design",
+      "Sustainable Building",
+    ],
+    image: "/api/placeholder/300/400",
+    email: "sarah@eliteconstruction.com",
+  },
+  {
+    name: "Maria Rodriguez",
+    position: "Project Manager",
+    bio: "Licensed project management professional with expertise in large-scale residential and commercial construction projects.",
+    specializations: ["Project Management", "Scheduling", "Budget Control"],
+    image: "/api/placeholder/300/400",
+    email: "maria@eliteconstruction.com",
+  },
+  {
+    name: "David Kim",
+    position: "Head of Business Development",
+    bio: "Strategic business leader focused on expanding our reach while maintaining our commitment to quality and client satisfaction.",
+    specializations: [
+      "Business Strategy",
+      "Client Acquisition",
+      "Partnership Development",
+    ],
+    image: "/api/placeholder/300/400",
+    email: "david@eliteconstruction.com",
+  },
+];

@@ -22,7 +22,7 @@ export default function CompanyStory() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-primary mb-6">
+          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our <span className="text-secondary">Story</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -39,7 +39,7 @@ export default function CompanyStory() {
             transition={{ duration: 0.8 }}
             className="space-y-6"
           >
-            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-primary">
+            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">
               The Founder&apos;s Vision
             </h3>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -59,13 +59,13 @@ export default function CompanyStory() {
               <p>
                 Today, his son Michael and daughter Sarah continue this legacy,
                 bringing modern innovation to time-honored traditions, ensuring
-                that every Elite Construction project exceeds the highest
+                that every Tri Pros Remodeling project exceeds the highest
                 standards of excellence.
               </p>
             </div>
 
             <div className="bg-secondary/10 rounded-lg p-6 border-l-4 border-secondary">
-              <blockquote className="font-script text-xl text-primary italic">
+              <blockquote className="font-script text-xl text-foreground italic">
                 &ldquo;We don&apos;t just build structures; we craft legacies
                 that families will cherish for generations.&rdquo;
               </blockquote>
@@ -110,11 +110,11 @@ export default function CompanyStory() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-2xl p-8 lg:p-12 text-center"
         >
-          <h3 className="font-serif text-2xl lg:text-3xl font-bold text-primary mb-6">
+          <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Our Mission
           </h3>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-4xl mx-auto mb-8">
-            At Elite Construction, we are committed to transforming
+            At Tri Pros Remodeling, we are committed to transforming
             architectural visions into extraordinary realities. We believe that
             exceptional construction goes beyond building; it&apos;s about
             creating spaces where life&apos;s most precious moments unfold,
@@ -131,7 +131,7 @@ export default function CompanyStory() {
               <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🎯</span>
               </div>
-              <h4 className="font-semibold text-primary mb-2">Vision</h4>
+              <h4 className="font-semibold text-foreground mb-2">Vision</h4>
               <p className="text-sm text-muted-foreground">
                 To be the premier luxury construction company, setting the
                 standard for quality and innovation.
@@ -147,7 +147,7 @@ export default function CompanyStory() {
               <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">💎</span>
               </div>
-              <h4 className="font-semibold text-primary mb-2">Values</h4>
+              <h4 className="font-semibold text-foreground mb-2">Values</h4>
               <p className="text-sm text-muted-foreground">
                 Integrity, excellence, innovation, and unwavering commitment to
                 client satisfaction.
@@ -163,7 +163,7 @@ export default function CompanyStory() {
               <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🚀</span>
               </div>
-              <h4 className="font-semibold text-primary mb-2">Purpose</h4>
+              <h4 className="font-semibold text-foreground mb-2">Purpose</h4>
               <p className="text-sm text-muted-foreground">
                 Creating lasting legacies through exceptional craftsmanship and
                 personalized service.

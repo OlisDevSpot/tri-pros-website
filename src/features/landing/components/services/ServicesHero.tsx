@@ -1,7 +1,9 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function ServicesHero() {
   return (
@@ -34,7 +36,7 @@ export default function ServicesHero() {
             >
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
                 Complete Construction{" "}
-                <span className="text-primary">Solutions</span>
+                <span className="text-secondary">Solutions</span>
               </h1>
             </motion.div>
 
@@ -73,22 +75,26 @@ export default function ServicesHero() {
               transition={{ duration: 0.8, delay: 0.8 }}
               className="flex flex-col sm:flex-row gap-4"
             >
-              <motion.a
-                href="/contact"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-secondary/90 transition-colors duration-200 text-center"
-              >
-                Get Service Quote
-              </motion.a>
-              <motion.a
-                href="/portfolio"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-white hover:text-primary transition-colors duration-200 text-center"
-              >
-                View Our Work
-              </motion.a>
+              <motion.div>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="default"
+                  className="text-lg h-16"
+                >
+                  <Link href="/contact">Get Service Quote</Link>
+                </Button>
+              </motion.div>
+              <motion.div>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="text-lg h-16"
+                >
+                  <Link href="/portfolio">View Our Work</Link>
+                </Button>
+              </motion.div>
             </motion.div>
           </motion.div>
 
