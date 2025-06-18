@@ -1,5 +1,6 @@
 "use client";
 
+import { HeroContainer } from "@/components/HeroContainer";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import Image from "next/image";
@@ -7,7 +8,7 @@ import Link from "next/link";
 
 export default function ServicesHero() {
   return (
-    <section className="relative pt-20 pb-16 lg:pb-24 overflow-hidden h-screen flex items-center">
+    <HeroContainer>
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -138,6 +139,6 @@ export default function ServicesHero() {
           </motion.div>
         </div>
       </div>
-    </section>
+    </HeroContainer>
   );
 }

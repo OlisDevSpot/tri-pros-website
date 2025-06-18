@@ -60,7 +60,7 @@ export default function TeamSection() {
                       alt={member.name}
                       width={300}
                       height={400}
-                      className="w-full h-80 object-cover"
+                      className="w-full h-80 object-cover object-top"
                     />
                   </motion.div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

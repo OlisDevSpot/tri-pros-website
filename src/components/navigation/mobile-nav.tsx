@@ -20,7 +20,7 @@ export const MobileNav = ({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="absolute top-full w-full md:hidden bg-background/70 backdrop-blur-md border-t"
+          className="absolute top-full w-full lg:hidden bg-background/70 backdrop-blur-md border-t"
         >
           <div className="px-4 py-4 space-y-4 flex flex-col items-center">
             {navigationItems.map((item, index) => (

@@ -32,7 +32,7 @@ export const teamMembers = [
       "Client Relations",
       "Technology Integration",
     ],
-    image: "/api/placeholder/300/400",
+    image: "/company-info/mordi-headshot.jpeg",
     email: "michael@eliteconstruction.com",
   },
   {
@@ -44,15 +44,15 @@ export const teamMembers = [
       "Interior Design",
       "Sustainable Building",
     ],
-    image: "/api/placeholder/300/400",
+    image: "/company-info/sarah-headshot.jpeg",
     email: "sarah@eliteconstruction.com",
   },
   {
     name: "Maria Rodriguez",
-    position: "Project Manager",
-    bio: "Licensed project management professional with expertise in large-scale residential and commercial construction projects.",
-    specializations: ["Project Management", "Scheduling", "Budget Control"],
-    image: "/api/placeholder/300/400",
+    position: "Chief Technical Officer",
+    bio: "A technology and construction professional with expertise in large-scale residential and commercial construction projects.",
+    specializations: ["Frontend", "Backend", "Budget Control"],
+    image: "/company-info/maria-headshot.jpeg",
     email: "maria@eliteconstruction.com",
   },
   {
@@ -64,7 +64,7 @@ export const teamMembers = [
       "Client Acquisition",
       "Partnership Development",
     ],
-    image: "/api/placeholder/300/400",
+    image: "/company-info/david-headshot.jpeg",
     email: "david@eliteconstruction.com",
   },
 ];

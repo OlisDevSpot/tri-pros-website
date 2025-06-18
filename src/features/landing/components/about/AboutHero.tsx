@@ -1,5 +1,6 @@
 "use client";
 
+import { HeroContainer } from "@/components/HeroContainer";
 import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
 import Image from "next/image";
@@ -7,7 +8,7 @@ import Link from "next/link";
 
 export default function AboutHero() {
   return (
-    <section className="relative pt-28 pb-16 lg:pb-24 bg-gradient-to-br overflow-hidden min-h-screen flex items-center justify-center">
+    <HeroContainer>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Content */}
@@ -48,19 +49,19 @@ export default function AboutHero() {
               className="grid grid-cols-3 gap-6 pt-6"
             >
               <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-muted-foreground mb-2">
+                <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
                   1998
                 </div>
                 <div className="text-sm text-muted-foreground">Founded</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-muted-foreground mb-2">
+                <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
                   500+
                 </div>
                 <div className="text-sm text-muted-foreground">Projects</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold text-muted-foreground mb-2">
+                <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
                   3
                 </div>
                 <div className="text-sm text-muted-foreground">Generations</div>
@@ -146,6 +147,6 @@ export default function AboutHero() {
           </motion.div>
         </div>
       </div>
-    </section>
+    </HeroContainer>
   );
 }
