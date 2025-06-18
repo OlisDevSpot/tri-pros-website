@@ -183,23 +183,28 @@ export default function ServicesPreview() {
           <p className="text-lg text-muted-foreground mb-6">
             Ready to start your dream project?
           </p>
-          <Button
-            className="h-12 text-lg"
-            asChild
+          <motion.div
+            whileHover={{ scale: 1.025 }}
+            whileTap={{ scale: 0.975 }}
           >
-            <Link
-              href="/services"
-              className="inline-flex items-center space-x-2 px-8 hover:shadow-lg transition-shadow duration-200"
+            <Button
+              className="h-16 px-8 text-lg"
+              asChild
             >
-              <span>Explore All Services</span>
-              <motion.span
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+              <Link
+                href="/services"
+                className="inline-flex items-center space-x-2 px-8 hover:shadow-lg transition-shadow duration-200"
               >
-                →
-              </motion.span>
-            </Link>
-          </Button>
+                <span>Explore All Services</span>
+                <motion.span
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  →
+                </motion.span>
+              </Link>
+            </Button>
+          </motion.div>
         </motion.div>
       </div>
     </section>

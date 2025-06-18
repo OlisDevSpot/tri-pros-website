@@ -259,40 +259,6 @@ export default function ProcessOverview() {
             ))}
           </div>
         </motion.div>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.6, delay: 1 }}
-          className="text-center mt-16"
-        >
-          <h3 className="font-serif text-2xl font-bold text-foreground mb-4">
-            Ready to Experience Our Process?
-          </h3>
-          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Discover how our proven methodology ensures your project exceeds
-            expectations from concept to completion.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <motion.a
-              href="/process"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-secondary/90 transition-colors duration-200"
-            >
-              Learn More About Our Process
-            </motion.a>
-            <motion.a
-              href="/contact"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="border-2 border-primary text-primary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-primary hover:text-primary-foreground transition-colors duration-200"
-            >
-              Start Your Project
-            </motion.a>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

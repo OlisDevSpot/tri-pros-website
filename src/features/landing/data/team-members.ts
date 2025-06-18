@@ -2,14 +2,14 @@ export const teamMembers = [
   {
     name: "Oliver Porat",
     position: "Founder & CEO",
-    bio: "Master craftsman with over 35 years of experience. Robert founded Elite Construction with a vision to create architectural masterpieces that stand the test of time.",
+    bio: "Master craftsman with over 35 years of experience. Oliver co-founded Tri Pros Remodeling along with Sean Phil with a vision to create architectural masterpieces that stand the test of time.",
     specializations: [
       "Luxury Construction",
       "Project Leadership",
       "Quality Assurance",
     ],
     image: "/api/placeholder/300/400",
-    email: "robert@eliteconstruction.com",
+    email: "oliver@triprosremodeling.com",
   },
   {
     name: "Sean Phil",
@@ -21,7 +21,7 @@ export const teamMembers = [
       "Quality Assurance",
     ],
     image: "/api/placeholder/300/400",
-    email: "robert@eliteconstruction.com",
+    email: "sean@triprosremodeling.com",
   },
   {
     name: "Mordi Bill",
@@ -33,7 +33,7 @@ export const teamMembers = [
       "Technology Integration",
     ],
     image: "/company-info/mordi-headshot.jpeg",
-    email: "michael@eliteconstruction.com",
+    email: "mordi@triprosremodeling.com",
   },
   {
     name: "Sarah Elite-Martinez",
@@ -45,7 +45,7 @@ export const teamMembers = [
       "Sustainable Building",
     ],
     image: "/company-info/sarah-headshot.jpeg",
-    email: "sarah@eliteconstruction.com",
+    email: "sarah@triprosremodeling.com",
   },
   {
     name: "Maria Rodriguez",
@@ -53,7 +53,7 @@ export const teamMembers = [
     bio: "A technology and construction professional with expertise in large-scale residential and commercial construction projects.",
     specializations: ["Frontend", "Backend", "Budget Control"],
     image: "/company-info/maria-headshot.jpeg",
-    email: "maria@eliteconstruction.com",
+    email: "maria@triprosremodeling.com",
   },
   {
     name: "David Kim",
@@ -65,6 +65,6 @@ export const teamMembers = [
       "Partnership Development",
     ],
     image: "/company-info/david-headshot.jpeg",
-    email: "david@eliteconstruction.com",
+    email: "david@triprosremodeling.com",
   },
 ];

@@ -3,6 +3,7 @@ import CompanyStory from "@/features/landing/components/about/CompanyStory";
 import TeamSection from "@/features/landing/components/about/TeamSection";
 import CredentialsSection from "@/features/landing/components/about/CredentialsSection";
 import ProcessOverview from "@/features/landing/components/about/ProcessOverview";
+import BottomCTA from "@/components/BottomCTA";
 
 export const metadata = {
   title: "About Elite Construction | Three Generations of Master Craftsmanship",
@@ -18,6 +19,7 @@ export default function AboutPage() {
       <TeamSection />
       <CredentialsSection />
       <ProcessOverview />
+      <BottomCTA />
     </main>
   );
 }

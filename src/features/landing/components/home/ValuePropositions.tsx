@@ -7,6 +7,7 @@ import { useRef } from "react";
 import { valueProps } from "../../data/value-prop";
 import { Button } from "@/components/ui/button";
 import DecorativeLine from "@/components/DecorativeLine";
+import Link from "next/link";
 
 export default function ValuePropositions() {
   const ref = useRef(null);
@@ -94,20 +95,22 @@ export default function ValuePropositions() {
           className="text-center mt-16"
         >
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.025 }}
+            whileTap={{ scale: 0.975 }}
           >
             <Button
-              className="h-14 text-lg"
-              size="lg"
+              className="h-16 px-8 text-lg"
+              asChild
             >
-              <span>Learn About Our Process</span>
-              <motion.span
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                →
-              </motion.span>
+              <Link href="/about">
+                <span>Learn About Our Process</span>
+                <motion.span
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  →
+                </motion.span>
+              </Link>
             </Button>
           </motion.div>
         </motion.div>

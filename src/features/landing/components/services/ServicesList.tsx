@@ -128,7 +128,7 @@ export default function ServicesList() {
                   <div
                     className={cn(
                       "flex space-x-4 w-full",
-                      index % 2 === 0 ? "justify-start" : "justify-end"
+                      index % 2 === 0 ? "justify-start" : "lg:justify-end"
                     )}
                   >
                     <motion.div
@@ -177,7 +177,7 @@ export default function ServicesList() {
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.3 }}
-                    className="relative rounded-2xl overflow-hidden shadow-xl group-hover:shadow-2xl transition-shadow duration-300 h-full"
+                    className="relative rounded-2xl aspect-[16/9] lg:aspect-auto overflow-hidden shadow-xl group-hover:shadow-2xl transition-shadow duration-300 h-full"
                   >
                     <Image
                       src={service.image}

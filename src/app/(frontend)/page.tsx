@@ -3,6 +3,7 @@ import ValuePropositions from "@/features/landing/components/home/ValuePropositi
 import ServicesPreview from "@/features/landing/components/home/ServicesPreview";
 import TestimonialsSection from "@/features/landing/components/home/TestimonialsSection";
 import PastProjects from "@/features/landing/components/home/PastProjects";
+import BottomCTA from "@/components/BottomCTA";
 
 export default function Home() {
   return (
@@ -12,6 +13,7 @@ export default function Home() {
       <ServicesPreview />
       <PastProjects />
       <TestimonialsSection />
+      <BottomCTA />
     </main>
   );
 }

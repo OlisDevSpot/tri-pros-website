@@ -171,52 +171,6 @@ export default function TestimonialsSection() {
             </motion.div>
           ))}
         </div>
-
-        {/* Bottom CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-center mt-16"
-        >
-          <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Join 500+ satisfied homeowners who chose excellence.
-            <span className="font-semibold text-muted-foreground">
-              {" "}
-              Limited project slots available for 2024.
-            </span>
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <a
-                href="/testimonials"
-                className="inline-flex items-center space-x-2 bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-primary/90 transition-colors duration-200"
-              >
-                <span>Read More Reviews</span>
-                <motion.span
-                  animate={{ x: [0, 5, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  →
-                </motion.span>
-              </a>
-            </motion.div>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <a
-                href="/contact"
-                className="inline-flex items-center space-x-2 border-2 border-secondary text-secondary px-8 py-4 rounded-lg font-semibold text-lg hover:bg-secondary hover:text-secondary-foreground transition-colors duration-200"
-              >
-                <span>Start Your Project</span>
-              </a>
-            </motion.div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );
