@@ -17,7 +17,7 @@ export function ThemeToggle() {
 
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild className="h-full">
+      <DropdownMenuTrigger asChild className="h-full min-h-10">
         <Button variant="outline" size="icon" className="w-10">
           <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
           <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />

@@ -14,7 +14,7 @@ export default function BottomCTA() {
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.4 }}
-      className="text-center mb-32"
+      className="text-center mb-32 container"
       ref={ref}
     >
       <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
@@ -28,11 +28,12 @@ export default function BottomCTA() {
         <motion.div
           whileHover={{ scale: 1.025 }}
           whileTap={{ scale: 0.975 }}
+          className="w-full"
         >
           <Button
             asChild
             variant="default"
-            className="h-16 text-lg px-8"
+            className="h-16 text-lg px-8 w-full"
           >
             <Link href="/contact">
               <span>Start Your Project</span>
@@ -48,11 +49,12 @@ export default function BottomCTA() {
         <motion.div
           whileHover={{ scale: 1.025 }}
           whileTap={{ scale: 0.975 }}
+          className="w-full"
         >
           <Button
             asChild
             variant="outline"
-            className="h-16 text-lg px-8"
+            className="h-16 text-lg px-8 w-full"
           >
             <Link href="/testimonials">
               <span>Read More Reviews</span>

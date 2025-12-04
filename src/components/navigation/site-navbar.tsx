@@ -101,7 +101,7 @@ export function SiteNavbar() {
 
             {/* Mobile menu button */}
             <button
-              className="lg:hidden"
+              className="lg:hidden ml-1"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
               type="button"

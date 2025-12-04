@@ -29,10 +29,11 @@ export function MobileNav({
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
+                className="w-full"
               >
                 <Link
                   href={item.href}
-                  className="block text-foreground hover:text-secondary transition-colors duration-200 font-medium py-2"
+                  className="block text-foreground hover:text-secondary transition-colors duration-200 font-medium py-2 w-full text-center"
                   onClick={() => setIsOpen(false)}
                 >
                   {item.name}
