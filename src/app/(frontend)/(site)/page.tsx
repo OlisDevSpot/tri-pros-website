@@ -1,9 +1,9 @@
-import BottomCTA from '@/components/BottomCTA'
-import HomeHero from '@/features/landing/components/home/HomeHero'
-import PastProjects from '@/features/landing/components/home/PastProjects'
-import ServicesPreview from '@/features/landing/components/home/ServicesPreview'
-import TestimonialsSection from '@/features/landing/components/home/TestimonialsSection'
-import ValuePropositions from '@/features/landing/components/home/ValuePropositions'
+import BottomCTA from '@/components/cta'
+import HomeHero from '@/features/landing/components/home/home-hero'
+import PastProjects from '@/features/landing/components/home/past-projects'
+import ServicesPreview from '@/features/landing/components/home/services-preview'
+import TestimonialsSection from '@/features/landing/components/home/testimonials'
+import ValuePropositions from '@/features/landing/components/home/value-proposition'
 
 export default function Home() {
   return (

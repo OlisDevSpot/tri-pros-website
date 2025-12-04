@@ -1,14 +1,14 @@
-import Footer from '@/components/Footer'
-import Navigation from '@/components/navigation/Navigation'
+import Footer from '@/components/footer'
+import { SiteNavbar } from '@/components/navigation/site-navbar'
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        '--header-height': '80px',
+        '--navbar-height': '80px',
       } as React.CSSProperties}
     >
-      <Navigation />
+      <SiteNavbar />
       <main className="">
         {children}
       </main>

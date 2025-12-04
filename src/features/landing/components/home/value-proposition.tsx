@@ -4,7 +4,7 @@ import { motion, useInView } from 'motion/react'
 
 import Link from 'next/link'
 import { useRef } from 'react'
-import DecorativeLine from '@/components/DecorativeLine'
+import DecorativeLine from '@/components/decorative-line'
 import { Button } from '@/components/ui/button'
 import { companyInfo } from '@/features/landing/data/company'
 import { valueProps } from '../../data/value-prop'
@@ -16,7 +16,12 @@ export default function ValuePropositions() {
   return (
     <section
       ref={ref}
-      className="py-20 lg:py-32 bg-gradient-to-br from-transparent to-neutral-900"
+      style={{
+        background: `
+          radial-gradient(circle at top left, transparent, color-mix(in oklab, var(--background) 100%, transparent) , color-mix(in oklab, var(--primary) 20%, transparent)),
+          radial-gradient(circle at bottom right, transparent, color-mix(in oklab, var(--background) 100%, transparent), color-mix(in oklab, var(--primary) 20%, transparent))`,
+      }}
+      className="py-20 lg:py-32"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
@@ -78,7 +83,7 @@ export default function ValuePropositions() {
                 </p>
 
                 {/* Detail */}
-                <p className="text-muted-foreground leading-relaxed text-center flex-grow">
+                <p className="text-muted-foreground leading-relaxed text-center grow">
                   {prop.detail}
                 </p>
 

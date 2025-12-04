@@ -4,10 +4,12 @@ import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { Logo } from '@/components/logo'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { Button } from '@/components/ui/button'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useIsScrolled } from '@/hooks/useIsScrolled'
 import { cn } from '@/lib/utils'
-import Logo from '../Logo'
 import { MobileNav } from './mobile-nav'
 
 const navigationItems = [
@@ -17,7 +19,7 @@ const navigationItems = [
   { name: 'Blog', href: '/blog' },
 ]
 
-export default function Navigation() {
+export function SiteNavbar() {
   const [isOpen, setIsOpen] = useState(false)
   const scrolled = useIsScrolled(10)
   const isMobile = useIsMobile()
@@ -38,14 +40,14 @@ export default function Navigation() {
         height: scrolled ? 'auto' : 'auto',
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-12 xl:px-8">
-        <div className="flex justify-between items-center h-20">
+      <div className="container">
+        <div className="flex justify-between items-center h-(--navbar-height)">
           {/* Logo */}
           <motion.div
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
           >
-            <Logo />
+            <Logo onClick={() => setIsOpen(false)} />
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -78,54 +80,60 @@ export default function Navigation() {
           </div>
 
           {/* CTA Button */}
-          <div className="hidden lg:flex items-center space-x-4">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Link
-                href="/contact"
-                className="bg-linear-to-r from-primary to-primary-dark text-secondary-foreground px-6 py-3 rounded-lg font-semibold hover:brightness-90 duration-200 transition-all"
+          <div className="flex gap-2">
+            <div>
+              <ThemeToggle />
+            </div>
+            <div className="hidden md:block">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Schedule Consultation
-              </Link>
-            </motion.div>
-          </div>
+                <Button size="lg" variant="cta" asChild>
+                  <Link
+                    href="/contact"
+                  >
+                    Schedule Consultation
+                  </Link>
+                </Button>
+              </motion.div>
+            </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="lg:hidden"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-            type="button"
-          >
-            <motion.div
-              animate={isOpen ? 'open' : 'closed'}
-              className="w-6 h-6 flex flex-col justify-center items-center"
+            {/* Mobile menu button */}
+            <button
+              className="lg:hidden"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
+              type="button"
             >
-              <motion.span
-                variants={{
-                  closed: { rotate: 0, y: 0 },
-                  open: { rotate: 45, y: 5 },
-                }}
-                className="w-6 h-0.5 bg-foreground block transition-all duration-300"
-              />
-              <motion.span
-                variants={{
-                  closed: { opacity: 1 },
-                  open: { opacity: 0 },
-                }}
-                className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
-              />
-              <motion.span
-                variants={{
-                  closed: { rotate: 0, y: 0 },
-                  open: { rotate: -45, y: -5 },
-                }}
-                className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
-              />
-            </motion.div>
-          </button>
+              <motion.div
+                animate={isOpen ? 'open' : 'closed'}
+                className="w-6 h-6 flex flex-col justify-center items-center"
+              >
+                <motion.span
+                  variants={{
+                    closed: { rotate: 0, y: 0 },
+                    open: { rotate: 45, y: 5 },
+                  }}
+                  className="w-6 h-0.5 bg-foreground block transition-all duration-300"
+                />
+                <motion.span
+                  variants={{
+                    closed: { opacity: 1 },
+                    open: { opacity: 0 },
+                  }}
+                  className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
+                />
+                <motion.span
+                  variants={{
+                    closed: { rotate: 0, y: 0 },
+                    open: { rotate: -45, y: -5 },
+                  }}
+                  className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
+                />
+              </motion.div>
+            </button>
+          </div>
         </div>
       </div>
 

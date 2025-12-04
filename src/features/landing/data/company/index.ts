@@ -21,7 +21,6 @@ export const companyInfo = {
   numProjects: 520,
   generations: 3,
   clientSatisfaction: 0.98,
-  projectsDelivered: 50_000_000,
   contactInfo,
   insurances,
   licenses,

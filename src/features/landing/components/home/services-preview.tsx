@@ -5,7 +5,7 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import DecorativeLine from '@/components/DecorativeLine'
+import DecorativeLine from '@/components/decorative-line'
 import { Button } from '@/components/ui/button'
 import { services } from '@/features/landing/data/company/services'
 
@@ -16,7 +16,10 @@ export default function ServicesPreview() {
   return (
     <section
       ref={ref}
-      className="relative py-20 lg:py-32 bg-neutral-900"
+      style={{
+        background: 'radial-gradient(circle at top , color-mix(in oklab, var(--background) 100%, transparent), color-mix(in oklab, var(--primary) 20%, transparent))',
+      }}
+      className="relative py-20 lg:py-32"
     >
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         {/* Section Header */}
@@ -71,7 +74,7 @@ export default function ServicesPreview() {
                         className="w-full h-64 object-cover"
                       />
                     </motion.div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-card/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-t from-card/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
 
                     {/* Overlay CTA */}
                     <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover/image:opacity-100 transition-all duration-300">
@@ -82,12 +85,12 @@ export default function ServicesPreview() {
                   </div>
 
                   {/* Content */}
-                  <div className="p-8 flex flex-col flex-grow">
+                  <div className="p-8 flex flex-col grow">
                     <h3 className="font-serif text-2xl font-bold text-card-foreground mb-4 group-hover:text-muted-foreground transition-colors duration-300">
                       {service.title}
                     </h3>
 
-                    <p className="text-muted-foreground mb-6 leading-relaxed flex-grow">
+                    <p className="text-muted-foreground mb-6 leading-relaxed grow">
                       {service.description}
                     </p>
 
@@ -108,7 +111,7 @@ export default function ServicesPreview() {
                           }}
                           className="flex items-center space-x-3"
                         >
-                          <div className="w-2 h-2 bg-secondary rounded-full flex-shrink-0" />
+                          <div className="w-2 h-2 bg-secondary rounded-full shrink-0" />
                           <span className="text-sm font-medium text-muted-foreground">
                             {feature}
                           </span>

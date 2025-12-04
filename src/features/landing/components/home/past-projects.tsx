@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import useMeasure from 'react-use-measure'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
-import { PhotoCard } from './PhotoCard'
+import { PhotoCard } from './photo-card'
 
 const photos = [
   '/hero-photos/modern-house-1.png',
@@ -91,7 +91,7 @@ export default function PastProjects() {
           !isMobile ? 'h-[400px]' : 'h-[250px]',
         )}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-background from-5% via-transparent to-background to-95% z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-linear-to-r from-background from-5% via-transparent to-background to-95% z-10 pointer-events-none" />
         {/* MUST BE ABSOLUTE FOR WIDTH TO BE CALCULATED CORRECTLY */}
         <motion.div
           className="absolute left-0 flex gap-2 h-full"
@@ -108,6 +108,7 @@ export default function PastProjects() {
         >
           {[...photos, ...photos].map((photo, index) => (
             <PhotoCard
+              // eslint-disable-next-line react/no-array-index-key
               key={index}
               photo={photo}
             />

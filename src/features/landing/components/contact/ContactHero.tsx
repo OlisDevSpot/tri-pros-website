@@ -1,11 +1,11 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { HeroContainer } from '@/components/HeroContainer'
+import { ViewportHero } from '@/components/viewport-hero'
 
 export default function ContactHero() {
   return (
-    <HeroContainer className="h-[50vh]">
+    <ViewportHero className="h-[50vh]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -24,6 +24,6 @@ export default function ContactHero() {
           </p>
         </motion.div>
       </div>
-    </HeroContainer>
+    </ViewportHero>
   )
 }

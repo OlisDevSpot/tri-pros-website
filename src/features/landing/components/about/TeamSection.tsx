@@ -4,7 +4,7 @@ import { motion, useInView } from 'motion/react'
 
 import Image from 'next/image'
 import { useRef } from 'react'
-import DecorativeLine from '@/components/DecorativeLine'
+import DecorativeLine from '@/components/decorative-line'
 import { teamMembers } from '../../data/company/team-members'
 
 export default function TeamSection() {
@@ -65,7 +65,7 @@ export default function TeamSection() {
                       className="w-full h-80 object-cover object-top"
                     />
                   </motion.div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                   {/* Contact Overlay */}
                   <motion.div
@@ -86,14 +86,14 @@ export default function TeamSection() {
                 </div>
 
                 {/* Content */}
-                <div className="p-6 flex flex-col flex-grow">
+                <div className="p-6 flex flex-col grow">
                   <h3 className="font-serif text-xl font-bold text-foreground mb-1">
                     {member.name}
                   </h3>
                   <p className="text-muted-foreground font-bold mb-3">
                     {member.position}
                   </p>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-4 flex-grow">
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-4 grow">
                     {member.bio}
                   </p>
 

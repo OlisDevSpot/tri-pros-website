@@ -1,4 +1,4 @@
-import BottomCTA from '@/components/BottomCTA'
+import BottomCTA from '@/components/cta'
 import ProcessOverview from '@/features/landing/components/about/ProcessOverview'
 import ServicesHero from '@/features/landing/components/services/ServicesHero'
 import ServicesList from '@/features/landing/components/services/ServicesList'
@@ -14,8 +14,8 @@ export default function ServicesPage() {
   return (
     <main className="h-full">
       <ServicesHero />
-      {/* <ServicesListScroll /> */}
-      {/* <ServicesList /> */}
+      <ServicesListScroll />
+      <ServicesList />
       <ProcessOverview />
       <BottomCTA />
     </main>

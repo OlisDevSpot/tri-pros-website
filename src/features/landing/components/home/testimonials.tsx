@@ -5,7 +5,7 @@ import { motion, useInView } from 'motion/react'
 
 import Image from 'next/image'
 import { useRef } from 'react'
-import DecorativeLine from '@/components/DecorativeLine'
+import DecorativeLine from '@/components/decorative-line'
 import { companyInfo, testimonials } from '@/features/landing/data/company'
 
 export default function TestimonialsSection() {
@@ -134,7 +134,7 @@ export default function TestimonialsSection() {
                 </div>
 
                 {/* Testimonial Text */}
-                <p className="text-muted-foreground leading-relaxed mb-6 italic flex-grow">
+                <p className="text-muted-foreground leading-relaxed mb-6 italic grow">
                   {testimonial.text}
                 </p>
 

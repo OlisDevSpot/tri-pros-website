@@ -1,15 +1,15 @@
 import { cn } from '@/lib/utils'
 
-interface HeroContainerProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ViewportHeroProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
   className?: string
 }
 
-export function HeroContainer({
+export function ViewportHero({
   children,
   className,
   ...props
-}: HeroContainerProps) {
+}: ViewportHeroProps) {
   return (
     <div
       className={cn(

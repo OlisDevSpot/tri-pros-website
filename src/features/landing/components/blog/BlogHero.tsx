@@ -3,7 +3,7 @@
 import type { Variants } from 'motion/react'
 import { motion } from 'motion/react'
 
-import { HeroContainer } from '@/components/HeroContainer'
+import { ViewportHero } from '@/components/viewport-hero'
 import { blogPostTitles } from '@/features/landing/data/blog'
 import { HeroBlogPostCard } from './HeroBlogPostCard'
 
@@ -30,7 +30,7 @@ const childVariants: Variants = {
 
 export default function BlogHero() {
   return (
-    <HeroContainer>
+    <ViewportHero>
       <motion.div
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-4 h-[80%] w-full"
         variants={parentVariants}
@@ -69,6 +69,6 @@ export default function BlogHero() {
           />
         </motion.div>
       </motion.div>
-    </HeroContainer>
+    </ViewportHero>
   )
 }

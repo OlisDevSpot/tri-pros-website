@@ -3,12 +3,12 @@
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { HeroContainer } from '@/components/HeroContainer'
 import { Button } from '@/components/ui/button'
+import { ViewportHero } from '@/components/viewport-hero'
 
 export default function ServicesHero() {
   return (
-    <HeroContainer>
+    <ViewportHero>
       {/* Background Img */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -20,8 +20,8 @@ export default function ServicesHero() {
         />
         <div className="absolute inset-0 bg-linear-to-r from-black/70 to-black/40" />
       </div>
-    
-      <div className="relative z-10 max-w-7xl mx-auto px-4 pt-[calc(var(--header-height)+16px)] sm:px-6 lg:px-8">
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 pt-[calc(var(--navbar-height)+16px)] sm:px-6 lg:px-8">
         <div className="">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -139,6 +139,6 @@ export default function ServicesHero() {
           </motion.div>
         </div>
       </div>
-    </HeroContainer>
+    </ViewportHero>
   )
 }

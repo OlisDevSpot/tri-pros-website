@@ -1,4 +1,4 @@
-import BottomCTA from '@/components/BottomCTA'
+import BottomCTA from '@/components/cta'
 import AboutHero from '@/features/landing/components/about/AboutHero'
 import CompanyStory from '@/features/landing/components/about/CompanyStory'
 import CredentialsSection from '@/features/landing/components/about/CredentialsSection'

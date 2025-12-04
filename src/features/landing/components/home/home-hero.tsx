@@ -2,29 +2,29 @@
 
 import { motion } from 'motion/react'
 import Link from 'next/link'
-import { HeroContainer } from '@/components/HeroContainer'
-import { Button } from '@/components/ui/button'
-import { companyInfo } from '@/features/landing/data/company'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ViewportHero } from '@/components/viewport-hero'
+import { companyInfo } from '@/features/landing/data/company'
 
 export default function HomeHero() {
   const pillsData = useMemo(() => {
-    return [`${new Date().getFullYear() - companyInfo.yearFounded} Years Experience`, `${companyInfo.numProjects}+ Projects Delivered`, `${companyInfo.clientSatisfaction * 100}% Client Satisfaction`]
+    return [`${new Date().getFullYear() - companyInfo.yearFounded} Years Experience`, `${companyInfo.numProjects}+ Projects Delivered`, `${companyInfo.clientSatisfaction * 100}% Client Satisfaction`, `${companyInfo.generations} Generations`]
   }, [])
   return (
-    <HeroContainer>
+    <ViewportHero>
       {/* Content */}
       <div className="absolute inset-0 mx-auto w-full h-full lg:p-6">
         <div
           className="flex flex-col items-center justify-center h-full lg:rounded-3xl"
           style={{
-            backgroundImage: `radial-gradient(circle, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.5)), url("/hero-photos/modern-house-1.png")`,
+            backgroundImage: `radial-gradient(circle, color-mix(in oklab, var(--background) 80%, transparent), color-mix(in oklab, var(--background) 50%, transparent)), url("/hero-photos/modern-house-1.png")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-foreground">
+          <div className="container text-center text-foreground">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -44,7 +44,7 @@ export default function HomeHero() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
-                  className="bg-gradient-to-r from-secondary to-red-700 bg-clip-text text-transparent font-extrabold"
+                  className="bg-linear-to-r from-primary to-red-700 bg-clip-text text-transparent font-extrabold"
                 >
                   Masterpieces
                 </motion.span>
@@ -68,13 +68,13 @@ export default function HomeHero() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
-                className="flex flex-wrap justify-center items-center gap-8 text-foreground"
+                className="flex flex-wrap justify-center items-center gap-2 text-foreground"
               >
-                {pillsData.map((pill, index) => (
+                {pillsData.map(pill => (
                   <Badge
-                    key={index}
+                    key={pill}
                     variant="outline"
-                    className='py-2 px-4 rounded-3xl'
+                    className="py-2 px-4 rounded-3xl grow border-background/40 bg-foreground/10 backdrop-blur-sm"
                   >
                     <div className="w-2 h-2 bg-foreground rounded-full" />
                     <span className="font-semibold">{pill}</span>
@@ -87,32 +87,34 @@ export default function HomeHero() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.8 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                className="flex flex-row sm:flex-row gap-4 sm:justify-center sm:items-center max-w-2xl mx-auto"
               >
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  className="flex-1"
                 >
                   <Button
                     asChild
                     variant="default"
                     size="lg"
-                    className="h-14 text-lg"
+                    className="h-14 text-lg w-full"
                   >
-                    <Link href="/contact">Schedule Your Consultation</Link>
+                    <Link href="/contact">Schedule</Link>
                   </Button>
                 </motion.div>
                 <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  className="flex-1"
                 >
                   <Button
                     asChild
                     variant="outline"
                     size="lg"
-                    className="h-14 text-lg"
+                    className="h-14 text-lg w-full"
                   >
-                    <Link href="/portfolio">View Our Portfolio</Link>
+                    <Link href="/portfolio">View Portfolio</Link>
                   </Button>
                 </motion.div>
               </motion.div>
@@ -143,6 +145,6 @@ export default function HomeHero() {
           </div>
         </motion.div>
       </motion.div>
-    </HeroContainer>
+    </ViewportHero>
   )
 }
