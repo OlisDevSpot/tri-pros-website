@@ -1,107 +1,110 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
+import { motion, useInView } from 'motion/react'
+import { useRef } from 'react'
+import { useIsMobile } from '@/hooks/use-mobile'
+
+import { cn } from '@/lib/utils'
 
 const processSteps = [
   {
-    phase: "Discovery & Planning",
-    duration: "Weeks 1-2",
+    phase: 'Discovery & Planning',
+    duration: 'Weeks 1-2',
     description:
-      "We begin every project with a comprehensive consultation to understand your vision, needs, and budget.",
+      'We begin every project with a comprehensive consultation to understand your vision, needs, and budget.',
     activities: [
-      "Initial consultation and site assessment",
-      "Design development and architectural planning",
-      "Permit applications and approvals",
-      "Detailed project proposal and timeline",
-      "Material selection and sourcing",
+      'Initial consultation and site assessment',
+      'Design development and architectural planning',
+      'Permit applications and approvals',
+      'Detailed project proposal and timeline',
+      'Material selection and sourcing',
     ],
-    icon: "🔍",
-    bgColor: "from-blue-900 to-neutral-950",
-    color: "bg-blue-300",
+    icon: '🔍',
+    bgColor: 'from-blue-900 to-neutral-950',
+    color: 'bg-blue-300',
   },
   {
-    phase: "Pre-Construction",
-    duration: "Weeks 3-4",
+    phase: 'Pre-Construction',
+    duration: 'Weeks 3-4',
     description:
-      "Thorough preparation ensures smooth execution and eliminates surprises during construction.",
+      'Thorough preparation ensures smooth execution and eliminates surprises during construction.',
     activities: [
-      "Final design approval and engineering",
-      "Material ordering and delivery scheduling",
-      "Subcontractor coordination and scheduling",
-      "Site preparation and safety setup",
-      "Project timeline finalization",
+      'Final design approval and engineering',
+      'Material ordering and delivery scheduling',
+      'Subcontractor coordination and scheduling',
+      'Site preparation and safety setup',
+      'Project timeline finalization',
     ],
-    icon: "📋",
-    bgColor: "from-orange-900 to-neutral-950",
-    color: "bg-orange-300",
+    icon: '📋',
+    bgColor: 'from-orange-900 to-neutral-950',
+    color: 'bg-orange-300',
   },
   {
-    phase: "Construction",
-    duration: "Timeline Varies",
+    phase: 'Construction',
+    duration: 'Timeline Varies',
     description:
-      "Expert execution with daily progress updates and regular quality checkpoints.",
+      'Expert execution with daily progress updates and regular quality checkpoints.',
     activities: [
-      "Daily progress updates and communication",
-      "Regular quality control inspections",
-      "Weekly client walkthroughs",
-      "Real-time project management",
-      "Continuous safety monitoring",
+      'Daily progress updates and communication',
+      'Regular quality control inspections',
+      'Weekly client walkthroughs',
+      'Real-time project management',
+      'Continuous safety monitoring',
     ],
-    icon: "🏗️",
-    bgColor: "from-green-900 to-neutral-950",
-    color: "bg-green-300",
+    icon: '🏗️',
+    bgColor: 'from-green-900 to-neutral-950',
+    color: 'bg-green-300',
   },
   {
-    phase: "Completion & Handover",
-    duration: "Final Week",
+    phase: 'Completion & Handover',
+    duration: 'Final Week',
     description:
-      "Meticulous final inspections and comprehensive warranty documentation ensure your complete satisfaction.",
+      'Meticulous final inspections and comprehensive warranty documentation ensure your complete satisfaction.',
     activities: [
-      "Final quality inspections",
-      "Client walkthrough and punch list",
-      "System demonstrations and training",
-      "Warranty documentation and registration",
-      "Project completion celebration",
+      'Final quality inspections',
+      'Client walkthrough and punch list',
+      'System demonstrations and training',
+      'Warranty documentation and registration',
+      'Project completion celebration',
     ],
-    icon: "✅",
-    bgColor: "from-purple-900 to-neutral-950",
-    color: "bg-purple-300",
+    icon: '✅',
+    bgColor: 'from-purple-900 to-neutral-950',
+    color: 'bg-purple-300',
   },
-];
+]
 
 const qualityMeasures = [
   {
-    title: "Daily Quality Checks",
+    title: 'Daily Quality Checks',
     description:
-      "Every aspect of work is inspected daily by our quality control team",
-    icon: "🔍",
+      'Every aspect of work is inspected daily by our quality control team',
+    icon: '🔍',
   },
   {
-    title: "Photo Documentation",
+    title: 'Photo Documentation',
     description:
-      "Complete photographic record of all work phases for transparency",
-    icon: "📸",
+      'Complete photographic record of all work phases for transparency',
+    icon: '📸',
   },
   {
-    title: "Third-Party Inspections",
+    title: 'Third-Party Inspections',
     description:
-      "Independent inspections at critical milestones ensure compliance",
-    icon: "🏛️",
+      'Independent inspections at critical milestones ensure compliance',
+    icon: '🏛️',
   },
   {
-    title: "Material Verification",
+    title: 'Material Verification',
     description:
-      "All materials verified for quality and specifications before installation",
-    icon: "✅",
+      'All materials verified for quality and specifications before installation',
+    icon: '✅',
   },
-];
+]
 
 export default function ProcessOverview() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
+  const isMobile = useIsMobile()
   return (
     <section
       ref={ref}
@@ -116,7 +119,9 @@ export default function ProcessOverview() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our Proven <span className="text-secondary">Process</span>
+            Our Proven
+            {' '}
+            <span className="text-secondary">Process</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             A systematic approach refined over 25 years to ensure exceptional
@@ -135,11 +140,11 @@ export default function ProcessOverview() {
               className="relative"
             >
               <div
-                className={`grid grid-cols-1 lg:grid-cols-2 items-center ${index % 2 === 0 ? "bg-gradient-to-tr" : "bg-gradient-to-tl"} ${step.bgColor} rounded-lg`}
+                className={`flex flex-col lg:flex-row ${index % 2 === 0 ? 'bg-linear-to-tr' : 'bg-linear-to-tl'} ${step.bgColor} rounded-lg`}
               >
                 {/* Content */}
                 <div
-                  className={`${index % 2 === 0 ? "lg:order-2" : ""} space-y-6 p-8 h-full relative`}
+                  className={cn(`space-y-6 p-8 h-full relative flex-1`, isMobile || index % 2 === 1 ? 'order-2' : '')}
                 >
                   <div className="flex items-center space-x-4">
                     <div>
@@ -172,7 +177,7 @@ export default function ProcessOverview() {
                         }}
                         className="flex items-start space-x-3"
                       >
-                        <div className="w-2 h-2 bg-foreground rounded-full flex-shrink-0 mt-2" />
+                        <div className="w-2 h-2 bg-foreground rounded-full shrink-0 mt-2" />
                         <span className="text-muted-foreground">
                           {activity}
                         </span>
@@ -184,23 +189,23 @@ export default function ProcessOverview() {
                   {index < processSteps.length - 1 && (
                     <motion.div
                       initial={{ height: 0 }}
-                      animate={isInView ? { height: "200px" } : { height: 0 }}
+                      animate={isInView ? { height: '200px' } : { height: 0 }}
                       transition={{ duration: 0.8, delay: index * 0.2 + 0.5 }}
-                      className="absolute left-1/2 top-full w-1 bg-gradient-to-b from-white to-neutral-500 rounded-full transform -translate-x-1/2 hidden lg:block z-[-1]"
+                      className="absolute left-1/2 top-full w-1 bg-linear-to-b from-white to-neutral-500 rounded-full transform -translate-x-1/2 hidden lg:block z-[-1]"
                     />
                   )}
                 </div>
 
                 {/* Visual Element */}
                 <div
-                  className={`${index % 2 === 1 ? "lg:order-1" : ""} h-full shadow-2xl`}
+                  className={cn(`h- w-full shadow-2xl flex-1`, isMobile || index % 2 === 1 ? 'order-1' : '')}
                 >
                   <div
-                    className={`${step.color} rounded-lg p-8 shadow-xl border border-border/20 h-full flex items-center justify-center`}
+                    className={`${step.color} rounded-lg p-8 shadow-xl h-full w-full flex items-center justify-center`}
                   >
                     <div className="text-center">
                       <div
-                        className={`w-24 h-24 bg-gradient-to-br ${step.bgColor} rounded-full flex items-center justify-center text-white text-4xl mx-auto mb-6`}
+                        className={`w-24 h-24 bg-linear-to-br ${step.bgColor} rounded-full flex items-center justify-center text-white text-4xl mx-auto mb-6`}
                       >
                         {step.icon}
                       </div>
@@ -244,7 +249,7 @@ export default function ProcessOverview() {
                   isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }
                 }
                 transition={{ duration: 0.6, delay: index * 0.1 + 0.8 }}
-                className="select-none text-center p-6 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 transition-colors duration-300"
+                className="select-none text-center p-6 rounded-xl bg-linear-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 transition-colors duration-300"
               >
                 <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">{measure.icon}</span>
@@ -261,5 +266,5 @@ export default function ProcessOverview() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

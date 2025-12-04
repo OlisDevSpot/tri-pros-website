@@ -1,49 +1,51 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { motion } from "motion/react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import Logo from "../Logo";
-import { useIsScrolled } from "@/hooks/useIsScrolled";
-import { MobileNav } from "./mobile-nav";
-import { usePathname } from "next/navigation";
+import { motion } from 'motion/react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useState } from 'react'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { useIsScrolled } from '@/hooks/useIsScrolled'
+import { cn } from '@/lib/utils'
+import Logo from '../Logo'
+import { MobileNav } from './mobile-nav'
 
 const navigationItems = [
-  { name: "About", href: "/about" },
-  { name: "Services", href: "/services" },
-  { name: "Portfolio", href: "/portfolio" },
-  { name: "Blog", href: "/blog" },
-];
+  { name: 'About', href: '/about' },
+  { name: 'Services', href: '/services' },
+  { name: 'Portfolio', href: '/portfolio' },
+  { name: 'Blog', href: '/blog' },
+]
 
 export default function Navigation() {
-  const [isOpen, setIsOpen] = useState(false);
-  const scrolled = useIsScrolled(10);
-  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false)
+  const scrolled = useIsScrolled(10)
+  const isMobile = useIsMobile()
+  const pathname = usePathname()
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) => pathname === href
 
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={cn(
-        "fixed left-0 right-0 z-50 transition-all duration-300",
-        scrolled ? "bg-background/95 shadow-lg" : "bg-transparent"
+        'fixed left-0 right-0 z-50 transition-all duration-300',
+        scrolled ? 'bg-background/95 shadow-lg' : 'bg-transparent',
       )}
       style={{
-        top: scrolled ? "0" : "16px",
-        height: scrolled ? "auto" : "auto",
+        top: scrolled || isMobile || pathname !== '/' ? '0' : '32px',
+        height: scrolled ? 'auto' : 'auto',
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-12 xl:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Logo scrolled={scrolled} />
+            <Logo />
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -58,16 +60,16 @@ export default function Navigation() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "relative hover:text-neutral-300 transition-colors duration-200 font-medium",
-                    scrolled ? "text-foreground" : "text-foreground",
-                    isActive(item.href) ? "text-primary-light" : ""
+                    'relative hover:text-neutral-300 transition-colors duration-200 font-medium',
+                    scrolled ? 'text-foreground' : 'text-foreground',
+                    isActive(item.href) ? 'text-primary-light' : '',
                   )}
                 >
                   {item.name}
                   <motion.div
                     className="absolute -bottom-1 left-0 h-0.5 bg-secondary"
                     initial={{ width: 0 }}
-                    whileHover={{ width: "100%" }}
+                    whileHover={{ width: '100%' }}
                     transition={{ duration: 0.2 }}
                   />
                 </Link>
@@ -95,9 +97,10 @@ export default function Navigation() {
             className="lg:hidden"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
+            type="button"
           >
             <motion.div
-              animate={isOpen ? "open" : "closed"}
+              animate={isOpen ? 'open' : 'closed'}
               className="w-6 h-6 flex flex-col justify-center items-center"
             >
               <motion.span
@@ -133,5 +136,5 @@ export default function Navigation() {
         navigationItems={navigationItems}
       />
     </motion.nav>
-  );
+  )
 }

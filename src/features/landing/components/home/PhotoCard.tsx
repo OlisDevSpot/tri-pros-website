@@ -1,24 +1,24 @@
 /* eslint-disable @next/next/no-img-element */
-import { ArrowRightCircle } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { ArrowRightCircle } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 export function PhotoCard({ photo }: { photo: string }) {
-  const [hovered, setHovered] = useState(false);
-  const router = useRouter();
+  const [hovered, setHovered] = useState(false)
+  const router = useRouter()
 
   return (
     <motion.div
       className="relative h-full min-w-[500px] rounded-md overflow-hidden"
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      onClick={() => router.push("/portfolio")}
+      onClick={() => router.push('/portfolio')}
     >
       <AnimatePresence>
         {hovered && (
           <motion.div
-            key={"overlay"}
+            key="overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -46,5 +46,5 @@ export function PhotoCard({ photo }: { photo: string }) {
         className="object-cover h-full w-full"
       />
     </motion.div>
-  );
+  )
 }

@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import DecorativeLine from "@/components/DecorativeLine";
-import { stats } from "@/features/landing/data/stats";
-import { credentials } from "@/features/landing/data/credentials";
+import { motion, useInView } from 'motion/react'
+
+import { useRef } from 'react'
+import DecorativeLine from '@/components/DecorativeLine'
+import { credentials } from '@/features/landing/data/company/credentials'
+import { stats } from '@/features/landing/data/company/stats'
 
 export default function CredentialsSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <section
@@ -25,7 +25,11 @@ export default function CredentialsSection() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our <span className="text-secondary">Credentials</span> &
+            Our
+            {' '}
+            <span className="text-secondary">Credentials</span>
+            {' '}
+            &
             Recognition
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -111,7 +115,7 @@ export default function CredentialsSection() {
 
               {/* Bottom border animation */}
               <DecorativeLine
-                animate={isInView ? { width: "100%" } : { width: 0 }}
+                animate={isInView ? { width: '100%' } : { width: 0 }}
                 transition={{ duration: 0.8, delay: index * 0.1 + 0.6 }}
               />
             </motion.div>
@@ -179,5 +183,5 @@ export default function CredentialsSection() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

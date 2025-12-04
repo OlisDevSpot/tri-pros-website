@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { motion, useInView } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useRef } from "react";
+import { motion, useInView } from 'motion/react'
+import Link from 'next/link'
+import { useRef } from 'react'
+import { Button } from '@/components/ui/button'
 
 export default function BottomCTA() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <motion.div
@@ -20,7 +20,7 @@ export default function BottomCTA() {
       <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
         Join 500+ satisfied homeowners who chose excellence.
         <span className="font-semibold text-muted-foreground">
-          {" "}
+          {' '}
           Limited project slots available for 2024.
         </span>
       </p>
@@ -61,5 +61,5 @@ export default function BottomCTA() {
         </motion.div>
       </div>
     </motion.div>
-  );
+  )
 }

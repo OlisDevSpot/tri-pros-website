@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import Image from "next/image";
+import { motion } from 'motion/react'
+import Image from 'next/image'
 
 interface BlogPostCardProps {
-  title: string;
-  description: string;
-  image: string;
-  date: Date;
+  title: string
+  description: string
+  image: string
+  date: Date
 }
 
 export function BlogPostCard({
@@ -16,11 +16,11 @@ export function BlogPostCard({
   date,
   image,
 }: BlogPostCardProps) {
-  const formattedDate = new Date(date).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const formattedDate = new Date(date).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
   return (
     <div className="relative w-full aspect-[9/16] rounded-lg overflow-hidden shadow-sm p-4 hover:shadow-lg cursor-pointer transition-all duration-300">
       <div className="flex flex-col gap-2 justify-end h-full peer z-10 relative">
@@ -40,5 +40,5 @@ export function BlogPostCard({
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/50 pointer-events-none" />
     </div>
-  );
+  )
 }

@@ -1,15 +1,15 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import Image from "next/image";
-import DecorativeLine from "@/components/DecorativeLine";
-import { teamMembers } from "../../data/team-members";
+import { motion, useInView } from 'motion/react'
+
+import Image from 'next/image'
+import { useRef } from 'react'
+import DecorativeLine from '@/components/DecorativeLine'
+import { teamMembers } from '../../data/company/team-members'
 
 export default function TeamSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <section
@@ -25,7 +25,9 @@ export default function TeamSection() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Meet Our <span className="text-secondary">Expert Team</span>
+            Meet Our
+            {' '}
+            <span className="text-secondary">Expert Team</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Behind every exceptional project is a team of dedicated
@@ -76,7 +78,9 @@ export default function TeamSection() {
                       href={`mailto:${member.email}`}
                       className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg font-semibold text-center block hover:bg-secondary/90 transition-colors duration-200"
                     >
-                      Contact {member.name.split(" ")[0]}
+                      Contact
+                      {' '}
+                      {member.name.split(' ')[0]}
                     </a>
                   </motion.div>
                 </div>
@@ -122,7 +126,7 @@ export default function TeamSection() {
 
                   {/* Bottom border animation */}
                   <DecorativeLine
-                    animate={isInView ? { width: "100%" } : { width: 0 }}
+                    animate={isInView ? { width: '100%' } : { width: 0 }}
                     transition={{ duration: 0.8, delay: index * 0.1 + 0.5 }}
                   />
                 </div>
@@ -200,5 +204,5 @@ export default function TeamSection() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

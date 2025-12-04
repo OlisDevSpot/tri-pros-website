@@ -1,50 +1,53 @@
-import { motion, useInView } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { useFeatureStore } from "@/store/useFeatureStore";
-import { useEffect, useRef } from "react";
+import { motion, useInView } from 'motion/react'
+import Link from 'next/link'
+import { useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { useFeatureStore } from '@/store/useFeatureStore'
 
 interface Service {
-  title: string;
-  subtitle: string;
-  description: string;
-  features: string[];
-  timeline: string;
-  priceRange: string;
-  href: string;
-  icon: string;
+  title: string
+  subtitle: string
+  description: string
+  features: string[]
+  timeline: string
+  priceRange: string
+  href: string
+  icon: string
 }
 
 export default function ServiceCard({
   service,
   index,
 }: {
-  service: Service;
-  index: number;
+  service: Service
+  index: number
 }) {
-  const { setFeatureInView } = useFeatureStore();
-  const ref = useRef(null);
-  const isInView = useInView(ref, { margin: "-40% 0px -40% 0px" });
+  const { setFeatureInView } = useFeatureStore()
+  const ref = useRef(null)
+  const isInView = useInView(ref, { margin: '-50% 0px -50% 0px' })
 
   useEffect(() => {
     if (isInView) {
-      setFeatureInView(service.title);
+      setFeatureInView(service.title)
     }
-  }, [isInView, service.title, setFeatureInView]);
+    else {
+      setFeatureInView('')
+    }
+  }, [isInView, service.title, setFeatureInView])
 
   return (
     <motion.div
       key={service.title}
-      initial={{ opacity: 0.4, filter: "brightness(0.3)" }}
-      whileInView={{ opacity: 1, filter: "brightness(1)" }}
-      viewport={{ margin: "-40% 0px -40% 0px" }}
+      initial={{ opacity: 0.4, filter: 'brightness(0.3)' }}
+      whileInView={{ opacity: 1, filter: 'brightness(1)' }}
+      viewport={{ margin: '-50% 0px -50% 0px' }}
       transition={{ duration: 0.4 }}
       className="group"
       ref={ref}
     >
       {/* Content */}
-      <div className={`space-y-6 ${index % 2 === 1 ? "lg:col-start-2" : ""}`}>
+      <div className={`space-y-6 ${index % 2 === 1 ? 'lg:col-start-2' : ''}`}>
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center">
             <span className="text-3xl">{service.icon}</span>
@@ -104,7 +107,7 @@ export default function ServiceCard({
         </div>
 
         {/* CTA */}
-        <div className={cn("flex space-x-4 w-full")}>
+        <div className={cn('flex space-x-4 w-full')}>
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -144,5 +147,5 @@ export default function ServiceCard({
         </div>
       </div>
     </motion.div>
-  );
+  )
 }

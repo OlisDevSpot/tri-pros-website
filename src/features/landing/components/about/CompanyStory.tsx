@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import Image from "next/image";
+import { motion, useInView } from 'motion/react'
+
+import Image from 'next/image'
+import { useRef } from 'react'
 
 export default function CompanyStory() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <section
@@ -23,7 +23,9 @@ export default function CompanyStory() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our <span className="text-secondary">Story</span>
+            Our
+            {' '}
+            <span className="text-secondary">Story</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             A legacy built on craftsmanship, integrity, and an unwavering
@@ -173,5 +175,5 @@ export default function CompanyStory() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

@@ -1,81 +1,78 @@
-import type { Metadata } from "next";
-import { Playfair_Display, Inter, Dancing_Script } from "next/font/google";
-import "./globals.css";
-import Navigation from "@/components/navigation/Navigation";
-import Footer from "@/components/Footer";
-import { TRPCReactProvider } from "@/trpc/client";
+import type { Metadata } from 'next'
+import { Dancing_Script, Inter, Playfair_Display } from 'next/font/google'
+import { Providers } from '@/components/providers'
+import './globals.css'
 
 const playfair = Playfair_Display({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  display: "swap",
-});
+  variable: '--font-serif',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
+  variable: '--font-sans',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 const dancingScript = Dancing_Script({
-  variable: "--font-script",
-  subsets: ["latin"],
-  display: "swap",
-});
+  variable: '--font-script',
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: "Elite Construction Company | Luxury Custom Homes & Renovations",
+  title: '%s | Tri Pros Remodeling',
   description:
-    "Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.",
+    'Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.',
   keywords:
-    "luxury construction, custom homes, premium renovations, commercial construction, elite builders",
-  authors: [{ name: "Elite Construction Company" }],
-  creator: "Elite Construction Company",
+    'luxury construction, custom homes, premium renovations, commercial construction, elite builders',
+  authors: [{ name: 'Tri Pros Remodeling' }],
+  creator: 'Tri Pros Remodeling',
   openGraph: {
-    title: "Elite Construction Company | Crafting Architectural Masterpieces",
+    title: 'Tri Pros Remodeling | Crafting Architectural Masterpieces',
     description:
-      "Premium construction services for discerning homeowners and businesses who demand excellence.",
-    type: "website",
-    locale: "en_US",
+      'Premium construction services for discerning homeowners and businesses who demand excellence.',
+    type: 'website',
+    locale: 'en_US',
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Elite Construction Company | Luxury Custom Homes",
+    card: 'summary_large_image',
+    title: 'Tri Pros Remodeling | Luxury Custom Homes',
     description:
-      "Premium construction services for discerning homeowners and businesses who demand excellence.",
+      'Premium construction services for discerning homeowners and businesses who demand excellence.',
   },
   robots: {
     index: true,
     follow: true,
     googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      'index': true,
+      'follow': true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
     },
   },
-};
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html
       lang="en"
       className="dark"
+      suppressHydrationWarning
     >
-      <TRPCReactProvider>
-        <body
-          className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased`}
-        >
-          <Navigation />
+      <body
+        className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased`}
+      >
+        <Providers>
           {children}
-          <Footer />
-        </body>
-      </TRPCReactProvider>
+        </Providers>
+      </body>
     </html>
-  );
+  )
 }

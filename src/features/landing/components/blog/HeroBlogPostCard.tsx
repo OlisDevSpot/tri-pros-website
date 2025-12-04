@@ -1,15 +1,16 @@
-import { cn } from "@/lib/utils";
-import { HTMLMotionProps, motion, Variants } from "motion/react";
-import Image from "next/image";
+import type { HTMLMotionProps, Variants } from 'motion/react'
+import { motion } from 'motion/react'
+import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
-interface HeroBlogPostCardProps extends HTMLMotionProps<"div"> {
+interface HeroBlogPostCardProps extends HTMLMotionProps<'div'> {
   data: {
-    image: string;
-    title: string;
-    snippet: string;
-  };
-  className?: string;
-  variants: Variants;
+    image: string
+    title: string
+    snippet: string
+  }
+  className?: string
+  variants: Variants
 }
 
 export function HeroBlogPostCard({
@@ -21,17 +22,17 @@ export function HeroBlogPostCard({
   return (
     <motion.div
       className={cn(
-        "relative flex justify-end h-full rounded-lg overflow-hidden cursor-pointer",
-        className
+        'relative flex justify-end h-full rounded-lg overflow-hidden cursor-pointer',
+        className,
       )}
       variants={variants}
       {...props}
     >
-      {/* CONTENT-- first because we use `peer` which must be earlier than affected sibling*/}
+      {/* CONTENT-- first because we use `peer` which must be earlier than affected sibling */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeInOut", delay: 0.3 }}
+        transition={{ duration: 0.5, ease: 'easeInOut', delay: 0.3 }}
         className="inset-0 flex flex-col justify-end p-4 z-10 peer"
       >
         <motion.h3 className="text-white text-2xl font-bold">
@@ -53,5 +54,5 @@ export function HeroBlogPostCard({
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/50 pointer-events-none" />
     </motion.div>
-  );
+  )
 }

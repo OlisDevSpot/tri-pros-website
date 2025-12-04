@@ -1,29 +1,28 @@
-"use client";
+'use client'
 
-import { HeroContainer } from "@/components/HeroContainer";
-import { Button } from "@/components/ui/button";
-import { motion } from "motion/react";
-import Image from "next/image";
-import Link from "next/link";
+import { motion } from 'motion/react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { HeroContainer } from '@/components/HeroContainer'
+import { Button } from '@/components/ui/button'
 
 export default function ServicesHero() {
   return (
     <HeroContainer>
-      {/* Background */}
+      {/* Background Img */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/hero-photos/modern-house-3.avif"
-          alt="Elite Construction services showcase"
+          src="/hero-photos/modern-house-5.jpg"
+          alt="Tri Pros Remodeling services showcase"
           fill
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/40" />
+        <div className="absolute inset-0 bg-linear-to-r from-black/70 to-black/40" />
       </div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Content */}
+    
+      <div className="relative z-10 max-w-7xl mx-auto px-4 pt-[calc(var(--header-height)+16px)] sm:px-6 lg:px-8">
+        <div className="">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -36,7 +35,8 @@ export default function ServicesHero() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-                Complete Construction{" "}
+                Complete Construction
+                {' '}
                 <span className="text-secondary">Solutions</span>
               </h1>
             </motion.div>
@@ -56,13 +56,13 @@ export default function ServicesHero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="grid grid-cols-2 gap-6"
+              className="flex gap-4 w-full"
             >
-              <div className="text-center">
+              <div className="text-center py-4 border-2 bg-background/70 rounded-sm border-border flex-1">
                 <div className="text-3xl font-bold text-secondary mb-2">4</div>
                 <div className="text-sm text-gray-300">Core Services</div>
               </div>
-              <div className="text-center">
+              <div className="text-center py-4 border-2 bg-background/70 rounded-sm border-border flex-2">
                 <div className="text-3xl font-bold text-secondary mb-2">
                   100+
                 </div>
@@ -74,7 +74,7 @@ export default function ServicesHero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.8 }}
-              className="flex flex-col sm:flex-row gap-4"
+              className="flex sm:flex-row gap-4"
             >
               <motion.div>
                 <Button
@@ -83,7 +83,7 @@ export default function ServicesHero() {
                   variant="default"
                   className="text-lg h-16"
                 >
-                  <Link href="/contact">Get Service Quote</Link>
+                  <Link href="/contact">Get Quote</Link>
                 </Button>
               </motion.div>
               <motion.div>
@@ -108,21 +108,21 @@ export default function ServicesHero() {
           >
             {[
               {
-                icon: "🏠",
-                title: "Custom Homes",
-                subtitle: "Luxury residential",
+                icon: '🏠',
+                title: 'Custom Homes',
+                subtitle: 'Luxury residential',
               },
               {
-                icon: "🔨",
-                title: "Renovations",
-                subtitle: "Complete makeovers",
+                icon: '🔨',
+                title: 'Renovations',
+                subtitle: 'Complete makeovers',
               },
               {
-                icon: "🏢",
-                title: "Commercial",
-                subtitle: "Business buildings",
+                icon: '🏢',
+                title: 'Commercial',
+                subtitle: 'Business buildings',
               },
-              { icon: "📐", title: "Design-Build", subtitle: "Full-service" },
+              { icon: '📐', title: 'Design-Build', subtitle: 'Full-service' },
             ].map((service, index) => (
               <motion.div
                 key={service.title}
@@ -140,5 +140,5 @@ export default function ServicesHero() {
         </div>
       </div>
     </HeroContainer>
-  );
+  )
 }

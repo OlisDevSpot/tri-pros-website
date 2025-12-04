@@ -1,8 +1,8 @@
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils'
 
 interface HeroContainerProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
-  className?: string;
+  children: React.ReactNode
+  className?: string
 }
 
 export function HeroContainer({
@@ -13,12 +13,12 @@ export function HeroContainer({
   return (
     <div
       className={cn(
-        "h-screen w-full relative flex items-center justify-center overflow-hidden pt-20 pb-16 lg:pb-24",
-        className
+        'h-screen w-full relative flex items-center justify-center overflow-hidden',
+        className,
       )}
       {...props}
     >
       {children}
     </div>
-  );
+  )
 }

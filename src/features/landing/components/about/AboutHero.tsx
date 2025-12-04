@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import { HeroContainer } from "@/components/HeroContainer";
-import { Button } from "@/components/ui/button";
-import { motion } from "motion/react";
-import Image from "next/image";
-import Link from "next/link";
+import { motion } from 'motion/react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { HeroContainer } from '@/components/HeroContainer'
+import { Button } from '@/components/ui/button'
 
 export default function AboutHero() {
   return (
@@ -24,7 +24,8 @@ export default function AboutHero() {
               transition={{ duration: 0.8, delay: 0.2 }}
             >
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-                Three Generations of{" "}
+                Three Generations of
+                {' '}
                 <span className="text-secondary">Master Craftsmanship</span>
               </h1>
             </motion.div>
@@ -148,5 +149,5 @@ export default function AboutHero() {
         </div>
       </div>
     </HeroContainer>
-  );
+  )
 }

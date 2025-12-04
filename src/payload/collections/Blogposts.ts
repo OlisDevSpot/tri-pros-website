@@ -1,27 +1,27 @@
+import type { CollectionConfig } from 'payload'
 import {
   BlocksFeature,
   HeadingFeature,
   HorizontalRuleFeature,
   InlineToolbarFeature,
   lexicalEditor,
-} from "@payloadcms/richtext-lexical";
-import { CollectionConfig } from "payload";
+} from '@payloadcms/richtext-lexical'
 
 export const Blogposts: CollectionConfig = {
-  slug: "blogposts",
+  slug: 'blogposts',
   admin: {
-    useAsTitle: "title",
-    defaultColumns: ["title", "updatedAt", "createdAt"],
+    useAsTitle: 'title',
+    defaultColumns: ['title', 'updatedAt', 'createdAt'],
   },
   fields: [
     {
-      name: "title",
-      type: "text",
+      name: 'title',
+      type: 'text',
       required: true,
     },
     {
-      name: "body",
-      type: "richText",
+      name: 'body',
+      type: 'richText',
       required: true,
       editor: lexicalEditor({
         features: ({ rootFeatures }) => {
@@ -30,10 +30,10 @@ export const Blogposts: CollectionConfig = {
             HorizontalRuleFeature(),
             BlocksFeature({ blocks: [] }),
             InlineToolbarFeature(),
-            HeadingFeature({ enabledHeadingSizes: ["h1", "h2", "h3", "h4"] }),
-          ];
+            HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
+          ]
         },
       }),
     },
   ],
-};
+}

@@ -1,8 +1,9 @@
-import { motion, TargetAndTransition, Transition } from "framer-motion";
+import type { TargetAndTransition, Transition } from 'motion/react'
+import { motion } from 'motion/react'
 
 interface DecorativeLineProps {
-  animate: TargetAndTransition;
-  transition: Transition;
+  animate: TargetAndTransition
+  transition: Transition
 }
 
 export default function DecorativeLine({
@@ -16,5 +17,5 @@ export default function DecorativeLine({
       transition={transition}
       className="h-1 bg-gradient-to-r from-secondary to-secondary/50 mx-auto mt-6 rounded-full"
     />
-  );
+  )
 }

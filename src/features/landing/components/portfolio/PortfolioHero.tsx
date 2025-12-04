@@ -1,17 +1,16 @@
-/* eslint-disable @next/next/no-img-element */
-"use client";
+'use client'
 
-import { useRef } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
+import { motion, useScroll, useTransform } from 'motion/react'
+import { useRef } from 'react'
 
 export function PortfolioHero() {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({
     target: ref,
-    offset: ["start start", "end end"],
-  });
-  const scaleProgress = useTransform(scrollYProgress, [0, 0.95], [1, 0.8]);
-  const rounded = useTransform(scrollYProgress, [0, 0.95], ["0px", "24px"]);
+    offset: ['start start', 'end end'],
+  })
+  const scaleProgress = useTransform(scrollYProgress, [0, 0.95], [1, 0.8])
+  const rounded = useTransform(scrollYProgress, [0, 0.95], ['0px', '24px'])
 
   return (
     <div
@@ -20,7 +19,7 @@ export function PortfolioHero() {
     >
       <motion.div className="h-screen w-full sticky top-0 overflow-hidden">
         <motion.div
-          className="h-full w-full overflow-hidden bg-white"
+          className="relative h-full w-full overflow-hidden"
           style={{ scale: scaleProgress, borderRadius: rounded }}
         >
           <motion.img
@@ -28,8 +27,9 @@ export function PortfolioHero() {
             alt="Portfolio Hero"
             className="h-full w-full object-cover"
           />
+          <div className="absolute h-full w-full bg-black/30 z-10" />
         </motion.div>
       </motion.div>
     </div>
-  );
+  )
 }

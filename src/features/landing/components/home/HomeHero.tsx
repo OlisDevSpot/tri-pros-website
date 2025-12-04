@@ -1,22 +1,27 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import Link from "next/link";
-import { companyInfo } from "@/features/landing/data/company-info";
-import { Button } from "@/components/ui/button";
-import { HeroContainer } from "@/components/HeroContainer";
+import { motion } from 'motion/react'
+import Link from 'next/link'
+import { HeroContainer } from '@/components/HeroContainer'
+import { Button } from '@/components/ui/button'
+import { companyInfo } from '@/features/landing/data/company'
+import { useMemo } from 'react'
+import { Badge } from '@/components/ui/badge'
 
 export default function HomeHero() {
+  const pillsData = useMemo(() => {
+    return [`${new Date().getFullYear() - companyInfo.yearFounded} Years Experience`, `${companyInfo.numProjects}+ Projects Delivered`, `${companyInfo.clientSatisfaction * 100}% Client Satisfaction`]
+  }, [])
   return (
     <HeroContainer>
       {/* Content */}
-      <div className="absolute inset-0 mx-auto w-full h-full lg:p-4">
+      <div className="absolute inset-0 mx-auto w-full h-full lg:p-6">
         <div
-          className="flex flex-col items-center justify-center h-full lg:rounded-2xl"
+          className="flex flex-col items-center justify-center h-full lg:rounded-3xl"
           style={{
             backgroundImage: `radial-gradient(circle, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.5)), url("/hero-photos/modern-house-1.png")`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
           }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-foreground">
@@ -33,7 +38,8 @@ export default function HomeHero() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="font-serif text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight"
               >
-                Crafting Architectural{" "}
+                Crafting Architectural
+                {' '}
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -41,7 +47,8 @@ export default function HomeHero() {
                   className="bg-gradient-to-r from-secondary to-red-700 bg-clip-text text-transparent font-extrabold"
                 >
                   Masterpieces
-                </motion.span>{" "}
+                </motion.span>
+                {' '}
                 That Stand the Test of Time
               </motion.h1>
 
@@ -63,23 +70,16 @@ export default function HomeHero() {
                 transition={{ duration: 0.8, delay: 0.6 }}
                 className="flex flex-wrap justify-center items-center gap-8 text-foreground"
               >
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-foreground rounded-full" />
-                  <span className="font-semibold">
-                    {new Date().getFullYear() - companyInfo.yearFounded}+ Years
-                    Experience
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-foreground rounded-full" />
-                  <span className="font-semibold">
-                    {companyInfo.numProjects}+ Luxury Homes Built
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-foreground rounded-full" />
-                  <span className="font-semibold">A+ BBB Rating</span>
-                </div>
+                {pillsData.map((pill, index) => (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className='py-2 px-4 rounded-3xl'
+                  >
+                    <div className="w-2 h-2 bg-foreground rounded-full" />
+                    <span className="font-semibold">{pill}</span>
+                  </Badge>
+                ))}
               </motion.div>
 
               {/* CTA Buttons */}
@@ -144,5 +144,5 @@ export default function HomeHero() {
         </motion.div>
       </motion.div>
     </HeroContainer>
-  );
+  )
 }

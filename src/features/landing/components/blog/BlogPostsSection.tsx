@@ -1,5 +1,5 @@
-import { blogPostTitles } from "@/features/landing/data/blog";
-import { BlogPostCard } from "./BlogPostCard";
+import { blogPostTitles } from '@/features/landing/data/blog'
+import { BlogPostCard } from './BlogPostCard'
 
 export function BlogPostsSection() {
   return (
@@ -16,8 +16,8 @@ export function BlogPostsSection() {
                 <BlogPostCard
                   key={index}
                   title={title}
-                  description={"cool post bro"}
-                  image={"/hero-photos/modern-house-1.png"}
+                  description="cool post bro"
+                  image="/hero-photos/modern-house-1.png"
                   date={new Date()}
                 />
               ))}
@@ -30,7 +30,7 @@ export function BlogPostsSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }
 
 export function TextWithLine({ text }: { text: string }) {
@@ -38,5 +38,5 @@ export function TextWithLine({ text }: { text: string }) {
     <h2 className="flex uppercase text-2xl min-w-fit font-bold items-center after:h-0.5 after:content-[''] after:flex-grow after:bg-muted-foreground after:flex after:top-1/2 after:-translate-y-1/2 after:left-full after:ml-2">
       {text}
     </h2>
-  );
+  )
 }

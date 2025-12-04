@@ -1,24 +1,24 @@
-import { AnimatePresence } from "motion/react";
-import { motion } from "motion/react";
-import Link from "next/link";
+import { AnimatePresence, motion } from 'motion/react'
+
+import Link from 'next/link'
 
 interface MobileNavProps {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-  navigationItems: { name: string; href: string }[];
+  isOpen: boolean
+  setIsOpen: (isOpen: boolean) => void
+  navigationItems: { name: string, href: string }[]
 }
 
-export const MobileNav = ({
+export function MobileNav({
   isOpen,
   setIsOpen,
   navigationItems,
-}: MobileNavProps) => {
+}: MobileNavProps) {
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
+          animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           className="absolute top-full w-full lg:hidden bg-background/70 backdrop-blur-md border-t"
         >
@@ -57,5 +57,5 @@ export const MobileNav = ({
         </motion.div>
       )}
     </AnimatePresence>
-  );
-};
+  )
+}

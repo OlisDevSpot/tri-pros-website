@@ -5,7 +5,7 @@ import {
   lexicalEditor,
   ParagraphFeature,
   UnderlineFeature,
-} from "@payloadcms/richtext-lexical";
+} from '@payloadcms/richtext-lexical'
 
 export const baseLexical = lexicalEditor({
   features: [
@@ -15,4 +15,4 @@ export const baseLexical = lexicalEditor({
     ItalicFeature(),
     FixedToolbarFeature(),
   ],
-});
+})

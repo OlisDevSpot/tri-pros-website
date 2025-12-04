@@ -1,70 +1,23 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import DecorativeLine from "@/components/DecorativeLine";
+import { motion, useInView } from 'motion/react'
 
-const services = [
-  {
-    title: "Custom Home Construction",
-    description:
-      "Your dream home, built to perfection with unmatched attention to detail",
-    features: [
-      "Architectural Design",
-      "Premium Materials",
-      "Smart Home Integration",
-    ],
-    image: "/hero-photos/modern-house-3.avif",
-    href: "/services/custom-homes",
-  },
-  {
-    title: "Luxury Renovations",
-    description:
-      "Transform your space into something extraordinary with our renovation expertise",
-    features: [
-      "Kitchen Remodeling",
-      "Bathroom Renovations",
-      "Whole-Home Makeovers",
-    ],
-    image: "/hero-photos/modern-house-4.webp",
-    href: "/services/renovations",
-  },
-  {
-    title: "Commercial Projects",
-    description:
-      "Building success for forward-thinking businesses with innovative solutions",
-    features: ["Office Buildings", "Retail Spaces", "Restaurant Design"],
-    image: "/hero-photos/commercial-construction.jpg",
-    href: "/services/commercial",
-  },
-  {
-    title: "Design-Build Services",
-    description:
-      "Streamlined process from concept to completion under one expert team",
-    features: [
-      "Architectural Planning",
-      "Construction Management",
-      "Interior Design",
-    ],
-    image: "/hero-photos/modern-house-2.png",
-    href: "/services/design-build",
-  },
-];
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRef } from 'react'
+import DecorativeLine from '@/components/DecorativeLine'
+import { Button } from '@/components/ui/button'
+import { services } from '@/features/landing/data/company/services'
 
 export default function ServicesPreview() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <section
       ref={ref}
-      className="relative py-20 lg:py-32 bg-gradient-to-br from-neutral-800 to-neutral-900"
+      className="relative py-20 lg:py-32 bg-neutral-900"
     >
-      <div className="absolute inset-0 z-0 bg-radial-[at_50%_0%] from-neutral-800 to-transparent" />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
         {/* Section Header */}
         <motion.div
@@ -74,14 +27,16 @@ export default function ServicesPreview() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our Premium <span className="text-primary">Services</span>
+            Our Premium
+            {' '}
+            <span className="text-primary">Services</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             From custom luxury homes to commercial masterpieces, we deliver
             exceptional results across all construction disciplines.
           </p>
           <DecorativeLine
-            animate={isInView ? { width: "200px" } : { width: 0 }}
+            animate={isInView ? { width: '200px' } : { width: 0 }}
             transition={{ duration: 1, delay: 0.5 }}
           />
         </motion.div>
@@ -163,7 +118,7 @@ export default function ServicesPreview() {
 
                     {/* Bottom border animation */}
                     <DecorativeLine
-                      animate={isInView ? { width: "100%" } : { width: 0 }}
+                      animate={isInView ? { width: '100%' } : { width: 0 }}
                       transition={{ duration: 0.8, delay: index * 0.2 + 0.6 }}
                     />
                   </div>
@@ -208,5 +163,5 @@ export default function ServicesPreview() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

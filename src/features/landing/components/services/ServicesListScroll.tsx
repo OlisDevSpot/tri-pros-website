@@ -1,20 +1,20 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { services } from "@/features/landing/data/services";
-import { Button } from "@/components/ui/button";
-import ServiceCard from "./ServiceCard";
-import { useFeatureStore } from "@/store/useFeatureStore";
-import { cn } from "@/lib/utils";
+import { motion, useInView } from 'motion/react'
+
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { services } from '@/features/landing/data/company/services'
+import { cn } from '@/lib/utils'
+import { useFeatureStore } from '@/store/useFeatureStore'
+import ServiceCard from './ServiceCard'
 
 export default function ServicesListScroll() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const { featureInView } = useFeatureStore();
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const { featureInView } = useFeatureStore()
 
   return (
     <section
@@ -30,7 +30,9 @@ export default function ServicesListScroll() {
           className="text-center"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our Construction <span className="text-secondary">Services</span>
+            Our Construction
+            {' '}
+            <span className="text-secondary">Services</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Comprehensive construction solutions backed by 25+ years of
@@ -40,7 +42,7 @@ export default function ServicesListScroll() {
 
         {/* Services */}
         <div className="space-y-24 flex gap-24 items-start">
-          <div className="w-1/2 flex flex-col gap-24 flex-1 py-[50vh]">
+          <div className="w-1/2 flex flex-col gap-24 flex-1 py-[20vh]">
             {services.map((service, index) => (
               <ServiceCard
                 key={index}
@@ -50,13 +52,13 @@ export default function ServicesListScroll() {
             ))}
           </div>
           <div className="sticky top-0 h-screen flex-1 flex items-center">
-            <div className="w-full h-[50vh] relative">
+            <div className="w-full h-[80vh] relative">
               {services.map((service, index) => (
                 <motion.div
                   key={index}
                   className={cn(
-                    "h-full absolute inset-0 opacity-0 transition-opacity duration-300",
-                    featureInView === service.title && "opacity-100"
+                    'h-full absolute inset-0 opacity-0 transition-opacity duration-300',
+                    featureInView === service.title && 'opacity-100',
                   )}
                 >
                   <motion.div
@@ -83,7 +85,11 @@ export default function ServicesListScroll() {
                         href={service.href}
                         className="bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold text-center block hover:bg-secondary/90 transition-colors duration-200"
                       >
-                        Explore {service.title} →
+                        Explore
+                        {' '}
+                        {service.title}
+                        {' '}
+                        →
                       </Link>
                     </motion.div>
                   </motion.div>
@@ -135,5 +141,5 @@ export default function ServicesListScroll() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

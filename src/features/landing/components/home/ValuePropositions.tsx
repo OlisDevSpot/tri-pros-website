@@ -1,17 +1,17 @@
-"use client";
+'use client'
 
-import { companyInfo } from "@/features/landing/data/company-info";
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import { valueProps } from "../../data/value-prop";
-import { Button } from "@/components/ui/button";
-import DecorativeLine from "@/components/DecorativeLine";
-import Link from "next/link";
+import { motion, useInView } from 'motion/react'
+
+import Link from 'next/link'
+import { useRef } from 'react'
+import DecorativeLine from '@/components/DecorativeLine'
+import { Button } from '@/components/ui/button'
+import { companyInfo } from '@/features/landing/data/company'
+import { valueProps } from '../../data/value-prop'
 
 export default function ValuePropositions() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <section
@@ -27,7 +27,12 @@ export default function ValuePropositions() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
-            Why {companyInfo.name} Chooses{" "}
+            Why
+            {' '}
+            {companyInfo.name}
+            {' '}
+            Chooses
+            {' '}
             <span className="text-primary">Excellence</span>
             <br />
             Over Everything
@@ -79,7 +84,7 @@ export default function ValuePropositions() {
 
                 {/* Decorative Element */}
                 <DecorativeLine
-                  animate={isInView ? { width: "60%" } : { width: 0 }}
+                  animate={isInView ? { width: '60%' } : { width: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.2 + 0.4 }}
                 />
               </motion.div>
@@ -116,5 +121,5 @@ export default function ValuePropositions() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

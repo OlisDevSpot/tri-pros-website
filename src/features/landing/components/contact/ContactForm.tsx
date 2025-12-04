@@ -1,86 +1,89 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useState } from "react";
+import { motion } from 'motion/react'
+import { useState } from 'react'
 
 export default function ContactForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<
-    "idle" | "success" | "error"
-  >("idle");
+    'idle' | 'success' | 'error'
+  >('idle')
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    projectType: "",
-    timeline: "",
-    budget: "",
-    propertyType: "",
-    propertySize: "",
-    location: "",
-    message: "",
-  });
+    name: '',
+    email: '',
+    phone: '',
+    projectType: '',
+    timeline: '',
+    budget: '',
+    propertyType: '',
+    propertySize: '',
+    location: '',
+    message: '',
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitStatus("idle");
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitStatus('idle')
 
     try {
-      const response = await fetch("/api/inquiries", {
-        method: "POST",
+      const response = await fetch('/api/inquiries', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
-      });
+      })
 
       if (response.ok) {
-        setSubmitStatus("success");
+        setSubmitStatus('success')
         // Reset form
         setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          projectType: "",
-          timeline: "",
-          budget: "",
-          propertyType: "",
-          propertySize: "",
-          location: "",
-          message: "",
-        });
-      } else {
-        setSubmitStatus("error");
+          name: '',
+          email: '',
+          phone: '',
+          projectType: '',
+          timeline: '',
+          budget: '',
+          propertyType: '',
+          propertySize: '',
+          location: '',
+          message: '',
+        })
       }
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      setSubmitStatus("error");
-    } finally {
-      setIsSubmitting(false);
+      else {
+        setSubmitStatus('error')
+      }
     }
-  };
+    catch (error) {
+      console.error('Error submitting form:', error)
+      setSubmitStatus('error')
+    }
+    finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    >,
   ) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value,
-    }));
-  };
+    }))
+  }
 
   return (
-    <section className="bg-white py-16 lg:py-24">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="bg-neutral-900 py-16 lg:py-24">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="font-serif text-2xl lg:text-3xl font-bold text-primary mb-6">
+          <h2 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Request Your Consultation
           </h2>
           <p className="text-muted-foreground mb-8">
@@ -97,7 +100,7 @@ export default function ContactForm() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-semibold text-primary mb-2"
+                  className="block text-sm font-semibold text-foreground mb-2"
                 >
                   Full Name *
                 </label>
@@ -114,7 +117,7 @@ export default function ContactForm() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-semibold text-primary mb-2"
+                  className="block text-sm font-semibold text-foreground mb-2"
                 >
                   Email Address *
                 </label>
@@ -133,7 +136,7 @@ export default function ContactForm() {
             <div>
               <label
                 htmlFor="phone"
-                className="block text-sm font-semibold text-primary mb-2"
+                className="block text-sm font-semibold text-foreground mb-2"
               >
                 Phone Number *
               </label>
@@ -153,7 +156,7 @@ export default function ContactForm() {
               <div>
                 <label
                   htmlFor="projectType"
-                  className="block text-sm font-semibold text-primary mb-2"
+                  className="block text-sm font-semibold text-foreground mb-2"
                 >
                   Project Type *
                 </label>
@@ -176,7 +179,7 @@ export default function ContactForm() {
               <div>
                 <label
                   htmlFor="timeline"
-                  className="block text-sm font-semibold text-primary mb-2"
+                  className="block text-sm font-semibold text-foreground mb-2"
                 >
                   Preferred Timeline
                 </label>
@@ -197,36 +200,12 @@ export default function ContactForm() {
               </div>
             </div>
 
-            <div>
-              <label
-                htmlFor="budget"
-                className="block text-sm font-semibold text-primary mb-2"
-              >
-                Budget Range
-              </label>
-              <select
-                id="budget"
-                name="budget"
-                value={formData.budget}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary"
-              >
-                <option value="">Select Budget Range</option>
-                <option value="100k-250k">$100k - $250k</option>
-                <option value="250k-500k">$250k - $500k</option>
-                <option value="500k-1m">$500k - $1M</option>
-                <option value="1m-2m">$1M - $2M</option>
-                <option value="2m+">$2M+</option>
-                <option value="discuss">Prefer to Discuss</option>
-              </select>
-            </div>
-
             {/* Property Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
                   htmlFor="propertyType"
-                  className="block text-sm font-semibold text-primary mb-2"
+                  className="block text-sm font-semibold text-foreground mb-2"
                 >
                   Property Type
                 </label>
@@ -248,7 +227,7 @@ export default function ContactForm() {
               <div>
                 <label
                   htmlFor="propertySize"
-                  className="block text-sm font-semibold text-primary mb-2"
+                  className="block text-sm font-semibold text-foreground mb-2"
                 >
                   Property/Project Size
                 </label>
@@ -267,7 +246,7 @@ export default function ContactForm() {
             <div>
               <label
                 htmlFor="location"
-                className="block text-sm font-semibold text-primary mb-2"
+                className="block text-sm font-semibold text-foreground mb-2"
               >
                 Project Location
               </label>
@@ -285,7 +264,7 @@ export default function ContactForm() {
             <div>
               <label
                 htmlFor="message"
-                className="block text-sm font-semibold text-primary mb-2"
+                className="block text-sm font-semibold text-foreground mb-2"
               >
                 Project Description
               </label>
@@ -301,7 +280,7 @@ export default function ContactForm() {
             </div>
 
             {/* Success/Error Messages */}
-            {submitStatus === "success" && (
+            {submitStatus === 'success' && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -315,7 +294,7 @@ export default function ContactForm() {
               </motion.div>
             )}
 
-            {submitStatus === "error" && (
+            {submitStatus === 'error' && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -336,11 +315,11 @@ export default function ContactForm() {
               whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
               className={`w-full py-4 rounded-lg font-semibold text-lg transition-colors duration-200 ${
                 isSubmitting
-                  ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/90"
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
               }`}
             >
-              {isSubmitting ? "Submitting..." : "Schedule My Consultation"}
+              {isSubmitting ? 'Submitting...' : 'Schedule My Consultation'}
             </motion.button>
 
             <p className="text-sm text-muted-foreground text-center">
@@ -352,5 +331,5 @@ export default function ContactForm() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }

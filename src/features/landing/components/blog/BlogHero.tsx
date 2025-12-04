@@ -1,10 +1,11 @@
-"use client";
+'use client'
 
-import { motion, Variants } from "motion/react";
+import type { Variants } from 'motion/react'
+import { motion } from 'motion/react'
 
-import { blogPostTitles } from "@/features/landing/data/blog";
-import { HeroContainer } from "@/components/HeroContainer";
-import { HeroBlogPostCard } from "./HeroBlogPostCard";
+import { HeroContainer } from '@/components/HeroContainer'
+import { blogPostTitles } from '@/features/landing/data/blog'
+import { HeroBlogPostCard } from './HeroBlogPostCard'
 
 const parentVariants: Variants = {
   hidden: {
@@ -16,16 +17,16 @@ const parentVariants: Variants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: "easeInOut",
+      ease: 'easeInOut',
       staggerChildren: 0.2,
     },
   },
-};
+}
 
 const childVariants: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: { opacity: 1, y: 0 },
-};
+}
 
 export default function BlogHero() {
   return (
@@ -42,9 +43,9 @@ export default function BlogHero() {
         >
           <HeroBlogPostCard
             data={{
-              image: "/hero-photos/modern-house-1.png",
+              image: '/hero-photos/modern-house-1.png',
               title: blogPostTitles[0],
-              snippet: "This is a modern house",
+              snippet: 'This is a modern house',
             }}
             variants={childVariants}
           />
@@ -52,22 +53,22 @@ export default function BlogHero() {
         <motion.div className="flex-[1] flex flex-col gap-4 h-full">
           <HeroBlogPostCard
             data={{
-              image: "/hero-photos/modern-house-2.png",
+              image: '/hero-photos/modern-house-2.png',
               title: blogPostTitles[1],
-              snippet: "This is a modern house",
+              snippet: 'This is a modern house',
             }}
             variants={childVariants}
           />
           <HeroBlogPostCard
             data={{
-              image: "/hero-photos/modern-house-4.webp",
+              image: '/hero-photos/modern-house-4.webp',
               title: blogPostTitles[2],
-              snippet: "This is a modern house",
+              snippet: 'This is a modern house',
             }}
             variants={childVariants}
           />
         </motion.div>
       </motion.div>
     </HeroContainer>
-  );
+  )
 }

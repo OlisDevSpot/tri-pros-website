@@ -1,29 +1,29 @@
 export const footerData = [
   {
-    title: "Services",
+    title: 'Services',
     links: [
-      { name: "Custom Home Construction", href: "/services/custom-homes" },
-      { name: "Luxury Renovations", href: "/services/renovations" },
-      { name: "Commercial Projects", href: "/services/commercial" },
-      { name: "Design-Build Services", href: "/services/design-build" },
+      { name: 'Custom Home Construction', href: '/services/custom-homes' },
+      { name: 'Luxury Renovations', href: '/services/renovations' },
+      { name: 'Commercial Projects', href: '/services/commercial' },
+      { name: 'Design-Build Services', href: '/services/design-build' },
     ],
   },
   {
-    title: "Company",
+    title: 'Company',
     links: [
-      { name: "About Us", href: "/about" },
-      { name: "Our Process", href: "/process" },
-      { name: "Portfolio", href: "/portfolio" },
-      { name: "Testimonials", href: "/testimonials" },
+      { name: 'About Us', href: '/about' },
+      { name: 'Our Process', href: '/process' },
+      { name: 'Portfolio', href: '/portfolio' },
+      { name: 'Testimonials', href: '/testimonials' },
     ],
   },
   {
-    title: "Resources",
+    title: 'Resources',
     links: [
-      { name: "Contact Us", href: "/contact" },
-      { name: "Get a Quote", href: "/quote" },
-      { name: "Client Portal", href: "/portal" },
-      { name: "Careers", href: "/careers" },
+      { name: 'Contact Us', href: '/contact' },
+      { name: 'Get a Quote', href: '/quote' },
+      { name: 'Client Portal', href: '/portal' },
+      { name: 'Careers', href: '/careers' },
     ],
   },
-];
+]

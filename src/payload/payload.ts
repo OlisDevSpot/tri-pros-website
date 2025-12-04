@@ -1,6 +1,6 @@
-import { getPayload } from "payload";
-import configPromise from "@/payload.config";
+import { getPayload } from 'payload'
+import configPromise from '@/payload.config'
 
-export const payloadClient = () => {
-  return getPayload({ config: configPromise });
-};
+export function payloadClient() {
+  return getPayload({ config: configPromise })
+}

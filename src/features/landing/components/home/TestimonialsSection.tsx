@@ -1,17 +1,16 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import Image from "next/image";
-import { testimonials } from "@/features/landing/data/testimonials";
-import { companyInfo } from "@/features/landing/data/company-info";
-import millify from "millify";
-import DecorativeLine from "@/components/DecorativeLine";
+import millify from 'millify'
+import { motion, useInView } from 'motion/react'
+
+import Image from 'next/image'
+import { useRef } from 'react'
+import DecorativeLine from '@/components/DecorativeLine'
+import { companyInfo, testimonials } from '@/features/landing/data/company'
 
 export default function TestimonialsSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -20,31 +19,31 @@ export default function TestimonialsSection() {
         initial={{ opacity: 0, scale: 0 }}
         animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
         transition={{ duration: 0.3, delay: i * 0.1 }}
-        className={`text-xl ${i < rating ? "text-yellow-500" : "text-gray-300"}`}
+        className={`text-xl ${i < rating ? 'text-yellow-500' : 'text-gray-300'}`}
       >
         ★
       </motion.span>
-    ));
-  };
+    ))
+  }
 
   const stats = [
     {
-      label: "Projects Completed",
+      label: 'Projects Completed',
       value: `${companyInfo.numProjects}+`,
     },
     {
-      label: "Years Experience",
+      label: 'Years Experience',
       value: `${new Date().getFullYear() - companyInfo.yearFounded}`,
     },
     {
-      label: "Client Satisfaction",
+      label: 'Client Satisfaction',
       value: `${companyInfo.clientSatisfaction * 100}%`,
     },
     {
-      label: "Projects Delivered",
+      label: 'Projects Delivered',
       value: `$${millify(companyInfo.projectsDelivered, { precision: 0 })}+`,
     },
-  ];
+  ]
 
   return (
     <section
@@ -60,7 +59,11 @@ export default function TestimonialsSection() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            What Our <span className="text-primary">Clients</span> Say
+            What Our
+            {' '}
+            <span className="text-primary">Clients</span>
+            {' '}
+            Say
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
             Don&apos;t just take our word for it. Hear from the discerning
@@ -164,7 +167,7 @@ export default function TestimonialsSection() {
 
                 {/* Decorative Element */}
                 <DecorativeLine
-                  animate={isInView ? { width: "100%" } : { width: 0 }}
+                  animate={isInView ? { width: '100%' } : { width: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.2 + 0.5 }}
                 />
               </motion.div>
@@ -173,5 +176,5 @@ export default function TestimonialsSection() {
         </div>
       </div>
     </section>
-  );
+  )
 }

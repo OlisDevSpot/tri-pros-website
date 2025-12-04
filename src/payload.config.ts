@@ -1,18 +1,19 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 // storage-adapter-import-placeholder
-import { mongooseAdapter } from "@payloadcms/db-mongodb";
-import { payloadCloudPlugin } from "@payloadcms/payload-cloud";
-import path from "path";
-import { buildConfig } from "payload";
-import { fileURLToPath } from "url";
-import sharp from "sharp";
+import { mongooseAdapter } from '@payloadcms/db-mongodb'
+import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
+import { buildConfig } from 'payload'
+import sharp from 'sharp'
 
-import { Users } from "./payload/collections/Users";
-import { Media } from "./payload/collections/Media";
-import { baseLexical } from "./payload/fields/baseLexical";
-import { Blogposts } from "./payload/collections/Blogposts";
+import { Blogposts } from './payload/collections/Blogposts'
+import { Media } from './payload/collections/Media'
+import { Users } from './payload/collections/Users'
+import { baseLexical } from './payload/fields/baseLexical'
+import env from './config/env'
 
-const filename = fileURLToPath(import.meta.url);
-const dirname = path.dirname(filename);
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
 
 export default buildConfig({
   admin: {
@@ -23,16 +24,16 @@ export default buildConfig({
   },
   collections: [Users, Media, Blogposts],
   editor: baseLexical,
-  secret: process.env.PAYLOAD_SECRET || "",
+  secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
-    outputFile: path.resolve(dirname, "payload-types.ts"),
+    outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: mongooseAdapter({
-    url: process.env.DATABASE_URI || "",
+    url: env.PAYLOAD_DATABASE_URI || '',
   }),
   sharp,
   plugins: [
     payloadCloudPlugin(),
     // storage-adapter-placeholder
   ],
-});
+})

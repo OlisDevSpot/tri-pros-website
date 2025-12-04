@@ -1,9 +1,9 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
-/* 
+/*
 TEXT & BACKGROUND
 background
 foreground
@@ -95,12 +95,16 @@ card
   * {
     @apply border-border outline-ring/50;
   }
+  
+  html {
+    @apply overscroll-none
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overscroll-none;
   }
 
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role='button']:not(:disabled) {
     cursor: pointer;
   }
 }

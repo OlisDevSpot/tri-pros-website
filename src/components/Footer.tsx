@@ -1,12 +1,12 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import Link from "next/link";
-import Logo from "./Logo";
-import { companyInfo } from "@/features/landing/data/company-info";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { footerData } from "@/features/landing/data/footer";
+import { motion } from 'motion/react'
+import Link from 'next/link'
+import { companyInfo } from '@/features/landing/data/company'
+import { footerData } from '@/features/landing/data/footer'
+import Logo from './Logo'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
 
 export default function Footer() {
   return (
@@ -27,8 +27,11 @@ export default function Footer() {
 
               {/* Company Description */}
               <p className="text-foreground leading-relaxed max-w-md">
-                Crafting architectural masterpieces for over{" "}
-                {new Date().getFullYear() - companyInfo.yearFounded} years. We
+                Crafting architectural masterpieces for over
+                {' '}
+                {new Date().getFullYear() - companyInfo.yearFounded}
+                {' '}
+                years. We
                 specialize in luxury construction that stands the test of time,
                 delivering exceptional quality and white-glove service to
                 discerning clients.
@@ -62,7 +65,7 @@ export default function Footer() {
                 {section.title}
               </h3>
               <ul className="space-y-3">
-                {section.links.map((link) => (
+                {section.links.map(link => (
                   <li key={link.name}>
                     <Link
                       href={link.href}
@@ -91,11 +94,11 @@ export default function Footer() {
             {[
               ...companyInfo.contactInfo,
               {
-                label: "License",
+                label: 'License',
                 value: companyInfo.licenses[0].licenseNumber,
-                icon: "📜",
+                icon: '📜',
               },
-            ].map((info) => (
+            ].map(info => (
               <div
                 key={info.label}
                 className="flex items-start space-x-3"
@@ -144,7 +147,12 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <div className="text-foreground/70 text-sm">
-              © {new Date().getFullYear()} {companyInfo.name}. All rights
+              ©
+              {' '}
+              {new Date().getFullYear()}
+              {' '}
+              {companyInfo.name}
+              . All rights
               rights reserved.
             </div>
             <div className="flex space-x-6 text-sm">
@@ -171,5 +179,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  );
+  )
 }

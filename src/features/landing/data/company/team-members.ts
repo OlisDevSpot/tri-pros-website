@@ -1,0 +1,70 @@
+export const teamMembers = [
+  {
+    name: 'Oliver Porat',
+    position: 'Founder & CEO',
+    bio: 'Master craftsman with over 35 years of experience. Oliver co-founded Tri Pros Remodeling along with Sean Phil with a vision to create architectural masterpieces that stand the test of time.',
+    specializations: [
+      'Luxury Construction',
+      'Project Leadership',
+      'Quality Assurance',
+    ],
+    image: '/api/placeholder/300/400',
+    email: 'oliver@triprosremodeling.com',
+  },
+  {
+    name: 'Sean Phil',
+    position: 'Founder & CEO',
+    bio: 'Second-generation leader bringing modern innovation to traditional craftsmanship. Michael oversees all construction operations and client relationships.',
+    specializations: [
+      'Luxury Construction',
+      'Project Leadership',
+      'Quality Assurance',
+    ],
+    image: '/api/placeholder/300/400',
+    email: 'sean@triprosremodeling.com',
+  },
+  {
+    name: 'Mordi Bill',
+    position: 'President & Head of Operations',
+    bio: 'Renowned for his exceptional craftsmanship and attention to detail, Mordi Bill is a master of all trades. He is the driving force behind our team\'s success and the heart of our company.',
+    specializations: [
+      'Operations Management',
+      'Client Relations',
+      'Technology Integration',
+    ],
+    image: '/company-info/mordi-headshot.jpeg',
+    email: 'mordi@triprosremodeling.com',
+  },
+  {
+    name: 'Sarah Elite-Martinez',
+    position: 'Chief Design Officer',
+    bio: 'Award-winning architect and designer specializing in luxury residential and commercial projects. Sarah leads our design-build initiatives.',
+    specializations: [
+      'Architectural Design',
+      'Interior Design',
+      'Sustainable Building',
+    ],
+    image: '/company-info/sarah-headshot.jpeg',
+    email: 'sarah@triprosremodeling.com',
+  },
+  {
+    name: 'Maria Rodriguez',
+    position: 'Chief Technical Officer',
+    bio: 'A technology and construction professional with expertise in large-scale residential and commercial construction projects.',
+    specializations: ['Frontend', 'Backend', 'Budget Control'],
+    image: '/company-info/maria-headshot.jpeg',
+    email: 'maria@triprosremodeling.com',
+  },
+  {
+    name: 'David Kim',
+    position: 'Head of Business Development',
+    bio: 'Strategic business leader focused on expanding our reach while maintaining our commitment to quality and client satisfaction.',
+    specializations: [
+      'Business Strategy',
+      'Client Acquisition',
+      'Partnership Development',
+    ],
+    image: '/company-info/david-headshot.jpeg',
+    email: 'david@triprosremodeling.com',
+  },
+]

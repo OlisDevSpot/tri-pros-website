@@ -1,17 +1,17 @@
-"use client";
+'use client'
 
-import { motion } from "motion/react";
-import { useInView } from "motion/react";
-import { useRef } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { services } from "@/features/landing/data/services";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { motion, useInView } from 'motion/react'
+
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { services } from '@/features/landing/data/company/services'
+import { cn } from '@/lib/utils'
 
 export default function ServicesList() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <section
@@ -27,7 +27,9 @@ export default function ServicesList() {
           className="text-center mb-24"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our Construction <span className="text-secondary">Services</span>
+            Our Construction
+            {' '}
+            <span className="text-secondary">Services</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Comprehensive construction solutions backed by 25+ years of
@@ -47,13 +49,13 @@ export default function ServicesList() {
             >
               <div
                 className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${
-                  index % 2 === 1 ? "lg:grid-flow-col-dense" : ""
+                  index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''
                 }`}
               >
                 {/* Content */}
                 <div
                   className={`space-y-6 ${
-                    index % 2 === 1 ? "lg:col-start-2" : ""
+                    index % 2 === 1 ? 'lg:col-start-2' : ''
                   }`}
                 >
                   <div className="flex items-center space-x-4">
@@ -127,8 +129,8 @@ export default function ServicesList() {
                   {/* CTA */}
                   <div
                     className={cn(
-                      "flex space-x-4 w-full",
-                      index % 2 === 0 ? "justify-start" : "lg:justify-end"
+                      'flex space-x-4 w-full',
+                      index % 2 === 0 ? 'justify-start' : 'lg:justify-end',
                     )}
                   >
                     <motion.div
@@ -172,7 +174,7 @@ export default function ServicesList() {
 
                 {/* Image */}
                 <div
-                  className={`${index % 2 === 1 ? "lg:col-start-1" : ""} h-full`}
+                  className={`${index % 2 === 1 ? 'lg:col-start-1' : ''} h-full`}
                 >
                   <motion.div
                     whileHover={{ scale: 1.02 }}
@@ -199,7 +201,11 @@ export default function ServicesList() {
                         href={service.href}
                         className="bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold text-center block hover:bg-secondary/90 transition-colors duration-200"
                       >
-                        Explore {service.title} →
+                        Explore
+                        {' '}
+                        {service.title}
+                        {' '}
+                        →
                       </Link>
                     </motion.div>
                   </motion.div>
@@ -210,7 +216,7 @@ export default function ServicesList() {
               {index < services.length - 1 && (
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={isInView ? { width: "100%" } : { width: 0 }}
+                  animate={isInView ? { width: '100%' } : { width: 0 }}
                   transition={{ duration: 1, delay: index * 0.2 + 0.8 }}
                   className="h-px bg-gradient-to-r from-transparent via-border to-transparent mt-24"
                 />
@@ -261,5 +267,5 @@ export default function ServicesList() {
         </motion.div>
       </div>
     </section>
-  );
+  )
 }
