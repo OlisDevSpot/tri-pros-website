@@ -16,8 +16,9 @@ export { testimonials } from './testimonials'
 
 export const companyInfo = {
   name: 'Tri Pros Remodeling',
+  nickname: 'Tri Pros',
   logo: '/logo.png',
-  yearFounded: 1998,
+  yearFounded: 2009,
   numProjects: 520,
   valueOfProjectsInDollars: 9_000_000,
   generations: 3,

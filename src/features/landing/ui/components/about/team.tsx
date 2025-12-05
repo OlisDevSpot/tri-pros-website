@@ -24,7 +24,7 @@ export default function TeamSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Meet Our
             {' '}
             <span className="text-secondary">Expert Team</span>
@@ -87,7 +87,7 @@ export default function TeamSection() {
 
                 {/* Content */}
                 <div className="p-6 flex flex-col grow">
-                  <h3 className="font-serif text-xl font-bold text-foreground mb-1">
+                  <h3 className=" text-xl font-bold text-foreground mb-1">
                     {member.name}
                   </h3>
                   <p className="text-muted-foreground font-bold mb-3">
@@ -142,7 +142,7 @@ export default function TeamSection() {
           transition={{ duration: 0.8, delay: 0.8 }}
           className="mt-16 bg-linear-to-br from-primary to-[color-mix(in_oklch,var(--primary)_30%,black)] rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
-          <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-8">
+          <h3 className=" text-2xl lg:text-3xl font-bold mb-8">
             Our Team by the Numbers
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -180,7 +180,7 @@ export default function TeamSection() {
           transition={{ duration: 0.6, delay: 1 }}
           className="text-center mt-16"
         >
-          <h3 className="font-serif text-2xl font-bold text-foreground mb-4">
+          <h3 className=" text-2xl font-bold text-foreground mb-4">
             Join Our Elite Team
           </h3>
           <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">

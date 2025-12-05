@@ -37,7 +37,7 @@ export default function AboutHero() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+                <h1 className=" text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
                   Three Generations of
                   {' '}
                   <span className="text-secondary">Master Craftsmanship</span>
@@ -122,7 +122,7 @@ export default function AboutHero() {
               <div className="relative rounded-2xl overflow-hidden shadow-2xl h-full min-h-[400px]">
                 <Image
                   src="/hero-photos/modern-house-2.png"
-                  alt="Elite Construction founder and team"
+                  alt="Tri Pros Remodeling founder and team"
                   width={600}
                   height={700}
                   className="object-cover h-full"

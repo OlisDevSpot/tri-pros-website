@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Dancing_Script, Inter, Playfair_Display } from 'next/font/google'
+import { Dancing_Script, Playfair_Display, Syne } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
@@ -9,7 +9,7 @@ const playfair = Playfair_Display({
   display: 'swap',
 })
 
-const inter = Inter({
+const syne = Syne({
   variable: '--font-sans',
   subsets: ['latin'],
   display: 'swap',
@@ -23,16 +23,13 @@ const dancingScript = Dancing_Script({
 
 export const metadata: Metadata = {
   title: '%s | Tri Pros Remodeling',
-  description:
-    'Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.',
-  keywords:
-    'luxury construction, custom homes, premium renovations, commercial construction, elite builders',
+  description: 'Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.',
+  keywords: 'luxury construction, custom homes, premium renovations, commercial construction, elite builders',
   authors: [{ name: 'Tri Pros Remodeling' }],
   creator: 'Tri Pros Remodeling',
   openGraph: {
     title: 'Tri Pros Remodeling | Crafting Architectural Masterpieces',
-    description:
-      'Premium construction services for discerning homeowners and businesses who demand excellence.',
+    description: 'Premium construction services for discerning homeowners and businesses who demand excellence.',
     type: 'website',
     locale: 'en_US',
   },
@@ -67,7 +64,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased`}
+        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} antialiased`}
       >
         <Providers>
           {children}

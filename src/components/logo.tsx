@@ -27,7 +27,7 @@ export function Logo({
       >
         <span
           className={cn(
-            'text-foreground font-bold text-xl font-serif transition duration-300',
+            'text-foreground font-bold text-xl font-sans transition duration-300',
             currentColorOverride,
           )}
         >
@@ -40,8 +40,8 @@ export function Logo({
           currentColorOverride,
         )}
       >
-        <span className="font-serif font-bold text-xl">{companyInfo.name}</span>
-        <span className="text-sm -mt-1">Reimagine Construction</span>
+        <span className="font-bold text-xl font-sans">{companyInfo.name}</span>
+        <span className="text-sm -mt-1 font-sans">Reimagine Construction</span>
       </div>
     </Link>
   )

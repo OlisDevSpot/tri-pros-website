@@ -31,10 +31,10 @@ export default function ValuePropositions() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
             Why
             {' '}
-            {companyInfo.name}
+            {companyInfo.nickname}
             {' '}
             Chooses
             {' '}
@@ -73,7 +73,7 @@ export default function ValuePropositions() {
                 </motion.div>
 
                 {/* Title */}
-                <h3 className="font-serif text-2xl font-bold text-card-foreground mb-4 text-center">
+                <h3 className=" text-2xl font-bold text-card-foreground mb-4 text-center">
                   {prop.title}
                 </h3>
 

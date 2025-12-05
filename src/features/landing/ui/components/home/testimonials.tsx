@@ -58,7 +58,7 @@ export default function TestimonialsSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             What Our
             {' '}
             <span className="text-primary">Clients</span>
@@ -123,7 +123,7 @@ export default function TestimonialsSection() {
                       : { opacity: 0, scale: 0 }
                   }
                   transition={{ duration: 0.5, delay: index * 0.2 + 0.2 }}
-                  className="text-6xl text-foreground/50 font-serif mb-4"
+                  className="text-6xl text-foreground/50  mb-4"
                 >
                   &ldquo;
                 </motion.div>

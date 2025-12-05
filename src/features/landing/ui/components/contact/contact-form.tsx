@@ -76,14 +76,14 @@ export default function ContactForm() {
   }
 
   return (
-    <section className="bg-neutral-900 py-16 lg:py-24">
+    <section className="bg-background py-16 lg:py-24">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h2 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-6">
+          <h2 className=" text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Request Your Consultation
           </h2>
           <p className="text-muted-foreground mb-8">

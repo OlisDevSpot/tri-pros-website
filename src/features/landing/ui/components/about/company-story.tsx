@@ -22,7 +22,7 @@ export default function CompanyStory() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our
             {' '}
             <span className="text-secondary">Story</span>
@@ -41,7 +41,7 @@ export default function CompanyStory() {
             transition={{ duration: 0.8 }}
             className="space-y-6"
           >
-            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">
+            <h3 className=" text-2xl lg:text-3xl font-bold text-foreground">
               The Founder&apos;s Vision
             </h3>
             <div className="space-y-4 text-muted-foreground leading-relaxed">
@@ -112,7 +112,7 @@ export default function CompanyStory() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="bg-linear-to-br from-primary/5 to-secondary/5 rounded-2xl p-8 lg:p-12 text-center"
         >
-          <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-6">
+          <h3 className=" text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Our Mission
           </h3>
           <p className="text-lg text-muted-foreground leading-relaxed max-w-4xl mx-auto mb-8">

@@ -1,11 +1,11 @@
-import ContactForm from '@/features/landing/ui/components/contact/ContactForm'
-import ContactHero from '@/features/landing/ui/components/contact/ContactHero'
-import ContactInfo from '@/features/landing/ui/components/contact/ContactInfo'
+import ContactForm from '@/features/landing/ui/components/contact/contact-form'
+import ContactHero from '@/features/landing/ui/components/contact/contact-hero'
+import ContactInfo from '@/features/landing/ui/components/contact/contact-info'
 
 export const metadata = {
-  title: 'Contact Elite Construction | Schedule Your Consultation',
+  title: 'Contact Tri Pros Remodeling | Schedule Your Consultation',
   description:
-    'Contact Elite Construction for your luxury construction project. Schedule a consultation, request a quote, or speak with our expert team today.',
+    'Contact Tri Pros Remodeling for your luxury construction project. Schedule a consultation, request a quote, or speak with our expert team today.',
 }
 
 export default function ContactPage() {

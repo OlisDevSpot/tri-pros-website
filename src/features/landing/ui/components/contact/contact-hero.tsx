@@ -12,7 +12,7 @@ export default function ContactHero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+          <h1 className=" text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
             Let&apos;s Build Your
             {' '}
             <span className="text-secondary">Dream Project</span>

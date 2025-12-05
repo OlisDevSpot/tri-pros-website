@@ -1,5 +1,6 @@
 'use client'
 
+import type { Variants } from 'motion/react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { useMemo } from 'react'
@@ -7,6 +8,27 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ViewportHero } from '@/components/viewport-hero'
 import { companyInfo } from '@/features/landing/data/company'
+
+const parentVariant: Variants = {
+  initial: {
+    opacity: 0,
+    y: 30,
+  },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      delayChildren: 0.4,
+      staggerChildren: 0.4,
+    },
+  },
+}
+
+const highlightVariants: Variants = {
+  highlight: {
+    scale: 1.2,
+  },
+}
 
 export default function HomeHero() {
   const pillsData = useMemo(() => {
@@ -33,17 +55,17 @@ export default function HomeHero() {
             >
               {/* Main Headline */}
               <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
+                variants={parentVariant}
+                initial="initial"
+                animate="animate"
                 className="font-serif text-4xl sm:text-5xl lg:text-7xl font-bold leading-tight"
               >
                 Crafting Architectural
                 {' '}
                 <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.8 }}
+                  variants={highlightVariants}
+                  initial="initial"
+                  animate="highlight"
                   className="bg-linear-to-r from-primary to-red-700 bg-clip-text text-transparent font-extrabold"
                 >
                   Masterpieces
@@ -74,7 +96,7 @@ export default function HomeHero() {
                   <Badge
                     key={pill}
                     variant="outline"
-                    className="py-2 px-4 rounded-3xl grow border-background/40 bg-foreground/10 backdrop-blur-sm"
+                    className="py-2 px-4 rounded-3xl grow border-background/40 bg-foreground/10 backdrop-blur-sm lg:flex-1"
                   >
                     <div className="w-2 h-2 bg-foreground rounded-full" />
                     <span className="font-semibold">{pill}</span>
@@ -90,8 +112,8 @@ export default function HomeHero() {
                 className="flex flex-row sm:flex-row gap-4 sm:justify-center sm:items-center max-w-2xl mx-auto"
               >
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   className="flex-1"
                 >
                   <Button
@@ -104,8 +126,8 @@ export default function HomeHero() {
                   </Button>
                 </motion.div>
                 <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   className="flex-1"
                 >
                   <Button

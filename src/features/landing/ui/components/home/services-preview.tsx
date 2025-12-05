@@ -29,7 +29,7 @@ export default function ServicesPreview() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our Premium
             {' '}
             <span className="text-primary">Services</span>
@@ -86,7 +86,7 @@ export default function ServicesPreview() {
 
                   {/* Content */}
                   <div className="p-8 flex flex-col grow">
-                    <h3 className="font-serif text-2xl font-bold text-card-foreground mb-4 group-hover:text-muted-foreground transition-colors duration-300">
+                    <h3 className=" text-2xl font-bold text-card-foreground mb-4 group-hover:text-muted-foreground transition-colors duration-300">
                       {service.title}
                     </h3>
 

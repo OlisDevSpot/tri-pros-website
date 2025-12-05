@@ -29,7 +29,7 @@ export default function ServicesListScroll() {
           transition={{ duration: 0.6 }}
           className="text-center"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our Construction
             {' '}
             <span className="text-secondary">Services</span>
@@ -106,7 +106,7 @@ export default function ServicesListScroll() {
           transition={{ duration: 0.8, delay: 1 }}
           className="bg-linear-to-br from-secondary/20 to-secondary/40 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
-          <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-6">
+          <h3 className=" text-2xl lg:text-3xl font-bold mb-6">
             Not Sure Which Service You Need?
           </h3>
           <p className="text-lg mb-8 opacity-90 max-w-3xl mx-auto">

@@ -118,7 +118,7 @@ export default function ProcessOverview() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Proven
             {' '}
             <span className="text-secondary">Process</span>
@@ -151,7 +151,7 @@ export default function ProcessOverview() {
                       <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         {step.duration}
                       </div>
-                      <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">
+                      <h3 className=" text-2xl lg:text-3xl font-bold text-foreground">
                         {step.phase}
                       </h3>
                     </div>
@@ -231,7 +231,7 @@ export default function ProcessOverview() {
           className="bg-transparent rounded-2xl p-8 lg:p-12 shadow-xl border border-border"
         >
           <div className="text-center mb-12">
-            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-4">
+            <h3 className=" text-2xl lg:text-3xl font-bold text-foreground mb-4">
               Quality Assurance Measures
             </h3>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">

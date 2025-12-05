@@ -13,10 +13,30 @@ import { cn } from '@/lib/utils'
 import { MobileNav } from './mobile-nav'
 
 const navigationItems = [
-  { name: 'About', href: '/about' },
-  { name: 'Services', href: '/services' },
-  { name: 'Portfolio', href: '/portfolio' },
-  { name: 'Blog', href: '/blog' },
+  {
+    name: 'Tri Pros Experience',
+    href: '/experience',
+  },
+  {
+    name: 'Community',
+    href: '/community',
+  },
+  {
+    name: 'About',
+    href: '/about',
+  },
+  {
+    name: 'Services',
+    href: '/services',
+  },
+  {
+    name: 'Portfolio',
+    href: '/portfolio',
+  },
+  {
+    name: 'Blog',
+    href: '/blog',
+  },
 ]
 
 export function SiteNavbar() {
@@ -40,8 +60,8 @@ export function SiteNavbar() {
         height: scrolled ? 'auto' : 'auto',
       }}
     >
-      <div className="container">
-        <div className="flex justify-between items-center h-(--navbar-height)">
+      <div className="px-4 sm:px-14 w-full">
+        <div className="flex justify-between items-center h-(--navbar-height) w-full">
           {/* Logo */}
           <motion.div
             whileHover={{ scale: 1.03 }}

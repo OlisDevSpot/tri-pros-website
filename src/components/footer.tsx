@@ -59,7 +59,7 @@ export default function Footer() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <h3 className="font-serif font-bold text-lg text-foreground mb-4">
+              <h3 className=" font-bold text-lg text-foreground mb-4">
                 {section.title}
               </h3>
               <ul className="space-y-3">
@@ -85,7 +85,7 @@ export default function Footer() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-12 pt-8 border-t border-primary-foreground/20"
         >
-          <h3 className="font-serif font-bold text-lg text-foreground mb-6">
+          <h3 className=" font-bold text-lg text-foreground mb-6">
             Contact Information
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -121,7 +121,7 @@ export default function Footer() {
           className="mt-12 pt-8 border-t border-primary-foreground/20"
         >
           <div className="max-w-md">
-            <h3 className="font-serif font-bold text-lg text-foreground mb-4">
+            <h3 className=" font-bold text-lg text-foreground mb-4">
               Stay Updated
             </h3>
             <p className="text-foreground text-sm mb-4">

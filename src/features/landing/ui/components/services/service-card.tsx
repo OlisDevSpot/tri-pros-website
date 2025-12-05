@@ -53,7 +53,7 @@ export default function ServiceCard({
             <span className="text-3xl">{service.icon}</span>
           </div>
           <div>
-            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground">
+            <h3 className=" text-2xl lg:text-3xl font-bold text-foreground">
               {service.title}
             </h3>
             <p className="text-muted-foreground font-semibold">

@@ -24,7 +24,7 @@ export default function CredentialsSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Our
             {' '}
             <span className="text-secondary">Credentials</span>
@@ -84,7 +84,7 @@ export default function CredentialsSection() {
                   <span className="text-3xl">{credential.icon}</span>
                 </div>
                 <div>
-                  <h3 className="font-serif text-xl font-bold text-foreground">
+                  <h3 className=" text-xl font-bold text-foreground">
                     {credential.category}
                   </h3>
                 </div>
@@ -129,7 +129,7 @@ export default function CredentialsSection() {
           transition={{ duration: 0.8, delay: 0.6 }}
           className="mt-16 bg-linear-to-br from-blue-900 to-neutral-950 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
-          <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-6">
+          <h3 className=" text-2xl lg:text-3xl font-bold mb-6">
             Verify Our Credentials
           </h3>
           <p className="text-lg mb-8 opacity-90 max-w-3xl mx-auto">

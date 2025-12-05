@@ -19,17 +19,17 @@ const contactMethods = [
   },
   {
     type: 'Email',
-    value: 'info@eliteconstruction.com',
+    value: 'info@triprosremodeling.com',
     description: 'Response within 2 hours',
     icon: '📧',
-    href: 'mailto:info@eliteconstruction.com',
+    href: 'mailto:info@triprosremodeling.com',
   },
   {
     type: 'Project Inquiries',
-    value: 'projects@eliteconstruction.com',
+    value: 'projects@triprosremodeling.com',
     description: 'New project consultations',
     icon: '🏗️',
-    href: 'mailto:projects@eliteconstruction.com',
+    href: 'mailto:projects@triprosremodeling.com',
   },
 ]
 
@@ -52,7 +52,7 @@ const offices = [
 
 export default function ContactInfo() {
   return (
-    <section className="bg-neutral-800 py-16 lg:py-24 text-primary-foreground">
+    <section className="bg-foreground py-16 lg:py-24 text-background">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -62,10 +62,10 @@ export default function ContactInfo() {
         >
           {/* Header */}
           <div>
-            <h2 className="font-serif text-2xl lg:text-3xl font-bold mb-4">
+            <h2 className=" text-2xl lg:text-3xl font-bold mb-4">
               Get in Touch
             </h2>
-            <p className="text-primary-foreground/80">
+            <p className="text-background/80">
               Multiple ways to reach our expert team. We&apos;re here to help
               bring your construction vision to life.
             </p>
@@ -73,7 +73,7 @@ export default function ContactInfo() {
 
           {/* Contact Methods */}
           <div className="space-y-6">
-            <h3 className="font-serif text-xl font-bold text-foreground">
+            <h3 className=" text-xl font-bold text-background">
               Contact Methods
             </h3>
             {contactMethods.map((method, index) => (
@@ -84,15 +84,15 @@ export default function ContactInfo() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 whileHover={{ scale: 1.02 }}
-                className="flex items-start space-x-4 p-4 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors duration-200"
+                className="flex items-start space-x-4 p-4 rounded-lg bg-card/10 backdrop-blur-sm hover:bg-card/20 transition-colors duration-200"
               >
                 <div className="text-2xl">{method.icon}</div>
                 <div className="flex-1">
-                  <div className="font-semibold text-foreground">
+                  <div className="font-semibold">
                     {method.type}
                   </div>
                   <div className="text-lg">{method.value}</div>
-                  <div className="text-sm text-primary-foreground/70">
+                  <div className="text-sm text-background/70">
                     {method.description}
                   </div>
                 </div>
@@ -102,7 +102,7 @@ export default function ContactInfo() {
 
           {/* Office Locations */}
           <div className="space-y-6">
-            <h3 className="font-serif text-xl font-bold text-foreground">
+            <h3 className=" text-xl font-bold text-foreground">
               Office Locations
             </h3>
             {offices.map((office, index) => (
@@ -111,12 +111,12 @@ export default function ContactInfo() {
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 + 0.4 }}
-                className="p-6 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20"
+                className="p-6 rounded-lg bg-background/10 backdrop-blur-sm border border-background/20"
               >
-                <h4 className="font-serif text-lg font-bold text-foreground mb-3">
+                <h4 className=" text-lg font-bold text-background mb-3">
                   {office.name}
                 </h4>
-                <div className="space-y-2 text-primary-foreground/90">
+                <div className="space-y-2 text-background/90">
                   <div className="flex items-start space-x-2">
                     <span className="text-secondary">📍</span>
                     <div>
@@ -151,10 +151,10 @@ export default function ContactInfo() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="bg-secondary/20 rounded-lg p-6 border border-secondary/30"
           >
-            <h3 className="font-serif text-lg font-bold text-foreground mb-4">
+            <h3 className=" text-lg font-bold text-background mb-4">
               Our Response Commitment
             </h3>
-            <div className="space-y-3 text-sm text-primary-foreground/90">
+            <div className="space-y-3 text-sm text-background/90">
               <div className="flex justify-between">
                 <span>Phone Calls:</span>
                 <span className="font-semibold">
@@ -183,31 +183,31 @@ export default function ContactInfo() {
             transition={{ duration: 0.8, delay: 0.8 }}
             className="text-center"
           >
-            <h3 className="font-serif text-lg font-bold text-foreground mb-4">
-              Why Choose Elite Construction?
+            <h3 className=" text-lg font-bold text-background mb-4">
+              Why Choose Tri Pros Remodeling?
             </h3>
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-foreground">98%</div>
-                <div className="text-sm text-primary-foreground/80">
+                <div className="text-2xl font-bold text-background">98%</div>
+                <div className="text-sm text-background/80">
                   Client Satisfaction
                 </div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">25+</div>
-                <div className="text-sm text-primary-foreground/80">
+                <div className="text-2xl font-bold text-background">25+</div>
+                <div className="text-sm text-background/80">
                   Years Experience
                 </div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">A+</div>
-                <div className="text-sm text-primary-foreground/80">
+                <div className="text-2xl font-bold text-background">A+</div>
+                <div className="text-sm text-background/80">
                   BBB Rating
                 </div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-foreground">500+</div>
-                <div className="text-sm text-primary-foreground/80">
+                <div className="text-2xl font-bold text-background">500+</div>
+                <div className="text-sm text-background/80">
                   Projects Completed
                 </div>
               </div>
