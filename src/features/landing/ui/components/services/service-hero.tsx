@@ -21,12 +21,12 @@ export default function ServicesHero() {
         <div className="absolute inset-0 bg-linear-to-r from-background/70 to-background/50" />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 grid-rows-3 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className=" flex flex-col lg:flex-row gap-12 lg:gap-24 grid-rows-3 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-white space-y-8 mt-16 flex-1"
+          className="text-foreground space-y-8 mt-16 flex-1"
         >
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -36,7 +36,7 @@ export default function ServicesHero() {
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
               Complete Construction
               {' '}
-              <span className="text-secondary">Solutions</span>
+              <span className="text-[color-mix(in_oklch,var(--primary)_80%,var(--foreground)_10%)]">Solutions</span>
             </h1>
           </motion.div>
 
@@ -44,7 +44,7 @@ export default function ServicesHero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl text-gray-200 leading-relaxed"
+            className="text-xl leading-relaxed"
           >
             From luxury custom homes to commercial masterpieces, we deliver
             exceptional construction services tailored to your vision and
@@ -57,15 +57,15 @@ export default function ServicesHero() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="flex gap-4 w-full"
           >
-            <div className="text-center py-4 border-2 bg-background/70 rounded-sm border-border flex-1">
+            <div className="text-center py-4 border bg-background/70 rounded-sm border-border/50 flex-1 shadow-xl">
               <div className="text-3xl font-bold text-secondary mb-2">4</div>
-              <div className="text-sm text-gray-300">Core Services</div>
+              <div className="text-sm text-foreground">Core Services</div>
             </div>
-            <div className="text-center py-4 border-2 bg-background/70 rounded-sm border-border flex-2">
+            <div className="text-center py-4 border bg-background/70 rounded-sm border-border/30 flex-1 shadow-xl">
               <div className="text-3xl font-bold text-secondary mb-2">
                 100+
               </div>
-              <div className="text-sm text-gray-300">Service Areas</div>
+              <div className="text-sm text-foreground">Service Areas</div>
             </div>
           </motion.div>
 
@@ -82,7 +82,7 @@ export default function ServicesHero() {
                 variant="default"
                 className="text-lg h-16 w-full"
               >
-                <Link href="/contact">Meet Our Team</Link>
+                <Link href="/contact">Our Team</Link>
               </Button>
             </motion.div>
             <motion.div className="w-full">
@@ -92,7 +92,7 @@ export default function ServicesHero() {
                 variant="outline"
                 className="text-lg h-16 w-full"
               >
-                <Link href="/portfolio">View Our Legacy</Link>
+                <Link href="/portfolio">Our Legacy</Link>
               </Button>
             </motion.div>
           </motion.div>
@@ -103,7 +103,7 @@ export default function ServicesHero() {
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="grid grid-cols-2 gap-6 flex-1"
+          className="grid grid-cols-2 gap-4 flex-1"
         >
           {[
             {
@@ -128,11 +128,11 @@ export default function ServicesHero() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 + 0.8 }}
-              className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center text-white border border-white/20 flex flex-col items-center justify-center"
+              className="bg-foreground/10 backdrop-blur-sm rounded-xl p-6 text-center text-foreground border border-white/20 flex flex-col items-center justify-center"
             >
               <div className="text-4xl mb-3">{service.icon}</div>
               <h3 className="font-bold text-lg mb-1">{service.title}</h3>
-              <p className="text-sm text-gray-300">{service.subtitle}</p>
+              <p className="text-sm text-foreground">{service.subtitle}</p>
             </motion.div>
           ))}
         </motion.div>
