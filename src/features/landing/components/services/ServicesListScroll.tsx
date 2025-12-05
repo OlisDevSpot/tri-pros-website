@@ -45,7 +45,7 @@ export default function ServicesListScroll() {
           <div className="w-1/2 flex flex-col gap-24 flex-1 py-[20vh]">
             {services.map((service, index) => (
               <ServiceCard
-                key={index}
+                key={service.title}
                 service={service}
                 index={index}
               />
@@ -53,9 +53,9 @@ export default function ServicesListScroll() {
           </div>
           <div className="sticky top-0 h-screen flex-1 flex items-center">
             <div className="w-full h-[80vh] relative">
-              {services.map((service, index) => (
+              {services.map(service => (
                 <motion.div
-                  key={index}
+                  key={service.title}
                   className={cn(
                     'h-full absolute inset-0 opacity-0 transition-opacity duration-300',
                     featureInView === service.title && 'opacity-100',
@@ -64,7 +64,7 @@ export default function ServicesListScroll() {
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.3 }}
-                    className="relative rounded-2xl aspect-[16/9] lg:aspect-auto overflow-hidden shadow-xl group-hover:shadow-2xl transition-shadow duration-300 h-full"
+                    className="relative rounded-2xl aspect-video lg:aspect-auto overflow-hidden shadow-xl group-hover:shadow-2xl transition-shadow duration-300 h-full"
                   >
                     <Image
                       src={service.image}
@@ -73,7 +73,7 @@ export default function ServicesListScroll() {
                       height={400}
                       className="h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -104,7 +104,7 @@ export default function ServicesListScroll() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 1 }}
-          className="bg-gradient-to-br from-secondary/20 to-secondary/40 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="bg-linear-to-br from-secondary/20 to-secondary/40 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
           <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-6">
             Not Sure Which Service You Need?

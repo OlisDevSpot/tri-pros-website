@@ -3,19 +3,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
-TEXT & BACKGROUND
-background
-foreground
-primary
-secondary
-accent
-
-UI ELEMENTS
-border
-card
-*/
-
 :root {
   --background: oklch(0.9846 0.0017 247.8389);
   --foreground: oklch(0.2781 0.0296 256.848);
@@ -175,10 +162,11 @@ card
   * {
     @apply border-border outline-ring/50;
   }
-  
+
   html {
-    @apply overscroll-none
+    @apply overscroll-none;
   }
+
   body {
     @apply bg-background text-foreground overscroll-none;
   }
@@ -191,6 +179,6 @@ card
 
 @layer utilities {
   .container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 }

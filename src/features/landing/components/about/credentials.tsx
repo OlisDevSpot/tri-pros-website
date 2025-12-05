@@ -53,7 +53,7 @@ export default function CredentialsSection() {
                 isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }
               }
               transition={{ duration: 0.5, delay: index * 0.1 + 0.3 }}
-              className="bg-gradient-to-br from-secondary/15 to-secondary/25 rounded-xl p-6 text-center"
+              className="bg-linear-to-br from-secondary/15 to-secondary/25 rounded-xl p-6 text-center"
             >
               <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
                 {stat.number}
@@ -105,7 +105,7 @@ export default function CredentialsSection() {
                     }}
                     className="flex items-start space-x-3"
                   >
-                    <div className="w-2 h-2 bg-secondary rounded-full flex-shrink-0 mt-2" />
+                    <div className="w-2 h-2 bg-secondary rounded-full shrink-0 mt-2" />
                     <span className="text-muted-foreground leading-relaxed">
                       {item}
                     </span>
@@ -127,7 +127,7 @@ export default function CredentialsSection() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-16 bg-gradient-to-br from-blue-900 to-neutral-950 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="mt-16 bg-linear-to-br from-blue-900 to-neutral-950 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
           <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-6">
             Verify Our Credentials
@@ -143,9 +143,9 @@ export default function CredentialsSection() {
               href="https://www.bbb.org"
               target="_blank"
               rel="noopener noreferrer"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-colors duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-foreground/10 backdrop-blur-sm rounded-lg p-4 hover:bg-foreground/20 transition-colors duration-200"
             >
               <div className="text-2xl mb-2">🅱️</div>
               <div className="font-semibold">Verify BBB Rating</div>
@@ -156,9 +156,9 @@ export default function CredentialsSection() {
               href="https://www.cslb.ca.gov"
               target="_blank"
               rel="noopener noreferrer"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-colors duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-foreground/10 backdrop-blur-sm rounded-lg p-4 hover:bg-foreground/20 transition-colors duration-200"
             >
               <div className="text-2xl mb-2">📜</div>
               <div className="font-semibold">License Verification</div>
@@ -169,9 +169,9 @@ export default function CredentialsSection() {
 
             <motion.a
               href="/contact"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-secondary text-secondary-foreground rounded-lg p-4 hover:bg-secondary/90 transition-colors duration-200"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-foreground/10 text-secondary-foreground rounded-lg p-4 hover:bg-foreground/20 transition-colors duration-200"
             >
               <div className="text-2xl mb-2">📞</div>
               <div className="font-semibold">Request Certificates</div>

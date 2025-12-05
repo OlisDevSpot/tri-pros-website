@@ -13,7 +13,7 @@ export function ViewportHero({
   return (
     <div
       className={cn(
-        'h-screen w-full relative flex items-center justify-center overflow-hidden',
+        'min-h-screen w-full relative flex items-center justify-center overflow-hidden',
         className,
       )}
       {...props}

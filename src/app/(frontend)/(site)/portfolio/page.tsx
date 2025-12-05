@@ -1,5 +1,5 @@
 import BottomCTA from '@/components/cta'
-import { PortfolioHero } from '@/features/landing/components/portfolio/PortfolioHero'
+import { PortfolioHero } from '@/features/landing/components/portfolio/portfolio-hero'
 
 function PortfolioPage() {
   return (

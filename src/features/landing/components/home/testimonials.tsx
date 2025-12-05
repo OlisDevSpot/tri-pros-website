@@ -41,7 +41,7 @@ export default function TestimonialsSection() {
     },
     {
       label: 'Projects Delivered',
-      value: `$${millify(companyInfo.projectsDelivered, { precision: 0 })}+`,
+      value: `$${millify(companyInfo.valueOfProjectsInDollars, { precision: 0 })}+`,
     },
   ]
 

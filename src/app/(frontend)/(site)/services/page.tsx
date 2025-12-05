@@ -1,5 +1,5 @@
 import BottomCTA from '@/components/cta'
-import ProcessOverview from '@/features/landing/components/about/ProcessOverview'
+import ProcessOverview from '@/features/landing/components/about/process-overview'
 import ServicesHero from '@/features/landing/components/services/ServicesHero'
 import ServicesList from '@/features/landing/components/services/ServicesList'
 import ServicesListScroll from '@/features/landing/components/services/ServicesListScroll'

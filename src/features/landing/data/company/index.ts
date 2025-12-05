@@ -19,6 +19,7 @@ export const companyInfo = {
   logo: '/logo.png',
   yearFounded: 1998,
   numProjects: 520,
+  valueOfProjectsInDollars: 9_000_000,
   generations: 3,
   clientSatisfaction: 0.98,
   contactInfo,

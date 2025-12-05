@@ -35,6 +35,7 @@ function FormField<
   ...props
 }: ControllerProps<TFieldValues, TName>) {
   return (
+    // eslint-disable-next-line react/no-unstable-context-value
     <FormFieldContext value={{ name: props.name }}>
       <Controller {...props} />
     </FormFieldContext>
@@ -43,6 +44,7 @@ function FormField<
 
 function useFormField() {
   const fieldContext = React.use(FormFieldContext)
+  // eslint-disable-next-line ts/no-use-before-define
   const itemContext = React.use(FormItemContext)
   const { getFieldState } = useFormContext()
   const formState = useFormState({ name: fieldContext.name })
@@ -76,6 +78,7 @@ function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
   const id = React.useId()
 
   return (
+    // eslint-disable-next-line react/no-unstable-context-value
     <FormItemContext value={{ id }}>
       <div
         data-slot="form-item"

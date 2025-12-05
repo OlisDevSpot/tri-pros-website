@@ -119,7 +119,7 @@ export default function ProcessOverview() {
           className="text-center mb-16"
         >
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our Proven
+            Proven
             {' '}
             <span className="text-secondary">Process</span>
           </h2>

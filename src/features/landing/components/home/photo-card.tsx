@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import { ArrowRightCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useRouter } from 'next/navigation'

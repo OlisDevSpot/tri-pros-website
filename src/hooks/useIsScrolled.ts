@@ -12,6 +12,7 @@ export function useIsScrolled(threshold: number = 0): boolean {
 
       if (isScrolledRef.current !== scrolled) {
         isScrolledRef.current = scrolled
+        // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
         setIsScrolled(scrolled)
       }
       ticking.current = false

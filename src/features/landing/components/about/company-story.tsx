@@ -110,7 +110,7 @@ export default function CompanyStory() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-2xl p-8 lg:p-12 text-center"
+          className="bg-linear-to-br from-primary/5 to-secondary/5 rounded-2xl p-8 lg:p-12 text-center"
         >
           <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-6">
             Our Mission

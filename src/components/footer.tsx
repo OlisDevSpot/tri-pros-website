@@ -5,8 +5,6 @@ import Link from 'next/link'
 import { companyInfo } from '@/features/landing/data/company'
 import { footerData } from '@/features/landing/data/footer'
 import { Logo } from './logo'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
 
 export default function Footer() {
   return (
@@ -130,15 +128,6 @@ export default function Footer() {
               Get the latest construction tips, project showcases, and company
               news.
             </p>
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                id="my-button"
-                placeholder="Enter your email"
-                className="flex-1"
-              />
-              <Button variant="outline">Subscribe</Button>
-            </div>
           </div>
         </motion.div>
       </div>

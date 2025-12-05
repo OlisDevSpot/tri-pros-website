@@ -140,34 +140,34 @@ export default function TeamSection() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-16 bg-linear-to-br from-blue-900 to-neutral-950 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="mt-16 bg-linear-to-br from-primary to-[color-mix(in_oklch,var(--primary)_30%,black)] rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
           <h3 className="font-serif text-2xl lg:text-3xl font-bold mb-8">
             Our Team by the Numbers
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
-              <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+              <p className="text-3xl lg:text-4xl font-bold">
                 25+
-              </div>
+              </p>
               <div className="text-sm">Team Members</div>
             </div>
             <div>
-              <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+              <p className="text-3xl lg:text-4xl font-bold">
                 150+
-              </div>
+              </p>
               <div className="text-sm">Years Combined Experience</div>
             </div>
             <div>
-              <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+              <p className="text-3xl lg:text-4xl font-bold">
                 15+
-              </div>
+              </p>
               <div className="text-sm">Licensed Professionals</div>
             </div>
             <div>
-              <div className="text-3xl lg:text-4xl font-bold text-secondary mb-2">
+              <p className="text-3xl lg:text-4xl font-bold">
                 98%
-              </div>
+              </p>
               <div className="text-sm">Employee Retention Rate</div>
             </div>
           </div>
