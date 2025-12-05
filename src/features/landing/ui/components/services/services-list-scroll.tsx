@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { services } from '@/features/landing/data/company/services'
 import { cn } from '@/lib/utils'
 import { useFeatureStore } from '@/store/useFeatureStore'
-import ServiceCard from './ServiceCard'
+import ServiceCard from './service-card'
 
 export default function ServicesListScroll() {
   const ref = useRef(null)

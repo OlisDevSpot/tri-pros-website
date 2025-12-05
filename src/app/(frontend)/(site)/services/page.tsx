@@ -1,8 +1,4 @@
-import BottomCTA from '@/components/cta'
-import ProcessOverview from '@/features/landing/components/about/process-overview'
-import ServicesHero from '@/features/landing/components/services/ServicesHero'
-import ServicesList from '@/features/landing/components/services/ServicesList'
-import ServicesListScroll from '@/features/landing/components/services/ServicesListScroll'
+import { ServicesView } from '@/features/landing/ui/views/services-view'
 
 export const metadata = {
   title: 'Construction Services | Elite Construction Company',
@@ -13,11 +9,7 @@ export const metadata = {
 export default function ServicesPage() {
   return (
     <main className="h-full">
-      <ServicesHero />
-      <ServicesListScroll />
-      <ServicesList />
-      <ProcessOverview />
-      <BottomCTA />
+      <ServicesView />
     </main>
   )
 }

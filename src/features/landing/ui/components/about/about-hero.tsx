@@ -5,9 +5,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ViewportHero } from '@/components/viewport-hero'
+import { companyInfo } from '@/features/landing/data/company'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
-import { companyInfo } from '../../data/company'
 
 export function TopSpacer({ children }: { children: React.ReactNode }) {
   return (

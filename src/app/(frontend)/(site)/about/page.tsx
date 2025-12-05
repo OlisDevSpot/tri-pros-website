@@ -1,9 +1,9 @@
 import BottomCTA from '@/components/cta'
-import AboutHero from '@/features/landing/components/about/about-hero'
-import CompanyStory from '@/features/landing/components/about/company-story'
-import CredentialsSection from '@/features/landing/components/about/credentials'
-import ProcessOverview from '@/features/landing/components/about/process-overview'
-import TeamSection from '@/features/landing/components/about/team'
+import AboutHero from '@/features/landing/ui/components/about/about-hero'
+import CompanyStory from '@/features/landing/ui/components/about/company-story'
+import CredentialsSection from '@/features/landing/ui/components/about/credentials'
+import ProcessOverview from '@/features/landing/ui/components/about/process-overview'
+import TeamSection from '@/features/landing/ui/components/about/team'
 
 export const metadata = {
   title: 'About Elite Construction | Three Generations of Master Craftsmanship',

@@ -7,7 +7,7 @@ import { useRef } from 'react'
 import DecorativeLine from '@/components/decorative-line'
 import { Button } from '@/components/ui/button'
 import { companyInfo } from '@/features/landing/data/company'
-import { valueProps } from '../../data/value-prop'
+import { valueProps } from '@/features/landing/data/value-prop'
 
 export default function ValuePropositions() {
   const ref = useRef(null)

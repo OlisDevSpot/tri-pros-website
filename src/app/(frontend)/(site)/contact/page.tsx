@@ -1,6 +1,6 @@
-import ContactForm from '@/features/landing/components/contact/ContactForm'
-import ContactHero from '@/features/landing/components/contact/ContactHero'
-import ContactInfo from '@/features/landing/components/contact/ContactInfo'
+import ContactForm from '@/features/landing/ui/components/contact/ContactForm'
+import ContactHero from '@/features/landing/ui/components/contact/ContactHero'
+import ContactInfo from '@/features/landing/ui/components/contact/ContactInfo'
 
 export const metadata = {
   title: 'Contact Elite Construction | Schedule Your Consultation',

@@ -5,7 +5,7 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import { useRef } from 'react'
 import DecorativeLine from '@/components/decorative-line'
-import { teamMembers } from '../../data/company/team-members'
+import { teamMembers } from '@/features/landing/data/company/team-members'
 
 export default function TeamSection() {
   const ref = useRef(null)

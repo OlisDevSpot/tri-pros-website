@@ -79,7 +79,7 @@ export default function ServiceCard({
                 }}
                 className="flex items-start space-x-2"
               >
-                <div className="w-2 h-2 bg-secondary rounded-full flex-shrink-0 mt-2" />
+                <div className="w-2 h-2 bg-secondary rounded-full shrink-0 mt-2" />
                 <span className="text-sm text-muted-foreground">{feature}</span>
               </motion.div>
             ))}
@@ -88,7 +88,7 @@ export default function ServiceCard({
 
         {/* Project Details */}
         <div className="grid grid-cols-2 gap-6 pt-4">
-          <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
+          <div className="bg-linear-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-foreground mb-1">
               {service.timeline}
             </div>
@@ -96,7 +96,7 @@ export default function ServiceCard({
               Typical Timeline
             </div>
           </div>
-          <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
+          <div className="bg-linear-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-foreground mb-1">
               {service.priceRange}
             </div>
