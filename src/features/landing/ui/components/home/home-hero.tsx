@@ -32,7 +32,7 @@ const highlightVariants: Variants = {
 
 export default function HomeHero() {
   const pillsData = useMemo(() => {
-    return [`${new Date().getFullYear() - companyInfo.yearFounded} Years Experience`, `${companyInfo.numProjects}+ Projects Delivered`, `${companyInfo.clientSatisfaction * 100}% Client Satisfaction`, `${companyInfo.generations} Generations`]
+    return [`${companyInfo.combinedYearsExperience}+ Years Combined Experience`, `${companyInfo.numProjects}+ Projects Delivered`, `${companyInfo.clientSatisfaction * 100}% Client Satisfaction`, `${companyInfo.generations} Generations`]
   }, [])
   return (
     <ViewportHero>

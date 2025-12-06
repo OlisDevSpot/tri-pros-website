@@ -2,8 +2,9 @@
 
 import { motion, useInView } from 'motion/react'
 
-import Image from 'next/image'
 import { useRef } from 'react'
+import { TextWithLine } from '@/components/text-with-line'
+import { FounderStory } from './founder-story'
 
 export default function CompanyStory() {
   const ref = useRef(null)
@@ -23,86 +24,94 @@ export default function CompanyStory() {
           className="text-center mb-16"
         >
           <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            Our
+            The Journey Behind Becoming Tri Pros Remodeling - A Story of
             {' '}
-            <span className="text-secondary">Story</span>
+            <span className="text-secondary">Drive & Dedication</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            A legacy built on craftsmanship, integrity, and an unwavering
-            commitment to excellence
-          </p>
         </motion.div>
 
-        {/* Founder's Story */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-20">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
-            transition={{ duration: 0.8 }}
-            className="space-y-6"
+        {/* The Journey */}
+        <div className="flex flex-col gap-12">
+          <FounderStory />
+          <div
+            className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-20 w-full rounded-lg overflow-hidden"
           >
-            <h3 className=" text-2xl lg:text-3xl font-bold text-foreground">
-              The Founder&apos;s Vision
-            </h3>
-            <div className="space-y-4 text-muted-foreground leading-relaxed">
-              <p>
-                Oliver Porat began his journey in construction at the age of 16,
-                working alongside his grandfather, a master carpenter who
-                immigrated from Italy with nothing but his tools and an
-                uncompromising dedication to craftsmanship.
-              </p>
-              <p>
-                After decades of honing his skills and learning from the
-                industry&apos;s finest artisans, Robert founded Elite
-                Construction in 1998 with a simple yet powerful vision: to
-                create architectural masterpieces that would stand as testaments
-                to quality for generations to come.
-              </p>
-              <p>
-                Today, his son Michael and daughter Sarah continue this legacy,
-                bringing modern innovation to time-honored traditions, ensuring
-                that every Tri Pros Remodeling project exceeds the highest
-                standards of excellence.
-              </p>
+            <img
+              src="/company/oliver-headshot.jpg"
+              className="absolute inset-0 grayscale-50 w-[50%] h-full object-cover z-[-1]"
+            />
+            <div className="w-full h-full flex items-end justify-center">
+              <h3 className="text-2xl lg:text-3xl font-bold text-foreground whitespace-pre-line text-center">
+                Ophir "Oliver" Porat
+              </h3>
             </div>
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
+              transition={{ duration: 0.8 }}
+              className="space-y-6"
+            >
+              <div className="space-y-4 text-foreground/80 leading-relaxed font-semibold">
+                <TextWithLine text="The Founder&apos;s Vision" />
+                <p>
+                  Oliver Porat began his journey in construction at the age of 16,
+                  working alongside his grandfather, a master carpenter who
+                  immigrated from Italy with nothing but his tools and an
+                  uncompromising dedication to craftsmanship.
+                </p>
+                <p>
+                  After decades of honing his skills and learning from the
+                  industry&apos;s finest artisans, Robert founded Elite
+                  Construction in 1998 with a simple yet powerful vision: to
+                  create architectural masterpieces that would stand as testaments
+                  to quality for generations to come.
+                </p>
+                <p>
+                  Today, his son Michael and daughter Sarah continue this legacy,
+                  bringing modern innovation to time-honored traditions, ensuring
+                  that every Tri Pros Remodeling project exceeds the highest
+                  standards of excellence.
+                </p>
+              </div>
 
-            <div className="bg-secondary/10 rounded-lg p-6 border-l-4 border-secondary">
-              <blockquote className="font-script text-xl text-foreground italic">
-                &ldquo;We don&apos;t just build structures; we craft legacies
-                that families will cherish for generations.&rdquo;
-              </blockquote>
-              <cite className="text-sm text-muted-foreground mt-2 block">
-                — Oliver Porat, Founder
-              </cite>
-            </div>
-          </motion.div>
+              <div className="bg-card rounded-lg p-6 border-l-4 border-secondary">
+                <blockquote className="font-script text-xl text-foreground italic">
+                  &ldquo;We don&apos;t just build structures; we craft legacies
+                  that families will cherish for generations.&rdquo;
+                </blockquote>
+                <cite className="text-sm text-foreground/80 mt-2 block">
+                  — Oliver Porat, Founder
+                </cite>
+              </div>
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="rounded-2xl overflow-hidden shadow-xl">
-              <Image
-                src="/oliver-headshot.jpg"
-                alt="Oliver Porat, Founder"
-                width={500}
-                height={600}
-                className="object-cover"
-              />
-            </div>
-            <div className="absolute -bottom-4 -right-4 bg-white rounded-xl p-4 shadow-lg border border-border/20">
-              <div className="text-center">
-                <div className="text-lg font-bold text-secondary">
-                  Oliver Porat
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Founder & Master Craftsman
+            {/* <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src="/oliver-headshot.jpg"
+                  alt="Oliver Porat, Founder"
+                  width={500}
+                  height={600}
+                  className="object-cover"
+                />
+              </div>
+              <div className="absolute -bottom-4 -right-4 bg-white rounded-xl p-4 shadow-lg border border-border/20">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-secondary">
+                    Oliver Porat
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Founder & Master Craftsman
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div> */}
+          </div>
         </div>
 
         {/* Mission Statement */}

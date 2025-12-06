@@ -1,5 +1,6 @@
 'use client'
 
+import millify from 'millify'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -37,8 +38,8 @@ export default function AboutHero() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <h1 className=" text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-                  Three Generations of
+                <h1 className=" text-4xl sm:text-5xl font-bold leading-tight">
+                  A Company Built on Values, Ethics, and
                   {' '}
                   <span className="text-secondary">Master Craftsmanship</span>
                 </h1>
@@ -50,11 +51,14 @@ export default function AboutHero() {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="text-xl text-muted-foreground leading-relaxed"
               >
-                Founded in 1998 by master craftsman Robert Elite, our company has
+                Founded in
+                {' '}
+                {companyInfo.yearFounded}
+                {' '}
+                by childhood friends Sean Phil & Ophir "Oliver" Porat, our company has
                 been built on a foundation of unwavering commitment to quality,
-                innovation, and client satisfaction. Today, we continue this
-                legacy of excellence with the next generation of skilled artisans
-                and modern techniques.
+                innovation, and client satisfaction. Today, we are focused on bringing
+                innovative additions to the construction industry.
               </motion.p>
 
               <motion.div
@@ -65,19 +69,21 @@ export default function AboutHero() {
               >
                 <div className="text-center">
                   <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                    1998
+                    {companyInfo.yearFounded}
                   </div>
                   <div className="text-sm text-muted-foreground">Founded</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                    500+
+                    $
+                    {millify(companyInfo.valueOfProjectsInDollars)}
+                    +
                   </div>
-                  <div className="text-sm text-muted-foreground">Projects</div>
+                  <div className="text-sm text-muted-foreground">Total Projects Value</div>
                 </div>
                 <div className="text-center">
                   <div className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                    3
+                    {companyInfo.generations}
                   </div>
                   <div className="text-sm text-muted-foreground">Generations</div>
                 </div>
@@ -143,8 +149,8 @@ export default function AboutHero() {
                 }
               >
                 <div className="text-center">
-                  <p className="text-lg font-bold">A+ BBB</p>
-                  <p className="text-base">Rating</p>
+                  <p className="text-lg font-bold">A+</p>
+                  <p className="text-base">BBB Rating</p>
                 </div>
               </motion.div>
 
@@ -154,15 +160,16 @@ export default function AboutHero() {
                 transition={{ duration: 0.8, delay: 1.2 }}
                 className={
                   cn(
-                    'absolute -top-6 -left-6 bg-linear-to-tl from-[color-mix(in_oklch,var(--primary)_60%,black_20%,transparent_20%)] to-primary text-white rounded-xl px-4 py-10 shadow-xl backdrop-blur-sm',
+                    'absolute -top-6 -left-6 bg-linear-to-tl from-[color-mix(in_oklch,var(--primary)_60%,black_20%,transparent_20%)] to-primary text-white rounded-xl px-4 py-4 pt-4 shadow-xl backdrop-blur-sm',
                     isMobile ? '-top-2 -left-2' : '',
                   )
                 }
               >
                 <div className="text-center">
-                  <p className="text-lg font-bold">100% Licensed</p>
-                  <p className="text-base">& Bonded</p>
-                  <p className="text-base">Fully Compliant</p>
+                  <p className="text-lg font-bold">100% </p>
+                  <p className="text-base">Licensed,</p>
+                  <p className="text-base">Insured,</p>
+                  <p className="text-base">Bonded</p>
                 </div>
               </motion.div>
 
@@ -179,10 +186,11 @@ export default function AboutHero() {
               >
                 <div className="text-center">
                   <p className="text-2xl font-bold">
-                    25+
+                    {companyInfo.combinedYearsExperience}
+                    +
                   </p>
                   <p className="text-base">
-                    Years of Excellence
+                    Years of Combined Experience
                   </p>
                 </div>
               </motion.div>
