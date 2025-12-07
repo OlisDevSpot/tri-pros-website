@@ -26,6 +26,11 @@ export const metadata: Metadata = {
     default: 'Tri Pros Remodeling',
     template: '%s | Tri Pros Remodeling',
   },
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
   description: 'Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.',
   keywords: 'luxury construction, custom homes, premium renovations, commercial construction, elite builders',
   authors: [{ name: 'Tri Pros Remodeling' }],
