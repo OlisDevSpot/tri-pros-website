@@ -5,5 +5,6 @@ export default antfu({
   react: true,
   rules: {
     'react-refresh/only-export-components': 'off',
+    'ts/no-empty-object-type': 'off',
   },
 })
