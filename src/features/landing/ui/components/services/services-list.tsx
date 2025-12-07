@@ -97,7 +97,7 @@ export default function ServicesList() {
                           }}
                           className="flex items-start space-x-2"
                         >
-                          <div className="w-2 h-2 bg-secondary rounded-full flex-shrink-0 mt-2" />
+                          <div className="w-2 h-2 bg-secondary rounded-full shrink-0 mt-2" />
                           <span className="text-sm text-muted-foreground">
                             {feature}
                           </span>
@@ -108,7 +108,7 @@ export default function ServicesList() {
 
                   {/* Project Details */}
                   <div className="grid grid-cols-2 gap-6 pt-4">
-                    <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
+                    <div className="bg-linear-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-foreground mb-1">
                         {service.timeline}
                       </div>
@@ -116,7 +116,7 @@ export default function ServicesList() {
                         Typical Timeline
                       </div>
                     </div>
-                    <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
+                    <div className="bg-linear-to-br from-primary/5 to-secondary/5 rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-foreground mb-1">
                         {service.priceRange}
                       </div>
@@ -179,7 +179,7 @@ export default function ServicesList() {
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.3 }}
-                    className="relative rounded-2xl aspect-[16/9] lg:aspect-auto overflow-hidden shadow-xl group-hover:shadow-2xl transition-shadow duration-300 h-full"
+                    className="relative rounded-2xl aspect-video lg:aspect-auto overflow-hidden shadow-xl group-hover:shadow-2xl transition-shadow duration-300 h-full"
                   >
                     <Image
                       src={service.image}
@@ -188,7 +188,7 @@ export default function ServicesList() {
                       height={400}
                       className="h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                     {/* Overlay CTA */}
                     <motion.div
@@ -218,7 +218,7 @@ export default function ServicesList() {
                   initial={{ width: 0 }}
                   animate={isInView ? { width: '100%' } : { width: 0 }}
                   transition={{ duration: 1, delay: index * 0.2 + 0.8 }}
-                  className="h-px bg-gradient-to-r from-transparent via-border to-transparent mt-24"
+                  className="h-px bg-linear-to-r from-transparent via-border to-transparent mt-24"
                 />
               )}
             </motion.div>
@@ -230,7 +230,7 @@ export default function ServicesList() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 1 }}
-          className="mt-32 bg-gradient-to-br from-secondary/20 to-secondary/40 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="mt-32 bg-linear-to-br from-secondary/20 to-secondary/40 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
         >
           <h3 className=" text-2xl lg:text-3xl font-bold mb-6">
             Not Sure Which Service You Need?
