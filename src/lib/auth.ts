@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth'
-import env from '@/config/env'
+import env from '@/config/server-env'
 
 export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_BASE_URL,

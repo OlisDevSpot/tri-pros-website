@@ -7,37 +7,11 @@ import { useState } from 'react'
 import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
+import { navigationItems } from '@/data/nav-items'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useIsScrolled } from '@/hooks/useIsScrolled'
 import { cn } from '@/lib/utils'
 import { MobileNav } from './mobile-nav'
-
-const navigationItems = [
-  {
-    name: 'Tri Pros Experience',
-    href: '/experience',
-  },
-  {
-    name: 'Community',
-    href: '/community',
-  },
-  {
-    name: 'About',
-    href: '/about',
-  },
-  {
-    name: 'Services',
-    href: '/services',
-  },
-  {
-    name: 'Portfolio',
-    href: '/portfolio',
-  },
-  {
-    name: 'Blog',
-    href: '/blog',
-  },
-]
 
 export function SiteNavbar() {
   const [isOpen, setIsOpen] = useState(false)
