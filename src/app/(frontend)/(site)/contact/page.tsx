@@ -1,6 +1,6 @@
-import ContactForm from '@/features/landing/ui/components/contact/contact-form'
 import ContactHero from '@/features/landing/ui/components/contact/contact-hero'
 import ContactInfo from '@/features/landing/ui/components/contact/contact-info'
+import ScheduleConsultationForm from '@/features/landing/ui/components/contact/schedule-consultation-form'
 
 export const metadata = {
   title: 'Contact Tri Pros Remodeling | Schedule Your Consultation',
@@ -13,7 +13,9 @@ export default function ContactPage() {
     <main className="min-h-screen">
       <ContactHero />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 sticky top-0">
-        <ContactForm />
+        <section className="bg-background py-16 lg:py-24">
+          <ScheduleConsultationForm />
+        </section>
         <ContactInfo />
       </div>
     </main>

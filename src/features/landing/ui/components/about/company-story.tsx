@@ -3,7 +3,6 @@
 import { motion, useInView } from 'motion/react'
 
 import { useRef } from 'react'
-import { TextWithLine } from '@/components/text-with-line'
 import { FounderStory } from './founder-story'
 
 export default function CompanyStory() {
@@ -15,7 +14,7 @@ export default function CompanyStory() {
       ref={ref}
       className="py-20 lg:py-32"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container space-y-12">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -30,89 +29,55 @@ export default function CompanyStory() {
           </h2>
         </motion.div>
 
-        {/* The Journey */}
-        <div className="flex flex-col gap-12">
-          <FounderStory />
-          <div
-            className="relative grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-20 w-full rounded-lg overflow-hidden"
-          >
-            <img
-              src="/company/oliver-headshot.jpg"
-              className="absolute inset-0 grayscale-50 w-[50%] h-full object-cover z-[-1]"
-            />
-            <div className="w-full h-full flex items-end justify-center">
-              <h3 className="text-2xl lg:text-3xl font-bold text-foreground whitespace-pre-line text-center">
-                Ophir "Oliver" Porat
-              </h3>
+        <FounderStory
+          founderName="Sean Phil"
+          founderImgSrc="/company/sean-headshot.jpeg"
+          isInView={isInView}
+        >
+          <div className="space-y-6 text-base/relaxed">
+            <div className="space-y-4">
+              <p className="text-primary ">
+                I learned responsibility long before construction entered my life. My time in the Israeli Special Forces taught me what it means to stay calm under pressure and to rely on the people beside you. Later, working with U.S. Marines and American veterans showed me a different kind of strength — the quiet kind that comes from honesty, grit, and following through.
+              </p>
             </div>
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-6"
-            >
-              <div className="space-y-4 text-foreground/80 leading-relaxed font-semibold">
-                <TextWithLine text="The Founder&apos;s Vision" />
-                <p>
-                  Oliver Porat began his journey in construction at the age of 16,
-                  working alongside his grandfather, a master carpenter who
-                  immigrated from Italy with nothing but his tools and an
-                  uncompromising dedication to craftsmanship.
-                </p>
-                <p>
-                  After decades of honing his skills and learning from the
-                  industry&apos;s finest artisans, Robert founded Elite
-                  Construction in 1998 with a simple yet powerful vision: to
-                  create architectural masterpieces that would stand as testaments
-                  to quality for generations to come.
-                </p>
-                <p>
-                  Today, his son Michael and daughter Sarah continue this legacy,
-                  bringing modern innovation to time-honored traditions, ensuring
-                  that every Tri Pros Remodeling project exceeds the highest
-                  standards of excellence.
-                </p>
-              </div>
+            <div>
+              <p>
+                When my military career ended, I focused on building a stable life for my family. There’s nothing glamorous about raising kids and keeping a home running, but it teaches you a lot about patience, integrity, and doing what needs to be done. That’s what pushed me toward construction. It felt grounded, real, and aligned with the values I wanted to live by.
 
-              <div className="bg-card rounded-lg p-6 border-l-4 border-secondary">
-                <blockquote className="font-script text-xl text-foreground italic">
-                  &ldquo;We don&apos;t just build structures; we craft legacies
-                  that families will cherish for generations.&rdquo;
-                </blockquote>
-                <cite className="text-sm text-foreground/80 mt-2 block">
-                  — Oliver Porat, Founder
-                </cite>
-              </div>
-            </motion.div>
+                As I learned the trade, I saw how often families were let down by unfinished work, broken promises, and unnecessary stress. After helping my own relatives fix a nightmare remodel, it became clear to me that people deserved better. If they trusted me with their home, I owed them clear communication, dependable work, and the kind of follow-through I was raised on.
 
-            {/* <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 50 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="rounded-2xl overflow-hidden shadow-xl">
-                <Image
-                  src="/oliver-headshot.jpg"
-                  alt="Oliver Porat, Founder"
-                  width={500}
-                  height={600}
-                  className="object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-4 -right-4 bg-white rounded-xl p-4 shadow-lg border border-border/20">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-secondary">
-                    Oliver Porat
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Founder & Master Craftsman
-                  </div>
-                </div>
-              </div>
-            </motion.div> */}
+                That’s the foundation behind Tri Pros Remodeling. Different uniform, different mission — but the same commitment to showing up, doing the job right, and taking care of people every step of the way.
+              </p>
+            </div>
           </div>
-        </div>
+        </FounderStory>
+        <FounderStory
+          founderName='Ophir "Oliver" Porat'
+          flipOrder
+          founderImgSrc="/company/oliver-headshot.jpg"
+          isInView={isInView}
+          Quote={() => (
+            <div className="bg-card rounded-lg p-6 border-l-4 border-secondary">
+              <blockquote className="font-script text-xl text-foreground italic">
+                &ldquo;We don&apos;t just build structures; we craft legacies
+                that families will cherish for generations.&rdquo;
+              </blockquote>
+              <cite className="text-sm text-foreground/80 mt-2 block">
+                — Oliver Porat, Founder
+              </cite>
+            </div>
+          )}
+        >
+          <p>
+            I grew up with construction all around me. My dad was a contractor and a fearless home-DIYer, the kind of person who couldn’t walk past a wall without wondering how to improve it. I spent my childhood watching him turn sketches into structures, problems into plans, and raw materials into something that felt solid and meaningful.
+          </p>
+          <p>
+            Once I was old enough to pick up real tools, I was hooked. Seeing what could be created with today’s materials and technology pulled me in completely. I realized this wasn’t just a hobby or a family habit—it was a craft worth dedicating myself to.
+          </p>
+          <p>
+            Those early lessons shaped everything I do now. At Tri Pros Remodeling, I carry that same respect for the work forward, aiming for results that are honest, durable, and thoughtfully built. I’m not here to impress with flash—I’m here to deliver work you can rely on for years to come.
+          </p>
+        </FounderStory>
 
         {/* Mission Statement */}
         <motion.div

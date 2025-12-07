@@ -39,7 +39,7 @@ export default function HomeHero() {
       {/* Content */}
       <div className="absolute inset-0 mx-auto w-full h-full lg:p-6">
         <div
-          className="flex flex-col items-center justify-center h-full lg:rounded-3xl"
+          className="flex flex-col items-center justify-center h-full lg:rounded-3xl shadow-2xl"
           style={{
             backgroundImage: `radial-gradient(circle, color-mix(in oklab, var(--background) 80%, transparent), color-mix(in oklab, var(--background) 50%, transparent)), url("/hero-photos/modern-house-1.png")`,
             backgroundSize: 'cover',
@@ -66,7 +66,7 @@ export default function HomeHero() {
                   variants={highlightVariants}
                   initial="initial"
                   animate="highlight"
-                  className="bg-linear-to-r from-primary to-red-700 bg-clip-text text-transparent font-extrabold"
+                  className="bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent font-extrabold"
                 >
                   Masterpieces
                 </motion.span>

@@ -22,7 +22,10 @@ const dancingScript = Dancing_Script({
 })
 
 export const metadata: Metadata = {
-  title: '%s | Tri Pros Remodeling',
+  title: {
+    default: 'Tri Pros Remodeling',
+    template: '%s | Tri Pros Remodeling',
+  },
   description: 'Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.',
   keywords: 'luxury construction, custom homes, premium renovations, commercial construction, elite builders',
   authors: [{ name: 'Tri Pros Remodeling' }],

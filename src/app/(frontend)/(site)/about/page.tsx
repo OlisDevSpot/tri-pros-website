@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import BottomCTA from '@/components/cta'
 import AboutHero from '@/features/landing/ui/components/about/about-hero'
 import CompanyStory from '@/features/landing/ui/components/about/company-story'
@@ -5,8 +6,8 @@ import CredentialsSection from '@/features/landing/ui/components/about/credentia
 import ProcessOverview from '@/features/landing/ui/components/about/process-overview'
 import TeamSection from '@/features/landing/ui/components/about/team'
 
-export const metadata = {
-  title: 'About Tri Pros Remodeling | Three Generations of Master Craftsmanship',
+export const metadata: Metadata = {
+  title: 'About',
   description:
     'Learn about our company heritage, founder\'s story, and the master craftsmen who have been building architectural masterpieces for over 25 years.',
 }

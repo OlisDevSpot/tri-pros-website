@@ -5,7 +5,7 @@ export function ExperienceView() {
   return (
     <ViewportHero>
       <TopSpacer>
-        <div>
+        <div className="container w-full h-full">
           <h1>
             Count on an experience that runs smoothly from start to finish—steady communication, dependable follow-through, and a team that handles everything so you can step back with confidence.
           </h1>

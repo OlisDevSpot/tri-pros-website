@@ -16,6 +16,9 @@ const envSchema = z.object({
   // Better Auth
   BETTER_AUTH_URL: z.string(),
   BETTER_AUTH_SECRET: z.string(),
+
+  // RESEND
+  RESEND_API_KEY: z.string(),
 })
 
 export type env = z.infer<typeof envSchema>

@@ -1,5 +1,6 @@
 'use client'
 
+import { Toaster } from 'sonner'
 import { ThemeProvider } from './theme-provider'
 import { TRPCReactProvider } from './trpc-provider'
 
@@ -13,6 +14,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         disableTransitionOnChange
       >
         {children}
+        <Toaster />
       </ThemeProvider>
     </TRPCReactProvider>
   )

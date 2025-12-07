@@ -1,24 +1,55 @@
-export function FounderStory() {
+import { motion } from 'motion/react'
+import React from 'react'
+import { TextWithLine } from '@/components/text-with-line'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { cn } from '@/lib/utils'
+
+interface Props {
+  founderName: string
+  founderImgSrc: string
+  children: React.ReactNode
+  flipOrder?: boolean
+  isInView: boolean
+  Quote?: () => React.ReactNode
+}
+
+export function FounderStory({
+  founderName,
+  flipOrder = false,
+  children,
+  founderImgSrc,
+  isInView,
+  Quote,
+}: Props) {
+  const isMobile = useIsMobile()
+
   return (
-    <div className="flex gap-6 text-base/relaxed">
-      <div className="space-y-4">
-        <p className="text-primary ">
-          My name is Sean, and long before Tri Pros Remodeling existed, I learned what responsibility really means when I served in the Israeli Special Forces. When the stakes were measured in lives, not deadlines, I finally understood how crucial it is to have a team behind you.
-        </p>
-        <p>
-          Later, I had the privilege of training U.S. Marines and working alongside American veterans — men and women who know hardship in a way that can’t be taught in a classroom. Seeing their challenges up close, both during service and after returning home, gave me a lasting respect for grit, honesty, and having someone you can rely on.
+    <div className="flex flex-col gap-8">
+      <div
+        className="min-h-[400px] flex flex-col lg:flex-row gap-4 lg:gap-16 w-full rounded-lg overflow-hidden"
+      >
+        <div className={cn('relative w-full min-h-[200px] h-auto flex items-end justify-center rounded-lg overflow-hidden pb-8 flex-1', !isMobile && flipOrder && 'order-2')}>
+          <img
+            src={founderImgSrc}
+            className="absolute top-0 left-0 right-0 sm:inset-0 grayscale-50 sm:h-full object-cover z-[-1] w-full"
+          />
+          <h3 className="text-2xl lg:text-3xl font-bold text-foreground whitespace-pre-line text-center">
+            {founderName}
+          </h3>
+        </div>
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 }}
+          transition={{ duration: 0.8 }}
+          className="space-y-6 flex-1"
+        >
+          <div className="space-y-4 text-foreground/80 leading-relaxed font-semibold">
+            <TextWithLine text="The Founder&apos;s Vision" />
+            {children}
+          </div>
 
-          When my military career ended, I shifted my focus to something that grounded me even more deeply: family. Raising kids, building a household, and creating stability isn’t glamorous work, but it’s the kind that reveals a person’s character. I wanted a profession where those values mattered. Construction—done the right way—fit naturally.
-        </p>
-      </div>
-      <div>
-        <p>
-          My first years in the industry were spent learning from seasoned builders who valued skill and craftsmanship over shortcuts. But it wasn’t until I helped my own relatives through a botched remodel that I realized how many families were still dealing with dishonesty, delays, and needless stress. That hit home in a way nothing else had. If people trusted me with their homes—the place where they raise their kids, protect their loved ones, and build their lives—I owed them absolute transparency and dependable execution.
-
-          That’s why Tri Pros Remodeling exists today. It’s built on the same principles that shaped me in the military: keep your word, take care of your team, stay accountable, and never leave anyone behind. For our clients, that means straightforward communication, quality without compromise, and a process designed to honor their time, their budget, and their trust.
-
-          The work may be construction, but the mission is still service—just in a different uniform.
-        </p>
+          {Quote && <Quote />}
+        </motion.div>
       </div>
     </div>
   )
