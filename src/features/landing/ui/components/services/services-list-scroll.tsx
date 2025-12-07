@@ -52,7 +52,7 @@ export default function ServicesListScroll() {
             ))}
           </div>
           <div className="sticky top-0 h-screen flex-1 flex items-center">
-            <div className="w-full h-[80vh] relative">
+            <div className="w-full h-[80vh] relative top-[3vh]">
               {services.map(service => (
                 <motion.div
                   key={service.title}

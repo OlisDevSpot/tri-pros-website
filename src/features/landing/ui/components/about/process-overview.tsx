@@ -20,8 +20,9 @@ const processSteps = [
       'Material selection and sourcing',
     ],
     icon: '🔍',
-    bgColor: 'from-blue-900 to-neutral-950',
+    bgColor: 'from-blue-200 dark:from-blue-900 to-background',
     color: 'bg-blue-300',
+    imageSrc: '',
   },
   {
     phase: 'Pre-Construction',
@@ -36,8 +37,9 @@ const processSteps = [
       'Project timeline finalization',
     ],
     icon: '📋',
-    bgColor: 'from-orange-900 to-neutral-950',
+    bgColor: 'from-orange-200 dark:from-orange-900 to-background',
     color: 'bg-orange-300',
+    imageSrc: '',
   },
   {
     phase: 'Construction',
@@ -52,8 +54,9 @@ const processSteps = [
       'Continuous safety monitoring',
     ],
     icon: '🏗️',
-    bgColor: 'from-green-900 to-neutral-950',
+    bgColor: 'from-green-200 dark:from-green-900 to-background',
     color: 'bg-green-300',
+    imageSrc: '',
   },
   {
     phase: 'Completion & Handover',
@@ -68,8 +71,9 @@ const processSteps = [
       'Project completion celebration',
     ],
     icon: '✅',
-    bgColor: 'from-purple-900 to-neutral-950',
+    bgColor: 'from-purple-200 dark:from-purple-900 to-background',
     color: 'bg-purple-300',
+    imageSrc: '',
   },
 ]
 
@@ -118,7 +122,7 @@ export default function ProcessOverview() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
             Proven
             {' '}
             <span className="text-secondary">Process</span>
@@ -196,24 +200,18 @@ export default function ProcessOverview() {
                   )}
                 </div>
 
-                {/* Visual Element */}
+                {/* Image */}
                 <div
-                  className={cn(`h- w-full shadow-2xl flex-1`, isMobile || index % 2 === 1 ? 'order-1' : '')}
+                  className={cn(`rounded-lg w-full shadow-2xl flex-1`, isMobile || index % 2 === 1 ? 'order-1' : '')}
                 >
                   <div
-                    className={`${step.color} rounded-lg p-8 shadow-xl h-full w-full flex items-center justify-center`}
+                    className={`${step.color} p-8 shadow-xl h-full w-full flex items-center justify-center`}
                   >
                     <div className="text-center">
                       <div
-                        className={`w-24 h-24 bg-linear-to-br ${step.bgColor} rounded-full flex items-center justify-center text-white text-4xl mx-auto mb-6`}
+                        className={`w-24 h-24 bg-linear-to-br ${step.bgColor} rounded-full flex items-center justify-center text-foreground text-4xl mx-auto mb-6`}
                       >
                         {step.icon}
-                      </div>
-                      <div className="text-6xl font-bold text-background/60 mb-2">
-                        {index + 1}
-                      </div>
-                      <div className="font-serif text-xl font-bold text-background">
-                        {step.phase}
                       </div>
                     </div>
                   </div>

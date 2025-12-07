@@ -39,7 +39,7 @@ export default function ServiceCard({
   return (
     <motion.div
       key={service.title}
-      initial={{ opacity: 0.4, filter: 'brightness(0.3)' }}
+      initial={{ opacity: 0.25, filter: 'brightness(0.3)' }}
       whileInView={{ opacity: 1, filter: 'brightness(1)' }}
       viewport={{ margin: '-50% 0px -50% 0px' }}
       transition={{ duration: 0.4 }}
@@ -120,7 +120,6 @@ export default function ServiceCard({
             >
               <Link
                 href={service.href}
-                className="bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-secondary/90 transition-colors duration-200"
               >
                 Learn More
               </Link>
@@ -138,7 +137,6 @@ export default function ServiceCard({
             >
               <Link
                 href="/contact"
-                className="border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary hover:text-primary-foreground transition-colors duration-200"
               >
                 Get Quote
               </Link>

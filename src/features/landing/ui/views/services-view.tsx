@@ -13,7 +13,7 @@ export function ServicesView() {
   return (
     <div className="h-full w-full">
       <ServicesHero />
-      {!isMobile ? <ServicesListScroll /> : null}
+      {!isMobile && <ServicesListScroll />}
       {isMobile && <ServicesList />}
       <ProcessOverview />
       <BottomCTA />
