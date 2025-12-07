@@ -1,7 +1,6 @@
 import { TRPCError } from '@trpc/server'
 import { scheduleConsultationFormSchema } from '@/features/landing/schemas/schedule-consultation-form'
 import { resendClient } from '@/services/email/resend'
-import { EmailTemplate } from '@/services/email/templates/example'
 import { baseProcedure, createTRPCRouter } from '../init'
 
 export const landingRouter = createTRPCRouter({
