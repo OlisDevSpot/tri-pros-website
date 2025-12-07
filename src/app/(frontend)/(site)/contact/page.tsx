@@ -1,9 +1,10 @@
+import type { Metadata } from 'next'
 import ContactHero from '@/features/landing/ui/components/contact/contact-hero'
 import ContactInfo from '@/features/landing/ui/components/contact/contact-info'
 import ScheduleConsultationForm from '@/features/landing/ui/components/contact/schedule-consultation-form'
 
-export const metadata = {
-  title: 'Contact Tri Pros Remodeling | Schedule Your Consultation',
+export const metadata: Metadata = {
+  title: 'Contact',
   description:
     'Contact Tri Pros Remodeling for your luxury construction project. Schedule a consultation, request a quote, or speak with our expert team today.',
 }
