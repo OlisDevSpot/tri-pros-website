@@ -1,4 +1,7 @@
+import config from '@payload-config'
 import { initTRPC } from '@trpc/server'
+import { headers as getHeaders } from 'next/headers'
+import { getPayload } from 'payload'
 import { cache } from 'react'
 import superjson from 'superjson'
 
@@ -22,3 +25,26 @@ const t = initTRPC.create({
 export const createTRPCRouter = t.router
 export const createCallerFactory = t.createCallerFactory
 export const baseProcedure = t.procedure
+
+export const payloadProcedure = t.procedure.use(async ({ ctx, next }) => {
+  const payload = await getPayload({ config })
+
+  return await next({
+    ctx: {
+      ...ctx,
+      payload,
+    },
+  })
+})
+
+export const protectedProcedure = payloadProcedure.use(async ({ ctx, next }) => {
+  const headers = await getHeaders()
+  const session = await ctx.payload.auth({ headers })
+
+  return await next({
+    ctx: {
+      ...ctx,
+      session,
+    },
+  })
+})

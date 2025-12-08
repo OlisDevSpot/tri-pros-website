@@ -10,7 +10,7 @@ interface BlogPostCardProps {
   date: Date
 }
 
-export function BlogPostCard({
+export function BlogpostCard({
   title,
   description,
   date,
@@ -22,7 +22,7 @@ export function BlogPostCard({
     year: 'numeric',
   })
   return (
-    <div className="relative w-full aspect-[9/16] rounded-lg overflow-hidden shadow-sm p-4 hover:shadow-lg cursor-pointer transition-all duration-300">
+    <div className="relative w-full aspect-9/16 rounded-lg overflow-hidden shadow-sm p-4 hover:shadow-lg cursor-pointer transition-all duration-300">
       <div className="flex flex-col gap-2 justify-end h-full peer z-10 relative">
         <h3 className="text-2xl font-semibold">{title}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>

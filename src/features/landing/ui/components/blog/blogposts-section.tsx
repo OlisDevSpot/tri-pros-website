@@ -1,8 +1,8 @@
 import { TextWithLine } from '@/components/text-with-line'
 import { blogPostTitles } from '@/features/landing/data/blog'
-import { BlogPostCard } from './BlogPostCard'
+import { BlogpostCard } from './blogpost-card-small'
 
-export function BlogPostsSection() {
+export function BlogpostsSection() {
   return (
     <section className="w-full min-h-screen py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -14,7 +14,7 @@ export function BlogPostsSection() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {blogPostTitles.map((title, index) => (
-                <BlogPostCard
+                <BlogpostCard
                   // eslint-disable-next-line react/no-array-index-key
                   key={index}
                   title={title}

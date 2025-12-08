@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Field, FieldHook } from 'payload'
 import {
   BlocksFeature,
   HeadingFeature,
@@ -7,6 +7,47 @@ import {
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 
+function format(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/ /g, '-')
+    .replace(/[^\w-]+/g, '')
+}
+
+function formatSlug(fallback: string): FieldHook {
+  return ({ value, originalDoc, data }) => {
+    if (typeof value === 'string') {
+      return format(value)
+    }
+
+    const fallbackData = data?.[fallback] || originalDoc?.[fallback]
+
+    if (fallbackData && typeof fallbackData === 'string') {
+      return format(fallbackData)
+    }
+
+    return value
+  }
+}
+
+export const TitleField: Field = {
+  name: 'title',
+  type: 'text',
+  required: true,
+}
+
+export const SlugField: Field = {
+  name: 'slug',
+  type: 'text',
+  required: true,
+  unique: true,
+  hooks: {
+    beforeValidate: [
+      formatSlug('title'),
+    ],
+  },
+}
+
 export const Blogposts: CollectionConfig = {
   slug: 'blogposts',
   admin: {
@@ -14,11 +55,8 @@ export const Blogposts: CollectionConfig = {
     defaultColumns: ['title', 'updatedAt', 'createdAt'],
   },
   fields: [
-    {
-      name: 'title',
-      type: 'text',
-      required: true,
-    },
+    TitleField,
+    SlugField,
     {
       name: 'body',
       type: 'richText',

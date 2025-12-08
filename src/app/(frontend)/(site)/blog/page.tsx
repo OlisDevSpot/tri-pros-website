@@ -1,12 +1,18 @@
-import BlogHero from '@/features/landing/ui/components/blog/BlogHero'
-import { BlogPostsSection } from '@/features/landing/ui/components/blog/BlogPostsSection'
+import type { Metadata } from 'next'
+import BlogHero from '@/features/landing/ui/components/blog/blog-hero'
+import { BlogpostsSection } from '@/features/landing/ui/components/blog/blogposts-section'
 
-function Page() {
+export const metadata: Metadata = {
+  title: 'Blog',
+  description:
+    'Explore our blog for industry insights, expert tips, and the latest news in the world of construction and remodeling.',
+}
+
+export default function BlogPage() {
   return (
     <main>
       <BlogHero />
-      <BlogPostsSection />
+      <BlogpostsSection />
     </main>
   )
 }
-export default Page

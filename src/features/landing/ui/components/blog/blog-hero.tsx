@@ -5,7 +5,7 @@ import { motion } from 'motion/react'
 
 import { ViewportHero } from '@/components/viewport-hero'
 import { blogPostTitles } from '@/features/landing/data/blog'
-import { HeroBlogPostCard } from './HeroBlogPostCard'
+import { BlogpostCard } from './blogpost-card'
 
 const parentVariants: Variants = {
   hidden: {
@@ -32,41 +32,62 @@ export default function BlogHero() {
   return (
     <ViewportHero>
       <motion.div
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-4 h-[80%] w-full"
+        className="container flex gap-4 h-full w-full"
         variants={parentVariants}
         initial="hidden"
         animate="visible"
       >
         <motion.div
-          className="flex-[2] h-full"
+          className="flex-2 h-auto"
           variants={childVariants}
         >
-          <HeroBlogPostCard
-            data={{
+          <BlogpostCard
+            blogpost={{
               image: '/hero-photos/modern-house-1.png',
               title: blogPostTitles[0],
               snippet: 'This is a modern house',
             }}
-            variants={childVariants}
-          />
+          >
+            <BlogpostCard.Frame
+              className="h-full"
+              variants={childVariants}
+            >
+              <motion.div className="grow overflow-hidden rounded-lg">
+                <BlogpostCard.Image className="relative" />
+              </motion.div>
+              <BlogpostCard.Header className="px-0">
+                <BlogpostCard.Title />
+                <BlogpostCard.Snippet />
+              </BlogpostCard.Header>
+
+            </BlogpostCard.Frame>
+          </BlogpostCard>
         </motion.div>
-        <motion.div className="flex-[1] flex flex-col gap-4 h-full">
-          <HeroBlogPostCard
-            data={{
+        <motion.div className="flex-1 flex flex-col gap-4 h-full">
+          <BlogpostCard
+            blogpost={{
               image: '/hero-photos/modern-house-2.png',
               title: blogPostTitles[1],
               snippet: 'This is a modern house',
             }}
-            variants={childVariants}
-          />
-          <HeroBlogPostCard
-            data={{
+          >
+            <BlogpostCard.Frame
+              variants={childVariants}
+              showHeader
+            />
+          </BlogpostCard>
+          <BlogpostCard
+            blogpost={{
               image: '/hero-photos/modern-house-4.webp',
               title: blogPostTitles[2],
               snippet: 'This is a modern house',
             }}
-            variants={childVariants}
-          />
+          >
+            <BlogpostCard.Frame
+              variants={childVariants}
+              showHeader
+            />
+          </BlogpostCard>
         </motion.div>
       </motion.div>
     </ViewportHero>
