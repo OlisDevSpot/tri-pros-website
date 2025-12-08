@@ -23,13 +23,13 @@ export function Logo({
       <Image
         src={LogoDarkRight}
         alt="Logo"
-        className="absolute dark:relative !dark:hidden object-cover"
+        className="absolute dark:relative not-dark:hidden object-cover"
         fill
       />
       <Image
         src={LogoLightRight}
         alt="Logo"
-        className="absolute dark:hidden !dark:relative object-cover"
+        className="absolute dark:hidden not-dark:relative object-cover"
         fill
       />
     </Link>

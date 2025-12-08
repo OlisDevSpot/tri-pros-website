@@ -20,7 +20,7 @@ export function SiteNavbar() {
   const isMobile = useIsMobile()
   const pathname = usePathname()
 
-  const isActive = (href: string) => pathname === href
+  const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
   return (
     <motion.nav
@@ -56,7 +56,7 @@ export function SiteNavbar() {
                   className={cn(
                     'relative hover:text-neutral-300 transition-colors duration-200 font-medium',
                     scrolled ? 'text-foreground' : 'text-foreground',
-                    isActive(item.href) ? 'text-primary-light' : '',
+                    isActive(item.href) ? 'text-primary hover:text-primary' : '',
                   )}
                 >
                   {item.name}
@@ -72,12 +72,12 @@ export function SiteNavbar() {
           </div>
 
           {/* CTA Button */}
-          <div className="flex gap-2">
-            <div>
+          <div className="flex gap-2 items-center">
+            <div className="w-12 h-full">
               <ThemeToggle />
             </div>
             <div>
-              <Button size="icon" variant="outline" className="h-10 w-10">
+              <Button size="icon" variant="outline" className="h-12 w-12">
                 <PhoneCallIcon />
               </Button>
             </div>
@@ -86,7 +86,12 @@ export function SiteNavbar() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Button size="lg" variant="cta" asChild>
+                <Button
+                  className="h-12"
+                  size="lg"
+                  variant="cta"
+                  asChild
+                >
                   <Link
                     href="/contact"
                   >
@@ -98,7 +103,7 @@ export function SiteNavbar() {
 
             {/* Mobile menu button */}
             <button
-              className="lg:hidden ml-1"
+              className="lg:hidden"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
               type="button"
