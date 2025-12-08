@@ -1,12 +1,12 @@
 export const contactInfo = [
   {
     label: 'Main Office',
-    value: '123 Construction Ave, \nTarzana, CA 91335',
+    value: '3526 E. Olympic Blvd, \nLos Angeles, CA 90023',
     icon: '📍',
   },
   {
     label: 'Phone',
-    value: '(818) 651-1445',
+    value: '(818) 470-7656',
     icon: '📞',
   },
   {

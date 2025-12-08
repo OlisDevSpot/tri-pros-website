@@ -21,8 +21,8 @@ export function BlogpostCard({
     <div className="relative w-full aspect-9/16 rounded-lg overflow-hidden shadow-sm p-4 hover:shadow-lg cursor-pointer transition-all duration-300">
       <div className="flex flex-col gap-2 justify-end h-full peer z-10 relative">
         <h3>{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
-        <p className="text-sm text-muted-foreground">{formatDate(date)}</p>
+        <p className="text-sm text-foreground">{description}</p>
+        <p className="text-sm text-foreground">{formatDate(date)}</p>
       </div>
       <motion.div className="absolute inset-0 h-full w-full hover:scale-105 transition-all duration-300 peer-hover:scale-105">
         <Image
@@ -34,7 +34,7 @@ export function BlogpostCard({
       </motion.div>
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+      <div className="absolute inset-0 bg-background/50 pointer-events-none" />
     </div>
   )
 }

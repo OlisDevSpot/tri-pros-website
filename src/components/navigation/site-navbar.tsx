@@ -37,10 +37,7 @@ export function SiteNavbar() {
       <div className="px-4 sm:px-14 w-full">
         <div className="flex justify-between items-center h-(--navbar-height) w-full">
           {/* Logo */}
-          <motion.div
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.98 }}
-          >
+          <motion.div className="w-[200px] h-full">
             <Logo onClick={() => setIsOpen(false)} />
           </motion.div>
 
