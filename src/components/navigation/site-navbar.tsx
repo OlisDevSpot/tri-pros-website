@@ -1,5 +1,6 @@
 'use client'
 
+import { PhoneCallIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -74,6 +75,11 @@ export function SiteNavbar() {
           <div className="flex gap-2">
             <div>
               <ThemeToggle />
+            </div>
+            <div>
+              <Button size="icon" variant="outline" className="h-10 w-10">
+                <PhoneCallIcon />
+              </Button>
             </div>
             <div className="hidden md:block">
               <motion.div

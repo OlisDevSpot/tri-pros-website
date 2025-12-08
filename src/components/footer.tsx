@@ -103,7 +103,7 @@ export default function Footer() {
               >
                 <span className="text-2xl">{info.icon}</span>
                 <div>
-                  <p className="font-semibold text-foreground text-sm whitespace-pre-line">
+                  <p className="font-semibold text-foreground text-sm whitespace-break-spaces">
                     {info.label}
                   </p>
                   <p className="text-foreground text-sm">{info.value}</p>
