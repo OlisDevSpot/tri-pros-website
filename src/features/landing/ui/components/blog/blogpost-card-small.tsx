@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react'
 import Image from 'next/image'
+import { formatDate } from '@/lib/formatters'
 
 interface BlogPostCardProps {
   title: string
@@ -16,17 +17,12 @@ export function BlogpostCard({
   date,
   image,
 }: BlogPostCardProps) {
-  const formattedDate = new Date(date).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
   return (
     <div className="relative w-full aspect-9/16 rounded-lg overflow-hidden shadow-sm p-4 hover:shadow-lg cursor-pointer transition-all duration-300">
       <div className="flex flex-col gap-2 justify-end h-full peer z-10 relative">
-        <h3 className="text-2xl font-semibold">{title}</h3>
+        <h3>{title}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>
-        <p className="text-sm text-muted-foreground">{formattedDate}</p>
+        <p className="text-sm text-muted-foreground">{formatDate(date)}</p>
       </div>
       <motion.div className="absolute inset-0 h-full w-full hover:scale-105 transition-all duration-300 peer-hover:scale-105">
         <Image

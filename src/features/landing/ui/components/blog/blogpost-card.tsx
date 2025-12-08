@@ -2,12 +2,14 @@ import type { HTMLMotionProps, Variants } from 'motion/react'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import React, { createContext } from 'react'
+import { formatDate } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 
 interface Blogpost {
   image: string
   title: string
   snippet: string
+  date: Date
 }
 
 interface BlogpostCardContextProps {
@@ -26,20 +28,20 @@ export function useBlogpostCardContext() {
 
 interface BlogpostCardProviderProps {
   children: React.ReactNode
-  blogpost: Blogpost
+  blogpost: Omit<Blogpost, 'date'> & { date?: Date }
 }
 
 export function BlogpostCardProvider({ children, blogpost }: BlogpostCardProviderProps) {
   return (
     // eslint-disable-next-line react/no-unstable-context-value
-    <BlogpostCardContext value={{ blogpost }}>
+    <BlogpostCardContext value={{ blogpost: { ...blogpost, date: blogpost.date || new Date() } }}>
       {children}
     </BlogpostCardContext>
   )
 }
 
 interface BlogpostCardProps {
-  blogpost: Blogpost
+  blogpost: Omit<Blogpost, 'date'> & { date?: Date }
   children: React.ReactNode
 }
 
@@ -56,16 +58,17 @@ export function BlogpostCard({
 
 interface BlogpostCardFrameProps extends HTMLMotionProps<'div'> {
   variants: Variants
+  containerSize?: 'sm' | 'md' | 'lg'
   children?: React.ReactNode
   className?: string
   showHeader?: boolean
 }
 
-export function BlogpostCardFrame({ variants, children, className, showHeader = false, ...props }: BlogpostCardFrameProps) {
+export function BlogpostCardFrame({ variants, containerSize = 'md', children, className, showHeader = false, ...props }: BlogpostCardFrameProps) {
   return (
     <motion.div
       className={cn(
-        'relative flex flex-col min-h-[300px] rounded-lg overflow-hidden cursor-pointer',
+        'relative flex flex-col min-h-[200px] rounded-lg overflow-hidden cursor-pointer',
         className,
       )}
       variants={variants}
@@ -75,14 +78,15 @@ export function BlogpostCardFrame({ variants, children, className, showHeader = 
     >
       {showHeader && (
         <>
-          <BlogpostCard.Header className="absolute z-10 pointer-events-none peer">
-            <BlogpostCard.Title />
+          <BlogpostCard.Header className={cn('absolute z-10 pointer-events-none peer')}>
+            <BlogpostCard.Title className={cn(
+              containerSize === 'lg' ? 'text-2xl' : containerSize === 'md' ? 'text-xl' : 'text-lg',
+            )}
+            />
             <BlogpostCard.Snippet />
+            <BlogpostCard.Date />
           </BlogpostCard.Header>
           <BlogpostCard.Image />
-
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-background/50 pointer-events-none z-5" />
         </>
       )}
 
@@ -109,10 +113,12 @@ export function BlogpostCardHeader({ children, className, ...props }: BlogpostCa
   )
 }
 
-export function BlogpostCardTitle() {
+interface BlogpostCardTitleProps extends HTMLMotionProps<'h3'> {}
+
+export function BlogpostCardTitle({ className }: BlogpostCardTitleProps) {
   const { blogpost } = useBlogpostCardContext()
   return (
-    <motion.h3 className="text-foreground text-2xl font-bold">
+    <motion.h3 className={cn('text-foreground text-2xl font-bold', className)}>
       {blogpost.title}
     </motion.h3>
   )
@@ -121,7 +127,20 @@ export function BlogpostCardTitle() {
 export function BlogpostCardSnippet() {
   const { blogpost } = useBlogpostCardContext()
   return (
-    <motion.p className="text-foreground text-base">{blogpost.snippet}</motion.p>
+    <motion.p className="text-foreground/70 text-base">{blogpost.snippet}</motion.p>
+  )
+}
+
+interface BlogpostCardDateProps {
+  overrideDate?: Date
+}
+
+export function BlogpostCardDate({ overrideDate }: BlogpostCardDateProps) {
+  const { blogpost } = useBlogpostCardContext()
+  const date = overrideDate ? formatDate(overrideDate) : formatDate(blogpost.date)
+
+  return (
+    <p className="text-sm text-muted-foreground">{date}</p>
   )
 }
 
@@ -140,6 +159,7 @@ export function BlogpostCardImage({ className }: BlogpostCardImageProps) {
         fill
         className="object-cover"
       />
+      <div className="absolute inset-0 bg-background/80 z-5 hover:bg-background/50 transition duration-400" />
     </motion.div>
   )
 }
@@ -149,4 +169,5 @@ BlogpostCard.Frame = BlogpostCardFrame
 BlogpostCard.Header = BlogpostCardHeader
 BlogpostCard.Title = BlogpostCardTitle
 BlogpostCard.Snippet = BlogpostCardSnippet
+BlogpostCard.Date = BlogpostCardDate
 BlogpostCard.Image = BlogpostCardImage

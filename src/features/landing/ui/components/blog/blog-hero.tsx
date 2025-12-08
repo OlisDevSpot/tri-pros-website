@@ -74,11 +74,24 @@ export default function BlogHero() {
             <BlogpostCard.Frame
               variants={childVariants}
               showHeader
+              containerSize="sm"
             />
           </BlogpostCard>
           <BlogpostCard
             blogpost={{
               image: '/hero-photos/modern-house-4.webp',
+              title: blogPostTitles[2],
+              snippet: 'This is a modern house',
+            }}
+          >
+            <BlogpostCard.Frame
+              variants={childVariants}
+              showHeader
+            />
+          </BlogpostCard>
+          <BlogpostCard
+            blogpost={{
+              image: '/hero-photos/modern-house-5.jpg',
               title: blogPostTitles[2],
               snippet: 'This is a modern house',
             }}
