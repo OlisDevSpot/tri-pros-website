@@ -41,7 +41,7 @@ const offices = [
 export default function ContactInfo() {
   return (
     <section className="bg-foreground py-16 lg:py-24 text-background">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container max-w-2xl!">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

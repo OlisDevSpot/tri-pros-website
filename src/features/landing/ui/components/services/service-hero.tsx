@@ -27,7 +27,7 @@ export default function ServicesHero() {
       </motion.div>
 
       <TopSpacer>
-        <div className="relative container flex flex-col lg:flex-row gap-12 lg:gap-24 grid-rows-3 z-10 pb-20">
+        <div className="h-full relative container flex flex-col lg:flex-row gap-12 lg:gap-24 z-10">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
@@ -39,7 +39,7 @@ export default function ServicesHero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <h1 className=" text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
+              <h1 className="font-bold leading-tight">
                 Complete Construction
                 {' '}
                 <span className="text-[color-mix(in_oklch,var(--primary)_80%,var(--foreground)_10%)]">Solutions</span>

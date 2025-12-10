@@ -18,7 +18,7 @@ export function ViewportHero({
   return (
     <div
       className={cn(
-        'min-h-screen w-full relative flex items-center justify-center overflow-hidden p-6',
+        'min-h-screen h-auto lg:h-screen w-full relative flex items-center justify-center overflow-hidden p-6',
         isMobile && 'p-0',
         className,
       )}

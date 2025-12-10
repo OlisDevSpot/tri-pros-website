@@ -2,7 +2,7 @@ import z from 'zod'
 
 export const scheduleConsultationFormSchema = z.object({
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   phone: z.string(),
   projectType: z.string(),
   timeline: z.string(),
