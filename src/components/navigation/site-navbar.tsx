@@ -83,7 +83,7 @@ export function NavigationItem({
       <Link
         href={item.href}
         className={cn(
-          'relative inline-block px-8 py-4 hover:text-neutral-300 transition-colors duration-200 font-medium',
+          'relative inline-block px-8 py-4 hover:text-foreground/70 transition-colors duration-200 font-medium',
           scrolled ? 'text-foreground' : 'text-foreground',
           isActive ? 'text-primary hover:text-primary' : '',
         )}
