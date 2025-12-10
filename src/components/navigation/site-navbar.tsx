@@ -1,5 +1,6 @@
 'use client'
 
+import type { Variants } from 'motion/react'
 import { ChevronUpIcon, PhoneCallIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import Link from 'next/link'
@@ -14,6 +15,19 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useIsScrolled } from '@/hooks/useIsScrolled'
 import { cn } from '@/lib/utils'
 import { MobileNav } from './mobile-nav'
+
+const navContainerVariants: Variants = {
+  initial: {
+    y: -100,
+  },
+  animate: {
+    y: 0,
+    transition: {
+      staggerChildren: 0.4,
+      duration: 0.5,
+    },
+  },
+}
 
 interface Props {
   item: {
@@ -67,7 +81,7 @@ export function NavigationItem({
 }
 
 export function SiteNavbar() {
-  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(3)
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const scrolled = useIsScrolled(10)
   const isMobile = useIsMobile()
@@ -96,8 +110,6 @@ export function SiteNavbar() {
         )}
       </AnimatePresence>
       <motion.nav
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
         className={cn(
           'fixed left-0 right-0 z-50 transition-all duration-300',
           scrolled ? 'bg-background/95 shadow-lg' : 'bg-transparent',
@@ -107,8 +119,15 @@ export function SiteNavbar() {
           height: scrolled ? 'auto' : 'auto',
         }}
       >
-        <div className="px-4 sm:px-14 w-full">
-          <div className="flex justify-between items-center h-(--navbar-height) w-full">
+        <div
+          className="px-4 sm:px-14 w-full"
+        >
+          <motion.div
+            variants={navContainerVariants}
+            initial="initial"
+            animate="animate"
+            className="flex justify-between items-center h-(--navbar-height) w-full"
+          >
             {/* Logo */}
             <motion.div className="w-[200px] h-full">
               <Logo onClick={() => setIsMobileOpen(false)} />
@@ -199,23 +218,20 @@ export function SiteNavbar() {
                 </Button>
               </div>
               <div className="hidden md:block">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <MotionButton
+                  className="h-12"
+                  size="lg"
+                  variant="cta"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  asChild
                 >
-                  <Button
-                    className="h-12"
-                    size="lg"
-                    variant="cta"
-                    asChild
+                  <Link
+                    href="/contact"
                   >
-                    <Link
-                      href="/contact"
-                    >
-                      Schedule Consultation
-                    </Link>
-                  </Button>
-                </motion.div>
+                    Schedule Consultation
+                  </Link>
+                </MotionButton>
               </div>
 
               {/* Mobile menu button */}
@@ -255,7 +271,7 @@ export function SiteNavbar() {
                 </motion.div>
               </Button>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Mobile Navigation */}

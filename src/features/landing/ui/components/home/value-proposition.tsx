@@ -18,8 +18,7 @@ export default function ValuePropositions() {
       ref={ref}
       style={{
         background: `
-          radial-gradient(circle at top left, transparent, color-mix(in oklab, var(--background) 100%, transparent) , color-mix(in oklab, var(--primary) 20%, transparent)),
-          radial-gradient(circle at bottom right, transparent, color-mix(in oklab, var(--background) 100%, transparent), color-mix(in oklab, var(--primary) 20%, transparent))`,
+          radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 80%, transparent))`,
       }}
       className="py-20 lg:py-32"
     >
