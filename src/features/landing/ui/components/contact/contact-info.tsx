@@ -1,18 +1,20 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { companyInfo } from '@/features/landing/data/company'
+import { formatAsPhoneNumber } from '@/lib/formatters'
 
 const contactMethods = [
   {
     type: 'Main Office',
-    value: '(555) 123-4567',
+    value: formatAsPhoneNumber(companyInfo.contactInfo.find(info => info.accessor === 'phone')!.value),
     description: 'Mon-Fri: 8:00 AM - 6:00 PM',
     icon: '📞',
     href: 'tel:+15551234567',
   },
   {
     type: 'Emergency Line',
-    value: '(555) 999-0000',
+    value: formatAsPhoneNumber(companyInfo.teamInfo.owners.find(owner => owner.name === 'Oliver Porat')!.phone),
     description: '24/7 Emergency Support',
     icon: '🚨',
     href: 'tel:+15559990000',
@@ -24,29 +26,15 @@ const contactMethods = [
     icon: '📧',
     href: 'mailto:info@triprosremodeling.com',
   },
-  {
-    type: 'Project Inquiries',
-    value: 'projects@triprosremodeling.com',
-    description: 'New project consultations',
-    icon: '🏗️',
-    href: 'mailto:projects@triprosremodeling.com',
-  },
 ]
 
 const offices = [
   {
     name: 'Main Office',
-    address: '123 Construction Avenue',
-    city: 'Builder City, BC 12345',
-    phone: '(555) 123-4567',
+    address: companyInfo.contactInfo.find(info => info.accessor === 'mainOffice')!.value.split('\n')[0],
+    city: companyInfo.contactInfo.find(info => info.accessor === 'mainOffice')!.value.split('\n')[1],
+    phone: formatAsPhoneNumber(companyInfo.contactInfo.find(info => info.accessor === 'phone')!.value),
     hours: 'Mon-Fri: 8:00 AM - 6:00 PM\nSat: 9:00 AM - 3:00 PM\nSun: Closed',
-  },
-  {
-    name: 'Design Center',
-    address: '456 Design Boulevard',
-    city: 'Creative District, BC 12346',
-    phone: '(555) 234-5678',
-    hours: 'Mon-Sat: 10:00 AM - 7:00 PM\nSun: 12:00 PM - 5:00 PM',
   },
 ]
 
@@ -223,13 +211,13 @@ export default function ContactInfo() {
           >
             <div className="flex items-center justify-center space-x-2 mb-2">
               <span className="text-2xl">🚨</span>
-              <span className="font-bold text-red-200">Emergency Support</span>
+              <span className="font-bold text-destructive">Emergency Support</span>
             </div>
-            <p className="text-sm text-primary-foreground/90">
+            <p className="text-sm text-background">
               For construction emergencies, call our 24/7 hotline:
               <a
                 href="tel:+15559990000"
-                className="font-bold text-red-200 ml-1"
+                className="font-bold text-destructive ml-1"
               >
                 (555) 999-0000
               </a>

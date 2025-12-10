@@ -33,7 +33,7 @@ export function FounderStory({
             src={founderImgSrc}
             className="absolute top-0 left-0 right-0 sm:inset-0 grayscale-50 sm:h-full object-cover z-[-1] w-full"
           />
-          <h3 className="text-2xl lg:text-3xl font-bold text-foreground whitespace-pre-line text-center">
+          <h3 className="text-2xl lg:text-3xl font-bold text-white whitespace-pre-line text-center">
             {founderName}
           </h3>
         </div>

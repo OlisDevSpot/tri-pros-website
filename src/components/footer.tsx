@@ -18,10 +18,12 @@ export default function Footer() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="space-y-6"
+              className="space-y-6 "
             >
               {/* Logo */}
-              <Logo />
+              <motion.div className="w-[200px]">
+                <Logo />
+              </motion.div>
 
               {/* Company Description */}
               <p className="text-foreground leading-relaxed max-w-md">

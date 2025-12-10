@@ -31,30 +31,30 @@ export default function CompanyStory() {
 
         <FounderStory
           founderName="Sean Phil"
-          founderImgSrc="/company/sean-headshot.jpeg"
+          founderImgSrc="/company/employees/sean-headshot.jpeg"
           isInView={isInView}
         >
-          <div className="space-y-6 text-base/relaxed">
-            <div className="space-y-4">
-              <p className="text-primary ">
-                I learned responsibility long before construction entered my life. My time in the Israeli Special Forces taught me what it means to stay calm under pressure and to rely on the people beside you. Later, working with U.S. Marines and American veterans showed me a different kind of strength — the quiet kind that comes from honesty, grit, and following through.
-              </p>
-            </div>
-            <div>
-              <p>
-                When my military career ended, I focused on building a stable life for my family. There’s nothing glamorous about raising kids and keeping a home running, but it teaches you a lot about patience, integrity, and doing what needs to be done. That’s what pushed me toward construction. It felt grounded, real, and aligned with the values I wanted to live by.
-
-                As I learned the trade, I saw how often families were let down by unfinished work, broken promises, and unnecessary stress. After helping my own relatives fix a nightmare remodel, it became clear to me that people deserved better. If they trusted me with their home, I owed them clear communication, dependable work, and the kind of follow-through I was raised on.
-
-                That’s the foundation behind Tri Pros Remodeling. Different uniform, different mission — but the same commitment to showing up, doing the job right, and taking care of people every step of the way.
-              </p>
-            </div>
+          <div className="space-y-4">
+            <p className="text-primary">
+              My name is Sean, and I learned responsibility long before construction entered my life. My time in the Israeli Special Forces taught me what it means to stay calm under pressure and to rely on the people beside you. Later, working with U.S. Marines and American veterans showed me a different kind of strength — the quiet kind that comes from honesty, grit, and following through.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <p>
+              When my military career ended, I focused on building a stable life for my family. There’s nothing glamorous about raising kids and keeping a home running, but it teaches you a lot about patience, integrity, and doing what needs to be done. That’s what pushed me toward construction. It felt grounded, real, and aligned with the values I wanted to live by.
+            </p>
+            <p>
+              As I learned the trade, I saw how often families were let down by unfinished work, broken promises, and unnecessary stress. After helping my own relatives fix a nightmare remodel, it became clear to me that people deserved better. If they trusted me with their home, I owed them clear communication, dependable work, and the kind of follow-through I was raised on.
+            </p>
+            <p>
+              That’s the foundation behind Tri Pros Remodeling. Different uniform, different mission — but the same commitment to showing up, doing the job right, and taking care of people every step of the way.
+            </p>
           </div>
         </FounderStory>
         <FounderStory
           founderName='Ophir "Oliver" Porat'
           flipOrder
-          founderImgSrc="/company/oliver-headshot.jpg"
+          founderImgSrc="/company/employees/oliver-headshot.jpg"
           isInView={isInView}
           Quote={() => (
             <div className="bg-card rounded-lg p-6 border-l-4 border-secondary">
@@ -69,7 +69,7 @@ export default function CompanyStory() {
           )}
         >
           <p>
-            I grew up with construction all around me. My dad was a contractor and a fearless home-DIYer, the kind of person who couldn’t walk past a wall without wondering how to improve it. I spent my childhood watching him turn sketches into structures, problems into plans, and raw materials into something that felt solid and meaningful.
+            My name is Ophir, but most people know me as Oliver. From an early age I grew up with construction all around me. My dad was a contractor and a fearless home-DIYer, the kind of person who couldn’t walk past a wall without wondering how to improve it. I spent my childhood watching him turn sketches into structures, problems into plans, and raw materials into something that felt solid and meaningful.
           </p>
           <p>
             Once I was old enough to pick up real tools, I was hooked. Seeing what could be created with today’s materials and technology pulled me in completely. I realized this wasn’t just a hobby or a family habit—it was a craft worth dedicating myself to.

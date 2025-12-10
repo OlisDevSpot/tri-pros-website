@@ -1,7 +1,7 @@
 'use client'
 
-import LogoDarkRight from '@public/logo-dark-right.svg'
-import LogoLightRight from '@public/logo-light-right.svg'
+import LogoDarkRight from '@public/company/logo/logo-dark-right.svg'
+import LogoLightRight from '@public/company/logo/logo-light-right.svg'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -15,7 +15,7 @@ export function Logo({
   return (
     <Link
       href="/"
-      className="relative w-full h-full flex"
+      className="relative w-full min-h-[50px] h-full flex -ml-3"
       onClick={() => {
         onClick?.()
       }}

@@ -9,6 +9,7 @@ import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { navigationItems } from '@/data/nav-items'
+import { companyInfo } from '@/features/landing/data/company'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useIsScrolled } from '@/hooks/useIsScrolled'
 import { cn } from '@/lib/utils'
@@ -77,8 +78,15 @@ export function SiteNavbar() {
               <ThemeToggle />
             </div>
             <div>
-              <Button size="icon" variant="outline" className="h-12 w-12">
-                <PhoneCallIcon />
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground"
+                asChild
+              >
+                <a href={`tel:+1${companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value}`}>
+                  <PhoneCallIcon />
+                </a>
               </Button>
             </div>
             <div className="hidden md:block">
@@ -102,8 +110,10 @@ export function SiteNavbar() {
             </div>
 
             {/* Mobile menu button */}
-            <button
-              className="lg:hidden"
+            <Button
+              size="icon"
+              variant="outline"
+              className="lg:hidden h-12 w-12"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
               type="button"
@@ -134,7 +144,7 @@ export function SiteNavbar() {
                   className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
                 />
               </motion.div>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
