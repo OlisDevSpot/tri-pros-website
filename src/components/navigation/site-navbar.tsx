@@ -180,7 +180,7 @@ export function SiteNavbar() {
                     width: widthValue ?? 0,
                     left: offsetValue ?? 0,
                   }}
-                  className="absolute h-0.5 bg-black bottom-0"
+                  className="absolute h-0.5 bg-foreground bottom-0"
                 />
                 {navigationItems.map((item, index) => (
                   <NavigationItem
