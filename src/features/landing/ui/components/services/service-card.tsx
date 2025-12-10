@@ -1,3 +1,4 @@
+import type { services } from '@/features/landing/data/company/services'
 import { motion, useInView } from 'motion/react'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
@@ -5,22 +6,11 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useFeatureStore } from '@/store/useFeatureStore'
 
-interface Service {
-  title: string
-  subtitle: string
-  description: string
-  features: string[]
-  timeline: string
-  priceRange: string
-  href: string
-  icon: string
-}
-
 export default function ServiceCard({
   service,
   index,
 }: {
-  service: Service
+  service: typeof services[number]
   index: number
 }) {
   const { setFeatureInView } = useFeatureStore()
