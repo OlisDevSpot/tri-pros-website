@@ -4,19 +4,12 @@ import millify from 'millify'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { TopSpacer } from '@/components/top-spacer'
 import { Button } from '@/components/ui/button'
 import { ViewportHero } from '@/components/viewport-hero'
 import { companyInfo } from '@/features/landing/data/company'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
-
-export function TopSpacer({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="h-full pt-[calc(var(--navbar-height)+16px)]">
-      {children}
-    </div>
-  )
-}
 
 export default function AboutHero() {
   const isMobile = useIsMobile()
@@ -38,7 +31,7 @@ export default function AboutHero() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <h1 className=" text-4xl sm:text-5xl font-bold leading-tight">
+                <h1 className="text-4xl sm:text-5xl font-bold leading-tight">
                   A Company Built on Values, Ethics, and
                   {' '}
                   <span className="text-secondary">Master Craftsmanship</span>

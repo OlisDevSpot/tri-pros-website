@@ -1,3 +1,6 @@
+'use client'
+
+import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
 interface ViewportHeroProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -10,10 +13,13 @@ export function ViewportHero({
   className,
   ...props
 }: ViewportHeroProps) {
+  const isMobile = useIsMobile()
+
   return (
     <div
       className={cn(
         'min-h-screen w-full relative flex items-center justify-center overflow-hidden p-6',
+        isMobile && 'p-0',
         className,
       )}
       {...props}

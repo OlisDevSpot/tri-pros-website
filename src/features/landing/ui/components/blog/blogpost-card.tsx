@@ -68,7 +68,7 @@ export function BlogpostCardFrame({ variants, containerSize = 'md', children, cl
   return (
     <motion.div
       className={cn(
-        'relative flex flex-col min-h-[200px] rounded-lg overflow-hidden cursor-pointer',
+        'relative flex flex-col min-h-[200px] rounded-lg overflow-hidden cursor-pointer group',
         className,
       )}
       variants={variants}
@@ -118,7 +118,7 @@ interface BlogpostCardTitleProps extends HTMLMotionProps<'h3'> {}
 export function BlogpostCardTitle({ className }: BlogpostCardTitleProps) {
   const { blogpost } = useBlogpostCardContext()
   return (
-    <motion.h3 className={cn('text-foreground text-2xl font-bold', className)}>
+    <motion.h3 className={cn('text-foreground text-2xl font-bold group-hover:text-foreground/70 transition', className)}>
       {blogpost.title}
     </motion.h3>
   )
@@ -146,20 +146,21 @@ export function BlogpostCardDate({ overrideDate }: BlogpostCardDateProps) {
 
 interface BlogpostCardImageProps {
   className?: string
+  overlayClassName?: string
 }
 
-export function BlogpostCardImage({ className }: BlogpostCardImageProps) {
+export function BlogpostCardImage({ className, overlayClassName }: BlogpostCardImageProps) {
   const { blogpost } = useBlogpostCardContext()
 
   return (
-    <motion.div className={cn('absolute insert-0 h-full w-full transition-all duration-300 hover:scale-105', className)}>
+    <motion.div className={cn('absolute insert-0 h-full w-full transition-all duration-300 group-hover:scale-105', className)}>
       <Image
         src={blogpost.image}
         alt={blogpost.title}
         fill
         className="object-cover"
       />
-      <div className="absolute inset-0 bg-background/80 z-5 hover:bg-background/50 transition duration-400" />
+      <div className={cn('absolute inset-0 bg-background/80 z-5 hover:bg-background/50 transition duration-400', overlayClassName)} />
     </motion.div>
   )
 }
