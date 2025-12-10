@@ -1,11 +1,11 @@
 'use client'
 
-import type { Variants } from 'motion/react'
+import type { MotionValue, Variants } from 'motion/react'
 import { ChevronUpIcon, PhoneCallIcon } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button, MotionButton } from '@/components/ui/button'
@@ -40,6 +40,8 @@ interface Props {
   onTabClick?: () => void
   onMouseEnter: () => void
   selectedItemIndex: number | null
+  widthValue?: MotionValue<number>
+  offsetValue?: MotionValue<number>
 }
 
 export function NavigationItem({
@@ -49,16 +51,31 @@ export function NavigationItem({
   onTabClick,
   onMouseEnter,
   selectedItemIndex,
+  widthValue,
+  offsetValue,
 }: Props) {
   const scrolled = useIsScrolled(10)
+  const buttonRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (offsetValue && widthValue && buttonRef.current && selectedItemIndex === index) {
+      const clientRect = buttonRef.current.getBoundingClientRect()
+      const containerLeft = document.getElementById('nav-items-container')?.getBoundingClientRect()!.left as number
+      // setWidth(clientRect.width)
+      // setOffset(clientRect.x - containerLeft)
+
+      animate(widthValue, clientRect.width)
+      animate(offsetValue, clientRect.x - containerLeft)
+    }
+  }, [selectedItemIndex, index, offsetValue, widthValue])
 
   return (
     <motion.div
+      ref={buttonRef}
       key={item.name}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="px-8 py-4"
       onMouseEnter={onMouseEnter}
       onClick={() => {
         onTabClick?.()
@@ -67,7 +84,7 @@ export function NavigationItem({
       <Link
         href={item.href}
         className={cn(
-          'relative hover:text-neutral-300 transition-colors duration-200 font-medium',
+          'relative inline-block px-8 py-4 hover:text-neutral-300 transition-colors duration-200 font-medium',
           scrolled ? 'text-foreground' : 'text-foreground',
           isActive ? 'text-primary hover:text-primary' : '',
         )}
@@ -92,10 +109,19 @@ export function SiteNavbar() {
   const isMobile = useIsMobile()
   const pathname = usePathname()
 
+  const widthValue = useMotionValue(0)
+  const offsetValue = useMotionValue(0)
+
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
   function findSelectedItem(index: number) {
     return navigationItems.find((item, i) => i === index)
+  }
+
+  function closeNavigation() {
+    setSelectedItemIndex(null)
+    setIsMobileOpen(false)
+    animate(widthValue, 0)
   }
 
   return (
@@ -108,8 +134,7 @@ export function SiteNavbar() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-49 bg-background/50"
             onClick={() => {
-              setSelectedItemIndex(null)
-              setIsMobileOpen(false)
+              closeNavigation()
             }}
           />
         )}
@@ -140,27 +165,36 @@ export function SiteNavbar() {
 
             {/* Desktop Navigation */}
             <div
-              onMouseLeave={() => setSelectedItemIndex(null)}
+              onMouseLeave={() => {
+                closeNavigation()
+              }}
               className="relative hidden lg:block"
             >
               {/* Navigation Items */}
-              <div className="flex items-center">
+              <div
+                id="nav-items-container"
+                className="relative flex items-center"
+              >
+                <motion.div
+                  style={{
+                    width: widthValue ?? 0,
+                    left: offsetValue ?? 0,
+                  }}
+                  className="absolute h-0.5 bg-black bottom-0"
+                />
                 {navigationItems.map((item, index) => (
                   <NavigationItem
                     key={item.name}
                     item={item}
+                    widthValue={widthValue}
+                    offsetValue={offsetValue}
                     index={index}
                     isActive={isActive(item.href)}
                     onTabClick={() => {
                       setSelectedItemIndex(null)
                     }}
                     onMouseEnter={() => {
-                      if (item.subItems && item.subItems.length > 0) {
-                        setSelectedItemIndex(index)
-                      }
-                      else {
-                        setSelectedItemIndex(null)
-                      }
+                      setSelectedItemIndex(index)
                     }}
                     selectedItemIndex={selectedItemIndex}
                   />
@@ -168,7 +202,7 @@ export function SiteNavbar() {
               </div>
               {/* Additional Content */}
               <AnimatePresence>
-                {selectedItemIndex !== null && (
+                {selectedItemIndex && navigationItems[selectedItemIndex]?.subItems && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -185,7 +219,7 @@ export function SiteNavbar() {
                     {/* Content */}
                     <div
                       onClick={() => {
-                        setSelectedItemIndex(null)
+                        closeNavigation()
                       }}
                       className="flex flex-col"
                     >

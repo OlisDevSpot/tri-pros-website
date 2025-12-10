@@ -3,8 +3,11 @@
 import { motion, useInView } from 'motion/react'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRef } from 'react'
 import DecorativeLine from '@/components/decorative-line'
+import { MotionButton } from '@/components/ui/button'
+import { companyInfo } from '@/features/landing/data/company'
 import { teamMembers } from '@/features/landing/data/company/team-members'
 
 export default function TeamSection() {
@@ -140,12 +143,12 @@ export default function TeamSection() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-16 bg-linear-to-br from-primary to-[color-mix(in_oklch,var(--primary)_30%,black)] rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="mt-16 bg-linear-to-br from-primary to-[color-mix(in_oklch,var(--primary)_30%,var(--background))] rounded-2xl p-8 lg:p-12 text-center text-foreground"
         >
-          <h3 className=" text-2xl lg:text-3xl font-bold mb-8">
+          <h3 className="text-2xl lg:text-3xl font-bold mb-8">
             Our Team by the Numbers
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="flex flex-col lg:flex-row w-full gap-8 [&>div]:flex-1">
             <div>
               <p className="text-3xl lg:text-4xl font-bold">
                 25+
@@ -154,15 +157,10 @@ export default function TeamSection() {
             </div>
             <div>
               <p className="text-3xl lg:text-4xl font-bold">
-                150+
+                {companyInfo.combinedYearsExperience}
+                +
               </p>
               <div className="text-sm">Years Combined Experience</div>
-            </div>
-            <div>
-              <p className="text-3xl lg:text-4xl font-bold">
-                15+
-              </p>
-              <div className="text-sm">Licensed Professionals</div>
             </div>
             <div>
               <p className="text-3xl lg:text-4xl font-bold">
@@ -187,20 +185,15 @@ export default function TeamSection() {
             We&apos;re always looking for talented professionals who share our
             passion for excellence and commitment to quality craftsmanship.
           </p>
-          <motion.a
-            href="/careers"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="inline-flex items-center space-x-2 bg-secondary text-secondary-foreground px-8 py-4 rounded-lg font-semibold text-lg hover:bg-secondary/90 transition-colors duration-200"
+          <MotionButton
+            variant="cta"
+            size="xl"
+            asChild
           >
-            <span>View Open Positions</span>
-            <motion.span
-              animate={{ x: [0, 5, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              →
-            </motion.span>
-          </motion.a>
+            <Link href="/join/careers">
+              View Open Positions
+            </Link>
+          </MotionButton>
         </motion.div>
       </div>
     </section>
