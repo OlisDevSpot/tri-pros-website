@@ -37,6 +37,7 @@ interface Props {
   }
   index: number
   isActive: boolean
+  onTabClick?: () => void
   onMouseEnter: () => void
   selectedItemIndex: number | null
 }
@@ -45,6 +46,7 @@ export function NavigationItem({
   item,
   index,
   isActive,
+  onTabClick,
   onMouseEnter,
   selectedItemIndex,
 }: Props) {
@@ -58,6 +60,9 @@ export function NavigationItem({
       transition={{ delay: index * 0.1 }}
       className="px-8 py-4"
       onMouseEnter={onMouseEnter}
+      onClick={() => {
+        onTabClick?.()
+      }}
     >
       <Link
         href={item.href}
@@ -146,6 +151,9 @@ export function SiteNavbar() {
                     item={item}
                     index={index}
                     isActive={isActive(item.href)}
+                    onTabClick={() => {
+                      setSelectedItemIndex(null)
+                    }}
                     onMouseEnter={() => {
                       if (item.subItems && item.subItems.length > 0) {
                         setSelectedItemIndex(index)
@@ -175,7 +183,12 @@ export function SiteNavbar() {
                     <div className="absolute -top-6 h-6 left-0 w-full" />
 
                     {/* Content */}
-                    <div className="flex flex-col">
+                    <div
+                      onClick={() => {
+                        setSelectedItemIndex(null)
+                      }}
+                      className="flex flex-col"
+                    >
                       {findSelectedItem(selectedItemIndex)?.subItems?.map((subItem, index) => (
                         <MotionButton
                           key={subItem.name}

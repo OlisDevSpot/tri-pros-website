@@ -181,7 +181,7 @@
   }
 
   h1 {
-    font-size: 2rem;
+    @apply text-5xl;
     font-weight: 500;
   }
 

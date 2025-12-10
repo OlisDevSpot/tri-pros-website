@@ -15,7 +15,7 @@ export function Logo({
   return (
     <Link
       href="/"
-      className="relative w-full min-h-[50px] h-full flex -ml-3"
+      className="relative min-w-fit w-full min-h-[50px] h-full flex -ml-3"
       onClick={() => {
         onClick?.()
       }}

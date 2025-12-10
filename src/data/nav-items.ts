@@ -41,10 +41,6 @@ export const navigationItems = [
         name: 'Design-Build Services',
         href: '/services/design-build',
       },
-      {
-        name: 'Project Management',
-        href: '/services/project-management',
-      },
     ],
   },
   {

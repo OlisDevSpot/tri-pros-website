@@ -66,7 +66,7 @@ export default function HomeHero() {
                   variants={highlightVariants}
                   initial="initial"
                   animate="highlight"
-                  className="bg-linear-to-r from-primary to-secondary bg-clip-text text-transparent font-extrabold"
+                  className="bg-linear-to-r from-primary to-[color-mix(in_oklch,var(--primary)_70%,var(--foreground))] bg-clip-text text-transparent font-extrabold"
                 >
                   Masterpieces
                 </motion.span>

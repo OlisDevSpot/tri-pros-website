@@ -1,5 +1,6 @@
 export const services = [
   {
+    slug: 'custom-homes',
     title: 'Custom Home Construction',
     subtitle: 'Build Your Dream Home from the Ground Up',
     description:
@@ -19,6 +20,7 @@ export const services = [
     icon: '🏠',
   },
   {
+    slug: 'renovations',
     title: 'Luxury Renovations',
     subtitle: 'Transform Your Space with Premium Upgrades',
     description:
@@ -38,6 +40,7 @@ export const services = [
     icon: '🔨',
   },
   {
+    slug: 'commercial',
     title: 'Commercial Construction',
     subtitle: 'Professional Buildings for Growing Businesses',
     description:
@@ -57,6 +60,7 @@ export const services = [
     icon: '🏢',
   },
   {
+    slug: 'design-build',
     title: 'Design-Build Services',
     subtitle: 'Streamlined Process from Concept to Completion',
     description:
@@ -75,4 +79,4 @@ export const services = [
     href: '/services/design-build',
     icon: '📐',
   },
-]
+] as const
