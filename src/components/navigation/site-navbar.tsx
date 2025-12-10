@@ -40,8 +40,8 @@ interface Props {
   onTabClick?: () => void
   onMouseEnter: () => void
   selectedItemIndex: number | null
-  widthValue?: MotionValue<number>
-  offsetValue?: MotionValue<number>
+  width?: MotionValue<number>
+  left?: MotionValue<number>
 }
 
 export function NavigationItem({
@@ -51,23 +51,22 @@ export function NavigationItem({
   onTabClick,
   onMouseEnter,
   selectedItemIndex,
-  widthValue,
-  offsetValue,
+  width,
+  left,
 }: Props) {
   const scrolled = useIsScrolled(10)
   const buttonRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (offsetValue && widthValue && buttonRef.current && selectedItemIndex === index) {
-      const clientRect = buttonRef.current.getBoundingClientRect()
-      const containerLeft = document.getElementById('nav-items-container')?.getBoundingClientRect()!.left as number
-      // setWidth(clientRect.width)
-      // setOffset(clientRect.x - containerLeft)
+    if (!left || !width || !buttonRef.current || selectedItemIndex !== index)
+      return
 
-      animate(widthValue, clientRect.width)
-      animate(offsetValue, clientRect.x - containerLeft)
-    }
-  }, [selectedItemIndex, index, offsetValue, widthValue])
+    const clientRect = buttonRef.current.getBoundingClientRect()
+    const containerLeft = document.getElementById('nav-items-container')?.getBoundingClientRect()!.left as number
+
+    animate(width, clientRect.width)
+    animate(left, clientRect.x - containerLeft)
+  }, [selectedItemIndex, index, left, width])
 
   return (
     <motion.div
@@ -93,7 +92,10 @@ export function NavigationItem({
           {item.name}
           {item.subItems && item.subItems.length > 0 && (
             <ChevronUpIcon
-              className={cn('size-4 transition-transform -mr-2', selectedItemIndex === index ? 'rotate-180' : '')}
+              className={cn(
+                'size-4 transition-transform -mr-2',
+                selectedItemIndex === index || isActive ? 'rotate-180' : '',
+              )}
             />
           )}
         </div>
@@ -108,20 +110,30 @@ export function SiteNavbar() {
   const scrolled = useIsScrolled(10)
   const isMobile = useIsMobile()
   const pathname = usePathname()
+  const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
 
-  const widthValue = useMotionValue(0)
-  const offsetValue = useMotionValue(0)
+  const width = useMotionValue(0)
+  const left = useMotionValue(0)
+  const subitemsContainerHeight = useMotionValue(150)
+
+  useEffect(() => {
+    if (!subitemsContainerRef.current)
+      return
+
+    const containerRect = subitemsContainerRef.current.getBoundingClientRect()
+    animate(subitemsContainerHeight, containerRect.height, { type: 'tween', duration: 0.2 })
+  }, [selectedItemIndex, subitemsContainerHeight])
 
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
   function findSelectedItem(index: number) {
-    return navigationItems.find((item, i) => i === index)
+    return navigationItems.find((_, i) => i === index)
   }
 
   function closeNavigation() {
     setSelectedItemIndex(null)
     setIsMobileOpen(false)
-    animate(widthValue, 0)
+    animate(width, 0)
   }
 
   return (
@@ -177,8 +189,8 @@ export function SiteNavbar() {
               >
                 <motion.div
                   style={{
-                    width: widthValue ?? 0,
-                    left: offsetValue ?? 0,
+                    width,
+                    left,
                   }}
                   className="absolute h-0.5 bg-foreground bottom-0"
                 />
@@ -186,8 +198,8 @@ export function SiteNavbar() {
                   <NavigationItem
                     key={item.name}
                     item={item}
-                    widthValue={widthValue}
-                    offsetValue={offsetValue}
+                    width={width}
+                    left={left}
                     index={index}
                     isActive={isActive(item.href)}
                     onTabClick={() => {
@@ -209,7 +221,7 @@ export function SiteNavbar() {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.2 }}
                     style={{
-                      height: 'auto',
+                      height: subitemsContainerHeight,
                     }}
                     className="absolute top-[calc(100%+24px)] left-0 right-0 transition-all bg-background/80 backdrop-blur-sm border-foreground/30 shadow-2xl rounded-lg"
                   >
@@ -218,6 +230,7 @@ export function SiteNavbar() {
 
                     {/* Content */}
                     <div
+                      ref={subitemsContainerRef}
                       onClick={() => {
                         closeNavigation()
                       }}
