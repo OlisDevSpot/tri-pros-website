@@ -132,6 +132,7 @@ export default function AboutHero() {
                   width={600}
                   height={700}
                   className="object-cover h-full"
+                  priority
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent" />
               </div>

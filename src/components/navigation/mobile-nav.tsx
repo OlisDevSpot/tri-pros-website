@@ -48,7 +48,7 @@ export function MobileNav({
             >
               <Link
                 href="/contact"
-                className="block bg-primary text-secondary-foreground px-6 py-3 rounded-lg font-semibold text-center"
+                className="block bg-primary px-6 py-3 rounded-lg font-semibold text-center text-primary-foreground"
                 onClick={() => setIsOpen(false)}
               >
                 Schedule Consultation

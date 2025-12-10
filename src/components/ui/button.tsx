@@ -1,8 +1,9 @@
 import type { VariantProps } from 'class-variance-authority'
 import { Slot } from '@radix-ui/react-slot'
 import { cva } from 'class-variance-authority'
-import * as React from 'react'
+import { motion } from 'motion/react'
 
+import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const buttonVariants = cva(
@@ -20,7 +21,7 @@ const buttonVariants = cva(
           'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
         ghost:
           'hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary/50',
-        link: 'text-primary underline-offset-4 hover:underline',
+        link: 'text-foreground underline-offset-4 hover:underline hover:text-primary/80',
         cta: 'bg-primary text-primary-foreground',
       },
       size: {
@@ -60,4 +61,6 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+const MotionButton = motion(Button)
+
+export { Button, buttonVariants, MotionButton }
