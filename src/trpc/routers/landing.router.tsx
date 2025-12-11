@@ -2,6 +2,8 @@ import { TRPCError } from '@trpc/server'
 import { generalInquiryFormSchema } from '@/features/landing/schemas/general-inquiry-form'
 import { scheduleConsultationFormSchema } from '@/features/landing/schemas/schedule-consultation-form'
 import { resendClient } from '@/services/email/resend'
+import { GeneralInquiryEmail } from '@/services/email/templates/general-inquiry-email'
+import { ProjectEmailTemplate } from '@/services/email/templates/project-inquiry-email'
 import { baseProcedure, createTRPCRouter } from '../init'
 
 export const landingRouter = createTRPCRouter({
@@ -12,7 +14,7 @@ export const landingRouter = createTRPCRouter({
         to: 'Tri Pros <info@triprosremodeling.com>',
         from: 'info@triprosremodeling.com',
         subject: 'Consultation scheduled!',
-        html: '<p>Cool stuff bro</p>',
+        react: <ProjectEmailTemplate data={input} />,
       })
 
       if (error) {
@@ -31,7 +33,7 @@ export const landingRouter = createTRPCRouter({
         to: 'Tri Pros <info@triprosremodeling.com>',
         from: 'info@triprosremodeling.com',
         subject: 'General Inquiry',
-        html: '<p>Cool stuff bro</p>',
+        react: <GeneralInquiryEmail data={input} />,
       })
 
       if (error) {

@@ -205,7 +205,7 @@ export default function ScheduleConsultationForm() {
               <FormItem>
                 <FormLabel>Project Description</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="City, State" {...field} />
+                  <Textarea placeholder="My project includes..." {...field} />
                 </FormControl>
               </FormItem>
             )}
