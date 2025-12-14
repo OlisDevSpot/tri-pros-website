@@ -1,9 +1,12 @@
 'use client'
 
 import { motion, useInView } from 'motion/react'
-import Link from 'next/link'
 import { useRef } from 'react'
-import { Button } from '@/components/ui/button'
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+import GeneralInquiryForm from '@/features/landing/ui/components/contact/general-inquiry-form'
+import ScheduleConsultationForm from '@/features/landing/ui/components/contact/schedule-consultation-form'
 
 export default function BottomCTA() {
   const ref = useRef(null)
@@ -21,46 +24,28 @@ export default function BottomCTA() {
         Join 500+ satisfied homeowners who chose excellence.
         <span className="font-semibold text-muted-foreground">
           {' '}
-          Limited project slots available for 2024.
+          Limited project slots available for 2026.
         </span>
       </p>
       <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <motion.div
-          whileHover={{ scale: 1.025 }}
-          whileTap={{ scale: 0.975 }}
-          className="w-full"
-        >
-          <Button
-            asChild
-            variant="default"
-            className="h-16 text-lg px-8 w-full"
-          >
-            <Link href="/contact">
-              <span>Start Your Project</span>
-              <motion.span
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                →
-              </motion.span>
-            </Link>
-          </Button>
-        </motion.div>
-        <motion.div
-          whileHover={{ scale: 1.025 }}
-          whileTap={{ scale: 0.975 }}
-          className="w-full"
-        >
-          <Button
-            asChild
-            variant="outline"
-            className="h-16 text-lg px-8 w-full"
-          >
-            <Link href="/testimonials">
-              <span>Read More Reviews</span>
-            </Link>
-          </Button>
-        </motion.div>
+        <Tabs defaultValue="schedule-consultation" className="gap-0 h-full">
+          <div className="h-20 flex items-start pb-4 justify-start shrink-0">
+            <div className="w-fit flex justify-center">
+              <TabsList>
+                <TabsTrigger value="schedule-consultation">Schedule Consultation</TabsTrigger>
+                <TabsTrigger value="general-inquiry">General Inquiry</TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
+          <div className="w-full grow min-h-0 overflow-clip">
+            <TabsContent value="schedule-consultation">
+              <ScheduleConsultationForm />
+            </TabsContent>
+            <TabsContent value="general-inquiry">
+              <GeneralInquiryForm />
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
     </motion.div>
   )
