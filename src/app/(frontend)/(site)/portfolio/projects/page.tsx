@@ -1,9 +1,7 @@
-import { ViewportHero } from '@/components/viewport-hero'
+import { PortfolioProjectsView } from '@/features/landing/ui/views/portfolio-projects-view'
 
 export default function PortfolioProjectsPage() {
   return (
-    <ViewportHero>
-      <h1>Projects</h1>
-    </ViewportHero>
+    <PortfolioProjectsView />
   )
 }

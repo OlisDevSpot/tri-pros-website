@@ -22,6 +22,10 @@
       ]
     },
     "resolveJsonModule": true,
+    "types": [
+      "react",
+      "google.maps"
+    ],
     "allowJs": true,
     "strict": true,
     "noEmit": true,

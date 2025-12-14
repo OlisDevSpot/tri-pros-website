@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import env from '@/config/client-env'
-import { navigationItems } from '@/data/nav-items'
+import { navigationItems } from '@/constants/nav-items'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages = navigationItems.map(item => item.href)

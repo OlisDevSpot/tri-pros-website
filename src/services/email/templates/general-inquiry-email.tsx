@@ -14,7 +14,7 @@ export function GeneralInquiryEmail({ data }: EmailTemplateProps) {
     <Html>
       <div>
         <h1>
-          General Inquiry form filled!
+          New lead inquiry
         </h1>
         <div>
           <p>
@@ -32,10 +32,17 @@ export function GeneralInquiryEmail({ data }: EmailTemplateProps) {
             {' '}
             {data.phone}
           </p>
+          {data.address && (
+            <p>
+              Address:
+              {' '}
+              {data.address.fullAddress}
+            </p>
+          )}
           <p>
             Description:
             {' '}
-            {data.projectDescription}
+            {data.inquiryDescription}
           </p>
         </div>
       </div>

@@ -4,14 +4,17 @@ import type { GeneralInquiryFormSchema } from '@/features/landing/schemas/genera
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 
+import { APIProvider } from '@vis.gl/react-google-maps'
 import { motion } from 'motion/react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { AddressInput } from '@/components/inputs/address-input'
 import { Button } from '@/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { defaultValues, generalInquiryFormSchema } from '@/features/landing/schemas/general-inquiry-form'
+import { extractPart } from '@/lib/google-maps-helpers'
 import { useTRPC } from '@/trpc/helpers'
 
 export default function GeneralInquiryForm() {
@@ -54,60 +57,99 @@ export default function GeneralInquiryForm() {
       >
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* Personal Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                name="name"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                name="email"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="john.doe@gmail.com" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
-              name="name"
+              name="phone"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full Name *</FormLabel>
+                  <FormLabel>Phone Number *</FormLabel>
                   <FormControl>
-                    <Input placeholder="John Doe" {...field} />
+                    <Input placeholder="818-555-4444" {...field} />
                   </FormControl>
                 </FormItem>
               )}
             />
+
             <FormField
-              name="email"
+              control={form.control}
+              name="address"
+              render={({ field: _field }) => (
+                <FormItem>
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    {/* eslint-disable-next-line node/prefer-global/process */}
+                    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+                      <AddressInput
+                        // value={field.value}
+                        // onChange={(value) => {
+                        //   console.log({ value })
+                        //   field.onChange(value)
+                        // }}
+                        onPlaceChange={(place) => {
+                          const street = place.name ?? ''
+                          const city = extractPart(place, 'city')
+                          const state = extractPart(place, 'administrative_area_level_1', { short: true })
+                          const zip = extractPart(place, 'postal_code')
+
+                          form.setValue('address.street', street)
+                          form.setValue('address.city', city)
+                          form.setValue('address.state', state)
+                          form.setValue('address.zipCode', zip)
+                          form.setValue('address.location', place.geometry?.location?.toJSON())
+                          const fullAddress = `${[street, city, state].filter(Boolean).join(', ')} ${zip}`
+                          form.setValue('address.fullAddress', fullAddress)
+                        }}
+                      />
+                    </APIProvider>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              name="inquiryDescription"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Address *</FormLabel>
+                  <FormLabel>Inquiry Description *</FormLabel>
                   <FormControl>
-                    <Input placeholder="john.doe@gmail.com" {...field} />
+                    <Textarea placeholder="My project includes..." {...field} />
                   </FormControl>
                 </FormItem>
               )}
             />
           </div>
 
-          <FormField
-            name="phone"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number *</FormLabel>
-                <FormControl>
-                  <Input placeholder="818-555-4444" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            name="projectDescription"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Project Description</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="My project includes..." {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <Button>Submit</Button>
+          <Button className="" disabled={generalInquiry.isPending}>Submit</Button>
 
           <p className="text-sm text-muted-foreground text-center">
             By submitting this form, you agree to be contacted by Tri Pros

@@ -1,7 +1,7 @@
 'use client'
 
 import type { MotionValue, Variants } from 'motion/react'
-import { ChevronUpIcon, PhoneCallIcon } from 'lucide-react'
+import { ArrowRightIcon, ChevronUpIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button, MotionButton } from '@/components/ui/button'
-import { navigationItems } from '@/data/nav-items'
+import { navigationItems } from '@/constants/nav-items'
 import { companyInfo } from '@/features/landing/data/company'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useIsScrolled } from '@/hooks/useIsScrolled'
@@ -273,7 +273,7 @@ export function SiteNavbar() {
                   asChild
                 >
                   <a href={`tel:+1${companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value}`}>
-                    <PhoneCallIcon />
+                    <PhoneIcon />
                   </a>
                 </Button>
               </div>
@@ -288,8 +288,10 @@ export function SiteNavbar() {
                 >
                   <Link
                     href="/contact"
+                    className="flex items-center gap-2"
                   >
                     Schedule Consultation
+                    <ArrowRightIcon />
                   </Link>
                 </MotionButton>
               </div>

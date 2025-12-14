@@ -9,6 +9,9 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   NEXT_PUBLIC_BASE_URL: z.string(),
 
+  // Database
+  DATABASE_URL: z.string(),
+
   // Payload
   PAYLOAD_SECRET: z.string(),
   PAYLOAD_DATABASE_URI: z.string(),
@@ -19,6 +22,9 @@ const envSchema = z.object({
 
   // RESEND
   RESEND_API_KEY: z.string(),
+
+  // MONDAY
+  MONDAY_API_TOKEN: z.string(),
 })
 
 export type env = z.infer<typeof envSchema>

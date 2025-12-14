@@ -1,14 +1,37 @@
 'use client'
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@radix-ui/react-tabs'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { companyInfo } from '@/features/landing/data/company'
 import { footerData } from '@/features/landing/data/footer'
+import GeneralInquiryForm from '@/features/landing/ui/components/contact/general-inquiry-form'
+import ScheduleConsultationForm from '@/features/landing/ui/components/contact/schedule-consultation-form'
 import { Logo } from './logo'
 
 export default function Footer() {
   return (
     <footer className="bg-muted text-foreground">
+      <div className="flex-1 grow min-h-0 self-start h-full">
+        <Tabs defaultValue="schedule-consultation" className="gap-0 h-full">
+          <div className="h-20 flex items-start pb-4 justify-start shrink-0">
+            <div className="w-fit flex justify-center">
+              <TabsList>
+                <TabsTrigger value="schedule-consultation">Schedule Consultation</TabsTrigger>
+                <TabsTrigger value="general-inquiry">General Inquiry</TabsTrigger>
+              </TabsList>
+            </div>
+          </div>
+          <div className="w-full grow min-h-0 overflow-auto">
+            <TabsContent value="schedule-consultation">
+              <ScheduleConsultationForm />
+            </TabsContent>
+            <TabsContent value="general-inquiry">
+              <GeneralInquiryForm />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
       {/* Main Footer Content */}
       <div className="container pt-16 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
