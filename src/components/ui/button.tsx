@@ -22,7 +22,7 @@ const buttonVariants = cva(
         ghost:
           'hover:bg-primary hover:text-primary-foreground dark:hover:bg-primary/50',
         link: 'text-foreground underline-offset-4 hover:underline hover:text-primary/80',
-        cta: 'bg-primary text-primary-foreground',
+        cta: 'bg-primary text-primary-foreground hover:bg-primary/90 transition',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

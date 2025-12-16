@@ -29,8 +29,8 @@ export default function BottomCTA() {
       </p>
       <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
         <Tabs defaultValue="schedule-consultation" className="gap-0 h-full">
-          <div className="h-20 flex items-start pb-4 justify-start shrink-0">
-            <div className="w-fit flex justify-center">
+          <div className="h-20 flex items-center justify-center shrink-0">
+            <div className="w-fit flex justify-center ">
               <TabsList>
                 <TabsTrigger value="schedule-consultation">Schedule Consultation</TabsTrigger>
                 <TabsTrigger value="general-inquiry">General Inquiry</TabsTrigger>

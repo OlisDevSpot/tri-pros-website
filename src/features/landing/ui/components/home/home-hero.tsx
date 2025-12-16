@@ -39,14 +39,14 @@ export default function HomeHero() {
       {/* Content */}
       <div className="absolute inset-0 mx-auto w-full h-full lg:p-6">
         <div
-          className="flex flex-col items-center justify-center h-full lg:rounded-3xl shadow-2xl"
+          className="relative flex flex-col items-center justify-center h-full lg:rounded-3xl shadow-2xl"
           style={{
             backgroundImage: `radial-gradient(circle, color-mix(in oklab, var(--background) 80%, transparent), color-mix(in oklab, var(--background) 50%, transparent)), url("/hero-photos/modern-house-1.png")`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
-          <div className="container text-center text-foreground">
+          <div className=" container text-center text-foreground">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -142,7 +142,26 @@ export default function HomeHero() {
               </motion.div>
             </motion.div>
           </div>
+
+          {/* BUSINESS CARD */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="absolute bottom-6 left-6 w-fit h-fit font-mono"
+          >
+            <p>
+              CA Lic #
+              {companyInfo.licenses[0].licenseNumber}
+            </p>
+            <p>
+              License Type:
+              {' '}
+              {companyInfo.licenses[0].type}
+            </p>
+          </motion.div>
         </div>
+
       </div>
 
       {/* Scroll Indicator */}

@@ -1,7 +1,7 @@
 export const licenses = [
   {
-    type: 'B2 General',
+    type: 'B2, General Building & Construction',
     description: 'General Building License',
-    licenseNumber: 'CA Lic. #1076760',
+    licenseNumber: '1076760',
   },
 ]

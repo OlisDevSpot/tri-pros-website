@@ -17,7 +17,7 @@ export default function ServicesPreview() {
     <section
       ref={ref}
       style={{
-        background: 'radial-gradient(circle at top , color-mix(in oklab, var(--background) 100%, transparent), color-mix(in oklab, var(--primary) 20%, transparent))',
+        background: `radial-gradient(150% 150% at 50% 100%, var(--background), var(--background), color-mix(in oklab, var(--primary) 80%, transparent))`,
       }}
       className="relative py-20 lg:py-32"
     >

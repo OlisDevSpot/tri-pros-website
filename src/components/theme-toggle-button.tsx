@@ -4,23 +4,29 @@ import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
+import { MotionButton } from '@/components/ui/button'
 
-export function ThemeToggle() {
+interface Props extends React.HTMLAttributes<HTMLButtonElement> {
+  className?: string
+}
+
+export function ThemeToggleButton({ className }: Props) {
   const { theme, setTheme } = useTheme()
 
   return (
-    <Button
+    <MotionButton
       variant="outline"
       aria-label="Toggle dark mode"
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={className}
       size="icon"
-      className="w-12 h-12"
       onClick={() => {
         setTheme(theme === 'light' ? 'dark' : 'light')
       }}
     >
       <Sun className="dark:hidden not-dark:block" />
       <Moon className="dark:block not-dark:hidden" />
-    </Button>
+    </MotionButton>
   )
 }

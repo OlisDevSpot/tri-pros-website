@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Dancing_Script, Playfair_Display, Syne } from 'next/font/google'
+import { Dancing_Script, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
@@ -19,6 +19,13 @@ const dancingScript = Dancing_Script({
   variable: '--font-script',
   subsets: ['latin'],
   display: 'swap',
+})
+
+const spaceMono = Space_Mono({
+  variable: '--font-mono',
+  subsets: ['latin'],
+  display: 'swap',
+  weight: '400',
 })
 
 export const metadata: Metadata = {
@@ -72,7 +79,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} antialiased`}
+        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} antialiased`}
       >
         <Providers>
           {children}

@@ -17,8 +17,7 @@ export default function ValuePropositions() {
     <section
       ref={ref}
       style={{
-        background: `
-          radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 80%, transparent))`,
+        background: `radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 80%, transparent))`,
       }}
       className="py-20 lg:py-32"
     >

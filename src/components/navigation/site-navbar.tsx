@@ -7,8 +7,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/logo'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Button, MotionButton } from '@/components/ui/button'
+import { ThemeToggleButton } from '@/components/theme-toggle-button'
+import { MotionButton } from '@/components/ui/button'
 import { navigationItems } from '@/constants/nav-items'
 import { companyInfo } from '@/features/landing/data/company'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -260,26 +260,41 @@ export function SiteNavbar() {
               </AnimatePresence>
             </div>
 
-            {/* CTA Button */}
             <div className="flex gap-2 items-center">
-              <div className="w-12 h-full">
-                <ThemeToggle />
-              </div>
-              <div>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground"
-                  asChild
-                >
-                  <a href={`tel:+1${companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value}`}>
-                    <PhoneIcon />
-                  </a>
-                </Button>
-              </div>
+              <ThemeToggleButton className={
+                cn(
+                  'h-12 w-12 border-foreground/15 shadow-md',
+                  pathname === '/' ? 'rounded-[40px]' : '',
+                )
+              }
+              />
+              <MotionButton
+                size="icon"
+                variant="outline"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                }}
+                className={
+                  cn(
+                    'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                  )
+                }
+                asChild
+              >
+                <a href={`tel:+1${companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value}`}>
+                  <PhoneIcon />
+                </a>
+              </MotionButton>
               <div className="hidden md:block">
                 <MotionButton
-                  className="h-12"
+                  className={
+                    cn(
+                      'h-12',
+                      pathname === '/' ? 'rounded-4xl' : '',
+                    )
+                  }
                   size="lg"
                   variant="cta"
                   initial={{ opacity: 0, y: -20 }}
@@ -288,7 +303,7 @@ export function SiteNavbar() {
                 >
                   <Link
                     href="/contact"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 px-2"
                   >
                     Schedule Consultation
                     <ArrowRightIcon />
@@ -297,10 +312,16 @@ export function SiteNavbar() {
               </div>
 
               {/* Mobile menu button */}
-              <Button
+              <MotionButton
                 size="icon"
                 variant="outline"
-                className="lg:hidden h-12 w-12"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={
+                  cn(
+                    'lg:hidden h-12 w-12',
+                  )
+                }
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
                 aria-label="Toggle menu"
                 type="button"
@@ -331,7 +352,7 @@ export function SiteNavbar() {
                     className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
                   />
                 </motion.div>
-              </Button>
+              </MotionButton>
             </div>
           </motion.div>
         </div>
