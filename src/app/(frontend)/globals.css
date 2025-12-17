@@ -162,24 +162,24 @@
   * {
     @apply border-border outline-ring/50;
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklch, var(--foreground) 80%, transparent) var(--background); /* thumb, track */
+    scrollbar-color: color-mix(in oklch, var(--foreground) 80%, transparent) var(--background);
   }
 
   *::-webkit-scrollbar {
-  width: 8px;  /* thin */
-  height: 8px;
-}
+    width: 8px;
+    height: 8px;
+  }
 
-*::-webkit-scrollbar-track {
-  background: black;       /* gutter */
-  margin: 6px 0 6px 0;     /* creates vertical gap (top/bottom) */
-}
+  *::-webkit-scrollbar-track {
+    background: black;
+    margin: 6px 0 6px 0;
+  }
 
-*::-webkit-scrollbar-thumb {
-  background-color: white; /* actual scrollbar */
-  border-radius: 9999px;
-  border: 2px solid black; /* creates gap by shrinking the white bar */
-}
+  *::-webkit-scrollbar-thumb {
+    background-color: white;
+    border-radius: 9999px;
+    border: 2px solid black;
+  }
 
   html {
     @apply overscroll-none;
@@ -188,7 +188,6 @@
   body {
     @apply bg-background text-foreground overscroll-none;
   }
-  
 
   h1,
   h2,
