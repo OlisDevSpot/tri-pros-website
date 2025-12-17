@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-export function usePipedriveLeadBoosterBootstrap() {
+export function usePipedriveChatbotLoader() {
   useEffect(() => {
     if (typeof window === 'undefined')
       return

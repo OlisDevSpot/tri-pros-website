@@ -1,10 +1,10 @@
 'use client'
 
 import Script from 'next/script'
-import { usePipedriveLeadBoosterBootstrap } from '@/services/pipedrive/use-loader'
+import { usePipedriveChatbotLoader } from '@/services/pipedrive/hooks/use-chatbot-loader'
 
 export function Chatbot() {
-  usePipedriveLeadBoosterBootstrap()
+  usePipedriveChatbotLoader()
 
   return (
     <Script
