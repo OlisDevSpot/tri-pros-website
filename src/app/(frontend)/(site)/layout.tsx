@@ -1,3 +1,4 @@
+import { Chatbot } from '@/components/chatbot'
 import Footer from '@/components/footer'
 import { SiteNavbar } from '@/components/navigation/site-navbar'
 
@@ -9,6 +10,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       } as React.CSSProperties}
     >
       <SiteNavbar />
+      <Chatbot />
       <main className="">
         {children}
       </main>

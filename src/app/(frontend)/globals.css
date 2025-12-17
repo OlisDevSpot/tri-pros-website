@@ -161,24 +161,39 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklch, var(--foreground) 80%, transparent) var(--background);
-  }
-
-  *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
   }
 
   *::-webkit-scrollbar-track {
-    background: black;
-    margin: 6px 0 6px 0;
+    @apply border-l-16 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-background;
+  }
+  *::-webkit-scrollbar-thumb {
+    @apply border-l-16 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-foreground;
   }
 
-  *::-webkit-scrollbar-thumb {
-    background-color: white;
-    border-radius: 9999px;
-    border: 2px solid black;
+  .right-scrollbar {
+    &::-webkit-scrollbar {
+      @apply w-[22px];
+    }
+    &::-webkit-scrollbar-track {
+      @apply border-l-16 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-background;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      @apply border-l-16 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-foreground;
+    }
+  }
+
+  .bottom-scrollbar {
+    &::-webkit-scrollbar {
+      @apply h-[22px];
+    }
+    &::-webkit-scrollbar-track {
+      @apply border-t-16 border-l-0 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-neutral-700;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      @apply border-t-16 border-l-0 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-neutral-400;
+    }
   }
 
   html {

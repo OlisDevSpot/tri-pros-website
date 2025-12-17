@@ -31,7 +31,7 @@ export default function ContactHero() {
                       </TabsList>
                     </div>
                   </div>
-                  <div className="w-full grow min-h-0 overflow-auto">
+                  <div className="w-full grow min-h-0 overflow-auto right-scrollbar">
                     <TabsContent value="schedule-consultation">
                       <ScheduleConsultationForm />
                     </TabsContent>
