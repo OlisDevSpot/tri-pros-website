@@ -25,8 +25,6 @@ export default function Footer() {
                 <Logo />
               </motion.div>
 
-              <iframe sandbox="" src="https://triprosremodeling.pipedrive.com/scheduler/Aq1ZdEc6/meeting" title="Pipedrive Scheduler Embed" height="600px" width="100%" style={{ maxWidth: '800px' }} allowFullScreen></iframe>
-
               {/* Company Description */}
               <p className="text-foreground leading-relaxed max-w-md">
                 Crafting architectural masterpieces for over
