@@ -1,5 +1,4 @@
 import type { MetadataRoute } from 'next'
-import env from '@/config/client-env'
 import { navigationItems } from '@/constants/nav-items'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -7,10 +6,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     {
-      url: env.NEXT_PUBLIC_BASE_URL,
+      url: process.env.NEXT_PUBLIC_BASE_URL,
     },
     ...pages.map(page => ({
-      url: `${env.NEXT_PUBLIC_BASE_URL}${page}`,
+      url: `${process.env.NEXT_PUBLIC_BASE_URL}${page}`,
     })),
   ]
 }
