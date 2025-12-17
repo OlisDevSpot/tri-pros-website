@@ -12,7 +12,7 @@ export const landingRouter = createTRPCRouter({
     .input(scheduleConsultationFormSchema)
     .mutation(async ({ input }) => {
       const { data, error } = await resendClient.emails.send({
-        to: 'Tri Pros <info@triprosremodeling.com>',
+        to: 'Tri Pros <test@triprosremodeling.com>',
         from: 'info@triprosremodeling.com',
         subject: 'Consultation scheduled!',
         react: <ProjectEmailTemplate data={input} />,
@@ -31,7 +31,7 @@ export const landingRouter = createTRPCRouter({
     .input(generalInquiryFormSchema)
     .mutation(async ({ input }) => {
       const { data, error } = await resendClient.emails.send({
-        to: 'Tri Pros <info@triprosremodeling.com>',
+        to: 'Tri Pros <test@triprosremodeling.com>',
         from: 'info@triprosremodeling.com',
         subject: 'General Inquiry',
         react: <GeneralInquiryEmail data={input} />,

@@ -291,7 +291,7 @@ export function SiteNavbar() {
                 <MotionButton
                   className={
                     cn(
-                      'h-12',
+                      'h-12 shadow-sm shadow-foreground/30',
                       pathname === '/' ? 'rounded-4xl' : '',
                     )
                   }
