@@ -14,7 +14,7 @@ export default function CompanyStory() {
       ref={ref}
       className="py-20 lg:py-32"
     >
-      <div className="container space-y-12">
+      <div className="container space-y-24">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -54,10 +54,10 @@ export default function CompanyStory() {
         <FounderStory
           founderName='Ophir "Oliver" Porat'
           flipOrder
-          founderImgSrc="/company/employees/oliver-headshot.jpg"
+          founderImgSrc="/company/employees/ophir-full-body.jpg"
           isInView={isInView}
           Quote={() => (
-            <div className="bg-card rounded-lg p-6 border-l-4 border-secondary">
+            <div className="bg-card rounded-lg p-6 border border-border/40 border-l-4 border-l-secondary shadow-md">
               <blockquote className="font-script text-xl text-foreground italic">
                 &ldquo;We don&apos;t just build structures; we craft legacies
                 that families will cherish for generations.&rdquo;

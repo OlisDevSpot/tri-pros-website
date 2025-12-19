@@ -8,7 +8,7 @@ export const teamMembers = [
       'Project Leadership',
       'Quality Assurance',
     ],
-    image: '/company/employees/oliver-headshot.jpg',
+    image: '/company/employees/ophir-headshot.jpeg',
     email: 'oliver@triprosremodeling.com',
   },
   {

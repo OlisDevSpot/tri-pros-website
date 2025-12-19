@@ -25,6 +25,10 @@ const envSchema = z.object({
 
   // MONDAY
   MONDAY_API_TOKEN: z.string(),
+
+  // PIPEDRIVE
+  PIPEDRIVE_BASE_URL: z.string(),
+  PIPEDRIVE_API_KEY: z.string(),
 })
 
 export type env = z.infer<typeof envSchema>
