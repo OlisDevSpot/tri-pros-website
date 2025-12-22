@@ -48,7 +48,7 @@ export default function TestimonialsSection() {
   return (
     <section
       ref={ref}
-      className="py-20 lg:py-32"
+      className="py-20 lg:py-32 bg-background"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}

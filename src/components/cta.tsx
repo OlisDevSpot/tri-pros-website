@@ -17,7 +17,7 @@ export default function BottomCTA() {
       initial={{ opacity: 0, y: 30 }}
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.4 }}
-      className="text-center mb-32 container"
+      className="text-center pb-32 container bg-background"
       ref={ref}
     >
       <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">

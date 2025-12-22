@@ -80,8 +80,8 @@ export default function HomeHero() {
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="inline-flex lg:absolute lg:top-1/2 lg:left-6 lg:-translate-y-1/2"
+                transition={{ duration: 1.2, delay: 1 }}
+                className="inline-flex lg:inline lg:absolute lg:top-1/2 lg:left-6 lg:-translate-y-1/2"
               >
                 <div className="w-fit h-fit flex lg:flex-col gap-4 py-4">
                   {companyInfo.socials.map(social => (
