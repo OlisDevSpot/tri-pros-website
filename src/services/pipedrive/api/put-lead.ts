@@ -29,6 +29,7 @@ export async function putLead(input: GeneralInquiryFormSchema) {
   }
 
   catch (error) {
+    // eslint-disable-next-line no-console
     console.log('pipedrive error', error)
 
     throw new TRPCError({
