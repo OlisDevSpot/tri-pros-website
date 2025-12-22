@@ -7,7 +7,9 @@ import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ViewportHero } from '@/components/viewport-hero'
+
 import { companyInfo } from '@/features/landing/data/company'
+import { cn } from '@/lib/utils'
 
 const parentVariant: Variants = {
   initial: {
@@ -46,12 +48,12 @@ export default function HomeHero() {
             backgroundPosition: 'center',
           }}
         >
-          <div className=" container text-center text-foreground">
+          <div className="container text-center text-foreground">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="space-y-8"
+              className="space-y-2 lg:space-y-8"
             >
               {/* Main Headline */}
               <motion.h1
@@ -73,6 +75,27 @@ export default function HomeHero() {
                 {' '}
                 That Stand the Test of Time
               </motion.h1>
+
+              {/* SOCIALS */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+                className="inline-flex lg:absolute lg:top-1/2 lg:left-6 lg:-translate-y-1/2"
+              >
+                <div className="w-fit h-fit flex lg:flex-col gap-4 py-4">
+                  {companyInfo.socials.map(social => (
+                    <a
+                      key={social.name}
+                      href={social.href}
+                      target="_blank"
+                      className="rounded-md"
+                    >
+                      <social.Icon className={cn('w-6 h-6 transition', social.className)} />
+                    </a>
+                  ))}
+                </div>
+              </motion.div>
 
               {/* Subheadline */}
               <motion.p
@@ -148,7 +171,7 @@ export default function HomeHero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="absolute bottom-6 left-6 w-fit h-fit font-mono"
+            className="hidden lg:absolute bottom-6 left-6 w-fit h-fit font-mono"
           >
             <p>
               CA Lic #
@@ -169,7 +192,7 @@ export default function HomeHero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1.2 }}
-        className="absolute bottom-16 left-1/2 transform -translate-x-1/2 text-white z-10"
+        className="absolute bottom-6 lg:bottom-16 left-1/2 transform -translate-x-1/2 text-white z-10"
       >
         <motion.div
           animate={{ y: [0, 10, 0] }}
