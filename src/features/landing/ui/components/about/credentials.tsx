@@ -16,7 +16,7 @@ export default function CredentialsSection() {
       ref={ref}
       className="py-20 lg:py-32"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -127,7 +127,7 @@ export default function CredentialsSection() {
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-16 bg-linear-to-br from-blue-900 to-neutral-950 rounded-2xl p-8 lg:p-12 text-center text-primary-foreground"
+          className="mt-16 bg-linear-to-br from-primary to-[color-mix(in_oklch,var(--primary)_60%,var(--background)_40%)] rounded-2xl p-8 lg:p-12 text-center text-foreground"
         >
           <h3 className=" text-2xl lg:text-3xl font-bold mb-6">
             Verify Our Credentials
