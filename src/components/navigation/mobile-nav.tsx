@@ -5,7 +5,7 @@ import Link from 'next/link'
 interface MobileNavProps {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
-  navigationItems: { name: string, href: string }[]
+  navigationItems: readonly { name: string, href: string }[]
 }
 
 export function MobileNav({

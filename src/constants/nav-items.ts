@@ -26,20 +26,20 @@ export const navigationItems = [
     href: '/services',
     subItems: [
       {
-        name: 'Custom Home Construction',
-        href: '/services/custom-homes',
+        name: 'Energy-Efficient Construction',
+        href: '/services/energy-efficient-construction',
       },
       {
         name: 'Luxury Renovations',
-        href: '/services/renovations',
-      },
-      {
-        name: 'Commercial Projects',
-        href: '/services/commercial',
+        href: '/services/luxury-renovations',
       },
       {
         name: 'Design-Build Services',
         href: '/services/design-build',
+      },
+      {
+        name: 'Commercial Projects',
+        href: '/services/commercial',
       },
     ],
   },
@@ -61,4 +61,9 @@ export const navigationItems = [
     name: 'Blog',
     href: '/blog',
   },
-]
+] as const
+
+type ServiceSlugsRaw = Extract<typeof navigationItems[number], { href: '/services' }>['subItems'][number]['href']
+type RemoveServices<T> = T extends `/services/${infer Rest}` ? Rest : never
+
+export type ServiceSlugs = RemoveServices<ServiceSlugsRaw>

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Dancing_Script, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
+import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
@@ -26,6 +26,12 @@ const spaceMono = Space_Mono({
   subsets: ['latin'],
   display: 'swap',
   weight: '400',
+})
+
+const nunito = Nunito({
+  variable: '--font-nunito',
+  subsets: ['latin'],
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -79,7 +85,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body
-        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} antialiased`}
+        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
         <Providers>
           {children}

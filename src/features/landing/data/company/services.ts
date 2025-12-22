@@ -1,26 +1,43 @@
-export const services = [
+import type { ServiceSlugs } from '@/constants/nav-items'
+
+interface Service {
+  slug: ServiceSlugs
+  title: string
+  subtitle: string
+  description: string
+  features: string[]
+  timeline: string
+  priceRange: string
+  image: string
+  href: string
+  icon: string
+}
+
+export const services: Service[] = [
   {
-    slug: 'custom-homes',
-    title: 'Custom Home Construction',
-    subtitle: 'Build Your Dream Home from the Ground Up',
+    slug: 'energy-efficient-construction',
+    title: 'Energy-Efficient Construction',
+    subtitle: 'Sustainable Homes for a Greener Future',
     description:
-      'Create the luxury home you&apos;ve always envisioned with our comprehensive custom home construction services. From initial design through final walkthrough, we handle every detail.',
+      'Elevate your home\'s energy efficiency and environmental impact with our energy-efficient construction services.',
     features: [
-      'Architectural design consultation',
-      'Permit acquisition and management',
-      'Site preparation and foundation',
-      'Complete construction management',
-      'Interior design coordination',
-      'Landscape architecture integration',
+      'Insulation upgrades',
+      'Solar panels installation',
+      'Energy-efficient windows',
+      'Green roofing solutions',
+      'Smart home technology integration',
+      'Energy-efficient lighting',
     ],
-    timeline: '8-18 months',
-    priceRange: '$500k - $3M+',
+    timeline: '0.5-5 months',
+    priceRange: '$10k - $250k',
     image: '/hero-photos/modern-house-1.png',
-    href: '/services/custom-homes',
+    get href() {
+      return `/services/${this.slug}`
+    },
     icon: '🏠',
   },
   {
-    slug: 'renovations',
+    slug: 'luxury-renovations',
     title: 'Luxury Renovations',
     subtitle: 'Transform Your Space with Premium Upgrades',
     description:

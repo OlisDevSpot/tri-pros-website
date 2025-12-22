@@ -33,7 +33,7 @@ interface Props {
   item: {
     name: string
     href: string
-    subItems?: { name: string, href: string }[]
+    subItems?: readonly { name: string, href: string }[]
   }
   index: number
   isActive: boolean
@@ -126,8 +126,13 @@ export function SiteNavbar() {
 
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
-  function findSelectedItem(index: number) {
-    return navigationItems.find((_, i) => i === index)
+  function findSelectedItem(index: number): { name: string, href: string, subItems: readonly { name: string, href: string }[] } | undefined {
+    const item = navigationItems.find((_, i) => i === index)
+
+    if (!item || !('subItems' in item))
+      return undefined
+
+    return item
   }
 
   function closeNavigation() {
@@ -214,7 +219,7 @@ export function SiteNavbar() {
               </div>
               {/* Additional Content */}
               <AnimatePresence>
-                {selectedItemIndex && navigationItems[selectedItemIndex]?.subItems && (
+                {selectedItemIndex && 'subItems' in navigationItems[selectedItemIndex] && navigationItems[selectedItemIndex]?.subItems && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
