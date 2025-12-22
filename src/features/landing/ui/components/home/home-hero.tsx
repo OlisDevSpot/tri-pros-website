@@ -171,7 +171,7 @@ export default function HomeHero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
-            className="hidden lg:absolute bottom-6 left-6 w-fit h-fit font-mono"
+            className="hidden lg:block absolute bottom-6 left-6 w-fit h-fit font-mono"
           >
             <p>
               CA Lic #
