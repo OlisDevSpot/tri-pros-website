@@ -11,7 +11,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
     >
       <SiteNavbar />
       <Chatbot />
-      <main className="relative z-1 bg-background">
+      <main className="relative z-10 bg-background">
         {children}
       </main>
       <Footer />

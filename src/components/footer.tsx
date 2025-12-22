@@ -8,7 +8,7 @@ import { Logo } from './logo'
 
 export default function Footer() {
   return (
-    <footer className="bg-muted text-foreground sticky bottom-0 w-full z-[-100]">
+    <footer className="bg-muted text-foreground sticky bottom-0 w-full z-1">
       <div className="container pt-16 pb-12">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">

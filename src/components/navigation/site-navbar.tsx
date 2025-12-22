@@ -176,7 +176,7 @@ export function SiteNavbar() {
             className="flex justify-between items-center h-(--navbar-height) w-full"
           >
             {/* Logo */}
-            <motion.div className="w-[200px] h-full">
+            <motion.div className="w-[200px] h-full shrink-0">
               <Logo onClick={() => setIsMobileOpen(false)} />
             </motion.div>
 
@@ -185,7 +185,7 @@ export function SiteNavbar() {
               onMouseLeave={() => {
                 closeNavigation()
               }}
-              className="relative hidden lg:block"
+              className="relative hidden 2xl:block"
             >
               {/* Navigation Items */}
               <div
@@ -324,7 +324,7 @@ export function SiteNavbar() {
                 animate={{ opacity: 1, y: 0 }}
                 className={
                   cn(
-                    'lg:hidden h-12 w-12',
+                    '2xl:hidden h-12 w-12',
                   )
                 }
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
