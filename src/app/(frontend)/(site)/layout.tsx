@@ -10,7 +10,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       } as React.CSSProperties}
     >
       <SiteNavbar />
-      <Chatbot />
+      {/* <Chatbot /> */}
       <main className="relative z-10 bg-background">
         {children}
       </main>

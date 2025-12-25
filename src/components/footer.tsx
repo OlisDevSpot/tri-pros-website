@@ -21,7 +21,7 @@ export default function Footer() {
               className="space-y-6 "
             >
               {/* Logo */}
-              <motion.div className="w-[200px]">
+              <motion.div className="w-[200px] h-[100px] shrink-0">
                 <Logo />
               </motion.div>
 
@@ -94,8 +94,8 @@ export default function Footer() {
             {[
               ...companyInfo.contactInfo,
               {
-                label: 'License',
-                value: companyInfo.licenses[0].licenseNumber,
+                label: 'CA Lic.',
+                value: `#${companyInfo.licenses[0].licenseNumber}`,
                 icon: '📜',
               },
             ].map(info => (

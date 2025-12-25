@@ -8,8 +8,9 @@ export function Chatbot() {
 
   return (
     <Script
-      id="pipedrive-leadbooster-loader"
-      src="https://leadbooster-chat.pipedrive.com/assets/loader.js"
+      type="text/javascript"
+      id="hs-script-loader"
+      src="//js-na2.hs-scripts.com/244690401.js"
       strategy="afterInteractive"
     />
   )

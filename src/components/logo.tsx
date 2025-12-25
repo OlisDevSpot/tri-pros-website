@@ -15,7 +15,7 @@ export function Logo({
   return (
     <Link
       href="/"
-      className="relative min-w-fit w-full min-h-[50px] h-full flex -ml-3"
+      className="relative min-w-fit w-full flex h-full"
       onClick={() => {
         onClick?.()
       }}
@@ -23,13 +23,13 @@ export function Logo({
       <Image
         src={LogoDarkRight}
         alt="Logo"
-        className="absolute dark:relative not-dark:hidden object-cover"
+        className="absolute dark:relative not-dark:hidden"
         fill
       />
       <Image
         src={LogoLightRight}
         alt="Logo"
-        className="absolute dark:hidden not-dark:relative object-cover"
+        className="absolute dark:hidden not-dark:relative"
         fill
       />
     </Link>

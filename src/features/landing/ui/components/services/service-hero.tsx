@@ -64,11 +64,11 @@ export default function ServicesHero() {
               className="flex gap-4 w-full"
             >
               <div className="text-center py-4 border bg-background/70 rounded-sm border-border/50 flex-1 shadow-xl">
-                <div className="text-3xl font-bold text-secondary mb-2">4</div>
+                <div className="text-3xl font-bold mb-2">4</div>
                 <div className="text-sm text-foreground">Core Services</div>
               </div>
               <div className="text-center py-4 border bg-background/70 rounded-sm border-border/30 flex-1 shadow-xl">
-                <div className="text-3xl font-bold text-secondary mb-2">
+                <div className="text-3xl font-bold mb-2">
                   100+
                 </div>
                 <div className="text-sm text-foreground">Service Areas</div>
