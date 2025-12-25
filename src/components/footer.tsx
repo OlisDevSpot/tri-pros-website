@@ -21,7 +21,7 @@ export default function Footer() {
               className="space-y-6 "
             >
               {/* Logo */}
-              <motion.div className="w-[200px] h-[100px] shrink-0">
+              <motion.div className="w-[200px] h-[60px] shrink-0">
                 <Logo />
               </motion.div>
 

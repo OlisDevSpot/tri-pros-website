@@ -8,20 +8,24 @@ import DecorativeLine from '@/components/decorative-line'
 import { Button } from '@/components/ui/button'
 import { companyInfo } from '@/features/landing/data/company'
 import { valueProps } from '@/features/landing/data/value-prop'
+import { useIsScrolled } from '@/hooks/useIsScrolled'
 
 export default function ValuePropositions() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const scrolled = useIsScrolled()
 
   return (
-    <section
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={scrolled ? { opacity: 1 } : { opacity: 0 }}
       ref={ref}
       style={{
         background: `radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 80%, transparent))`,
       }}
-      className="py-20 lg:py-32"
+      className="py-20 lg:py-32 min-h-[200vh]"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 sticky top-32">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -80,11 +84,6 @@ export default function ValuePropositions() {
                   {prop.description}
                 </p>
 
-                {/* Detail */}
-                <p className="text-muted-foreground leading-relaxed text-center grow">
-                  {prop.detail}
-                </p>
-
                 {/* Decorative Element */}
                 <DecorativeLine
                   animate={isInView ? { width: '60%' } : { width: 0 }}
@@ -107,7 +106,7 @@ export default function ValuePropositions() {
             whileTap={{ scale: 0.975 }}
           >
             <Button
-              className="h-16 px-8 text-lg"
+              className="h-14 px-8 text-lg"
               asChild
             >
               <Link href="/about">
@@ -123,6 +122,6 @@ export default function ValuePropositions() {
           </motion.div>
         </motion.div>
       </div>
-    </section>
+    </motion.section>
   )
 }
