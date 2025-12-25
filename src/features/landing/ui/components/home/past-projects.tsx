@@ -91,7 +91,9 @@ export default function PastProjects() {
           !isMobile ? 'h-[400px]' : 'h-[250px]',
         )}
       >
-        <div className="absolute inset-0 bg-linear-to-r from-background from-5% via-transparent to-background to-95% z-10 pointer-events-none" />
+        <div
+          className="hidden lg:block absolute inset-0 bg-linear-to-r from-background from-5% via-transparent to-background to-95% z-10 pointer-events-none"
+        />
         {/* MUST BE ABSOLUTE FOR WIDTH TO BE CALCULATED CORRECTLY */}
         <motion.div
           className="absolute left-0 flex gap-2 h-full"
