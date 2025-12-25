@@ -55,9 +55,14 @@ export const metadata: Metadata = {
   creator: 'Tri Pros Remodeling',
   openGraph: {
     title: 'Tri Pros Remodeling | Crafting Architectural Masterpieces',
-    description: 'Premium construction services for discerning homeowners and businesses who demand excellence.',
+    description: 'Premium construction services for discerning homeowners and businesses who demand excellence and require tailored results.',
     type: 'website',
     locale: 'en_US',
+    images: [
+      {
+        url: '/company/logo/opengraph-image.jpg',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
