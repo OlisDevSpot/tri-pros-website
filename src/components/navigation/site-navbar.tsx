@@ -176,7 +176,7 @@ export function SiteNavbar() {
             className="flex justify-between items-center h-(--navbar-height) w-full"
           >
             {/* Logo */}
-            <motion.div className="w-[200px] h-full shrink-0">
+            <motion.div className="w-[180px] h-full shrink-0">
               <Logo onClick={() => setIsMobileOpen(false)} />
             </motion.div>
 
