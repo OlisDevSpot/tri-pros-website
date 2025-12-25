@@ -23,7 +23,7 @@ export default function ValuePropositions() {
       style={{
         background: `radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 80%, transparent))`,
       }}
-      className="py-20 lg:py-32 min-h-[200vh]"
+      className="py-20 lg:py-32 lg:min-h-[200vh]"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 sticky top-32">
         {/* Section Header */}

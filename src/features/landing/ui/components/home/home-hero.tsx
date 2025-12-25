@@ -37,7 +37,7 @@ export default function HomeHero() {
     return [`${companyInfo.combinedYearsExperience}+ Years Combined Experience`, `${companyInfo.numProjects}+ Projects Delivered`, `${companyInfo.clientSatisfaction * 100}% Client Satisfaction`, `${companyInfo.generations} Generations`]
   }, [])
   return (
-    <ViewportHero className="absolute inset-0 z-50">
+    <ViewportHero className="lg:absolute lg:inset-0 z-50">
       {/* Content */}
       <div className="absolute inset-0 mx-auto w-full h-full lg:p-6">
         <div
