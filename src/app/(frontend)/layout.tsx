@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     images: [
       {
-        url: '/company/logo/opengraph-image.jpg',
+        url: '/company/logo/opengraph-image.png',
         width: 629,
         height: 313,
       },
