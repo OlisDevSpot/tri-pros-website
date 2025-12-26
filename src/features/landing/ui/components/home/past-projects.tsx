@@ -10,11 +10,11 @@ import { PhotoCard } from './photo-card'
 
 const photos = [
   '/hero-photos/modern-house-1.png',
-  '/project-photos/modern-kitchen-1.jpeg',
+  '/portfolio-photos/modern-kitchen-1.jpeg',
   '/hero-photos/modern-house-2.png',
-  '/project-photos/modern-staircase-1.jpeg',
+  '/portfolio-photos/modern-staircase-1.jpeg',
   '/hero-photos/modern-house-3.avif',
-  '/project-photos/modern-bathroom-1.jpeg',
+  '/portfolio-photos/modern-bathroom-1.jpeg',
   '/hero-photos/modern-house-4.webp',
 ]
 
