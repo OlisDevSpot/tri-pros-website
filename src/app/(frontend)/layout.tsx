@@ -61,9 +61,13 @@ export const metadata: Metadata = {
     images: [
       {
         url: '/company/logo/opengraph-image.jpg',
+        width: 629,
+        height: 313,
       },
       {
         url: '/company/logo/opengraph-image-2.jpg',
+        width: 800,
+        height: 800,
       },
     ],
   },
