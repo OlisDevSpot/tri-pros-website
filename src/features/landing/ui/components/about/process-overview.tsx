@@ -149,7 +149,7 @@ export default function ProcessOverview() {
               >
                 {/* Content */}
                 <div
-                  className={cn(`space-y-6 p-8 h-full relative flex-1`, isMobile || index % 2 === 1 ? 'order-2' : '')}
+                  className={cn(`space-y-6 p-8 h-full relative flex-1 shadow-xl`, isMobile || index % 2 === 1 ? 'order-2' : '')}
                 >
                   <div className="flex items-center space-x-4">
                     <div>
@@ -196,14 +196,16 @@ export default function ProcessOverview() {
                       initial={{ height: 0 }}
                       animate={isInView ? { height: '200px' } : { height: 0 }}
                       transition={{ duration: 0.8, delay: index * 0.2 + 0.5 }}
-                      className="absolute left-1/2 top-full w-1 bg-linear-to-b from-white to-neutral-500 rounded-full transform -translate-x-1/2 hidden lg:block z-[-1]"
+                      className={cn(
+                        'absolute top-full w-1 left-1/2 -translate-x-1/2 bg-linear-to-b from-white to-neutral-500 rounded-full transform z-[-1]',
+                      )}
                     />
                   )}
                 </div>
 
                 {/* Image */}
                 <div
-                  className={cn(`relative rounded-lg w-full shadow-2xl flex-1`, isMobile || index % 2 === 1 ? 'order-1' : '')}
+                  className={cn(`relative rounded-lg w-full shadow-2xl flex-1 min-h-[300px] overflow-hidden`, isMobile || index % 2 === 1 ? 'order-1' : '')}
                 >
                   {step.imageSrc && (
                     <div className="absolute inset-0">
@@ -216,9 +218,8 @@ export default function ProcessOverview() {
                     </div>
                   )}
                   <div
-                    className={`${step.color} p-8 shadow-xl h-full w-full flex items-center justify-center z-50 relative`}
-                  >
-                  </div>
+                    className={`${step.color} shadow-xl z-50 absolute inset-0`}
+                  />
                 </div>
               </div>
             </motion.div>
