@@ -1,9 +1,10 @@
 'use client'
 
 import { motion, useInView } from 'motion/react'
+import Image from 'next/image'
 import { useRef } from 'react'
-import { useIsMobile } from '@/hooks/use-mobile'
 
+import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
 const processSteps = [
@@ -21,8 +22,8 @@ const processSteps = [
     ],
     icon: '🔍',
     bgColor: 'from-blue-200 dark:from-blue-900 to-background',
-    color: 'bg-blue-300',
-    imageSrc: '',
+    color: 'bg-blue-300/30',
+    imageSrc: '/process/design-stage.jpeg',
   },
   {
     phase: 'Pre-Construction',
@@ -38,8 +39,8 @@ const processSteps = [
     ],
     icon: '📋',
     bgColor: 'from-orange-200 dark:from-orange-900 to-background',
-    color: 'bg-orange-300',
-    imageSrc: '',
+    color: 'bg-orange-300/30',
+    imageSrc: '/process/pre-construction-stage.jpeg',
   },
   {
     phase: 'Construction',
@@ -55,8 +56,8 @@ const processSteps = [
     ],
     icon: '🏗️',
     bgColor: 'from-green-200 dark:from-green-900 to-background',
-    color: 'bg-green-300',
-    imageSrc: '',
+    color: 'bg-green-300/30',
+    imageSrc: '/process/construction-stage.jpeg',
   },
   {
     phase: 'Completion & Handover',
@@ -72,8 +73,8 @@ const processSteps = [
     ],
     icon: '✅',
     bgColor: 'from-purple-200 dark:from-purple-900 to-background',
-    color: 'bg-purple-300',
-    imageSrc: '',
+    color: 'bg-purple-300/30',
+    imageSrc: '/process/handover-stage.jpeg',
   },
 ]
 
@@ -202,18 +203,21 @@ export default function ProcessOverview() {
 
                 {/* Image */}
                 <div
-                  className={cn(`rounded-lg w-full shadow-2xl flex-1`, isMobile || index % 2 === 1 ? 'order-1' : '')}
+                  className={cn(`relative rounded-lg w-full shadow-2xl flex-1`, isMobile || index % 2 === 1 ? 'order-1' : '')}
                 >
-                  <div
-                    className={`${step.color} p-8 shadow-xl h-full w-full flex items-center justify-center`}
-                  >
-                    <div className="text-center">
-                      <div
-                        className={`w-24 h-24 bg-linear-to-br ${step.bgColor} rounded-full flex items-center justify-center text-foreground text-4xl mx-auto mb-6`}
-                      >
-                        {step.icon}
-                      </div>
+                  {step.imageSrc && (
+                    <div className="absolute inset-0">
+                      <Image
+                        fill
+                        src={step.imageSrc}
+                        alt={step.description}
+                        className="object-cover object-top w-full h-full"
+                      />
                     </div>
+                  )}
+                  <div
+                    className={`${step.color} p-8 shadow-xl h-full w-full flex items-center justify-center z-50 relative`}
+                  >
                   </div>
                 </div>
               </div>
