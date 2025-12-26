@@ -40,8 +40,9 @@ export default function ScheduleConsultationForm() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
+        className="min-h-fit"
       >
-        <h2 className=" text-2xl lg:text-3xl font-bold text-foreground mb-6">
+        <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-6">
           Request Your Consultation
         </h2>
         <p className="text-muted-foreground mb-8">
@@ -54,7 +55,7 @@ export default function ScheduleConsultationForm() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-card">
           {/* Personal Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField

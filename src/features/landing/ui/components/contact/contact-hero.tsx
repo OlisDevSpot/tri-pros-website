@@ -9,7 +9,7 @@ import ScheduleConsultationForm from '@/features/landing/ui/components/contact/s
 
 export default function ContactHero() {
   return (
-    <ViewportHero className="h-[50vh]">
+    <ViewportHero className="lg:h-[50vh] max-lg:pb-12 pb-20">
       <TopSpacer>
         <div className="container text-center h-full">
           <motion.div
@@ -19,11 +19,11 @@ export default function ContactHero() {
             className="h-full"
           >
             <motion.div
-              className="flex flex-col lg:flex-row gap-20 items-center h-full"
+              className="flex flex-col lg:flex-row gap-4 lg:gap-20 items-center h-full"
             >
-              <div className="flex-1 grow min-h-0 self-start h-full">
+              <div className="flex-1 grow min-h-0 self-start h-full order-2 lg:order-1">
                 <Tabs defaultValue="schedule-consultation" className="gap-0 h-full">
-                  <div className="h-20 flex items-start pb-4 justify-start shrink-0">
+                  <div className="h-20 flex items-center justify-center shrink-0">
                     <div className="w-fit flex justify-center">
                       <TabsList>
                         <TabsTrigger value="schedule-consultation">Schedule Consultation</TabsTrigger>
@@ -41,7 +41,7 @@ export default function ContactHero() {
                   </div>
                 </Tabs>
               </div>
-              <div className="flex flex-col flex-1 grow min-h-0 overflow-auto">
+              <div className="flex flex-col flex-1 grow min-h-0 overflow-auto order-1 lg:order-2">
                 <h1 className=" text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6">
                   Let&apos;s Build Your
                   {' '}

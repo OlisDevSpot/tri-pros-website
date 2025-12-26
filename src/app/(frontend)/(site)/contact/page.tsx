@@ -12,7 +12,7 @@ export default function ContactPage() {
   return (
     <main className="min-h-screen">
       <ContactHero />
-      <div className="flex flex-col sticky top-0">
+      <div className="flex flex-col lg:flex-row sticky top-0">
         <ContactInfo />
       </div>
     </main>
