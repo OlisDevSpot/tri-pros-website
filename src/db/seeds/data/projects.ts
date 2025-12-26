@@ -6,7 +6,6 @@ export const projects = [
     title: 'Bliss',
     accessor: 'bliss',
     description: '',
-    heroImage: '',
     mediaFiles: {
       before: [],
       during: [],
