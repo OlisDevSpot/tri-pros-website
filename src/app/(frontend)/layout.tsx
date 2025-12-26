@@ -62,6 +62,9 @@ export const metadata: Metadata = {
       {
         url: '/company/logo/opengraph-image.jpg',
       },
+      {
+        url: '/company/logo/opengraph-image-2.jpg',
+      },
     ],
   },
   twitter: {
