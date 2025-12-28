@@ -4,12 +4,12 @@ import type { Variants } from 'motion/react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { useMemo } from 'react'
+import { CompanySocialButtons } from '@/components/company-social-buttons'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ViewportHero } from '@/components/viewport-hero'
 
+import { ViewportHero } from '@/components/viewport-hero'
 import { companyInfo } from '@/features/landing/data/company'
-import { cn } from '@/lib/utils'
 
 const parentVariant: Variants = {
   initial: {
@@ -76,26 +76,7 @@ export default function HomeHero() {
                 That Stand the Test of Time
               </motion.h1>
 
-              {/* SOCIALS */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 1 }}
-                className="inline-flex lg:inline lg:absolute lg:top-1/2 lg:left-6 lg:-translate-y-1/2"
-              >
-                <div className="w-fit h-fit flex lg:flex-col gap-4 py-4">
-                  {companyInfo.socials.map(social => (
-                    <a
-                      key={social.name}
-                      href={social.href}
-                      target="_blank"
-                      className="rounded-md"
-                    >
-                      <social.Icon className={cn('w-6 h-6 transition', social.className)} />
-                    </a>
-                  ))}
-                </div>
-              </motion.div>
+              <CompanySocialButtons onHero />
 
               {/* Subheadline */}
               <motion.p

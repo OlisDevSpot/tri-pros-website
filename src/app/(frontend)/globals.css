@@ -161,6 +161,8 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    scroll-behavior: smooth;
+    scroll-margin-top: 80px;
   }
 
   *::-webkit-scrollbar-track {

@@ -26,19 +26,17 @@ export const experienceFeatures = [
 
 export function ExperienceFeatures() {
   return (
-    <section className="container">
-      <div className="space-y-12">
-        <TextWithLine text="Proprietary Customer Success Flows" />
-        <div className="flex flex-col gap-4">
-          {experienceFeatures.map(feature => (
-            <ExperienceFeature
-              key={feature.name}
-              feature={feature}
-            />
-          ))}
-        </div>
+    <div className="space-y-12">
+      <TextWithLine text="Proprietary Customer Success Flows" />
+      <div className="flex flex-col gap-4">
+        {experienceFeatures.map(feature => (
+          <ExperienceFeature
+            key={feature.name}
+            feature={feature}
+          />
+        ))}
       </div>
-    </section>
+    </div>
   )
 }
 

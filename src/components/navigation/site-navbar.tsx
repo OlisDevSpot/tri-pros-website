@@ -1,7 +1,8 @@
+/* eslint-disable node/prefer-global/process */
 'use client'
 
 import type { MotionValue, Variants } from 'motion/react'
-import { ArrowRightIcon, ChevronUpIcon, PhoneIcon } from 'lucide-react'
+import { ArrowRightIcon, ChevronUpIcon, NotebookIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -9,11 +10,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Logo } from '@/components/logo'
 import { ThemeToggleButton } from '@/components/theme-toggle-button'
 import { MotionButton } from '@/components/ui/button'
-import { navigationItems } from '@/constants/nav-items'
 import { companyInfo } from '@/features/landing/data/company'
+import { useHasScrolled } from '@/hooks/use-has-scrolled'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { useIsScrolled } from '@/hooks/useIsScrolled'
 import { cn } from '@/lib/utils'
+import { navigationItems } from '@/shared/constants/nav-items'
 import { MobileNav } from './mobile-nav'
 
 const navContainerVariants: Variants = {
@@ -54,7 +55,7 @@ export function NavigationItem({
   width,
   left,
 }: Props) {
-  const scrolled = useIsScrolled(10)
+  const scrolled = useHasScrolled(10)
   const buttonRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export function NavigationItem({
 export function SiteNavbar() {
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const scrolled = useIsScrolled(10)
+  const scrolled = useHasScrolled(10)
   const isMobile = useIsMobile()
   const pathname = usePathname()
   const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
@@ -266,6 +267,27 @@ export function SiteNavbar() {
             </div>
 
             <div className="flex gap-2 items-center">
+              {process.env.NODE_ENV === 'development' && (
+                <MotionButton
+                  size="icon"
+                  variant="outline"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{
+                    borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                  }}
+                  className={
+                    cn(
+                      'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                    )
+                  }
+                  asChild
+                >
+                  <Link href="/proposal">
+                    <NotebookIcon />
+                  </Link>
+                </MotionButton>
+              )}
               <ThemeToggleButton className={
                 cn(
                   'h-12 w-12 border-foreground/15 shadow-md',

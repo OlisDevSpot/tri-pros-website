@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { navigationItems } from '@/constants/nav-items'
+import { navigationItems } from '@/shared/constants/nav-items'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages = navigationItems.map(item => item.href)

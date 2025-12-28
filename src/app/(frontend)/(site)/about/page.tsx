@@ -3,7 +3,7 @@ import BottomCTA from '@/components/cta'
 import AboutHero from '@/features/landing/ui/components/about/about-hero'
 import CompanyStory from '@/features/landing/ui/components/about/company-story'
 import CredentialsSection from '@/features/landing/ui/components/about/credentials'
-import ProcessOverview from '@/features/landing/ui/components/about/process-overview'
+import { ProcessOverview } from '@/features/landing/ui/components/about/process-overview'
 import TeamSection from '@/features/landing/ui/components/about/team'
 
 export const metadata: Metadata = {

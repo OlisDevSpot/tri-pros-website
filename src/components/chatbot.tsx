@@ -1,7 +1,7 @@
 'use client'
 
 import Script from 'next/script'
-import { usePipedriveChatbotLoader } from '@/services/pipedrive/hooks/use-chatbot-loader'
+import { usePipedriveChatbotLoader } from '@/shared/services/pipedrive/hooks/use-chatbot-loader'
 
 export function Chatbot() {
   usePipedriveChatbotLoader()

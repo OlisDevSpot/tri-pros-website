@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { Pool } from 'pg'
 
+import { Pool } from 'pg'
 import env from '@/config/server-env'
 import * as schema from '@/db/schema'
 

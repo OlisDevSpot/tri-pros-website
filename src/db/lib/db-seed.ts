@@ -1,15 +1,16 @@
-// const tables = process.env.npm_config_tables as keyof typeof schema
+import { db } from '@/db'
+import * as seedFns from '@/db/seeds'
 
-export async function seedOneStopSalesDb() {
+export async function seedTable() {
+  await seedFns.trades(db)
+  await seedFns.scopes(db)
+  await seedFns.materials(db)
+  await seedFns.addons(db)
+  await seedFns.benefitCategories(db)
+  await seedFns.benefits(db)
+  await seedFns.x_materialBenefits(db)
+  await seedFns.x_scopeBenefits(db)
+  await seedFns.x_scopeMaterials(db)
 }
 
-(async () => {
-  // eslint-disable-next-line node/prefer-global/process
-  switch (process.argv[2]) {
-    case 'oneStopSales':
-      await seedOneStopSalesDb()
-      break
-    default:
-      throw new Error('Invalid schema')
-  }
-})()
+seedTable()

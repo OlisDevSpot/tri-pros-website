@@ -1,6 +1,6 @@
 import { TopSpacer } from '@/components/top-spacer'
 import { ViewportHero } from '@/components/viewport-hero'
-import ProcessOverview from '../components/about/process-overview'
+import { ProcessOverview } from '../components/about/process-overview'
 import { ExperienceFeatures } from '../components/experience/features'
 
 export function ExperienceView() {
@@ -8,7 +8,7 @@ export function ExperienceView() {
     <main className="min-h-screen container">
       <ViewportHero>
         <TopSpacer>
-          <div className="container flex flex-col lg:flex-row gap-12 items-start lg:items-center h-full">
+          <div className="flex flex-col lg:flex-row gap-12 items-start lg:items-center h-full">
             <h1 className="text-4xl lg:text-7xl">
               &ldquo;Transparency in every step, customer-first approach, and a skilled team to bring your vision to life.&rdquo;
             </h1>

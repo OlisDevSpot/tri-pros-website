@@ -1,6 +1,9 @@
 import type { ZodError } from 'zod'
 
+import { config } from 'dotenv'
 import z from 'zod'
+
+config({ path: '.env' })
 
 const envSchema = z.object({
   // General

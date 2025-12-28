@@ -8,12 +8,12 @@ import DecorativeLine from '@/components/decorative-line'
 import { Button } from '@/components/ui/button'
 import { companyInfo } from '@/features/landing/data/company'
 import { valueProps } from '@/features/landing/data/value-prop'
-import { useIsScrolled } from '@/hooks/useIsScrolled'
+import { useHasScrolled } from '@/hooks/use-has-scrolled'
 
 export default function ValuePropositions() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
-  const scrolled = useIsScrolled()
+  const scrolled = useHasScrolled()
 
   return (
     <motion.section

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-export function useIsScrolled(threshold: number = 0): boolean {
+export function useHasScrolled(threshold: number = 0): boolean {
   const [isScrolled, setIsScrolled] = useState(false)
   const isScrolledRef = useRef(isScrolled)
   const ticking = useRef(false)

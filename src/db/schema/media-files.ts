@@ -1,7 +1,7 @@
 import type z from 'zod'
-import type { Tag } from '@/constants/tags'
+import type { Tag } from '@/shared/constants/tags'
 import { relations } from 'drizzle-orm'
-import { boolean, integer, jsonb, pgTable, varchar } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgTable, text, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
 import { createdAt, unsafeId, updatedAt } from '../lib/schema-helpers'
 import { projects } from './projects'
@@ -9,10 +9,14 @@ import { projects } from './projects'
 export const mediaFiles = pgTable('media_files', {
   id: unsafeId,
   name: varchar('name', { length: 80 }).notNull(),
+  pathKey: text('path_key').notNull().unique(),
+  bucket: text('bucket').notNull(),
+  mimeType: text('mime_type').notNull(),
+  fileExtension: text('file_extension').notNull(),
   url: varchar('url', { length: 255 }).notNull(),
   tags: jsonb('tags').$type<Tag[]>(),
   isHeroImage: boolean('is_hero_image').notNull().default(false),
-  projectId: integer('project_id')
+  projectId: uuid('project_id')
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),
   createdAt,
