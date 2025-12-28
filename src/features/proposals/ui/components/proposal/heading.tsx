@@ -9,11 +9,11 @@ export function Heading() {
       <div>
         <h2 className="text-4xl">
           Proposal for
-          {' {{homeownerInfo.name}}'}
+          {' {{ho.firstName}} {{ho.lastName}} '}
         </h2>
       </div>
       <div>
-        <p>{`{{dateSent}}`}</p>
+        <p>{`{{project.proposalDateSent}}`}</p>
       </div>
     </div>
   )
