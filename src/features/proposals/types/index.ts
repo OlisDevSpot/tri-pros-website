@@ -14,5 +14,5 @@ export interface ProposalStep {
   title: string
   accessor: string
   description: string
-  Component: React.ReactNode
+  Component: () => React.ReactNode
 }

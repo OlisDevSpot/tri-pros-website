@@ -2,12 +2,12 @@
 'use client'
 
 import type { MotionValue, Variants } from 'motion/react'
-import { ArrowRightIcon, ChevronUpIcon, NotebookIcon, PhoneIcon } from 'lucide-react'
+import { ArrowRightIcon, ChevronUpIcon, FormInputIcon, NotebookIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Logo } from '@/components/logo'
+import { LogoLink } from '@/components/logo'
 import { ThemeToggleButton } from '@/components/theme-toggle-button'
 import { MotionButton } from '@/components/ui/button'
 import { companyInfo } from '@/features/landing/data/company'
@@ -178,7 +178,7 @@ export function SiteNavbar() {
           >
             {/* Logo */}
             <motion.div className="w-[180px] h-full shrink-0">
-              <Logo onClick={() => setIsMobileOpen(false)} />
+              <LogoLink onClick={() => setIsMobileOpen(false)} />
             </motion.div>
 
             {/* Desktop Navigation */}
@@ -268,25 +268,46 @@ export function SiteNavbar() {
 
             <div className="flex gap-2 items-center">
               {process.env.NODE_ENV === 'development' && (
-                <MotionButton
-                  size="icon"
-                  variant="outline"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  style={{
-                    borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                  }}
-                  className={
-                    cn(
-                      'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
-                    )
-                  }
-                  asChild
-                >
-                  <Link href="/proposal">
-                    <NotebookIcon />
-                  </Link>
-                </MotionButton>
+                <>
+                  <MotionButton
+                    size="icon"
+                    variant="outline"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                    }}
+                    className={
+                      cn(
+                        'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                      )
+                    }
+                    asChild
+                  >
+                    <Link href="/proposal-flow/form">
+                      <FormInputIcon />
+                    </Link>
+                  </MotionButton>
+                  <MotionButton
+                    size="icon"
+                    variant="outline"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                    }}
+                    className={
+                      cn(
+                        'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                      )
+                    }
+                    asChild
+                  >
+                    <Link href="/proposal-flow/proposal">
+                      <NotebookIcon />
+                    </Link>
+                  </MotionButton>
+                </>
               )}
               <ThemeToggleButton className={
                 cn(

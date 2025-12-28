@@ -20,7 +20,9 @@ export function RelatedProjects({ projectType }: Props) {
     <Card>
       <CardHeader>
         <CardTitle>
-          {`Other ${projectTypes[projectType].title} Projects`}
+          <h2>
+            {`Other ${projectTypes[projectType].title} Projects`}
+          </h2>
         </CardTitle>
         <CardDescription>View similar completed projects from our portfolio</CardDescription>
       </CardHeader>

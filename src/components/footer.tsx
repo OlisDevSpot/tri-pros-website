@@ -4,7 +4,7 @@ import { motion } from 'motion/react'
 import Link from 'next/link'
 import { companyInfo } from '@/features/landing/data/company'
 import { footerData } from '@/features/landing/data/footer'
-import { Logo } from './logo'
+import { LogoLink } from './logo'
 
 export default function Footer() {
   return (
@@ -22,7 +22,7 @@ export default function Footer() {
             >
               {/* Logo */}
               <motion.div className="w-[200px] h-[60px] shrink-0">
-                <Logo />
+                <LogoLink />
               </motion.div>
 
               {/* Company Description */}
