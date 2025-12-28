@@ -25,7 +25,7 @@ export function ProposalForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 w-full h-full"
+        className="space-y-8 w-full h-auto"
       >
         <Card className="w-full">
           <CardHeader>
