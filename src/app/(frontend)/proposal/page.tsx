@@ -5,7 +5,12 @@ import { ProposalPageNavbar } from '@/features/proposals/ui/components/proposal-
 
 export default function ProposalPage() {
   return (
-    <div className="h-screen flex flex-col">
+    <div
+      style={{
+        background: `radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 60%, transparent))`,
+      }}
+      className="h-screen flex flex-col"
+    >
       <ProposalPageNavbar />
       <div className="grow min-h-0 p-8">
         <Proposal />
