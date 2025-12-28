@@ -10,7 +10,7 @@ export default function ProposalFlowLayout({
       style={{
         background: `radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 60%, transparent))`,
       }}
-      className="h-dvh flex flex-col "
+      className="h-dvh flex flex-col"
     >
       <ProposalPageNavbar />
       {children}
