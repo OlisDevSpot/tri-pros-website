@@ -6,10 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 export function ProjectOverview() {
   const proposal = useCurrentProposal()
 
-  if (!proposal.data) {
-    return null
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
