@@ -1,4 +1,4 @@
-import { ViewportHero } from '@/components/viewport-hero'
+import { ViewportHero } from '@/shared/components/viewport-hero'
 
 export function PortfolioProjectsHero() {
   return (

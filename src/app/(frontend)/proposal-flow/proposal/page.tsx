@@ -4,7 +4,7 @@ import { Proposal } from '@/features/proposals/ui/components/proposal'
 
 export default function ProposalPage() {
   return (
-    <div className="grow min-h-0 lg:p-8">
+    <div className="container h-full px-8 overflow-auto">
       <Proposal />
     </div>
   )

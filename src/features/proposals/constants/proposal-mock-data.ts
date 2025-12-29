@@ -12,12 +12,6 @@ export const proposalSections = [
         Icon: CircleUserIcon,
       },
       {
-        label: 'Full address',
-        name: 'address',
-        value: '{{ho.address}}, {{ho.city}}, {{ho.state}} {{ho.zipCode}}',
-        Icon: MapPinHouseIcon,
-      },
-      {
         label: 'Email',
         name: 'email',
         value: '{{ho.email}}',
@@ -36,6 +30,14 @@ export const proposalSections = [
         Icon: BabyIcon,
       },
     ],
+    extraFields: [
+      {
+        label: 'Full address',
+        name: 'address',
+        value: '{{ho.address}}, {{ho.city}}, {{ho.state}} {{ho.zipCode}}',
+        Icon: MapPinHouseIcon,
+      },
+    ],
   },
   {
     label: 'Project',
@@ -47,7 +49,7 @@ export const proposalSections = [
         Icon: DrillIcon,
       },
       {
-        label: 'Approximate timeline',
+        label: 'Time Allocated',
         name: 'approximateTimeline',
         value: '{{project.timeAllocated}}',
         Icon: FaTimeline,

@@ -3,9 +3,10 @@
 import type { ProposalFormValues } from '@/features/proposals/schemas/form-schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form } from '@/components/ui/form'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Form } from '@/shared/components/ui/form'
 import { defaultValues, proposalFormSchema } from '@/features/proposals/schemas/form-schema'
+import { FundingFields } from './funding-fields'
 import { HomeownerFields } from './homeowner-fields'
 import { ProjectFields } from './project-fields'
 
@@ -41,6 +42,13 @@ export function ProposalForm() {
           </CardHeader>
           <CardContent className="space-y-8">
             <ProjectFields />
+          </CardContent>
+          <CardHeader>
+            <CardTitle>Funding Information</CardTitle>
+            <CardDescription>Information relevant to increased financial responsibility</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
+            <FundingFields />
           </CardContent>
         </Card>
       </form>

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import BottomCTA from '@/components/cta'
+import BottomCTA from '@/shared/components/cta'
 import { PortfolioHero } from '@/features/landing/ui/components/portfolio/portfolio-hero'
 
 export const metadata: Metadata = {

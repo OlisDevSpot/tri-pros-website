@@ -3,8 +3,8 @@
 import type { Variants } from 'motion/react'
 import { motion } from 'motion/react'
 
-import { TopSpacer } from '@/components/top-spacer'
-import { ViewportHero } from '@/components/viewport-hero'
+import { TopSpacer } from '@/shared/components/top-spacer'
+import { ViewportHero } from '@/shared/components/viewport-hero'
 import { blogPostTitles } from '@/features/landing/data/blog'
 import { BlogpostCard } from './blogpost-card'
 

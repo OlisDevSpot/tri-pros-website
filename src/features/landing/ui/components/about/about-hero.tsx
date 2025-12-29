@@ -4,12 +4,12 @@ import millify from 'millify'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { TopSpacer } from '@/components/top-spacer'
-import { Button } from '@/components/ui/button'
-import { ViewportHero } from '@/components/viewport-hero'
+import { TopSpacer } from '@/shared/components/top-spacer'
+import { Button } from '@/shared/components/ui/button'
+import { ViewportHero } from '@/shared/components/viewport-hero'
 import { companyInfo } from '@/features/landing/data/company'
-import { useIsMobile } from '@/hooks/use-mobile'
-import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { cn } from '@/shared/lib/utils'
 
 export default function AboutHero() {
   const isMobile = useIsMobile()

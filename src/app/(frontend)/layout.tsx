@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
-import { Providers } from '@/components/providers'
+import { Providers } from '@/shared/components/providers'
 import './globals.css'
 
 const playfair = Playfair_Display({

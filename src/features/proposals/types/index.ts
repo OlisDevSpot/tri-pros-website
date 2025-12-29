@@ -10,9 +10,9 @@ export interface HomeownerInfo {
   fundingType: string
 }
 
-export interface ProposalStep {
+export interface ProposalStep<P> {
   title: string
   accessor: string
   description: string
-  Component: () => React.ReactNode
+  Component: (props: P) => React.ReactNode
 }

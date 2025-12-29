@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react'
 import { companyInfo } from '@/features/landing/data/company'
-import { formatAsPhoneNumber } from '@/lib/formatters'
+import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 const offices = [
   {

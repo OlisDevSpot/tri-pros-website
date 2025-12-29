@@ -1,10 +1,11 @@
 import z from 'zod'
+import { projectTypes } from '@/shared/constants/enums'
 
 export const scheduleConsultationFormSchema = z.object({
   name: z.string(),
   email: z.email(),
   phone: z.string(),
-  projectType: z.string(),
+  projectType: z.enum(projectTypes),
   timeline: z.string(),
   budget: z.string(),
   propertyType: z.string(),
@@ -19,7 +20,7 @@ export const defaultValues: ScheduleConsultationFormSchema = {
   name: '',
   email: '',
   phone: '',
-  projectType: '',
+  projectType: 'general-remodeling',
   timeline: '',
   budget: '',
   propertyType: '',

@@ -5,8 +5,8 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import DecorativeLine from '@/components/decorative-line'
-import { Button } from '@/components/ui/button'
+import DecorativeLine from '@/shared/components/decorative-line'
+import { Button } from '@/shared/components/ui/button'
 import { services } from '@/features/landing/data/company/services'
 
 export default function ServicesPreview() {

@@ -6,7 +6,7 @@ import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 
-import env from './config/server-env'
+import env from './shared/config/server-env'
 import { Blogposts } from './payload/collections/Blogposts'
 import { Media } from './payload/collections/Media'
 import { Users } from './payload/collections/Users'

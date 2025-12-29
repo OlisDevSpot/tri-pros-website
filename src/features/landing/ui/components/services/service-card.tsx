@@ -2,9 +2,9 @@ import type { services } from '@/features/landing/data/company/services'
 import { motion, useInView } from 'motion/react'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { useFeatureStore } from '@/store/useFeatureStore'
+import { Button } from '@/shared/components/ui/button'
+import { cn } from '@/shared/lib/utils'
+import { useFeatureStore } from '@/shared/hooks/use-feature-store'
 
 export default function ServiceCard({
   service,

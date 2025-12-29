@@ -6,6 +6,7 @@ import type {
   hvacComponents,
   hvacTypes,
   insulationLevels,
+  projectTypes,
   roofLocations,
   roofTypes,
   tradeLocations,
@@ -13,6 +14,8 @@ import type {
   variableGroups,
   windowsTypes,
 } from '@/shared/constants/enums'
+
+export type ProjectType = (typeof projectTypes)[number]
 
 // PLATFORM
 export type TradeLocation = (typeof tradeLocations)[number]

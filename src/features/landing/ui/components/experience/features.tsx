@@ -1,4 +1,4 @@
-import { TextWithLine } from '@/components/text-with-line'
+import { TextWithLine } from '@/shared/components/text-with-line'
 
 interface Feature {
   name: string

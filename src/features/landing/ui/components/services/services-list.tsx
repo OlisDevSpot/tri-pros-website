@@ -5,9 +5,9 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 import { services } from '@/features/landing/data/company/services'
-import { cn } from '@/lib/utils'
+import { cn } from '@/shared/lib/utils'
 
 export default function ServicesList() {
   const ref = useRef(null)

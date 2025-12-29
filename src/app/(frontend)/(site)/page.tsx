@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import BottomCTA from '@/components/cta'
+import BottomCTA from '@/shared/components/cta'
 import HomeHero from '@/features/landing/ui/components/home/home-hero'
 import PastProjects from '@/features/landing/ui/components/home/past-projects'
 import ServicesPreview from '@/features/landing/ui/components/home/services-preview'

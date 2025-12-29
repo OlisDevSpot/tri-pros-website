@@ -2,8 +2,8 @@ import type { HTMLMotionProps, Variants } from 'motion/react'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import React, { createContext } from 'react'
-import { formatDate } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
+import { formatDate } from '@/shared/lib/formatters'
+import { cn } from '@/shared/lib/utils'
 
 interface Blogpost {
   image: string

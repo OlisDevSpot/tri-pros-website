@@ -10,8 +10,8 @@
     "lint": "next lint",
     "generate:types": "payload generate:types --watch",
     "db:push": "drizzle-kit push",
-    "db:reset": "tsx ./src/db/lib/db-reset.ts",
-    "db:seed": "tsx ./src/db/lib/db-seed.ts"
+    "db:reset": "tsx ./src/shared/db/lib/db-reset.ts",
+    "db:seed": "tsx ./src/shared/db/lib/db-seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

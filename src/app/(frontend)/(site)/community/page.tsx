@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ViewportHero } from '@/components/viewport-hero'
+import { ViewportHero } from '@/shared/components/viewport-hero'
 
 export const metadata: Metadata = {
   title: 'Community',

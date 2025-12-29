@@ -4,8 +4,8 @@ import { animate, motion, useInView, useMotionValue } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 
 import useMeasure from 'react-use-measure'
-import { useIsMobile } from '@/hooks/use-mobile'
-import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { cn } from '@/shared/lib/utils'
 import { PhotoCard } from './photo-card'
 
 const photos = [

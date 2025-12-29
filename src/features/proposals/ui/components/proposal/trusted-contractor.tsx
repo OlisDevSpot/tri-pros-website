@@ -1,6 +1,6 @@
-import { CompanySocialButtons } from '@/components/company-social-buttons'
-import { Logo } from '@/components/logo'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CompanySocialButtons } from '@/shared/components/company-social-buttons'
+import { Logo } from '@/shared/components/logo'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { ProcessOverview } from '@/features/landing/ui/components/about/process-overview'
 
 export function TrustedContractor() {

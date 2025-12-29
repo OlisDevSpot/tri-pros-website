@@ -1,5 +1,5 @@
-import { TopSpacer } from '@/components/top-spacer'
-import { ViewportHero } from '@/components/viewport-hero'
+import { TopSpacer } from '@/shared/components/top-spacer'
+import { ViewportHero } from '@/shared/components/viewport-hero'
 import { ProcessOverview } from '../components/about/process-overview'
 import { ExperienceFeatures } from '../components/experience/features'
 

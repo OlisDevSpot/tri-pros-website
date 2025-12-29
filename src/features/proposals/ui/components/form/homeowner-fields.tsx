@@ -1,7 +1,7 @@
 import type { ProposalFormValues } from '@/features/proposals/schemas/form-schema'
 import { useFormContext } from 'react-hook-form'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { Input } from '@/shared/components/ui/input'
 
 export function HomeownerFields() {
   const form = useFormContext<ProposalFormValues>()

@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 
 export function ScopeOfWork() {
   return (

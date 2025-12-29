@@ -3,7 +3,7 @@
 import { motion, useInView } from 'motion/react'
 
 import { useRef } from 'react'
-import DecorativeLine from '@/components/decorative-line'
+import DecorativeLine from '@/shared/components/decorative-line'
 import { credentials } from '@/features/landing/data/company/credentials'
 import { stats } from '@/features/landing/data/company/stats'
 

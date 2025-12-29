@@ -4,10 +4,10 @@ import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Logo } from '@/components/logo'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Logo } from '@/shared/components/logo'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { proposalSteps } from '@/features/proposals/constants/proposal-steps'
-import { useIsMobile } from '@/hooks/use-mobile'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 
 export function ProposalPageNavbar() {
   const isMobile = useIsMobile()
@@ -43,13 +43,13 @@ export function ProposalPageNavbar() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex justify-center items-center w-fit px-8 bg-foreground/40 hover:bg-foreground/40"
+            className="flex justify-center items-center w-fit bg-foreground/40 hover:bg-foreground/40"
           >
             <Link
               className="h-full w-full flex items-center justify-center transition"
               href="/proposal-flow/proposal"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 h-full w-full px-8 ">
                 PROPOSAL
                 <ArrowRightIcon size={20} />
               </div>

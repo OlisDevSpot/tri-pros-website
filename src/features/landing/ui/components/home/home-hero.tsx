@@ -4,11 +4,11 @@ import type { Variants } from 'motion/react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { CompanySocialButtons } from '@/components/company-social-buttons'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { CompanySocialButtons } from '@/shared/components/company-social-buttons'
+import { Badge } from '@/shared/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
 
-import { ViewportHero } from '@/components/viewport-hero'
+import { ViewportHero } from '@/shared/components/viewport-hero'
 import { companyInfo } from '@/features/landing/data/company'
 
 const parentVariant: Variants = {

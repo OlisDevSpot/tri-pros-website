@@ -1,8 +1,8 @@
 import type { ProposalFormValues } from '@/features/proposals/schemas/form-schema'
 import { useFormContext } from 'react-hook-form'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { Input } from '@/shared/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 
 export function ProjectFields() {
   const form = useFormContext<ProposalFormValues>()

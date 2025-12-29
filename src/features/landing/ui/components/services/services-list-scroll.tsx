@@ -5,10 +5,10 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 import { services } from '@/features/landing/data/company/services'
-import { cn } from '@/lib/utils'
-import { useFeatureStore } from '@/store/useFeatureStore'
+import { cn } from '@/shared/lib/utils'
+import { useFeatureStore } from '@/shared/hooks/use-feature-store'
 import ServiceCard from './service-card'
 
 export default function ServicesListScroll() {

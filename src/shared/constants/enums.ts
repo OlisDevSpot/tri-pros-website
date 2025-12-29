@@ -1,4 +1,7 @@
 // PLATFORM
+
+export const projectTypes = ['general-remodeling', 'energy-efficient'] as const
+
 export const tradeLocations = ['exterior', 'interior', 'lot'] as const
 export const constructionTypes = ['energy-efficient', 'rough-construction', 'finish-construction'] as const
 export const homeAreas = ['bathroom', 'kitchen', 'bedroom', 'living-room', 'dining-room', 'front-yard', 'back-yard', 'side-yard', 'garage', 'attic', 'basement', 'foundation', 'exterior-shell', 'interior-space'] as const

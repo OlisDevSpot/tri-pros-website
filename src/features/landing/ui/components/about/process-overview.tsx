@@ -4,8 +4,8 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import { useRef } from 'react'
 
-import { useIsMobile } from '@/hooks/use-mobile'
-import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { cn } from '@/shared/lib/utils'
 
 const processSteps = [
   {

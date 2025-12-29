@@ -13,7 +13,9 @@ export default function ProposalFlowLayout({
       className="h-dvh flex flex-col"
     >
       <ProposalPageNavbar />
-      {children}
+      <div className="grow min-h-0 py-4 lg:py-8">
+        {children}
+      </div>
     </div>
   )
 }

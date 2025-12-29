@@ -1,5 +1,5 @@
-import Footer from '@/components/footer'
-import { SiteNavbar } from '@/components/navigation/site-navbar'
+import Footer from '@/shared/components/footer'
+import { SiteNavbar } from '@/shared/components/navigation/site-navbar'
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (

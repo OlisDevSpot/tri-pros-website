@@ -1,27 +1,15 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { projectTypes } from '@/features/proposals/constants/project-types'
 
-interface Props {
-  projectType: 'energy-efficient' | 'general remodeling'
-}
+export function RelatedProjects() {
+  const projectType = projectTypes['energy-efficient']
 
-export const projectTypes = {
-  'energy-efficient': {
-    title: 'Energy Efficient',
-    description: 'Energy efficient projects',
-  },
-  'general remodeling': {
-    title: 'General Remodeling',
-    description: 'General remodeling projects',
-  },
-}
-
-export function RelatedProjects({ projectType }: Props) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>
           <h2>
-            {`Other ${projectTypes[projectType].title} Projects`}
+            {`Other ${projectType.title} Projects`}
           </h2>
         </CardTitle>
         <CardDescription>View similar completed projects from our portfolio</CardDescription>

@@ -1,4 +1,4 @@
-import { ViewportHero } from '@/components/viewport-hero'
+import { ViewportHero } from '@/shared/components/viewport-hero'
 import { services } from '@/features/landing/data/company/services'
 
 type Service = (typeof services)[number]['slug']

@@ -1,8 +1,8 @@
 import { motion } from 'motion/react'
 import React from 'react'
-import { TextWithLine } from '@/components/text-with-line'
-import { useIsMobile } from '@/hooks/use-mobile'
-import { cn } from '@/lib/utils'
+import { TextWithLine } from '@/shared/components/text-with-line'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
   founderName: string

@@ -2,7 +2,7 @@
 
 import { motion } from 'motion/react'
 import Image from 'next/image'
-import { formatDate } from '@/lib/formatters'
+import { formatDate } from '@/shared/lib/formatters'
 
 interface BlogPostCardProps {
   title: string
