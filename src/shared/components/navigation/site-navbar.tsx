@@ -1,21 +1,23 @@
-/* eslint-disable node/prefer-global/process */
 'use client'
 
 import type { MotionValue, Variants } from 'motion/react'
-import { ArrowRightIcon, ChevronUpIcon, FormInputIcon, NotebookIcon, PhoneIcon } from 'lucide-react'
+import { ArrowRightIcon, ChevronUpIcon, LogInIcon, LogOutIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { companyInfo } from '@/features/landing/data/company'
+import { signOut, useSession } from '@/shared/auth/client'
+import { MotionButton } from '@/shared/components/buttons/motion-button'
 import { LogoLink } from '@/shared/components/logo'
 import { ThemeToggleButton } from '@/shared/components/theme-toggle-button'
-import { MotionButton } from '@/shared/components/ui/button'
-import { companyInfo } from '@/features/landing/data/company'
+import { generateNavItemsGroups, publicNavItems } from '@/shared/constants/nav-items'
+import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
-import { navigationItems } from '@/shared/constants/nav-items'
-import { MobileNav } from './mobile-nav'
+import { SignInModal } from '../dialogs/modals/sign-in-modal'
+import { PopoverNav } from './popover-nav'
 
 const navContainerVariants: Variants = {
   initial: {
@@ -113,6 +115,10 @@ export function SiteNavbar() {
   const pathname = usePathname()
   const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
 
+  const { data: session, isPending } = useSession()
+
+  const { setModal, open: openAuthModal } = useAuthModalStore()
+
   const width = useMotionValue(0)
   const left = useMotionValue(0)
   const subitemsContainerHeight = useMotionValue(150)
@@ -125,10 +131,17 @@ export function SiteNavbar() {
     animate(subitemsContainerHeight, containerRect.height, { type: 'tween', duration: 0.2 })
   }, [selectedItemIndex, subitemsContainerHeight])
 
+  useEffect(() => {
+    setModal({
+      accessor: 'login-modal',
+      Element: <SignInModal />,
+    })
+  }, [setModal])
+
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
   function findSelectedItem(index: number): { name: string, href: string, subItems: readonly { name: string, href: string }[] } | undefined {
-    const item = navigationItems.find((_, i) => i === index)
+    const item = publicNavItems.find((_, i) => i === index)
 
     if (!item || !('subItems' in item))
       return undefined
@@ -141,6 +154,21 @@ export function SiteNavbar() {
     setIsMobileOpen(false)
     animate(width, 0)
   }
+
+  function openLoginModal() {
+    closeNavigation()
+    openAuthModal()
+  }
+
+  const getPopoverNavItems = useCallback(() => {
+    const items = generateNavItemsGroups({ navType: !session ? 'public' : 'user' })
+
+    return isMobile ? items : { user: items.user }
+  }, [isMobile, session])
+
+  const hasPopoverItems = useMemo(() => {
+    return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0
+  }, [getPopoverNavItems])
 
   return (
     <>
@@ -159,7 +187,7 @@ export function SiteNavbar() {
       </AnimatePresence>
       <motion.nav
         className={cn(
-          'fixed left-0 right-0 z-50 transition-all duration-300',
+          'fixed left-0 right-0 z-50 transition-all duration-300 scrollbar-gutter-stable',
           scrolled ? 'bg-background/95 shadow-lg' : 'bg-transparent',
         )}
         style={{
@@ -200,7 +228,7 @@ export function SiteNavbar() {
                   }}
                   className="absolute h-0.5 bg-foreground bottom-0"
                 />
-                {navigationItems.map((item, index) => (
+                {publicNavItems.map((item, index) => (
                   <NavigationItem
                     key={item.name}
                     item={item}
@@ -220,7 +248,7 @@ export function SiteNavbar() {
               </div>
               {/* Additional Content */}
               <AnimatePresence>
-                {selectedItemIndex && 'subItems' in navigationItems[selectedItemIndex] && navigationItems[selectedItemIndex]?.subItems && (
+                {selectedItemIndex && 'subItems' in publicNavItems[selectedItemIndex] && publicNavItems[selectedItemIndex]?.subItems && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -267,48 +295,49 @@ export function SiteNavbar() {
             </div>
 
             <div className="flex gap-2 items-center">
-              {process.env.NODE_ENV === 'development' && (
-                <>
-                  <MotionButton
-                    size="icon"
-                    variant="outline"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                    }}
-                    className={
-                      cn(
-                        'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
-                      )
-                    }
-                    asChild
-                  >
-                    <Link href="/proposal-flow/form">
-                      <FormInputIcon />
-                    </Link>
-                  </MotionButton>
-                  <MotionButton
-                    size="icon"
-                    variant="outline"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                    }}
-                    className={
-                      cn(
-                        'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
-                      )
-                    }
-                    asChild
-                  >
-                    <Link href="/proposal-flow/proposal">
-                      <NotebookIcon />
-                    </Link>
-                  </MotionButton>
-                </>
-              )}
+              {!isPending && !session?.user
+                ? (
+                    <MotionButton
+                      size="icon"
+                      variant="outline"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                      }}
+                      className={
+                        cn(
+                          'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                        )
+                      }
+                      onClick={() => {
+                        openLoginModal()
+                      }}
+                    >
+                      <LogInIcon />
+                    </MotionButton>
+                  )
+                : (
+                    <MotionButton
+                      size="icon"
+                      variant="outline"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                      }}
+                      className={
+                        cn(
+                          'h-12 w-12 text-red-200 lg:bg-rose-800 lg:text-foreground border-foreground/15 shadow-md',
+                        )
+                      }
+                      onClick={async () => {
+                        await signOut()
+                      }}
+                    >
+                      <LogOutIcon />
+                    </MotionButton>
+                  )}
               <ThemeToggleButton className={
                 cn(
                   'h-12 w-12 border-foreground/15 shadow-md',
@@ -367,7 +396,8 @@ export function SiteNavbar() {
                 animate={{ opacity: 1, y: 0 }}
                 className={
                   cn(
-                    '2xl:hidden h-12 w-12',
+                    'h-12 w-12 rounded-full',
+                    hasPopoverItems ? 'flex' : 'hidden',
                   )
                 }
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -376,7 +406,7 @@ export function SiteNavbar() {
               >
                 <motion.div
                   animate={isMobileOpen ? 'open' : 'closed'}
-                  className="w-6 h-6 flex flex-col justify-center items-center"
+                  className="w-4 h-4 flex flex-col justify-center items-center"
                 >
                   <motion.span
                     variants={{
@@ -406,10 +436,10 @@ export function SiteNavbar() {
         </div>
 
         {/* Mobile Navigation */}
-        <MobileNav
+        <PopoverNav
           isOpen={isMobileOpen}
           setIsOpen={setIsMobileOpen}
-          navigationItems={navigationItems}
+          navItemsGroup={getPopoverNavItems()}
         />
       </motion.nav>
     </>

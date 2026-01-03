@@ -1,4 +1,5 @@
 import z from 'zod'
+import { projectTypes } from '@/shared/constants/enums'
 
 export const proposalFormSchema = z.object({
   homeowner: z.object({
@@ -10,26 +11,24 @@ export const proposalFormSchema = z.object({
     city: z.string().min(1, { message: 'City is required' }),
     state: z.string().min(1, { message: 'State is required' }),
     zipCode: z.string().min(1, { message: 'Zip code is required' }),
+    age: z.number().min(18, { message: 'You must be 18 or older' }),
   }).optional(),
   project: z.object({
-    type: z.enum(['energy-efficient', 'general remodeling']),
+    label: z.string().min(1, { message: 'Label is required' }),
+    type: z.enum(projectTypes).default('general-remodeling').nonoptional(),
     timeAllocated: z.string().min(1, { message: 'Time allocated is required' }),
     sowSummary: z.string().min(1, { message: 'SOW summary is required' }),
-    startDate: z.string().min(1, { message: 'Start date is required' }),
-    completionDate: z.string().min(1, { message: 'Completion date is required' }),
   }).optional(),
   funding: z.object({
     tcp: z.number().min(1, { message: 'TCP is required' }),
     deposit: z.number().min(1, { message: 'Deposit is required' }),
-    fundingType: z.enum(['loan', 'cash', 'mixed']),
     totalCash: z.number(),
-    totalLoan: z.number(),
   }).optional(),
 })
 
 export type ProposalFormValues = z.infer<typeof proposalFormSchema>
 
-export const defaultValues: ProposalFormValues = {
+export const baseDefaultValues: ProposalFormValues = {
   homeowner: {
     firstName: '',
     lastName: '',
@@ -39,19 +38,17 @@ export const defaultValues: ProposalFormValues = {
     city: '',
     state: '',
     zipCode: '',
+    age: 40,
   },
   project: {
-    type: 'energy-efficient',
+    type: 'general-remodeling',
+    label: '',
     timeAllocated: '',
     sowSummary: '',
-    startDate: '',
-    completionDate: '',
   },
   funding: {
     tcp: 0,
-    deposit: 0,
-    fundingType: 'loan',
+    deposit: 1000,
     totalCash: 0,
-    totalLoan: 0,
   },
 }

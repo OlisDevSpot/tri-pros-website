@@ -62,6 +62,58 @@ export function HomeownerFields() {
               </FormItem>
             )}
           />
+          <FormField
+            name="homeowner.address"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Address *</FormLabel>
+                <FormControl>
+                  <Input placeholder="123 ABC Street," {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="homeowner.city"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City *</FormLabel>
+                <FormControl>
+                  <Input placeholder="Tarzana" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="homeowner.state"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State *</FormLabel>
+                <FormControl>
+                  <Input placeholder="CA" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="homeowner.zipCode"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Zip *</FormLabel>
+                <FormControl>
+                  <Input placeholder="91335" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
       </div>
     </section>

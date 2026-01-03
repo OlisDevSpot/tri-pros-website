@@ -229,6 +229,10 @@
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+
+  .scrollbar-gutter-stable {
+    scrollbar-gutter: stable;
+  }
 }
 
 @layer utilities {

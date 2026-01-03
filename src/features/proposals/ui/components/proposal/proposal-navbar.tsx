@@ -4,9 +4,9 @@ import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { proposalSteps } from '@/features/proposals/constants/proposal-steps'
 import { Logo } from '@/shared/components/logo'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { proposalSteps } from '@/features/proposals/constants/proposal-steps'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 
 export function ProposalPageNavbar() {

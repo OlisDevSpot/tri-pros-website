@@ -1,7 +1,6 @@
 import type { VariantProps } from 'class-variance-authority'
 import { Slot } from '@radix-ui/react-slot'
 import { cva } from 'class-variance-authority'
-import { motion } from 'motion/react'
 
 import * as React from 'react'
 import { cn } from '@/shared/lib/utils'
@@ -61,6 +60,4 @@ function Button({
   )
 }
 
-const MotionButton = motion.create(Button)
-
-export { Button, buttonVariants, MotionButton }
+export { Button, buttonVariants }

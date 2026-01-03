@@ -1,10 +1,19 @@
+import { headers as getHeaders } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { ProposalPageNavbar } from '@/features/proposals/ui/components/proposal/proposal-navbar'
+import { ProposalSidebar } from '@/features/proposals/ui/components/sidebar'
+import { requireAuth } from '@/shared/auth/lib/utils'
+import { ROOTS } from '@/shared/config/roots'
 
-export default function ProposalFlowLayout({
+export default async function ProposalFlowLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  await requireAuth(await getHeaders(), () => {
+    redirect(`${ROOTS.generateUrl('/', { absolute: true })}`)
+  })
+
   return (
     <div
       style={{
@@ -13,8 +22,13 @@ export default function ProposalFlowLayout({
       className="h-dvh flex flex-col"
     >
       <ProposalPageNavbar />
-      <div className="grow min-h-0 py-4 lg:py-8">
-        {children}
+      <div className="container grow min-h-0 py-4 lg:py-8">
+        <div className="h-full flex gap-4 justify-between">
+          <nav className="h-fit border border-primary/20 p-4 rounded-xl">
+            <ProposalSidebar />
+          </nav>
+          {children}
+        </div>
       </div>
     </div>
   )

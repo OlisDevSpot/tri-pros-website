@@ -9,7 +9,7 @@ import { accessor, description, imageUrl, label, outcomeStatement, unsafeId } fr
 import { x_materialBenefits } from './x-material-benefits'
 import { x_scopeMaterials } from './x-scope-materials'
 
-export const materials = pgTable('material', {
+export const materials = pgTable('materials', {
   id: unsafeId,
   label,
   accessor: accessor.unique(),

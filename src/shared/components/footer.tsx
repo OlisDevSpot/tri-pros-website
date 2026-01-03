@@ -8,7 +8,7 @@ import { LogoLink } from './logo'
 
 export default function Footer() {
   return (
-    <footer className="bg-muted text-foreground lg:sticky lg:bottom-0 w-full z-1">
+    <footer className="text-foreground lg:sticky lg:bottom-0 w-full z-1 min-h-fit bg-muted">
       <div className="container pt-16 pb-12">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">

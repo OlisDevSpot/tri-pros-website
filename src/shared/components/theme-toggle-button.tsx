@@ -4,7 +4,7 @@ import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import * as React from 'react'
 
-import { MotionButton } from '@/shared/components/ui/button'
+import { MotionButton } from '@/shared/components/buttons/motion-button'
 
 interface Props extends React.HTMLAttributes<HTMLButtonElement> {
   className?: string

@@ -1,8 +1,8 @@
-import { useSearchParams } from 'next/navigation'
-import { useGetProposal } from '@/shared/data-client/proposals/use-get-proposals'
+import { useParams } from 'next/navigation'
+import { useGetProposal } from '@/shared/dal/client/proposals/use-get-proposals'
 
 export function useCurrentProposal() {
-  const proposalId = useSearchParams().get('proposalId')!
+  const params = useParams() as { proposalId: string }
 
-  return useGetProposal(proposalId)
+  return useGetProposal(params.proposalId)
 }

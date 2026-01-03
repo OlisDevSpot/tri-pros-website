@@ -1,3 +1,6 @@
+/* eslint-disable no-alert */
+'use client'
+
 import { motion } from 'motion/react'
 import { proposalSteps } from '@/features/proposals/constants/proposal-steps'
 import { Heading } from './heading'
@@ -22,7 +25,22 @@ export function Proposal() {
               id={step.accessor}
               key={step.accessor}
             >
-              <step.Component />
+              {step.accessor === 'funding'
+                ? (
+                    <step.Component onPickFinancingOption={(option) => {
+                      // eslint-disable-next-line no-console
+                      console.log(option)
+                    }}
+                    />
+                  )
+                : (step.accessor === 'agreement-link'
+                    ? (
+                        <step.Component onClick={() => {
+                          alert('clicked')
+                        }}
+                        />
+                      )
+                    : (<step.Component />)) }
             </div>
           ))}
         </motion.div>

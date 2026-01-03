@@ -4,7 +4,7 @@ import { integer, pgTable, unique } from 'drizzle-orm/pg-core'
 import { unsafeId } from '@/shared/db/lib/schema-helpers'
 
 import { scopes } from '@/shared/db/schema'
-import { variables } from './variable'
+import { variables } from './variables'
 
 export const x_scopeVariables = pgTable('x_scope_variables', {
   id: unsafeId,

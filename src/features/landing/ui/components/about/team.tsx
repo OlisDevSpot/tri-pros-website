@@ -5,10 +5,10 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import DecorativeLine from '@/shared/components/decorative-line'
-import { MotionButton } from '@/shared/components/ui/button'
 import { companyInfo } from '@/features/landing/data/company'
 import { teamMembers } from '@/features/landing/data/company/team-members'
+import { MotionButton } from '@/shared/components/buttons/motion-button'
+import DecorativeLine from '@/shared/components/decorative-line'
 
 export default function TeamSection() {
   const ref = useRef(null)

@@ -1,7 +1,7 @@
-import { CompanySocialButtons } from '@/shared/components/company-social-buttons'
-import { Logo } from '@/shared/components/logo'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { ProcessOverview } from '@/features/landing/ui/components/about/process-overview'
+import { CompanySocialButtons } from '@/shared/components/company-social-buttons'
+import { LogoLink } from '@/shared/components/logo'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 
 export function TrustedContractor() {
   return (
@@ -17,7 +17,7 @@ export function TrustedContractor() {
         </CardHeader>
         <CardContent>
           <div className="w-[180px] h-[50px] shrink-0">
-            <Logo />
+            <LogoLink />
           </div>
           <CompanySocialButtons className="lg:flex-row" />
         </CardContent>

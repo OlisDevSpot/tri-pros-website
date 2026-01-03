@@ -18,7 +18,14 @@ export function FundingFields() {
               <FormItem>
                 <FormLabel>Total Contract Price</FormLabel>
                 <FormControl>
-                  <Input placeholder="$50,000" {...field} />
+                  <Input
+                    {...field}
+                    placeholder="$50,000"
+                    onChange={(value) => {
+                      const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                      field.onChange(numericValue)
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -31,13 +38,20 @@ export function FundingFields() {
               <FormItem>
                 <FormLabel>Deposit</FormLabel>
                 <FormControl>
-                  <Input placeholder="$1,000" {...field} />
+                  <Input
+                    {...field}
+                    placeholder="$1,000"
+                    onChange={(value) => {
+                      const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                      field.onChange(numericValue)
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
+          {/* <FormField
             name="funding.fundingType"
             control={form.control}
             render={({ field }) => (
@@ -77,7 +91,7 @@ export function FundingFields() {
                 <FormMessage />
               </FormItem>
             )}
-          />
+          /> */}
         </div>
       </div>
     </section>

@@ -11,7 +11,7 @@ import { locationEnum } from './meta'
 import { scopes } from './scopes'
 import { x_tradeBenefits } from './x-trade-benefits'
 
-export const trades = pgTable('trade', {
+export const trades = pgTable('trades', {
   id: unsafeId,
   label,
   accessor: accessor.unique(),

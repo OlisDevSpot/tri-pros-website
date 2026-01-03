@@ -1,9 +1,11 @@
 import type { ZodError } from 'zod'
 
 import { config } from 'dotenv'
+import { expand } from 'dotenv-expand'
+
 import z from 'zod'
 
-config({ path: '.env' })
+expand(config({ path: '.env' }))
 
 const envSchema = z.object({
   // General
@@ -23,6 +25,11 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string(),
   BETTER_AUTH_SECRET: z.string(),
 
+  // GOOGLE
+  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string(),
+  GOOGLE_CLIENT_SECRET: z.string(),
+
   // RESEND
   RESEND_API_KEY: z.string(),
 
@@ -32,6 +39,12 @@ const envSchema = z.object({
   // PIPEDRIVE
   PIPEDRIVE_BASE_URL: z.string(),
   PIPEDRIVE_API_KEY: z.string(),
+
+  // HUBSPOT
+  HUBSPOT_BASE_URL: z.string(),
+  HUBSPOT_CLIENT_ID: z.string(),
+  HUBSPOT_CLIENT_SECRET: z.string(),
+  HUBSPOT_APP_REDIRECT_URL: z.string(),
 })
 
 export type env = z.infer<typeof envSchema>

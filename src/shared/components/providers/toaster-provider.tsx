@@ -6,6 +6,9 @@ export function ToasterProvider() {
   const { theme } = useTheme()
 
   return (
-    <Toaster position="top-center" theme={theme as 'light' | 'dark'} />
+    <Toaster
+      position="top-center"
+      theme={theme as 'light' | 'dark'}
+    />
   )
 }

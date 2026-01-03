@@ -1,4 +1,5 @@
 import type { ProposalStep } from '@/features/proposals/types'
+import type { financingOptions } from '@/shared/constants/financing-options'
 import {
   ProjectOverview,
   RelatedProjects,
@@ -37,7 +38,7 @@ export const proposalSteps = [
     title: 'Funding',
     accessor: 'funding',
     description: 'Funding',
-    Component: () => Funding(),
+    Component: ({ onPickFinancingOption }: { onPickFinancingOption?: (option: typeof financingOptions[keyof typeof financingOptions][number]) => void }) => Funding({ onPickFinancingOption }),
   },
   {
     title: 'Agreement Link',
