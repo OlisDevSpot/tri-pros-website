@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import { ProposalPageNavbar } from '@/features/proposal-flow/ui/components/navbar/navbar'
 import { ProposalFlowLoadingState } from '@/features/proposal-flow/ui/components/states/loading'
-import { LoadingState } from '@/shared/components/states/loading-state'
 
 export default async function ProposalFlowLayout({
   children,
