@@ -1,4 +1,7 @@
+import { Suspense } from 'react'
 import { ProposalPageNavbar } from '@/features/proposal-flow/ui/components/navbar/navbar'
+import { ProposalFlowLoadingState } from '@/features/proposal-flow/ui/components/states/loading'
+import { LoadingState } from '@/shared/components/states/loading-state'
 
 export default async function ProposalFlowLayout({
   children,
@@ -16,7 +19,9 @@ export default async function ProposalFlowLayout({
       <ProposalPageNavbar />
       <div className="container grow min-h-0 py-4 lg:py-8">
         <div className="h-full">
-          {children}
+          <Suspense fallback={<ProposalFlowLoadingState />}>
+            {children}
+          </Suspense>
         </div>
       </div>
     </div>
