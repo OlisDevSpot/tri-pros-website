@@ -37,11 +37,13 @@ export interface ContactsProperties {
 }
 
 export interface ContactResponse {
+  vid: string
   properties: ContactProperties
 }
 
 export interface ContactsResponse {
   contacts: {
+    vid: string
     properties: ContactsProperties
   }[]
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import BottomCTA from '@/shared/components/cta'
 import { PortfolioHero } from '@/features/landing/ui/components/portfolio/portfolio-hero'
+import BottomCTA from '@/shared/components/cta'
 
 export const metadata: Metadata = {
   title: 'Portfolio',

@@ -26,6 +26,7 @@ export function SignInGoogle({
             await signIn.social({
               provider: 'google',
               callbackURL: `/`,
+              errorCallbackURL: `/`,
             })
           }}
         >

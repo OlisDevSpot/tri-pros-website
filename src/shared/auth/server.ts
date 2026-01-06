@@ -1,10 +1,11 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
-import { genericOAuth, hubspot } from 'better-auth/plugins'
+import { genericOAuth, hubspot, openAPI } from 'better-auth/plugins'
 import env from '@/shared/config/server-env'
 import { db } from '@/shared/db'
 import * as schema from '@/shared/db/schema'
+import { userRoles } from '../constants/enums'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -20,6 +21,23 @@ export const auth = betterAuth({
       prompt: 'select_account consent',
     },
   },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const CORPORATE_DOMAIN = 'triprosremodeling.com'
+          const email = user.email?.toLowerCase?.() ?? ''
+          const domain = email.split('@')[1] ?? ''
+
+          if (domain !== CORPORATE_DOMAIN) {
+            return { data: user }
+          }
+
+          return { data: { ...user, role: 'agent' } }
+        },
+      },
+    },
+  },
   baseURL: env.NEXT_PUBLIC_BASE_URL,
   secret: env.BETTER_AUTH_SECRET,
   user: {
@@ -29,23 +47,20 @@ export const auth = betterAuth({
         input: false,
       },
       role: {
-        type: ['user', 'admin', 'super-admin'] as const,
+        type: [...userRoles] as const,
         defaultValue: 'user',
-      },
-      companyId: {
-        type: 'string',
-        input: false,
       },
     },
   },
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // seconds
+      maxAge: 60, // 1 minutes
     },
   },
   plugins: [
     nextCookies(),
+    openAPI(),
     genericOAuth({
       config: [
         hubspot({
@@ -65,4 +80,5 @@ export const auth = betterAuth({
 })
 
 export type Auth = typeof auth
-export type Session = Auth['$Infer']['Session']
+export type BetterAuthUser = Auth['$Infer']['Session']['user']
+export type BetterAuthSession = Auth['$Infer']['Session']

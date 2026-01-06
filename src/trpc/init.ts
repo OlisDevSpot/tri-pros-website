@@ -1,4 +1,4 @@
-import type { Session } from '@/shared/auth/server'
+import type { BetterAuthSession } from '@/shared/auth/server'
 import config from '@payload-config'
 import { initTRPC, TRPCError } from '@trpc/server'
 import { headers as getHeaders } from 'next/headers'
@@ -8,7 +8,7 @@ import superjson from 'superjson'
 import { auth } from '@/shared/auth/server'
 
 export interface CoreTRPCContext {
-  session: Session | null
+  session: BetterAuthSession | null
 }
 
 export interface HTTPTRPCContext extends CoreTRPCContext {
@@ -50,12 +50,17 @@ export const payloadProcedure = t.procedure.use(async ({ ctx, next }) => {
 })
 
 export const agentProcedure = baseProcedure.use(async ({ ctx, next }) => {
-  if (!ctx.session?.user) {
+  if (!ctx.session) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'Only authenticated users are allowed to perform this action',
     })
   }
 
-  return await next()
+  return await next({
+    ctx: {
+      ...ctx,
+      session: ctx.session,
+    },
+  })
 })

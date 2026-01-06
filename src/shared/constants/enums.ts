@@ -1,6 +1,7 @@
-// PLATFORM
+// MAIN
+export const userRoles = ['user', 'homeowner', 'agent', 'super-admin'] as const
 
-export const projectTypes = ['general-remodeling', 'energy-efficient'] as const
+// CONSTRUCTION
 
 export const tradeLocations = ['exterior', 'interior', 'lot'] as const
 export const constructionTypes = ['energy-efficient', 'rough-construction', 'finish-construction'] as const
@@ -14,7 +15,8 @@ export const windowsTypes = ['single', 'double'] as const
 export const insulationLevels = ['low', 'medium', 'high'] as const
 export const foundationTypes = ['raised', 'slab'] as const
 
-// ONE STOP SALES
+// PROPOSALS
+export const projectTypes = ['general-remodeling', 'energy-efficient'] as const
 export const electricProviders = ['ladwp', 'edison', 'glendale water & power', 'burbank water & power', 'riverside public utilities', 'pg&e', 'other'] as const
 export const variableDataTypes = ['text', 'select', 'number', 'boolean'] as const
 export const variableGroups = ['project', 'trade'] as const

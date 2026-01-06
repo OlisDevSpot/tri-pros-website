@@ -1,0 +1,113 @@
+import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import { useFormContext } from 'react-hook-form'
+import { Button } from '@/shared/components/ui/button'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { Input } from '@/shared/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { Textarea } from '@/shared/components/ui/textarea'
+
+export function ProjectFields() {
+  const form = useFormContext<ProposalFormValues>()
+
+  return (
+    <section className="space-y-8">
+      <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
+        <div className="flex flex-col gap-4">
+          <div className="grid lg:grid-cols-2 gap-4">
+            <FormField
+              name="project.type"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project Type</FormLabel>
+                  <FormControl>
+                    <Select defaultValue="general-remodeling">
+                      <SelectTrigger {...field} className="w-full">
+                        <SelectValue placeholder="Select a project type" />
+                      </SelectTrigger>
+                      <SelectContent {...field}>
+                        <SelectItem value="general-remodeling">
+                          General Remodeling
+                        </SelectItem>
+                        <SelectItem value="energy-efficient">
+                          Energy Efficient
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="project.timeAllocated"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Time Allocated</FormLabel>
+                  <FormControl>
+                    <Input placeholder="4-6 weeks" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <FormField
+            name="project.sowSummary"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex gap-2 items-center">
+                  <FormLabel>Scope of Work</FormLabel>
+                  <Button
+                    variant="outline"
+                    type="button"
+                    className="text-xs text-muted-foreground hover:underline"
+                    size="sm"
+                  >
+                    Templates
+                  </Button>
+                </div>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Tri Pros Remodeling will..."
+                    className="min-h-[250px]"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {/* <FormField
+            name="project.startDate"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input placeholder="1/1/2030" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="project.completionDate"
+            control={form.control}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Completion Date</FormLabel>
+                <FormControl>
+                  <Input placeholder="1/30/2030" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          /> */}
+        </div>
+      </div>
+    </section>
+  )
+}

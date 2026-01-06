@@ -2,12 +2,15 @@
 
 import type { NavItemsGroup, NavType } from '@/shared/types/nav'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import Link from 'next/link'
 import { FaHubspot } from 'react-icons/fa6'
-import { oauth2 } from '@/shared/auth/client'
+import { oauth2, unlinkAccount } from '@/shared/auth/client'
+import { useGetAccounts } from '@/shared/auth/hooks/queries/use-get-accounts'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn, getTypedKeys } from '@/shared/lib/utils'
+import { SpinnerLoader2 } from '../loaders/spinner-loader-2'
 import { Button } from '../ui/button'
 
 interface MobileNavProps {
@@ -21,47 +24,38 @@ export function PopoverNav({
   setIsOpen,
   navItemsGroup,
 }: MobileNavProps) {
+  const queryClient = useQueryClient()
   const isMobile = useIsMobile()
+
+  const accounts = useGetAccounts()
+
+  const hubspotAccountLinked = accounts.data?.find(account => account.providerId === 'hubspot')
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: isMobile ? 'auto' : '100vh' }}
-          exit={{ opacity: 0, height: 0 }}
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 100 }}
+          transition={{
+            type: 'tween',
+          }}
           className={cn(
-            'bg-background/70 backdrop-blur-md',
-            isMobile ? 'absolute top-full w-full border-t' : 'fixed h-screen top-0 right-0 w-80 border-l',
+            'fixed h-dvh top-0 bg-background/70 backdrop-blur-md w-full',
+            isMobile ? 'right-0 w-[70%]' : 'right-0 w-80 border-l',
           )}
         >
-          <div>
-            <Button
-              onClick={async () => {
-                await oauth2.link({
-                  providerId: 'hubspot',
-                  callbackURL: '/',
-                })
-
-                setIsOpen(false)
-              }}
-              className="flex items-center gap-2"
-            >
-              <FaHubspot />
-              <span className="sr-only">Link Hubspot</span>
-            </Button>
-          </div>
-          <div className="px-4 py-4 space-y-4 flex flex-col items-center">
+          <div className="px-8 py-8 space-y-4 flex flex-col items-center h-full">
             {getTypedKeys(navItemsGroup).map(key => (
               <motion.div key={key as string}>
-                {navItemsGroup[key] && navItemsGroup[key].sectionName !== 'Public' && <h4>{navItemsGroup[key].sectionName}</h4>}
                 {navItemsGroup[key] && navItemsGroup[key].items.map((item, index) => (
                   <motion.div
                     key={item.name}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="w-full"
+                    className="w-full h-full"
                   >
                     <Link
                       href={item.href}
@@ -74,6 +68,46 @@ export function PopoverNav({
                 ))}
               </motion.div>
             ))}
+            <div className="mt-auto">
+              <Button
+                onClick={hubspotAccountLinked
+                  ? async () => {
+                    await unlinkAccount({ providerId: 'hubspot' }, {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ['accounts'] })
+                      },
+                    })
+                  }
+                  : async () => {
+                    await oauth2.link({
+                      providerId: 'hubspot',
+                      callbackURL: '/',
+                    }, {
+                      onSuccess: () => {
+                        queryClient.invalidateQueries({ queryKey: ['accounts'] })
+                      },
+                    })
+
+                    setIsOpen(false)
+                  }}
+                className={cn(
+                  'flex items-center gap-2',
+                  hubspotAccountLinked && 'text-destructive-foreground bg-destructive hover:bg-destructive/80 hover:text-destructive-foreground/80',
+                )}
+                disabled={accounts.isLoading}
+              >
+                <FaHubspot />
+                {accounts.isLoading
+                  ? <SpinnerLoader2 />
+                  : (
+                      <span>
+                        {hubspotAccountLinked ? 'Unlink' : 'Link'}
+                        {' '}
+                        Hubspot
+                      </span>
+                    )}
+              </Button>
+            </div>
           </div>
         </motion.div>
       )}

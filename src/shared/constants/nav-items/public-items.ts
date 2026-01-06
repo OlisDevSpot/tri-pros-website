@@ -12,6 +12,7 @@ export const publicNavItems = [
   {
     name: 'Community',
     href: '/community',
+    action: 'readonly',
     subItems: [
       {
         name: 'Community Commitment',

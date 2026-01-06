@@ -1,5 +1,5 @@
-import { TextWithLine } from '@/shared/components/text-with-line'
 import { blogPostTitles } from '@/features/landing/data/blog'
+import { TextWithLine } from '@/shared/components/text-with-line'
 import { BlogpostCard } from './blogpost-card-small'
 
 export function BlogpostsSection() {

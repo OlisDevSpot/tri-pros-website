@@ -3,10 +3,10 @@
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-
 import GeneralInquiryForm from '@/features/landing/ui/components/contact/general-inquiry-form'
+
 import ScheduleConsultationForm from '@/features/landing/ui/components/contact/schedule-consultation-form'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 export default function BottomCTA() {
   const ref = useRef(null)

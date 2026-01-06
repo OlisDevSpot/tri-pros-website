@@ -3,8 +3,8 @@ import { motion, useInView } from 'motion/react'
 import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
-import { cn } from '@/shared/lib/utils'
 import { useFeatureStore } from '@/shared/hooks/use-feature-store'
+import { cn } from '@/shared/lib/utils'
 
 export default function ServiceCard({
   service,

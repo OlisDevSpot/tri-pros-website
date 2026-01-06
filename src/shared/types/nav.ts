@@ -7,6 +7,7 @@ export interface NavItem {
   href: string
   icon?: any
   badge?: string
+  action?: 'readonly' | 'navigate'
   subItems?: NavItem[]
   enablePrefetch?: boolean
   prefetchFn?: (trpc: ReturnType<typeof useTRPC>) => void

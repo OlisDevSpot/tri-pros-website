@@ -2,8 +2,9 @@
 
 import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
-import { useRef } from 'react'
+import { usePathname } from 'next/navigation'
 
+import { useRef } from 'react'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
@@ -106,6 +107,7 @@ const qualityMeasures = [
 ]
 
 export function ProcessOverview() {
+  const pathname = usePathname().split('/')
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
@@ -114,7 +116,11 @@ export function ProcessOverview() {
     <section
       ref={ref}
     >
-      <div className="">
+      <div className={cn(
+        'container py-20 lg:py-32',
+        pathname[1] === 'proposal-flow' && 'py-0 lg:py-0',
+      )}
+      >
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}

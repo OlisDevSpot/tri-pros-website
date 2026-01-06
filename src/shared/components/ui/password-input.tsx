@@ -50,6 +50,7 @@ export function PasswordInput({
   }
 
   return (
+    // eslint-disable-next-line react/no-unstable-context-value
     <PasswordInputContext value={{ password: currentValue.toString() }}>
       <div className="space-y-3">
         <InputGroup>
@@ -156,6 +157,7 @@ export function PasswordInputStrengthChecker() {
 
           return (
             <div
+              // eslint-disable-next-line react/no-array-index-key
               key={i}
               className={cn(
                 'h-1 flex-1 rounded-full',

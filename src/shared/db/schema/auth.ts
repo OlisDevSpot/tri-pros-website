@@ -1,5 +1,8 @@
+import type z from 'zod'
 import { relations } from 'drizzle-orm'
 import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { createSelectSchema } from 'drizzle-zod'
+import { userRoles } from '@/shared/constants/enums'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -13,10 +16,9 @@ export const user = pgTable('user', {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   nickname: text('nickname'),
-  role: text('role', { enum: ['user', 'admin', 'super-admin'] }).default(
-    'user',
+  role: text('role', { enum: userRoles }).default(
+    'homeowner',
   ),
-  companyId: text('company_id'),
 })
 
 export const session = pgTable(
@@ -96,3 +98,6 @@ export const accountRelations = relations(account, ({ one }) => ({
     references: [user.id],
   }),
 }))
+
+export const selectUserSchema = createSelectSchema(user)
+export type User = z.infer<typeof selectUserSchema>

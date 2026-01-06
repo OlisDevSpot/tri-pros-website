@@ -10,14 +10,16 @@ import type {
   roofLocations,
   roofTypes,
   tradeLocations,
+  userRoles,
   variableDataTypes,
   variableGroups,
   windowsTypes,
 } from '@/shared/constants/enums'
 
-export type ProjectType = (typeof projectTypes)[number]
+// MAIN
+export type UserRole = (typeof userRoles)[number]
 
-// PLATFORM
+// CONSTRUCTION
 export type TradeLocation = (typeof tradeLocations)[number]
 export type ConstructionType = (typeof constructionTypes)[number]
 export type HomeArea = (typeof homeAreas)[number]
@@ -30,7 +32,8 @@ export type WindowsType = (typeof windowsTypes)[number]
 export type InsulationLevel = (typeof insulationLevels)[number]
 export type FoundationType = (typeof foundationTypes)[number]
 
-// REMODEL-X
+// PROPOSALS
+export type ProjectType = (typeof projectTypes)[number]
 export type ElectricProvider = (typeof electricProviders)[number]
 export type VariableDataType = (typeof variableDataTypes)[number]
 export type VariableGroup = (typeof variableGroups)[number]

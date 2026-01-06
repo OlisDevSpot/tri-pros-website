@@ -1,10 +1,11 @@
 'use client'
 
-import type { MotionValue, Variants } from 'motion/react'
-import { ArrowRightIcon, ChevronUpIcon, LogInIcon, LogOutIcon, PhoneIcon } from 'lucide-react'
+import type { Variants } from 'motion/react'
+import { LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useQueryState } from 'nuqs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { companyInfo } from '@/features/landing/data/company'
 import { signOut, useSession } from '@/shared/auth/client'
@@ -17,6 +18,8 @@ import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 import { SignInModal } from '../dialogs/modals/sign-in-modal'
+import { SpinnerLoader2 } from '../loaders/spinner-loader-2'
+import { NavItem } from './nav-item'
 import { PopoverNav } from './popover-nav'
 
 const navContainerVariants: Variants = {
@@ -32,82 +35,9 @@ const navContainerVariants: Variants = {
   },
 }
 
-interface Props {
-  item: {
-    name: string
-    href: string
-    subItems?: readonly { name: string, href: string }[]
-  }
-  index: number
-  isActive: boolean
-  onTabClick?: () => void
-  onMouseEnter: () => void
-  selectedItemIndex: number | null
-  width?: MotionValue<number>
-  left?: MotionValue<number>
-}
-
-export function NavigationItem({
-  item,
-  index,
-  isActive,
-  onTabClick,
-  onMouseEnter,
-  selectedItemIndex,
-  width,
-  left,
-}: Props) {
-  const scrolled = useHasScrolled(10)
-  const buttonRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (!left || !width || !buttonRef.current || selectedItemIndex !== index)
-      return
-
-    const clientRect = buttonRef.current.getBoundingClientRect()
-    const containerLeft = document.getElementById('nav-items-container')?.getBoundingClientRect()!.left as number
-
-    animate(width, clientRect.width)
-    animate(left, clientRect.x - containerLeft)
-  }, [selectedItemIndex, index, left, width])
-
-  return (
-    <motion.div
-      ref={buttonRef}
-      key={item.name}
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      onMouseEnter={onMouseEnter}
-      onClick={() => {
-        onTabClick?.()
-      }}
-    >
-      <Link
-        href={item.href}
-        className={cn(
-          'relative inline-block px-8 py-4 hover:text-foreground/70 transition-colors duration-200 font-medium',
-          scrolled ? 'text-foreground' : 'text-foreground',
-          isActive ? 'text-primary hover:text-primary' : '',
-        )}
-      >
-        <div className="flex gap-2 items-center w-fit">
-          {item.name}
-          {item.subItems && item.subItems.length > 0 && (
-            <ChevronUpIcon
-              className={cn(
-                'size-4 transition-transform -mr-2',
-                selectedItemIndex === index || isActive ? 'rotate-180' : '',
-              )}
-            />
-          )}
-        </div>
-      </Link>
-    </motion.div>
-  )
-}
-
 export function SiteNavbar() {
+  const [authError] = useQueryState('error', { defaultValue: '' })
+  const [mounted, setMounted] = useState(false)
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const scrolled = useHasScrolled(10)
@@ -122,6 +52,16 @@ export function SiteNavbar() {
   const width = useMotionValue(0)
   const left = useMotionValue(0)
   const subitemsContainerHeight = useMotionValue(150)
+
+  const getPopoverNavItems = useCallback(() => {
+    const items = generateNavItemsGroups({ navType: session?.user?.role !== 'agent' ? 'public' : 'user' })
+
+    return isMobile ? items : { user: items.user }
+  }, [isMobile, session])
+
+  const hasPopoverItems = useMemo(() => {
+    return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0
+  }, [getPopoverNavItems])
 
   useEffect(() => {
     if (!subitemsContainerRef.current)
@@ -138,6 +78,19 @@ export function SiteNavbar() {
     })
   }, [setModal])
 
+  useEffect(() => {
+    if (!isPending)
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect, react-hooks/set-state-in-effect
+      setMounted(true)
+  }, [isPending])
+
+  useEffect(() => {
+    if (authError) {
+      // eslint-disable-next-line no-alert
+      alert(authError.replaceAll('_', ' '))
+    }
+  }, [authError])
+
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
   function findSelectedItem(index: number): { name: string, href: string, subItems: readonly { name: string, href: string }[] } | undefined {
@@ -149,6 +102,9 @@ export function SiteNavbar() {
     return item
   }
 
+  if (!mounted)
+    return null
+
   function closeNavigation() {
     setSelectedItemIndex(null)
     setIsMobileOpen(false)
@@ -159,16 +115,6 @@ export function SiteNavbar() {
     closeNavigation()
     openAuthModal()
   }
-
-  const getPopoverNavItems = useCallback(() => {
-    const items = generateNavItemsGroups({ navType: !session ? 'public' : 'user' })
-
-    return isMobile ? items : { user: items.user }
-  }, [isMobile, session])
-
-  const hasPopoverItems = useMemo(() => {
-    return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0
-  }, [getPopoverNavItems])
 
   return (
     <>
@@ -229,7 +175,7 @@ export function SiteNavbar() {
                   className="absolute h-0.5 bg-foreground bottom-0"
                 />
                 {publicNavItems.map((item, index) => (
-                  <NavigationItem
+                  <NavItem
                     key={item.name}
                     item={item}
                     width={width}
@@ -295,81 +241,55 @@ export function SiteNavbar() {
             </div>
 
             <div className="flex gap-2 items-center">
-              {!isPending && !session?.user
-                ? (
-                    <MotionButton
-                      size="icon"
-                      variant="outline"
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      style={{
-                        borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                      }}
-                      className={
-                        cn(
-                          'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
-                        )
-                      }
-                      onClick={() => {
-                        openLoginModal()
-                      }}
-                    >
-                      <LogInIcon />
-                    </MotionButton>
-                  )
-                : (
-                    <MotionButton
-                      size="icon"
-                      variant="outline"
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      style={{
-                        borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                      }}
-                      className={
-                        cn(
-                          'h-12 w-12 text-red-200 lg:bg-rose-800 lg:text-foreground border-foreground/15 shadow-md',
-                        )
-                      }
-                      onClick={async () => {
-                        await signOut()
-                      }}
-                    >
-                      <LogOutIcon />
-                    </MotionButton>
-                  )}
-              <ThemeToggleButton className={
-                cn(
-                  'h-12 w-12 border-foreground/15 shadow-md',
-                  pathname === '/' ? 'rounded-[40px]' : '',
-                )
-              }
-              />
-              <MotionButton
-                size="icon"
-                variant="outline"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{
-                  borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                }}
-                className={
+              {!isMobile && (
+                <div>
+                  {isPending
+                    ? (
+                        <SpinnerLoader2 />
+                      )
+                    : (
+                        <MotionButton
+                          size="icon"
+                          variant="outline"
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          style={{
+                            borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                          }}
+                          className={
+                            cn(
+                              'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                              session?.user && 'stroke-red-200 bg-rose-400 dark:bg-rose-800 lg:bg-rose-400',
+                            )
+                          }
+                          onClick={!session?.user
+                            ? openLoginModal
+                            : async () => {
+                              await signOut()
+                            }}
+                        >
+                          {session?.user ? <LogOutIcon /> : <LogInIcon />}
+                        </MotionButton>
+                      ) }
+                </div>
+              )}
+
+              {!isMobile && (
+                <ThemeToggleButton className={
                   cn(
-                    'h-12 w-12 bg-primary text-primary-foreground lg:bg-transparent lg:text-foreground border-foreground/15 shadow-md',
+                    'h-12 w-12 border-foreground/15 shadow-md',
+                    pathname === '/' ? 'rounded-[40px]' : '',
                   )
                 }
-                asChild
-              >
-                <a href={`tel:+1${companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value}`}>
-                  <PhoneIcon />
-                </a>
-              </MotionButton>
-              <div className="hidden md:block">
+                />
+              )}
+              <div>
                 <MotionButton
                   className={
                     cn(
-                      'h-12 shadow-sm shadow-foreground/30',
+                      'h-12 shadow-sm shadow-foreground/30 gap-2 py-1',
                       pathname === '/' ? 'rounded-4xl' : '',
+                      isMobile ? 'pl-1 pr-1' : 'pr-1',
                     )
                   }
                   size="lg"
@@ -378,59 +298,82 @@ export function SiteNavbar() {
                   animate={{ opacity: 1, y: 0 }}
                   asChild
                 >
-                  <Link
-                    href="/contact"
-                    className="flex items-center gap-2 px-2"
-                  >
-                    Schedule Consultation
-                    <ArrowRightIcon />
-                  </Link>
+                  <div>
+                    {!isMobile && (
+                      <Link
+                        href="/contact"
+                        className="flex items-center gap-2 px-2"
+                      >
+                        Schedule Consultation
+                      </Link>
+                    )}
+                    <MotionButton
+                      variant="outline"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                      }}
+                      className={
+                        cn(
+                          'h-10 w-fit rounded-full hover:bg-background/20 text-neutral-300 px-1 py-1 gap-3',
+                        )
+                      }
+                      asChild
+                    >
+                      <div className="flex items-center">
+                        <MotionButton
+                          size="icon"
+                          variant="ghost"
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          style={{
+                            borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                          }}
+                          className={
+                            cn(
+                              'h-8 w-8 rounded-full hover:bg-background/20 text-neutral-300 p-0',
+                            )
+                          }
+                          asChild
+                        >
+                          <a href={`tel:+1${companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value}`}>
+                            <PhoneIcon />
+                          </a>
+                        </MotionButton>
+                        {/* Mobile menu button */}
+                        <MotionButton
+                          size="icon"
+                          variant="ghost"
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          style={{
+                            borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                          }}
+                          className={
+                            cn(
+                              'h-8 w-8 rounded-full hover:bg-background/20',
+                              hasPopoverItems ? 'flex' : 'hidden',
+                            )
+                          }
+                          onClick={() => {
+                            setIsMobileOpen(!isMobileOpen)
+                          }}
+                          aria-label="Toggle menu"
+                          type="button"
+                        >
+                          <motion.div
+                            animate={isMobileOpen ? 'open' : 'closed'}
+                            className="relative w-6 h-6 flex flex-col justify-center items-center"
+                          >
+                            <MenuIcon size={20} className="h-full w-full text-neutral-300" />
+                          </motion.div>
+                        </MotionButton>
+                      </div>
+                    </MotionButton>
+                  </div>
                 </MotionButton>
               </div>
-
-              {/* Mobile menu button */}
-              <MotionButton
-                size="icon"
-                variant="outline"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={
-                  cn(
-                    'h-12 w-12 rounded-full',
-                    hasPopoverItems ? 'flex' : 'hidden',
-                  )
-                }
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                aria-label="Toggle menu"
-                type="button"
-              >
-                <motion.div
-                  animate={isMobileOpen ? 'open' : 'closed'}
-                  className="w-4 h-4 flex flex-col justify-center items-center"
-                >
-                  <motion.span
-                    variants={{
-                      closed: { rotate: 0, y: 0 },
-                      open: { rotate: 45, y: 5 },
-                    }}
-                    className="w-6 h-0.5 bg-foreground block transition-all duration-300"
-                  />
-                  <motion.span
-                    variants={{
-                      closed: { opacity: 1 },
-                      open: { opacity: 0 },
-                    }}
-                    className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
-                  />
-                  <motion.span
-                    variants={{
-                      closed: { rotate: 0, y: 0 },
-                      open: { rotate: -45, y: -5 },
-                    }}
-                    className="w-6 h-0.5 bg-foreground block mt-1 transition-all duration-300"
-                  />
-                </motion.div>
-              </MotionButton>
             </div>
           </motion.div>
         </div>

@@ -5,8 +5,8 @@ import { motion, useInView } from 'motion/react'
 
 import Image from 'next/image'
 import { useRef } from 'react'
-import DecorativeLine from '@/shared/components/decorative-line'
 import { companyInfo, testimonials } from '@/features/landing/data/company'
+import DecorativeLine from '@/shared/components/decorative-line'
 
 export default function TestimonialsSection() {
   const ref = useRef(null)
