@@ -85,7 +85,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     env.NEXT_PUBLIC_BASE_URL,
     'https://triprosremodeling.com',
-    'https://*.triprosremodeling.com',
+    'https://www.triprosremodeling.com',
   ],
 })
 
