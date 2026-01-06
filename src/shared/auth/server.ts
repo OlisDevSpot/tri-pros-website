@@ -77,10 +77,15 @@ export const auth = betterAuth({
       ],
     }),
   ],
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+    },
+  },
   trustedOrigins: [
     env.NEXT_PUBLIC_BASE_URL,
     'https://triprosremodeling.com',
-    'https://www.triprosremodeling.com',
+    'https://*.triprosremodeling.com',
   ],
 })
 
