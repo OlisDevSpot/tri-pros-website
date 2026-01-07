@@ -22,7 +22,6 @@ const envSchema = z.object({
   PAYLOAD_DATABASE_URI: z.string(),
 
   // Better Auth
-  BETTER_AUTH_URL: z.string(),
   BETTER_AUTH_SECRET: z.string(),
 
   // GOOGLE
