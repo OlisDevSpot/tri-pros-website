@@ -12,18 +12,16 @@ export const footerData = [
     title: 'Company',
     links: [
       { name: 'About Us', href: '/about' },
-      { name: 'Our Process', href: '/process' },
-      { name: 'Portfolio', href: '/portfolio' },
-      { name: 'Testimonials', href: '/testimonials' },
+      { name: 'Tri Pros Experience', href: '/experience' },
+      { name: 'Projects', href: '/portfolio/projects' },
+      { name: 'Testimonials', href: '/portfolio/testimonials' },
     ],
   },
   {
     title: 'Resources',
     links: [
       { name: 'Contact Us', href: '/contact' },
-      { name: 'Get a Quote', href: '/quote' },
-      { name: 'Client Portal', href: '/portal' },
-      { name: 'Careers', href: '/careers' },
+      { name: 'Careers', href: '/community/join' },
     ],
   },
 ]
