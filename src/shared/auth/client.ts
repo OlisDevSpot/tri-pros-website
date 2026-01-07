@@ -13,8 +13,7 @@ export const {
   listAccounts,
   unlinkAccount,
 } = createAuthClient({
-  // eslint-disable-next-line node/prefer-global/process
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL!,
+
   plugins: [
     organizationClient(),
     inferAdditionalFields<typeof auth>(),
