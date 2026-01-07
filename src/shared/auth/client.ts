@@ -13,7 +13,6 @@ export const {
   listAccounts,
   unlinkAccount,
 } = createAuthClient({
-
   plugins: [
     organizationClient(),
     inferAdditionalFields<typeof auth>(),
