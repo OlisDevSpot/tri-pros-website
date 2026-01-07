@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { listAccounts } from '../../client'
+import { listAccounts } from '@/shared/auth/client'
 
-export function useGetAccounts() {
+interface Props {
+  enabled?: boolean
+}
+
+export function useGetAccounts({ enabled }: Props = {}) {
   return useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
@@ -9,5 +13,6 @@ export function useGetAccounts() {
 
       return data
     },
+    enabled,
   })
 }

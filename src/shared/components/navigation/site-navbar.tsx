@@ -1,12 +1,18 @@
 'use client'
 
 import type { Variants } from 'motion/react'
-import { LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
+import { CalendarPlus2Icon, LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useQueryState } from 'nuqs'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  // useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { companyInfo } from '@/features/landing/data/company'
 import { signOut, useSession } from '@/shared/auth/client'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
@@ -15,6 +21,7 @@ import { ThemeToggleButton } from '@/shared/components/theme-toggle-button'
 import { generateNavItemsGroups, publicNavItems } from '@/shared/constants/nav-items'
 import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
+import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 import { SignInModal } from '../dialogs/modals/sign-in-modal'
@@ -44,6 +51,7 @@ export function SiteNavbar() {
   const isMobile = useIsMobile()
   const pathname = usePathname()
   const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
+  const matches = useMatchMedia()
 
   const { data: session, isPending } = useSession()
 
@@ -59,9 +67,9 @@ export function SiteNavbar() {
     return isMobile ? items : { user: items.user }
   }, [isMobile, session])
 
-  const hasPopoverItems = useMemo(() => {
-    return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0
-  }, [getPopoverNavItems])
+  // const hasPopoverItems = useMemo(() => {
+  //   return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0
+  // }, [getPopoverNavItems])
 
   useEffect(() => {
     if (!subitemsContainerRef.current)
@@ -118,6 +126,7 @@ export function SiteNavbar() {
 
   return (
     <>
+      {/* NAV OVERLAY */}
       <AnimatePresence>
         {(selectedItemIndex !== null || isMobileOpen) && (
           <motion.div
@@ -131,18 +140,20 @@ export function SiteNavbar() {
           />
         )}
       </AnimatePresence>
+
+      {/* NAV */}
       <motion.nav
         className={cn(
           'fixed left-0 right-0 z-50 transition-all duration-300 scrollbar-gutter-stable',
           scrolled ? 'bg-background/95 shadow-lg' : 'bg-transparent',
         )}
         style={{
-          top: scrolled || isMobile || pathname !== '/' ? '0' : '32px',
+          top: scrolled || !matches.lg || pathname !== '/' ? '0' : '32px',
           height: scrolled ? 'auto' : 'auto',
         }}
       >
         <div
-          className="px-4 sm:px-14 w-full"
+          className="px-4 sm:px-8 lg:px-14 w-full"
         >
           <motion.div
             variants={navContainerVariants}
@@ -160,7 +171,7 @@ export function SiteNavbar() {
               onMouseLeave={() => {
                 closeNavigation()
               }}
-              className="relative hidden lg:block"
+              className="relative hidden xl:block"
             >
               {/* Navigation Items */}
               <div
@@ -241,7 +252,7 @@ export function SiteNavbar() {
             </div>
 
             <div className="flex gap-2 items-center">
-              {!isMobile && (
+              {!isMobile && matches['2xl'] && (
                 <div>
                   {isPending
                     ? (
@@ -271,25 +282,21 @@ export function SiteNavbar() {
                           {session?.user ? <LogOutIcon /> : <LogInIcon />}
                         </MotionButton>
                       ) }
+                  <ThemeToggleButton className={
+                    cn(
+                      'h-12 w-12 border-foreground/15 shadow-md',
+                      pathname === '/' ? 'rounded-[40px]' : '',
+                    )
+                  }
+                  />
                 </div>
-              )}
-
-              {!isMobile && (
-                <ThemeToggleButton className={
-                  cn(
-                    'h-12 w-12 border-foreground/15 shadow-md',
-                    pathname === '/' ? 'rounded-[40px]' : '',
-                  )
-                }
-                />
               )}
               <div>
                 <MotionButton
                   className={
                     cn(
-                      'h-12 shadow-sm shadow-foreground/30 gap-2 py-1',
+                      'h-12 shadow-sm shadow-foreground/30 gap-2 py-1 pl-1 pr-1',
                       pathname === '/' ? 'rounded-4xl' : '',
-                      isMobile ? 'pl-1 pr-1' : 'pr-1',
                     )
                   }
                   size="lg"
@@ -299,14 +306,6 @@ export function SiteNavbar() {
                   asChild
                 >
                   <div>
-                    {!isMobile && (
-                      <Link
-                        href="/contact"
-                        className="flex items-center gap-2 px-2"
-                      >
-                        Schedule Consultation
-                      </Link>
-                    )}
                     <MotionButton
                       variant="outline"
                       initial={{ opacity: 0, y: -20 }}
@@ -322,6 +321,36 @@ export function SiteNavbar() {
                       asChild
                     >
                       <div className="flex items-center">
+                        <MotionButton
+                          variant="ghost"
+                          size={matches['2xl'] ? 'default' : 'icon'}
+                          initial={{ opacity: 0, y: -20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          style={{
+                            borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                          }}
+                          className={
+                            cn(
+                              'h-8 w-8 2xl:w-fit rounded-full hover:bg-background/20 text-neutral-300 p-0',
+                            )
+                          }
+                          asChild
+                        >
+                          <Link
+                            href="/contact"
+                            className="flex items-center gap-2 px-2"
+                          >
+                            {matches['2xl']
+                              ? (
+                                  <span>
+                                    Schedule Consultation
+                                  </span>
+                                )
+                              : (
+                                  <CalendarPlus2Icon />
+                                )}
+                          </Link>
+                        </MotionButton>
                         <MotionButton
                           size="icon"
                           variant="ghost"
@@ -341,35 +370,30 @@ export function SiteNavbar() {
                             <PhoneIcon />
                           </a>
                         </MotionButton>
-                        {/* Mobile menu button */}
-                        <MotionButton
-                          size="icon"
-                          variant="ghost"
-                          initial={{ opacity: 0, y: -20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          style={{
-                            borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
-                          }}
-                          className={
-                            cn(
-                              'h-8 w-8 rounded-full hover:bg-background/20',
-                              hasPopoverItems ? 'flex' : 'hidden',
-                            )
-                          }
-                          onClick={() => {
-                            setIsMobileOpen(!isMobileOpen)
-                          }}
-                          aria-label="Toggle menu"
-                          type="button"
-                        >
-                          <motion.div
-                            animate={isMobileOpen ? 'open' : 'closed'}
-                            className="relative w-6 h-6 flex flex-col justify-center items-center"
-                          >
-                            <MenuIcon size={20} className="h-full w-full text-neutral-300" />
-                          </motion.div>
-                        </MotionButton>
                       </div>
+                    </MotionButton>
+                    {/* Mobile menu button */}
+                    <MotionButton
+                      size="icon"
+                      variant="ghost"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        borderRadius: pathname === '/' ? '40px' : 'var(--radius-md)',
+                      }}
+                      className={
+                        cn(
+                          'rounded-full hover:bg-background/20 flex 2xl:hidden',
+                          // hasPopoverItems ? 'flex' : 'hidden',
+                        )
+                      }
+                      onClick={() => {
+                        setIsMobileOpen(!isMobileOpen)
+                      }}
+                      aria-label="Toggle menu"
+                      type="button"
+                    >
+                      <MenuIcon size={24} className="text-neutral-300 h-6 w-6" />
                     </MotionButton>
                   </div>
                 </MotionButton>

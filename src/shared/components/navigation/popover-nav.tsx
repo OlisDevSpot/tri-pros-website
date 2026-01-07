@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
 import Link from 'next/link'
 import { FaHubspot } from 'react-icons/fa6'
-import { oauth2, unlinkAccount } from '@/shared/auth/client'
+import { oauth2, unlinkAccount, useSession } from '@/shared/auth/client'
 import { useGetAccounts } from '@/shared/auth/hooks/queries/use-get-accounts'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn, getTypedKeys } from '@/shared/lib/utils'
@@ -26,8 +26,9 @@ export function PopoverNav({
 }: MobileNavProps) {
   const queryClient = useQueryClient()
   const isMobile = useIsMobile()
+  const session = useSession()
 
-  const accounts = useGetAccounts()
+  const accounts = useGetAccounts({ enabled: !!session?.data?.user })
 
   const hubspotAccountLinked = accounts.data?.find(account => account.providerId === 'hubspot')
 

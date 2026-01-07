@@ -57,7 +57,7 @@ export function NavItem({
       <Link
         href={item.action === 'readonly' ? '#' : item.href}
         className={cn(
-          'relative inline-block px-8 py-4 hover:text-foreground/70 transition-colors duration-200 font-medium',
+          'relative inline-block px-6 py-3 2xl:px-8 2xl:py-4 hover:text-foreground/70 transition-colors duration-200 font-medium',
           scrolled ? 'text-foreground' : 'text-foreground',
           isActive ? 'text-primary hover:text-primary' : '',
           item.action === 'readonly' && 'cursor-default',
