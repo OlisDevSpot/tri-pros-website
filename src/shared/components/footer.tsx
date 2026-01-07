@@ -155,13 +155,7 @@ export default function Footer() {
                 Privacy Policy
               </Link>
               <Link
-                href="/terms"
-                className="text-foreground/70 hover:text-secondary transition-colors duration-200"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                href="/sitemap"
+                href="/sitemap.xml"
                 className="text-foreground/70 hover:text-secondary transition-colors duration-200"
               >
                 Sitemap

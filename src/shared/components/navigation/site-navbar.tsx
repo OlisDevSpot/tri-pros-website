@@ -160,7 +160,7 @@ export function SiteNavbar() {
               onMouseLeave={() => {
                 closeNavigation()
               }}
-              className="relative hidden 2xl:block"
+              className="relative hidden lg:block"
             >
               {/* Navigation Items */}
               <div
