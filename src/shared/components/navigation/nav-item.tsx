@@ -11,7 +11,7 @@ interface Props {
   item: TNavItem
   index: number
   isActive: boolean
-  onTabClick?: () => void
+  onClick?: () => void
   onMouseEnter: () => void
   selectedItemIndex: number | null
   width?: MotionValue<number>
@@ -22,7 +22,7 @@ export function NavItem({
   item,
   index,
   isActive,
-  onTabClick,
+  onClick,
   onMouseEnter,
   selectedItemIndex,
   width,
@@ -51,7 +51,7 @@ export function NavItem({
       transition={{ delay: index * 0.1 }}
       onMouseEnter={onMouseEnter}
       onClick={() => {
-        onTabClick?.()
+        onClick?.()
       }}
     >
       <Link

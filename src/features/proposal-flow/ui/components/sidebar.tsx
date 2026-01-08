@@ -19,7 +19,7 @@ export function ProposalSidebar() {
   }, [proposalFlowStep, setProposalFlowStep])
 
   return (
-    <div className="h-full flex flex-col gap-3 items-center shrink-0">
+    <div className="h-full flex lg:flex-col gap-3 items-center shrink-0">
       <Link href="/">
         <div className="group relative w-8 h-8 shrink-0">
           <Logo variant="icon" className="group-hover:opacity-20 transition" />
@@ -32,7 +32,7 @@ export function ProposalSidebar() {
         data-active={proposalFlowStep === 'create-proposal'}
         size="icon"
         variant={proposalFlowStep === 'create-proposal' ? 'default' : 'outline'}
-        className="data-[active=true]:bg-primary/80 data-[active=true]:h-20"
+        className="data-[active=true]:bg-primary/80 lg:data-[active=true]:h-20"
         onClick={() => {
           setProposalFlowStep('create-proposal')
         }}
@@ -43,7 +43,7 @@ export function ProposalSidebar() {
         data-active={proposalFlowStep === 'past-proposals'}
         size="icon"
         variant={proposalFlowStep === 'past-proposals' ? 'default' : 'outline'}
-        className="data-[active=true]:bg-primary/80 data-[active=true]:h-20"
+        className="data-[active=true]:bg-primary/80 lg:data-[active=true]:h-20"
         onClick={() => {
           setProposalFlowStep('past-proposals')
         }}

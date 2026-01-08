@@ -1,6 +1,6 @@
 import type { NavItem } from '@/shared/types/nav'
 
-export const publicNavItems = [
+export const marketingNavItems = [
   {
     name: 'Tri Pros Experience',
     href: '/experience',
@@ -66,7 +66,7 @@ export const publicNavItems = [
   },
 ] as const satisfies NavItem[]
 
-type ServiceSlugsRaw = Extract<typeof publicNavItems[number], { href: '/services' }>['subItems'][number]['href']
+type ServiceSlugsRaw = Extract<typeof marketingNavItems[number], { href: '/services' }>['subItems'][number]['href']
 type RemoveServices<T> = T extends `/services/${infer Rest}` ? Rest : never
 
 export type ServiceSlugs = RemoveServices<ServiceSlugsRaw>

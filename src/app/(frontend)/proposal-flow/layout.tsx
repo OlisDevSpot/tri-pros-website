@@ -14,6 +14,8 @@ export default async function ProposalFlowLayout({
         'background': `radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 60%, transparent))`,
       } as React.CSSProperties}
       className="h-dvh flex flex-col"
+      // REMOVE GUTTER STABLE FROM <html>
+      data-no-gutter-stable
     >
       <ProposalPageNavbar />
       <div className="container grow min-h-0 py-4 lg:py-8">

@@ -38,11 +38,11 @@ export default function MyProposalsPage() {
   }
 
   return (
-    <div className="h-full w-full flex gap-4 justify-between">
-      <nav className="h-fit border border-primary/20 p-4 rounded-xl w-(--sidebar-width) shrink-0">
+    <div className="h-full w-full flex flex-col lg:flex-row gap-4 justify-between">
+      <nav className="h-fit border border-primary/20 p-4 rounded-xl w-full lg:w-(--sidebar-width) shrink-0">
         <ProposalSidebar />
       </nav>
-      <div className="relative w-full h-full overflow-clip">
+      <div className="relative w-full h-full overflow-hidden">
         <AnimatePresence>
           {myProposalStep === 'create-proposal' && (
             <CreateNewProposalView key="create-proposal" />

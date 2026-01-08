@@ -1,4 +1,4 @@
-import type { ServiceSlugs } from '@/shared/constants/nav-items/public-items'
+import type { ServiceSlugs } from '@/shared/constants/nav-items/marketing'
 
 interface Service {
   slug: ServiceSlugs

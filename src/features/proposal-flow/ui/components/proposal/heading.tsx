@@ -1,6 +1,8 @@
 import { CalendarIcon, MapPinHouseIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { companyInfo } from '@/features/landing/data/company'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { Logo } from '@/shared/components/logo'
 import { formatAddress, formatStringAsDate } from '@/shared/lib/formatters'
 
 export function Heading() {
@@ -20,7 +22,7 @@ export function Heading() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col justify-between items-start lg:items-center gap-2"
+      className="flex flex-col justify-between items-center gap-2"
     >
       <div>
         <h2 className="text-2xl lg:text-4xl">
@@ -30,13 +32,17 @@ export function Heading() {
         </h2>
       </div>
       <div className="flex flex-col lg:flex-row gap-2 lg:gap-6">
-        <div className="flex items-center gap-2">
-          <CalendarIcon size={20} className="text-muted-foreground" />
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <CalendarIcon size={20} className="" />
           <p>{formatStringAsDate(proposal.data.createdAt, { hour: undefined, minute: undefined })}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <MapPinHouseIcon size={20} className="text-muted-foreground" />
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <MapPinHouseIcon size={20} className="" />
           <p>{formatAddress(address, city, state, zipCode)}</p>
+        </div>
+        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          <Logo variant="icon" className="size-5" />
+          <p>{companyInfo.name}</p>
         </div>
       </div>
     </motion.div>

@@ -11,7 +11,7 @@ interface Props extends React.ComponentProps<'div'> {
   isPending?: boolean
 }
 
-export function SignInGoogle({
+export function SignInGoogleButton({
   isPending = false,
 }: Props) {
   return (

@@ -1,8 +1,8 @@
 'use client'
 
-import type { generateNavItemsGroups } from '@/shared/constants/nav-items'
-import type { NavItemsGroup } from '@/shared/types/nav'
+import type { UserRole } from '@/shared/types/enums'
 
+import type { NavItemsGroup } from '@/shared/types/nav'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Logo } from '@/shared/components/logo'
@@ -26,7 +26,7 @@ import {
 import { getTypedKeys } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
-interface Props<T extends Record<Parameters<typeof generateNavItemsGroups>[0]['navType'], NavItemsGroup>> {
+interface Props<T extends Record<UserRole, NavItemsGroup>> {
   sidebarItemsGroups: T
   adminUrl?: string
   settingsUrl?: string

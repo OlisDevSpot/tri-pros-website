@@ -39,6 +39,25 @@ export function Funding({ onPickFinancingOption }: Props) {
     return proposal.data?.tcp - cashInDeal
   }, [cashInDeal, proposal.data])
 
+  function pickFinancingOption(option: typeof financingOptions[keyof typeof financingOptions][number]) {
+    if (!proposal.data) {
+      return
+    }
+
+    onPickFinancingOption?.(option)
+    updateProposal.mutate({
+      token,
+      proposalId: proposal.data.id,
+      data: {
+        financeOptionId: option.id,
+      },
+    }, {
+      onSuccess: () => {
+        toast.success('Financing option updated')
+      },
+    })
+  }
+
   if (!proposal.data) {
     return null
   }
@@ -69,7 +88,7 @@ export function Funding({ onPickFinancingOption }: Props) {
                     Some lenders may request a minimum cash investement.
                   </p>
                 </div>
-                <div className="p-6 border rounded-xl flex gap-6">
+                <div className="p-6 border rounded-xl flex flex-col lg:flex-row gap-6">
                   <div className="space-y-4 flex-1">
                     <h3 className="text-lg font-semibold">Upfront Costs</h3>
                     <div className="space-y-2">
@@ -118,46 +137,37 @@ export function Funding({ onPickFinancingOption }: Props) {
                           key={`${financingOptions['360Finance']}-${option.rate}`}
                           className={
                             cn(
-                              'p-4 border rounded-xl space-y-4 w-full flex items-center justify-between disabled:text-muted-foreground disabled:cursor-not-allowed disabled:opacity/50',
+                              'p-4 border rounded-xl w-full flex items-center justify-between disabled:text-muted-foreground disabled:cursor-not-allowed disabled:opacity/50',
                               option.id === proposal.data.financeOptionId && 'bg-primary/20',
                             )
                           }
                           type="button"
                           onClick={() => {
-                            onPickFinancingOption?.(option)
-                            updateProposal.mutate({
-                              token,
-                              proposalId: proposal.data.id,
-                              data: {
-                                financeOptionId: option.id,
-                              },
-                            }, {
-                              onSuccess: () => {
-                                toast.success('Financing option updated')
-                              },
-                            })
+                            pickFinancingOption(option)
                           }}
                           disabled={updateProposal.isPending}
                         >
-                          <div className="text-start h-fit">
+                          <div className="text-start h-fit space-y-1">
                             <p className="font-semibold">
                               {option.term / 12}
                               {' '}
-                              years (
+                              years
+                            </p>
+                            <span className="block text-muted-foreground text-sm">
                               {option.term}
                               {' '}
-                              months)
-                            </p>
-                            <span className="text-muted-foreground text-sm">
+                              months
+                            </span>
+                            <span className="block text-muted-foreground text-sm">
                               {option.rate * 100}
                               % APR
                             </span>
                           </div>
-                          <div>
-                            <p>
+                          <div className="flex gap-1 items-center flex-wrap text-end w-fit">
+                            <p className="shrink-0">
                               {getLoanValues(amountFinanced, option.rate, option.term).monthlyFormatted}
-                              <span className="text-muted-foreground text-xs">/ month</span>
                             </p>
+                            <span className="text-muted-foreground text-xs">/ month</span>
                           </div>
                         </button>
                       ))}

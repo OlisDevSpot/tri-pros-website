@@ -1,6 +1,6 @@
 import type { NavItem } from '@/shared/types/nav'
 
-export const userNavItems: NavItem[] = [
+export const tprInternalNavItems = [
   {
     name: 'Flows',
     href: '/proposal-flow',
@@ -12,4 +12,4 @@ export const userNavItems: NavItem[] = [
       },
     ],
   },
-]
+] as const satisfies NavItem[]

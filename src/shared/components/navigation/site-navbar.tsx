@@ -1,6 +1,7 @@
 'use client'
 
 import type { Variants } from 'motion/react'
+import type { NavItem as TNavItem } from '@/shared/types/nav'
 import { CalendarPlus2Icon, LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
@@ -18,7 +19,7 @@ import { signOut, useSession } from '@/shared/auth/client'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
 import { LogoLink } from '@/shared/components/logo'
 import { ThemeToggleButton } from '@/shared/components/theme-toggle-button'
-import { generateNavItemsGroups, publicNavItems } from '@/shared/constants/nav-items'
+import { generateNavItemsGroups, marketingNavItems } from '@/shared/constants/nav-items'
 import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
@@ -43,29 +44,28 @@ const navContainerVariants: Variants = {
 }
 
 export function SiteNavbar() {
+  const { data: session, isPending } = useSession()
+  const { setModal, open: openAuthModal } = useAuthModalStore()
   const [authError] = useQueryState('error', { defaultValue: '' })
   const [mounted, setMounted] = useState(false)
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+
   const scrolled = useHasScrolled(10)
   const isMobile = useIsMobile()
   const pathname = usePathname()
-  const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
   const matches = useMatchMedia()
-
-  const { data: session, isPending } = useSession()
-
-  const { setModal, open: openAuthModal } = useAuthModalStore()
 
   const width = useMotionValue(0)
   const left = useMotionValue(0)
   const subitemsContainerHeight = useMotionValue(150)
+  const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
 
   const getPopoverNavItems = useCallback(() => {
-    const items = generateNavItemsGroups({ navType: session?.user?.role !== 'agent' ? 'public' : 'user' })
+    const items = generateNavItemsGroups({ userRole: session?.user?.role })
 
-    return isMobile ? items : { user: items.user }
-  }, [isMobile, session])
+    return items
+  }, [session])
 
   // const hasPopoverItems = useMemo(() => {
   //   return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0
@@ -101,8 +101,8 @@ export function SiteNavbar() {
 
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
-  function findSelectedItem(index: number): { name: string, href: string, subItems: readonly { name: string, href: string }[] } | undefined {
-    const item = publicNavItems.find((_, i) => i === index)
+  function findSelectedItem(index: number): TNavItem | undefined {
+    const item = marketingNavItems.find((_, i) => i === index)
 
     if (!item || !('subItems' in item))
       return undefined
@@ -144,7 +144,7 @@ export function SiteNavbar() {
       {/* NAV */}
       <motion.nav
         className={cn(
-          'fixed left-0 right-0 z-50 transition-all duration-300 scrollbar-gutter-stable',
+          'fixed left-0 right-0 z-50 transition-all duration-300',
           scrolled ? 'bg-background/95 shadow-lg' : 'bg-transparent',
         )}
         style={{
@@ -185,7 +185,7 @@ export function SiteNavbar() {
                   }}
                   className="absolute h-0.5 bg-foreground bottom-0"
                 />
-                {publicNavItems.map((item, index) => (
+                {marketingNavItems.map((item, index) => (
                   <NavItem
                     key={item.name}
                     item={item}
@@ -193,7 +193,7 @@ export function SiteNavbar() {
                     left={left}
                     index={index}
                     isActive={isActive(item.href)}
-                    onTabClick={() => {
+                    onClick={() => {
                       setSelectedItemIndex(null)
                     }}
                     onMouseEnter={() => {
@@ -205,7 +205,7 @@ export function SiteNavbar() {
               </div>
               {/* Additional Content */}
               <AnimatePresence>
-                {selectedItemIndex && 'subItems' in publicNavItems[selectedItemIndex] && publicNavItems[selectedItemIndex]?.subItems && (
+                {selectedItemIndex && 'subItems' in marketingNavItems[selectedItemIndex] && marketingNavItems[selectedItemIndex]?.subItems && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -253,7 +253,7 @@ export function SiteNavbar() {
 
             <div className="flex gap-2 items-center">
               {!isMobile && matches['2xl'] && (
-                <div>
+                <div className="flex gap-2 items-center">
                   {isPending
                     ? (
                         <SpinnerLoader2 />
@@ -372,7 +372,8 @@ export function SiteNavbar() {
                         </MotionButton>
                       </div>
                     </MotionButton>
-                    {/* Mobile menu button */}
+
+                    {/* Popover menu button */}
                     <MotionButton
                       size="icon"
                       variant="ghost"
@@ -383,7 +384,7 @@ export function SiteNavbar() {
                       }}
                       className={
                         cn(
-                          'rounded-full hover:bg-background/20 flex 2xl:hidden',
+                          'rounded-full hover:bg-background/20 flex',
                           // hasPopoverItems ? 'flex' : 'hidden',
                         )
                       }
@@ -406,7 +407,7 @@ export function SiteNavbar() {
         <PopoverNav
           isOpen={isMobileOpen}
           setIsOpen={setIsMobileOpen}
-          navItemsGroup={getPopoverNavItems()}
+          navItems={getPopoverNavItems()}
         />
       </motion.nav>
     </>

@@ -1,7 +1,5 @@
 import type { useTRPC } from '@/trpc/helpers'
 
-export type NavType = 'public' | 'user' | 'admin'
-
 export interface NavItem {
   name: string
   href: string
@@ -14,6 +12,8 @@ export interface NavItem {
 }
 
 export interface NavItemsGroup {
-  sectionName: string
+  sectionName: 'Marketing Links' | 'TPR Internal' | 'Action Buttons'
   items: NavItem[]
 }
+
+export type DynamicNavSections = 'marketing-links' | 'action-buttons' | 'tpr-internal'

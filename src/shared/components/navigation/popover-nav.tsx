@@ -1,36 +1,32 @@
 'use client'
 
-import type { NavItemsGroup, NavType } from '@/shared/types/nav'
+import type { DynamicNavSections, NavItemsGroup } from '@/shared/types/nav'
 
-import { useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'motion/react'
-import Link from 'next/link'
-import { FaHubspot } from 'react-icons/fa6'
-import { oauth2, unlinkAccount, useSession } from '@/shared/auth/client'
-import { useGetAccounts } from '@/shared/auth/hooks/queries/use-get-accounts'
+import { Fragment } from 'react'
+import { useSession } from '@/shared/auth/client'
+import { isInternalUser } from '@/shared/auth/lib/is-internal-user'
+import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { cn, getTypedKeys } from '@/shared/lib/utils'
-import { SpinnerLoader2 } from '../loaders/spinner-loader-2'
-import { Button } from '../ui/button'
+import { cn } from '@/shared/lib/utils'
+import { LinkHubspotButton } from '../buttons/auth/link-hubspot-button'
+import { Separator } from '../ui/separator'
+import { NavItem } from './nav-item'
 
 interface MobileNavProps {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
-  navItemsGroup: Partial<Record<NavType, NavItemsGroup>>
+  navItems: Partial<Record<DynamicNavSections, NavItemsGroup>>
 }
 
 export function PopoverNav({
   isOpen,
   setIsOpen,
-  navItemsGroup,
+  navItems,
 }: MobileNavProps) {
-  const queryClient = useQueryClient()
   const isMobile = useIsMobile()
-  const session = useSession()
-
-  const accounts = useGetAccounts({ enabled: !!session?.data?.user })
-
-  const hubspotAccountLinked = accounts.data?.find(account => account.providerId === 'hubspot')
+  const matches = useMatchMedia()
+  const sessionQuery = useSession()
 
   return (
     <AnimatePresence>
@@ -47,67 +43,36 @@ export function PopoverNav({
             isMobile ? 'right-0 w-[70%]' : 'right-0 w-80 border-l',
           )}
         >
-          <div className="px-8 py-8 space-y-4 flex flex-col items-center h-full">
-            {getTypedKeys(navItemsGroup).map(key => (
-              <motion.div key={key as string}>
-                {navItemsGroup[key] && navItemsGroup[key].items.map((item, index) => (
-                  <motion.div
-                    key={item.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="w-full h-full"
-                  >
-                    <Link
-                      href={item.href}
-                      className="block text-foreground hover:text-secondary transition-colors duration-200 font-medium py-2 w-full text-center"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  </motion.div>
-                ))}
-              </motion.div>
-            ))}
+          <div className="px-8 py-8 space-y-4 flex flex-col items-center h-full justify-between">
+            <div className="flex flex-col gap-4 items-center">
+              {isInternalUser(sessionQuery.data?.user) && navItems['tpr-internal']?.items.map(item => (
+                <Fragment key={item.href}>
+                  <NavItem
+                    item={item}
+                    index={0}
+                    isActive={false}
+                    onMouseEnter={() => {}}
+                    selectedItemIndex={null}
+                  />
+                  <Separator />
+                </Fragment>
+              ))}
+              {!matches.xl && navItems['marketing-links']?.items.map(item => (
+                <NavItem
+                  key={item.href}
+                  item={item}
+                  index={0}
+                  isActive={false}
+                  onClick={() => setIsOpen(false)}
+                  onMouseEnter={() => { }}
+                  selectedItemIndex={null}
+                />
+              ))}
+            </div>
             <div className="mt-auto">
-              <Button
-                onClick={hubspotAccountLinked
-                  ? async () => {
-                    await unlinkAccount({ providerId: 'hubspot' }, {
-                      onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: ['accounts'] })
-                      },
-                    })
-                  }
-                  : async () => {
-                    await oauth2.link({
-                      providerId: 'hubspot',
-                      callbackURL: '/',
-                    }, {
-                      onSuccess: () => {
-                        queryClient.invalidateQueries({ queryKey: ['accounts'] })
-                      },
-                    })
-
-                    setIsOpen(false)
-                  }}
-                className={cn(
-                  'flex items-center gap-2',
-                  hubspotAccountLinked && 'text-destructive-foreground bg-destructive hover:bg-destructive/80 hover:text-destructive-foreground/80',
-                )}
-                disabled={accounts.isLoading}
-              >
-                <FaHubspot />
-                {accounts.isLoading
-                  ? <SpinnerLoader2 />
-                  : (
-                      <span>
-                        {hubspotAccountLinked ? 'Unlink' : 'Link'}
-                        {' '}
-                        Hubspot
-                      </span>
-                    )}
-              </Button>
+              <LinkHubspotButton
+                onLinkAccount={() => setIsOpen(false)}
+              />
             </div>
           </div>
         </motion.div>

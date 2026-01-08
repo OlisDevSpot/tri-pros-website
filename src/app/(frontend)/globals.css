@@ -202,8 +202,14 @@
     @apply overscroll-none;
   }
 
+  html:not(:has([data-no-gutter-stable])) {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-background text-foreground overscroll-none;
+    /* REMOVE RADIX DIALOG SCROLLBAR WIDTH AUTO-COMPENSATION */
+    margin-right: 0px !important;
   }
 
   h1,
