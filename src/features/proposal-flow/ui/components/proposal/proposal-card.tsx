@@ -23,11 +23,11 @@ export function ProposalCard({ proposal }: Props) {
   const { address, city, state, zipCode } = proposal
 
   return (
-    <Card className="flex-row">
+    <Card className="lg:flex-row">
       <CardHeader className="space-y-2 flex-1">
         <CardTitle>
           <div className="flex items-center gap-3">
-            <h2>{proposal.label}</h2>
+            <h2 className="text-2xl lg:text-3xl">{proposal.label}</h2>
             <Badge className={cn(
               'h-fjt',
               PROPOSAL_STATUS_COLORS[proposal.status],
@@ -41,14 +41,14 @@ export function ProposalCard({ proposal }: Props) {
           <div className="space-y-2">
             <span className="flex gap-2">
               <MapPinIcon size={16} className="text-muted-foreground" />
-              <p>
+              <p className="whitespace-pre-line">
                 {formatAddress(address, city, state, zipCode)}
               </p>
             </span>
             <span className="flex gap-2">
               <CalendarIcon size={16} className="text-muted-foreground" />
               <p>
-                Date sent:
+                Sent:
                 {' '}
                 {formatStringAsDate(proposal.createdAt)}
               </p>

@@ -26,8 +26,8 @@ export default function MyProposalsPage() {
 
   if (session.isPending) {
     return (
-      <div className="h-full w-full flex gap-4 justify-between">
-        <nav className="h-50 border border-primary/20 rounded-xl w-(--sidebar-width) shrink-0"></nav>
+      <div className="h-full w-full flex flex-col lg:flex-row gap-4 justify-between">
+        <nav className="h-(--sidebar-height) lg:h-50 border border-primary/20 p-4 rounded-xl w-full lg:w-(--sidebar-width) shrink-0"></nav>
         <LoadingState title="Loading Session Data" description="This might take a few seconds" />
       </div>
     )
@@ -39,7 +39,7 @@ export default function MyProposalsPage() {
 
   return (
     <div className="h-full w-full flex flex-col lg:flex-row gap-4 justify-between">
-      <nav className="h-fit border border-primary/20 p-4 rounded-xl w-full lg:w-(--sidebar-width) shrink-0">
+      <nav className="h-(--sidebar-height) lg:h-fit border border-primary/20 p-4 rounded-xl w-full lg:w-(--sidebar-width) shrink-0">
         <ProposalSidebar />
       </nav>
       <div className="relative w-full h-full overflow-hidden">
