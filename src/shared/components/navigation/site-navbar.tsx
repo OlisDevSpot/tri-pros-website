@@ -49,7 +49,7 @@ export function SiteNavbar() {
   const [authError] = useQueryState('error', { defaultValue: '' })
   const [mounted, setMounted] = useState(false)
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
   const scrolled = useHasScrolled(10)
   const isMobile = useIsMobile()
@@ -115,7 +115,7 @@ export function SiteNavbar() {
 
   function closeNavigation() {
     setSelectedItemIndex(null)
-    setIsMobileOpen(false)
+    setIsPopoverOpen(false)
     animate(width, 0)
   }
 
@@ -128,7 +128,7 @@ export function SiteNavbar() {
     <>
       {/* NAV OVERLAY */}
       <AnimatePresence>
-        {(selectedItemIndex !== null || isMobileOpen) && (
+        {(selectedItemIndex !== null || isPopoverOpen) && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -163,7 +163,7 @@ export function SiteNavbar() {
           >
             {/* Logo */}
             <motion.div className="w-[180px] h-full shrink-0">
-              <LogoLink onClick={() => setIsMobileOpen(false)} />
+              <LogoLink onClick={() => setIsPopoverOpen(false)} />
             </motion.div>
 
             {/* Desktop Navigation */}
@@ -389,7 +389,7 @@ export function SiteNavbar() {
                         )
                       }
                       onClick={() => {
-                        setIsMobileOpen(!isMobileOpen)
+                        setIsPopoverOpen(!isPopoverOpen)
                       }}
                       aria-label="Toggle menu"
                       type="button"
@@ -405,8 +405,8 @@ export function SiteNavbar() {
 
         {/* Mobile Navigation */}
         <PopoverNav
-          isOpen={isMobileOpen}
-          setIsOpen={setIsMobileOpen}
+          isOpen={isPopoverOpen}
+          setIsOpen={setIsPopoverOpen}
           navItems={getPopoverNavItems()}
         />
       </motion.nav>

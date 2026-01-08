@@ -39,7 +39,7 @@ export function LinkHubspotButton({ onLinkAccount }: Props) {
           onLinkAccount?.()
         }}
       className={cn(
-        'flex items-center gap-2',
+        'flex items-center gap-2 w-full',
         hubspotAccountLinked && 'text-destructive-foreground bg-destructive hover:bg-destructive/80 hover:text-destructive-foreground/80',
       )}
       disabled={accounts.isLoading}

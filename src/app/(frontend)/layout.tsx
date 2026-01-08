@@ -100,6 +100,7 @@ export default function RootLayout({
       lang="en"
       className="dark"
       suppressHydrationWarning
+      data-scroll-behavior="smooth"
     >
       <body
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}

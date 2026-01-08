@@ -28,7 +28,11 @@ export function LogoutButton({ asMenuItem = false }: Props) {
             </div>
           )
         : (
-            <Button variant="destructive" onClick={handleLogout}>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              className="w-full transition hover:bg-destructive/80 dark:hover:bg-destructive/80"
+            >
               <LogOutIcon />
               Log-out
             </Button>

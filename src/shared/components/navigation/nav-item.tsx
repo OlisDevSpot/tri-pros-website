@@ -12,7 +12,7 @@ interface Props {
   index: number
   isActive: boolean
   onClick?: () => void
-  onMouseEnter: () => void
+  onMouseEnter?: () => void
   selectedItemIndex: number | null
   width?: MotionValue<number>
   left?: MotionValue<number>
@@ -53,6 +53,7 @@ export function NavItem({
       onClick={() => {
         onClick?.()
       }}
+      className="w-full min-w-fit"
     >
       <Link
         href={item.action === 'readonly' ? '#' : item.href}
