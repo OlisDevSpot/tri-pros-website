@@ -441,6 +441,16 @@ export const scopesData = {
   ],
   roof: [
     {
+      label: 'Roof Repair',
+      accessor: 'roofRepair',
+      description: 'Repair existing roof',
+      outcomeStatement: 'Repair your roof to extend its lifespan and protect it from future damage',
+      imageUrl: 'https://res.cloudinary.com/doyafbzya/image/upload/v1756441726/roof-repair_b0x5oq.webp',
+      constructionType: 'energy-efficient',
+      homeArea: ['exterior-shell'],
+      scopeOfWorkBase: null,
+    },
+    {
       label: 'Roof Overlay',
       accessor: 'overlay',
       description: 'Overlay existing roof',
@@ -461,16 +471,6 @@ export const scopesData = {
       scopeOfWorkBase: 'Phase I: Site Preparation - Provide dumpster to jobsite - Cover ground around house, HVAC condensers as needed, fragile items and exposed ceilings in garage with nylon and tarps in order to collect debris from roof in an organized fashion - Pull city permit (permit related expenses to be billed separately)  Phase II: Demo - Demo existing roof finish - Clean wood deck from all nails and debris and prepare for new roof installation - Demo existing roof underlayment to decking - Inspect the wood decking for structural soundness and replace wood to match as necessary. - Replace up to 15% of damaged plywood - Clean all debris & haul away - Pass tear off inspection with local city inspector  Phase III: Install new roofing material per code - Prep work area, HVAC condensers as needed, cover with nylon and tarps in order to collect debris from roof in an organized fashion - Install new synthetic underlayment (UDL30 or equivalent) and fasten down with 1" plastic cap nails per code - Install new powder coated 2x2/ 2x3 drip edge metal flashings along perimeter (Eaves/gutters and Rakes) - Install starter shingles around the perimeter per manufacturer standards - Install ice & water shield (weather-lock) on all penetrations and valleys as needed - Install, seal and paint all metal flashings, pipes vents to match - Install new low profile attic vents to match - Install new Owens Corning Cool Shingles (25 yr Warranty) (Color to be selected by customer) - Install decorative hip / ridge caps  Agreement Notes - 1 BSQ.= 100 square feet - Contractor is not liable for any broken tiles - Any dry-rot repair is additional charge- $x/ man hour + material',
     },
     {
-      label: 'Tile Reset',
-      accessor: 'tileReset',
-      description: 'Replace entire existing tile roofing',
-      outcomeStatement: 'Reinstall your tile roof with upgraded underlayment for improved longevity and leak protection',
-      imageUrl: 'https://res.cloudinary.com/doyafbzya/image/upload/v1755057322/tile-reset_dtudvv.webp',
-      constructionType: 'rough-construction',
-      homeArea: ['exterior-shell'],
-      scopeOfWorkBase: 'Phase I: Site Preparation - Cover ground around house, HVAC condensers as needed, fragile items and exposed ceilings in garage with nylon and tarps in order to collect debris from roof in an organized fashion - Pull city permit on homeowner\'s behalf  Phase II: Demo - Remove existing tiles from roof and store away (tiles to be reinstalled) - Clean wood deck from all nails and debris and prepare for new roof installation. - Demo existing roof underlayment to decking - Inspect the wood decking for structural soundness and replace wood to match as necessary. - Replace up to 15% of damaged plywood. - Clean all debris & haul away - Pass tear off inspection with local city inspector  Phase III: Install new roofing material per code - Prep work area, HVAC condensers as needed, cover with nylon and tarps in order to collect debris from roof in an organized fashion - Install new synthetic underlayment - UDL30 or equivalent and fasten down with 1" plastic cap nails per code - Install new powder coated 2x2/ 2x3 drip edge metal flashings along perimeter (Eaves/gutters and Rakes)- Color TBD - Install ice & water shield (weather-lock) on all penetrations and valleys as needed. - Install, seal and paint all metal flashings, pipes vents to match - Install new low profile attic vents to match - Re-install original roof tiles - Install decorative hip / ridge caps as needed - Clean up and haul away all debris  Notes - *1 sq.= 100 square feet - *Contractor is not liable for any broken tiles - *Permit fees will be billed separately. Contractor to pull and company to reimburse',
-    },
-    {
       label: 'Roof Redeck',
       accessor: 'redeck',
       description: 'Replace entire existing roofing',
@@ -479,6 +479,16 @@ export const scopesData = {
       constructionType: 'energy-efficient',
       homeArea: ['exterior-shell'],
       scopeOfWorkBase: 'Phase I: Site Preparation - Cover ground around house, HVAC condensers as needed, fragile items and exposed ceilings in garage with nylon and tarps in order to collect debris from roof in an organized fashion  Phase II: Demo - Provide dumpster to jobsite - Demo existing asphalt shingles - Demo existing roof underlayment to decking - Demo all existing decking and vents - Team will inspect rafters (if damaged additional costs may apply) - Valley metal remains for re-enforcement - Provide and install new 1/2 inch plywood/osb boards over entire house roof - Clean all debris & haul away - Pass decking inspection with local city inspector  Phase III: Install new roofing material per code - Install new synthetic underlayment - UDL30 or equivalent and fasten down with 1" plastic cap nails per code - Install new powder coated 2x2/ 2x3 drip edge metal flashings along perimeter (Eaves/gutters and Rakes)- Color TBD - Install starter shingles around the perimeter per manufacturer standards - Install ice & water shield (weather-lock) on all penetrations and valleys as needed. - Install, seal and paint all metal flashings, pipes vents to match - Install new low profile attic vents to match - Install new Owens Corning Cool Shingles- 25 yr Warranty Color to be selected by customer. - Install decorative hip/ ridge caps  Notes - *1 sq.= 100 square feet - *Permit fees will be billed separately. Contractor to pull and company to reimburse',
+    },
+    {
+      label: 'Tile Reset',
+      accessor: 'tileReset',
+      description: 'Replace entire existing tile roofing',
+      outcomeStatement: 'Reinstall your tile roof with upgraded underlayment for improved longevity and leak protection',
+      imageUrl: 'https://res.cloudinary.com/doyafbzya/image/upload/v1755057322/tile-reset_dtudvv.webp',
+      constructionType: 'rough-construction',
+      homeArea: ['exterior-shell'],
+      scopeOfWorkBase: 'Phase I: Site Preparation - Cover ground around house, HVAC condensers as needed, fragile items and exposed ceilings in garage with nylon and tarps in order to collect debris from roof in an organized fashion - Pull city permit on homeowner\'s behalf  Phase II: Demo - Remove existing tiles from roof and store away (tiles to be reinstalled) - Clean wood deck from all nails and debris and prepare for new roof installation. - Demo existing roof underlayment to decking - Inspect the wood decking for structural soundness and replace wood to match as necessary. - Replace up to 15% of damaged plywood. - Clean all debris & haul away - Pass tear off inspection with local city inspector  Phase III: Install new roofing material per code - Prep work area, HVAC condensers as needed, cover with nylon and tarps in order to collect debris from roof in an organized fashion - Install new synthetic underlayment - UDL30 or equivalent and fasten down with 1" plastic cap nails per code - Install new powder coated 2x2/ 2x3 drip edge metal flashings along perimeter (Eaves/gutters and Rakes)- Color TBD - Install ice & water shield (weather-lock) on all penetrations and valleys as needed. - Install, seal and paint all metal flashings, pipes vents to match - Install new low profile attic vents to match - Re-install original roof tiles - Install decorative hip / ridge caps as needed - Clean up and haul away all debris  Notes - *1 sq.= 100 square feet - *Contractor is not liable for any broken tiles - *Permit fees will be billed separately. Contractor to pull and company to reimburse',
     },
   ],
   solar: [

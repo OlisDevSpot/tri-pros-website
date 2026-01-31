@@ -1,6 +1,7 @@
 'use client'
 
 import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import { LockIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -50,18 +51,20 @@ export function ProposalForm({ overrideValues }: Props) {
         form.setValue('project.label', overrideValues.project.label || '')
         form.setValue('project.type', overrideValues.project.type || 'general-remodeling')
         form.setValue('project.timeAllocated', overrideValues.project.timeAllocated || '')
-        form.setValue('project.sowSummary', overrideValues.project.sowSummary || '')
+        form.setValue('project.agreementNotes', overrideValues.project.agreementNotes || '')
       }
 
       if (overrideValues.funding) {
         form.setValue('funding.tcp', overrideValues.funding.tcp || 0)
-        form.setValue('funding.deposit', overrideValues.funding.deposit || 0)
+        form.setValue('funding.depositAmount', overrideValues.funding.depositAmount || 0)
         form.setValue('funding.cashInDeal', overrideValues.funding.cashInDeal || 0)
       }
     }
   }, [form, overrideValues])
 
   function onSubmit(data: ProposalFormValues) {
+    console.log({ data })
+
     createProposal.mutate({
       label: data.project.label,
       ownerId: session?.user.id || 'c497d366-7c0a-4ae8-8bf3-d0ab0ed50b38',
@@ -80,11 +83,11 @@ export function ProposalForm({ overrideValues }: Props) {
       // PROJECT
       projectType: data.project.type,
       timeAllocated: data.project.timeAllocated,
-      sowSummary: data.project.sowSummary,
+      agreementNotes: data.project.agreementNotes,
 
       // FUNDING
       tcp: data.funding.tcp,
-      depositAmount: data.funding.deposit,
+      depositAmount: data.funding.depositAmount,
       cashInDeal: data.funding.cashInDeal,
 
       // HUBSPOT
@@ -151,7 +154,16 @@ export function ProposalForm({ overrideValues }: Props) {
           <ProjectFields />
         </CardContent>
         <CardHeader>
-          <CardTitle>Funding Information</CardTitle>
+          <div className="flex gap-2 items-center">
+            <CardTitle>Funding Information</CardTitle>
+            <Button
+              type="button"
+              size="icon"
+
+            >
+              <LockIcon className="w-4 h-4" />
+            </Button>
+          </div>
           <CardDescription>Information relevant to increased financial responsibility</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -165,10 +177,16 @@ export function ProposalForm({ overrideValues }: Props) {
         </div>
       )}
       <Button
+        type="button"
+        disabled={createProposal.isPending}
+      >
+        Save
+      </Button>
+      <Button
         type="submit"
         disabled={createProposal.isPending}
       >
-        Submit
+        Update & Preview
       </Button>
     </form>
   )

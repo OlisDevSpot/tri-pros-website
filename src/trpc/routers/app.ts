@@ -1,5 +1,6 @@
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 import { constructionRouter } from './construction.router'
+import { docusignRouter } from './docusign.router'
 import { hubspotRouter } from './hubspot.router'
 import { landingRouter } from './landing.router'
 import { proposalRouter } from './proposal.router'
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   healthcheck: baseProcedure.query(() => 'ok'),
   landingRouter,
   hubspotRouter,
+  docusignRouter,
   constructionRouter,
   proposalRouter,
 })

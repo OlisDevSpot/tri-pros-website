@@ -1,6 +1,6 @@
 import type z from 'zod'
 import { relations } from 'drizzle-orm'
-import { pgTable, uuid, varchar } from 'drizzle-orm/pg-core'
+import { jsonb, pgTable, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { accessor, createdAt, description, id, updatedAt } from '../lib/schema-helpers'
 import { customers } from './customers'
@@ -15,6 +15,7 @@ export const projects = pgTable('projects', {
   city: varchar('city', { length: 80 }).notNull(),
   state: varchar('state', { length: 2 }).default('CA'),
   zip: varchar('zip', { length: 5 }),
+  hoRequirements: jsonb('ho_requirements').$type<string[]>(),
   customerId: uuid('customer_id')
     .references(() => customers.id, { onDelete: 'cascade' }),
   createdAt,

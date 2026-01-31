@@ -1,18 +1,31 @@
 import { motion } from 'motion/react'
 import { ProposalCard } from '@/features/proposal-flow/ui/components/proposal/proposal-card'
+import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { useGetProposals } from '@/shared/dal/client/proposals/queries/use-get-proposals'
 
 export function PastProposalsView() {
   const proposals = useGetProposals()
+
+  console.log({ proposals })
 
   if (proposals.isLoading) {
     return (
       <LoadingState
         title="Loading Past Proposals"
         description="This might take a few seconds"
+        className="bg-card"
+      />
+    )
+  }
+
+  if (!proposals.data) {
+    return (
+      <ErrorState
+        title="Error: Could not load past proposals"
+        description="Please try again"
         className="bg-card"
       />
     )

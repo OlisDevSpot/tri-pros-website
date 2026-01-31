@@ -44,6 +44,12 @@ const envSchema = z.object({
   HUBSPOT_CLIENT_ID: z.string(),
   HUBSPOT_CLIENT_SECRET: z.string(),
   HUBSPOT_APP_REDIRECT_URL: z.string(),
+
+  // DOCUSIGN
+  DS_USER_ID: z.string(),
+  DS_ACCOUNT_ID: z.string(),
+  DS_INTEGRATION_KEY: z.string(),
+  DS_JWT_PRIVATE_KEY_PATH: z.string(),
 })
 
 export type env = z.infer<typeof envSchema>

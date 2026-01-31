@@ -31,7 +31,7 @@ export function FundingFields() {
             )}
           />
           <FormField
-            name="funding.deposit"
+            name="funding.depositAmount"
             control={form.control}
             render={({ field }) => (
               <FormItem>

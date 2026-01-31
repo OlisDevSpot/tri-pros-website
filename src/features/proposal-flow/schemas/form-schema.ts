@@ -1,5 +1,7 @@
 import z from 'zod'
 import { projectTypes } from '@/shared/constants/enums'
+import { insertProposalSchema } from '@/shared/db/schema'
+import { tradesData } from '@/shared/db/seeds/data/trades'
 
 export const proposalFormSchema = z.object({
   homeowner: z.object({
@@ -17,13 +19,30 @@ export const proposalFormSchema = z.object({
   project: z.object({
     label: z.string().min(1, { message: 'Label is required' }),
     type: z.enum(projectTypes).default('general-remodeling').nonoptional(),
+    scopes: z.array(
+      z.object({
+        trade: z.enum(tradesData.map(trade => trade.accessor)).optional(),
+        scope: z.array(z.string()),
+        sow: z.string().optional(),
+      }),
+    ).min(0, { message: 'At least one scope is required' }),
     timeAllocated: z.string().min(1, { message: 'Time allocated is required' }),
-    sowSummary: z.string().min(1, { message: 'SOW summary is required' }),
+    agreementNotes: z.string().optional(),
   }),
   funding: z.object({
-    tcp: z.number().min(1, { message: 'TCP is required' }),
-    deposit: z.number(),
-    cashInDeal: z.number(),
+    ...insertProposalSchema.pick({
+      tcp: true,
+      depositAmount: true,
+      cashInDeal: true,
+    }).shape,
+    extraFields: z.object({
+      ...insertProposalSchema.pick({
+        discounts: true,
+      }).shape,
+      options: z.object({
+        allowDiscounts: z.boolean().default(false),
+      }),
+    }).optional(),
   }),
 })
 
@@ -44,12 +63,13 @@ export const baseDefaultValues: ProposalFormValues = {
   project: {
     type: 'general-remodeling',
     label: '',
+    scopes: [],
     timeAllocated: '',
-    sowSummary: '',
+    agreementNotes: '',
   },
   funding: {
     tcp: 0,
-    deposit: 1000,
+    depositAmount: 1000,
     cashInDeal: 0,
   },
 }

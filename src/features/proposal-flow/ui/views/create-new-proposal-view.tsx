@@ -44,22 +44,26 @@ export function CreateNewProposalView() {
 
   const contactProperties = contactQuery.data?.contacts[0].properties
 
-  const currentProposalValues = useMemo(() => ({
-    project: {
-      label: `${contactProperties?.firstname.value || ''} ${contactProperties?.lastname.value || ''}`.trim() || '',
-    },
-    homeowner: {
-      firstName: contactProperties?.firstname.value || '',
-      lastName: contactProperties?.lastname.value || '',
-      email: contactProperties?.email?.value || '',
-      phone: contactProperties?.phone?.value || '',
-      address: contactProperties?.address?.value || '',
-      city: contactProperties?.city?.value || '',
-      state: contactProperties?.state?.value || '',
-      zipCode: contactProperties?.zip?.value || '',
-      hubspotVid: String(contactQuery.data?.contacts[0].vid),
-    },
-  }), [contactProperties, contactQuery.data])
+  const currentProposalValues = useMemo(() => {
+    if (contactQuery.data) {
+      return {
+        project: {
+          label: `${contactProperties?.firstname.value || ''} ${contactProperties?.lastname.value || ''}`.trim() || '',
+        },
+        homeowner: {
+          firstName: contactProperties?.firstname.value || '',
+          lastName: contactProperties?.lastname.value || '',
+          email: contactProperties?.email?.value || '',
+          phone: contactProperties?.phone?.value || '',
+          address: contactProperties?.address?.value || '',
+          city: contactProperties?.city?.value || '',
+          state: contactProperties?.state?.value || '',
+          zipCode: contactProperties?.zip?.value || '',
+          hubspotVid: String(contactQuery.data?.contacts[0].vid),
+        },
+      }
+    }
+  }, [contactProperties, contactQuery.data])
 
   return (
     <motion.div
@@ -76,7 +80,7 @@ export function CreateNewProposalView() {
           placeholder="Search contact"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          className="max-w-[200px]"
+          className="max-w-50"
         />
         <Button
           onClick={() => {

@@ -15,10 +15,8 @@ export const x_projectScopes = pgTable('x_project_scopes', {
   scopeId: integer('scope_id')
     .notNull()
     .references(() => scopes.id, { onDelete: 'no action' }),
-  scopeMaterialId: integer('scope_material_id').references(
-    () => x_scopeMaterials.id,
-    { onDelete: 'cascade' },
-  ),
+  scopeMaterialId: integer('scope_material_id')
+    .references(() => x_scopeMaterials.id, { onDelete: 'cascade' }),
   variablesData: jsonb('variables_data').$type<Record<string, any>>(),
 }, table => [
   unique('project_id_scope_id_unique').on(

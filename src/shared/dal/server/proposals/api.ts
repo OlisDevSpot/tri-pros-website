@@ -1,4 +1,5 @@
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
+import { randomBytes } from 'node:crypto'
 import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema/proposals'
@@ -6,7 +7,10 @@ import { proposals } from '@/shared/db/schema/proposals'
 export async function createProposal(data: InsertProposalSchema) {
   const [proposal] = await db
     .insert(proposals)
-    .values(data)
+    .values({
+      ...data,
+      token: `tpr-${randomBytes(8).toString('hex')}`,
+    })
     .returning()
 
   return proposal
@@ -22,11 +26,15 @@ export async function getProposal(proposalId: string) {
 }
 
 export async function getProposals(userId: string) {
+  console.log('running getProposals for user', userId)
+
   const foundProposals = await db
     .select()
     .from(proposals)
     .where(eq(proposals.ownerId, userId))
     .orderBy(desc(proposals.createdAt))
+
+  console.log({ foundProposals })
 
   return foundProposals
 }

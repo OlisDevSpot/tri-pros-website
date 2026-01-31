@@ -18,27 +18,6 @@ export function generateObject(label: string, data: Partial<InsertTrade>) {
   }
 }
 
-export const trades = [
-  'Addition',
-  'ADU',
-  'Attic & Basement',
-  'Bathroom',
-  'Blueprints & Engineering',
-  'Dryscaping & Hardscaping',
-  'Electricals',
-  'Exterior features',
-  'Exterior paint & Siding',
-  'Flooring',
-  'Hazardous materials',
-  'HVAC',
-  'Interior paint',
-  'Kitchen',
-  'Plumbing',
-  'Roof',
-  'Solar',
-  'Windows & Doors',
-] as const
-
 export const tradesData = [
   {
     accessor: 'addition',

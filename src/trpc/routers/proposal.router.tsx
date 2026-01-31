@@ -24,8 +24,12 @@ export const proposalRouter = createTRPCRouter({
     }),
 
   getProposals: agentProcedure.query(async ({ ctx }) => {
+    console.log('ran get proposals')
     const { user } = ctx.session
+
     const proposals = await getProposals(user.id)
+
+    console.log({ proposals })
 
     return proposals
   }),

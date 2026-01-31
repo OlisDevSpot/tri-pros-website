@@ -5,14 +5,15 @@ export const projectsData = [
   {
     title: 'Altura',
     accessor: 'altura',
-    description: 'A luxurious finish for a modern kitchen',
-    city: 'Arcadia',
+    description: 'Letting your frontyard do the talking',
+    city: 'Lancaster',
+    hoRequirements: ['Make parking space wider', 'open up space', 'increase curb appeal', 'reduce maintenance'],
     mediaFiles: [],
   },
   {
     title: 'Atlas',
     accessor: 'atlas',
-    description: 'Bold and modern design for a long-lasting covered patio - Beverly Hills, CA',
+    description: 'Bold and modern design for a long-lasting covered patio',
     city: 'Beverly Hills',
     mediaFiles: [],
   },
@@ -42,6 +43,13 @@ export const projectsData = [
     accessor: 'riviera',
     description: 'Mini-pebble, Baja, and spa for finish for the modern pool experience- Indio, CA',
     city: 'Indio',
+    mediaFiles: [],
+  },
+  {
+    title: 'Verona',
+    accessor: 'verona',
+    description: 'A luxurious finish for a modern kitchen',
+    city: 'Arcadia',
     mediaFiles: [],
   },
 ] as const satisfies (InsertProject & {

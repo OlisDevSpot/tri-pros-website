@@ -22,7 +22,7 @@ export function TrustedContractor() {
           <CompanySocialButtons className="lg:flex-row" />
         </CardContent>
       </Card>
-      <ProcessOverview />
+      <ProcessOverview className="px-0! lg:px-0! w-full" />
     </div>
   )
 }

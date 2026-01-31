@@ -39,6 +39,19 @@ export function ProjectOverview() {
           value: proposal[field.name as keyof Proposal] || '',
         }
       }),
+      extraFields: section.extraFields.map((field) => {
+        if (field.name === 'discounts') {
+          return {
+            ...field,
+            value: proposal[field.name as keyof Proposal],
+          }
+        }
+
+        return {
+          ...field,
+          value: proposal[field.name as keyof Proposal] || '',
+        }
+      }),
     }))
   }, [])
 

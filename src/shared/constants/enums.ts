@@ -2,6 +2,26 @@
 export const userRoles = ['user', 'homeowner', 'agent', 'super-admin'] as const
 
 // CONSTRUCTION
+// export const allTrades = [
+//   'addition',
+//   'adu',
+//   'atticBasement',
+//   'bathroom',
+//   'blueprintsEngineering',
+//   'dryscapingHardscaping',
+//   'electricals',
+//   'exteriorFeatures',
+//   'exteriorPaintSiding',
+//   'flooring',
+//   'hazardousMaterials',
+//   'hvac',
+//   'interiorPaint',
+//   'kitchen',
+//   'plumbing',
+//   'roof',
+//   'solar',
+//   'windowsDoors',
+// ] as const
 
 export const tradeLocations = ['exterior', 'interior', 'lot'] as const
 export const constructionTypes = ['energy-efficient', 'rough-construction', 'finish-construction'] as const
