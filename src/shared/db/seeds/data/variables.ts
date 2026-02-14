@@ -171,7 +171,7 @@ export const variablesData = {
     },
   ],
 
-  windows: [
+  windowsAndDoors: [
     {
       key: 'numLargeWindows',
       label: 'Number of large windows',

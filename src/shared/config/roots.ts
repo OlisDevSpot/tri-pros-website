@@ -12,7 +12,7 @@ interface Options {
 
 function generateUrl(relativeUrl: string, options?: Options) {
   // eslint-disable-next-line node/prefer-global/process
-  const domain = process.env.NDOE_ENV === 'production' || options?.isProduction ? APP_ROOTS.prodBaseUrl : APP_ROOTS.devBaseUrl
+  const domain = process.env.NODE_ENV === 'production' || options?.isProduction ? APP_ROOTS.prodBaseUrl : APP_ROOTS.devBaseUrl
 
   return options?.absolute ? `${domain}${relativeUrl}` : relativeUrl
 }

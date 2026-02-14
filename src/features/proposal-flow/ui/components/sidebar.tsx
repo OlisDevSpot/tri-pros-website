@@ -5,12 +5,13 @@ import { ArrowLeftIcon, HistoryIcon, PlusIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
-import { myProposalsStepParser } from '@/features/proposal-flow/lib/url-parsers'
+import { myProposalsStepParser, proposalIdParser } from '@/features/proposal-flow/lib/url-parsers'
 import { Logo } from '@/shared/components/logo'
 import { Button } from '@/shared/components/ui/button'
 
 export function ProposalSidebar() {
   const [proposalFlowStep, setProposalFlowStep] = useQueryState('step', myProposalsStepParser)
+  const [_, setProposalId] = useQueryState('proposalId', proposalIdParser)
 
   useEffect(() => {
     if (proposalFlowStep === 'past-proposals') {
@@ -35,6 +36,7 @@ export function ProposalSidebar() {
         className="data-[active=true]:bg-primary/80 lg:data-[active=true]:h-20"
         onClick={() => {
           setProposalFlowStep('create-proposal')
+          setProposalId('')
         }}
       >
         <PlusIcon size={20} />
@@ -46,6 +48,7 @@ export function ProposalSidebar() {
         className="data-[active=true]:bg-primary/80 lg:data-[active=true]:h-20"
         onClick={() => {
           setProposalFlowStep('past-proposals')
+          setProposalId('')
         }}
       >
         <HistoryIcon size={20} />

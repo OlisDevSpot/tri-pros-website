@@ -1,4 +1,5 @@
 import type z from 'zod'
+import type { HomeArea } from '@/shared/types/enums'
 import { relations } from 'drizzle-orm'
 import { integer, jsonb, pgEnum, pgTable, text, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
@@ -20,6 +21,11 @@ export const proposals = pgTable('proposals', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   token: text('token').notNull(),
+
+  // PROJECT SUMMARY
+  projectSummary: text('project_summary'),
+  projectObjectives: jsonb('project_objectives').$type<string[]>(),
+  homeAreasUpgrades: jsonb('home_areas_upgrades').$type<HomeArea[]>(),
 
   // PROJECT INFO
   projectType: projectTypeEnum('project_type').notNull().default('general-remodeling'),

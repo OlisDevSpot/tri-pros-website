@@ -2,22 +2,21 @@
 
 import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
 import { LockIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { toast } from 'sonner'
-import { useSession } from '@/shared/auth/client'
+import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { ROOTS } from '@/shared/config/roots'
-import { useCreateProposal } from '@/shared/dal/client/proposals/mutations/use-create-proposal'
 import { FundingFields } from './funding-fields'
 import { HomeownerFields } from './homeowner-fields'
 import { ProjectFields } from './project-fields'
 
 interface Props {
+  onSubmit: (data: ProposalFormValues) => void
   isLoading: boolean
   overrideValues?: {
     homeowner?: Partial<ProposalFormValues['homeowner']>
@@ -26,83 +25,31 @@ interface Props {
   }
 }
 
-export function ProposalForm({ overrideValues }: Props) {
+function deepMergeDefaults(base: ProposalFormValues, override: Props['overrideValues'] = {}): ProposalFormValues {
+  if (Object.keys(override).length === 0) {
+    return base
+  }
+
+  const defaultWithOverrides = {
+    ...base,
+    homeowner: { ...base.homeowner, ...(override.homeowner ?? {}) },
+    project: { ...base.project, ...(override.project ?? {}) },
+    funding: { ...base.funding, ...(override.funding ?? {}) },
+  }
+
+  return defaultWithOverrides
+}
+
+export function ProposalForm({ isLoading, onSubmit, overrideValues }: Props) {
   const form = useFormContext<ProposalFormValues>()
-  const createProposal = useCreateProposal()
-  const { data: session } = useSession()
-  const router = useRouter()
+  const [proposalId] = useQueryState('proposalId')
 
   useEffect(() => {
     if (overrideValues) {
-      if (overrideValues.homeowner) {
-        form.setValue('homeowner.firstName', overrideValues.homeowner.firstName || '')
-        form.setValue('homeowner.lastName', overrideValues.homeowner.lastName || '')
-        form.setValue('homeowner.email', overrideValues.homeowner.email || '')
-        form.setValue('homeowner.phone', overrideValues.homeowner.phone || '')
-        form.setValue('homeowner.address', overrideValues.homeowner.address || '')
-        form.setValue('homeowner.city', overrideValues.homeowner.city || '')
-        form.setValue('homeowner.state', overrideValues.homeowner.state || '')
-        form.setValue('homeowner.zipCode', overrideValues.homeowner.zipCode || '')
-        form.setValue('homeowner.age', overrideValues.homeowner.age || 0)
-        form.setValue('homeowner.hubspotVid', overrideValues.homeowner.hubspotVid || '')
-      }
-
-      if (overrideValues.project) {
-        form.setValue('project.label', overrideValues.project.label || '')
-        form.setValue('project.type', overrideValues.project.type || 'general-remodeling')
-        form.setValue('project.timeAllocated', overrideValues.project.timeAllocated || '')
-        form.setValue('project.agreementNotes', overrideValues.project.agreementNotes || '')
-      }
-
-      if (overrideValues.funding) {
-        form.setValue('funding.tcp', overrideValues.funding.tcp || 0)
-        form.setValue('funding.depositAmount', overrideValues.funding.depositAmount || 0)
-        form.setValue('funding.cashInDeal', overrideValues.funding.cashInDeal || 0)
-      }
+      form.reset(deepMergeDefaults(baseDefaultValues, overrideValues))
     }
-  }, [form, overrideValues])
-
-  function onSubmit(data: ProposalFormValues) {
-    console.log({ data })
-
-    createProposal.mutate({
-      label: data.project.label,
-      ownerId: session?.user.id || 'c497d366-7c0a-4ae8-8bf3-d0ab0ed50b38',
-
-      // HOMEOWNER
-      firstName: data.homeowner.firstName,
-      lastName: data.homeowner.lastName,
-      email: data.homeowner.email,
-      phoneNum: data.homeowner.phone,
-      address: data.homeowner.address,
-      city: data.homeowner.city,
-      state: data.homeowner.state,
-      zipCode: data.homeowner.zipCode,
-      customerAge: data.homeowner.age,
-
-      // PROJECT
-      projectType: data.project.type,
-      timeAllocated: data.project.timeAllocated,
-      agreementNotes: data.project.agreementNotes,
-
-      // FUNDING
-      tcp: data.funding.tcp,
-      depositAmount: data.funding.depositAmount,
-      cashInDeal: data.funding.cashInDeal,
-
-      // HUBSPOT
-      hubspotContactVid: data.homeowner.hubspotVid,
-    }, {
-      onSuccess: (data) => {
-        toast.success('Proposal created!')
-        // form.reset()
-        router.push(`${ROOTS.proposalFlow()}/proposal/${data.id}`)
-      },
-      onError: (error) => {
-        toast.error(error.message)
-      },
-    })
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [overrideValues])
 
   const onInvalid = (errors: any) => {
     // eslint-disable-next-line no-console
@@ -176,18 +123,14 @@ export function ProposalForm({ overrideValues }: Props) {
           <div className="text-red-500">{JSON.stringify(form.formState.errors, null, 2)}</div>
         </div>
       )}
-      <Button
-        type="button"
-        disabled={createProposal.isPending}
-      >
-        Save
-      </Button>
-      <Button
-        type="submit"
-        disabled={createProposal.isPending}
-      >
-        Update & Preview
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="submit"
+          disabled={isLoading}
+        >
+          {proposalId ? 'Update & Preview' : 'Save & Preview'}
+        </Button>
+      </div>
     </form>
   )
 }

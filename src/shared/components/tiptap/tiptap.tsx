@@ -1,18 +1,37 @@
 'use client'
 
 import DragHandle from '@tiptap/extension-drag-handle-react'
+import Highlight from '@tiptap/extension-highlight'
+import TextAlign from '@tiptap/extension-text-align'
 import { EditorContent, useEditor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
+import { BoldIcon, ItalicIcon, StrikethroughIcon } from 'lucide-react'
+import { cn } from '@/shared/lib/utils'
 import { Button } from '../ui/button'
 import { TipTapMenuBar } from './menu-bar'
 
-function Tiptap() {
+interface Props {
+  onChange: (value: string) => void
+  initialValues?: string
+}
+
+export function Tiptap({ onChange, initialValues }: Props) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      TextAlign,
+      Highlight.configure({
+        multicolor: true,
+      }),
+    ],
     // Don't render immediately on the server to avoid SSR issues
     immediatelyRender: false,
     autofocus: true,
+    content: initialValues,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML())
+    },
   })
 
   return (
@@ -20,25 +39,40 @@ function Tiptap() {
       {editor && (
         <BubbleMenu className="bubble-menu" editor={editor}>
           <Button
+            size="icon"
+            variant="outline"
             type="button"
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={editor.isActive('bold') ? 'is-active' : ''}
+            className={cn(
+              'rounded-none',
+              editor.isActive('bold') ? 'is-active' : '',
+            )}
           >
-            Bold
+            <BoldIcon />
           </Button>
           <Button
+            size="icon"
+            variant="outline"
             type="button"
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={editor.isActive('italic') ? 'is-active' : ''}
+            className={cn(
+              'rounded-none',
+              editor.isActive('italic') ? 'is-active' : '',
+            )}
           >
-            Italic
+            <ItalicIcon />
           </Button>
           <Button
+            size="icon"
+            variant="outline"
             type="button"
             onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={editor.isActive('strike') ? 'is-active' : ''}
+            className={cn(
+              'rounded-none',
+              editor.isActive('strike') ? 'is-active' : '',
+            )}
           >
-            Strike
+            <StrikethroughIcon />
           </Button>
         </BubbleMenu>
       )}
@@ -58,5 +92,3 @@ function Tiptap() {
     </>
   )
 }
-
-export default Tiptap

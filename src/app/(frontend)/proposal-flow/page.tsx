@@ -7,6 +7,7 @@ import { useEffect } from 'react'
 import { myProposalsStepParser } from '@/features/proposal-flow/lib/url-parsers'
 import { ProposalSidebar } from '@/features/proposal-flow/ui/components/sidebar'
 import { CreateNewProposalView } from '@/features/proposal-flow/ui/views/create-new-proposal-view'
+import { EditProposalView } from '@/features/proposal-flow/ui/views/edit-proposal-view'
 import { PastProposalsView } from '@/features/proposal-flow/ui/views/past-proposals-view'
 import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -51,6 +52,11 @@ export default function MyProposalsPage() {
         <AnimatePresence>
           {myProposalStep === 'past-proposals' && (
             <PastProposalsView key="past-proposals" />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {myProposalStep === 'edit-proposal' && (
+            <EditProposalView key="edit-proposal" />
           )}
         </AnimatePresence>
       </div>

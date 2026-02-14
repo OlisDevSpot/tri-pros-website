@@ -52,7 +52,7 @@ export const scopeBenefitsData = {
       reduceHeadache: ['hvacLife', 'leakMoldPrevention'],
     },
   },
-  windows: {
+  windowsAndDoors: {
     replaceWindows: {
       increaseComfort: ['noiseReduction'],
       increaseValue: ['fireResistance', 'functionality', 'homeAppeal', 'homeSecurity', 'increasePropertyValue'],

@@ -1,7 +1,7 @@
 import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
-import Tiptap from '@/shared/components/tiptap/tiptap'
+import { Tiptap } from '@/shared/components/tiptap/tiptap'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
@@ -37,9 +37,63 @@ export function ProjectFields() {
     <section className="space-y-8">
       <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
         <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-4 flex-wrap w-full">
+            <FormField
+              name="project.address"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Address *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123 ABC Street" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="project.city"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Tarzana" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="project.state"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>State *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="CA" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="project.zipCode"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Zip *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="91335" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <div className="grid lg:grid-cols-2 gap-4">
             <FormField
-              name="project.type"
+              name="project.projectType"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -182,7 +236,9 @@ export function ProjectFields() {
                             placeholder="Tri Pros Remodeling will..."
                             className="min-h-[250px]"
                           /> */}
-                          <Tiptap />
+                          <Tiptap
+                            onChange={html => field.onChange(html)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -219,6 +275,7 @@ export function ProjectFields() {
                 <FormControl>
                   <Textarea
                     {...field}
+                    value={field.value || ''}
                     placeholder="Tri Pros Remodeling will..."
                     className="min-h-62.5"
                   />

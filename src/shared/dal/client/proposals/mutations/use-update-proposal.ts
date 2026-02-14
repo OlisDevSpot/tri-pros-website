@@ -8,6 +8,7 @@ export function useUpdateProposal() {
   return useMutation(trpc.proposalRouter.updateProposal.mutationOptions({
     onSuccess: (data) => {
       queryClient.invalidateQueries(trpc.proposalRouter.getProposal.queryOptions({ proposalId: data.id }))
+      queryClient.invalidateQueries(trpc.proposalRouter.getProposals.queryOptions())
     },
   }))
 }

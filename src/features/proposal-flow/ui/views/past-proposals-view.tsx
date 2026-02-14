@@ -9,8 +9,6 @@ import { useGetProposals } from '@/shared/dal/client/proposals/queries/use-get-p
 export function PastProposalsView() {
   const proposals = useGetProposals()
 
-  console.log({ proposals })
-
   if (proposals.isLoading) {
     return (
       <LoadingState

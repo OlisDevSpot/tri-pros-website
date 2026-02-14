@@ -1,3 +1,4 @@
+import type { ProposalFormValues } from '../schemas/form-schema'
 import type { UserRole } from '@/shared/db/types/users'
 
 export interface HomeownerInfo {
@@ -18,4 +19,10 @@ export interface ProposalStep<P> {
   accessor: string
   description: string
   Component: (props: P) => React.ReactNode
+}
+
+export interface OverrideProposalValues {
+  homeowner?: Partial<ProposalFormValues['homeowner']>
+  project?: Partial<ProposalFormValues['project']>
+  funding?: Partial<ProposalFormValues['funding']>
 }

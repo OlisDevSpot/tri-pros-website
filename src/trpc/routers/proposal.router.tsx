@@ -7,6 +7,26 @@ import { ProposalEmail } from '@/shared/services/resend/templates/proposal-email
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
 export const proposalRouter = createTRPCRouter({
+
+  getProposal: baseProcedure
+    .input(z.object({
+      proposalId: z.string(),
+    }))
+    .query(async ({ input }) => {
+      const proposal = await getProposal(input.proposalId)
+
+      return proposal
+    }),
+
+  getProposals: agentProcedure
+    .query(async ({ ctx }) => {
+      const { user } = ctx.session
+
+      const proposals = await getProposals(user.id)
+
+      return proposals
+    }),
+
   createProposal: baseProcedure
     .input(insertProposalSchema.strict())
     .mutation(async ({ input }) => {
@@ -14,25 +34,6 @@ export const proposalRouter = createTRPCRouter({
 
       return proposal
     }),
-
-  getProposal: baseProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .query(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
-
-      return proposal
-    }),
-
-  getProposals: agentProcedure.query(async ({ ctx }) => {
-    console.log('ran get proposals')
-    const { user } = ctx.session
-
-    const proposals = await getProposals(user.id)
-
-    console.log({ proposals })
-
-    return proposals
-  }),
 
   updateProposal: baseProcedure
     .input(z.object({
@@ -44,9 +45,16 @@ export const proposalRouter = createTRPCRouter({
       const user = ctx.session?.user
 
       if (user) {
-        const proposal = await updateProposal(user.id, input.proposalId, input.data)
-
-        return proposal
+        try {
+          const proposal = await updateProposal(user.id, input.proposalId, input.data)
+          return proposal
+        }
+        catch {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            cause: 'Unauthorized',
+          })
+        }
       }
 
       if (!input.token) {
@@ -62,7 +70,11 @@ export const proposalRouter = createTRPCRouter({
     }),
 
   sendProposalEmail: agentProcedure
-    .input(z.object({ proposalId: z.string(), email: z.email(), token: z.string() }))
+    .input(z.object({
+      proposalId: z.string(),
+      email: z.email(),
+      token: z.string(),
+    }))
     .mutation(async ({ input, ctx }) => {
       const { user } = ctx.session
 

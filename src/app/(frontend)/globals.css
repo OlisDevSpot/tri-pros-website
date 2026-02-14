@@ -174,7 +174,7 @@
 
   .right-scrollbar {
     &::-webkit-scrollbar {
-      @apply w-[22px];
+      @apply w-5.5;
     }
     &::-webkit-scrollbar-track {
       @apply border-l-16 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-background;
@@ -187,7 +187,7 @@
 
   .bottom-scrollbar {
     &::-webkit-scrollbar {
-      @apply h-[22px];
+      @apply h-5.5;
     }
     &::-webkit-scrollbar-track {
       @apply border-t-16 border-l-0 border-transparent rounded-full shadow-[inset_0_0_10px_10px] shadow-neutral-700;
@@ -295,6 +295,22 @@
     svg {
       width: 1.25rem;
       height: 1.25rem;
+    }
+  }
+
+  :first-child {
+    margin-top: 0;
+  }
+
+  /* List styles */
+  ul,
+  ol {
+    padding: 0 1rem;
+    margin: 1.25rem 1rem 1.25rem 0.4rem;
+
+    li p {
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
     }
   }
 }

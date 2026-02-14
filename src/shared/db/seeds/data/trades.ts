@@ -156,9 +156,9 @@ export const tradesData = [
     location: 'exterior',
   },
   {
-    accessor: 'windows',
-    slug: 'windows',
-    label: 'Windows',
+    accessor: 'windowsAndDoors',
+    slug: 'windows-and-doors',
+    label: 'Windows & Doors',
     description: 'Windows keeps you reflected',
     imageUrl: 'https://res.cloudinary.com/doyafbzya/image/upload/v1755028803/windows_upwmem.jpg',
     location: 'exterior',

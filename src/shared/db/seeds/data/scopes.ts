@@ -523,7 +523,7 @@ export const scopesData = {
       scopeOfWorkBase: null,
     },
   ],
-  windows: [
+  windowsAndDoors: [
     {
       label: 'Window replacement',
       accessor: 'replaceWindows',

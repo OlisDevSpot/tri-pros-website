@@ -1,24 +1,27 @@
 import z from 'zod'
-import { projectTypes } from '@/shared/constants/enums'
 import { insertProposalSchema } from '@/shared/db/schema'
 import { tradesData } from '@/shared/db/seeds/data/trades'
 
 export const proposalFormSchema = z.object({
-  homeowner: z.object({
-    firstName: z.string().min(1, { message: 'First name is required' }),
-    lastName: z.string().min(1, { message: 'Last name is required' }),
-    email: z.string().min(1, { message: 'Email is required' }),
-    phone: z.string().min(1, { message: 'Phone is required' }),
-    address: z.string().min(1, { message: 'Address is required' }),
-    city: z.string().min(1, { message: 'City is required' }),
-    state: z.string().min(1, { message: 'State is required' }),
-    zipCode: z.string().min(1, { message: 'Zip code is required' }),
-    age: z.number().min(18, { message: 'You must be 18 or older' }),
-    hubspotVid: z.string().optional(),
+  homeowner: insertProposalSchema.pick({
+    firstName: true,
+    lastName: true,
+    email: true,
+    phoneNum: true,
+    customerAge: true,
+    hubspotContactVid: true,
   }),
   project: z.object({
-    label: z.string().min(1, { message: 'Label is required' }),
-    type: z.enum(projectTypes).default('general-remodeling').nonoptional(),
+    ...insertProposalSchema.pick({
+      address: true,
+      city: true,
+      state: true,
+      zipCode: true,
+      projectType: true,
+      label: true,
+      timeAllocated: true,
+      agreementNotes: true,
+    }).shape,
     scopes: z.array(
       z.object({
         trade: z.enum(tradesData.map(trade => trade.accessor)).optional(),
@@ -26,8 +29,6 @@ export const proposalFormSchema = z.object({
         sow: z.string().optional(),
       }),
     ).min(0, { message: 'At least one scope is required' }),
-    timeAllocated: z.string().min(1, { message: 'Time allocated is required' }),
-    agreementNotes: z.string().optional(),
   }),
   funding: z.object({
     ...insertProposalSchema.pick({
@@ -40,7 +41,7 @@ export const proposalFormSchema = z.object({
         discounts: true,
       }).shape,
       options: z.object({
-        allowDiscounts: z.boolean().default(false),
+        allowDiscounts: z.boolean().default(false).optional(),
       }),
     }).optional(),
   }),
@@ -53,15 +54,15 @@ export const baseDefaultValues: ProposalFormValues = {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phoneNum: '',
+    customerAge: 0,
+  },
+  project: {
     address: '',
     city: '',
     state: '',
     zipCode: '',
-    age: 0,
-  },
-  project: {
-    type: 'general-remodeling',
+    projectType: 'general-remodeling',
     label: '',
     scopes: [],
     timeAllocated: '',

@@ -98,7 +98,7 @@ export const xScopeVariablesData = {
       variableKey: 'numMiniSplits',
     },
   ],
-  windows: [
+  windowsAndDoors: [
     {
       scopeAccessor: 'replaceWindows',
       variableKey: 'numSmallWindows',

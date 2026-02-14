@@ -96,7 +96,7 @@ export function ProjectOverview() {
                         <p>{field.label}</p>
                       </div>
                       <div className="border-b border-dashed grow h-[75%]" />
-                      <p className="-mt-0.5">{field.value}</p>
+                      <p className="-mt-0.5">{field.value.toString()}</p>
                     </div>
                   ))}
                 </div>

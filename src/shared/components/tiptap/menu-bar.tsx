@@ -1,4 +1,22 @@
 import type { Editor } from '@tiptap/react'
+import {
+  AlignCenterIcon,
+  AlignJustifyIcon,
+  AlignLeftIcon,
+  AlignRightIcon,
+  BoldIcon,
+  Heading1Icon,
+  Heading2Icon,
+  Heading3Icon,
+  HighlighterIcon,
+  ItalicIcon,
+  LockIcon,
+  StrikethroughIcon,
+  UnlockIcon,
+} from 'lucide-react'
+import { cn,
+
+} from '@/shared/lib/utils'
 import { Button } from '../ui/button'
 
 interface Props {
@@ -19,95 +37,148 @@ export function TipTapMenuBar({ editor }: Props) {
     <div>
       <div>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={toggleEditable}
-          className={editor.isEditable ? 'bg-red-500' : editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isEditable ? 'bg-red-500/40' : editor.isActive('heading', { level: 1 }) ? 'is-active' : '',
+          )}
         >
-          Drag Handle
+          {editor.isEditable ? <UnlockIcon /> : <LockIcon />}
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive('heading', { level: 1 }) ? 'is-active' : '',
+          )}
         >
-          H1
+          <Heading1Icon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive('heading', { level: 2 }) ? 'is-active' : '',
+          )}
         >
-          H2
+          <Heading2Icon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive('heading', { level: 3 }) ? 'is-active' : '',
+          )}
         >
-          H3
+          <Heading3Icon />
         </Button>
         <Button
-          type="button"
-          onClick={() => editor.chain().focus().setParagraph().run()}
-          className={editor.isActive('paragraph') ? 'is-active' : ''}
-        >
-          Paragraph
-        </Button>
-        <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive('bold') ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive('bold') ? 'is-active' : '',
+          )}
         >
-          Bold
+          <BoldIcon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive('italic') ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive('italic') ? 'is-active' : '',
+          )}
         >
-          Italic
+          <ItalicIcon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={editor.isActive('strike') ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive('strike') ? 'is-active' : '',
+          )}
         >
-          Strike
+          <StrikethroughIcon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().toggleHighlight().run()}
-          className={editor.isActive('highlight') ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive('highlight') ? 'is-active' : '',
+          )}
         >
-          Highlight
+          <HighlighterIcon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          className={editor.isActive({ textAlign: 'left' }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive({ textAlign: 'left' }) ? 'is-active' : '',
+          )}
         >
-          Left
+          <AlignLeftIcon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          className={editor.isActive({ textAlign: 'center' }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive({ textAlign: 'center' }) ? 'is-active' : '',
+          )}
         >
-          Center
+          <AlignCenterIcon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
-          className={editor.isActive({ textAlign: 'right' }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive({ textAlign: 'right' }) ? 'is-active' : '',
+          )}
         >
-          Right
+          <AlignRightIcon />
         </Button>
         <Button
+          size="icon"
+          variant="outline"
           type="button"
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-          className={editor.isActive({ textAlign: 'justify' }) ? 'is-active' : ''}
+          className={cn(
+            'rounded-none',
+            editor.isActive({ textAlign: 'justify' }) ? 'is-active' : '',
+          )}
         >
-          Justify
+          <AlignJustifyIcon />
         </Button>
       </div>
     </div>

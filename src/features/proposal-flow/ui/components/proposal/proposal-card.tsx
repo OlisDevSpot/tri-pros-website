@@ -66,9 +66,12 @@ export function ProposalCard({ proposal }: Props) {
           </Link>
         </Button>
         <Button asChild variant="secondary">
-          <Link href={`${ROOTS.proposalFlow()}/proposal/${proposal.id}`}>
+          <Link href={`${ROOTS.proposalFlow()}?step=edit-proposal&proposalId=${proposal.id}`}>
             Edit Proposal
           </Link>
+        </Button>
+        <Button variant="destructive">
+          Delete Proposal
         </Button>
       </CardContent>
     </Card>

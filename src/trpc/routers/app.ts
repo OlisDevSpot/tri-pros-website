@@ -1,3 +1,5 @@
+import { proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import { generateProjectSummary } from '@/shared/services/ai/generate-project-summary'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 import { constructionRouter } from './construction.router'
 import { docusignRouter } from './docusign.router'
@@ -6,9 +8,15 @@ import { landingRouter } from './landing.router'
 import { proposalRouter } from './proposal.router'
 
 export const appRouter = createTRPCRouter({
-  test: baseProcedure.query(async ({ ctx }) => {
-    return { resHeaders: [...ctx.resHeaders.entries()] }
-  }),
+  test: baseProcedure
+    .input(proposalFormSchema)
+    .query(async ({ ctx, input }) => {
+      await generateProjectSummary({
+        ...input,
+      })
+
+      return { resHeaders: [...ctx.resHeaders.entries()] }
+    }),
   test2: agentProcedure.query(({ ctx }) => {
     const cookies = ctx.req?.headers.get('cookie')
       ?.split('; ')

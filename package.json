@@ -14,6 +14,7 @@
     "db:seed": "tsx ./src/shared/db/lib/db-seed.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.25",
     "@hookform/resolvers": "^5.1.1",
     "@hubspot/api-client": "^13.4.0",
     "@mondaydotcomorg/api": "^12.0.1",
@@ -52,6 +53,8 @@
     "@tanstack/react-query": "^5.80.7",
     "@tiptap/extension-drag-handle": "^3.15.3",
     "@tiptap/extension-drag-handle-react": "^3.15.3",
+    "@tiptap/extension-highlight": "^3.19.0",
+    "@tiptap/extension-text-align": "^3.19.0",
     "@tiptap/pm": "^3.15.3",
     "@tiptap/react": "^3.15.3",
     "@tiptap/starter-kit": "^3.15.3",
@@ -62,6 +65,7 @@
     "@zxcvbn-ts/core": "^3.0.4",
     "@zxcvbn-ts/language-common": "^3.0.4",
     "@zxcvbn-ts/language-en": "^3.0.2",
+    "ai": "^6.0.70",
     "better-auth": "^1.4.5",
     "class-variance-authority": "^0.7.1",
     "client-only": "^0.0.1",

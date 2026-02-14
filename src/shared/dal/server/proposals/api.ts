@@ -26,15 +26,11 @@ export async function getProposal(proposalId: string) {
 }
 
 export async function getProposals(userId: string) {
-  console.log('running getProposals for user', userId)
-
   const foundProposals = await db
     .select()
     .from(proposals)
     .where(eq(proposals.ownerId, userId))
     .orderBy(desc(proposals.createdAt))
-
-  console.log({ foundProposals })
 
   return foundProposals
 }

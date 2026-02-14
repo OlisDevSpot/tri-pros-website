@@ -1,31 +1,24 @@
 // MAIN
 export const userRoles = ['user', 'homeowner', 'agent', 'super-admin'] as const
-
-// CONSTRUCTION
-// export const allTrades = [
-//   'addition',
-//   'adu',
-//   'atticBasement',
-//   'bathroom',
-//   'blueprintsEngineering',
-//   'dryscapingHardscaping',
-//   'electricals',
-//   'exteriorFeatures',
-//   'exteriorPaintSiding',
-//   'flooring',
-//   'hazardousMaterials',
-//   'hvac',
-//   'interiorPaint',
-//   'kitchen',
-//   'plumbing',
-//   'roof',
-//   'solar',
-//   'windowsDoors',
-// ] as const
-
 export const tradeLocations = ['exterior', 'interior', 'lot'] as const
 export const constructionTypes = ['energy-efficient', 'rough-construction', 'finish-construction'] as const
-export const homeAreas = ['bathroom', 'kitchen', 'bedroom', 'living-room', 'dining-room', 'front-yard', 'back-yard', 'side-yard', 'garage', 'attic', 'basement', 'foundation', 'exterior-shell', 'interior-space'] as const
+
+export const homeAreas = [
+  'bathroom',
+  'kitchen',
+  'bedroom',
+  'living-room',
+  'dining-room',
+  'front-yard',
+  'back-yard',
+  'side-yard',
+  'garage',
+  'attic',
+  'basement',
+  'foundation',
+  'exterior-shell',
+  'interior-space',
+] as const
 
 export const roofLocations = ['main home', 'garage', 'adu'] as const
 export const roofTypes = ['shingle', 'metal', 'flat', 'woodshake', 'tile'] as const
