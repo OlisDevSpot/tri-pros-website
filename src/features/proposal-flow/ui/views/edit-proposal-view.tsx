@@ -31,7 +31,7 @@ export function EditProposalView() {
     if (proposal.data) {
       const { data } = proposal
 
-      const overrideValues: OverrideProposalValues = {
+      const initialValues: OverrideProposalValues = {
         homeowner: {
           firstName: data.firstName || '',
           lastName: data.lastName || '',
@@ -56,7 +56,7 @@ export function EditProposalView() {
         },
       }
 
-      return overrideValues
+      return initialValues
     }
   }, [proposal])
 
@@ -120,7 +120,7 @@ export function EditProposalView() {
         <Form {...form}>
           <ProposalForm
             isLoading={proposal.isLoading || updateProposal.isPending}
-            overrideValues={currentProposalValues}
+            initialValues={currentProposalValues}
             onSubmit={onSubmit}
           />
         </Form>

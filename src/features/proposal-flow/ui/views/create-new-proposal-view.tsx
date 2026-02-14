@@ -173,7 +173,7 @@ export function CreateNewProposalView() {
         <Form {...form}>
           <ProposalForm
             isLoading={hubspotContactQuery.isLoading}
-            overrideValues={currentProposalValues}
+            initialValues={currentProposalValues}
             onSubmit={onSubmit}
           />
         </Form>

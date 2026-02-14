@@ -18,14 +18,14 @@ import { ProjectFields } from './project-fields'
 interface Props {
   onSubmit: (data: ProposalFormValues) => void
   isLoading: boolean
-  overrideValues?: {
+  initialValues?: {
     homeowner?: Partial<ProposalFormValues['homeowner']>
     project?: Partial<ProposalFormValues['project']>
     funding?: Partial<ProposalFormValues['funding']>
   }
 }
 
-function deepMergeDefaults(base: ProposalFormValues, override: Props['overrideValues'] = {}): ProposalFormValues {
+function deepMergeDefaults(base: ProposalFormValues, override: Props['initialValues'] = {}): ProposalFormValues {
   if (Object.keys(override).length === 0) {
     return base
   }
@@ -40,16 +40,16 @@ function deepMergeDefaults(base: ProposalFormValues, override: Props['overrideVa
   return defaultWithOverrides
 }
 
-export function ProposalForm({ isLoading, onSubmit, overrideValues }: Props) {
+export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
   const form = useFormContext<ProposalFormValues>()
   const [proposalId] = useQueryState('proposalId')
 
   useEffect(() => {
-    if (overrideValues) {
-      form.reset(deepMergeDefaults(baseDefaultValues, overrideValues))
+    if (initialValues) {
+      form.reset(deepMergeDefaults(baseDefaultValues, initialValues))
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overrideValues])
+  }, [initialValues])
 
   const onInvalid = (errors: any) => {
     // eslint-disable-next-line no-console

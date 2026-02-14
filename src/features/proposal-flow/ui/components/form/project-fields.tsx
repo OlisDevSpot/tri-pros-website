@@ -14,7 +14,7 @@ import { tradesData } from '@/shared/db/seeds/data/trades'
 export function ProjectFields() {
   const form = useFormContext<ProposalFormValues>()
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: `project.scopes`,
   })
