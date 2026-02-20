@@ -28,7 +28,7 @@ export function Heading() {
         <h2 className="text-2xl lg:text-4xl">
           Proposal for
           {' '}
-          {`${proposal.data.firstName} ${proposal.data.lastName}` || 'John Doe'}
+          {`${proposal.data.name}` || 'John Doe'}
         </h2>
       </div>
       <div className="flex flex-col lg:flex-row gap-2 lg:gap-6">

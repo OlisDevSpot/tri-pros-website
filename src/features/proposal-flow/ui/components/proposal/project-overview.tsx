@@ -16,7 +16,7 @@ export function ProjectOverview() {
         if (field.name === 'name') {
           return {
             ...field,
-            value: `${proposal.firstName} ${proposal.lastName}`,
+            value: `${proposal.name}`,
           }
         }
 
@@ -96,7 +96,13 @@ export function ProjectOverview() {
                         <p>{field.label}</p>
                       </div>
                       <div className="border-b border-dashed grow h-[75%]" />
-                      <p className="-mt-0.5">{field.value.toString()}</p>
+                      {/* <p className="-mt-0.5">{field.value.toString()}</p> */}
+                      <input
+                        type="text"
+                        className="w-50"
+                        value={field.value.toString()}
+                        disabled={field.label === 'Project Type'}
+                      />
                     </div>
                   ))}
                 </div>

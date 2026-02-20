@@ -3,7 +3,7 @@ import { create } from 'zustand'
 interface ModalState {
   isOpen: boolean
   modal: {
-    Element: React.ReactNode
+    Element: () => React.ReactNode
     accessor: string
   } | null
 }

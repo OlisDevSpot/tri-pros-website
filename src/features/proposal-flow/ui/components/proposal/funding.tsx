@@ -26,7 +26,7 @@ export function Funding({ onPickFinancingOption }: Props) {
 
   useEffect(() => {
     if (proposal.data && cashInDeal === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks-extra/no-direct-set-state-in-use-effect
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setCashInDeal(proposal.data.cashInDeal)
     }
   }, [proposal.data, cashInDeal])
@@ -181,7 +181,7 @@ export function Funding({ onPickFinancingOption }: Props) {
                 <div>
                   <h3 className="text-lg font-semibold">Consolidate</h3>
                   <p className="text-muted-foreground">
-                    Some lenders may request a minimum monthly investment.
+                    Coming soon!
                   </p>
                 </div>
                 <div>

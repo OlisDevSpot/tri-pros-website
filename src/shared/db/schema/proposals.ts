@@ -1,5 +1,6 @@
 import type z from 'zod'
 import type { HomeArea } from '@/shared/types/enums'
+import type { SOW } from '@/shared/types/sow'
 import { relations } from 'drizzle-orm'
 import { integer, jsonb, pgEnum, pgTable, text, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
@@ -24,6 +25,7 @@ export const proposals = pgTable('proposals', {
 
   // PROJECT SUMMARY
   projectSummary: text('project_summary'),
+  sow: jsonb('sow').$type<SOW[]>(),
   projectObjectives: jsonb('project_objectives').$type<string[]>(),
   homeAreasUpgrades: jsonb('home_areas_upgrades').$type<HomeArea[]>(),
 
@@ -33,8 +35,7 @@ export const proposals = pgTable('proposals', {
   agreementNotes: text('sow_summary'),
 
   // HOMEOWNER INFO
-  firstName: text('first_name').notNull(),
-  lastName: text('last_name').notNull(),
+  name: text('name').notNull(),
   email: text('email').notNull(),
   phoneNum: text('phone_num').notNull(),
   address: text('address').notNull(),
@@ -50,6 +51,9 @@ export const proposals = pgTable('proposals', {
   cashInDeal: integer('cash_in_deal').notNull().default(1000),
   financeOptionId: integer('finance_option_id')
     .references(() => financeOptions.id, { onDelete: 'cascade' }),
+
+  // NOTION
+  notionPageId: text('notion_page_id'),
 
   // HUBSPOT
   hubspotContactVid: text('hubspot_contact_vid'),

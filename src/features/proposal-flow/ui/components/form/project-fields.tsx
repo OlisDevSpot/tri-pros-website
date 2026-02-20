@@ -1,6 +1,8 @@
 import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { TradeAccessor } from '@/shared/db/types'
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
 import { Tiptap } from '@/shared/components/tiptap/tiptap'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
@@ -9,22 +11,26 @@ import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, Mul
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { scopesData } from '@/shared/db/seeds/data/scopes'
-import { tradesData } from '@/shared/db/seeds/data/trades'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { useGetTrades } from '@/shared/services/notion/hooks/use-get-trades'
 
 export function ProjectFields() {
   const form = useFormContext<ProposalFormValues>()
+  const { open: openModal, setModal } = useModalStore()
+
+  const trades = useGetTrades()
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: `project.scopes`,
+    name: `project.sow`,
   })
 
-  const currentScopes = useWatch({
+  const currentSOW = useWatch({
     control: form.control,
-    name: `project.scopes`,
+    name: `project.sow`,
   })
 
-  function getScopesOfTrade(tradeAccessor: ProposalFormValues['project']['scopes'][0]['trade']) {
+  function getScopesOfTrade(tradeAccessor: ProposalFormValues['project']['sow'][0]['trade']) {
     if (!tradeAccessor) {
       return []
     }
@@ -138,7 +144,7 @@ export function ProjectFields() {
                 <div className="flex items-end rounded-lg h-full w-full">
                   <FormField
                     control={form.control}
-                    name={`project.scopes.${index}.trade`}
+                    name={`project.sow.${index}.trade`}
                     render={({ field }) => (
                       <FormItem className="max-w-62.5">
                         <FormControl className="w-full">
@@ -146,7 +152,7 @@ export function ProjectFields() {
                             value={field.value}
                             onValueChange={(val) => {
                               field.onChange(val)
-                              form.setValue(`project.scopes.${index}.scope`, [])
+                              form.setValue(`project.sow.${index}.scopes`, [])
                             }}
                           >
                             <SelectTrigger
@@ -156,9 +162,14 @@ export function ProjectFields() {
                               <SelectValue placeholder="Select a trade" />
                             </SelectTrigger>
                             <SelectContent {...field}>
-                              {tradesData.map(trade => (
+                              {/* {tradesData.map(trade => (
                                 <SelectItem key={trade.accessor} value={trade.accessor}>
                                   {trade.label}
+                                </SelectItem>
+                              ))} */}
+                              {trades.data?.map(trade => (
+                                <SelectItem key={trade.id} value={trade.id}>
+                                  {trade.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -171,7 +182,7 @@ export function ProjectFields() {
 
                   <FormField
                     control={form.control}
-                    name={`project.scopes.${index}.scope`}
+                    name={`project.sow.${index}.scopes`}
                     render={({ field }) => (
                       <FormItem className="w-full">
                         <MultiSelect
@@ -179,7 +190,7 @@ export function ProjectFields() {
                           values={field.value}
                         >
                           <FormControl>
-                            <MultiSelectTrigger className="w-full" disabled={currentScopes[index]?.trade === undefined}>
+                            <MultiSelectTrigger className="w-full" disabled={currentSOW[index]?.trade === undefined}>
                               <MultiSelectValue placeholder="Select scopes..." />
                             </MultiSelectTrigger>
                           </FormControl>
@@ -190,7 +201,7 @@ export function ProjectFields() {
                             }}
                           >
                             <MultiSelectGroup>
-                              {getScopesOfTrade(currentScopes[index]?.trade).map(scope => (
+                              {getScopesOfTrade(currentSOW[index]?.trade).map(scope => (
                                 <MultiSelectItem key={scope.accessor} value={scope.accessor}>
                                   {scope.label}
                                 </MultiSelectItem>
@@ -215,7 +226,22 @@ export function ProjectFields() {
                 </div>
                 <div className="w-full p-4 pt-0">
                   <FormField
-                    name={`project.scopes.${index}.sow`}
+                    name={`project.sow.${index}.title`}
+                    control={form.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Section Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Title" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="w-full p-4 pt-0">
+                  <FormField
+                    name={`project.sow.${index}.html`}
                     control={form.control}
                     render={({ field }) => (
                       <FormItem>
@@ -226,6 +252,13 @@ export function ProjectFields() {
                             type="button"
                             className="text-xs text-muted-foreground hover:underline"
                             size="sm"
+                            onClick={() => {
+                              setModal({
+                                accessor: 'Templates',
+                                Element: TemplatesModal,
+                              })
+                              openModal()
+                            }}
                           >
                             Templates
                           </Button>
@@ -238,6 +271,7 @@ export function ProjectFields() {
                           /> */}
                           <Tiptap
                             onChange={html => field.onChange(html)}
+                            initialValues={field.value}
                           />
                         </FormControl>
                         <FormMessage />
@@ -251,7 +285,7 @@ export function ProjectFields() {
               type="button"
               size="icon"
               variant="outline"
-              onClick={() => append({ scope: [] })}
+              onClick={() => append({ scopes: [], title: '', html: '', trade: '' as TradeAccessor })}
             >
               <PlusIcon />
             </Button>

@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { auth } from '../server'
+import { auth } from '../../../auth/server'
 
 export async function getAccessToken() {
   try {

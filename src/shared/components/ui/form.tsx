@@ -1,4 +1,3 @@
-/* eslint-disable react/no-unstable-context-value */
 'use client'
 
 import type * as LabelPrimitive from '@radix-ui/react-label'

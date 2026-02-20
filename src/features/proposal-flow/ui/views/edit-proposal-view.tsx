@@ -27,14 +27,13 @@ export function EditProposalView() {
     disabled: proposal.isLoading || updateProposal.isPending,
   })
 
-  const currentProposalValues = useMemo(() => {
+  const initProposalValues = useMemo(() => {
     if (proposal.data) {
       const { data } = proposal
 
       const initialValues: OverrideProposalValues = {
         homeowner: {
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
+          name: data.name || '',
           email: data.email || '',
           phoneNum: data.phoneNum || '',
           customerAge: data.customerAge || 0,
@@ -48,6 +47,7 @@ export function EditProposalView() {
           city: data.city || '',
           state: data.state || '',
           zipCode: data.zipCode || '',
+          sow: data.sow || [],
         },
         funding: {
           cashInDeal: data.cashInDeal || 0,
@@ -58,7 +58,8 @@ export function EditProposalView() {
 
       return initialValues
     }
-  }, [proposal])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposal.data])
 
   if (proposal.isLoading) {
     return (
@@ -91,11 +92,9 @@ export function EditProposalView() {
       ...rawData.homeowner,
     }
 
-    const { scopes, ...rest } = data
-
     updateProposal.mutate({
       proposalId,
-      data: rest,
+      data,
     }, {
       onSuccess: () => {
         toast.success('Proposal updated')
@@ -120,7 +119,7 @@ export function EditProposalView() {
         <Form {...form}>
           <ProposalForm
             isLoading={proposal.isLoading || updateProposal.isPending}
-            initialValues={currentProposalValues}
+            initialValues={initProposalValues}
             onSubmit={onSubmit}
           />
         </Form>

@@ -1,7 +1,7 @@
 import type { ContactResponse, ContactsResponse } from '@/shared/services/hubspot/types/contacts'
 import z from 'zod'
-import { getAccessToken } from '@/shared/auth/lib/get-access-token'
 import env from '@/shared/config/server-env'
+import { getAccessToken } from '@/shared/services/hubspot/lib/get-access-token'
 import { baseProcedure, createTRPCRouter } from '../init'
 
 export const hubspotRouter = createTRPCRouter({

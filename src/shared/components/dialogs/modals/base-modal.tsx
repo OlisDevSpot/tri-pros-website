@@ -23,7 +23,7 @@ export function Modal({
   return (
     <Dialog open={isOpen} onOpenChange={close}>
       <DialogContent
-        className={cn('sm:max-w-[425px] space-y-2 flex flex-col items-start', className)}
+        className={cn('sm:max-w-106.25 space-y-2 flex flex-col items-start', className)}
         onInteractOutside={(event) => {
           // Prevent closing when clicking Google Places dropdown
           if (

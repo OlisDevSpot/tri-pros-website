@@ -93,7 +93,7 @@ export function MultiSelect({
 
   return (
     <MultiSelectContext
-      // eslint-disable-next-line react/no-unstable-context-value
+
       value={{
         open,
         setOpen,

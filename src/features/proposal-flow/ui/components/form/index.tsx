@@ -53,6 +53,8 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
 
   const onInvalid = (errors: any) => {
     // eslint-disable-next-line no-console
+    console.log(form.getValues())
+    // eslint-disable-next-line no-console
     console.log('INVALID SUBMIT', errors)
     toast.error('Form is invalid (check console)')
   }

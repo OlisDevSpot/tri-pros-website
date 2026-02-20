@@ -1,10 +1,14 @@
+import type { PageObjectResponse } from '@notionhq/client'
+import z from 'zod'
 import { proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { generateProjectSummary } from '@/shared/services/ai/generate-project-summary'
-import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
+import { queryContactsDatabase } from '@/shared/services/notion/dal/query-contacts'
+import { baseProcedure, createTRPCRouter } from '../init'
 import { constructionRouter } from './construction.router'
 import { docusignRouter } from './docusign.router'
 import { hubspotRouter } from './hubspot.router'
 import { landingRouter } from './landing.router'
+import { notionRouter } from './notion.router'
 import { proposalRouter } from './proposal.router'
 
 export const appRouter = createTRPCRouter({
@@ -17,16 +21,18 @@ export const appRouter = createTRPCRouter({
 
       return { resHeaders: [...ctx.resHeaders.entries()] }
     }),
-  test2: agentProcedure.query(({ ctx }) => {
-    const cookies = ctx.req?.headers.get('cookie')
-      ?.split('; ')
-      .map(cookie => cookie.split('='))
-      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}) as Record<string, string>
+  testNotion: baseProcedure
+    .input(
+      z.object({ name: z.string() }),
+    )
+    .query(async ({ input }) => {
+      const response = await queryContactsDatabase(input.name)
 
-    return { cookies }
-  }),
+      return response.results as PageObjectResponse[]
+    }),
   healthcheck: baseProcedure.query(() => 'ok'),
   landingRouter,
+  notionRouter,
   hubspotRouter,
   docusignRouter,
   constructionRouter,

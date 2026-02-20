@@ -77,7 +77,7 @@ export function Tiptap({ onChange, initialValues }: Props) {
         </BubbleMenu>
       )}
       {editor && (
-        <div className="w-full h-full min-h-62.5 flex flex-col">
+        <div className="tiptap w-full h-full min-h-62.5 flex flex-col">
           <div className="min-h-10 w-full shrink-0">
             <TipTapMenuBar editor={editor} />
           </div>

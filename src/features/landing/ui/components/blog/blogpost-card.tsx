@@ -33,7 +33,7 @@ interface BlogpostCardProviderProps {
 
 export function BlogpostCardProvider({ children, blogpost }: BlogpostCardProviderProps) {
   return (
-    // eslint-disable-next-line react/no-unstable-context-value
+
     <BlogpostCardContext value={{ blogpost: { ...blogpost, date: blogpost.date || new Date() } }}>
       {children}
     </BlogpostCardContext>
@@ -68,7 +68,7 @@ export function BlogpostCardFrame({ variants, containerSize = 'md', children, cl
   return (
     <motion.div
       className={cn(
-        'relative flex flex-col min-h-[200px] rounded-lg overflow-hidden cursor-pointer group',
+        'relative flex flex-col min-h-50 rounded-lg overflow-hidden cursor-pointer group',
         className,
       )}
       variants={variants}

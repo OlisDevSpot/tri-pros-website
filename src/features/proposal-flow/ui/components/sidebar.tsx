@@ -15,6 +15,7 @@ export function ProposalSidebar() {
 
   useEffect(() => {
     if (proposalFlowStep === 'past-proposals') {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setProposalFlowStep(proposalFlowStep, { history: 'replace' })
     }
   }, [proposalFlowStep, setProposalFlowStep])

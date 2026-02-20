@@ -82,13 +82,13 @@ export function SiteNavbar() {
   useEffect(() => {
     setModal({
       accessor: 'login-modal',
-      Element: <SignInModal />,
+      Element: SignInModal,
     })
   }, [setModal])
 
   useEffect(() => {
     if (!isPending)
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect, react-hooks/set-state-in-effect
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setMounted(true)
   }, [isPending])
 
@@ -162,7 +162,7 @@ export function SiteNavbar() {
             className="flex justify-between items-center h-(--navbar-height) w-full"
           >
             {/* Logo */}
-            <motion.div className="w-[180px] h-full shrink-0">
+            <motion.div className="w-45 h-full shrink-0">
               <LogoLink onClick={() => setIsPopoverOpen(false)} />
             </motion.div>
 

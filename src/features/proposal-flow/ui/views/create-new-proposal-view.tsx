@@ -1,18 +1,19 @@
 'use client'
 
 import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { SOW } from '@/shared/types/sow'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { XIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
+
 import { useMemo, useRef } from 'react'
 
 import { useForm } from 'react-hook-form'
 
 import { toast } from 'sonner'
-
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { useSession } from '@/shared/auth/client'
@@ -31,7 +32,7 @@ export function CreateNewProposalView() {
   const router = useRouter()
   const createProposal = useCreateProposal()
 
-  const hubspotContactQuery = useQuery(trpc.hubspotRouter.getContactByQuery.queryOptions({
+  const notionContactQuery = useQuery(trpc.notionRouter.getContactByQuery.queryOptions({
     query: lastQuery,
   }, {
     enabled: !!lastQuery,
@@ -41,7 +42,7 @@ export function CreateNewProposalView() {
     resolver: zodResolver(proposalFormSchema),
     mode: 'onSubmit',
     defaultValues: baseDefaultValues,
-    disabled: hubspotContactQuery.isLoading,
+    disabled: notionContactQuery.isLoading,
   })
 
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -50,51 +51,67 @@ export function CreateNewProposalView() {
     setLastQuery(query)
   }
 
-  const contactProperties = hubspotContactQuery.data?.contacts[0].properties
+  const contactProperties = useMemo(() => notionContactQuery.data?.properties, [notionContactQuery.data])
 
-  const currentProposalValues = useMemo(() => {
-    if (hubspotContactQuery.data) {
+  const initProposalValues = useMemo(() => {
+    if (notionContactQuery.data) {
       const data: Partial<ProposalFormValues> = {
         project: {
-          label: `${contactProperties?.firstname.value || ''} ${contactProperties?.lastname.value || ''}`.trim() || '',
-          address: contactProperties?.address?.value || '',
-          city: contactProperties?.city?.value || '',
-          state: contactProperties?.state?.value || '',
-          zipCode: contactProperties?.zip?.value || '',
-          scopes: [],
+          label: `${contactProperties?.name || ''}`.trim() || '',
+          address: contactProperties?.address || '',
+          city: contactProperties?.city || '',
+          state: contactProperties?.state || '',
+          zipCode: contactProperties?.zip || '',
+          sow: [],
           timeAllocated: '4 weeks',
           agreementNotes: '',
           projectType: 'general-remodeling',
         },
         homeowner: {
-          firstName: contactProperties?.firstname.value || '',
-          lastName: contactProperties?.lastname.value || '',
-          email: contactProperties?.email?.value || '',
-          phoneNum: contactProperties?.phone?.value || '',
-          hubspotContactVid: String(hubspotContactQuery.data?.contacts[0].vid),
+          name: contactProperties?.name || '',
+          email: contactProperties?.email || '',
+          phoneNum: contactProperties?.phone || '',
           customerAge: 0,
         },
       }
 
       return data
     }
-  }, [contactProperties, hubspotContactQuery.data])
+  }, [contactProperties, notionContactQuery.data])
 
   function handleHubspotSearch(_query: string) {
     // eslint-disable-next-line no-console
     console.log(contactProperties)
     // eslint-disable-next-line no-console
-    console.log(hubspotContactQuery.data)
+    console.log(notionContactQuery.data)
   }
 
   function onSubmit(data: ProposalFormValues) {
+    // eslint-disable-next-line no-console
+    console.log(data)
+
+    const sow = data.project.sow.map(({ title, scopes, trade, html }) => {
+      if (!trade) {
+        return undefined
+      }
+
+      return {
+        title,
+        scopes,
+        trade,
+        html,
+      }
+    }).filter(
+      (item): item is SOW =>
+        item !== undefined,
+    )
+
     createProposal.mutate({
       label: data.project.label,
       ownerId: session?.user.id || 'c497d366-7c0a-4ae8-8bf3-d0ab0ed50b38',
 
       // HOMEOWNER
-      firstName: data.homeowner.firstName,
-      lastName: data.homeowner.lastName,
+      name: data.homeowner.name,
       email: data.homeowner.email,
       phoneNum: data.homeowner.phoneNum,
       customerAge: data.homeowner.customerAge,
@@ -107,6 +124,7 @@ export function CreateNewProposalView() {
       projectType: data.project.projectType,
       timeAllocated: data.project.timeAllocated,
       agreementNotes: data.project.agreementNotes,
+      sow,
 
       // FUNDING
       tcp: data.funding.tcp,
@@ -172,8 +190,8 @@ export function CreateNewProposalView() {
       >
         <Form {...form}>
           <ProposalForm
-            isLoading={hubspotContactQuery.isLoading}
-            initialValues={currentProposalValues}
+            isLoading={notionContactQuery.isLoading}
+            initialValues={initProposalValues}
             onSubmit={onSubmit}
           />
         </Form>
