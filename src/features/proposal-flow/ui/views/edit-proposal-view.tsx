@@ -1,4 +1,4 @@
-import type { ProposalFormValues } from '../../schemas/form-schema'
+import type { ProposalFormSchema } from '../../schemas/form-schema'
 import type { OverrideProposalValues } from '../../types'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,7 +21,7 @@ export function EditProposalView() {
   const proposal = useGetProposal(proposalId!, { enabled: !!proposalId })
   const updateProposal = useUpdateProposal()
 
-  const form = useForm<ProposalFormValues>({
+  const form = useForm<ProposalFormSchema>({
     resolver: zodResolver(proposalFormSchema),
     mode: 'onSubmit',
     disabled: proposal.isLoading || updateProposal.isPending,
@@ -81,7 +81,7 @@ export function EditProposalView() {
     )
   }
 
-  function onSubmit(rawData: ProposalFormValues) {
+  function onSubmit(rawData: ProposalFormSchema) {
     if (!proposalId) {
       return
     }

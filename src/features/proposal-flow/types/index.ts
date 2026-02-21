@@ -1,4 +1,4 @@
-import type { ProposalFormValues } from '../schemas/form-schema'
+import type { ProposalFormSchema } from '../schemas/form-schema'
 import type { UserRole } from '@/shared/db/types/users'
 
 export interface HomeownerInfo {
@@ -22,7 +22,7 @@ export interface ProposalStep<P> {
 }
 
 export interface OverrideProposalValues {
-  homeowner?: Partial<ProposalFormValues['homeowner']>
-  project?: Partial<ProposalFormValues['project']>
-  funding?: Partial<ProposalFormValues['funding']>
+  homeowner?: Partial<ProposalFormSchema['homeowner']>
+  project?: Partial<ProposalFormSchema['project']>
+  funding?: Partial<ProposalFormSchema['funding']>
 }

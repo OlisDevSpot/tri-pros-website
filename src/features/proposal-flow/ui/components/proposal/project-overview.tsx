@@ -1,13 +1,33 @@
 import type { Proposal } from '@/shared/db/schema'
+import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { proposalFields } from '@/features/proposal-flow/constants/proposal-fields'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { proposalToFormValues } from '@/features/proposal-flow/lib/converters'
+import { SpinnerLoader2 } from '@/shared/components/loaders/spinner-loader-2'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { useTRPC } from '@/trpc/helpers'
 
 export function ProjectOverview() {
+  const trpc = useTRPC()
   const proposal = useCurrentProposal()
+  const proposalForm = proposalToFormValues(proposal.data)
+  const aiProjectSummary = useMutation(trpc.aiRouter.generateProjectSummary.mutationOptions())
+
+  useEffect(() => {
+    if (!proposal.data?.id)
+      return
+    if (proposal.data.projectSummary && proposal.data.energyBenefits)
+      return
+
+    aiProjectSummary.mutate({
+      proposalId: proposal.data.id,
+      proposalFormValues: proposalForm,
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposal.data?.id, proposal.data?.projectSummary])
 
   const generateProposalFields = useCallback((proposal: Proposal) => {
     return proposalFields.map(section => ({
@@ -110,20 +130,17 @@ export function ProjectOverview() {
           </div>
           <div>
             <h4>Project Summary</h4>
-            <p className="text-muted-foreground">This project focuses on transforming your existing space into a more functional, energy-efficient, and visually cohesive home that supports how your family lives day to day.</p>
-          </div>
-          <div>
-            <h4>Primary Objectives</h4>
-            <p className="text-muted-foreground">{`{{ho.motivations}}`}</p>
-            <p className="text-muted-foreground">{`{{ho.primaryGoals[]}}`}</p>
-          </div>
-          <div>
-            <h4>Home Areas Upgraded</h4>
-            <p className="text-muted-foreground">{`{{ho.areasImpacted[]}}`}</p>
+            {proposal.data.projectSummary ? <p className="text-muted-foreground">{proposal.data.projectSummary}</p> : <SpinnerLoader2 size={16} />}
           </div>
           <div>
             <h4>Efficiency Benefits</h4>
+            {proposal.data.energyBenefits ? <p className="text-muted-foreground">{proposal.data.energyBenefits}</p> : <SpinnerLoader2 size={16} />}
           </div>
+          {/* <div>
+            <h4>Primary Objectives</h4>
+            <p className="text-muted-foreground">{`{{ho.motivations}}`}</p>
+            <p className="text-muted-foreground">{`{{ho.primaryGoals[]}}`}</p>
+          </div> */}
         </CardContent>
       </Card>
     </motion.div>

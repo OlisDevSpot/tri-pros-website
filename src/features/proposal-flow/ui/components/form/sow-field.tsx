@@ -1,4 +1,4 @@
-import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { TrashIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
@@ -15,7 +15,7 @@ import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queri
 
 interface Props {
   index: number
-  sowSnapshot: ProposalFormValues['project']['sow'][0]
+  sowSnapshot: ProposalFormSchema['project']['sow'][0]
   onDelete: () => void
 }
 
@@ -24,7 +24,7 @@ export function SOWSection({
   sowSnapshot,
   onDelete,
 }: Props) {
-  const form = useFormContext<ProposalFormValues>()
+  const form = useFormContext<ProposalFormSchema>()
   const [tradeId, setTradeId] = useState<string | undefined>(sowSnapshot.trade || undefined)
 
   const currentSOW = useWatch({
@@ -45,7 +45,7 @@ export function SOWSection({
   const scopesOfTrade = useGetScopes({ query: tradeId, filterProperty: 'relatedTrade' })
 
   return (
-    <div key={sowSnapshot.title} className="flex flex-col gap-4 items-center border w-full max-h-125 overflow-auto">
+    <div key={sowSnapshot.title} className="flex flex-col gap-4 items-center border w-full max-h-187.5 overflow-auto">
       <div className="flex items-end rounded-lg h-full w-full">
         <FormField
           control={form.control}

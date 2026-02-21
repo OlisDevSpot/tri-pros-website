@@ -1,4 +1,4 @@
-import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { TradeAccessor } from '@/shared/db/types'
 import { PlusIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -10,7 +10,7 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { SOWSection } from './sow-field'
 
 export function ProjectFields() {
-  const form = useFormContext<ProposalFormValues>()
+  const form = useFormContext<ProposalFormSchema>()
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,

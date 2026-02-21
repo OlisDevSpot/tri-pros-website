@@ -25,9 +25,10 @@ export const proposals = pgTable('proposals', {
 
   // PROJECT SUMMARY
   projectSummary: text('project_summary'),
-  sow: jsonb('sow').$type<SOW[]>(),
+  energyBenefits: text('energy_benefits'),
   projectObjectives: jsonb('project_objectives').$type<string[]>(),
   homeAreasUpgrades: jsonb('home_areas_upgrades').$type<HomeArea[]>(),
+  sow: jsonb('sow').$type<SOW[]>(),
 
   // PROJECT INFO
   projectType: projectTypeEnum('project_type').notNull().default('general-remodeling'),

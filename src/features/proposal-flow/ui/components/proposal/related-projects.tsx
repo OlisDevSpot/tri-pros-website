@@ -40,7 +40,7 @@ export function RelatedProjects() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="w-full max-h-[500px] flex flex-col md:flex-row gap-4 overflow-y-auto md:overflow-x-auto pb-4">
+        <div className="w-full max-h-125 flex flex-col md:flex-row gap-4 overflow-y-auto md:overflow-x-auto pb-4">
           {projectsData.map(project => (
             <Button
               key={project.accessor}

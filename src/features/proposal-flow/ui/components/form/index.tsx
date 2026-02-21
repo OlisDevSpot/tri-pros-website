@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { LockIcon } from 'lucide-react'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
@@ -16,16 +16,16 @@ import { HomeownerFields } from './homeowner-fields'
 import { ProjectFields } from './project-fields'
 
 interface Props {
-  onSubmit: (data: ProposalFormValues) => void
+  onSubmit: (data: ProposalFormSchema) => void
   isLoading: boolean
   initialValues?: {
-    homeowner?: Partial<ProposalFormValues['homeowner']>
-    project?: Partial<ProposalFormValues['project']>
-    funding?: Partial<ProposalFormValues['funding']>
+    homeowner?: Partial<ProposalFormSchema['homeowner']>
+    project?: Partial<ProposalFormSchema['project']>
+    funding?: Partial<ProposalFormSchema['funding']>
   }
 }
 
-function deepMergeDefaults(base: ProposalFormValues, override: Props['initialValues'] = {}): ProposalFormValues {
+function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialValues'] = {}): ProposalFormSchema {
   if (Object.keys(override).length === 0) {
     return base
   }
@@ -41,7 +41,7 @@ function deepMergeDefaults(base: ProposalFormValues, override: Props['initialVal
 }
 
 export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
-  const form = useFormContext<ProposalFormValues>()
+  const form = useFormContext<ProposalFormSchema>()
   const [proposalId] = useQueryState('proposalId')
 
   useEffect(() => {

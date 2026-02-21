@@ -1,10 +1,10 @@
-import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { useFormContext } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 
 export function FundingFields() {
-  const form = useFormContext<ProposalFormValues>()
+  const form = useFormContext<ProposalFormSchema>()
 
   return (
     <section className="space-y-8">

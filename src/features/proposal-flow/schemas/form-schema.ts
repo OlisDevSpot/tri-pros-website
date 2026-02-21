@@ -46,9 +46,9 @@ export const proposalFormSchema = z.object({
   }),
 })
 
-export type ProposalFormValues = z.infer<typeof proposalFormSchema>
+export type ProposalFormSchema = z.infer<typeof proposalFormSchema>
 
-export const baseDefaultValues: ProposalFormValues = {
+export const baseDefaultValues: ProposalFormSchema = {
   homeowner: {
     name: '',
     email: '',

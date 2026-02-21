@@ -1,4 +1,4 @@
-import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { HeartHandshakeIcon } from 'lucide-react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
@@ -6,7 +6,7 @@ import { Input } from '@/shared/components/ui/input'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/shared/components/ui/input-group'
 
 export function HomeownerFields() {
-  const form = useFormContext<ProposalFormValues>()
+  const form = useFormContext<ProposalFormSchema>()
 
   const customerAge = useWatch({
     control: form.control,

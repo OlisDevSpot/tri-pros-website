@@ -64,6 +64,7 @@
     "@trpc/client": "^11.4.1",
     "@trpc/server": "^11.4.1",
     "@trpc/tanstack-react-query": "^11.4.1",
+    "@upstash/qstash": "^2.9.0",
     "@vis.gl/react-google-maps": "^1.7.1",
     "@zxcvbn-ts/core": "^3.0.4",
     "@zxcvbn-ts/language-common": "^3.0.4",

@@ -61,6 +61,12 @@ const envSchema = z.object({
   R2_ACCESS_KEY_ID: z.string(),
   R2_SECRET_ACCESS_KEY: z.string(),
   R2_JURISDICTION: z.string(),
+
+  // UPSTASH
+  QSTASH_URL: z.string(),
+  QSTASH_TOKEN: z.string(),
+  QSTASH_CURRENT_SIGNING_KEY: z.string(),
+  QSTASH_NEXT_SIGNING_KEY: z.string(),
 })
 
 export type env = z.infer<typeof envSchema>

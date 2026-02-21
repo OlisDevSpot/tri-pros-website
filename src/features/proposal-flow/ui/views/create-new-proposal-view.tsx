@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
+import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { SOW } from '@/shared/types/sow'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
@@ -47,7 +47,7 @@ export function CreateNewProposalView() {
     enabled: false,
   }))
 
-  const form = useForm<ProposalFormValues>({
+  const form = useForm<ProposalFormSchema>({
     resolver: zodResolver(proposalFormSchema),
     mode: 'onSubmit',
     defaultValues: baseDefaultValues,
@@ -65,7 +65,7 @@ export function CreateNewProposalView() {
 
   const initProposalValues = useMemo(() => {
     if (notionContactQuery.data) {
-      const data: Partial<ProposalFormValues> = {
+      const data: Partial<ProposalFormSchema> = {
         project: {
           label: `${contactProperties?.mostLikelyProperties?.name || ''}`.trim() || '',
           address: contactProperties?.mostLikelyProperties?.address || '',
@@ -89,7 +89,7 @@ export function CreateNewProposalView() {
     }
   }, [contactProperties, notionContactQuery.data])
 
-  function onSubmit(data: ProposalFormValues) {
+  function onSubmit(data: ProposalFormSchema) {
     // eslint-disable-next-line no-console
     console.log(data)
 
