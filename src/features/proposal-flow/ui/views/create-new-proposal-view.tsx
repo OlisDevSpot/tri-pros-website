@@ -219,7 +219,6 @@ export function CreateNewProposalView() {
               ))}
 
         </div>
-        bnm
       </div>
       <div
         className="h-full w-full overflow-auto pr-4"
