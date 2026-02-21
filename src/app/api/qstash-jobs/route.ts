@@ -17,7 +17,7 @@ for (const job of jobs) {
   registry.set(job.key, job.handler)
 }
 
-export const receiver = new Receiver({
+const receiver = new Receiver({
   currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY!,
   nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY!,
 })
