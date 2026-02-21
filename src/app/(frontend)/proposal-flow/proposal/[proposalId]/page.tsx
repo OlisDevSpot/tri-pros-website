@@ -1,12 +1,9 @@
-/* eslint-disable unused-imports/no-unused-imports */
-import { ProjectOverview, Proposal, RelatedProjects } from '@/features/proposal-flow/ui/components/proposal'
+import { Proposal } from '@/features/proposal-flow/ui/components/proposal'
 
 export default async function ProposalPage() {
   return (
     <div className="h-full overflow-auto">
       <Proposal />
-      {/* <ProjectOverview /> */}
-      {/* <RelatedProjects /> */}
     </div>
   )
 }

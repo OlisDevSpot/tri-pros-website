@@ -269,11 +269,11 @@
       }
 
       h1 {
-        @apply text-5xl;
+        @apply text-3xl;
       }
 
       h2 {
-        @apply text-4xl;
+        @apply text-2xl;
       }
       [data-id] {
         border: 3px solid red;
@@ -324,15 +324,8 @@
     }
 
     h2 {
-      @apply text-2xl relative;
+      @apply text-2xl block pt-2;
       line-height: 1rem;
-      &::after {
-        content: "";
-        position: absolute;
-        right: 0px;
-        width: 80px;
-        border-top: 2px solid black;
-      }
     }
   }
 }

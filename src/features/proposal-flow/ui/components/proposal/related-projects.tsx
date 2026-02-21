@@ -1,8 +1,7 @@
-import Image from 'next/image'
 import Link from 'next/link'
-import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'
 import { PROJECT_TYPES } from '@/features/proposal-flow/constants/project-types'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { CustomImageSlider } from '@/shared/components/image-slider'
 import { Logo } from '@/shared/components/logo'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
@@ -49,23 +48,13 @@ export function RelatedProjects() {
               asChild
             >
               <div>
-                <div className="absolute inset-0 select-none z-5">
-                  <ReactCompareSlider
-                    itemOne={<ReactCompareSliderImage src={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-before.jpeg`} alt="Before" />}
-                    itemTwo={<ReactCompareSliderImage src={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-after.jpeg`} alt="After" />}
-                    className="w-full h-full"
-                  />
-                  <Image
-                    src={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-after.jpeg`}
-                    alt={project.title}
-                    fill
-                    className="object-cover w-full h-full opacity-100 group-hover:opacity-0 transition duration-300 pointer-events-none"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-80 group-hover:opacity-30 transition duration-300 pointer-events-none" />
-                </div>
+                <CustomImageSlider
+                  beforeSrc={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-before.jpeg`}
+                  afterSrc={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-after.jpeg`}
+                />
                 <div className="pointer-events-none opacity-100 group-hover:opacity-20 flex flex-col items-center justify-center transition h-full z-20 w-full border-5 border-primary/40 text-wrap relative">
-                  <div className="h-fit bg-primary/40 w-full flex flex-col items-center justify-center">
-                    <h2 className="uppercase">{project.title}</h2>
+                  <div className="h-fit bg-primary/40 w-full flex flex-col items-center justify-center group-active:opacity-30 transition">
+                    <h2 className="uppercase text-neutral-200">{project.title}</h2>
                   </div>
                   <div className="absolute bottom-2 right-2 opacity-50">
                     <Logo

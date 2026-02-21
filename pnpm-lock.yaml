@@ -261,8 +261,8 @@ importers:
         specifier: ^19.0.0
         version: 19.2.4
       react-compare-slider:
-        specifier: ^3.1.0
-        version: 3.1.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: 4.0.0-2
+        version: 4.0.0-2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react-day-picker:
         specifier: ^9.7.0
         version: 9.13.0(react@19.2.4)
@@ -7516,9 +7516,9 @@ packages:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
     engines: {node: '>= 0.6'}
 
-  react-compare-slider@3.1.0:
-    resolution: {integrity: sha512-TQVbZYmYyTIeKRmQciVXCmUwHjTThQTON7GfWfzMAOInRRG9tCiQnVXnCUd5DJ5l3Hngh4IEzOb9TG82gjoEhQ==}
-    engines: {node: '>=16.9.0'}
+  react-compare-slider@4.0.0-2:
+    resolution: {integrity: sha512-e40eRPxpf0JhLepWyIlSqn89XHMkDBirzdGwRKAfoRcQ2j0pWu+HDkbqrSy9nZbulwrTs9hxY5mXY7N/4gF/pg==}
+    engines: {node: '>=20.0.0'}
     peerDependencies:
       react: '>=16.8'
       react-dom: '>=16.8'
@@ -17240,7 +17240,7 @@ snapshots:
 
   range-parser@1.2.1: {}
 
-  react-compare-slider@3.1.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  react-compare-slider@4.0.0-2(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
