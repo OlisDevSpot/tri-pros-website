@@ -12,11 +12,6 @@ import { useSendProposalEmail } from '@/shared/dal/client/proposals/mutations/us
 import { checkUserRole } from '@/shared/permissions/lib/check-user-role'
 import { Heading } from './heading'
 
-export { Heading } from './heading'
-export { ProjectOverview } from './project-overview'
-export { RelatedProjects } from './related-projects'
-export { ScopeOfWork } from './scope-of-work'
-
 export function Proposal() {
   const sessionQuery = useSession()
   const params = useParams() as { proposalId: string }
@@ -28,6 +23,7 @@ export function Proposal() {
   }
 
   const userRole = checkUserRole(sessionQuery.data?.user.email || '')
+  const proposalSteps = generateProposalSteps(userRole)
 
   return (
     <div className="h-full overflow-auto scroll-smooth">
@@ -38,7 +34,7 @@ export function Proposal() {
           animate={{ opacity: 1 }}
           className="space-y-20"
         >
-          {generateProposalSteps(userRole).map(step => (
+          {proposalSteps.map(step => (
             <div
               id={step.accessor}
               key={step.accessor}

@@ -23,6 +23,7 @@ export async function generateProjectSummary(proposalId: string, proposal: Propo
       EXPECTED OUTPUT:
       - do not generate text that highlights the absolute investment amount (tcp). Instead, focus on future home energy savings like gas, water, electricity (if any), and property value increase
       - your goal is to "sell" to the homeowner a future with the upgrades installed - how amazing it would be, and how much his property and his lifestyle would benefit
+      - ONLY OUTPUT RESPONSE FOR energy savings parameter if we can infer some utility/maintennace savings from undergoing this scope of work. Otherwise, return an empty string
 
       EXAMPLE ENERGY BENEFITS:
       - utility savings by lowering heating & cooling costs (cool roof, new efficient HVAC, double-pane windows, etc)

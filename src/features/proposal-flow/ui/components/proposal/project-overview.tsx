@@ -132,10 +132,13 @@ export function ProjectOverview() {
             <h4>Project Summary</h4>
             {proposal.data.projectSummary ? <p className="text-muted-foreground">{proposal.data.projectSummary}</p> : <SpinnerLoader2 size={16} />}
           </div>
-          <div>
-            <h4>Efficiency Benefits</h4>
-            {proposal.data.energyBenefits ? <p className="text-muted-foreground">{proposal.data.energyBenefits}</p> : <SpinnerLoader2 size={16} />}
-          </div>
+          {proposal.data.energyBenefits
+            && (
+              <div>
+                <h4>Efficiency Benefits</h4>
+                <p className="text-muted-foreground">{proposal.data.energyBenefits}</p>
+              </div>
+            )}
           {/* <div>
             <h4>Primary Objectives</h4>
             <p className="text-muted-foreground">{`{{ho.motivations}}`}</p>

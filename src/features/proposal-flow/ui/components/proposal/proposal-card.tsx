@@ -48,7 +48,7 @@ export function ProposalCard({ proposal }: Props) {
             <span className="flex gap-2">
               <CalendarIcon size={16} className="text-muted-foreground" />
               <p>
-                Sent:
+                Created:
                 {' '}
                 {formatStringAsDate(proposal.createdAt)}
               </p>

@@ -324,7 +324,15 @@
     }
 
     h2 {
-      @apply text-4xl;
+      @apply text-2xl relative;
+      line-height: 1rem;
+      &::after {
+        content: "";
+        position: absolute;
+        right: 0px;
+        width: 80px;
+        border-top: 2px solid black;
+      }
     }
   }
 }
