@@ -1,12 +1,29 @@
 import type { ZodRawShape } from 'zod'
+import type { Contact } from '../lib/contacts/schema'
+import type { Meeting } from '../lib/meetings/schema'
+import type { Project } from '../lib/projects/schema'
+import type { ScopeOrAddon } from '../lib/scopes/schema'
+import type { Trade } from '../lib/trades/schema'
+import type { NotionDatabaseName, RawPropertyMap } from '../types'
 import { CONTACT_PROPERTIES_MAP } from '../lib/contacts/properties-map'
 import { contactSchema } from '../lib/contacts/schema'
 import { MEETING_PROPERTIES_MAP } from '../lib/meetings/properties-map'
 import { meetingSchema } from '../lib/meetings/schema'
 import { PROJECT_PROPERTIES_MAP } from '../lib/projects/properties-map'
 import { projectSchema } from '../lib/projects/schema'
+import { SCOPE_OR_ADDON_PROPERTIES_MAP } from '../lib/scopes/properties-map'
+import { scopeOrAddonSchema } from '../lib/scopes/schema'
 import { TRADE_PROPERTIES_MAP } from '../lib/trades/properties-map'
 import { tradeSchema } from '../lib/trades/schema'
+
+type RawDatbaseMap = {
+  [K in NotionDatabaseName]: {
+    id: string
+    name: K
+    propertiesMap: RawPropertyMap<Contact> | RawPropertyMap<Meeting> | RawPropertyMap<Project> | RawPropertyMap<Trade> | RawPropertyMap<ScopeOrAddon>
+    properties: ZodRawShape
+  }
+}
 
 export const notionDatabasesMeta = {
   contacts: {
@@ -33,6 +50,12 @@ export const notionDatabasesMeta = {
     propertiesMap: TRADE_PROPERTIES_MAP,
     properties: tradeSchema.shape,
   },
-} as const satisfies Record<string, { id: string, name: string, propertiesMap: Record<string, string>, properties: ZodRawShape }>
+  scopes: {
+    id: 'ef70ca1b-548b-8226-b680-07fe8f00a91f',
+    name: 'scopes',
+    propertiesMap: SCOPE_OR_ADDON_PROPERTIES_MAP,
+    properties: scopeOrAddonSchema.shape,
+  },
+} as const satisfies RawDatbaseMap
 
 export type NotionDatabaseMap = typeof notionDatabasesMeta

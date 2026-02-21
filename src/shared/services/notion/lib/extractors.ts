@@ -38,11 +38,11 @@ export function phone(props: Props, key: string) {
   return p.phone_number ?? null
 }
 
-export function selectName(props: Props, key: string) {
+export function selectName<T>(props: Props, key: string) {
   const p = must(props, key)
   if (p.type !== 'select')
     throw new Error(`"${key}" is not select`)
-  return p.select?.name ?? null
+  return p.select?.name as T ?? null
 }
 
 export function dateISO(props: Props, key: string) {

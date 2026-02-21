@@ -21,7 +21,7 @@ export function SearchInput({
   const inputRef = useRef<HTMLInputElement>(null)
 
   return (
-    <div className={cn('relative min-w-[100px]', className)} {...props}>
+    <div className={cn('relative min-w-25', className)} {...props}>
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
       <Input
         ref={inputRef}

@@ -1,43 +1,21 @@
 import type { ProposalFormValues } from '@/features/proposal-flow/schemas/form-schema'
 import type { TradeAccessor } from '@/shared/db/types'
-import { PlusIcon, TrashIcon } from 'lucide-react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
-import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
-import { Tiptap } from '@/shared/components/tiptap/tiptap'
+import { PlusIcon } from 'lucide-react'
+import { useFieldArray, useFormContext } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { scopesData } from '@/shared/db/seeds/data/scopes'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
-import { useGetTrades } from '@/shared/services/notion/hooks/use-get-trades'
+import { SOWSection } from './sow-field'
 
 export function ProjectFields() {
   const form = useFormContext<ProposalFormValues>()
-  const { open: openModal, setModal } = useModalStore()
-
-  const trades = useGetTrades()
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: `project.sow`,
   })
-
-  const currentSOW = useWatch({
-    control: form.control,
-    name: `project.sow`,
-  })
-
-  function getScopesOfTrade(tradeAccessor: ProposalFormValues['project']['sow'][0]['trade']) {
-    if (!tradeAccessor) {
-      return []
-    }
-
-    const scopes = scopesData[tradeAccessor] || []
-    return scopes
-  }
 
   return (
     <section className="space-y-8">
@@ -138,157 +116,25 @@ export function ProjectFields() {
             />
           </div>
           <div className="flex flex-col items-start gap-4 min-h-15 flex-wrap">
-            <h3>Trades</h3>
-            {fields.map((fieldOfArray, index) => (
-              <div key={fieldOfArray.id} className="flex flex-col gap-4 items-center border w-full">
-                <div className="flex items-end rounded-lg h-full w-full">
-                  <FormField
-                    control={form.control}
-                    name={`project.sow.${index}.trade`}
-                    render={({ field }) => (
-                      <FormItem className="max-w-62.5">
-                        <FormControl className="w-full">
-                          <Select
-                            value={field.value}
-                            onValueChange={(val) => {
-                              field.onChange(val)
-                              form.setValue(`project.sow.${index}.scopes`, [])
-                            }}
-                          >
-                            <SelectTrigger
-                              {...field}
-                              className="w-full bg-transparent dark:bg-transparent border-0"
-                            >
-                              <SelectValue placeholder="Select a trade" />
-                            </SelectTrigger>
-                            <SelectContent {...field}>
-                              {/* {tradesData.map(trade => (
-                                <SelectItem key={trade.accessor} value={trade.accessor}>
-                                  {trade.label}
-                                </SelectItem>
-                              ))} */}
-                              {trades.data?.map(trade => (
-                                <SelectItem key={trade.id} value={trade.id}>
-                                  {trade.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`project.sow.${index}.scopes`}
-                    render={({ field }) => (
-                      <FormItem className="w-full">
-                        <MultiSelect
-                          onValuesChange={field.onChange}
-                          values={field.value}
-                        >
-                          <FormControl>
-                            <MultiSelectTrigger className="w-full" disabled={currentSOW[index]?.trade === undefined}>
-                              <MultiSelectValue placeholder="Select scopes..." />
-                            </MultiSelectTrigger>
-                          </FormControl>
-                          <MultiSelectContent
-                            search={{
-                              emptyMessage: 'No scopes found',
-                              placeholder: 'Search scopes...',
-                            }}
-                          >
-                            <MultiSelectGroup>
-                              {getScopesOfTrade(currentSOW[index]?.trade).map(scope => (
-                                <MultiSelectItem key={scope.accessor} value={scope.accessor}>
-                                  {scope.label}
-                                </MultiSelectItem>
-                              ))}
-                            </MultiSelectGroup>
-                          </MultiSelectContent>
-                        </MultiSelect>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-9 w-9 rounded-none"
-                    onClick={() => remove(index)}
-                  >
-                    <TrashIcon />
-                  </Button>
-                </div>
-                <div className="w-full p-4 pt-0">
-                  <FormField
-                    name={`project.sow.${index}.title`}
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Section Title</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Title" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="w-full p-4 pt-0">
-                  <FormField
-                    name={`project.sow.${index}.html`}
-                    control={form.control}
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex gap-2 items-center">
-                          <FormLabel>Scope of Work</FormLabel>
-                          <Button
-                            variant="outline"
-                            type="button"
-                            className="text-xs text-muted-foreground hover:underline"
-                            size="sm"
-                            onClick={() => {
-                              setModal({
-                                accessor: 'Templates',
-                                Element: TemplatesModal,
-                              })
-                              openModal()
-                            }}
-                          >
-                            Templates
-                          </Button>
-                        </div>
-                        <FormControl>
-                          {/* <Textarea
-                            {...field}
-                            placeholder="Tri Pros Remodeling will..."
-                            className="min-h-[250px]"
-                          /> */}
-                          <Tiptap
-                            onChange={html => field.onChange(html)}
-                            initialValues={field.value}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            ))}
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={() => append({ scopes: [], title: '', html: '', trade: '' as TradeAccessor })}
-            >
-              <PlusIcon />
-            </Button>
+            <h3>Complete Scope of Work</h3>
+            <div className="flex flex-col gap-8 flex-wrap w-full">
+              {fields.map((fieldOfArray, index) => (
+                <SOWSection
+                  key={fieldOfArray.id}
+                  index={index}
+                  sowSnapshot={fieldOfArray}
+                  onDelete={() => remove(index)}
+                />
+              ))}
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                onClick={() => append({ scopes: [], title: '', html: '', trade: '' as TradeAccessor })}
+              >
+                <PlusIcon />
+              </Button>
+            </div>
           </div>
           <FormField
             name="project.agreementNotes"

@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
+    "@aws-sdk/client-s3": "^3.995.0",
     "@hookform/resolvers": "^5.1.1",
     "@hubspot/api-client": "^13.4.0",
     "@mondaydotcomorg/api": "^12.0.1",

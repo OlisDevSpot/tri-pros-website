@@ -17,25 +17,34 @@ import { toast } from 'sonner'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { useSession } from '@/shared/auth/client'
+import { SpinnerLoader2 } from '@/shared/components/loaders/spinner-loader-2'
+import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { ROOTS } from '@/shared/config/roots'
 import { useCreateProposal } from '@/shared/dal/client/proposals/mutations/use-create-proposal'
+import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CreateNewProposalView() {
   const [query, setQuery] = useQueryState('q', { defaultValue: '' })
-  const [lastQuery, setLastQuery] = useQueryState('last-query', { defaultValue: '' })
+  const [lastContactId, setLastContactId] = useQueryState('last-contact-id', { defaultValue: '' })
   const trpc = useTRPC()
   const { data: session } = useSession()
   const router = useRouter()
   const createProposal = useCreateProposal()
 
-  const notionContactQuery = useQuery(trpc.notionRouter.getContactByQuery.queryOptions({
-    query: lastQuery,
+  const notionContactQuery = useQuery(trpc.notionRouter.contacts.getByQuery.queryOptions({
+    query,
+    filterProperty: 'name',
   }, {
-    enabled: !!lastQuery,
+    enabled: false,
+  }))
+  const notionContactById = useQuery(trpc.notionRouter.contacts.getSingleById.queryOptions({
+    id: lastContactId,
+  }, {
+    enabled: false,
   }))
 
   const form = useForm<ProposalFormValues>({
@@ -47,30 +56,31 @@ export function CreateNewProposalView() {
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  function searchForContact(query: string) {
-    setLastQuery(query)
-  }
-
-  const contactProperties = useMemo(() => notionContactQuery.data?.properties, [notionContactQuery.data])
+  const contactProperties = useMemo(() => {
+    return {
+      mostLikelyProperties: notionContactQuery.data?.properties,
+      allMatches: notionContactQuery.data?.allPages,
+    }
+  }, [notionContactQuery.data])
 
   const initProposalValues = useMemo(() => {
     if (notionContactQuery.data) {
       const data: Partial<ProposalFormValues> = {
         project: {
-          label: `${contactProperties?.name || ''}`.trim() || '',
-          address: contactProperties?.address || '',
-          city: contactProperties?.city || '',
-          state: contactProperties?.state || '',
-          zipCode: contactProperties?.zip || '',
+          label: `${contactProperties?.mostLikelyProperties?.name || ''}`.trim() || '',
+          address: contactProperties?.mostLikelyProperties?.address || '',
+          city: contactProperties?.mostLikelyProperties?.city || '',
+          state: contactProperties?.mostLikelyProperties?.state || '',
+          zipCode: contactProperties?.mostLikelyProperties?.zip || '',
           sow: [],
           timeAllocated: '4 weeks',
           agreementNotes: '',
           projectType: 'general-remodeling',
         },
         homeowner: {
-          name: contactProperties?.name || '',
-          email: contactProperties?.email || '',
-          phoneNum: contactProperties?.phone || '',
+          name: contactProperties?.mostLikelyProperties?.name || '',
+          email: contactProperties?.mostLikelyProperties?.email || '',
+          phoneNum: contactProperties?.mostLikelyProperties?.phone || '',
           customerAge: 0,
         },
       }
@@ -78,13 +88,6 @@ export function CreateNewProposalView() {
       return data
     }
   }, [contactProperties, notionContactQuery.data])
-
-  function handleHubspotSearch(_query: string) {
-    // eslint-disable-next-line no-console
-    console.log(contactProperties)
-    // eslint-disable-next-line no-console
-    console.log(notionContactQuery.data)
-  }
 
   function onSubmit(data: ProposalFormValues) {
     // eslint-disable-next-line no-console
@@ -159,14 +162,20 @@ export function CreateNewProposalView() {
           placeholder="Search contact"
           value={query}
           onChange={(e) => {
-            handleHubspotSearch(query)
             setQuery(e.target.value)
           }}
           className="max-w-50"
         />
         <Button
           onClick={() => {
-            searchForContact(query)
+            notionContactQuery
+              .refetch()
+              .then(({ data }) => {
+                setLastContactId(data?.id || '')
+              })
+              .finally(() => {
+                searchInputRef.current?.focus()
+              })
           }}
           type="button"
         >
@@ -177,13 +186,40 @@ export function CreateNewProposalView() {
           className="bg-destructive text-destructive-foreground hover:bg-destructive/80 hover:text-destructive-foreground/80"
           onClick={() => {
             form.reset()
-            setLastQuery('')
             setQuery('')
+            setLastContactId('')
             searchInputRef.current?.focus()
           }}
         >
           <XIcon />
         </Button>
+        <div>
+          { notionContactQuery.isLoading && !notionContactQuery.data
+            ? <SpinnerLoader2 size={16} />
+            : (notionContactQuery.data?.allPages && notionContactQuery.data.allPages.length > 0 && (
+                <div className="flex flex-row gap-2">
+                  { notionContactQuery.data!.allPages.map(page => (
+                    <div
+                      key={page.id}
+                    >
+                      <Badge
+                        variant={lastContactId === page.id ? 'default' : 'outline'}
+                        className="cursor-pointer text-sm"
+                        onClick={() => {
+                          setLastContactId(page.id)
+                          notionContactById
+                            .refetch()
+                        }}
+                      >
+                        {pageToContact(page).name}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+        </div>
+        bnm
       </div>
       <div
         className="h-full w-full overflow-auto pr-4"

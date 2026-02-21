@@ -9,12 +9,12 @@ export function pageToMeeting(page: PageObjectResponse): Meeting {
 
   const raw: Partial<Meeting> = {
     id: page.id,
-    title: titleText(p, MEETING_PROPERTIES_MAP.title),
-    notes: richText(p, MEETING_PROPERTIES_MAP.notes),
-    phone: phone(p, MEETING_PROPERTIES_MAP.phone),
-    meetingDatetime: dateISO(p, MEETING_PROPERTIES_MAP.meetingDatetime),
-    salesrepsAssigned: peopleIds(p, MEETING_PROPERTIES_MAP.salesrepsAssigned),
-    relatedContactId: relationIds(p, MEETING_PROPERTIES_MAP.relatedContactId)[0],
+    title: titleText(p, MEETING_PROPERTIES_MAP.title.label),
+    notes: richText(p, MEETING_PROPERTIES_MAP.notes.label),
+    phone: phone(p, MEETING_PROPERTIES_MAP.phone.label),
+    meetingDatetime: dateISO(p, MEETING_PROPERTIES_MAP.meetingDatetime.label),
+    salesrepsAssigned: peopleIds(p, MEETING_PROPERTIES_MAP.salesrepsAssigned.label),
+    relatedContactId: relationIds(p, MEETING_PROPERTIES_MAP.relatedContactId.label)[0],
   }
 
   const valid = meetingSchema.safeParse(raw)

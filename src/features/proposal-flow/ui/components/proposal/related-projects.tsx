@@ -40,23 +40,23 @@ export function RelatedProjects() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="w-full flex gap-4 overflow-x-auto pb-4">
+        <div className="w-full max-h-[500px] flex flex-col md:flex-row gap-4 overflow-y-auto md:overflow-x-auto pb-4">
           {projectsData.map(project => (
             <Button
               key={project.accessor}
               variant="ghost"
-              className="relative group w-75 min-h-100 overflow-hidden z-10 bg-transparent rounded-lg flex items-center justify-center cursor-pointer p-0"
+              className="relative group w-full lg:w-75 min-h-100 overflow-hidden z-10 bg-transparent rounded-lg flex items-center justify-center cursor-pointer p-0"
               asChild
             >
               <div>
                 <div className="absolute inset-0 select-none z-5">
                   <ReactCompareSlider
-                    itemOne={<ReactCompareSliderImage src={`/portfolio-photos/projects/${project.title}/hero-before.jpeg`} alt="Before" />}
-                    itemTwo={<ReactCompareSliderImage src={`/portfolio-photos/projects/${project.title}/hero-after.jpeg`} alt="After" />}
+                    itemOne={<ReactCompareSliderImage src={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-before.jpeg`} alt="Before" />}
+                    itemTwo={<ReactCompareSliderImage src={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-after.jpeg`} alt="After" />}
                     className="w-full h-full"
                   />
                   <Image
-                    src={`/portfolio-photos/projects/${project.title}/hero-after.jpeg`}
+                    src={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-after.jpeg`}
                     alt={project.title}
                     fill
                     className="object-cover w-full h-full opacity-100 group-hover:opacity-0 transition duration-300 pointer-events-none"

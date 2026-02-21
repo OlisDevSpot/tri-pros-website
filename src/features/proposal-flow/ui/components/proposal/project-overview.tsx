@@ -97,12 +97,11 @@ export function ProjectOverview() {
                       </div>
                       <div className="border-b border-dashed grow h-[75%]" />
                       {/* <p className="-mt-0.5">{field.value.toString()}</p> */}
-                      <input
-                        type="text"
+                      <p
                         className="w-50"
-                        value={field.value.toString()}
-                        disabled={field.label === 'Project Type'}
-                      />
+                      >
+                        {field.value.toString()}
+                      </p>
                     </div>
                   ))}
                 </div>

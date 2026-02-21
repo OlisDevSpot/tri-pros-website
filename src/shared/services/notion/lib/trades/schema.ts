@@ -3,8 +3,8 @@ import { z } from 'zod'
 export const tradeSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.string().optional(),
-  homeOrLot: z.string().optional(),
+  type: z.enum(['Energy Efficiency', 'General Construction', 'Structural / Functional']).optional(),
+  homeOrLot: z.enum(['Home', 'Lot']).optional(),
   relatedScopes: z.array(z.string()).default([]),
 })
 

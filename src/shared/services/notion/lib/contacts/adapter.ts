@@ -9,18 +9,18 @@ export function pageToContact(page: PageObjectResponse): Contact {
 
   const raw: Partial<Contact> = {
     id: page.id,
-    name: titleText(p, CONTACT_PROPERTIES_MAP.name),
-    email: email(p, CONTACT_PROPERTIES_MAP.email),
-    address: richText(p, CONTACT_PROPERTIES_MAP.address),
-    city: richText(p, CONTACT_PROPERTIES_MAP.city),
-    state: selectName(p, CONTACT_PROPERTIES_MAP.state),
-    zip: richText(p, CONTACT_PROPERTIES_MAP.zip),
-    notes: richText(p, CONTACT_PROPERTIES_MAP.notes),
-    phone: phone(p, CONTACT_PROPERTIES_MAP.phone),
-    initMeetingAt: dateISO(p, CONTACT_PROPERTIES_MAP.initMeetingAt),
-    ownerIds: peopleIds(p, CONTACT_PROPERTIES_MAP.ownerIds),
-    relatedMeetingsIds: relationIds(p, CONTACT_PROPERTIES_MAP.relatedMeetingsIds),
-    relatedProjectsIds: relationIds(p, CONTACT_PROPERTIES_MAP.relatedProjectsIds),
+    name: titleText(p, CONTACT_PROPERTIES_MAP.name.label),
+    email: email(p, CONTACT_PROPERTIES_MAP.email.label),
+    address: richText(p, CONTACT_PROPERTIES_MAP.address.label),
+    city: richText(p, CONTACT_PROPERTIES_MAP.city.label),
+    state: selectName(p, CONTACT_PROPERTIES_MAP.state.label),
+    zip: richText(p, CONTACT_PROPERTIES_MAP.zip.label),
+    notes: richText(p, CONTACT_PROPERTIES_MAP.notes.label),
+    phone: phone(p, CONTACT_PROPERTIES_MAP.phone.label),
+    initMeetingAt: dateISO(p, CONTACT_PROPERTIES_MAP.initMeetingAt.label),
+    ownerId: peopleIds(p, CONTACT_PROPERTIES_MAP.ownerId.label),
+    relatedMeetingsIds: relationIds(p, CONTACT_PROPERTIES_MAP.relatedMeetingsIds.label),
+    relatedProjectsIds: relationIds(p, CONTACT_PROPERTIES_MAP.relatedProjectsIds.label),
   }
 
   const valid = contactSchema.safeParse(raw)

@@ -1,0 +1,10 @@
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {}
+
+// get keys of object union eg: { a: string } | { b: string } | { c: number }
+export type KeysOfUnion<T> = T extends T ? keyof T : never
+
+export function getTypedKeys<T extends Record<string, any>>(obj: T): Array<keyof T> {
+  return Object.keys(obj) as Array<keyof T>
+}

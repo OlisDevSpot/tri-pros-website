@@ -1,5 +1,5 @@
 import { createTRPCRouter } from '../init'
-import { tradesRouter } from './trades.router'
+import { tradesRouter } from './notion.router/trades.router'
 
 export const constructionRouter = createTRPCRouter({
   tradesRouter,

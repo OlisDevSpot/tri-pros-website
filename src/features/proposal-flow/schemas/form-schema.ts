@@ -1,8 +1,5 @@
-import type { ScopeAccessor } from '@/shared/db/types'
 import z from 'zod'
 import { insertProposalSchema } from '@/shared/db/schema'
-import { scopesData } from '@/shared/db/seeds/data/scopes'
-import { tradesData } from '@/shared/db/seeds/data/trades'
 
 export const proposalFormSchema = z.object({
   homeowner: insertProposalSchema.pick({
@@ -26,10 +23,8 @@ export const proposalFormSchema = z.object({
     sow: z.array(
       z.object({
         title: z.string(),
-        trade: z.enum(tradesData.map(trade => trade.accessor)),
-        scopes: z.array(
-          z.enum(Object.values(scopesData).flatMap(scopesOfTrade => scopesOfTrade.map(scope => scope.accessor)) as ScopeAccessor[]),
-        ),
+        trade: z.string(),
+        scopes: z.array(z.string()),
         html: z.string(),
       }),
     ).min(0, { message: 'At least one scope is required' }),

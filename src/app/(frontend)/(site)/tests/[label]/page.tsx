@@ -7,7 +7,6 @@ import { TopSpacer } from '@/shared/components/top-spacer'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { ViewportHero } from '@/shared/components/viewport-hero'
-import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { useTRPC } from '@/trpc/helpers'
 
 export default function TestPage() {
@@ -15,10 +14,10 @@ export default function TestPage() {
   const [isEnabled, setIsEnabled] = useState(false)
 
   const trpc = useTRPC()
-  const runTest = useQuery(trpc.testNotion.queryOptions({ name: inputValue }, { enabled: isEnabled }))
+  const runTest = useQuery(trpc.notionRouter.scopes.getScopesByTrade.queryOptions({ tradeId: 'a9c0ca1b548b835b93128152b409d577' }, { enabled: isEnabled }))
 
   if (runTest.data) {
-    console.log(pageToContact(runTest.data[0]))
+    console.log(runTest.data)
   }
 
   return (

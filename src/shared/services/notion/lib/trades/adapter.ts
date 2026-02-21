@@ -9,10 +9,10 @@ export function pageToTrade(page: PageObjectResponse): Trade {
 
   const raw: Partial<Trade> = {
     id: page.id,
-    name: titleText(p, TRADE_PROPERTIES_MAP.name),
-    homeOrLot: selectName(p, TRADE_PROPERTIES_MAP.homeOrLot) ?? undefined,
-    type: selectName(p, TRADE_PROPERTIES_MAP.type) ?? undefined,
-    relatedScopes: relationIds(p, TRADE_PROPERTIES_MAP.relatedScopes),
+    name: titleText(p, TRADE_PROPERTIES_MAP.name.label),
+    homeOrLot: selectName<'Home' | 'Lot'>(p, TRADE_PROPERTIES_MAP.homeOrLot.label) ?? undefined,
+    type: selectName(p, TRADE_PROPERTIES_MAP.type.label) ?? undefined,
+    relatedScopes: relationIds(p, TRADE_PROPERTIES_MAP.relatedScopes.label),
   }
 
   const valid = tradeSchema.safeParse(raw)
