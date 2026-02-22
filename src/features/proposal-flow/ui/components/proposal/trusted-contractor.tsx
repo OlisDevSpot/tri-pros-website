@@ -16,7 +16,7 @@ export function TrustedContractor() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="w-[180px] h-[50px] shrink-0">
+          <div className="w-45 h-12.5 shrink-0">
             <LogoLink />
           </div>
           <CompanySocialButtons className="lg:flex-row" />

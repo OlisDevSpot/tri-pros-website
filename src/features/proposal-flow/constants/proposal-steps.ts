@@ -68,4 +68,4 @@ export function generateProposalSteps(userRole: UserRole) {
 }
 
 export type ProposalAccessor = typeof proposalSteps[number]['accessor']
-export const overrideSections: ProposalAccessor[] = ['funding', 'send-proposal', 'agreement-link']
+export const customizableSections: ProposalAccessor[] = ['funding', 'send-proposal', 'agreement-link']
