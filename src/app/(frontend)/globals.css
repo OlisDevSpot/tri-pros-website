@@ -325,7 +325,7 @@
 
     h2 {
       @apply text-2xl block pt-2;
-      line-height: 1rem;
+      line-height: 1.5rem;
     }
   }
 }

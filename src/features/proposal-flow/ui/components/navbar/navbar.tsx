@@ -63,7 +63,7 @@ export function ProposalPageNavbar() {
         : (
             <div className="h-full w-full flex items-center justify-center px-4">
               <Select
-                defaultValue="project-overview"
+                value={activeSectionId}
                 onValueChange={(val) => {
                   router.push(`#${val}`)
                 }}

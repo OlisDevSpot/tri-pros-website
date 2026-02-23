@@ -12,6 +12,12 @@ export const auth = betterAuth({
     schema,
     provider: 'pg',
   }),
+  trustedOrigins: [
+    env.BETTER_AUTH_URL || '',
+    env.NEXT_PUBLIC_BASE_URL,
+    'https://triprosremodeling.com',
+    'https://www.triprosremodeling.com',
+  ].filter(Boolean),
   socialProviders: {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
@@ -82,11 +88,6 @@ export const auth = betterAuth({
       enabled: true,
     },
   },
-  trustedOrigins: [
-    env.NEXT_PUBLIC_BASE_URL,
-    'https://triprosremodeling.com',
-    'https://www.triprosremodeling.com',
-  ],
 })
 
 export type Auth = typeof auth

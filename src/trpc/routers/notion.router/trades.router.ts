@@ -6,7 +6,9 @@ import { baseProcedure, createTRPCRouter } from '../../init'
 export const tradesRouter = createTRPCRouter({
   getAll: baseProcedure
     .query(async () => {
-      const rawTrades = await queryNotionDatabase('trades')
+      const rawTrades = await queryNotionDatabase('trades', {
+        sortBy: { property: 'name', direction: 'ascending' },
+      })
 
       if (!rawTrades)
         return []
@@ -18,7 +20,11 @@ export const tradesRouter = createTRPCRouter({
   getTradesByQuery: baseProcedure
     .input(z.object({ query: z.string().optional().nullable() }))
     .query(async ({ input }) => {
-      const rawTrades = await queryNotionDatabase('trades', { query: input.query || undefined, filterProperty: 'name' })
+      const rawTrades = await queryNotionDatabase('trades', {
+        query: input.query || undefined,
+        filterProperty: 'name',
+        sortBy: { property: 'name', direction: 'ascending' },
+      })
 
       if (!rawTrades)
         return []

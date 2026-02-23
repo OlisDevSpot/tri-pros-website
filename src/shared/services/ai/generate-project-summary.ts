@@ -6,29 +6,51 @@ import z from 'zod'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema'
 
-export async function generateProjectSummary(proposalId: string, proposal: ProposalFormSchema) {
+export async function generateProjectSummary(proposalId: string, proposal: Partial<ProposalFormSchema>) {
   try {
     const { output } = await generateText({
       model: openai('gpt-4.1-mini-2025-04-14'),
       system:
       `
-      You are a project summary generator. 
-      You are a professional copywriter and have tremendous experience in construction & construction sales.
-      You will be given project details like customer name, scopes of work interested, exact address, cost of project etc, and you will generate a short summary of the project.
-      Your only job is to output a 4 sentence "marketing" project summary that will be presented to a potential customer via a dynamic proposal. You must analyze the complete information and output both a complete summary of the project's beneficial outcomes for the customer as well as energy benefits (if they exist) by doing this project. 
-      
-      IMPORTANT TERMINOLOGIES:
-      - tcp = total contact price
+      RULES — PROJECT SUMMARY
+      - Always generate a professional 3–4 sentence summary.
+      - Focus on homeowner benefits, lifestyle improvement, comfort, durability, aesthetics, and property value.
+      - Sell the future outcome, not the construction process.
+      - Never mention the tcp or any dollar amounts.
+      - Avoid technical jargon unless it directly improves perceived value.
+      - Tone should feel confident, premium, and trustworthy.
 
-      EXPECTED OUTPUT:
-      - do not generate text that highlights the absolute investment amount (tcp). Instead, focus on future home energy savings like gas, water, electricity (if any), and property value increase
-      - your goal is to "sell" to the homeowner a future with the upgrades installed - how amazing it would be, and how much his property and his lifestyle would benefit
-      - ONLY OUTPUT RESPONSE FOR energy savings parameter if we can infer some utility/maintennace savings from undergoing this scope of work. Otherwise, return an empty string
+      RULES — ENERGY BENEFITS FIELD
+      - Only populate this field if the project scope reasonably creates measurable long-term savings or efficiency improvements.
+      - Otherwise return an empty string "".
+      - When included, describe:
+        - Utility savings (electricity, gas, water)
+        - Maintenance reduction
+        - Longevity / durability savings
+        - Efficiency improvements
+        - Comfort improvements tied to efficiency
+      - Do NOT exaggerate or fabricate savings.
+      - Keep this section 1–2 sentences maximum.
 
-      EXAMPLE ENERGY BENEFITS:
-      - utility savings by lowering heating & cooling costs (cool roof, new efficient HVAC, double-pane windows, etc)
-      - water conservation (dry landscaping, hardscaping, plumbing upgrades etc)
-      - gardening & mainentence savings (paying for landscaping, regular maintenance, broken sprinklers etc)
+      EXAMPLES OF PROJECTS THAT MAY HAVE ENERGY BENEFITS
+      - Roofing (cool roof, insulation improvements)
+      - Windows / doors
+      - HVAC
+      - Plumbing upgrades
+      - Landscaping conversions (turf removal, drip irrigation)
+      - Exterior envelope improvements
+      - Solar-adjacent prep
+
+      EXAMPLES WITHOUT ENERGY BENEFITS
+      - Interior paint
+      - Cosmetic finishes only
+      - Decorative upgrades with no efficiency impact
+
+      TERMINOLOGY
+      tcp = total contract price (never mention in output)
+
+      GOAL
+      Maximize homeowner excitement, perceived value, and emotional confidence in moving forward.
       
       `,
       prompt: `Generate a project summary with the given paramters:
@@ -37,17 +59,14 @@ export async function generateProjectSummary(proposalId: string, proposal: Propo
       output: Output.object({
         schema: z.object({
           projectSummary: z.string(),
-          energyBenefits: z.string(),
+          energyBenefits: z.string().optional(),
         }),
       }),
     })
 
     await db
       .update(proposals)
-      .set({
-        projectSummary: output.projectSummary,
-        energyBenefits: output.energyBenefits,
-      })
+      .set(output)
       .where(eq(proposals.id, proposalId))
   }
   catch {

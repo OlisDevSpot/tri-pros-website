@@ -6,18 +6,22 @@ import { notionDatabasesMeta } from '../constants/databases'
 import { buildPropertyFilter } from '../lib/property-filter'
 
 type PropertyKey<T extends NotionDatabaseName> = keyof NotionDatabaseMap[T]['propertiesMap']
+type SortDirection = 'ascending' | 'descending'
 
 interface QueryOpts<T extends NotionDatabaseName> {
   id?: string
   query?: string
   filterProperty?: PropertyKey<T>
-  sortBy?: PropertyKey<T>
+  sortBy?: {
+    property: PropertyKey<T>
+    direction: SortDirection
+  }
 }
 
 export function queryNotionDatabase<T extends NotionDatabaseName>(
   databaseName: T,
   opts: QueryOpts<T> & { id: string },
-): Promise<PageObjectResponse>
+): Promise<PageObjectResponse[] | undefined>
 
 export function queryNotionDatabase<T extends NotionDatabaseName>(
   databaseName: T,
@@ -30,23 +34,30 @@ export async function queryNotionDatabase<T extends NotionDatabaseName>(
   opts: QueryOpts<T> = {},
 ): Promise<PageObjectResponse | PageObjectResponse[] | undefined> {
   const meta = notionDatabasesMeta[databaseName]
+  const propertiesMap = meta.propertiesMap
+  const propertyToSortBy = opts.sortBy && propertiesMap[opts.sortBy.property as keyof typeof propertiesMap] as unknown as NotionPropDef
 
   if (opts.id) {
     const contactPage = await notionClient.pages.retrieve({
       page_id: opts.id,
     })
 
-    return contactPage as PageObjectResponse
+    return [contactPage] as PageObjectResponse[]
   }
   else if (!opts.filterProperty) {
     const response = await notionClient.dataSources.query({
       data_source_id: meta.id,
+      sorts: opts.sortBy && [
+        {
+          property: propertyToSortBy?.label as string,
+          direction: opts.sortBy?.direction || 'ascending',
+        },
+      ],
     })
 
     return response.results as PageObjectResponse[]
   }
 
-  const propertiesMap = notionDatabasesMeta[databaseName].propertiesMap
   const propertyToFilterBy = propertiesMap[opts.filterProperty as keyof typeof propertiesMap] as unknown as NotionPropDef
 
   const propertyFilterObject = buildPropertyFilter(propertyToFilterBy.label, propertyToFilterBy.type, opts.query || '')

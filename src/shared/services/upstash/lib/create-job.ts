@@ -13,12 +13,19 @@ export function createJob<T>(key: string, handler: JobHandler<T>) {
     key,
     handler,
     dispatch: async (payload: T, options?: DispatchOptions<T>) => {
-      await qstashClient.publishJSON({
-        ...options,
-        body: payload,
-        method: 'POST',
-        url: `${env.NEXT_PUBLIC_BASE_URL}/api/qstash-jobs?job=${key}`,
-      })
+      // eslint-disable-next-line no-console
+      console.log('DISPATCHING JOB', key)
+      try {
+        await qstashClient.publishJSON({
+          ...options,
+          body: payload,
+          method: 'POST',
+          url: `${env.NEXT_PUBLIC_BASE_URL}/api/qstash-jobs?job=${key}`,
+        })
+      }
+      catch (error) {
+        console.error('Something went wrong', error)
+      }
     },
   }
 }

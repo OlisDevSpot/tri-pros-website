@@ -2,9 +2,9 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import { generateProjectSummary } from '../../ai/generate-project-summary'
 import { createJob } from '../lib/create-job'
 
-export const generateAISummary = createJob(
+export const generateAISummaryJob = createJob(
   'generate-ai-summary',
-  async ({ proposalId, proposalFormValues }: { proposalId: string, proposalFormValues: ProposalFormSchema }) => {
+  async ({ proposalId, proposalFormValues }: { proposalId: string, proposalFormValues: Partial<ProposalFormSchema> }) => {
     await generateProjectSummary(proposalId, proposalFormValues)
   },
 )

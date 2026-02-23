@@ -1,5 +1,6 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { TradeAccessor } from '@/shared/db/types'
+import type { ProjectType } from '@/shared/types/enums'
 import { PlusIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
@@ -83,7 +84,12 @@ export function ProjectFields() {
                 <FormItem>
                   <FormLabel>Project Type</FormLabel>
                   <FormControl>
-                    <Select defaultValue="general-remodeling">
+                    <Select
+                      defaultValue="general-remodeling"
+                      onValueChange={(val: ProjectType) => {
+                        field.onChange(val)
+                      }}
+                    >
                       <SelectTrigger {...field} className="w-full">
                         <SelectValue placeholder="Select a project type" />
                       </SelectTrigger>

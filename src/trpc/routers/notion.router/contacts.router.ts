@@ -23,7 +23,7 @@ export const contactsRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const { id } = input
 
-      const contactPage = await queryNotionDatabase('contacts', { id })
+      const [contactPage] = await queryNotionDatabase('contacts', { id }) as PageObjectResponse[]
       if (!contactPage)
         return {}
 
@@ -34,7 +34,10 @@ export const contactsRouter = createTRPCRouter({
       id: z.string().optional(),
       query: z.string().optional(),
       filterProperty: z.enum(getTypedKeys(contactSchema.omit({ id: true }).shape)).optional(),
-      sortBy: z.enum(getTypedKeys(contactSchema.omit({ id: true }).shape)).optional(),
+      sortBy: z.object({
+        property: z.enum(getTypedKeys(contactSchema.omit({ id: true }).shape)),
+        direction: z.enum(['ascending', 'descending']).optional().default('ascending'),
+      }).optional(),
     }))
     .query(async ({ input }) => {
       const opts = input

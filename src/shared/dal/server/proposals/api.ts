@@ -9,6 +9,7 @@ export async function createProposal(data: InsertProposalSchema) {
     .insert(proposals)
     .values({
       ...data,
+      cashInDeal: data.tcp,
       token: `tpr-${randomBytes(8).toString('hex')}`,
     })
     .returning()

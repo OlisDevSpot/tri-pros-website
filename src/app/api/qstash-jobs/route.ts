@@ -1,11 +1,14 @@
 import type { Job, JobMap } from '@/shared/services/upstash/types'
 import { Receiver } from '@upstash/qstash'
 import env from '@/shared/config/server-env'
+import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai-summary'
 
 /**
  * An array of jobs we have defined.
  */
-const jobs: Job[] = []
+const jobs: Job[] = [
+  generateAISummaryJob,
+]
 
 /**
  * Register jobs, this is just a simple

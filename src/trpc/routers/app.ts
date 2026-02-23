@@ -10,11 +10,11 @@ import { proposalRouter } from './proposal.router'
 export const appRouter = createTRPCRouter({
   healthcheck: baseProcedure.query(() => 'ok'),
   landingRouter,
+  proposalRouter,
   notionRouter,
   hubspotRouter,
   docusignRouter,
   constructionRouter,
-  proposalRouter,
   aiRouter,
 })
 

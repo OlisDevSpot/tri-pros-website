@@ -14,7 +14,7 @@ export function ProjectOverview() {
   const trpc = useTRPC()
   const proposal = useCurrentProposal()
   const proposalForm = proposalToFormValues(proposal.data)
-  const aiProjectSummary = useMutation(trpc.aiRouter.generateProjectSummary.mutationOptions())
+  const dispatchProjectSummaryJob = useMutation(trpc.aiRouter.dispatchProjectSummaryJob.mutationOptions())
 
   useEffect(() => {
     if (!proposal.data?.id)
@@ -22,7 +22,7 @@ export function ProjectOverview() {
     if (proposal.data.projectSummary && proposal.data.energyBenefits)
       return
 
-    aiProjectSummary.mutate({
+    dispatchProjectSummaryJob.mutate({
       proposalId: proposal.data.id,
       proposalFormValues: proposalForm,
     })

@@ -46,10 +46,10 @@ export const proposals = pgTable('proposals', {
   customerAge: integer('customer_age').notNull(),
 
   // FUNDING INFO
-  tcp: integer('tcp').notNull().default(0),
+  tcp: integer('tcp').notNull(),
   depositAmount: integer('deposit_amount').notNull().default(0),
   discounts: jsonb('discounts').$type<{ reason: string, amount: number }[]>(),
-  cashInDeal: integer('cash_in_deal').notNull().default(1000),
+  cashInDeal: integer('cash_in_deal').notNull(),
   financeOptionId: integer('finance_option_id')
     .references(() => financeOptions.id, { onDelete: 'cascade' }),
 

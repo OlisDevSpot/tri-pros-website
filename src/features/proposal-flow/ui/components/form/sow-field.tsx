@@ -42,7 +42,7 @@ export function SOWSection({
   const { open: openModal, setModal } = useModalStore()
 
   const allTrades = useGetAllTrades()
-  const scopesOfTrade = useGetScopes({ query: tradeId, filterProperty: 'relatedTrade' })
+  const scopesOfTrade = useGetScopes({ query: tradeId, filterProperty: 'relatedTrade' }, { enabled: !!tradeId })
 
   return (
     <div key={sowSnapshot.title} className="flex flex-col gap-4 items-center border w-full max-h-187.5 overflow-auto">
