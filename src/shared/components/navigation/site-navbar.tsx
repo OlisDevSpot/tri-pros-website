@@ -82,7 +82,7 @@ export function SiteNavbar() {
   useEffect(() => {
     setModal({
       accessor: 'login-modal',
-      Element: SignInModal,
+      Component: SignInModal,
     })
   }, [setModal])
 

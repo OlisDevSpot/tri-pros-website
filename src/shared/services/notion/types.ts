@@ -3,7 +3,7 @@ import type { NotionDatabaseMap } from './constants/databases'
 import type { queryNotionDatabase } from './dal/query-notion-database'
 import { notionDatabasesMeta } from './constants/databases'
 
-export type NotionDatabaseName = 'contacts' | 'meetings' | 'projects' | 'trades' | 'scopes'
+export type NotionDatabaseName = 'contacts' | 'meetings' | 'projects' | 'trades' | 'scopes' | 'sows'
 export interface NotionPropDef {
   label: string
   type: NotionColumnType

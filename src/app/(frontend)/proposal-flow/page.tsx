@@ -43,7 +43,7 @@ export default function MyProposalsPage() {
       <nav className="h-(--sidebar-height) lg:h-fit border border-primary/20 p-4 rounded-xl w-full lg:w-(--sidebar-width) shrink-0">
         <ProposalSidebar />
       </nav>
-      <div className="relative w-full h-full overflow-hidden">
+      <div className="relative w-full h-full overflow-hidden min-h-0">
         <AnimatePresence>
           {myProposalStep === 'create-proposal' && (
             <CreateNewProposalView key="create-proposal" />

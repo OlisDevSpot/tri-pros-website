@@ -1,6 +1,9 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
+import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
+import { useQueryClient } from '@tanstack/react-query'
 import { TrashIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
 import { Tiptap } from '@/shared/components/tiptap/tiptap'
@@ -12,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useGetScopes } from '@/shared/services/notion/dal/scopes/hooks/queries/use-get-scopes'
 import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queries/use-get-trades'
+import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   index: number
@@ -24,25 +28,27 @@ export function SOWSection({
   sowSnapshot,
   onDelete,
 }: Props) {
+  const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const form = useFormContext<ProposalFormSchema>()
   const [tradeId, setTradeId] = useState<string | undefined>(sowSnapshot.trade || undefined)
+  const tiptapRef = useRef<TiptapHandle | null>(null)
 
   const currentSOW = useWatch({
     control: form.control,
     name: `project.sow`,
   })
 
+  const allTrades = useGetAllTrades()
+  const scopesOfTrade = useGetScopes({ query: tradeId, filterProperty: 'relatedTrade' }, { enabled: !!tradeId })
+
   function getScopesOfTrade(tradeId: string) {
-    if (!tradeId) {
-      return []
-    }
+    if (!tradeId)
+      return
 
     setTradeId(tradeId)
   }
-  const { open: openModal, setModal } = useModalStore()
-
-  const allTrades = useGetAllTrades()
-  const scopesOfTrade = useGetScopes({ query: tradeId, filterProperty: 'relatedTrade' }, { enabled: !!tradeId })
+  const { open: openModal, close: closeModal, setModal } = useModalStore()
 
   return (
     <div key={sowSnapshot.title} className="flex flex-col gap-4 items-center border w-full max-h-187.5 overflow-auto">
@@ -54,6 +60,7 @@ export function SOWSection({
             <FormItem className="max-w-62.5">
               <FormControl className="w-full">
                 <Select
+                  defaultOpen={true}
                   value={field.value}
                   onValueChange={(val) => {
                     field.onChange(val)
@@ -156,7 +163,17 @@ export function SOWSection({
                   onClick={() => {
                     setModal({
                       accessor: 'Templates',
-                      Element: TemplatesModal,
+                      Component: TemplatesModal,
+                      props: {
+                        trade: allTrades.data?.find(trade => trade.id === tradeId),
+                        scopes: form.getValues(`project.sow.${index}.scopes`).map(scopeId => scopesOfTrade.data?.find(scope => scope.id === scopeId)).filter(Boolean) as ScopeOrAddon[],
+                        onSelect: async (sowId) => {
+                          const html = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
+
+                          tiptapRef.current?.insertHTML(html || '')
+                          closeModal()
+                        },
+                      },
                     })
                     openModal()
                   }}
@@ -165,12 +182,8 @@ export function SOWSection({
                 </Button>
               </div>
               <FormControl>
-                {/* <Textarea
-                            {...field}
-                            placeholder="Tri Pros Remodeling will..."
-                            className="min-h-[250px]"
-                          /> */}
                 <Tiptap
+                  ref={tiptapRef}
                   onChange={html => field.onChange(html)}
                   initialValues={field.value}
                 />

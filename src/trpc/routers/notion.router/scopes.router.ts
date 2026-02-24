@@ -1,8 +1,12 @@
+import type { PageObjectResponse } from '@notionhq/client'
+import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getTypedKeys } from '@/shared/lib/utils'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
+import { pageToHTML } from '@/shared/services/notion/lib/page-to-html'
 import { pageToScope } from '@/shared/services/notion/lib/scopes/adapter'
 import { scopeOrAddonSchema } from '@/shared/services/notion/lib/scopes/schema'
+import { pageToSOW } from '@/shared/services/notion/lib/sows/adapter'
 import { baseProcedure, createTRPCRouter } from '../../init'
 
 export const scopesRouter = createTRPCRouter({
@@ -48,5 +52,45 @@ export const scopesRouter = createTRPCRouter({
       const scopes = rawScopes.map(pageToScope)
 
       return scopes
+    }),
+  getAllSOW: baseProcedure
+    .input(z.object({ scopeId: z.string() }))
+    .query(async ({ input }) => {
+      const { scopeId } = input
+
+      try {
+        const rawSOWs = await queryNotionDatabase('sows', { filterProperty: 'relatedScope', query: scopeId }) as PageObjectResponse[]
+        if (!rawSOWs)
+          throw new Error('Scope not found')
+
+        const sows = rawSOWs.map(sow => pageToSOW(sow))
+
+        return sows
+      }
+      catch (error) {
+        console.error(error)
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          cause: error,
+        })
+      }
+    }),
+  getSOWContent: baseProcedure
+    .input(z.object({ sowId: z.string() }))
+    .query(async ({ input }) => {
+      const { sowId } = input
+
+      try {
+        const html = pageToHTML(sowId)
+
+        return html
+      }
+      catch (error) {
+        console.error(error)
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          cause: error,
+        })
+      }
     }),
 })

@@ -9,8 +9,8 @@ export function GlobalDialogs() {
 
   return (
     <>
-      {baseModal && <baseModal.Element />}
-      {authModal && <authModal.Element />}
+      {baseModal && <baseModal.Component {...baseModal.props} />}
+      {authModal && <authModal.Component {...authModal.props} />}
     </>
   )
 }

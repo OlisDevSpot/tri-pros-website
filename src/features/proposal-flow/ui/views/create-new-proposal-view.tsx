@@ -153,7 +153,7 @@ export function CreateNewProposalView() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -30 }}
       transition={{ duration: 0.25 }}
-      className="w-full h-full flex flex-col gap-4"
+      className="w-full h-full flex flex-col gap-4 min-h-0"
     >
       <div className="flex justify-start items-center gap-2 shrink-0">
         <Input
@@ -207,8 +207,7 @@ export function CreateNewProposalView() {
                         className="cursor-pointer text-sm"
                         onClick={() => {
                           setLastContactId(page.id)
-                          notionContactById
-                            .refetch()
+                          notionContactById.refetch()
                         }}
                       >
                         {pageToContact(page).name}
@@ -220,9 +219,7 @@ export function CreateNewProposalView() {
 
         </div>
       </div>
-      <div
-        className="h-full w-full overflow-auto pr-4"
-      >
+      <div className="flex-1 min-h-0 w-full overflow-auto pr-4">
         <Form {...form}>
           <ProposalForm
             isLoading={notionContactQuery.isLoading}
