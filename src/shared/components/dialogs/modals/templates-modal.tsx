@@ -1,6 +1,6 @@
 import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries } from '@tanstack/react-query'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 import { Modal } from './base-modal'
@@ -15,7 +15,9 @@ export function TemplatesModal({ trade, scopes, onSelect }: Props) {
   const { isOpen, close } = useModalStore()
 
   const trpc = useTRPC()
-  const SOWs = useQuery(trpc.notionRouter.scopes.getAllSOW.queryOptions({ scopeId: scopes[0].id }))
+  const SOWs = useQueries({
+    queries: scopes.map(scope => trpc.notionRouter.scopes.getAllSOW.queryOptions({ scopeId: scope.id })),
+  })
 
   return (
     <Modal
@@ -26,7 +28,7 @@ export function TemplatesModal({ trade, scopes, onSelect }: Props) {
       className="w-full md:max-w-[80%]"
     >
       <div className="w-full space-y-4">
-        {scopes.map(scope => (
+        {scopes.map((scope, scopeI) => (
           <div
             key={scope.id}
             className="p-4 rounded-md border space-y-4"
@@ -36,7 +38,7 @@ export function TemplatesModal({ trade, scopes, onSelect }: Props) {
               <hr className="mt-1" />
             </div>
             <div className="flex flex-col gap-2">
-              {SOWs.data?.filter(sow => scope.relatedScopesOfWork?.includes(sow.id)).map(sow => (
+              {SOWs[scopeI].data?.filter(sow => scope.relatedScopesOfWork?.includes(sow.id)).map(sow => (
                 <div
                   key={sow.id}
                   className="p-2 rounded-md min-w-max"
