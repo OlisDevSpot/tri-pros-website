@@ -1,7 +1,7 @@
 'use client'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import { LockIcon } from 'lucide-react'
+import { Settings2Icon } from 'lucide-react'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -110,7 +110,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
               size="icon"
 
             >
-              <LockIcon className="w-4 h-4" />
+              <Settings2Icon className="w-4 h-4" />
             </Button>
           </div>
           <CardDescription>Information relevant to increased financial responsibility</CardDescription>
