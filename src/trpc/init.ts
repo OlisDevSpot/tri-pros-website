@@ -5,6 +5,7 @@ import { headers as getHeaders } from 'next/headers'
 import { getPayload } from 'payload'
 import { cache } from 'react'
 import superjson from 'superjson'
+import { ZodError } from 'zod'
 import { auth } from '@/shared/auth/server'
 
 export interface CoreTRPCContext {
@@ -32,6 +33,16 @@ export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeade
 
 const t = initTRPC.context<HTTPTRPCContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError:
+          error.cause instanceof ZodError ? error.cause.flatten() : null,
+      },
+    }
+  },
 })
 
 export const createTRPCRouter = t.router

@@ -67,12 +67,15 @@ export const scopesRouter = createTRPCRouter({
 
         return sows
       }
-      catch (error) {
-        console.error(error)
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          cause: error,
-        })
+      catch (error: unknown) {
+        if (error instanceof TRPCError) {
+          console.error(error)
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error.message,
+            cause: error,
+          })
+        }
       }
     }),
   getSOWContent: baseProcedure
@@ -81,7 +84,7 @@ export const scopesRouter = createTRPCRouter({
       const { sowId } = input
 
       try {
-        const html = pageToHTML(sowId)
+        const html = await pageToHTML(sowId)
 
         return html
       }

@@ -4,7 +4,7 @@ import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import { useQueryClient } from '@tanstack/react-query'
 import { TrashIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
 import { Tiptap } from '@/shared/components/tiptap/tiptap'
 import { Button } from '@/shared/components/ui/button'
@@ -33,11 +33,6 @@ export function SOWSection({
   const form = useFormContext<ProposalFormSchema>()
   const [tradeId, setTradeId] = useState<string | undefined>(sowSnapshot.trade || undefined)
   const tiptapRef = useRef<TiptapHandle | null>(null)
-
-  const currentSOW = useWatch({
-    control: form.control,
-    name: `project.sow`,
-  })
 
   const allTrades = useGetAllTrades()
   const scopesOfTrade = useGetScopes({ query: tradeId, filterProperty: 'relatedTrade' }, { enabled: !!tradeId })
@@ -98,8 +93,8 @@ export function SOWSection({
                 values={field.value}
               >
                 <FormControl>
-                  <MultiSelectTrigger className="w-full" disabled={currentSOW[index]?.trade === undefined}>
-                    <MultiSelectValue placeholder="Select scopes..." />
+                  <MultiSelectTrigger className="w-full" disabled={scopesOfTrade.isLoading}>
+                    <MultiSelectValue placeholder={scopesOfTrade.isLoading ? 'Loading...' : 'Select scopes'} />
                   </MultiSelectTrigger>
                 </FormControl>
                 <MultiSelectContent

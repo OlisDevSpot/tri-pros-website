@@ -72,5 +72,6 @@ export async function queryNotionDatabase<T extends NotionDatabaseName>(
   }
   catch (e) {
     console.error(e)
+    throw new Error('ERROR QUERYING FOR DATA!')
   }
 }
