@@ -70,7 +70,7 @@ export const proposalFields = [
         label: 'Age',
         name: 'age',
         Icon: BabyIcon,
-        format: value => `${value} years old`,
+        format: value => value ? `${value} years old` : '-',
       },
     ],
     extraFields: [
