@@ -128,7 +128,7 @@ export function CreateNewProposalView() {
       fundingJSON: {
         data: {
           ...data.funding.data,
-          tcp: data.funding.data.cashInDeal,
+          cashInDeal: data.funding.data.tcp,
         },
         meta: data.funding.meta,
       },
