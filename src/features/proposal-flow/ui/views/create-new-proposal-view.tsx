@@ -1,7 +1,7 @@
 'use client'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { SOW } from '@/shared/types/sow'
+import type { SOW } from '@/shared/entities/proposals/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
 import { XIcon } from 'lucide-react'
@@ -24,6 +24,7 @@ import { Form } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { ROOTS } from '@/shared/config/roots'
 import { useCreateProposal } from '@/shared/dal/client/proposals/mutations/use-create-proposal'
+import { homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -66,23 +67,31 @@ export function CreateNewProposalView() {
   const initProposalValues = useMemo(() => {
     if (notionContactQuery.data) {
       const data: Partial<ProposalFormSchema> = {
-        project: {
-          label: `${contactProperties?.mostLikelyProperties?.name || ''}`.trim() || '',
-          address: contactProperties?.mostLikelyProperties?.address || '',
-          city: contactProperties?.mostLikelyProperties?.city || '',
-          state: contactProperties?.mostLikelyProperties?.state || '',
-          zipCode: contactProperties?.mostLikelyProperties?.zip || '',
-          sow: [],
-          timeAllocated: '4 weeks',
-          agreementNotes: '',
-          projectType: 'general-remodeling',
-        },
-        homeowner: {
-          name: contactProperties?.mostLikelyProperties?.name || '',
-          email: contactProperties?.mostLikelyProperties?.email || '',
-          phoneNum: contactProperties?.mostLikelyProperties?.phone || '',
-          customerAge: 0,
-        },
+        project: projectSectionSchema.parse({
+          data: {
+            ...baseDefaultValues.project.data,
+            address: contactProperties?.mostLikelyProperties?.address || '',
+            city: contactProperties?.mostLikelyProperties?.city || '',
+            state: contactProperties?.mostLikelyProperties?.state || '',
+            zip: contactProperties?.mostLikelyProperties?.zip || '',
+            label: `${contactProperties?.mostLikelyProperties?.name || ''}`.trim() || '',
+          },
+          meta: {
+            enabled: true,
+          },
+        }),
+        homeowner: homeownerSectionSchema.parse({
+          data: {
+            ...baseDefaultValues.homeowner.data,
+            name: contactProperties?.mostLikelyProperties?.name || '',
+            email: contactProperties?.mostLikelyProperties?.email || '',
+            phoneNum: contactProperties?.mostLikelyProperties?.phone || '',
+            age: 0,
+          },
+          meta: {
+            enabled: true,
+          },
+        }),
       }
 
       return data
@@ -93,49 +102,36 @@ export function CreateNewProposalView() {
     // eslint-disable-next-line no-console
     console.log(data)
 
-    const sow = data.project.sow.map(({ title, scopes, trade, html }) => {
-      if (!trade) {
+    const sow = data.project.data.sow.map((singleSOW) => {
+      if (!singleSOW.trade) {
         return undefined
       }
 
-      return {
-        title,
-        scopes,
-        trade,
-        html,
-      }
+      return singleSOW
     }).filter(
       (item): item is SOW =>
         item !== undefined,
     )
 
     createProposal.mutate({
-      label: data.project.label,
+      label: data.project.data.label,
       ownerId: session?.user.id || 'c497d366-7c0a-4ae8-8bf3-d0ab0ed50b38',
 
-      // HOMEOWNER
-      name: data.homeowner.name,
-      email: data.homeowner.email,
-      phoneNum: data.homeowner.phoneNum,
-      customerAge: data.homeowner.customerAge,
-
-      // PROJECT
-      address: data.project.address,
-      city: data.project.city,
-      state: data.project.state,
-      zipCode: data.project.zipCode,
-      projectType: data.project.projectType,
-      timeAllocated: data.project.timeAllocated,
-      agreementNotes: data.project.agreementNotes,
-      sow,
-
-      // FUNDING
-      tcp: data.funding.tcp,
-      depositAmount: data.funding.depositAmount,
-      cashInDeal: data.funding.cashInDeal,
-
-      // HUBSPOT
-      hubspotContactVid: data.homeowner.hubspotContactVid,
+      homeownerJSON: data.homeowner,
+      projectJSON: {
+        data: {
+          ...data.project.data,
+          sow,
+        },
+        meta: data.project.meta,
+      },
+      fundingJSON: {
+        data: {
+          ...data.funding.data,
+          tcp: data.funding.data.cashInDeal,
+        },
+        meta: data.funding.meta,
+      },
     }, {
       onSuccess: (data) => {
         toast.success('Proposal created!')

@@ -1,4 +1,5 @@
 import type { Proposal } from '@/shared/db/schema'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CalendarIcon, MapPinIcon } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/shared/components/ui/badge'
@@ -7,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { ROOTS } from '@/shared/config/roots'
 import { formatAddress, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   proposal: Proposal
@@ -20,7 +22,14 @@ const PROPOSAL_STATUS_COLORS: Record<Proposal['status'], string> = {
 }
 
 export function ProposalCard({ proposal }: Props) {
-  const { address, city, state, zipCode } = proposal
+  const { address, city, state, zip, type } = proposal.projectJSON.data
+  const queryClient = useQueryClient()
+  const trpc = useTRPC()
+  const deleteProposal = useMutation(trpc.proposalRouter.deleteProposal.mutationOptions({
+    onSuccess: () => {
+      queryClient.invalidateQueries(trpc.proposalRouter.getProposals.queryOptions())
+    },
+  }))
 
   return (
     <Card className="lg:flex-row">
@@ -42,7 +51,7 @@ export function ProposalCard({ proposal }: Props) {
             <span className="flex gap-2">
               <MapPinIcon size={16} className="text-muted-foreground" />
               <p className="whitespace-pre-line">
-                {formatAddress(address, city, state, zipCode)}
+                {formatAddress(address, city, state, zip)}
               </p>
             </span>
             <span className="flex gap-2">
@@ -54,7 +63,7 @@ export function ProposalCard({ proposal }: Props) {
               </p>
             </span>
             <div className="flex gap-2">
-              <Badge className="bg-yellow-800">{proposal.projectType}</Badge>
+              <Badge className="bg-yellow-800">{type}</Badge>
             </div>
           </div>
         </CardDescription>
@@ -70,7 +79,14 @@ export function ProposalCard({ proposal }: Props) {
             Edit Proposal
           </Link>
         </Button>
-        <Button variant="destructive">
+        <Button
+          variant="destructive"
+          onClick={() => {
+            deleteProposal.mutate({
+              proposalId: proposal.id,
+            })
+          }}
+        >
           Delete Proposal
         </Button>
       </CardContent>

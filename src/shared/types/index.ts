@@ -8,3 +8,7 @@ export type KeysOfUnion<T> = T extends T ? keyof T : never
 export function getTypedKeys<T extends Record<string, any>>(obj: T): Array<keyof T> {
   return Object.keys(obj) as Array<keyof T>
 }
+
+export type DeepPartial<T> = {
+  [P in keyof T]?: DeepPartial<T[P]>
+}

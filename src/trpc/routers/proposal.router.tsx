@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
-import { createProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
+import { createProposal, deleteProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
 import { insertProposalSchema } from '@/shared/db/schema'
 import { resendClient } from '@/shared/services/resend/client'
 import { ProposalEmail } from '@/shared/services/resend/templates/proposal-email'
@@ -13,9 +13,26 @@ export const proposalRouter = createTRPCRouter({
       proposalId: z.string(),
     }))
     .query(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
+      try {
+        const proposal = await getProposal(input.proposalId)
 
-      return proposal
+        if (!proposal) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            cause: 'Proposal not found',
+          })
+        }
+
+        return proposal
+      }
+      catch (e) {
+        if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            cause: e,
+          })
+        }
+      }
     }),
 
   getProposals: agentProcedure
@@ -67,6 +84,14 @@ export const proposalRouter = createTRPCRouter({
       const proposal = await updateProposal(input.token, input.proposalId, input.data)
 
       return proposal
+    }),
+
+  deleteProposal: agentProcedure
+    .input(z.object({
+      proposalId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      await deleteProposal(input.proposalId)
     }),
 
   sendProposalEmail: agentProcedure

@@ -19,7 +19,7 @@ export function RelatedProjects() {
     return null
   }
 
-  const projectType = PROJECT_TYPES[proposal.data.projectType]
+  const projectType = PROJECT_TYPES[proposal.data.projectJSON.data.type]
 
   return (
     <Card>

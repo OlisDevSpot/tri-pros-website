@@ -16,7 +16,8 @@ export function Heading() {
     return null
   }
 
-  const { address, city, state, zipCode } = proposal.data
+  const { address, city, state, zip } = proposal.data.projectJSON.data
+  const { name } = proposal.data.homeownerJSON.data
 
   return (
     <motion.div
@@ -28,7 +29,7 @@ export function Heading() {
         <h2 className="text-2xl lg:text-4xl">
           Proposal for
           {' '}
-          {`${proposal.data.name}` || 'John Doe'}
+          {`${name}` || 'John Doe'}
         </h2>
       </div>
       <div className="flex flex-col lg:flex-row gap-2 lg:gap-6">
@@ -38,7 +39,7 @@ export function Heading() {
         </div>
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <MapPinHouseIcon size={20} className="" />
-          <p>{formatAddress(address, city, state, zipCode)}</p>
+          <p>{formatAddress(address, city, state, zip)}</p>
         </div>
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <Logo variant="icon" className="size-5" />

@@ -29,36 +29,14 @@ export function EditProposalView() {
 
   const initProposalValues = useMemo(() => {
     if (proposal.data) {
-      const { data } = proposal
-
       const initialValues: OverrideProposalValues = {
-        homeowner: {
-          name: data.name || '',
-          email: data.email || '',
-          phoneNum: data.phoneNum || '',
-          customerAge: data.customerAge || 0,
-        },
-        project: {
-          label: data.label || '',
-          projectType: data.projectType || 'general-remodeling',
-          timeAllocated: data.timeAllocated || '',
-          agreementNotes: data.agreementNotes || '',
-          address: data.address || '',
-          city: data.city || '',
-          state: data.state || '',
-          zipCode: data.zipCode || '',
-          sow: data.sow || [],
-        },
-        funding: {
-          cashInDeal: data.cashInDeal || 0,
-          depositAmount: data.depositAmount || 0,
-          tcp: data.tcp || 0,
-        },
+        homeowner: proposal.data.homeownerJSON,
+        project: proposal.data.projectJSON,
+        funding: proposal.data.fundingJSON,
       }
 
       return initialValues
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposal.data])
 
   if (proposal.isLoading) {
@@ -86,15 +64,13 @@ export function EditProposalView() {
       return
     }
 
-    const data = {
-      ...rawData.project,
-      ...rawData.funding,
-      ...rawData.homeowner,
-    }
-
     updateProposal.mutate({
       proposalId,
-      data,
+      data: {
+        homeownerJSON: rawData.homeowner,
+        projectJSON: rawData.project,
+        fundingJSON: rawData.funding,
+      },
     }, {
       onSuccess: () => {
         toast.success('Proposal updated')

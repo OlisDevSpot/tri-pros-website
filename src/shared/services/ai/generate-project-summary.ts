@@ -58,15 +58,34 @@ export async function generateProjectSummary(proposalId: string, proposal: Parti
       `,
       output: Output.object({
         schema: z.object({
-          projectSummary: z.string(),
+          summary: z.string(),
           energyBenefits: z.string().optional(),
         }),
       }),
     })
 
+    if (!output) {
+      throw new Error('Failed to generate project summary')
+    }
+
+    const [proposalToUpdate] = await db
+      .select()
+      .from(proposals)
+      .where(eq(proposals.id, proposalId))
+      .limit(1)
+
+    if (!proposalToUpdate) {
+      throw new Error('Proposal not found')
+    }
+
     await db
       .update(proposals)
-      .set(output)
+      .set({
+        projectJSON: {
+          ...proposalToUpdate.projectJSON,
+          ...output,
+        },
+      })
       .where(eq(proposals.id, proposalId))
   }
   catch {

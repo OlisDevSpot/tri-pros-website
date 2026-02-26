@@ -3,7 +3,13 @@ import { useFormContext } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 
-export function FundingFields() {
+interface Props {
+  showSettings?: boolean
+}
+
+export function FundingFields({
+  showSettings = false,
+}: Props) {
   const form = useFormContext<ProposalFormSchema>()
 
   return (
@@ -11,7 +17,7 @@ export function FundingFields() {
       <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
         <div className="grid lg:grid-cols-2 gap-4">
           <FormField
-            name="funding.tcp"
+            name="funding.data.tcp"
             control={form.control}
             render={({ field }) => (
               <FormItem>
@@ -31,7 +37,7 @@ export function FundingFields() {
             )}
           />
           <FormField
-            name="funding.depositAmount"
+            name="funding.data.depositAmount"
             control={form.control}
             render={({ field }) => (
               <FormItem>
@@ -51,6 +57,12 @@ export function FundingFields() {
             )}
           />
         </div>
+        { showSettings && (
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            SETTINGS!
+          </div>
+        )}
       </div>
     </section>
   )

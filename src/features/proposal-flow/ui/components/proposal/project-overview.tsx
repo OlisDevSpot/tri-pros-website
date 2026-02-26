@@ -1,75 +1,54 @@
+'use client'
+
 import type { Proposal } from '@/shared/db/schema'
-import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { proposalFields } from '@/features/proposal-flow/constants/proposal-fields'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { proposalToFormValues } from '@/features/proposal-flow/lib/converters'
 import { SpinnerLoader2 } from '@/shared/components/loaders/spinner-loader-2'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { useTRPC } from '@/trpc/helpers'
 
 export function ProjectOverview() {
-  const trpc = useTRPC()
   const proposal = useCurrentProposal()
-  const proposalForm = proposalToFormValues(proposal.data)
-  const dispatchProjectSummaryJob = useMutation(trpc.aiRouter.dispatchProjectSummaryJob.mutationOptions())
-
-  useEffect(() => {
-    if (!proposal.data?.id)
-      return
-    if (proposal.data.projectSummary && proposal.data.energyBenefits)
-      return
-
-    dispatchProjectSummaryJob.mutate({
-      proposalId: proposal.data.id,
-      proposalFormValues: proposalForm,
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [proposal.data?.id, proposal.data?.projectSummary])
 
   const generateProposalFields = useCallback((proposal: Proposal) => {
     return proposalFields.map(section => ({
       ...section,
       overviewFields: section.overviewFields.map((field) => {
+        const projectFields = proposal.projectJSON.data
+        const homeownerFields = proposal.homeownerJSON.data
+        const fundingFields = proposal.fundingJSON.data
+        const proposalFields = {
+          ...homeownerFields,
+          ...projectFields,
+          ...fundingFields,
+        }
+
         if (field.name === 'name') {
           return {
             ...field,
-            value: `${proposal.name}`,
+            value: `${proposal.homeownerJSON.data.name}`,
           }
         }
 
         if ('format' in field && field.type === 'number') {
           return {
             ...field,
-            value: field.format(Number(proposal[field.name as keyof Proposal] || '')),
+            value: field.format(Number(proposalFields[field.name] || proposalFields[field.name] || 0)),
           }
         }
 
         if ('format' in field && field.type === 'enum') {
           return {
             ...field,
-            value: field.format(String(proposal[field.name as keyof Proposal] || '')),
+            value: field.format(String(proposalFields[field.name] || proposalFields[field.name] || '')),
           }
         }
 
         return {
           ...field,
-          value: proposal[field.name as keyof Proposal] || '',
-        }
-      }),
-      extraFields: section.extraFields.map((field) => {
-        if (field.name === 'discounts') {
-          return {
-            ...field,
-            value: proposal[field.name as keyof Proposal],
-          }
-        }
-
-        return {
-          ...field,
-          value: proposal[field.name as keyof Proposal] || '',
+          value: proposalFields[field.name] || '',
         }
       }),
     }))
@@ -82,6 +61,8 @@ export function ProjectOverview() {
   if (!proposal.data) {
     return <div className="bg-blue-500">Sorry, nothing to display here</div>
   }
+
+  const { summary, energyBenefits } = proposal.data.projectJSON.data
 
   return (
     <motion.div
@@ -130,13 +111,13 @@ export function ProjectOverview() {
           </div>
           <div>
             <h4>Project Summary</h4>
-            {proposal.data.projectSummary ? <p className="text-muted-foreground">{proposal.data.projectSummary}</p> : <SpinnerLoader2 size={16} />}
+            {summary ? <p className="text-muted-foreground">{summary}</p> : <SpinnerLoader2 size={16} />}
           </div>
-          {proposal.data.energyBenefits
+          {energyBenefits
             && (
               <div>
                 <h4>Efficiency Benefits</h4>
-                <p className="text-muted-foreground">{proposal.data.energyBenefits}</p>
+                <p className="text-muted-foreground">{energyBenefits}</p>
               </div>
             )}
           {/* <div>

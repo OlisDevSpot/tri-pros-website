@@ -8,6 +8,7 @@ import { customizableSections, generateProposalSteps } from '@/features/proposal
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useSession } from '@/shared/auth/client'
+import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useSendProposalEmail } from '@/shared/dal/client/proposals/mutations/use-send-proposal-email'
 import { checkUserRole } from '@/shared/permissions/lib/check-user-role'
@@ -21,8 +22,24 @@ export function Proposal() {
   const { setRootEl } = useScrollRoot()
 
   if (sessionQuery.isPending || proposal.isLoading) {
-    return <LoadingState title="Loading Proposal" description="This may take a few seconds" />
+    return (
+      <LoadingState
+        title="Loading Proposal"
+        description="This may take a few seconds"
+      />
+    )
   }
+
+  if (!proposal.data) {
+    return (
+      <ErrorState
+        title="Error: Could not load proposal"
+        description="Please try again"
+      />
+    )
+  }
+
+  const { token, homeownerJSON: { data: { email } } } = proposal.data
 
   const userRole = checkUserRole(sessionQuery.data?.user.email || '')
   const proposalSteps = generateProposalSteps(userRole)
@@ -59,8 +76,8 @@ export function Proposal() {
                   <step.Component onClick={() => {
                     sendProposalEmail.mutate({
                       proposalId: params.proposalId,
-                      email: proposal.data?.email || '',
-                      token: proposal.data?.token || '',
+                      email: email || '',
+                      token: token || '',
                     }, {
                       onSuccess: () => {
                         toast.success('proposal sent!')

@@ -10,13 +10,15 @@ import { sanitizeUserHtml } from '@/shared/lib/sanitize-html'
 export function ScopeOfWork() {
   const proposal = useCurrentProposal()
 
-  if (!proposal) {
+  if (!proposal.data) {
     return <ErrorState title="Error: Could not load proposal" description="Please try again" />
   }
 
   if (proposal.isLoading) {
     return <LoadingState title="Loading Proposal" description="This might take a few seconds" />
   }
+
+  const { sow } = proposal.data.projectJSON.data
 
   return (
     <motion.div
@@ -33,7 +35,7 @@ export function ScopeOfWork() {
         <CardContent className="space-y-8">
           <div>
             <div>
-              {proposal.data.sow?.map(({ title, html }) => (
+              {sow.map(({ title, html }) => (
                 <div key={title} className="proposal-sow">
                   <h4>{title}</h4>
                   <div className="space-y-4" dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(html) }} />

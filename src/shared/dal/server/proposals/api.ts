@@ -9,7 +9,13 @@ export async function createProposal(data: InsertProposalSchema) {
     .insert(proposals)
     .values({
       ...data,
-      cashInDeal: data.tcp,
+      fundingJSON: {
+        ...data.fundingJSON,
+        data: {
+          ...data.fundingJSON.data,
+          cashInDeal: data.fundingJSON.data.cashInDeal,
+        },
+      },
       token: `tpr-${randomBytes(8).toString('hex')}`,
     })
     .returning()
@@ -50,4 +56,8 @@ export async function updateProposal(userIdOrToken: string, proposalId: string, 
     .returning()
 
   return proposal
+}
+
+export async function deleteProposal(proposalId: string) {
+  await db.delete(proposals).where(eq(proposals.id, proposalId))
 }

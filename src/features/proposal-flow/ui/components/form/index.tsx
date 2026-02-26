@@ -1,7 +1,7 @@
 'use client'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import { Settings2Icon } from 'lucide-react'
+import { SettingsIcon } from 'lucide-react'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -68,7 +68,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
         <CardHeader>
           <div className="flex items-center gap-4">
             <FormField
-              name="project.label"
+              name="project.data.label"
               control={form.control}
               render={({ field }) => (
                 <FormItem className="flex items-center">
@@ -108,15 +108,18 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
             <Button
               type="button"
               size="icon"
-
+              variant="outline"
+              onClick={() => { }}
             >
-              <Settings2Icon className="w-4 h-4" />
+              <SettingsIcon className="w-4 h-4" />
             </Button>
           </div>
           <CardDescription>Information relevant to increased financial responsibility</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          <FundingFields />
+          <FundingFields
+            showSettings
+          />
         </CardContent>
       </Card>
 

@@ -4,6 +4,7 @@ import { useQueryState } from 'nuqs'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
@@ -28,8 +29,9 @@ export function Funding({ onPickFinancingOption }: Props) {
 
   useEffect(() => {
     if (proposal.data && cashInDeal === null) {
+      const tcp = proposal.data.fundingJSON.data.tcp || 0
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setCashInDeal(proposal.data.cashInDeal ?? proposal.data.tcp)
+      setCashInDeal(proposal.data.fundingJSON.data.cashInDeal ?? tcp)
     }
   }, [proposal.data, cashInDeal])
 
@@ -38,7 +40,7 @@ export function Funding({ onPickFinancingOption }: Props) {
       return 0
     }
 
-    return proposal.data?.tcp - cashInDeal
+    return proposal.data.fundingJSON.data.tcp - cashInDeal
   }, [cashInDeal, proposal.data])
 
   function pickFinancingOption(option: FinanceOption) {
@@ -60,7 +62,19 @@ export function Funding({ onPickFinancingOption }: Props) {
     })
   }
 
-  if (!proposal.data) {
+  if (proposal.isPending) {
+    return (
+      <LoadingState
+        title="Loading Proposal"
+        description="This might take a few seconds"
+        className="bg-card"
+      />
+    )
+  }
+
+  const proposalData = proposal.data
+
+  if (!proposalData) {
     return null
   }
 
@@ -109,15 +123,21 @@ export function Funding({ onPickFinancingOption }: Props) {
                           }}
                           disabled={updateProposal.isPending}
                         />
-                        {cashInDeal !== proposal.data.cashInDeal && (
+                        {cashInDeal !== proposalData.fundingJSON.data.cashInDeal && (
                           <Button
                             size="sm"
                             onClick={() => {
                               updateProposal.mutate({
                                 token,
-                                proposalId: proposal.data.id,
+                                proposalId: proposalData.id,
                                 data: {
-                                  cashInDeal: cashInDeal || 0,
+                                  fundingJSON: {
+                                    ...proposalData.fundingJSON,
+                                    data: {
+                                      ...proposalData.fundingJSON.data,
+                                      cashInDeal: cashInDeal || 0,
+                                    },
+                                  },
                                 },
                               }, {
                                 onSuccess: () => {
@@ -141,7 +161,7 @@ export function Funding({ onPickFinancingOption }: Props) {
                             className={
                               cn(
                                 'p-4 border rounded-xl w-full flex items-center justify-between disabled:text-muted-foreground disabled:cursor-not-allowed disabled:opacity/50',
-                                option.id === proposal.data.financeOptionId && 'bg-primary/20',
+                                option.id === proposalData.financeOptionId && 'bg-primary/20',
                               )
                             }
                             type="button"

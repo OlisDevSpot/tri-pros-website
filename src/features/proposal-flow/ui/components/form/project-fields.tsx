@@ -15,7 +15,7 @@ export function ProjectFields() {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: `project.sow`,
+    name: `project.data.sow`,
   })
 
   return (
@@ -24,7 +24,7 @@ export function ProjectFields() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4 flex-wrap w-full">
             <FormField
-              name="project.address"
+              name="project.data.address"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -37,7 +37,7 @@ export function ProjectFields() {
               )}
             />
             <FormField
-              name="project.city"
+              name="project.data.city"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -50,7 +50,7 @@ export function ProjectFields() {
               )}
             />
             <FormField
-              name="project.state"
+              name="project.data.state"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -63,7 +63,7 @@ export function ProjectFields() {
               )}
             />
             <FormField
-              name="project.zipCode"
+              name="project.data.zip"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -78,7 +78,7 @@ export function ProjectFields() {
           </div>
           <div className="grid lg:grid-cols-2 gap-4">
             <FormField
-              name="project.projectType"
+              name="project.data.type"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -108,7 +108,7 @@ export function ProjectFields() {
               )}
             />
             <FormField
-              name="project.timeAllocated"
+              name="project.data.timeAllocated"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
@@ -136,14 +136,21 @@ export function ProjectFields() {
                 type="button"
                 size="icon"
                 variant="outline"
-                onClick={() => append({ scopes: [], title: '', html: '', trade: '' as TradeAccessor })}
+                onClick={() => {
+                  append({
+                    scopes: [],
+                    title: '',
+                    html: '',
+                    trade: '' as TradeAccessor,
+                  })
+                }}
               >
                 <PlusIcon />
               </Button>
             </div>
           </div>
           <FormField
-            name="project.agreementNotes"
+            name="project.data.agreementNotes"
             control={form.control}
             render={({ field }) => (
               <FormItem>

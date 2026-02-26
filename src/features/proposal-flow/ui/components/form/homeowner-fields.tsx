@@ -10,7 +10,7 @@ export function HomeownerFields() {
 
   const customerAge = useWatch({
     control: form.control,
-    name: 'homeowner.customerAge',
+    name: 'homeowner.data.age',
   })
 
   return (
@@ -18,7 +18,7 @@ export function HomeownerFields() {
       <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
         <div className="grid lg:grid-cols-2 gap-4">
           <FormField
-            name="homeowner.name"
+            name="homeowner.data.name"
             control={form.control}
             render={({ field }) => (
               <FormItem>
@@ -31,7 +31,7 @@ export function HomeownerFields() {
             )}
           />
           <FormField
-            name="homeowner.phoneNum"
+            name="homeowner.data.phoneNum"
             control={form.control}
             render={({ field }) => (
               <FormItem>
@@ -44,7 +44,7 @@ export function HomeownerFields() {
             )}
           />
           <FormField
-            name="homeowner.email"
+            name="homeowner.data.email"
             control={form.control}
             render={({ field }) => (
               <FormItem>
@@ -57,7 +57,7 @@ export function HomeownerFields() {
             )}
           />
           <FormField
-            name="homeowner.customerAge"
+            name="homeowner.data.age"
             control={form.control}
             render={({ field }) => (
               <FormItem>
@@ -78,12 +78,14 @@ export function HomeownerFields() {
                         field.onChange(Number(e.target.value) || '')
                       }}
                     />
-                    {customerAge > 62 && (
-                      <InputGroupAddon align="inline-end">
-                        <HeartHandshakeIcon className="text-green-300" />
-                        <span className="text-green-300">Senior</span>
-                      </InputGroupAddon>
-                    )}
+                    {customerAge
+                      ? customerAge > 62 && (
+                        <InputGroupAddon align="inline-end">
+                          <HeartHandshakeIcon className="text-green-300" />
+                          <span className="text-green-300">Senior</span>
+                        </InputGroupAddon>
+                      )
+                      : null}
                   </InputGroup>
                 </FormControl>
                 <FormMessage />

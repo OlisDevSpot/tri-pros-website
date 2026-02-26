@@ -19,7 +19,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   index: number
-  sowSnapshot: ProposalFormSchema['project']['sow'][0]
+  sowSnapshot: ProposalFormSchema['project']['data']['sow'][0]
   onDelete: () => void
 }
 
@@ -50,17 +50,16 @@ export function SOWSection({
       <div className="flex items-end rounded-lg h-full w-full">
         <FormField
           control={form.control}
-          name={`project.sow.${index}.trade`}
+          name={`project.data.sow.${index}.trade`}
           render={({ field }) => (
             <FormItem className="max-w-62.5">
               <FormControl className="w-full">
                 <Select
-                  defaultOpen={true}
                   value={field.value}
                   onValueChange={(val) => {
                     field.onChange(val)
                     getScopesOfTrade(val)
-                    form.setValue(`project.sow.${index}.scopes`, [])
+                    form.setValue(`project.data.sow.${index}.scopes`, [])
                   }}
                 >
                   <SelectTrigger
@@ -85,7 +84,7 @@ export function SOWSection({
 
         <FormField
           control={form.control}
-          name={`project.sow.${index}.scopes`}
+          name={`project.data.sow.${index}.scopes`}
           render={({ field }) => (
             <FormItem className="w-full">
               <MultiSelect
@@ -129,7 +128,7 @@ export function SOWSection({
       </div>
       <div className="w-full p-4 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
         <FormField
-          name={`project.sow.${index}.title`}
+          name={`project.data.sow.${index}.title`}
           control={form.control}
           render={({ field }) => (
             <FormItem>
@@ -144,7 +143,7 @@ export function SOWSection({
       </div>
       <div className="w-full p-4 pt-0">
         <FormField
-          name={`project.sow.${index}.html`}
+          name={`project.data.sow.${index}.html`}
           control={form.control}
           render={({ field }) => (
             <FormItem>
@@ -161,7 +160,7 @@ export function SOWSection({
                       Component: TemplatesModal,
                       props: {
                         trade: allTrades.data?.find(trade => trade.id === tradeId),
-                        scopes: form.getValues(`project.sow.${index}.scopes`).map(scopeId => scopesOfTrade.data?.find(scope => scope.id === scopeId)).filter(Boolean) as ScopeOrAddon[],
+                        scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scopeId => scopesOfTrade.data?.find(scope => scope.id === scopeId)).filter(Boolean) as ScopeOrAddon[],
                         onSelect: async (sowId) => {
                           const html = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
 

@@ -68,7 +68,7 @@ export const proposalFields = [
       {
         type: 'number',
         label: 'Age',
-        name: 'customerAge',
+        name: 'age',
         Icon: BabyIcon,
         format: value => `${value} years old`,
       },
@@ -86,7 +86,7 @@ export const proposalFields = [
     overviewFields: [
       {
         label: 'Project Type',
-        name: 'projectType',
+        name: 'type',
         type: 'enum',
         values: projectTypes,
         format: (value) => {
@@ -105,7 +105,6 @@ export const proposalFields = [
       {
         label: 'Time Allocated',
         name: 'timeAllocated',
-        value: '{{project.timeAllocated}}',
         Icon: FaTimeline,
       },
     ],
@@ -113,17 +112,14 @@ export const proposalFields = [
       {
         label: 'Scope of Work Summary',
         name: 'scopeOfWorkSummary',
-        value: '{{project.scopeOfWorkSummary}}',
       },
       {
         label: 'Approximate start date',
         name: 'approximateStartDate',
-        value: '{{project.approximateStartDate}}',
       },
       {
         label: 'Approximate completion date',
         name: 'approximateCompletionDate',
-        value: '{{project.approximateCompletionDate}}',
       },
     ],
   },
@@ -153,32 +149,26 @@ export const proposalFields = [
       {
         label: 'Total Cash',
         name: 'cashInDeal',
-        value: '{{funding.cashInDeal}}',
       },
       {
         label: 'Total Loan',
         name: 'totalLoan',
-        value: '{{funding.totalLoan}}',
       },
       {
         label: 'Finance Company',
         name: 'financeCompany',
-        value: '{{funding.financeCompany}}',
       },
       {
         label: 'Loan Term',
         name: 'loanTerm',
-        value: '{{funding.loanTerm}}',
       },
       {
         label: 'Interest Rate',
         name: 'interestRate',
-        value: '{{funding.interestRate}}',
       },
       {
         label: 'Discounts',
         name: 'discounts',
-        value: '{{funding.discount[]}}',
       },
     ],
   },

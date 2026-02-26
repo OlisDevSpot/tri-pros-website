@@ -29,6 +29,16 @@ export function PastProposalsView() {
     )
   }
 
+  if (proposals.data.length === 0) {
+    return (
+      <ErrorState
+        title="No Proposals Found"
+        description="Create a new proposal"
+        className="bg-card"
+      />
+    )
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
