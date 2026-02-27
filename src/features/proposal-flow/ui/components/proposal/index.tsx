@@ -39,7 +39,7 @@ export function Proposal() {
     )
   }
 
-  const { token, homeownerJSON: { data: { email } } } = proposal.data
+  const { token, homeownerJSON: { data: { email, name } } } = proposal.data
 
   const userRole = checkUserRole(sessionQuery.data?.user.email || '')
   const proposalSteps = generateProposalSteps(userRole)
@@ -78,6 +78,7 @@ export function Proposal() {
                       proposalId: params.proposalId,
                       email: email || '',
                       token: token || '',
+                      customerName: name,
                     }, {
                       onSuccess: () => {
                         toast.success('proposal sent!')

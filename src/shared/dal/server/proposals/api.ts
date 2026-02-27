@@ -5,22 +5,28 @@ import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema/proposals'
 
 export async function createProposal(data: InsertProposalSchema) {
-  const [proposal] = await db
-    .insert(proposals)
-    .values({
-      ...data,
-      fundingJSON: {
-        ...data.fundingJSON,
-        data: {
-          ...data.fundingJSON.data,
-          cashInDeal: data.fundingJSON.data.cashInDeal,
+  try {
+    const [proposal] = await db
+      .insert(proposals)
+      .values({
+        ...data,
+        fundingJSON: {
+          ...data.fundingJSON,
+          data: {
+            ...data.fundingJSON.data,
+            cashInDeal: data.fundingJSON.data.cashInDeal,
+          },
         },
-      },
-      token: `tpr-${randomBytes(8).toString('hex')}`,
-    })
-    .returning()
+        token: `tpr-${randomBytes(8).toString('hex')}`,
+      })
+      .returning()
 
-  return proposal
+    return proposal
+  }
+  catch (error) {
+    console.error(error)
+    throw new Error('Failed to create proposal')
+  }
 }
 
 export async function getProposal(proposalId: string) {

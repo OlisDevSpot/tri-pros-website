@@ -1,10 +1,12 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
+import { ROOTS } from '@/shared/config/roots'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
 import { createProposal, deleteProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
 import { insertProposalSchema } from '@/shared/db/schema'
+import { updatePageUrlProperty } from '@/shared/services/notion/dal/update-page-property'
 import { resendClient } from '@/shared/services/resend/client'
-import { ProposalEmail } from '@/shared/services/resend/templates/proposal-email'
+import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
 export const proposalRouter = createTRPCRouter({
@@ -47,9 +49,34 @@ export const proposalRouter = createTRPCRouter({
   createProposal: baseProcedure
     .input(insertProposalSchema.strict())
     .mutation(async ({ input }) => {
-      const proposal = await createProposal(input)
+      try {
+        const proposal = await createProposal(input)
 
-      return proposal
+        if (!proposal) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            cause: 'Proposal not created',
+          })
+        }
+        const proposalUrl = `${ROOTS.proposalFlow({ absolute: true, isProduction: true })}/proposal/${proposal.id}?token=${proposal.token}`
+
+        if (proposal.notionPageId) {
+          await updatePageUrlProperty(proposal.notionPageId, `Proposals Link`, proposalUrl)
+        }
+
+        const proposalData = {
+          proposal,
+          proposalUrl,
+        }
+
+        return proposalData
+      }
+      catch (e) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          cause: e,
+        })
+      }
     }),
 
   updateProposal: baseProcedure
@@ -97,6 +124,7 @@ export const proposalRouter = createTRPCRouter({
   sendProposalEmail: agentProcedure
     .input(z.object({
       proposalId: z.string(),
+      customerName: z.string(),
       email: z.email(),
       token: z.string(),
     }))
@@ -106,8 +134,14 @@ export const proposalRouter = createTRPCRouter({
       const { data, error } = await resendClient.emails.send({
         from: 'Tri Pros <info@triprosremodeling.com>',
         to: input.email,
+        bcc: 'info@triprosremodeling.com',
         subject: 'Your Proposal From Tri Pros Remodeling',
-        react: <ProposalEmail proposalId={input.proposalId} token={input.token} />,
+        react: (
+          <ProposalEmail
+            proposalUrl={`${ROOTS.proposalFlow({ absolute: true, isProduction: true })}/proposal/${input.proposalId}?token=${input.token}`}
+            customerName={input.customerName}
+          />
+        ),
       })
 
       if (error) {

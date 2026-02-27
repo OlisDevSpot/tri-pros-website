@@ -22,7 +22,6 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { ROOTS } from '@/shared/config/roots'
 import { useCreateProposal } from '@/shared/dal/client/proposals/mutations/use-create-proposal'
 import { homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
@@ -124,7 +123,7 @@ export function CreateNewProposalView() {
     createProposal.mutate({
       label: data.project.data.label,
       ownerId: session?.user.id || 'c497d366-7c0a-4ae8-8bf3-d0ab0ed50b38',
-
+      notionPageId: notionContactQuery.data?.id,
       homeownerJSON: data.homeowner,
       projectJSON: {
         data: {
@@ -144,7 +143,7 @@ export function CreateNewProposalView() {
     }, {
       onSuccess: (data) => {
         toast.success('Proposal created!')
-        router.push(`${ROOTS.proposalFlow()}/proposal/${data.id}`)
+        router.push(data.proposalUrl)
       },
       onError: (error) => {
         toast.error(error.message)
