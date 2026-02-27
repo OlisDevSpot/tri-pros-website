@@ -103,7 +103,7 @@ export function CreateNewProposalView() {
     console.log(data)
 
     const sow = data.project.data.sow.map((singleSOW) => {
-      if (!singleSOW.trade) {
+      if (!singleSOW.tradeId) {
         return undefined
       }
 

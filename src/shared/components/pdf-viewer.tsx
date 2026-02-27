@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import * as React from 'react'
+import { useState } from 'react'
 
 interface Props {
   url: string // pass from server when possible
@@ -16,9 +16,8 @@ export function PdfViewer({
   height = '80vh',
   className = '',
 }: Props) {
-  const boxRef = React.useRef<HTMLDivElement>(null)
-  const [hover, setHover] = React.useState(false)
-  const [busy, setBusy] = React.useState(false)
+  const [hover, setHover] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const openInNewTab = async () => {
     setBusy(true)
@@ -31,12 +30,11 @@ export function PdfViewer({
   }
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full h-full border-5 border-yellow-500 ${className}`}>
       <div
-        ref={boxRef}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        className="group relative flex-1 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/10 max-h-[80vh]"
+        className="group relative flex-1 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/10 h-full border-5"
         style={{ height }}
       >
         <iframe

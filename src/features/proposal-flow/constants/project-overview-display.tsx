@@ -104,6 +104,11 @@ export const proposalFields = [
         Icon: DrillIcon,
       },
       {
+        label: 'Scopes',
+        name: 'scopes',
+        Icon: BanknoteArrowDownIcon,
+      },
+      {
         label: 'Time Allocated',
         name: 'timeAllocated',
         Icon: FaTimeline,
@@ -154,6 +159,21 @@ export const proposalFields = [
           maximumFractionDigits: 0,
         }),
         Icon: BanknoteArrowDownIcon,
+      },
+      {
+        type: 'text',
+        label: 'Exclusive Offer',
+        name: 'exclusiveOffers',
+        format: (value) => {
+          const offers = value.split(',').map(offer => offer.trim())
+
+          return (
+            <span>
+              {offers.join(', ')}
+            </span>
+          )
+        },
+        Icon: CircleDollarSignIcon,
       },
     ],
   },

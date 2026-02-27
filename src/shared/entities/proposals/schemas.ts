@@ -3,10 +3,10 @@ import { homeAreas, projectTypes } from '@/shared/constants/enums'
 
 // SUB-SCHEMAS
 const homeAreaSchema = z.enum(homeAreas)
-const sowSchema = z.object({
+export const sowSchema = z.object({
   title: z.string(),
-  trade: z.string(),
-  scopes: z.array(z.string()),
+  tradeId: z.string(),
+  scopeIds: z.array(z.string()),
   html: z.string(),
 })
 
@@ -19,7 +19,6 @@ const DiscountIncentiveSchema = z.object({
 const ExclusiveOfferIncentiveSchema = z.object({
   type: z.literal('exclusive-offer'),
   offer: z.string(),
-  units: z.int().positive(),
   notes: z.string().optional(),
 })
 

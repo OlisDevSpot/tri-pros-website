@@ -1,7 +1,6 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { IncentiveType } from '@/shared/types/enums'
 import { PlusIcon, TrashIcon } from 'lucide-react'
-import { Fragment } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
@@ -96,7 +95,7 @@ export function FundingFields({
               {fields.map((field, index) => (
                 <div
                   key={field.id}
-                  className="w-full flex gap-4"
+                  className="w-full flex items-center gap-4"
                 >
                   <div>
                     <Button
@@ -114,7 +113,7 @@ export function FundingFields({
                     name={`funding.data.incentives.${index}.type`}
                     control={form.control}
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-50">
                         <FormLabel>Incentive Type</FormLabel>
                         <FormControl>
                           <Select
@@ -142,42 +141,19 @@ export function FundingFields({
                   />
                   {
                     incentives[index]?.type === 'exclusive-offer' && (
-                      <Fragment>
-                        <FormField
-                          name={`funding.data.incentives.${index}.offer`}
-                          control={form.control}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Offer</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          name={`funding.data.incentives.${index}.units`}
-                          control={form.control}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Units</FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  defaultValue={1}
-                                  placeholder="1"
-                                  onChange={(value) => {
-                                    const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                                    field.onChange(numericValue)
-                                  }}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </Fragment>
+                      <FormField
+                        name={`funding.data.incentives.${index}.offer`}
+                        control={form.control}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Offer</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )
                   }
                   { incentives[index]?.type === 'discount' && (

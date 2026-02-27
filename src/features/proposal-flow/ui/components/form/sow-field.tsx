@@ -31,7 +31,7 @@ export function SOWSection({
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const form = useFormContext<ProposalFormSchema>()
-  const [tradeId, setTradeId] = useState<string | undefined>(sowSnapshot.trade || undefined)
+  const [tradeId, setTradeId] = useState<string | undefined>(sowSnapshot.tradeId || undefined)
   const tiptapRef = useRef<TiptapHandle | null>(null)
 
   const allTrades = useGetAllTrades()
@@ -50,7 +50,7 @@ export function SOWSection({
       <div className="flex items-end rounded-lg h-full w-full">
         <FormField
           control={form.control}
-          name={`project.data.sow.${index}.trade`}
+          name={`project.data.sow.${index}.tradeId`}
           render={({ field }) => (
             <FormItem className="max-w-62.5">
               <FormControl className="w-full">
@@ -59,7 +59,7 @@ export function SOWSection({
                   onValueChange={(val) => {
                     field.onChange(val)
                     getScopesOfTrade(val)
-                    form.setValue(`project.data.sow.${index}.scopes`, [])
+                    form.setValue(`project.data.sow.${index}.scopeIds`, [])
                   }}
                 >
                   <SelectTrigger
@@ -84,7 +84,7 @@ export function SOWSection({
 
         <FormField
           control={form.control}
-          name={`project.data.sow.${index}.scopes`}
+          name={`project.data.sow.${index}.scopeIds`}
           render={({ field }) => (
             <FormItem className="w-full">
               <MultiSelect
@@ -160,7 +160,7 @@ export function SOWSection({
                       Component: TemplatesModal,
                       props: {
                         trade: allTrades.data?.find(trade => trade.id === tradeId),
-                        scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scopeId => scopesOfTrade.data?.find(scope => scope.id === scopeId)).filter(Boolean) as ScopeOrAddon[],
+                        scopes: form.getValues(`project.data.sow.${index}.scopeIds`).map(scopeId => scopesOfTrade.data?.find(scope => scope.id === scopeId)).filter(Boolean) as ScopeOrAddon[],
                         onSelect: async (sowId) => {
                           const html = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
 

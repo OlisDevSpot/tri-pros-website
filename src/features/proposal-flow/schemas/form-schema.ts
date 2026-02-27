@@ -32,8 +32,8 @@ export const baseDefaultValues: ProposalFormSchema = {
       sow: [
         {
           title: '',
-          scopes: [],
-          trade: '',
+          tradeId: '',
+          scopeIds: [],
           html: '',
         },
       ],

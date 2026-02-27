@@ -9,24 +9,32 @@ import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-p
 import { SpinnerLoader2 } from '@/shared/components/loaders/spinner-loader-2'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { isTruthy } from '@/shared/types'
 
 export function ProjectOverview() {
   const proposal = useCurrentProposal()
+
 
   const generateProposalFields = useCallback((proposal: Proposal) => {
     const projectFields = proposal.projectJSON.data
     const homeownerFields = proposal.homeownerJSON.data
     const fundingFields = proposal.fundingJSON.data
-    const proposalCtx: ProposalContext = {
+    const proposalCtx: ProposalContext & { scopes: string, exclusiveOffers: string } = {
       ...homeownerFields,
       ...projectFields,
       ...fundingFields,
+      scopes: proposal.projectJSON.data.sow.map(sowSection => sowSection.scopeIds).flat().join(', '),
+      exclusiveOffers: proposal.fundingJSON.data.incentives.filter(inc => inc.type === 'exclusive-offer').map(inc => inc.offer).join(', '),
     }
 
     return proposalFields.map(section => ({
       ...section,
       fields: section.fields.map((field) => {
-        const rawValue = proposal.homeownerJSON.data.name
+        const rawValue = proposalCtx[field.name]
+
+        if (!rawValue || (Array.isArray(rawValue) && rawValue.length === 0)) {
+          return undefined
+        }
 
         const fieldWithValue: FieldWithValues<typeof field> = {
           ...field,
@@ -34,23 +42,18 @@ export function ProjectOverview() {
           displayValue: `${rawValue}`,
         }
 
-        if (field.name === 'name') {
-          return fieldWithValue
-        }
-
         if ('format' in field && field.type === 'number') {
-          fieldWithValue.displayValue = field.format(Number(proposalCtx[field.name] || proposalCtx[field.name] || 0), proposalCtx)
+          fieldWithValue.displayValue = field.format(Number(proposalCtx[field.name] || 0), proposalCtx)
           return fieldWithValue
         }
 
         if ('format' in field && field.type === 'enum') {
-          fieldWithValue.displayValue = field.format(String(proposalCtx[field.name] || proposalCtx[field.name] || ''))
+          fieldWithValue.displayValue = field.format(String(proposalCtx[field.name] || ''))
           return fieldWithValue
         }
 
-        fieldWithValue.displayValue = proposalCtx[field.name] || ''
         return fieldWithValue
-      }),
+      }).filter(isTruthy),
     }))
   }, [])
 
@@ -81,10 +84,12 @@ export function ProjectOverview() {
             {generateProposalFields(proposal.data).map(section => (
               <div
                 key={section.label}
-                className="space-y-4"
+                className="flex flex-col md:flex-row gap-6 h-full items-center"
               >
-                <h4>{section.label}</h4>
-                <div className="grid lg:grid-cols-2 gap-2 gap-x-6 w-full">
+                <div className="flex-1 min-h-0 grow flex items-center justify-center border rounded-lg py-8">
+                  <h2>{section.label}</h2>
+                </div>
+                <div className="flex-2 flex flex-col gap-2 w-full">
                   {section.fields.map(field => (
                     <div
                       key={field.label}
@@ -99,7 +104,7 @@ export function ProjectOverview() {
                       <div className="border-b border-dashed grow h-[75%]" />
                       {/* <p className="-mt-0.5">{field.value.toString()}</p> */}
                       <p
-                        className="w-50"
+                        className="w-fit"
                       >
                         {field.displayValue}
                       </p>

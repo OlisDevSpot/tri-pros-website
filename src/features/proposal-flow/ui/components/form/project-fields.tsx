@@ -1,5 +1,4 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { TradeAccessor } from '@/shared/db/types'
 import type { ProjectType } from '@/shared/types/enums'
 import { PlusIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
@@ -138,10 +137,10 @@ export function ProjectFields() {
                 variant="outline"
                 onClick={() => {
                   append({
-                    scopes: [],
+                    tradeId: '',
+                    scopeIds: [],
                     title: '',
                     html: '',
-                    trade: '' as TradeAccessor,
                   })
                 }}
               >

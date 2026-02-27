@@ -24,7 +24,7 @@ export function RelatedProjects() {
   return (
     <Card>
       <CardHeader>
-        <div className="w-full flex items-center justify-between">
+        <div className="w-full flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex flex-col gap-2">
             <CardTitle>
               <h2>
@@ -33,7 +33,7 @@ export function RelatedProjects() {
             </CardTitle>
             <CardDescription>View similar completed projects from our portfolio. We prefer letting our results do the talking.</CardDescription>
           </div>
-          <Button variant="outline">
+          <Button variant="outline" className="w-full sm:w-fit">
             <Link href="/portfolio/projects">View Full Portfolio</Link>
           </Button>
         </div>
