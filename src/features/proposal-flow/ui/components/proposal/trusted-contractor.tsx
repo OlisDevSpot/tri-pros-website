@@ -18,7 +18,7 @@ export function TrustedContractor() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          <div className="flex items-center gap-8 w-full">
+          <div className="flex flex-col md:flex-row items-center gap-8 w-full">
             <div className="w-45 h-12.5 shrink-0">
               <LogoLink />
             </div>
