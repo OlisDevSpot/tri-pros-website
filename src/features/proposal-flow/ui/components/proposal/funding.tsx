@@ -84,7 +84,7 @@ export function Funding({ onPickFinancingOption }: Props) {
       animate={{ opacity: 1 }}
     >
       <Card>
-        <CardHeader>
+        <CardHeader className="text-center md:text-start">
           <CardTitle>
             <h2>Funding Summary</h2>
           </CardTitle>
@@ -92,14 +92,14 @@ export function Funding({ onPickFinancingOption }: Props) {
         </CardHeader>
         <CardContent className="space-y-8">
           <Tabs defaultValue="cash" className="space-y-8">
-            <TabsList>
+            <TabsList className="mx-auto md:mx-0">
               <TabsTrigger value="cash">Cash / cash + finance</TabsTrigger>
               <TabsTrigger value="consolidate">Consolidate</TabsTrigger>
             </TabsList>
             { financeOptions.data && (
               <TabsContent value="cash">
                 <div className="space-y-8">
-                  <div>
+                  <div className="text-center md:text-start">
                     <h3 className="text-lg font-semibold">Cash / cash + finance</h3>
                     <p className="text-muted-foreground">
                       Some lenders may request a minimum cash investement.

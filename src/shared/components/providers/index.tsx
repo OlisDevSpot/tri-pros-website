@@ -3,6 +3,7 @@
 import { NuqsProvider } from './nuqs-adapter'
 import { ThemeProvider } from './theme-provider'
 import { ToasterProvider } from './toaster-provider'
+import { TooltipProvider } from './tooltip-provider'
 import { TRPCReactProvider } from './trpc-provider'
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -15,7 +16,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
           <ToasterProvider />
         </ThemeProvider>
       </NuqsProvider>

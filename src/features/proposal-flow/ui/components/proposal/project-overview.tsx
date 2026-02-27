@@ -22,7 +22,7 @@ export function ProjectOverview() {
       ...homeownerFields,
       ...projectFields,
       ...fundingFields,
-      scopes: proposal.projectJSON.data.sow.map(sowSection => sowSection.scopeIds).flat().join(', '),
+      scopes: proposal.projectJSON.data.sow.map(sowSection => sowSection.scopes.map(scope => scope.label)).flat().join(', '),
       exclusiveOffers: proposal.fundingJSON.data.incentives.filter(inc => inc.type === 'exclusive-offer').map(inc => inc.offer).join(', '),
     }
 
@@ -46,7 +46,7 @@ export function ProjectOverview() {
           return fieldWithValue
         }
 
-        if ('format' in field && field.type === 'enum') {
+        if ('format' in field && (field.type === 'enum' || field.type === 'text')) {
           fieldWithValue.displayValue = field.format(String(proposalCtx[field.name] || ''))
           return fieldWithValue
         }
@@ -72,7 +72,7 @@ export function ProjectOverview() {
       animate={{ opacity: 1 }}
     >
       <Card>
-        <CardHeader>
+        <CardHeader className="text-center md:text-start">
           <CardTitle>
             <h2>Project Overview</h2>
           </CardTitle>
@@ -85,14 +85,14 @@ export function ProjectOverview() {
                 key={section.label}
                 className="flex flex-col md:flex-row gap-6 h-full items-center"
               >
-                <div className="flex-1 min-h-0 grow flex items-center justify-center border rounded-lg py-8">
+                <div className="flex-1 min-h-0 w-full grow flex items-center justify-center border rounded-lg py-8">
                   <h2>{section.label}</h2>
                 </div>
                 <div className="flex-2 flex flex-col gap-2 w-full">
                   {section.fields.map(field => (
                     <div
                       key={field.label}
-                      className="flex items-start lg:items-center gap-2"
+                      className="flex items-end gap-2"
                     >
                       <div className="flex gap-2 text-muted-foreground">
                         <span className="flex items-center justify-center w-5">
@@ -100,10 +100,9 @@ export function ProjectOverview() {
                         </span>
                         <p>{field.label}</p>
                       </div>
-                      <div className="border-b border-dashed grow h-[75%]" />
-                      {/* <p className="-mt-0.5">{field.value.toString()}</p> */}
+                      <div className="border-b border-dashed grow mb-1.25" />
                       <p
-                        className="w-fit"
+                        className="w-fit text-end"
                       >
                         {field.displayValue}
                       </p>

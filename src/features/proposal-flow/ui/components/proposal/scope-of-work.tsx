@@ -26,7 +26,7 @@ export function ScopeOfWork() {
       animate={{ opacity: 1 }}
     >
       <Card>
-        <CardHeader>
+        <CardHeader className="text-center md:text-start">
           <CardTitle>
             <h2>Proposed Scope of Work</h2>
           </CardTitle>

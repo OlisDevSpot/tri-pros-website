@@ -1,4 +1,4 @@
-import { FaFacebook, FaGoogle, FaInstagram, FaLinkedin } from 'react-icons/fa'
+import { FaFacebook, FaGoogle, FaInstagram, FaLinkedin, FaYelp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 
 export const socials = [
@@ -19,6 +19,12 @@ export const socials = [
     href: 'https://www.google.com/search?q=Tri%20Pros%20Remodeling',
     Icon: FaGoogle,
     className: 'hover:text-yellow-800 dark:hover:text-yellow-300',
+  },
+  {
+    name: 'yelp',
+    href: 'https://www.yelp.com/biz/tri-pros-remodeling-los-angeles?osq=Tri+Pros+Remodeling',
+    Icon: FaYelp,
+    className: 'hover:text-red-800 dark:hover:text-red-300',
   },
   {
     name: 'linkedin',

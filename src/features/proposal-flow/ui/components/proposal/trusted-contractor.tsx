@@ -24,7 +24,7 @@ export function TrustedContractor() {
   return (
     <div className="w-full space-y-20">
       <Card>
-        <CardHeader className="space-y-2">
+        <CardHeader className="space-y-2 text-center md:text-start">
           <CardTitle><h2>Trusted Contractor</h2></CardTitle>
           <CardDescription>
             Licensed and insured. Clear scope, clean work, and professional communication from start to finish.

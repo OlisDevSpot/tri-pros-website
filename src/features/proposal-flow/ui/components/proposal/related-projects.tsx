@@ -23,8 +23,8 @@ export function RelatedProjects() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="w-full flex flex-col md:flex-row gap-4 items-center justify-between">
+      <CardHeader className="text-center md:text-start">
+        <div className="w-full flex flex-col md:flex-row gap-6 items-center justify-between">
           <div className="flex flex-col gap-2">
             <CardTitle>
               <h2>

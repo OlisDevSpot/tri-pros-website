@@ -11,6 +11,7 @@ import {
   PhoneIcon,
 } from 'lucide-react'
 import { FaTimeline } from 'react-icons/fa6'
+import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { projectTypes } from '@/shared/constants/enums'
 
 export type Display = string | React.ReactNode
@@ -106,7 +107,24 @@ export const proposalFields = [
       {
         label: 'Scopes',
         name: 'scopes',
+        type: 'text',
         Icon: BanknoteArrowDownIcon,
+        format: (value) => {
+          const scopes = value.split(',')
+          return (
+            <HybridPopoverTooltip
+              content={(
+                <span className="flex flex-col gap-2">
+                  {scopes.map(scope => (
+                    <span key={scope}>{scope}</span>
+                  ))}
+                </span>
+              )}
+            >
+              {scopes[0]}
+            </HybridPopoverTooltip>
+          )
+        },
       },
       {
         label: 'Time Allocated',
@@ -120,7 +138,7 @@ export const proposalFields = [
     fields: [
       {
         type: 'number',
-        label: 'Total Contract Price',
+        label: 'Contract Price',
         name: 'finalTcp',
         format: (value, ctx) => {
           const discounts = ctx.incentives.reduce((acc, cur) => cur.type === 'discount' ? acc + cur.amount : acc, 0)

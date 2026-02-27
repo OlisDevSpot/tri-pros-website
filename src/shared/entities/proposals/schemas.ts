@@ -3,10 +3,14 @@ import { homeAreas, projectTypes } from '@/shared/constants/enums'
 
 // SUB-SCHEMAS
 const homeAreaSchema = z.enum(homeAreas)
+export const constructionItemSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+})
 export const sowSchema = z.object({
   title: z.string(),
-  tradeId: z.string(),
-  scopeIds: z.array(z.string()),
+  trade: constructionItemSchema,
+  scopes: z.array(constructionItemSchema),
   html: z.string(),
 })
 

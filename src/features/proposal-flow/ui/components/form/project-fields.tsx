@@ -137,8 +137,11 @@ export function ProjectFields() {
                 variant="outline"
                 onClick={() => {
                   append({
-                    tradeId: '',
-                    scopeIds: [],
+                    trade: {
+                      id: '',
+                      label: '',
+                    },
+                    scopes: [],
                     title: '',
                     html: '',
                   })
