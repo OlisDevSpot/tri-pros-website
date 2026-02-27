@@ -6,7 +6,7 @@ export type Prettify<T> = {
 export type KeysOfUnion<T> = T extends T ? keyof T : never
 
 export function isTruthy<T>(value: T): value is NonNullable<T> {
-  return Boolean(value);
+  return Boolean(value)
 }
 
 export function getTypedKeys<T extends Record<string, any>>(obj: T): Array<keyof T> {

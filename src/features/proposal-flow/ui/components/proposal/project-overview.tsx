@@ -14,7 +14,6 @@ import { isTruthy } from '@/shared/types'
 export function ProjectOverview() {
   const proposal = useCurrentProposal()
 
-
   const generateProposalFields = useCallback((proposal: Proposal) => {
     const projectFields = proposal.projectJSON.data
     const homeownerFields = proposal.homeownerJSON.data
