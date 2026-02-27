@@ -1,9 +1,10 @@
 'use client'
 
+import type { FieldWithValues, ProposalContext } from '@/features/proposal-flow/constants/project-overview-display'
 import type { Proposal } from '@/shared/db/schema'
 import { motion } from 'motion/react'
 import { useCallback } from 'react'
-import { proposalFields } from '@/features/proposal-flow/constants/proposal-fields'
+import { proposalFields } from '@/features/proposal-flow/constants/project-overview-display'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { SpinnerLoader2 } from '@/shared/components/loaders/spinner-loader-2'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -13,43 +14,42 @@ export function ProjectOverview() {
   const proposal = useCurrentProposal()
 
   const generateProposalFields = useCallback((proposal: Proposal) => {
+    const projectFields = proposal.projectJSON.data
+    const homeownerFields = proposal.homeownerJSON.data
+    const fundingFields = proposal.fundingJSON.data
+    const proposalCtx: ProposalContext = {
+      ...homeownerFields,
+      ...projectFields,
+      ...fundingFields,
+    }
+
     return proposalFields.map(section => ({
       ...section,
-      overviewFields: section.overviewFields.map((field) => {
-        const projectFields = proposal.projectJSON.data
-        const homeownerFields = proposal.homeownerJSON.data
-        const fundingFields = proposal.fundingJSON.data
-        const proposalFields = {
-          ...homeownerFields,
-          ...projectFields,
-          ...fundingFields,
+      fields: section.fields.map((field) => {
+        const rawValue = proposal.homeownerJSON.data.name
+
+        const fieldWithValue: FieldWithValues<typeof field> = {
+          ...field,
+          rawValue,
+          displayValue: `${rawValue}`,
         }
 
         if (field.name === 'name') {
-          return {
-            ...field,
-            value: `${proposal.homeownerJSON.data.name}`,
-          }
+          return fieldWithValue
         }
 
         if ('format' in field && field.type === 'number') {
-          return {
-            ...field,
-            value: field.format(Number(proposalFields[field.name] || proposalFields[field.name] || 0)),
-          }
+          fieldWithValue.displayValue = field.format(Number(proposalCtx[field.name] || proposalCtx[field.name] || 0), proposalCtx)
+          return fieldWithValue
         }
 
         if ('format' in field && field.type === 'enum') {
-          return {
-            ...field,
-            value: field.format(String(proposalFields[field.name] || proposalFields[field.name] || '')),
-          }
+          fieldWithValue.displayValue = field.format(String(proposalCtx[field.name] || proposalCtx[field.name] || ''))
+          return fieldWithValue
         }
 
-        return {
-          ...field,
-          value: proposalFields[field.name] || '',
-        }
+        fieldWithValue.displayValue = proposalCtx[field.name] || ''
+        return fieldWithValue
       }),
     }))
   }, [])
@@ -85,7 +85,7 @@ export function ProjectOverview() {
               >
                 <h4>{section.label}</h4>
                 <div className="grid lg:grid-cols-2 gap-2 gap-x-6 w-full">
-                  {section.overviewFields.map(field => (
+                  {section.fields.map(field => (
                     <div
                       key={field.label}
                       className="flex items-start lg:items-center gap-2"
@@ -101,7 +101,7 @@ export function ProjectOverview() {
                       <p
                         className="w-50"
                       >
-                        {field.value.toString()}
+                        {field.displayValue}
                       </p>
                     </div>
                   ))}
@@ -109,10 +109,12 @@ export function ProjectOverview() {
               </div>
             ))}
           </div>
-          <div>
-            <h4>Project Summary</h4>
-            {summary ? <p className="text-muted-foreground">{summary}</p> : <SpinnerLoader2 size={16} />}
-          </div>
+          {summary && (
+            <div>
+              <h4>Project Summary</h4>
+              {summary ? <p className="text-muted-foreground">{summary}</p> : <SpinnerLoader2 size={16} />}
+            </div>
+          )}
           {energyBenefits
             && (
               <div>

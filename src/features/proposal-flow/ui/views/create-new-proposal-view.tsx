@@ -113,6 +113,14 @@ export function CreateNewProposalView() {
         item !== undefined,
     )
 
+    const totalProjectDiscounts = data.funding.data.incentives.reduce((acc, cur) => {
+      if (cur.type === 'discount') {
+        return acc + cur.amount
+      }
+
+      return acc
+    }, 0)
+
     createProposal.mutate({
       label: data.project.data.label,
       ownerId: session?.user.id || 'c497d366-7c0a-4ae8-8bf3-d0ab0ed50b38',
@@ -128,7 +136,8 @@ export function CreateNewProposalView() {
       fundingJSON: {
         data: {
           ...data.funding.data,
-          cashInDeal: data.funding.data.tcp,
+          cashInDeal: data.funding.data.startingTcp - totalProjectDiscounts,
+          finalTcp: data.funding.data.startingTcp - totalProjectDiscounts,
         },
         meta: data.funding.meta,
       },

@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { IconType } from 'react-icons/lib'
+import type { Proposal } from '@/shared/db/schema'
 import {
   BabyIcon,
   BanknoteArrowDownIcon,
@@ -7,49 +8,56 @@ import {
   CircleUserIcon,
   DrillIcon,
   MailIcon,
-  MapPinHouseIcon,
   PhoneIcon,
 } from 'lucide-react'
 import { FaTimeline } from 'react-icons/fa6'
 import { projectTypes } from '@/shared/constants/enums'
 
-interface BaseField {
+export type Display = string | React.ReactNode
+
+export type ProposalContext
+  = Proposal['homeownerJSON']['data']
+    & Proposal['projectJSON']['data']
+    & Proposal['fundingJSON']['data']
+
+export interface BaseField {
   label: string
-  name: string
+  name: keyof ProposalContext | string
   Icon?: LucideIcon | IconType
 }
 
 interface TextField extends BaseField {
-  type: 'text'
-  value?: string
-  format?: (value: string) => string
+  type?: 'text'
+  format?: (value: string, ctx: ProposalContext) => Display
 }
 
 interface EnumField<T extends string> extends BaseField {
   type: 'enum'
   values: readonly T[]
-  value?: T
-  format?: (value: T) => string
+  format?: (value: T, ctx: ProposalContext) => Display
 }
 
 interface NumberField extends BaseField {
   type: 'number'
-  value?: number
-  format: (value: number) => string
+  format: (value: number, ctx: ProposalContext) => Display
 }
 
 type Field<E extends string = string> = BaseField | NumberField | TextField | EnumField<E>
 
+export type FieldWithValues<F extends Field = Field> = F & {
+  rawValue?: unknown
+  displayValue: Display
+}
+
 interface Section {
   label: string
-  overviewFields: Field[]
-  extraFields: Field[]
+  fields: Field[]
 }
 
 export const proposalFields = [
   {
     label: 'Homeowner',
-    overviewFields: [
+    fields: [
       {
         label: 'Name',
         name: 'name',
@@ -73,17 +81,10 @@ export const proposalFields = [
         format: value => value ? `${value} years old` : '-',
       },
     ],
-    extraFields: [
-      {
-        label: 'Full address',
-        name: 'address',
-        Icon: MapPinHouseIcon,
-      },
-    ],
   },
   {
     label: 'Project',
-    overviewFields: [
+    fields: [
       {
         label: 'Project Type',
         name: 'type',
@@ -108,29 +109,39 @@ export const proposalFields = [
         Icon: FaTimeline,
       },
     ],
-    extraFields: [
-      {
-        label: 'Scope of Work Summary',
-        name: 'scopeOfWorkSummary',
-      },
-      {
-        label: 'Approximate start date',
-        name: 'approximateStartDate',
-      },
-      {
-        label: 'Approximate completion date',
-        name: 'approximateCompletionDate',
-      },
-    ],
   },
   {
     label: 'Funding',
-    overviewFields: [
+    fields: [
       {
         type: 'number',
         label: 'Total Contract Price',
-        name: 'tcp',
-        format: value => value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }),
+        name: 'finalTcp',
+        format: (value, ctx) => {
+          const discounts = ctx.incentives.reduce((acc, cur) => cur.type === 'discount' ? acc + cur.amount : acc, 0)
+          const formattedStartingTcp = ctx.startingTcp.toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0,
+          })
+
+          const formattedFinalTcp = value.toLocaleString('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0,
+          })
+
+          if (!discounts) {
+            return formattedFinalTcp
+          }
+
+          return (
+            <span className="inline-flex items-center gap-2">
+              <span className="line-through text-muted-foreground">{formattedStartingTcp}</span>
+              <span className="font-medium">{formattedFinalTcp}</span>
+            </span>
+          )
+        },
         Icon: CircleDollarSignIcon,
       },
       {
@@ -143,32 +154,6 @@ export const proposalFields = [
           maximumFractionDigits: 0,
         }),
         Icon: BanknoteArrowDownIcon,
-      },
-    ],
-    extraFields: [
-      {
-        label: 'Total Cash',
-        name: 'cashInDeal',
-      },
-      {
-        label: 'Total Loan',
-        name: 'totalLoan',
-      },
-      {
-        label: 'Finance Company',
-        name: 'financeCompany',
-      },
-      {
-        label: 'Loan Term',
-        name: 'loanTerm',
-      },
-      {
-        label: 'Interest Rate',
-        name: 'interestRate',
-      },
-      {
-        label: 'Discounts',
-        name: 'discounts',
       },
     ],
   },

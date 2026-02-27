@@ -49,7 +49,8 @@ export const baseDefaultValues: ProposalFormSchema = {
   },
   funding: {
     data: {
-      tcp: 0,
+      startingTcp: 0,
+      finalTcp: 0,
       depositAmount: 1000,
       cashInDeal: 0,
       incentives: [],

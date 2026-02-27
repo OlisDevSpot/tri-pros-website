@@ -28,10 +28,10 @@ export function RelatedProjects() {
           <div className="flex flex-col gap-2">
             <CardTitle>
               <h2>
-                {`Other ${projectType.title} Projects`}
+                {`Our Past ${projectType.title} Projects`}
               </h2>
             </CardTitle>
-            <CardDescription>View similar completed projects from our portfolio</CardDescription>
+            <CardDescription>View similar completed projects from our portfolio. We prefer letting our results do the talking.</CardDescription>
           </div>
           <Button variant="outline">
             <Link href="/portfolio/projects">View Full Portfolio</Link>

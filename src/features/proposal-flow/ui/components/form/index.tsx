@@ -109,7 +109,9 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
               type="button"
               size="icon"
               variant="outline"
-              onClick={() => { }}
+              onClick={() => {
+
+              }}
             >
               <SettingsIcon className="w-4 h-4" />
             </Button>

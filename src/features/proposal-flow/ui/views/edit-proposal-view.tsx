@@ -15,6 +15,20 @@ import { useGetProposal } from '@/shared/dal/client/proposals/queries/use-get-pr
 import { proposalFormSchema } from '../../schemas/form-schema'
 import { ProposalForm } from '../components/form'
 
+export function calculateProposalDiscounts(proposal: ProposalFormSchema) {
+  const { funding } = proposal
+
+  const totalDiscounts = funding.data.incentives.reduce((acc, cur) => {
+    if (cur.type === 'discount') {
+      return acc + cur.amount
+    }
+
+    return acc
+  }, 0)
+
+  return totalDiscounts
+}
+
 export function EditProposalView() {
   const [proposalId] = useQueryState('proposalId')
 
@@ -64,12 +78,23 @@ export function EditProposalView() {
       return
     }
 
+    const totalDiscounts = calculateProposalDiscounts(rawData)
+
+    const updatedFinalTcp = rawData.funding.data.startingTcp - totalDiscounts
+
     updateProposal.mutate({
       proposalId,
       data: {
         homeownerJSON: rawData.homeowner,
         projectJSON: rawData.project,
-        fundingJSON: rawData.funding,
+        fundingJSON: {
+          ...rawData.funding,
+          data: {
+            ...rawData.funding.data,
+            finalTcp: updatedFinalTcp,
+            cashInDeal: rawData.funding.data.cashInDeal > updatedFinalTcp ? updatedFinalTcp : rawData.funding.data.cashInDeal,
+          },
+        },
       },
     }, {
       onSuccess: () => {

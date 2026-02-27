@@ -212,7 +212,7 @@ export function ProcessOverview({ className }: Props) {
 
                 {/* Image */}
                 <div
-                  className={cn(`relative rounded-lg w-full shadow-2xl flex-1 min-h-[300px] overflow-hidden`, isMobile || index % 2 === 1 ? 'order-1' : '')}
+                  className={cn(`relative rounded-lg w-full shadow-2xl flex-1 min-h-75 overflow-hidden`, isMobile || index % 2 === 1 ? 'order-1' : '')}
                 >
                   {step.imageSrc && (
                     <div className="absolute inset-0">

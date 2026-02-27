@@ -33,3 +33,4 @@ export const projectTypes = ['general-remodeling', 'energy-efficient'] as const
 export const electricProviders = ['ladwp', 'edison', 'glendale water & power', 'burbank water & power', 'riverside public utilities', 'pg&e', 'other'] as const
 export const variableDataTypes = ['text', 'select', 'number', 'boolean'] as const
 export const variableGroups = ['project', 'trade'] as const
+export const incentiveTypes = ['discount', 'tax-credit', 'cash-back', 'exclusive-bonus', 'other'] as const

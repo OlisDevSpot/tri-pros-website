@@ -29,7 +29,7 @@ export function Funding({ onPickFinancingOption }: Props) {
 
   useEffect(() => {
     if (proposal.data && cashInDeal === null) {
-      const tcp = proposal.data.fundingJSON.data.tcp || 0
+      const tcp = proposal.data.fundingJSON.data.finalTcp || 0
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setCashInDeal(proposal.data.fundingJSON.data.cashInDeal ?? tcp)
     }
@@ -40,7 +40,7 @@ export function Funding({ onPickFinancingOption }: Props) {
       return 0
     }
 
-    return proposal.data.fundingJSON.data.tcp - cashInDeal
+    return proposal.data.fundingJSON.data.finalTcp - cashInDeal
   }, [cashInDeal, proposal.data])
 
   function pickFinancingOption(option: FinanceOption) {

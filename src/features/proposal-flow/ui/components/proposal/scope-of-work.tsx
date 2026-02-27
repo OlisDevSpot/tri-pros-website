@@ -28,9 +28,9 @@ export function ScopeOfWork() {
       <Card>
         <CardHeader>
           <CardTitle>
-            <h2>Scope of Work</h2>
+            <h2>Proposed Scope of Work</h2>
           </CardTitle>
-          <CardDescription>Ensure your information matches with our records</CardDescription>
+          <CardDescription>A successful remodeling project always starts with a solid scope of work description.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           <div>

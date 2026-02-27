@@ -1,6 +1,7 @@
 import z from 'zod'
 import { homeAreas, projectTypes } from '@/shared/constants/enums'
 
+// SUB-SCHEMAS
 const homeAreaSchema = z.enum(homeAreas)
 const sowSchema = z.object({
   title: z.string(),
@@ -9,10 +10,22 @@ const sowSchema = z.object({
   html: z.string(),
 })
 
-const sectionMetaSchema = z.object({
-  enabled: z.boolean(),
+const DiscountIncentiveSchema = z.object({
+  type: z.literal('discount'),
+  amount: z.number(),
+  notes: z.string().optional(),
 })
 
+const ExclusiveOfferIncentiveSchema = z.object({
+  type: z.literal('exclusive-offer'),
+  offer: z.string(),
+  units: z.int().positive(),
+  notes: z.string().optional(),
+})
+
+const incentiveSchema = z.discriminatedUnion('type', [DiscountIncentiveSchema, ExclusiveOfferIncentiveSchema])
+
+// MAIN SCHEMA BUILDING BLOCKS
 const homeownerDataSchema = z.object({
   name: z.string(),
   phoneNum: z.string(),
@@ -39,10 +52,16 @@ const projectDataSchema = z.object({
 const fundingDataSchema = z.object({
   cashInDeal: z.number(),
   depositAmount: z.number(),
-  tcp: z.number(),
-  incentives: z.array(z.object({ reason: z.string(), amount: z.number() })),
+  startingTcp: z.number(),
+  finalTcp: z.number(),
+  incentives: z.array(incentiveSchema),
 })
 
+const sectionMetaSchema = z.object({
+  enabled: z.boolean(),
+})
+
+// MAIN SCHEMAS
 export const homeownerSectionSchema = z.object({
   data: homeownerDataSchema,
   meta: sectionMetaSchema,

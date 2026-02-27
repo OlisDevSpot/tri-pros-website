@@ -5,6 +5,7 @@ import type {
   homeAreas,
   hvacComponents,
   hvacTypes,
+  incentiveTypes,
   insulationLevels,
   projectTypes,
   roofLocations,
@@ -37,3 +38,4 @@ export type ProjectType = (typeof projectTypes)[number]
 export type ElectricProvider = (typeof electricProviders)[number]
 export type VariableDataType = (typeof variableDataTypes)[number]
 export type VariableGroup = (typeof variableGroups)[number]
+export type IncentiveType = (typeof incentiveTypes)[number]
