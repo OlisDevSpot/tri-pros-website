@@ -7,6 +7,10 @@ export const tprInternalNavItems = [
     action: 'readonly',
     subItems: [
       {
+        name: 'Showroom',
+        href: '/showroom',
+      },
+      {
         name: 'Proposals',
         href: '/proposal-flow',
       },

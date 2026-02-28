@@ -1,9 +1,10 @@
 import type z from 'zod'
 import type { Tag } from '@/shared/constants/tags'
 import { relations } from 'drizzle-orm'
-import { boolean, jsonb, pgTable, text, uuid, varchar } from 'drizzle-orm/pg-core'
+import { boolean, integer, jsonb, pgTable, text, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
 import { createdAt, unsafeId, updatedAt } from '../lib/schema-helpers'
+import { mediaPhaseEnum } from './meta'
 import { projects } from './projects'
 
 export const mediaFiles = pgTable('media_files', {
@@ -16,6 +17,10 @@ export const mediaFiles = pgTable('media_files', {
   url: varchar('url', { length: 255 }).notNull(),
   tags: jsonb('tags').$type<Tag[]>(),
   isHeroImage: boolean('is_hero_image').notNull().default(false),
+  phase: mediaPhaseEnum('phase').notNull().default('main'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  duration: integer('duration'),
+  thumbnailUrl: varchar('thumbnail_url', { length: 255 }),
   projectId: uuid('project_id')
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),

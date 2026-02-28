@@ -1,6 +1,6 @@
 import type z from 'zod'
 import { relations } from 'drizzle-orm'
-import { jsonb, pgTable, uuid, varchar } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgTable, text, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { accessor, createdAt, description, id, updatedAt } from '../lib/schema-helpers'
 import { customers } from './customers'
@@ -11,6 +11,8 @@ export const projects = pgTable('projects', {
   title: varchar('title', { length: 80 }).notNull(),
   accessor: accessor.unique(),
   description,
+  backstory: text('backstory'),
+  isPublic: boolean('is_public').notNull().default(false),
   address: varchar('address', { length: 255 }),
   city: varchar('city', { length: 80 }).notNull(),
   state: varchar('state', { length: 2 }).default('CA'),

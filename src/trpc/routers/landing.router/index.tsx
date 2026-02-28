@@ -5,9 +5,11 @@ import { putLead as putPipedriveLead } from '@/shared/services/pipedrive/api/put
 import { resendClient } from '@/shared/services/resend/client'
 import { GeneralInquiryEmail } from '@/shared/services/resend/emails/general-inquiry-email'
 import { ProjectEmailTemplate } from '@/shared/services/resend/emails/project-inquiry-email'
-import { baseProcedure, createTRPCRouter } from '../init'
+import { baseProcedure, createTRPCRouter } from '../../init'
+import { projectsRouter } from './projects.router'
 
 export const landingRouter = createTRPCRouter({
+  projectsRouter,
   scheduleConsultation: baseProcedure
     .input(scheduleConsultationFormSchema)
     .mutation(async ({ input }) => {

@@ -7,6 +7,7 @@ import type {
   hvacTypes,
   incentiveTypes,
   insulationLevels,
+  mediaPhases,
   projectTypes,
   roofLocations,
   roofTypes,
@@ -14,11 +15,18 @@ import type {
   userRoles,
   variableDataTypes,
   variableGroups,
+  viewSources,
   windowsTypes,
 } from '@/shared/constants/enums'
 
 // MAIN
 export type UserRole = (typeof userRoles)[number]
+
+// MEDIA
+export type MediaPhase = (typeof mediaPhases)[number]
+
+// VIEWS
+export type ViewSource = (typeof viewSources)[number]
 
 // CONSTRUCTION
 export type TradeLocation = (typeof tradeLocations)[number]

@@ -1,8 +1,9 @@
-/* eslint-disable no-alert */
 'use client'
 
+import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { customizableSections, generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
@@ -12,14 +13,40 @@ import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useSendProposalEmail } from '@/shared/dal/client/proposals/mutations/use-send-proposal-email'
 import { checkUserRole } from '@/shared/permissions/lib/check-user-role'
+import { useTRPC } from '@/trpc/helpers'
 import { Heading } from './heading'
 
 export function Proposal() {
   const sessionQuery = useSession()
   const params = useParams() as { proposalId: string }
+  const searchParams = useSearchParams()
   const sendProposalEmail = useSendProposalEmail()
   const proposal = useCurrentProposal()
   const { setRootEl } = useScrollRoot()
+  const trpc = useTRPC()
+  const recordView = useMutation(trpc.proposalRouter.recordView.mutationOptions())
+  const sendContract = useMutation(trpc.docusignRouter.sendContractForSigning.mutationOptions())
+  const hasRecorded = useRef(false)
+
+  useEffect(() => {
+    if (hasRecorded.current || !proposal.data) {
+      return
+    }
+    hasRecorded.current = true
+
+    const token = searchParams.get('token') ?? ''
+    const utmSource = searchParams.get('utm_source')
+    const source = utmSource === 'email' ? 'email' : 'direct'
+
+    recordView.mutate({
+      proposalId: params.proposalId,
+      token,
+      source,
+      referer: typeof window !== 'undefined' ? document.referrer : undefined,
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : undefined,
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposal.data])
 
   if (sessionQuery.isPending || proposal.isLoading) {
     return (
@@ -67,9 +94,12 @@ export function Proposal() {
                   />
                 )}
                 {customizableSections.includes(step.accessor) && step.accessor === 'agreement-link' && (
-                  <step.Component onClick={() => {
-                    alert('agreement link sent!')
-                  }}
+                  <step.Component
+                    onClick={() => {
+                      sendContract.mutate({ proposalId: params.proposalId, token: token ?? '' })
+                    }}
+                    isPending={sendContract.isPending}
+                    isSuccess={sendContract.isSuccess}
                   />
                 )}
                 {customizableSections.includes(step.accessor) && step.accessor === 'send-proposal' && (

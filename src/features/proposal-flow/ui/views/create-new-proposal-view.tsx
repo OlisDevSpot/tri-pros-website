@@ -142,8 +142,9 @@ export function CreateNewProposalView() {
       },
     }, {
       onSuccess: (data) => {
+        const urlWithoutQueryStrings = data.proposalUrl.split('?')[0]
         toast.success('Proposal created!')
-        router.push(data.proposalUrl)
+        router.push(urlWithoutQueryStrings)
       },
       onError: (error) => {
         toast.error(error.message)

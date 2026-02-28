@@ -1,7 +1,7 @@
 import type z from 'zod'
 import type { FundingSection, HomeownerSection, ProjectSection } from '@/shared/entities/proposals/types'
 import { relations } from 'drizzle-orm'
-import { integer, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { fundingSectionSchema, homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
@@ -29,6 +29,9 @@ export const proposals = pgTable('proposals', {
 
   financeOptionId: integer('finance_option_id')
     .references(() => financeOptions.id, { onDelete: 'cascade' }),
+
+  docusignEnvelopeId: text('docusign_envelope_id'),
+  contractSentAt: timestamp('contract_sent_at', { mode: 'string', withTimezone: true }),
 
   createdAt,
   updatedAt,

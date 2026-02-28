@@ -28,6 +28,12 @@ export const windowsTypes = ['single', 'double'] as const
 export const insulationLevels = ['low', 'medium', 'high'] as const
 export const foundationTypes = ['raised', 'slab'] as const
 
+// MEDIA
+export const mediaPhases = ['before', 'during', 'after', 'main'] as const
+
+// VIEWS
+export const viewSources = ['email', 'direct', 'unknown'] as const
+
 // PROPOSALS
 export const projectTypes = ['general-remodeling', 'energy-efficient'] as const
 export const electricProviders = ['ladwp', 'edison', 'glendale water & power', 'burbank water & power', 'riverside public utilities', 'pg&e', 'other'] as const

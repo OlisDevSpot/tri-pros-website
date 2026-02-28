@@ -1,30 +1,23 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import env from '@/shared/config/server-env'
+import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
+import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
 import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
-import { baseProcedure, createTRPCRouter } from '../init'
+import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
-export const contractorTabs = {
-  textTabs: {
-    'start-date': '1/1/2026',
-    'completion-date': '1/30/2026',
-  },
-  numericalTabs: {
-    tcp: '50000',
-    deposit: '1000',
-  },
-}
+async function getValidatedToken() {
+  const token = await getAccessToken()
 
-export const homeownerTabs = {
-  textTabs: {
-    'ho-address': '6252 Calvin Avenue',
-    'ho-city-state-zip': 'Tarzana, CA 91335',
-    'ho-phone': '(818) 470-7656',
-  },
-  numericalTabs: {
-    'ho-age': '64',
-  },
+  if (typeof token === 'object' && token.error) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      cause: token.error,
+    })
+  }
+
+  return token as string
 }
 
 export const docusignRouter = createTRPCRouter({
@@ -44,54 +37,18 @@ export const docusignRouter = createTRPCRouter({
     }
   }),
 
-  sendEnvelope: baseProcedure
-    .input(z.object({ templateId: z.string() }))
+  createContractDraft: agentProcedure
+    .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ input }) => {
-      const { templateId } = input
+      const proposal = await getProposal(input.proposalId)
 
-      const token = await getAccessToken()
-
-      if (typeof token === 'object' && token.error) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          cause: token.error,
-        })
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
       }
 
-      const body = {
-        templateId,
-        templateRoles: [
-          {
-            roleName: 'Contractor',
-            tabs: {
-              textTabs: Object.entries(contractorTabs.textTabs).map(([tabLabel, value]) => ({
-                tabLabel,
-                value,
-              })),
-              numericalTabs: Object.entries(contractorTabs.numericalTabs).map(([tabLabel, numericalValue]) => ({
-                tabLabel,
-                numericalValue,
-              })),
-            },
-          },
-          {
-            roleName: 'Homeowner',
-            name: 'Oliver P',
-            email: 'poratofir@gmail.com',
-            tabs: {
-              textTabs: Object.entries(homeownerTabs.textTabs).map(([tabLabel, value]) => ({
-                tabLabel,
-                value,
-              })),
-              numberTabs: Object.entries(homeownerTabs.numericalTabs).map(([tabLabel, numericalValue]) => ({
-                tabLabel,
-                numericalValue,
-              })),
-            },
-          },
-        ],
-        status: 'created',
-      }
+      const token = await getValidatedToken()
+
+      const body = buildEnvelopeBody(proposal, 'created')
 
       const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {
         method: 'POST',
@@ -102,7 +59,70 @@ export const docusignRouter = createTRPCRouter({
         body: JSON.stringify(body),
       })
 
-      const data = await res.json()
-      return data
+      const data = await res.json() as { envelopeId?: string }
+
+      if (!data.envelopeId) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', cause: data })
+      }
+
+      await updateProposal(proposal.ownerId, input.proposalId, {
+        docusignEnvelopeId: data.envelopeId,
+      })
+
+      return { envelopeId: data.envelopeId }
+    }),
+
+  sendContractForSigning: baseProcedure
+    .input(z.object({ proposalId: z.string(), token: z.string() }))
+    .mutation(async ({ input }) => {
+      const proposal = await getProposal(input.proposalId)
+
+      if (!proposal || proposal.token !== input.token) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', cause: 'Invalid token' })
+      }
+
+      const accessToken = await getValidatedToken()
+
+      let envelopeId = proposal.docusignEnvelopeId
+
+      if (envelopeId) {
+        // Draft exists — transition to sent
+        await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes/${envelopeId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: 'sent' }),
+        })
+      }
+      else {
+        // No draft — create and send in one step
+        const body = buildEnvelopeBody(proposal, 'sent')
+
+        const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        })
+
+        const data = await res.json() as { envelopeId?: string }
+
+        if (!data.envelopeId) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', cause: data })
+        }
+
+        envelopeId = data.envelopeId
+      }
+
+      await updateProposal(input.token, input.proposalId, {
+        docusignEnvelopeId: envelopeId,
+        contractSentAt: new Date().toISOString(),
+      })
+
+      return { envelopeId }
     }),
 })

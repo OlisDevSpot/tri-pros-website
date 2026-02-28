@@ -11,11 +11,13 @@
     "generate:types": "payload generate:types --watch",
     "db:push": "drizzle-kit push",
     "db:reset": "tsx ./src/shared/db/lib/db-reset.ts",
-    "db:seed": "tsx ./src/shared/db/lib/db-seed.ts"
+    "db:seed": "tsx ./src/shared/db/lib/db-seed.ts",
+    "email": "npx react-email -dir ./src/shared/services/resend/emails"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
-    "@aws-sdk/client-s3": "^3.995.0",
+    "@aws-sdk/client-s3": "^3.1000.0",
+    "@aws-sdk/s3-request-presigner": "^3.1000.0",
     "@hookform/resolvers": "^5.1.1",
     "@hubspot/api-client": "^13.4.0",
     "@mondaydotcomorg/api": "^12.0.1",
