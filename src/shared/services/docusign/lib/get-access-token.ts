@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import jwt from 'jsonwebtoken'
 import env from '@/shared/config/server-env'
@@ -10,10 +11,12 @@ export async function getAccessToken() {
     return cachedToken
   }
 
-  const privateKey = await fs.readFile(
-    env.DS_JWT_PRIVATE_KEY_PATH,
-    'utf-8',
-  )
+  const privateKey = env.NODE_ENV === 'production'
+    ? Buffer.from(env.DS_JWT_PRIVATE_KEY, 'base64').toString('utf-8')
+    : await fs.readFile(
+        env.DS_JWT_PRIVATE_KEY_PATH,
+        'utf-8',
+      )
 
   const now = Math.floor(Date.now() / 1000)
 
@@ -26,7 +29,7 @@ export async function getAccessToken() {
       exp: now + 3600,
       scope: 'signature impersonation',
     },
-    env.NODE_ENV === 'production' ? env.DS_JWT_PRIVATE_KEY.replace(/\\n/g, '\n') : privateKey,
+    privateKey,
     {
       algorithm: 'RS256',
     },
