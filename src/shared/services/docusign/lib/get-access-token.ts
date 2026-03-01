@@ -26,7 +26,7 @@ export async function getAccessToken() {
       exp: now + 3600,
       scope: 'signature impersonation',
     },
-    privateKey,
+    env.NODE_ENV === 'production' ? env.DS_JWT_PRIVATE_KEY.replace(/\\n/g, '\n') : privateKey,
     {
       algorithm: 'RS256',
     },
@@ -45,7 +45,7 @@ export async function getAccessToken() {
 
   if (!res.ok) {
     const error = await res.json() as { error: string, error_description: string }
-    return error
+    throw new Error(error.error_description)
   }
 
   const data = await res.json() as { access_token: string, expires_in: number }

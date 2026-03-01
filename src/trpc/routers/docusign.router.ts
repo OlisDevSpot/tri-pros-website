@@ -8,16 +8,17 @@ import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
 async function getValidatedToken() {
-  const token = await getAccessToken()
+  try {
+    const token = await getAccessToken()
 
-  if (typeof token === 'object' && token.error) {
+    return token as string
+  }
+  catch (error) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
-      cause: token.error,
+      cause: error,
     })
   }
-
-  return token as string
 }
 
 export const docusignRouter = createTRPCRouter({

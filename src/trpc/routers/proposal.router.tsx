@@ -178,10 +178,6 @@ export const proposalRouter = createTRPCRouter({
 
           const accessToken = await getAccessToken()
 
-          if (typeof accessToken === 'object' && accessToken.error) {
-            return
-          }
-
           const body = buildEnvelopeBody(proposal, 'created')
 
           const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {

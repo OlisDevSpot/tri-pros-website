@@ -31,8 +31,7 @@ export const scopesRouter = createTRPCRouter({
       }).optional(),
     }))
     .query(async ({ input }) => {
-      const opts = input
-      const rawScopes = await queryNotionDatabase('scopes', opts)
+      const rawScopes = await queryNotionDatabase('scopes', input)
       if (!rawScopes)
         return []
 

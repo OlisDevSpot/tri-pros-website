@@ -51,6 +51,7 @@ const envSchema = z.object({
   DS_ACCOUNT_ID: z.string(),
   DS_INTEGRATION_KEY: z.string(),
   DS_JWT_PRIVATE_KEY_PATH: z.string(),
+  DS_JWT_PRIVATE_KEY: z.string(),
 
   // NOTION
   NOTION_API_KEY: z.string(),
