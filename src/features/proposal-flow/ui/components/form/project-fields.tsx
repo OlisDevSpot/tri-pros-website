@@ -75,7 +75,7 @@ export function ProjectFields() {
               )}
             />
           </div>
-          <div className="grid lg:grid-cols-2 gap-4">
+          <div className="grid lg:grid-cols-3 gap-4">
             <FormField
               name="project.data.type"
               control={form.control}
@@ -119,6 +119,45 @@ export function ProjectFields() {
                 </FormItem>
               )}
             />
+            <FormField
+              name="project.data.validThroughTimeframe"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Valid Through Timeframe</FormLabel>
+                  <FormControl>
+                    <Select
+                      defaultValue="60 days"
+                      onValueChange={(val: ProjectType) => {
+                        field.onChange(val)
+                      }}
+                    >
+                      <SelectTrigger {...field} className="w-full">
+                        <SelectValue placeholder="Select a project type" />
+                      </SelectTrigger>
+                      <SelectContent {...field}>
+                        <SelectItem value="30 days">
+                          30 days
+                        </SelectItem>
+                        <SelectItem value="60 days">
+                          60 days
+                        </SelectItem>
+                        <SelectItem value="90 days">
+                          90 days
+                        </SelectItem>
+                        <SelectItem value="180 days">
+                          180 days
+                        </SelectItem>
+                        <SelectItem value="365 days">
+                          365 days
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
           <div className="flex flex-col items-start gap-4 min-h-15 flex-wrap">
             <h3>Complete Scope of Work</h3>
@@ -143,6 +182,7 @@ export function ProjectFields() {
                     },
                     scopes: [],
                     title: '',
+                    contentJSON: '',
                     html: '',
                   })
                 }}

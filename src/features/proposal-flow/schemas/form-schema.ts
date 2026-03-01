@@ -37,6 +37,7 @@ export const baseDefaultValues: ProposalFormSchema = {
             label: '',
           },
           scopes: [],
+          contentJSON: '',
           html: '',
         },
       ],
@@ -44,6 +45,7 @@ export const baseDefaultValues: ProposalFormSchema = {
       homeAreasUpgrades: [],
       projectObjectives: [],
       timeAllocated: '',
+      validThroughTimeframe: '60 days',
       agreementNotes: '',
     },
     meta: {

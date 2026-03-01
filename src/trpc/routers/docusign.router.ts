@@ -40,36 +40,46 @@ export const docusignRouter = createTRPCRouter({
   createContractDraft: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
+      try {
+        const proposal = await getProposal(input.proposalId)
 
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
+        }
+
+        const token = await getValidatedToken()
+
+        const body = buildEnvelopeBody(proposal, 'created')
+
+        const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        })
+
+        const data = await res.json() as { envelopeId?: string }
+
+        if (!data.envelopeId) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', cause: data })
+        }
+
+        await updateProposal(proposal.ownerId, input.proposalId, {
+          docusignEnvelopeId: data.envelopeId,
+        })
+
+        return { envelopeId: data.envelopeId }
       }
-
-      const token = await getValidatedToken()
-
-      const body = buildEnvelopeBody(proposal, 'created')
-
-      const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      })
-
-      const data = await res.json() as { envelopeId?: string }
-
-      if (!data.envelopeId) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', cause: data })
+      catch (error) {
+        // eslint-disable-next-line no-console
+        console.log(error)
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          cause: error,
+        })
       }
-
-      await updateProposal(proposal.ownerId, input.proposalId, {
-        docusignEnvelopeId: data.envelopeId,
-      })
-
-      return { envelopeId: data.envelopeId }
     }),
 
   sendContractForSigning: baseProcedure

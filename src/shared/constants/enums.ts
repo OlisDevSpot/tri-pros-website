@@ -40,3 +40,4 @@ export const electricProviders = ['ladwp', 'edison', 'glendale water & power', '
 export const variableDataTypes = ['text', 'select', 'number', 'boolean'] as const
 export const variableGroups = ['project', 'trade'] as const
 export const incentiveTypes = ['discount', 'tax-credit', 'cash-back', 'exclusive-bonus', 'other'] as const
+export const validThroughTimeframes = ['30 days', '60 days', '90 days', '180 days', '365 days'] as const

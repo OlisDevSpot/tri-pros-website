@@ -1,5 +1,5 @@
 import z from 'zod'
-import { homeAreas, projectTypes } from '@/shared/constants/enums'
+import { homeAreas, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 
 // SUB-SCHEMAS
 const homeAreaSchema = z.enum(homeAreas)
@@ -11,6 +11,7 @@ export const sowSchema = z.object({
   title: z.string(),
   trade: constructionItemSchema,
   scopes: z.array(constructionItemSchema),
+  contentJSON: z.string(),
   html: z.string(),
 })
 
@@ -45,6 +46,7 @@ const projectDataSchema = z.object({
   summary: z.string().optional(),
   type: z.enum(projectTypes),
   timeAllocated: z.string(),
+  validThroughTimeframe: z.enum(validThroughTimeframes),
   energyBenefits: z.string().optional(),
   projectObjectives: z.array(z.string()),
   homeAreasUpgrades: z.array(homeAreaSchema),

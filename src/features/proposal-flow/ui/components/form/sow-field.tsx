@@ -153,7 +153,7 @@ export function SOWSection({
       </div>
       <div className="w-full p-4 pt-0">
         <FormField
-          name={`project.data.sow.${index}.html`}
+          name={`project.data.sow.${index}.contentJSON`}
           control={form.control}
           render={({ field }) => (
             <FormItem>
@@ -172,9 +172,9 @@ export function SOWSection({
                         trade: allTrades.data?.find(trade => trade.id === tradeId),
                         scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as ScopeOrAddon[],
                         onSelect: async (sowId) => {
-                          const html = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
+                          const json = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
 
-                          tiptapRef.current?.insertHTML(html || '')
+                          tiptapRef.current?.insertContent(JSON.parse(json) || '')
                           closeModal()
                         },
                       },
@@ -188,8 +188,11 @@ export function SOWSection({
               <FormControl>
                 <Tiptap
                   ref={tiptapRef}
-                  onChange={html => field.onChange(html)}
-                  initialValues={field.value}
+                  onChange={({ html, json }) => {
+                    field.onChange(JSON.stringify(json))
+                    form.setValue(`project.data.sow.${index}.html`, html)
+                  }}
+                  initialValues={field.value ? JSON.parse(field.value) : undefined}
                 />
               </FormControl>
               <FormMessage />

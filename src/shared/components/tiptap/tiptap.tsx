@@ -14,12 +14,12 @@ import { TipTapMenuBar } from './menu-bar'
 
 export interface TiptapHandle {
   appendHTML: (html: string) => void
-  insertHTML: (html: string) => void
+  insertContent: (content: string) => void
   getHTML: () => string
 }
 
 interface Props {
-  onChange: (value: string) => void
+  onChange: ({ html, json }: { html: string, json: any }) => void
   initialValues?: string
   ref?: React.RefObject<TiptapHandle | null>
 }
@@ -33,11 +33,19 @@ export function Tiptap({ ref, onChange, initialValues }: Props) {
         multicolor: true,
       }),
     ],
+    editorProps: {
+      handleScrollToSelection: () => {
+        return true
+      },
+    },
     // Don't render immediately on the server to avoid SSR issues
     immediatelyRender: false,
     content: initialValues,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      onChange({
+        html: editor.getHTML(),
+        json: editor.getJSON(),
+      })
     },
   })
 
@@ -53,7 +61,7 @@ export function Tiptap({ ref, onChange, initialValues }: Props) {
         .insertContent(html)
         .run()
     },
-    insertHTML: (html: string) => {
+    insertContent: (content: string) => {
       if (!editor)
         return
       const endPos = editor.state.doc.content.size
@@ -62,10 +70,11 @@ export function Tiptap({ ref, onChange, initialValues }: Props) {
         .chain()
         .setTextSelection(endPos)
         .focus(undefined, { scrollIntoView: false })
-        .insertContent(html)
+        .insertContent(content)
         .run()
     },
     getHTML: () => editor?.getHTML() ?? '',
+    getJSON: () => editor?.getJSON() ?? {},
   }), [editor])
 
   if (!editor) {

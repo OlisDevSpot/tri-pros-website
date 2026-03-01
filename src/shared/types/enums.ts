@@ -13,6 +13,7 @@ import type {
   roofTypes,
   tradeLocations,
   userRoles,
+  validThroughTimeframes,
   variableDataTypes,
   variableGroups,
   viewSources,
@@ -47,3 +48,4 @@ export type ElectricProvider = (typeof electricProviders)[number]
 export type VariableDataType = (typeof variableDataTypes)[number]
 export type VariableGroup = (typeof variableGroups)[number]
 export type IncentiveType = (typeof incentiveTypes)[number]
+export type ValidThroughTimeframe = (typeof validThroughTimeframes)[number]

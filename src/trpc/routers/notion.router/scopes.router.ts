@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getTypedKeys } from '@/shared/lib/utils'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
-import { pageToHTML } from '@/shared/services/notion/lib/page-to-html'
+import { pageToTiptapJson } from '@/shared/services/notion/lib/page-to-tiptap-json'
 import { pageToScope } from '@/shared/services/notion/lib/scopes/adapter'
 import { scopeOrAddonSchema } from '@/shared/services/notion/lib/scopes/schema'
 import { pageToSOW } from '@/shared/services/notion/lib/sows/adapter'
@@ -84,9 +84,10 @@ export const scopesRouter = createTRPCRouter({
       const { sowId } = input
 
       try {
-        const html = await pageToHTML(sowId)
+        // const html = await pageToHTML(sowId)
+        const json = await pageToTiptapJson(sowId)
 
-        return html
+        return json
       }
       catch (error) {
         console.error(error)
