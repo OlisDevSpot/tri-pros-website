@@ -22,22 +22,6 @@ async function getValidatedToken() {
 }
 
 export const docusignRouter = createTRPCRouter({
-  getAccessToken: baseProcedure.query(async () => {
-    try {
-      const data = await getAccessToken()
-
-      return data
-    }
-    catch (error) {
-      // eslint-disable-next-line no-console
-      console.log(error)
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        cause: error,
-      })
-    }
-  }),
-
   createContractDraft: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .mutation(async ({ input }) => {
