@@ -47,7 +47,7 @@ const envSchema = z.object({
   HUBSPOT_APP_REDIRECT_URL: z.string(),
 
   // DOCUSIGN
-  DS_DEV_USER_ID: z.string(),
+  DS_DEV_USER_ID: z.string().optional(),
   DS_USER_ID: z.string(),
   DS_ACCOUNT_ID: z.string(),
   DS_INTEGRATION_KEY: z.string(),

@@ -23,7 +23,7 @@ export async function getAccessToken() {
   const assertion = jwt.sign(
     {
       iss: env.DS_INTEGRATION_KEY,
-      sub: env.NODE_ENV === 'production' ? env.DS_USER_ID : env.DS_DEV_USER_ID,
+      sub: env.NODE_ENV === 'production' ? env.DS_USER_ID : env.DS_DEV_USER_ID!,
       aud: DS_OAUTH_BASE_URL,
       iat: now,
       exp: now + 3600,
