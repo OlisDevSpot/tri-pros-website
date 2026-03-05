@@ -86,6 +86,7 @@ export function EditProposalView() {
     updateProposal.mutate({
       proposalId,
       data: {
+        label: rawData.project.data.label,
         formMetaJSON: rawData.meta,
         homeownerJSON: rawData.homeowner,
         projectJSON: rawData.project,

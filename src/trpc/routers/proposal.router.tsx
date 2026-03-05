@@ -130,6 +130,33 @@ export const proposalRouter = createTRPCRouter({
       await deleteProposal(input.proposalId)
     }),
 
+  duplicateProposal: agentProcedure
+    .input(z.object({
+      proposalId: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const source = await getProposal(input.proposalId)
+
+      if (!source) {
+        throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
+      }
+
+      const duplicate = await createProposal({
+        label: `Copy of ${source.label}`,
+        ownerId: ctx.session.user.id,
+        status: 'draft',
+        formMetaJSON: source.formMetaJSON,
+        homeownerJSON: source.homeownerJSON,
+        projectJSON: source.projectJSON,
+        fundingJSON: source.fundingJSON,
+        financeOptionId: source.financeOptionId ?? undefined,
+        notionPageId: source.notionPageId ?? undefined,
+        // intentionally omitted: docusignEnvelopeId, contractSentAt
+      })
+
+      return duplicate
+    }),
+
   sendProposalEmail: agentProcedure
     .input(z.object({
       proposalId: z.string(),

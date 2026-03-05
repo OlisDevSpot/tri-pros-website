@@ -1,7 +1,8 @@
 import type { Proposal } from '@/shared/db/schema'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarIcon, MapPinIcon } from 'lucide-react'
+import { CalendarIcon, CopyIcon, MapPinIcon } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
@@ -29,6 +30,14 @@ export function ProposalCard({ proposal }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries(trpc.proposalRouter.getProposals.queryOptions())
     },
+  }))
+
+  const duplicateProposal = useMutation(trpc.proposalRouter.duplicateProposal.mutationOptions({
+    onSuccess: () => {
+      queryClient.invalidateQueries(trpc.proposalRouter.getProposals.queryOptions())
+      toast.success('Proposal duplicated')
+    },
+    onError: () => toast.error('Failed to duplicate proposal'),
   }))
 
   return (
@@ -78,6 +87,14 @@ export function ProposalCard({ proposal }: Props) {
           <Link href={`${ROOTS.proposalFlow()}?step=edit-proposal&proposalId=${proposal.id}`}>
             Edit Proposal
           </Link>
+        </Button>
+        <Button
+          variant="outline"
+          disabled={duplicateProposal.isPending}
+          onClick={() => duplicateProposal.mutate({ proposalId: proposal.id })}
+        >
+          <CopyIcon className="w-4 h-4 mr-2" />
+          Duplicate
         </Button>
         <Button
           variant="destructive"
