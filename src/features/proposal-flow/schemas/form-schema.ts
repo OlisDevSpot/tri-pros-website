@@ -2,6 +2,9 @@ import z from 'zod'
 import { fundingSectionSchema, homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 
 export const proposalFormSchema = z.object({
+  meta: z.object({
+    pricingMode: z.enum(['total', 'breakdown']),
+  }),
   homeowner: homeownerSectionSchema,
   project: projectSectionSchema,
   funding: fundingSectionSchema,
@@ -10,6 +13,9 @@ export const proposalFormSchema = z.object({
 export type ProposalFormSchema = z.infer<typeof proposalFormSchema>
 
 export const baseDefaultValues: ProposalFormSchema = {
+  meta: {
+    pricingMode: 'total',
+  },
   homeowner: {
     data: {
       name: '',
@@ -31,14 +37,14 @@ export const baseDefaultValues: ProposalFormSchema = {
       label: '',
       sow: [
         {
+          contentJSON: '',
+          html: '',
+          scopes: [],
           title: '',
           trade: {
             id: '',
             label: '',
           },
-          scopes: [],
-          contentJSON: '',
-          html: '',
         },
       ],
       summary: '',
@@ -54,11 +60,12 @@ export const baseDefaultValues: ProposalFormSchema = {
   },
   funding: {
     data: {
-      startingTcp: 0,
-      finalTcp: 0,
-      depositAmount: 1000,
       cashInDeal: 0,
+      depositAmount: 1000,
+      finalTcp: 0,
       incentives: [],
+      miscPrice: 0,
+      startingTcp: 0,
     },
     meta: {
       enabled: true,

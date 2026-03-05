@@ -103,3 +103,24 @@ Env file: `.env` at project root. See `server-env.ts` for the full list of requi
 ### UI
 
 Tailwind v4, shadcn/ui (Radix primitives), lucide-react icons, motion for animations. Component config at `components.json`.
+
+
+## WHO WE ARE
+
+### COMPANY
+
+We are Tri Pros Remodeling, a Southern-California based residential construction & remodeling company.
+We are currently a small team of highly specialized tech, business, and construction professionals.
+Our expertise in sales shines through our understanding of human psychology and customer needs.
+
+### INDUSTRY
+
+### REVENUE MODEL
+
+We generate in-home meetings through telemarketing & social media services. 
+
+### SALES CYCLE
+
+1. Set up in-home appointment
+2. Schedule in-home meeting with customer
+3. 

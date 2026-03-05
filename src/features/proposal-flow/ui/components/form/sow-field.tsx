@@ -19,14 +19,16 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   index: number
-  sowSnapshot: ProposalFormSchema['project']['data']['sow'][0]
   onDelete: () => void
+  pricingMode: 'total' | 'breakdown'
+  sowSnapshot: ProposalFormSchema['project']['data']['sow'][0]
 }
 
 export function SOWSection({
   index,
-  sowSnapshot,
   onDelete,
+  pricingMode,
+  sowSnapshot,
 }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -137,19 +139,40 @@ export function SOWSection({
         </Button>
       </div>
       <div className="w-full p-4 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
-        <FormField
-          name={`project.data.sow.${index}.title`}
-          control={form.control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Section Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Title" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div className="flex gap-4">
+          <FormField
+            name={`project.data.sow.${index}.title`}
+            control={form.control}
+            render={({ field }) => (
+              <FormItem className="grow">
+                <FormLabel>Section Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="Title" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {pricingMode === 'breakdown' && (
+            <FormField
+              name={`project.data.sow.${index}.price`}
+              control={form.control}
+              render={({ field }) => (
+                <FormItem className="w-40">
+                  <FormLabel>Section Price</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="$10,000"
+                      onChange={e => field.onChange(Number(e.target.value.replace(/\D/g, '')))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        />
+        </div>
       </div>
       <div className="w-full p-4 pt-0">
         <FormField

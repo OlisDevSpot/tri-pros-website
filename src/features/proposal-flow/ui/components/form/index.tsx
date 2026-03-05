@@ -1,16 +1,18 @@
 'use client'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import type { OverrideProposalValues } from '@/features/proposal-flow/types'
 import { SettingsIcon } from 'lucide-react'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { Switch } from '@/shared/components/ui/switch'
 import { FundingFields } from './funding-fields'
 import { HomeownerFields } from './homeowner-fields'
 import { ProjectFields } from './project-fields'
@@ -18,11 +20,7 @@ import { ProjectFields } from './project-fields'
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
   isLoading: boolean
-  initialValues?: {
-    homeowner?: Partial<ProposalFormSchema['homeowner']>
-    project?: Partial<ProposalFormSchema['project']>
-    funding?: Partial<ProposalFormSchema['funding']>
-  }
+  initialValues?: OverrideProposalValues
 }
 
 function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialValues'] = {}): ProposalFormSchema {
@@ -32,6 +30,7 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
 
   const defaultWithOverrides = {
     ...base,
+    meta: { ...base.meta, ...(override.meta ?? {}) },
     homeowner: { ...base.homeowner, ...(override.homeowner ?? {}) },
     project: { ...base.project, ...(override.project ?? {}) },
     funding: { ...base.funding, ...(override.funding ?? {}) },
@@ -43,6 +42,7 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
 export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const [proposalId] = useQueryState('proposalId')
+  const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
 
   useEffect(() => {
     if (initialValues) {
@@ -87,6 +87,16 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
               )}
             />
           </div>
+          <div className="flex items-center gap-3 pt-2">
+            <Switch
+              checked={pricingMode === 'breakdown'}
+              onCheckedChange={checked =>
+                form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
+            />
+            <span className="text-sm font-medium">
+              {pricingMode === 'breakdown' ? 'Breakdown Pricing' : 'Total Pricing'}
+            </span>
+          </div>
         </CardHeader>
         <CardHeader>
           <CardTitle>Homeowner Information</CardTitle>
@@ -100,7 +110,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
           <CardDescription>Information relevant to the project success</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          <ProjectFields />
+          <ProjectFields pricingMode={pricingMode} />
         </CardContent>
         <CardHeader>
           <div className="flex gap-2 items-center">
@@ -120,6 +130,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
         </CardHeader>
         <CardContent className="space-y-8">
           <FundingFields
+            pricingMode={pricingMode}
             showSettings
           />
         </CardContent>

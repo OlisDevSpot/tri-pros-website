@@ -125,6 +125,7 @@ export function CreateNewProposalView() {
       ownerId: session?.user.id || 'c497d366-7c0a-4ae8-8bf3-d0ab0ed50b38',
       notionPageId: notionContactQuery.data?.id,
       homeownerJSON: data.homeowner,
+      formMetaJSON: data.meta,
       projectJSON: {
         data: {
           ...data.project.data,

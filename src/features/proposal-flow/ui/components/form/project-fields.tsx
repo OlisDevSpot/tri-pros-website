@@ -9,7 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/shared/components/ui/textarea'
 import { SOWSection } from './sow-field'
 
-export function ProjectFields() {
+interface Props {
+  pricingMode: 'total' | 'breakdown'
+}
+
+export function ProjectFields({ pricingMode }: Props) {
   const form = useFormContext<ProposalFormSchema>()
 
   const { fields, append, remove } = useFieldArray({
@@ -166,8 +170,9 @@ export function ProjectFields() {
                 <SOWSection
                   key={fieldOfArray.id}
                   index={index}
-                  sowSnapshot={fieldOfArray}
                   onDelete={() => remove(index)}
+                  pricingMode={pricingMode}
+                  sowSnapshot={fieldOfArray}
                 />
               ))}
               <Button
@@ -176,14 +181,15 @@ export function ProjectFields() {
                 variant="outline"
                 onClick={() => {
                   append({
+                    contentJSON: '',
+                    html: '',
+                    price: pricingMode === 'breakdown' ? 0 : undefined,
+                    scopes: [],
+                    title: '',
                     trade: {
                       id: '',
                       label: '',
                     },
-                    scopes: [],
-                    title: '',
-                    contentJSON: '',
-                    html: '',
                   })
                 }}
               >

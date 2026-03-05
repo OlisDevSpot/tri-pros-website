@@ -44,6 +44,7 @@ export function EditProposalView() {
   const initProposalValues = useMemo(() => {
     if (proposal.data) {
       const initialValues: OverrideProposalValues = {
+        meta: proposal.data.formMetaJSON,
         homeowner: proposal.data.homeownerJSON,
         project: proposal.data.projectJSON,
         funding: proposal.data.fundingJSON,
@@ -85,6 +86,7 @@ export function EditProposalView() {
     updateProposal.mutate({
       proposalId,
       data: {
+        formMetaJSON: rawData.meta,
         homeownerJSON: rawData.homeowner,
         projectJSON: rawData.project,
         fundingJSON: {

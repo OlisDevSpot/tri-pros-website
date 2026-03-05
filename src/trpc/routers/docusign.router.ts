@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import env from '@/shared/config/server-env'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
-import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
+import { DS_OAUTH_BASE_URL, DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
 import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
 import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
@@ -21,6 +21,44 @@ async function getValidatedToken() {
   }
 }
 
+interface DocuSignAccountInfo {
+  sub: string
+  accounts: Array<{
+    account_id: string
+    base_uri: string
+    is_default: boolean
+  }>
+}
+
+export async function getDocuSignAccountInfo(accessToken: string) {
+  const res = await fetch(`https://${DS_OAUTH_BASE_URL}/oauth/userinfo`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch DocuSign userinfo')
+  }
+
+  const data = (await res.json()) as DocuSignAccountInfo
+
+  const account
+    = data.accounts.find(a => a.is_default)
+      ?? data.accounts[0]
+
+  if (!account) {
+    throw new Error('No DocuSign account found')
+  }
+
+  return {
+    accountId: account.account_id,
+    baseUri: account.base_uri,
+    restBaseUrl: `${account.base_uri}/restapi`,
+    userId: data.sub,
+  }
+}
+
 export const docusignRouter = createTRPCRouter({
   createContractDraft: agentProcedure
     .input(z.object({ proposalId: z.string() }))
@@ -33,10 +71,12 @@ export const docusignRouter = createTRPCRouter({
         }
 
         const token = await getValidatedToken()
+        const { accountId, restBaseUrl }
+          = await getDocuSignAccountInfo(token)
 
         const body = buildEnvelopeBody(proposal, 'created')
 
-        const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {
+        const res = await fetch(`${restBaseUrl}/v2.1/accounts/${accountId}/envelopes`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

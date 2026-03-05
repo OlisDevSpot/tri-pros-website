@@ -8,28 +8,30 @@ export const constructionItemSchema = z.object({
   label: z.string(),
 })
 export const sowSchema = z.object({
-  title: z.string(),
-  trade: constructionItemSchema,
-  scopes: z.array(constructionItemSchema),
   contentJSON: z.string(),
   html: z.string(),
+  price: z.number().optional(),
+  scopes: z.array(constructionItemSchema),
+  title: z.string(),
+  trade: constructionItemSchema,
 })
 
-const DiscountIncentiveSchema = z.object({
+const discountIncentiveSchema = z.object({
   type: z.literal('discount'),
   amount: z.number(),
   notes: z.string().optional(),
 })
 
-const ExclusiveOfferIncentiveSchema = z.object({
+const exclusiveOfferIncentiveSchema = z.object({
   type: z.literal('exclusive-offer'),
   offer: z.string(),
   notes: z.string().optional(),
 })
 
-const incentiveSchema = z.discriminatedUnion('type', [DiscountIncentiveSchema, ExclusiveOfferIncentiveSchema])
+const incentiveSchema = z.discriminatedUnion('type', [discountIncentiveSchema, exclusiveOfferIncentiveSchema])
 
 // MAIN SCHEMA BUILDING BLOCKS
+
 const homeownerDataSchema = z.object({
   name: z.string(),
   phoneNum: z.string(),
@@ -57,9 +59,10 @@ const projectDataSchema = z.object({
 const fundingDataSchema = z.object({
   cashInDeal: z.number(),
   depositAmount: z.number(),
-  startingTcp: z.number(),
   finalTcp: z.number(),
   incentives: z.array(incentiveSchema),
+  miscPrice: z.number().optional(),
+  startingTcp: z.number(),
 })
 
 const sectionMetaSchema = z.object({
@@ -67,6 +70,10 @@ const sectionMetaSchema = z.object({
 })
 
 // MAIN SCHEMAS
+export const formMetaSectionSchema = z.object({
+  pricingMode: z.enum(['total', 'breakdown']),
+})
+
 export const homeownerSectionSchema = z.object({
   data: homeownerDataSchema,
   meta: sectionMetaSchema,

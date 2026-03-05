@@ -3,6 +3,7 @@ import type { Proposal } from '@/shared/db/schema'
 
 export function proposalToFormValues(proposal: Proposal): ProposalFormSchema {
   const data: ProposalFormSchema = {
+    meta: proposal.formMetaJSON,
     homeowner: proposal.homeownerJSON,
     project: proposal.projectJSON,
     funding: proposal.fundingJSON,
