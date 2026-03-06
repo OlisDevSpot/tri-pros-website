@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectDetail } from '@/shared/dal/server/landing/projects'
+import type { ProjectDetail } from '@/shared/entities/projects/types'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 

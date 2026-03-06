@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectDetail } from '@/shared/dal/server/landing/projects'
+import type { ProjectDetail } from '@/shared/entities/projects/types'
 import { X } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import Image from 'next/image'

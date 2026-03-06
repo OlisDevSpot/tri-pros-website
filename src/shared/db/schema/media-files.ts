@@ -36,7 +36,11 @@ export const mediaFilesRelations = relations(mediaFiles, ({ one }) => ({
 }))
 
 export const selectMediaFilesSchema = createSelectSchema(mediaFiles)
-export type SelectMediaFilesSchema = z.infer<typeof selectMediaFilesSchema>
+export type MediaFile = z.infer<typeof selectMediaFilesSchema>
 
-export const insertMediaFilesSchema = selectMediaFilesSchema.omit({ id: true, createdAt: true, updatedAt: true })
+export const insertMediaFilesSchema = selectMediaFilesSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+})
 export type InsertMediaFilesSchema = z.infer<typeof insertMediaFilesSchema>

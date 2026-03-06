@@ -7,13 +7,13 @@ import { useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Form } from '@/shared/components/ui/form'
 import { useUpdateProposal } from '@/shared/dal/client/proposals/mutations/use-update-proposal'
 import { useGetProposal } from '@/shared/dal/client/proposals/queries/use-get-proposal'
-import { proposalFormSchema } from '../../schemas/form-schema'
-import { ProposalForm } from '../components/form'
 
 export function calculateProposalDiscounts(proposal: ProposalFormSchema) {
   const { funding } = proposal
@@ -39,6 +39,7 @@ export function EditProposalView() {
     resolver: zodResolver(proposalFormSchema),
     mode: 'onSubmit',
     disabled: proposal.isLoading || updateProposal.isPending,
+    defaultValues: baseDefaultValues,
   })
 
   const initProposalValues = useMemo(() => {

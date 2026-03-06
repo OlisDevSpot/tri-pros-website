@@ -1,6 +1,6 @@
 'use client'
 
-import type { PublicProject } from '@/shared/dal/server/landing/projects'
+import type { PublicProject } from '@/shared/entities/projects/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -22,7 +22,7 @@ export function ProjectCard({ row, index }: { row: PublicProject, index: number 
     >
       <Link href={`/portfolio/${project.accessor}`}>
         <motion.div
-          className="relative rounded-xl overflow-hidden bg-muted aspect-[4/3] cursor-pointer"
+          className="relative rounded-xl overflow-hidden bg-muted aspect-4/3 cursor-pointer"
           whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.25 }}
           onHoverStart={() => setHovered(true)}
@@ -46,7 +46,7 @@ export function ProjectCard({ row, index }: { row: PublicProject, index: number 
               )}
 
           {/* Always-visible bottom gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
 
           {/* Bottom info */}
           <div className="absolute bottom-0 left-0 right-0 p-4 space-y-1">

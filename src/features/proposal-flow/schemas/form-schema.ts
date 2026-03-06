@@ -45,6 +45,7 @@ export const baseDefaultValues: ProposalFormSchema = {
             id: '',
             label: '',
           },
+          price: 0,
         },
       ],
       summary: '',
@@ -69,6 +70,7 @@ export const baseDefaultValues: ProposalFormSchema = {
     },
     meta: {
       enabled: true,
+      showPricingBreakdown: false,
     },
   },
 }

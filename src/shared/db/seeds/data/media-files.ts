@@ -7,7 +7,7 @@ import { projects } from '@/shared/db/schema'
 import { mediaFiles } from '@/shared/db/schema/media-files'
 import { projectsData } from './projects'
 
-async function createProject(data: Omit<InsertProject, 'address' | 'state' | 'customerId'>) {
+async function createProject(data: Omit<InsertProject, 'address' | 'state'>) {
   const [newProject] = await db.insert(projects).values(data).returning().onConflictDoUpdate({
     target: projects.accessor,
     set: {

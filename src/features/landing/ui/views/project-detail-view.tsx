@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectDetail } from '@/shared/dal/server/landing/projects'
+import type { ProjectDetail } from '@/shared/entities/projects/types'
 import BottomCTA from '@/shared/components/cta'
 import { BeforeAfterGallery } from '../components/portfolio/project/before-after-gallery'
 import { ProgressGallery } from '../components/portfolio/project/progress-gallery'

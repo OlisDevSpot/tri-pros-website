@@ -12,6 +12,8 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Switch } from '@/shared/components/ui/switch'
 import { FundingFields } from './funding-fields'
 import { HomeownerFields } from './homeowner-fields'
@@ -43,6 +45,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const [proposalId] = useQueryState('proposalId')
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
+  const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
 
   useEffect(() => {
     if (initialValues) {
@@ -79,7 +82,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
                     <Input
                       placeholder="John Doe"
                       {...field}
-                      className="bg-transparent dark:bg-transparent border-none"
+                      className="bg-transparent dark:bg-transparent border-none min-w-112.5"
                     />
                   </FormControl>
                   <FormMessage />
@@ -115,22 +118,40 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
         <CardHeader>
           <div className="flex gap-2 items-center">
             <CardTitle>Funding Information</CardTitle>
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={() => {
-
-              }}
-            >
-              <SettingsIcon className="w-4 h-4" />
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                >
+                  <SettingsIcon className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="start">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Funding Settings</p>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
+                      Show Pricing Breakdown
+                    </Label>
+                    <Switch
+                      id="show-pricing-breakdown"
+                      checked={showPricingBreakdown}
+                      onCheckedChange={checked =>
+                        form.setValue('funding.meta.showPricingBreakdown', checked)}
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <CardDescription>Information relevant to increased financial responsibility</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
           <FundingFields
             pricingMode={pricingMode}
+            showPricingBreakdown={showPricingBreakdown}
             showSettings
           />
         </CardContent>

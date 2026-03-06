@@ -1,9 +1,7 @@
-import type { Project, SelectMediaFilesSchema } from '@/shared/db/schema'
+import type { ProjectDetail, PublicProject } from '@/shared/entities/projects/types'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { mediaFiles, projects } from '@/shared/db/schema'
-
-export interface PublicProject { project: Project, heroImage: SelectMediaFilesSchema | null }
 
 export async function getPublicProjects(): Promise<PublicProject[]> {
   const rows = await db
@@ -32,18 +30,6 @@ export async function getPublicProjects(): Promise<PublicProject[]> {
     return true
   })
 }
-
-export interface ProjectMediaGroups {
-  hero: SelectMediaFilesSchema[]
-  before: SelectMediaFilesSchema[]
-  during: SelectMediaFilesSchema[]
-  after: SelectMediaFilesSchema[]
-  main: SelectMediaFilesSchema[]
-  videos: SelectMediaFilesSchema[]
-  all: SelectMediaFilesSchema[]
-}
-
-export type ProjectDetail = { project: Project, media: ProjectMediaGroups } | null
 
 export async function getProjectByAccessor(accessor: string): Promise<ProjectDetail> {
   const [project] = await db

@@ -1,9 +1,8 @@
 import type z from 'zod'
 import { relations } from 'drizzle-orm'
-import { boolean, jsonb, pgTable, text, uuid, varchar } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgTable, text, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { accessor, createdAt, description, id, updatedAt } from '../lib/schema-helpers'
-import { customers } from './customers'
 import { mediaFiles } from './media-files'
 
 export const projects = pgTable('projects', {
@@ -18,8 +17,6 @@ export const projects = pgTable('projects', {
   state: varchar('state', { length: 2 }).default('CA'),
   zip: varchar('zip', { length: 5 }),
   hoRequirements: jsonb('ho_requirements').$type<string[]>(),
-  customerId: uuid('customer_id')
-    .references(() => customers.id, { onDelete: 'cascade' }),
   createdAt,
   updatedAt,
 })

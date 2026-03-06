@@ -164,7 +164,9 @@ export function SOWSection({
                     <Input
                       {...field}
                       placeholder="$10,000"
-                      onChange={e => field.onChange(Number(e.target.value.replace(/\D/g, '')))}
+                      type="text"
+                      value={String(field.value || '')}
+                      onChange={e => field.onChange(Number(e.target.value || ''))}
                     />
                   </FormControl>
                   <FormMessage />

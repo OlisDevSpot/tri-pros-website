@@ -1,7 +1,8 @@
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import { randomBytes } from 'node:crypto'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, max } from 'drizzle-orm'
 import { db } from '@/shared/db'
+import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 
 export async function createProposal(data: InsertProposalSchema) {
@@ -39,13 +40,17 @@ export async function getProposal(proposalId: string) {
 }
 
 export async function getProposals(userId: string) {
-  const foundProposals = await db
-    .select()
+  return db
+    .select({
+      ...getTableColumns(proposals),
+      viewCount: count(proposalViews.id),
+      lastViewedAt: max(proposalViews.viewedAt),
+    })
     .from(proposals)
+    .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .where(eq(proposals.ownerId, userId))
+    .groupBy(proposals.id)
     .orderBy(desc(proposals.createdAt))
-
-  return foundProposals
 }
 
 export async function updateProposal(userIdOrToken: string, proposalId: string, data: Partial<InsertProposalSchema>) {

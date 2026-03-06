@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectDetail } from '@/shared/dal/server/landing/projects'
+import type { ProjectDetail } from '@/shared/entities/projects/types'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import { Badge } from '@/shared/components/ui/badge'
@@ -35,7 +35,7 @@ export function ProjectHero({ project, heroUrl }: Props) {
           )}
 
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
 
       {/* Content */}
       <motion.div

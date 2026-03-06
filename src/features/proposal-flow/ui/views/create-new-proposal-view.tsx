@@ -26,6 +26,7 @@ import { useCreateProposal } from '@/shared/dal/client/proposals/mutations/use-c
 import { homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { useTRPC } from '@/trpc/helpers'
+import { getProposalAggregates } from '../../lib/get-proposal-aggregates'
 
 export function CreateNewProposalView() {
   const [query, setQuery] = useQueryState('q', { defaultValue: '' })
@@ -112,13 +113,7 @@ export function CreateNewProposalView() {
         item !== undefined,
     )
 
-    const totalProjectDiscounts = data.funding.data.incentives.reduce((acc, cur) => {
-      if (cur.type === 'discount') {
-        return acc + cur.amount
-      }
-
-      return acc
-    }, 0)
+    const { totalProjectDiscounts } = getProposalAggregates(data)
 
     createProposal.mutate({
       label: data.project.data.label,
