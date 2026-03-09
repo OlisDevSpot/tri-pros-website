@@ -92,7 +92,6 @@ Env file: `.env` at project root. See `server-env.ts` for the full list of requi
 ### Key Integrations
 
 - **DocuSign** — E-signature for proposals
-- **HubSpot / Pipedrive / Monday.com** — CRM integrations
 - **Cloudflare R2** — File storage (S3-compatible)
 - **Upstash QStash** — Background job queue (handlers at `/api/qstash-jobs`)
 - **Resend + React Email** — Transactional email
