@@ -46,13 +46,13 @@ export function PricingBreakdown({ proposalData }: { proposalData: InsertProposa
       {incentives.length > 0 && (
         <>
           <div className="border-t border-border/40" />
-          <div className="px-5 py-4 space-y-2.5">
+          <div className="px-5 py-4 space-y-2.5 text-emerald-700 dark:text-emerald-400">
             {incentives.map((incentive, i) => {
               if (incentive.type === 'discount') {
                 return (
                   <div key={`discount-${incentive.notes ?? i}`} className="flex items-center justify-between">
-                    <span className="text-rose-500">{incentive.notes || 'Discount'}</span>
-                    <span className="font-medium text-rose-500">
+                    <span>{incentive.notes || 'Discount'}</span>
+                    <span className="font-medium">
                       -
                       {formatAsDollars(incentive.amount)}
                     </span>
@@ -62,7 +62,7 @@ export function PricingBreakdown({ proposalData }: { proposalData: InsertProposa
               return (
                 <div key={`offer-${incentive.offer ?? i}`} className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <span className="text-violet-500">{incentive.offer || 'Exclusive Offer'}</span>
+                    <span className="">{incentive.offer || 'Exclusive Offer'}</span>
                     {incentive.notes && (
                       <span className="mx-2 flex items-center gap-2">
                         {' '}
@@ -71,7 +71,7 @@ export function PricingBreakdown({ proposalData }: { proposalData: InsertProposa
                       </span>
                     )}
                   </div>
-                  <span className="font-medium text-violet-500 flex items-center gap-1">
+                  <span className="font-medium flex items-center gap-1">
                     <CheckIcon className="w-3.5 h-3.5" />
                     Included
                   </span>

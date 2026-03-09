@@ -1,9 +1,10 @@
-import { CalendarIcon, MapPinHouseIcon } from 'lucide-react'
+import { CalendarIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { companyInfo } from '@/features/landing/data/company'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { Logo } from '@/shared/components/logo'
-import { formatAddress, formatStringAsDate } from '@/shared/lib/formatters'
+import { Badge } from '@/shared/components/ui/badge'
+import { formatStringAsDate } from '@/shared/lib/formatters'
 
 export function Heading() {
   const proposal = useCurrentProposal()
@@ -16,30 +17,52 @@ export function Heading() {
     return null
   }
 
-  const { address, city, state, zip } = proposal.data.projectJSON.data
+  const { sow } = proposal.data.projectJSON.data
   const { name } = proposal.data.homeownerJSON.data
+
+  const firstName = name.split(' ')[0]
+  const firstTrade = sow[0]?.trade.label
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col justify-between items-center gap-2"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col justify-between items-center gap-6"
     >
-      <div>
-        <h2 className="text-2xl lg:text-4xl">
-          Proposal for
+      <div className="flex flex-col items-center gap-4 text-center">
+        <Badge
+          variant="secondary"
+          className="text-xs font-semibold uppercase tracking-widest"
+        >
+          Your Proposal Is Ready
+        </Badge>
+        <h1 className="text-3xl lg:text-5xl font-bold -ml-6">
+          👋
+          Hi
           {' '}
-          {`${name}` || 'John Doe'}
-        </h2>
+          {firstName}
+          ,
+        </h1>
+        {firstTrade && (
+          <p className="text-muted-foreground max-w-md">
+            We put together a complete picture of your
+            {firstTrade && (
+              <>
+                {' '}
+                {firstTrade.toLowerCase()}
+              </>
+            )}
+            {' '}
+            project
+            {sow.length > 1 && ' & additional scopes'}
+            . Here&apos;s everything we prepared for you.
+          </p>
+        )}
       </div>
       <div className="flex flex-col lg:flex-row gap-2 lg:gap-6">
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <CalendarIcon size={20} className="" />
           <p>{formatStringAsDate(proposal.data.createdAt, { hour: undefined, minute: undefined })}</p>
-        </div>
-        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-          <MapPinHouseIcon size={20} className="" />
-          <p>{formatAddress(address, city, state, zip)}</p>
         </div>
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <Logo variant="icon" className="size-5" />

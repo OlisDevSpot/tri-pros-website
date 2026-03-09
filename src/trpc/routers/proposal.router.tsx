@@ -163,6 +163,7 @@ export const proposalRouter = createTRPCRouter({
       customerName: z.string(),
       email: z.email(),
       token: z.string(),
+      message: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const { user } = ctx.session
@@ -176,6 +177,7 @@ export const proposalRouter = createTRPCRouter({
           <ProposalEmail
             proposalUrl={`${ROOTS.proposalFlow({ absolute: true, isProduction: true })}/proposal/${input.proposalId}?token=${input.token}&utm_source=email`}
             customerName={input.customerName}
+            repMessage={input.message}
           />
         ),
       })

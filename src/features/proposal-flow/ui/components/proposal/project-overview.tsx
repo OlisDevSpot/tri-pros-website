@@ -42,12 +42,12 @@ export function ProjectOverview() {
         }
 
         if ('format' in field && field.type === 'number') {
-          fieldWithValue.displayValue = field.format(Number(proposalCtx[field.name] || 0), proposalCtx)
+          fieldWithValue.displayValue = field.format(Number(proposalCtx[field.name] || 0))
           return fieldWithValue
         }
 
         if ('format' in field && (field.type === 'enum' || field.type === 'text')) {
-          fieldWithValue.displayValue = field.format(String(proposalCtx[field.name] || ''))
+          fieldWithValue.displayValue = field.format(String(proposalCtx[field.name] || ''), proposalCtx)
           return fieldWithValue
         }
 
@@ -79,33 +79,35 @@ export function ProjectOverview() {
           <CardDescription>Ensure your information matches with our records</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          <div className="space-y-8 lg:p-6 lg:border rounded-lg ">
+          <div className="space-y-8 rounded-lg ">
             {generateProposalFields(proposal.data).map(section => (
               <div
                 key={section.label}
                 className="flex flex-col md:flex-row gap-6 h-full items-center"
               >
-                <div className="flex-1 min-h-0 w-full grow flex items-center justify-center border rounded-lg py-8">
+                <div className="flex-1 min-h-0 h-auto w-full grow flex items-center justify-center border rounded-lg py-8 self-stretch">
                   <h2>{section.label}</h2>
                 </div>
                 <div className="flex-2 flex flex-col gap-2 w-full">
                   {section.fields.map(field => (
                     <div
                       key={field.label}
-                      className="flex items-end gap-2"
+                      className="flex items-start gap-2"
                     >
-                      <div className="flex gap-2 text-muted-foreground">
-                        <span className="flex items-center justify-center w-5">
-                          {'Icon' in field && <field.Icon className="size-5" />}
-                        </span>
-                        <p>{field.label}</p>
+                      <div className="grow flex items-end gap-2">
+                        <div className="flex gap-2 text-muted-foreground">
+                          <span className="flex items-center justify-center w-5">
+                            {'Icon' in field && <field.Icon className="size-5" />}
+                          </span>
+                          <p>{field.label}</p>
+                        </div>
+                        <div className="border-b border-dashed grow mb-1.25" />
                       </div>
-                      <div className="border-b border-dashed grow mb-1.25" />
-                      <p
+                      <span
                         className="w-fit text-end"
                       >
                         {field.displayValue}
-                      </p>
+                      </span>
                     </div>
                   ))}
                 </div>

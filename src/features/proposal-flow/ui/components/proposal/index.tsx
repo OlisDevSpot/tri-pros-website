@@ -103,12 +103,13 @@ export function Proposal() {
                   />
                 )}
                 {customizableSections.includes(step.accessor) && step.accessor === 'send-proposal' && (
-                  <step.Component onClick={() => {
+                  <step.Component onClick={(message) => {
                     sendProposalEmail.mutate({
                       proposalId: params.proposalId,
                       email: email || '',
                       token: token || '',
                       customerName: name,
+                      message,
                     }, {
                       onSuccess: () => {
                         toast.success('proposal sent!')

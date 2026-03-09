@@ -62,6 +62,7 @@ export function SOWSection({
                     field.onChange(val)
                     getScopesOfTrade(val)
                     form.setValue(`project.data.sow.${index}.scopes`, [])
+                    form.setValue(`project.data.sow.${index}.trade.label`, allTrades.data?.find(trade => trade.id === val)?.name || '')
                   }}
                 >
                   <SelectTrigger

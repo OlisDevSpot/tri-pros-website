@@ -55,6 +55,31 @@ const styles = {
     textAlign: 'center' as const,
   },
 
+  repNoteSection: {
+    backgroundColor: '#f0f7ff',
+    borderLeft: '3px solid #2563eb',
+    padding: '12px 16px',
+    borderRadius: 4,
+    marginBottom: 16,
+  },
+
+  repNoteLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#2563eb',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.06em',
+    marginBottom: 4,
+  },
+
+  repNoteText: {
+    fontSize: 16,
+    lineHeight: '24px',
+    color: '#333',
+    fontStyle: 'italic',
+    margin: 0,
+  },
+
   button: {
     backgroundColor: '#2563eb',
     color: '#ffffff',
@@ -92,6 +117,7 @@ interface Props {
   heroImageUrl?: string
   logoUrl?: string
   projectSummary?: string
+  repMessage?: string
 }
 
 const base = ROOTS.generateUrl('', { absolute: true })
@@ -104,7 +130,8 @@ export default function ProposalEmail({
   repPhone = '8184707656',
   heroImageUrl = `${base}/hero-photos/modern-house-5.jpg`,
   logoUrl = `${base}/company/logo/logo-light-right.jpg`,
-  projectSummary = 'We’ve prepared a customized proposal outlining the scope, pricing, and next steps for the scope of work we discussed.',
+  projectSummary = 'We\'ve prepared a customized proposal outlining the scope, pricing, and next steps for the scope of work we discussed.',
+  repMessage,
 }: Props) {
   return (
     <Html>
@@ -131,13 +158,22 @@ export default function ProposalEmail({
           </Text>
 
           <Text style={styles.text}>
-            We’re excited to share your personalized proposal from
+            We're excited to share your personalized proposal from
             {' '}
             <strong>{companyName}</strong>
             .
           </Text>
 
-          <Text style={styles.text}>{projectSummary}</Text>
+          {repMessage
+            ? (
+                <Section style={styles.repNoteSection}>
+                  <Text style={styles.repNoteLabel}>A personal note from your rep</Text>
+                  <Text style={styles.repNoteText}>{repMessage}</Text>
+                </Section>
+              )
+            : (
+                <Text style={styles.text}>{projectSummary}</Text>
+              )}
 
           <Section style={{ margin: '24px 0', textAlign: 'center' }}>
             <Img
@@ -155,7 +191,7 @@ export default function ProposalEmail({
           </Section>
 
           <Text style={styles.subtle}>
-            You’ll be able to review details, pricing options, and next steps.
+            You'll be able to review details, pricing options, and next steps.
           </Text>
 
           <Hr style={styles.hr} />
@@ -167,8 +203,8 @@ export default function ProposalEmail({
 
             <Text style={styles.text}>
               • Review your proposal at your convenience
-              • Select any options you’d like included
-              • Approve electronically when you’re ready
+              • Select any options you'd like included
+              • Approve electronically when you're ready
             </Text>
           </Section>
 

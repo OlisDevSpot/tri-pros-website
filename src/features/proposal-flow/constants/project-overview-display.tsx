@@ -4,15 +4,15 @@ import type { Proposal } from '@/shared/db/schema'
 import {
   BabyIcon,
   BanknoteArrowDownIcon,
-  CircleDollarSignIcon,
   CircleUserIcon,
   DrillIcon,
   MailIcon,
+  MapPinHouseIcon,
   PhoneIcon,
 } from 'lucide-react'
 import { FaTimeline } from 'react-icons/fa6'
-import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { projectTypes } from '@/shared/constants/enums'
+import { formatAddress } from '@/shared/lib/formatters'
 
 export type Display = string | React.ReactNode
 
@@ -60,16 +60,33 @@ export const proposalFields = [
     label: 'Homeowner',
     fields: [
       {
+        type: 'text',
         label: 'Name',
         name: 'name',
         Icon: CircleUserIcon,
       },
       {
+        type: 'text',
+        label: 'Address',
+        name: 'address',
+        Icon: MapPinHouseIcon,
+        format: (value, ctx) => {
+          const { address, city, state, zip } = ctx
+          return (
+            <div className="whitespace-pre-line">
+              {formatAddress(address, city, state, zip)}
+            </div>
+          )
+        },
+      },
+      {
+        type: 'text',
         label: 'Email',
         name: 'email',
         Icon: MailIcon,
       },
       {
+        type: 'text',
         label: 'Phone',
         name: 'phoneNum',
         Icon: PhoneIcon,
@@ -105,6 +122,11 @@ export const proposalFields = [
         Icon: DrillIcon,
       },
       {
+        label: 'Time Allocated',
+        name: 'timeAllocated',
+        Icon: FaTimeline,
+      },
+      {
         label: 'Scopes',
         name: 'scopes',
         type: 'text',
@@ -112,86 +134,15 @@ export const proposalFields = [
         format: (value) => {
           const scopes = value.split(',')
           return (
-            <HybridPopoverTooltip
-              content={(
-                <span className="flex flex-col gap-2">
-                  {scopes.map(scope => (
-                    <span key={scope}>{scope}</span>
-                  ))}
-                </span>
-              )}
-            >
-              {scopes[0]}
-            </HybridPopoverTooltip>
+            <div className="flex flex-col gap-2">
+              <span className="flex flex-col gap-2">
+                {scopes.map(scope => (
+                  <span key={scope}>{scope}</span>
+                ))}
+              </span>
+            </div>
           )
         },
-      },
-      {
-        label: 'Time Allocated',
-        name: 'timeAllocated',
-        Icon: FaTimeline,
-      },
-    ],
-  },
-  {
-    label: 'Funding',
-    fields: [
-      {
-        type: 'number',
-        label: 'Contract Price',
-        name: 'finalTcp',
-        format: (value, ctx) => {
-          const discounts = ctx.incentives.reduce((acc, cur) => cur.type === 'discount' ? acc + cur.amount : acc, 0)
-          const formattedStartingTcp = ctx.startingTcp.toLocaleString('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            maximumFractionDigits: 0,
-          })
-
-          const formattedFinalTcp = value.toLocaleString('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            maximumFractionDigits: 0,
-          })
-
-          if (!discounts) {
-            return formattedFinalTcp
-          }
-
-          return (
-            <span className="inline-flex items-center gap-2">
-              <span className="line-through text-muted-foreground">{formattedStartingTcp}</span>
-              <span className="font-medium">{formattedFinalTcp}</span>
-            </span>
-          )
-        },
-        Icon: CircleDollarSignIcon,
-      },
-      {
-        type: 'number',
-        label: 'Deposit',
-        name: 'depositAmount',
-        format: value => value.toLocaleString('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          maximumFractionDigits: 0,
-        }),
-        Icon: BanknoteArrowDownIcon,
-      },
-      {
-        type: 'text',
-        label: 'Exclusive Offer',
-        name: 'exclusiveOffers',
-        format: (value) => {
-          const offers = value.split(',').map(offer => offer.trim())
-
-          return (
-            <span>
-              {offers.join(', ')}
-            </span>
-          )
-        },
-        Icon: CircleDollarSignIcon,
       },
     ],
   },
