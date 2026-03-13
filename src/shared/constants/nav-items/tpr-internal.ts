@@ -1,22 +1,21 @@
 import type { NavItem } from '@/shared/types/nav'
 
+import { ROOTS } from '@/shared/config/roots'
+
 export const tprInternalNavItems = [
   {
     name: 'Flows',
-    href: '/proposal-flow',
     action: 'readonly',
     subItems: [
       {
-        name: 'Meetings',
-        href: '/meetings',
+        name: 'Dashboard',
+        href: ROOTS.dashboard(),
+        action: 'navigate',
       },
       {
         name: 'Showroom',
         href: '/showroom',
-      },
-      {
-        name: 'Proposals',
-        href: '/proposal-flow',
+        action: 'navigate',
       },
     ],
   },

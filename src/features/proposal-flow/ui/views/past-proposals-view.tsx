@@ -48,9 +48,9 @@ export function PastProposalsView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4"
     >
-      <Card className="h-full w-full flex flex-col">
-        <CardHeader className="shrink-0">
-          <CardTitle>Past Proposals</CardTitle>
+      <Card className="h-full w-full flex flex-col lg:p-6 border-0 lg:border bg-transparent lg:bg-card">
+        <CardHeader className="shrink-0 px-0">
+          <CardTitle>Proposals</CardTitle>
           <CardDescription>
             {proposals.data.length}
             {' '}
@@ -58,7 +58,7 @@ export function PastProposalsView() {
             {proposals.data.length !== 1 ? 's' : ''}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grow min-h-0 overflow-auto">
+        <CardContent className="grow min-h-0 overflow-auto px-0">
           <PastProposalsTable data={proposals.data} />
         </CardContent>
       </Card>

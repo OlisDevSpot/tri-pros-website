@@ -5,12 +5,13 @@ import { db } from '@/shared/db'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 
-export async function createProposal(data: InsertProposalSchema) {
+export async function createProposal(data: InsertProposalSchema, customerId?: string) {
   try {
     const [proposal] = await db
       .insert(proposals)
       .values({
         ...data,
+        customerId: customerId ?? null,
         fundingJSON: {
           ...data.fundingJSON,
           data: {

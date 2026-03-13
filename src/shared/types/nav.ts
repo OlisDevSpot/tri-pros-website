@@ -1,15 +1,18 @@
 import type { useTRPC } from '@/trpc/helpers'
 
-export interface NavItem {
+export type NavItem = {
   name: string
-  href: string
   icon?: any
   badge?: string
-  action?: 'readonly' | 'navigate'
-  subItems?: NavItem[]
   enablePrefetch?: boolean
   prefetchFn?: (trpc: ReturnType<typeof useTRPC>) => void
-}
+} & ({
+  href: string
+  action: 'navigate'
+} | {
+  action: 'readonly'
+  subItems: NavItem[]
+})
 
 export interface NavItemsGroup {
   sectionName: 'Marketing Links' | 'TPR Internal' | 'Action Buttons'

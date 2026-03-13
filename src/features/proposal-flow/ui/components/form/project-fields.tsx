@@ -7,6 +7,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { SOWSection } from './sow-field'
 
 interface Props {
@@ -97,12 +98,11 @@ export function ProjectFields({ pricingMode }: Props) {
                         <SelectValue placeholder="Select a project type" />
                       </SelectTrigger>
                       <SelectContent {...field}>
-                        <SelectItem value="general-remodeling">
-                          General Remodeling
-                        </SelectItem>
-                        <SelectItem value="energy-efficient">
-                          Energy Efficient
-                        </SelectItem>
+                        {projectTypes.map(type => (
+                          <SelectItem key={type} value={type}>
+                            {type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </FormControl>
@@ -140,21 +140,9 @@ export function ProjectFields({ pricingMode }: Props) {
                         <SelectValue placeholder="Select a project type" />
                       </SelectTrigger>
                       <SelectContent {...field}>
-                        <SelectItem value="30 days">
-                          30 days
-                        </SelectItem>
-                        <SelectItem value="60 days">
-                          60 days
-                        </SelectItem>
-                        <SelectItem value="90 days">
-                          90 days
-                        </SelectItem>
-                        <SelectItem value="180 days">
-                          180 days
-                        </SelectItem>
-                        <SelectItem value="365 days">
-                          365 days
-                        </SelectItem>
+                        {validThroughTimeframes.map(tf => (
+                          <SelectItem key={tf} value={tf}>{tf}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </FormControl>

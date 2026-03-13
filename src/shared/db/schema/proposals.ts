@@ -1,17 +1,17 @@
 import type z from 'zod'
 import type { FormMetaSection, FundingSection, HomeownerSection, ProjectSection } from '@/shared/entities/proposals/types'
+import type { ProposalStatus } from '@/shared/types/enums'
 import { relations } from 'drizzle-orm'
-import { integer, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { fundingSectionSchema, homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
+import { customers } from './customers'
 import { financeOptions } from './finance-options'
+import { proposalStatusEnum } from './meta'
 
-const proposalStatuses = ['draft', 'sent', 'approved', 'declined'] as const
-
-export type ProposalStatus = typeof proposalStatuses[number]
-export const proposalStatusEnum = pgEnum('proposal_status', proposalStatuses)
+export type { ProposalStatus }
 
 export const proposals = pgTable('proposals', {
   id,
@@ -22,6 +22,7 @@ export const proposals = pgTable('proposals', {
     .references(() => user.id, { onDelete: 'cascade' }),
   token: text('token').notNull(),
   notionPageId: text('notion_page_id'),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
 
   formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>().notNull(),
   homeownerJSON: jsonb('homeowner_JSON').$type<HomeownerSection>().notNull(),
@@ -33,6 +34,7 @@ export const proposals = pgTable('proposals', {
 
   docusignEnvelopeId: text('docusign_envelope_id'),
   contractSentAt: timestamp('contract_sent_at', { mode: 'string', withTimezone: true }),
+  sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
 
   createdAt,
   updatedAt,
@@ -46,6 +48,10 @@ export const proposalsRelations = relations(proposals, ({ one }) => ({
   financeOption: one(financeOptions, {
     fields: [proposals.financeOptionId],
     references: [financeOptions.id],
+  }),
+  customer: one(customers, {
+    fields: [proposals.customerId],
+    references: [customers.id],
   }),
 }))
 
@@ -63,6 +69,7 @@ export const insertProposalSchema = createInsertSchema(proposals, {
 }).omit({
   id: true,
   token: true,
+  customerId: true,
   createdAt: true,
   updatedAt: true,
 })

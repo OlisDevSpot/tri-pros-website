@@ -10,6 +10,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shar
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { incentiveTypes } from '@/shared/constants/enums'
 import { PricingBreakdown } from '../pricing-breakdown'
 
 interface Props {
@@ -170,12 +171,11 @@ export function FundingFields({
                                 <SelectValue placeholder="Select an incentive type" />
                               </SelectTrigger>
                               <SelectContent {...field}>
-                                <SelectItem value="discount">
-                                  Discount
-                                </SelectItem>
-                                <SelectItem value="exclusive-offer">
-                                  Exclusive Offer
-                                </SelectItem>
+                                {incentiveTypes.filter(t => t === 'discount' || t === 'exclusive-offer').map(t => (
+                                  <SelectItem key={t} value={t}>
+                                    {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </FormControl>

@@ -1,7 +1,6 @@
 'use client'
 
 import type { Variants } from 'motion/react'
-import type { NavItem as TNavItem } from '@/shared/types/nav'
 import { CalendarPlus2Icon, LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
@@ -101,15 +100,6 @@ export function SiteNavbar() {
 
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
 
-  function findSelectedItem(index: number): TNavItem | undefined {
-    const item = marketingNavItems.find((_, i) => i === index)
-
-    if (!item || !('subItems' in item))
-      return undefined
-
-    return item
-  }
-
   if (!mounted)
     return null
 
@@ -192,7 +182,7 @@ export function SiteNavbar() {
                     width={width}
                     left={left}
                     index={index}
-                    isActive={isActive(item.href)}
+                    isActive={isActive(item.action === 'navigate' ? item.href : '')}
                     onClick={() => {
                       setSelectedItemIndex(null)
                     }}
@@ -205,7 +195,7 @@ export function SiteNavbar() {
               </div>
               {/* Additional Content */}
               <AnimatePresence>
-                {selectedItemIndex && 'subItems' in marketingNavItems[selectedItemIndex] && marketingNavItems[selectedItemIndex]?.subItems && (
+                {selectedItemIndex && marketingNavItems[selectedItemIndex].action === 'readonly' && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -227,7 +217,7 @@ export function SiteNavbar() {
                       }}
                       className="flex flex-col"
                     >
-                      {findSelectedItem(selectedItemIndex)?.subItems?.map((subItem, index) => (
+                      {marketingNavItems[selectedItemIndex].subItems?.map((subItem, index) => (
                         <MotionButton
                           key={subItem.name}
                           variant="link"

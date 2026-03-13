@@ -66,7 +66,7 @@ export function NavItem({
       >
         <div className="flex gap-2 items-center w-fit">
           {item.name}
-          {item.subItems && item.subItems.length > 0 && (
+          {item.action === 'readonly' && item.subItems.length > 0 && (
             <ChevronUpIcon
               className={cn(
                 'size-4 transition-transform -mr-2',

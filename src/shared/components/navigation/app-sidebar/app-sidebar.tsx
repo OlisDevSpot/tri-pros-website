@@ -80,23 +80,27 @@ export function AppSidebar<T extends Record<string, NavItemsGroup>>({
               <SidebarMenu>
                 {sidebarItemsGroups[key].items.map(item => (
                   <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild className="transition-colors duration-200 text-sidebar-foreground" isActive={pathname.startsWith(item.href)}>
-                      <Link href={item.href} onClick={() => setOpenMobile(false)}>
-                        <span>{item.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
+                    {item.action === 'navigate' && (
+                      <SidebarMenuButton asChild className="transition-colors duration-200 text-sidebar-foreground" isActive={pathname.startsWith(item.href)}>
+                        <Link href={item.href} onClick={() => setOpenMobile(false)}>
+                          <span>{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    )}
                     {item.badge && (
                       <SidebarMenuBadge className="border rounded-sm border-sidebar-foreground">{item.badge}</SidebarMenuBadge>
                     )}
-                    {'subItems' in item && (
+                    {item.action === 'readonly' && (
                       <SidebarMenuSub className="mt-0.5 pr-0 mr-0">
-                        {item.subItems?.map(subItem => (
+                        {item.subItems.map(subItem => (
                           <SidebarMenuSubItem key={subItem.name}>
-                            <SidebarMenuSubButton asChild className="transition-colors duration-200 text-sidebar-foreground" isActive={pathname.startsWith(subItem.href)}>
-                              <Link href={subItem.href} onClick={() => setOpenMobile(false)} onMouseEnter={() => subItem.prefetchFn?.(trpc)}>
-                                <span>{subItem.name}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
+                            {subItem.action === 'navigate' && (
+                              <SidebarMenuSubButton asChild className="transition-colors duration-200 text-sidebar-foreground" isActive={pathname.startsWith(subItem.href)}>
+                                <Link href={subItem.href} onClick={() => setOpenMobile(false)} onMouseEnter={() => subItem.prefetchFn?.(trpc)}>
+                                  <span>{subItem.name}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            )}
                           </SidebarMenuSubItem>
                         ))}
                       </SidebarMenuSub>

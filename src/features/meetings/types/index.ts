@@ -1,3 +1,5 @@
+export type ProgramAccessor = 'tpr-monthly-special' | 'energy-savings-plus' | 'senior-citizen-program'
+
 export type BuyTriggerType = 'urgency' | 'scarcity' | 'authority' | 'risk-reduction' | 'social-proof'
 
 export interface BuyTrigger {
@@ -15,24 +17,41 @@ export interface CaseStudy {
   results: string[]
 }
 
-export type CollectionFieldType = 'select' | 'text'
+export type CollectionFieldType = 'select' | 'text' | 'number' | 'rating' | 'boolean'
+
+export type JsonbSection
+  = | 'financialProfileJSON'
+    | 'homeownerSubjectiveProfileJSON'
+    | 'programDataJSON'
+    | 'propertyProfileJSON'
+    | 'situationObjectiveProfileJSON'
 
 export interface CollectionField {
   id: string
+  jsonbKey: JsonbSection
   label: string
-  options?: string[]
+  max?: number
+  min?: number
+  options?: readonly string[]
   placeholder?: string
   required?: boolean
   type: CollectionFieldType
 }
 
+export interface IntakeStep {
+  description: string
+  fields: CollectionField[]
+  id: string
+  title: string
+}
+
 export interface MeetingContext {
   collectedData: {
     bill: string
-    dms: string
-    reason: string
+    dmsPresent: string
     scope: string
     timeline: string
+    triggerEvent: string
     yrs: string
   }
   customer: {
@@ -54,14 +73,15 @@ export interface MeetingStep {
   collectsData?: CollectionField[]
   headline: string
   headlineFn?: (ctx: MeetingContext) => string
-  id: string
+  accessor: string
+  shortLabel?: string
   title: string
 }
 
 export interface MeetingProgram {
   accentColor: 'amber' | 'sky' | 'violet'
   forWho: string
-  id: string
+  accessor: string
   name: string
   signals: string[]
   steps: MeetingStep[]

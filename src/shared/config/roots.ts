@@ -1,7 +1,13 @@
 const APP_ROOTS = {
   devBaseUrl: 'http://localhost:3000',
   prodBaseUrl: 'https://triprosremodeling.com',
-  proposalFlow: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/proposal-flow', options),
+  dashboard: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard', options),
+  /** Agent-facing proposal management — lives under /dashboard now */
+  proposalFlow: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard', options),
+  /** Customer-facing public proposal link — MUST stay at /proposal-flow */
+  proposalPublic: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/proposal-flow', options),
+  /** Meeting sub-routes (e.g., /dashboard/meetings/[meetingId]) */
+  meetings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/meetings', options),
   authFlow: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/auth-flow', options),
 } as const
 

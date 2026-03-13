@@ -1,5 +1,6 @@
 import type { MeetingContext, MeetingProgram } from '@/features/meetings/types'
-import { getCurrentMonth, getInstallSlotsLeft, getMonthEnd } from '@/features/meetings/constants/buy-triggers'
+import { getCurrentMonth, getInstallSlotsLeft, getMonthEnd } from '@/features/meetings/lib/buy-triggers'
+import { meetingDecisionTimelines, meetingYearsInHome } from '@/shared/constants/enums'
 
 const month = getCurrentMonth()
 const monthEnd = getMonthEnd()
@@ -9,7 +10,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
   {
     accentColor: 'amber',
     forWho: 'New customers, any trade',
-    id: 'tpr-monthly-special',
+    accessor: 'tpr-monthly-special',
     name: `TPR ${month} Priority Program`,
     signals: [
       'First visit with Tri Pros',
@@ -20,7 +21,8 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
     steps: [
       // ── Step 1: Why This Month ──────────────────────────────────────
       {
-        id: 'why-this-month',
+        accessor: 'why-this-month',
+        shortLabel: 'Timing',
         title: 'Why This Month',
         headline: 'You reached out at exactly the right time.',
         body: `Every few months, we negotiate a bulk materials contract with our SoCal suppliers. Right now, in ${month}, we have a contract in place with our roofing and insulation supplier — and we're passing those savings directly to families who schedule this month.\n\nThis isn't a manufactured promotion. It's a real capacity window — we have ${slotsLeft} install slots open before ${monthEnd}, and we're filling them with customers who qualify for this program.\n\nYou reached out at the perfect time. Here's why that matters.`,
@@ -42,6 +44,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
         collectsData: [
           {
             id: 'scope',
+            jsonbKey: 'programDataJSON',
             label: 'Scope they\'re interested in',
             placeholder: 'e.g. Roof replacement + attic insulation',
             required: true,
@@ -49,22 +52,18 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           },
           {
             id: 'yrs',
-            label: 'Years in the home',
-            placeholder: 'e.g. 12',
-            type: 'text',
-          },
-          {
-            id: 'reason',
-            label: 'Primary reason for the project',
-            placeholder: 'e.g. Active leak, high utility bills, selling soon',
-            type: 'text',
+            jsonbKey: 'programDataJSON',
+            label: 'Years in this home',
+            options: meetingYearsInHome,
+            type: 'select',
           },
         ],
       },
 
       // ── Step 2: What's Included ─────────────────────────────────────
       {
-        id: 'package',
+        accessor: 'package',
+        shortLabel: 'Package',
         title: `${month} Priority Package`,
         headline: `Here's exactly what's in the ${month} package — priced, defined, and in writing.`,
         body: `The ${month} Priority Package is not a discount. It's a structured incentive package we've built around three specific benefits we can offer this month because of our current supplier contract.\n\n**What's included:**\n• Material upgrade: standard 3-tab shingles → premium architectural shingles at the same price ($800 value)\n• Warranty extension: standard 3-year → 5-year workmanship warranty ($400 value)\n• Free attic inspection with any roof scope ($200 value)\n\nTotal package value: $1,400 — included at no additional cost for families who sign this month.\n\nThis also stacks with federal IRA Section 25C tax credits for qualifying energy upgrades (HVAC, insulation, windows) — up to 30% back, and the LADWP Home Upgrade rebate program is currently open (up to $3,000 for qualifying improvements).`,
@@ -86,18 +85,14 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
         collectsData: [
           {
             id: 'timeline',
+            jsonbKey: 'programDataJSON',
             label: 'When they want to move forward',
-            options: ['ASAP', '1–3 months', '3–6 months', '6+ months', 'Not sure'],
-            type: 'select',
-          },
-          {
-            id: 'dms',
-            label: 'Decision-makers present today',
-            options: ['Both decision-makers present', 'One decision-maker present', 'Unclear / will discuss'],
+            options: meetingDecisionTimelines,
             type: 'select',
           },
           {
             id: 'bill',
+            jsonbKey: 'programDataJSON',
             label: 'Current monthly energy bill (optional)',
             placeholder: 'e.g. $220',
             type: 'text',
@@ -107,7 +102,8 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
 
       // ── Step 3: The Numbers ─────────────────────────────────────────
       {
-        id: 'numbers',
+        accessor: 'numbers',
+        shortLabel: 'Financing',
         title: 'The Numbers',
         headline: 'Less than a car payment. For permanent results.',
         body: `Let's talk about what this investment looks like month to month.\n\nWe work with GreenSky, a home improvement financing specialist. At 9.99% APR:\n\n• 180-month term (15 years): most projects run $140–$220/month\n• 120-month term (10 years): slightly higher monthly, paid off faster\n\nWe also have an 18-month same-as-cash option — 0% interest if paid in full before month 19. Families with available cash or a home equity line use this to avoid interest entirely.\n\nFor qualifying energy upgrades (HVAC, insulation, windows), the federal IRA Section 25C credit gives you 30% back at tax time. On a $12,000 insulation + HVAC project, that's $3,600 directly back to you. The monthly payment drops accordingly.\n\nThe ${month} Priority Package reduces your starting cost by $1,400 — which lowers your monthly payment before financing even begins.`,
@@ -130,7 +126,8 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
 
       // ── Step 4: Success Stories ─────────────────────────────────────
       {
-        id: 'stories',
+        accessor: 'stories',
+        shortLabel: 'Stories',
         title: 'Homes Like Yours',
         headline: 'Three Southern California families. Three decisions like the one you\'re making today.',
         body: `**The Ramirez Family — Whittier, CA**\nRoofing + insulation. 22-year-old roof with an active leak. Summer bills at $320/month. They replaced the roof, added attic insulation, and received $2,800 back at tax time via the IRA 25C credit. Their energy bill dropped $130/month. "We'd been putting this off for two years. Wish we hadn't waited."\n\n**The Gutierrez Family — Cerritos, CA**\nRoofing + windows. 18-year-old roof and 8 leaking double-pane windows. One mobilization, one permit, one inspection. Monthly payment: $198. "I kept thinking I had to choose between the roof and the windows. Turns out I didn't."\n\n**The Kim Family — Downey, CA**\nInsulation + HVAC service. Running AC 12+ hours a day, $290/month in summer bills. After insulation: electric bill dropped $95/month. IRA credit: $1,400 back. Monthly payment: $160 over 10 years. "The AC barely runs now. In August. In Downey."`,
@@ -153,7 +150,8 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
 
       // ── Step 5: Your Situation (Personalized) ──────────────────────
       {
-        id: 'your-home',
+        accessor: 'your-home',
+        shortLabel: 'Yours',
         title: 'Your Situation',
         headline: 'Your home. Your numbers. Your timeline.',
         headlineFn: (ctx: MeetingContext) => {
@@ -166,9 +164,9 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
         bodyFn: (ctx: MeetingContext) => {
           const firstName = ctx.customer?.name.split(' ')[0] ?? null
           const city = ctx.customer?.city ? `in ${ctx.customer.city}` : 'in your area'
-          const { bill, dms, reason, scope, timeline, yrs } = ctx.collectedData
+          const { bill, dmsPresent, scope, timeline, triggerEvent, yrs } = ctx.collectedData
 
-          const hasContext = firstName || scope || reason || timeline || yrs || bill
+          const hasContext = firstName || scope || triggerEvent || timeline || yrs || bill
 
           if (!hasContext) {
             return `Every home in Southern California has the same underlying challenge: aging materials, rising energy costs, and a project that keeps getting pushed to "next month." Let's make this specific to your situation.\n\nBased on everything we've covered today, here's exactly what your project looks like — the scope, the cost, the timeline, and why this month is the right financial decision for your family.`
@@ -181,8 +179,8 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
             body += `The scope you're looking at — ${scope} — is exactly what the ${month} Priority Program was designed for. The incentive package applies directly to this work, and this month's supplier contract means you're getting material pricing we can't guarantee next month.\n\n`
           }
 
-          if (reason) {
-            body += `You mentioned ${reason.toLowerCase()}. That ongoing problem has a real cost — not just the visible damage, but the energy loss, the risk of it getting worse, and the stress of knowing it needs to happen. The cost of not acting isn't zero.\n\n`
+          if (triggerEvent && triggerEvent !== 'Other') {
+            body += `You mentioned ${triggerEvent.toLowerCase()}. That ongoing problem has a real cost — not just the visible damage, but the energy loss, the risk of it getting worse, and the stress of knowing it needs to happen. The cost of not acting isn't zero.\n\n`
           }
 
           if (timeline === 'ASAP') {
@@ -200,13 +198,13 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           }
 
           if (yrs) {
-            body += `After ${yrs} year${yrs === '1' ? '' : 's'} in this home, you know its rhythms. You've earned the right to a house that performs the way you want it to. This is the moment to make that permanent.`
+            body += `After ${yrs} in this home, you know its rhythms. You've earned the right to a house that performs the way you want it to. This is the moment to make that permanent.`
           }
           else {
             body += `The cost of waiting isn't zero — it's the ongoing drain of the problem, month after month. Today is how you end it.`
           }
 
-          if (dms === 'One decision-maker present') {
+          if (dmsPresent === 'Primary only' || dmsPresent === 'Partner on phone') {
             body += `\n\nOne thing worth noting: if there are other decision-makers who weren't here today, we can hold your slot and pricing for 48 hours while you loop them in. Just let me know.`
           }
 
@@ -236,7 +234,8 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
 
       // ── Step 6: What's Next ─────────────────────────────────────────
       {
-        id: 'close',
+        accessor: 'close',
+        shortLabel: 'Close',
         title: `What's Next`,
         headline: 'The next step takes 5 minutes. The result lasts decades.',
         body: `Here's a summary of everything we've covered:\n\n• Scope: Roofing, insulation, windows, and qualifying HVAC upgrades — all eligible this month\n• Incentive: ${month} Priority Package — architectural shingle upgrade + 5-year warranty + free attic inspection ($1,400 combined value)\n• Financing: 9.99% APR via GreenSky — 180-month or 120-month terms. 18-month same-as-cash available.\n• Tax credit: 30% IRA Section 25C credit for qualifying energy upgrades — applied at tax time\n• Timeline: Install within 3–4 weeks of signing. Most projects complete in 10–14 business days.\n• Expiration: ${monthEnd}\n\nWe'll build your proposal right now. It takes about 5 minutes — your name, address, scope confirmation, and financing preference. Our install coordinator calls you within 24 hours to schedule your start date.\n\nReady?`,
@@ -262,7 +261,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
   {
     accentColor: 'sky',
     forWho: 'Homeowners with high utility bills or comfort issues',
-    id: 'energy-saver',
+    accessor: 'energy-saver',
     name: 'Energy-Saver Incentive Program',
     signals: [
       'High monthly utility bills ($200+/month)',
@@ -289,7 +288,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: `Your home is spending money every month it doesn't have to.`,
-        id: 'problem',
+        accessor: 'problem',
         title: 'The Problem',
       },
       {
@@ -310,7 +309,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: 'Three upgrades. One story. Dramatically lower bills.',
-        id: 'solution',
+        accessor: 'solution',
         title: 'The Solution',
       },
       {
@@ -331,7 +330,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: 'Federal and state programs pay for part of this.',
-        id: 'government',
+        accessor: 'government',
         title: 'What the Government Covers',
       },
       {
@@ -352,7 +351,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: 'Before vs. after — side by side.',
-        id: 'math',
+        accessor: 'math',
         title: 'Your Monthly Math',
       },
       {
@@ -373,7 +372,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: 'These programs have deadlines. Here is why this month matters.',
-        id: 'why-now',
+        accessor: 'why-now',
         title: 'Why Now',
       },
     ],
@@ -382,7 +381,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
   {
     accentColor: 'violet',
     forWho: 'Returning Tri Pros customers',
-    id: 'existing-customer-savings-plus',
+    accessor: 'existing-customer-savings-plus',
     name: 'Existing Customer Savings+',
     signals: [
       'Had previous work done with Tri Pros',
@@ -409,7 +408,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: 'You already know what we do. Here is what is new.',
-        id: 'welcome-back',
+        accessor: 'welcome-back',
         title: 'Welcome Back',
       },
       {
@@ -430,7 +429,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: 'New scopes. New incentives. Better pricing than before.',
-        id: 'whats-changed',
+        accessor: 'whats-changed',
         title: `What's Changed`,
       },
       {
@@ -451,7 +450,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: `As an existing customer, you get things we can't offer publicly.`,
-        id: 'benefits',
+        accessor: 'benefits',
         title: 'Your Exclusive Benefits',
       },
       {
@@ -472,7 +471,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: `The next logical upgrade based on what we've done.`,
-        id: 'whats-next',
+        accessor: 'whats-next',
         title: `What's Next for Your Home`,
       },
       {
@@ -493,7 +492,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           ],
         },
         headline: `You've done this before. You know how it goes.`,
-        id: 'close',
+        accessor: 'close',
         title: 'The Easiest Yes',
       },
     ],
@@ -501,8 +500,8 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
   },
 ]
 
-export function getProgramById(id: string): MeetingProgram | undefined {
-  return MEETING_PROGRAMS.find(p => p.id === id)
+export function getProgramByAccessor(accessor: string): MeetingProgram | undefined {
+  return MEETING_PROGRAMS.find(p => p.accessor === accessor)
 }
 
 export function resolveProgramName(program: MeetingProgram): string {

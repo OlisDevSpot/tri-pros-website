@@ -2,7 +2,12 @@ import type { MetadataRoute } from 'next'
 import { marketingNavItems } from '@/shared/constants/nav-items'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const pages = marketingNavItems.map(item => item.href)
+  const pages = marketingNavItems.map((item) => {
+    if (item.action === 'navigate')
+      return item.href
+    else
+      return item.subItems.map(subItem => subItem.href)
+  }).flat()
 
   return [
     {

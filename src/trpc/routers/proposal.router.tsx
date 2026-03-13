@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import z from 'zod'
 import { ROOTS } from '@/shared/config/roots'
 import env from '@/shared/config/server-env'
+import { upsertCustomerFromNotion } from '@/shared/dal/server/customers/api'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
 import { createProposal, deleteProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
 import { getProposalViews, recordProposalView } from '@/shared/dal/server/proposals/proposal-views'
@@ -12,7 +13,9 @@ import { user } from '@/shared/db/schema/auth'
 import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
 import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
 import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
+import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { updatePageUrlProperty } from '@/shared/services/notion/dal/update-page-property'
+import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { resendClient } from '@/shared/services/resend/client'
 import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
 import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
@@ -59,7 +62,23 @@ export const proposalRouter = createTRPCRouter({
     .input(insertProposalSchema.strict())
     .mutation(async ({ input }) => {
       try {
-        const proposal = await createProposal(input)
+        // Resolve Notion contact → upsert customer → attach FK
+        let customerId: string | undefined
+        if (input.notionPageId) {
+          try {
+            const pages = await queryNotionDatabase('contacts', { id: input.notionPageId })
+            if (pages?.[0]) {
+              const contact = pageToContact(pages[0])
+              const customer = await upsertCustomerFromNotion(contact)
+              customerId = customer.id
+            }
+          }
+          catch {
+            // Non-fatal — proposal creation must not fail if Notion is unreachable
+          }
+        }
+
+        const proposal = await createProposal(input, customerId)
 
         if (!proposal) {
           throw new TRPCError({
@@ -67,7 +86,7 @@ export const proposalRouter = createTRPCRouter({
             cause: 'Proposal not created',
           })
         }
-        const proposalUrl = `${ROOTS.proposalFlow({ absolute: true })}/proposal/${proposal.id}?token=${proposal.token}`
+        const proposalUrl = `${ROOTS.proposalPublic({ absolute: true })}/proposal/${proposal.id}?token=${proposal.token}`
 
         if (proposal.notionPageId) {
           await updatePageUrlProperty(proposal.notionPageId, `Proposals Link`, proposalUrl)
@@ -152,7 +171,7 @@ export const proposalRouter = createTRPCRouter({
         financeOptionId: source.financeOptionId ?? undefined,
         notionPageId: source.notionPageId ?? undefined,
         // intentionally omitted: docusignEnvelopeId, contractSentAt
-      })
+      }, source.customerId ?? undefined)
 
       return duplicate
     }),
@@ -175,7 +194,7 @@ export const proposalRouter = createTRPCRouter({
         subject: 'Your Proposal From Tri Pros Remodeling',
         react: (
           <ProposalEmail
-            proposalUrl={`${ROOTS.proposalFlow({ absolute: true, isProduction: true })}/proposal/${input.proposalId}?token=${input.token}&utm_source=email`}
+            proposalUrl={`${ROOTS.proposalPublic({ absolute: true, isProduction: true })}/proposal/${input.proposalId}?token=${input.token}&utm_source=email`}
             customerName={input.customerName}
             repMessage={input.message}
           />
@@ -189,7 +208,10 @@ export const proposalRouter = createTRPCRouter({
         })
       }
 
-      const proposal = await updateProposal(user.id, input.proposalId, { status: 'sent' })
+      const proposal = await updateProposal(user.id, input.proposalId, {
+        status: 'sent',
+        sentAt: new Date().toISOString(),
+      })
 
       if (!proposal) {
         throw new TRPCError({

@@ -79,12 +79,12 @@ export function ProposalCard({ proposal }: Props) {
       </CardHeader>
       <CardContent className="w-fit flex flex-col gap-2">
         <Button asChild>
-          <Link href={`${ROOTS.proposalFlow()}/proposal/${proposal.id}`}>
+          <Link href={`${ROOTS.proposalPublic()}/proposal/${proposal.id}`}>
             View Proposal
           </Link>
         </Button>
         <Button asChild variant="secondary">
-          <Link href={`${ROOTS.proposalFlow()}?step=edit-proposal&proposalId=${proposal.id}`}>
+          <Link href={`${ROOTS.dashboard()}?step=edit-proposal&proposalId=${proposal.id}`}>
             Edit Proposal
           </Link>
         </Button>

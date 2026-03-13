@@ -20,5 +20,13 @@ export function useProposalActions() {
     onError: () => toast.error('Failed to duplicate proposal'),
   }))
 
-  return { deleteProposal, duplicateProposal }
+  const updateProposal = useMutation(trpc.proposalRouter.updateProposal.mutationOptions({
+    onSuccess: () => {
+      invalidate()
+      toast.success('Status updated')
+    },
+    onError: () => toast.error('Failed to update status'),
+  }))
+
+  return { deleteProposal, duplicateProposal, updateProposal }
 }

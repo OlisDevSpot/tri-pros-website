@@ -52,7 +52,7 @@ export function PopoverNav({
           <div className="px-4 py-4 space-y-4 flex flex-col items-center h-full justify-between">
             <div className="flex flex-col gap-4 items-center w-full">
               {isInternalUser(sessionQuery.data?.user) && navItems['tpr-internal']?.items.map((item, index) => (
-                <Fragment key={item.href}>
+                <Fragment key={item.name}>
                   <NavItem
                     item={item}
                     index={0}
@@ -73,7 +73,7 @@ export function PopoverNav({
                       >
                         {navItems['tpr-internal']?.items?.[selectedAgentItemIndex]?.subItems?.map((subItem, subItemIndex) => (
                           <NavItem
-                            key={subItem.href}
+                            key={subItem.name}
                             item={subItem}
                             index={subItemIndex}
                             isActive={false}
@@ -87,7 +87,7 @@ export function PopoverNav({
                 </Fragment>
               ))}
               {!matches.xl && navItems['marketing-links'] && navItems['marketing-links'].items.map((item, index) => (
-                <Fragment key={item.href}>
+                <Fragment key={item.name}>
                   <NavItem
                     item={item}
                     index={0}
@@ -108,7 +108,7 @@ export function PopoverNav({
                       >
                         {navItems['marketing-links']?.items?.[selectedMarketingItemIndex]?.subItems?.map((subItem, subItemIndex) => (
                           <NavItem
-                            key={subItem.href}
+                            key={'href' in subItem ? subItem.href : ''}
                             item={subItem}
                             index={subItemIndex}
                             isActive={false}

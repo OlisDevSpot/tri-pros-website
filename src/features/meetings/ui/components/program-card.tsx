@@ -2,46 +2,23 @@
 
 import type { MeetingProgram } from '@/features/meetings/types'
 import { ArrowRightIcon, CheckIcon } from 'lucide-react'
-import Link from 'next/link'
+import { programAccentMap } from '@/features/meetings/constants/program-accent-map'
+import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
 interface ProgramCardProps {
-  contactId?: string
   program: MeetingProgram
+  onSelect: () => void
 }
 
-const accentMap = {
-  amber: {
-    badge: 'bg-amber-500/15 text-amber-300 border border-amber-700/30',
-    button: 'bg-amber-500 text-black group-hover:bg-amber-400',
-    check: 'text-amber-400',
-    header: 'bg-linear-to-br from-amber-900/60 to-amber-800/10 border-b border-amber-800/40',
-    name: 'text-amber-300',
-  },
-  sky: {
-    badge: 'bg-sky-500/15 text-sky-300 border border-sky-700/30',
-    button: 'bg-sky-500 text-black group-hover:bg-sky-400',
-    check: 'text-sky-400',
-    header: 'bg-linear-to-br from-sky-900/60 to-sky-800/10 border-b border-sky-800/40',
-    name: 'text-sky-300',
-  },
-  violet: {
-    badge: 'bg-violet-500/15 text-violet-300 border border-violet-700/30',
-    button: 'bg-violet-500 text-white group-hover:bg-violet-400',
-    check: 'text-violet-400',
-    header: 'bg-linear-to-br from-violet-900/60 to-violet-800/10 border-b border-violet-800/40',
-    name: 'text-violet-300',
-  },
-} as const
-
-export function ProgramCard({ contactId, program }: ProgramCardProps) {
-  const accent = accentMap[program.accentColor]
-  const href = contactId ? `/meetings/${program.id}?contactId=${contactId}` : `/meetings/${program.id}`
+export function ProgramCard({ onSelect, program }: ProgramCardProps) {
+  const accent = programAccentMap[program.accentColor]
 
   return (
-    <Link
-      className="group flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/60 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      href={href}
+    <Button
+      className="group flex h-auto w-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-card/60 p-0 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-card/60 hover:shadow-xl focus-visible:ring-primary text-left"
+      variant="ghost"
+      onClick={onSelect}
     >
       {/* Gradient header */}
       <div className={cn('p-6', accent.header)}>
@@ -82,6 +59,6 @@ export function ProgramCard({ contactId, program }: ProgramCardProps) {
           <ArrowRightIcon className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
         </div>
       </div>
-    </Link>
+    </Button>
   )
 }
