@@ -1,13 +1,15 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { PlayIcon } from 'lucide-react'
+import { CalendarIcon, PlayIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { NotionContactSearch } from '@/shared/components/notion/contact-search'
 import { Button } from '@/shared/components/ui/button'
+import { Label } from '@/shared/components/ui/label'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CreateMeetingView() {
@@ -16,6 +18,7 @@ export function CreateMeetingView() {
 
   const [contactId, setContactId] = useState('')
   const [contactName, setContactName] = useState('')
+  const [scheduledFor, setScheduledFor] = useState<Date | undefined>(undefined)
 
   const createMeeting = useMutation(
     trpc.meetingsRouter.create.mutationOptions({
@@ -31,8 +34,9 @@ export function CreateMeetingView() {
 
   function handleStart() {
     createMeeting.mutate({
-      notionContactId: contactId || undefined,
+      notionContactId: contactId,
       contactName: contactName || undefined,
+      scheduledFor: scheduledFor?.toISOString(),
     })
   }
 
@@ -66,14 +70,27 @@ export function CreateMeetingView() {
         />
         {!contactId && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Linking a contact personalizes the meeting presentation.
+            Select a contact to start a meeting.
           </p>
         )}
       </div>
 
+      <div className="rounded-xl border border-border/40 bg-card/40 p-5">
+        <Label className="mb-3 text-sm font-semibold text-foreground flex items-center gap-2">
+          <CalendarIcon className="size-3.5 text-muted-foreground" />
+          Schedule
+        </Label>
+        <DateTimePicker
+          value={scheduledFor}
+          onChange={setScheduledFor}
+          placeholder="Select date & time (optional)"
+          className="w-full justify-start border border-input bg-background px-3 py-2 h-9 text-sm"
+        />
+      </div>
+
       <Button
         className="w-full gap-2 py-6 text-base font-semibold"
-        disabled={createMeeting.isPending}
+        disabled={!contactId || createMeeting.isPending}
         size="lg"
         onClick={handleStart}
       >

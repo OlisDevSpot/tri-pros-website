@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
-import { PortfolioHero } from '@/features/landing/ui/components/portfolio/portfolio-hero'
-import { ProjectsGrid } from '@/features/landing/ui/components/portfolio/projects-grid'
+import { ShowroomGridView } from '@/features/showroom/ui/views/showroom-grid-view'
 import BottomCTA from '@/shared/components/cta'
 
 export const metadata: Metadata = {
@@ -12,8 +11,7 @@ export const metadata: Metadata = {
 function PortfolioPage() {
   return (
     <main>
-      <PortfolioHero />
-      <ProjectsGrid />
+      <ShowroomGridView />
       <BottomCTA />
     </main>
   )

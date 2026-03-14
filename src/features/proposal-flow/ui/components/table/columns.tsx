@@ -5,13 +5,14 @@ import type { AppRouter } from '@/trpc/routers/app'
 import { ArrowUpDownIcon, CheckIcon, CopyIcon, EyeIcon, PencilIcon } from 'lucide-react'
 import Link from 'next/link'
 import { PROPOSAL_STATUS_COLORS } from '@/features/proposal-flow/constants/status-colors'
+import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
 import { proposalStatuses } from '@/shared/constants/enums'
-import { formatStringAsDate } from '@/shared/lib/formatters'
+import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 type ProposalRow = inferRouterOutputs<AppRouter>['proposalRouter']['getProposals'][number]
@@ -20,6 +21,7 @@ export interface ProposalTableMeta {
   activeRowId: string | null
   onDuplicate: (proposalId: string) => void
   isDuplicating: boolean
+  onUpdateCreatedAt: (proposalId: string, date: Date) => void
   onUpdateStatus: (proposalId: string, status: ProposalStatus) => void
 }
 
@@ -49,7 +51,7 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
                 <div className="min-w-0 space-y-0.5 max-w-55">
                   <p className="font-medium leading-none truncate">{row.original.label}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {row.original.homeownerJSON.data.name}
+                    {row.original.customerName ?? '—'}
                   </p>
                 </div>
               </TooltipTrigger>
@@ -97,6 +99,15 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
       },
     },
     {
+      accessorKey: 'customerName',
+      header: 'Customer',
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground truncate max-w-40 block">
+          {row.original.customerName ?? '—'}
+        </span>
+      ),
+    },
+    {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row, table }) => {
@@ -136,24 +147,6 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
       },
     },
     {
-      id: 'address',
-      header: 'Address',
-      accessorFn: row =>
-        `${row.projectJSON.data.address}, ${row.projectJSON.data.city}`,
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          <p>{row.original.projectJSON.data.address}</p>
-          <p>
-            {row.original.projectJSON.data.city}
-            {', '}
-            {row.original.projectJSON.data.state}
-            {' '}
-            {row.original.projectJSON.data.zip}
-          </p>
-        </div>
-      ),
-    },
-    {
       accessorKey: 'createdAt',
       header: ({ column }) => (
         <Button
@@ -166,11 +159,57 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
           <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {formatStringAsDate(row.original.createdAt)}
-        </span>
+      cell: ({ row, table }) => {
+        const meta = table.options.meta as ProposalTableMeta | undefined
+        const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
+
+        return (
+          <div className="max-w-40" onClick={e => e.stopPropagation()}>
+            <DateTimePicker
+              value={new Date(row.original.createdAt)}
+              onChange={(date) => {
+                if (date) {
+                  meta?.onUpdateCreatedAt(row.original.id, date)
+                }
+              }}
+            >
+              <div className="flex flex-col">
+                <span className="text-sm font-medium leading-tight">{relative}</span>
+                <span className="text-xs text-muted-foreground">{dayAtTime}</span>
+              </div>
+            </DateTimePicker>
+          </div>
+        )
+      },
+      sortingFn: 'datetime',
+    },
+    {
+      accessorKey: 'sentAt',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-3"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          Sent
+          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
       ),
+      cell: ({ row }) => {
+        const dateStr = row.original.sentAt
+        if (!dateStr) {
+          return <span className="text-sm text-muted-foreground">—</span>
+        }
+        const { relative, dayAtTime } = formatDateCell(dateStr)
+
+        return (
+          <div className="flex flex-col max-w-40">
+            <span className="text-sm font-medium leading-tight">{relative}</span>
+            <span className="text-xs text-muted-foreground">{dayAtTime}</span>
+          </div>
+        )
+      },
       sortingFn: 'datetime',
     },
     {

@@ -1,6 +1,6 @@
 'use client'
 
-import type { JsonbSection, MeetingContext } from '@/features/meetings/types'
+import type { CollectionField, MeetingContext } from '@/features/meetings/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon, ClipboardListIcon, FileTextIcon, WrenchIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -10,6 +10,7 @@ import { useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { getProgramByAccessor } from '@/features/meetings/constants/programs'
 import { modeParser, stepParser } from '@/features/meetings/constants/query-parsers'
+import { getJsonbSection } from '@/features/meetings/lib/get-jsonb-section'
 import { BuyTriggerBar } from '@/features/meetings/ui/components/buy-trigger-bar'
 import { ProgramQuickPick } from '@/features/meetings/ui/components/program-quick-pick'
 import { StepDataPanel } from '@/features/meetings/ui/components/step-data-panel'
@@ -40,13 +41,23 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
 
   const updateMeeting = useMutation(
     trpc.meetingsRouter.update.mutationOptions({
-      onSuccess: (updated) => {
-        queryClient.setQueryData(
-          trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
-          updated,
-        )
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
+        })
       },
       onError: () => toast.error('Failed to save field'),
+    }),
+  )
+
+  const updateCustomerProfile = useMutation(
+    trpc.customersRouter.updateProfile.mutationOptions({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({
+          queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
+        })
+      },
+      onError: () => toast.error('Failed to save customer field'),
     }),
   )
 
@@ -54,7 +65,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   const [mode, setMode] = useQueryState('mode', modeParser)
 
   // Contact data for personalised program content
-  const contactId = meetingQuery.data?.notionContactId ?? ''
+  const contactId = meetingQuery.data?.customer?.notionContactId ?? ''
   const contactQuery = useQuery(
     trpc.notionRouter.contacts.getSingleById.queryOptions(
       { id: contactId },
@@ -63,6 +74,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   )
 
   const meeting = meetingQuery.data
+  const dbCustomer = meeting?.customer ?? null
 
   const ctx = useMemo<MeetingContext>(() => {
     const raw = contactQuery.data as {
@@ -74,7 +86,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
       state?: string | null
     } | undefined
 
-    const customer = raw?.name
+    const ctxCustomer = raw?.name
       ? {
           address: raw.address ?? null,
           city: raw.city ?? '',
@@ -89,19 +101,28 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
     return {
       collectedData: {
         bill: meeting?.programDataJSON?.bill ?? '',
-        dmsPresent: meeting?.situationObjectiveProfileJSON?.decisionMakersPresent ?? '',
+        dmsPresent: meeting?.situationProfileJSON?.decisionMakersPresent ?? '',
         scope: meeting?.programDataJSON?.scope ?? '',
         timeline: meeting?.programDataJSON?.timeline ?? '',
-        triggerEvent: meeting?.homeownerSubjectiveProfileJSON?.triggerEvent ?? '',
+        triggerEvent: dbCustomer?.customerProfileJSON?.triggerEvent ?? '',
         yrs: meeting?.programDataJSON?.yrs ?? '',
       },
-      customer,
+      customer: ctxCustomer,
     }
-  }, [contactQuery.data, contactId, meeting])
+  }, [contactQuery.data, contactId, meeting, dbCustomer])
 
-  function handleFieldSave(jsonbKey: JsonbSection, fieldId: string, value: string | number) {
-    const currentSection = ((meeting as Record<string, unknown>)?.[jsonbKey] ?? {}) as Record<string, unknown>
-    updateMeeting.mutate({ id: meetingId, [jsonbKey]: { ...currentSection, [fieldId]: value } })
+  function handleFieldSave(field: CollectionField, value: string | number | boolean) {
+    if (field.entity === 'customer' && dbCustomer?.id) {
+      const currentSection = getJsonbSection(dbCustomer, field.jsonbKey)
+      updateCustomerProfile.mutate({
+        customerId: dbCustomer.id,
+        [field.jsonbKey]: { ...currentSection, [field.id]: value },
+      })
+    }
+    else {
+      const currentSection = getJsonbSection(meeting ?? null, field.jsonbKey)
+      updateMeeting.mutate({ id: meetingId, [field.jsonbKey]: { ...currentSection, [field.id]: value } })
+    }
   }
 
   // Arrow-key navigation for program mode
@@ -212,6 +233,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
         <div className="min-h-0 flex-1">
           <MeetingIntakeView
             currentStep={currentStep}
+            customer={dbCustomer}
             meeting={meeting}
             onCompleteIntake={handleCompleteIntake}
             onFieldSave={handleFieldSave}
@@ -252,7 +274,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
     }
   }
 
-  const proposalHref = contactId ? `/dashboard?step=create-proposal&contactId=${contactId}` : '/dashboard?step=create-proposal'
+  const proposalHref = `/dashboard?step=create-proposal&meetingId=${meetingId}`
 
   return (
     <div className="flex h-full flex-col">
@@ -318,6 +340,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
         </AnimatePresence>
 
         <StepDataPanel
+          customer={dbCustomer}
           fields={step.collectsData ?? []}
           meeting={meeting}
           onSave={handleFieldSave}

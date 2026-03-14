@@ -1,9 +1,10 @@
+import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import { TRPCError } from '@trpc/server'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns } from 'drizzle-orm'
 import z from 'zod'
 import { upsertCustomerFromNotion } from '@/shared/dal/server/customers/api'
 import { db } from '@/shared/db'
-import { insertMeetingSchema, meetings } from '@/shared/db/schema'
+import { customers, insertMeetingSchema, meetings, proposals } from '@/shared/db/schema'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { agentProcedure, createTRPCRouter } from '../init'
@@ -13,35 +14,36 @@ export const meetingsRouter = createTRPCRouter({
   getAll: agentProcedure
     .query(async ({ ctx }) => {
       return db
-        .select()
+        .select({
+          ...getTableColumns(meetings),
+          customerName: customers.name,
+        })
         .from(meetings)
+        .leftJoin(customers, eq(customers.id, meetings.customerId))
         .where(eq(meetings.ownerId, ctx.session.user.id))
         .orderBy(desc(meetings.createdAt))
     }),
 
   // Create a new meeting record (called when an agent starts a meeting)
   create: agentProcedure
-    .input(insertMeetingSchema)
+    .input(insertMeetingSchema.extend({
+      notionContactId: z.string().min(1, 'A Notion contact is required'),
+    }))
     .mutation(async ({ ctx, input }) => {
-      // Resolve Notion contact → upsert customer → attach FK
-      let customerId: string | undefined
-      if (input.notionContactId) {
-        try {
-          const pages = await queryNotionDatabase('contacts', { id: input.notionContactId })
-          if (pages?.[0]) {
-            const contact = pageToContact(pages[0])
-            const customer = await upsertCustomerFromNotion(contact)
-            customerId = customer.id
-          }
-        }
-        catch {
-          // Non-fatal — meeting creation must not fail if Notion is unreachable
-        }
+      const { notionContactId, ...meetingData } = input
+
+      // Resolve Notion contact → upsert customer
+      const pages = await queryNotionDatabase('contacts', { id: notionContactId }) as PageObjectResponse[]
+      if (!pages?.[0]) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Notion contact not found' })
       }
+
+      const contact = pageToContact(pages[0])
+      const customer = await upsertCustomerFromNotion(contact)
 
       const [created] = await db
         .insert(meetings)
-        .values({ ...input, ownerId: ctx.session.user.id, customerId })
+        .values({ ...meetingData, ownerId: ctx.session.user.id, customerId: customer.id })
         .returning()
 
       return created
@@ -66,20 +68,27 @@ export const meetingsRouter = createTRPCRouter({
       return updated
     }),
 
-  // Get a single meeting by ID
+  // Get a single meeting by ID, with nested customer data
   getById: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
-      const [meeting] = await db
-        .select()
+      const [row] = await db
+        .select({
+          ...getTableColumns(meetings),
+          customer: getTableColumns(customers),
+        })
         .from(meetings)
+        .leftJoin(customers, eq(customers.id, meetings.customerId))
         .where(eq(meetings.id, input.id))
 
-      if (!meeting) {
+      if (!row) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
       }
 
-      return meeting
+      // Normalize null customer (leftJoin returns null for all fields when no match)
+      const customer = row.customer?.id ? row.customer : null
+
+      return { ...row, customer }
     }),
 
   // Link a proposal to a meeting (called when a proposal is created from a meeting)
@@ -89,17 +98,22 @@ export const meetingsRouter = createTRPCRouter({
       proposalId: z.string().uuid(),
     }))
     .mutation(async ({ input }) => {
-      const [updated] = await db
-        .update(meetings)
-        .set({ proposalId: input.proposalId, status: 'converted' })
-        .where(eq(meetings.id, input.meetingId))
+      const [proposal] = await db
+        .update(proposals)
+        .set({ meetingId: input.meetingId })
+        .where(eq(proposals.id, input.proposalId))
         .returning()
 
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
       }
 
-      return updated
+      await db
+        .update(meetings)
+        .set({ status: 'converted' })
+        .where(eq(meetings.id, input.meetingId))
+
+      return proposal
     }),
 
   // Duplicate a meeting, copying setup fields but resetting program/status data
@@ -119,13 +133,9 @@ export const meetingsRouter = createTRPCRouter({
         .insert(meetings)
         .values({
           ownerId: ctx.session.user.id,
-          notionContactId: original.notionContactId,
           customerId: original.customerId,
           contactName: original.contactName,
-          situationObjectiveProfileJSON: original.situationObjectiveProfileJSON,
-          homeownerSubjectiveProfileJSON: original.homeownerSubjectiveProfileJSON,
-          propertyProfileJSON: original.propertyProfileJSON,
-          financialProfileJSON: original.financialProfileJSON,
+          situationProfileJSON: original.situationProfileJSON,
         })
         .returning()
 

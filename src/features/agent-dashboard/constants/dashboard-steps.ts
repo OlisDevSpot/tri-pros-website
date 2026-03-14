@@ -7,4 +7,7 @@ export const dashboardSteps = [
   'proposals',
   'create-proposal',
   'edit-proposal',
+  'showroom',
+  'create-project',
+  'edit-project',
 ] as const

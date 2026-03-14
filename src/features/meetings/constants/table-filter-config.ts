@@ -1,5 +1,6 @@
 import type { DataTableFilterConfig } from '@/shared/components/data-table/types'
 
+import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
 import { meetingStatuses } from '@/shared/constants/enums'
 
 export const meetingTableFilters: DataTableFilterConfig[] = [
@@ -9,6 +10,13 @@ export const meetingTableFilters: DataTableFilterConfig[] = [
     type: 'search',
     columnId: 'contactName',
     placeholder: 'Filter meetings...',
+  },
+  {
+    id: 'time',
+    label: 'Time',
+    type: 'time-preset',
+    columnId: 'createdAt',
+    presets: DEFAULT_TIME_PRESETS,
   },
   {
     id: 'status',

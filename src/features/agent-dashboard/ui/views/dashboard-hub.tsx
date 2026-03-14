@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 
-import { dashboardStepParser, editMeetingIdParser } from '@/features/agent-dashboard/lib/url-parsers'
+import { dashboardStepParser, editMeetingIdParser, editProjectIdParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { DashboardSidebar } from '@/features/agent-dashboard/ui/components/dashboard-sidebar'
 import { ActionCenterView } from '@/features/agent-dashboard/ui/views/action-center-view'
 import { PipelineView } from '@/features/agent-dashboard/ui/views/pipeline-view'
 import { CreateMeetingView } from '@/features/meetings/ui/views/create-meeting-view'
 import { EditMeetingSetupView } from '@/features/meetings/ui/views/edit-meeting-setup-view'
 import { PastMeetingsView } from '@/features/meetings/ui/views/past-meetings-view'
+import { CreateProjectView } from '@/features/portfolio/ui/views/create-project-view'
+import { EditProjectView } from '@/features/portfolio/ui/views/edit-project-view'
+import { PortfolioProjectsView } from '@/features/portfolio/ui/views/portfolio-projects-view'
 import { CreateNewProposalView } from '@/features/proposal-flow/ui/views/create-new-proposal-view'
 import { EditProposalView } from '@/features/proposal-flow/ui/views/edit-proposal-view'
 import { PastProposalsView } from '@/features/proposal-flow/ui/views/past-proposals-view'
@@ -24,6 +27,7 @@ export function DashboardHub() {
   const session = useSession()
   const [step] = useQueryState('step', dashboardStepParser)
   const [editMeetingId] = useQueryState('editMeetingId', editMeetingIdParser)
+  const [editProjectId] = useQueryState('editProjectId', editProjectIdParser)
 
   useEffect(() => {
     if (!session.isPending && !session.data?.user) {
@@ -93,6 +97,21 @@ export function DashboardHub() {
         <AnimatePresence>
           {step === 'edit-proposal' && (
             <EditProposalView key="edit-proposal" />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'showroom' && (
+            <PortfolioProjectsView key="showroom" />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'create-project' && (
+            <CreateProjectView key="create-project" />
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'edit-project' && editProjectId && (
+            <EditProjectView key={`edit-project-${editProjectId}`} projectId={editProjectId} />
           )}
         </AnimatePresence>
       </div>

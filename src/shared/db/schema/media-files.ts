@@ -42,5 +42,12 @@ export const insertMediaFilesSchema = selectMediaFilesSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).partial({
+  tags: true,
+  isHeroImage: true,
+  sortOrder: true,
+  duration: true,
+  thumbnailUrl: true,
+  bucket: true,
 })
 export type InsertMediaFilesSchema = z.infer<typeof insertMediaFilesSchema>

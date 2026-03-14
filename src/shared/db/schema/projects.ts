@@ -1,9 +1,10 @@
 import type z from 'zod'
 import { relations } from 'drizzle-orm'
-import { boolean, jsonb, pgTable, text, varchar } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { accessor, createdAt, description, id, updatedAt } from '../lib/schema-helpers'
 import { mediaFiles } from './media-files'
+import { x_projectScopes } from './x-project-scopes'
 
 export const projects = pgTable('projects', {
   id,
@@ -17,12 +18,20 @@ export const projects = pgTable('projects', {
   state: varchar('state', { length: 2 }).default('CA'),
   zip: varchar('zip', { length: 5 }),
   hoRequirements: jsonb('ho_requirements').$type<string[]>(),
+  homeownerName: varchar('homeowner_name', { length: 80 }),
+  homeownerQuote: text('homeowner_quote'),
+  projectDuration: varchar('project_duration', { length: 40 }),
+  completedAt: timestamp('completed_at', { mode: 'string', withTimezone: true }),
+  challengeDescription: text('challenge_description'),
+  solutionDescription: text('solution_description'),
+  resultDescription: text('result_description'),
   createdAt,
   updatedAt,
 })
 
 export const projectsRelations = relations(projects, ({ many }) => ({
   mediaFiles: many(mediaFiles),
+  projectScopes: many(x_projectScopes),
 }))
 
 export const selectProjectSchema = createSelectSchema(projects)

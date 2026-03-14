@@ -1,5 +1,10 @@
+import { TRPCError } from '@trpc/server'
+import { eq } from 'drizzle-orm'
 import z from 'zod'
-import { backfillCustomers, getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
+import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
+import { db } from '@/shared/db'
+import { customers } from '@/shared/db/schema/customers'
+import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const customersRouter = createTRPCRouter({
@@ -23,16 +28,33 @@ export const customersRouter = createTRPCRouter({
       return getCustomerByNotionId(input.notionContactId)
     }),
 
+  // Update customer profile JSONB fields (used during meeting intake)
+  updateProfile: agentProcedure
+    .input(z.object({
+      customerId: z.string(),
+      customerProfileJSON: customerProfileSchema.optional(),
+      propertyProfileJSON: propertyProfileSchema.optional(),
+      financialProfileJSON: financialProfileSchema.optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { customerId, ...profiles } = input
+
+      const [updated] = await db
+        .update(customers)
+        .set(profiles)
+        .where(eq(customers.id, customerId))
+        .returning()
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+
+      return updated
+    }),
+
   // Pull all Notion contacts and upsert into the customers table
   syncFromNotion: agentProcedure
     .mutation(async () => {
       return syncAllCustomers()
-    }),
-
-  // One-time migration: link existing proposals + meetings to customer rows
-  // Call this once after deploy, then it can be removed.
-  backfill: agentProcedure
-    .mutation(async () => {
-      return backfillCustomers()
     }),
 })

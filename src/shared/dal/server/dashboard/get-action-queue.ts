@@ -1,6 +1,7 @@
-import { and, count, desc, eq, isNull, max, sql } from 'drizzle-orm'
+import { and, count, desc, eq, max, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
+import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
@@ -116,21 +117,23 @@ export async function getActionQueue(userId: string): Promise<ActionItem[]> {
   const sentProposals = await db
     .select({
       id: proposals.id,
-      customerName: sql<string>`COALESCE(${proposals.homeownerJSON}->'data'->>'name', 'Unknown')`.as('customer_name'),
-      customerPhone: sql<string | null>`${proposals.homeownerJSON}->'data'->>'phoneNum'`.as('customer_phone'),
-      customerEmail: sql<string | null>`${proposals.homeownerJSON}->'data'->>'email'`.as('customer_email'),
+      customerName: sql<string>`COALESCE(${customers.name}, 'Unknown')`.as('customer_name'),
+      customerPhone: sql<string | null>`${customers.phone}`.as('customer_phone'),
+      customerEmail: sql<string | null>`${customers.email}`.as('customer_email'),
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'trade'->>'label'`.as('trade'),
       sentAt: proposals.sentAt,
       viewCount: count(proposalViews.id),
       lastViewedAt: max(proposalViews.viewedAt),
     })
     .from(proposals)
+    .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+    .leftJoin(customers, eq(customers.id, meetings.customerId))
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .where(and(
       eq(proposals.ownerId, userId),
       eq(proposals.status, 'sent'),
     ))
-    .groupBy(proposals.id)
+    .groupBy(proposals.id, customers.name, customers.phone, customers.email)
     .orderBy(desc(proposals.sentAt))
 
   // 2. Completed meetings without proposals
@@ -145,7 +148,6 @@ export async function getActionQueue(userId: string): Promise<ActionItem[]> {
     .where(and(
       eq(meetings.ownerId, userId),
       eq(meetings.status, 'completed'),
-      isNull(meetings.proposalId),
     ))
     .orderBy(desc(meetings.createdAt))
 

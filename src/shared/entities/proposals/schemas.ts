@@ -32,18 +32,7 @@ const incentiveSchema = z.discriminatedUnion('type', [discountIncentiveSchema, e
 
 // MAIN SCHEMA BUILDING BLOCKS
 
-const homeownerDataSchema = z.object({
-  name: z.string(),
-  phoneNum: z.string(),
-  email: z.string(),
-  age: z.number().int().nonnegative().optional(),
-})
-
 const projectDataSchema = z.object({
-  address: z.string(),
-  city: z.string(),
-  state: z.literal('CA'),
-  zip: z.string().min(5).max(5),
   label: z.string(),
   summary: z.string().optional(),
   type: z.enum(projectTypes),
@@ -76,11 +65,6 @@ const fundingMetaSchema = sectionMetaSchema.extend({
 // MAIN SCHEMAS
 export const formMetaSectionSchema = z.object({
   pricingMode: z.enum(['total', 'breakdown']),
-})
-
-export const homeownerSectionSchema = z.object({
-  data: homeownerDataSchema,
-  meta: sectionMetaSchema,
 })
 
 export const projectSectionSchema = z.object({

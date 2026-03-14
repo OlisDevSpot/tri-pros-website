@@ -1,4 +1,21 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/ui -name *switch* -o -name *toggle*)",
+      "Bash(grep -rn \"type === ''boolean''\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features/meetings/ui/)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/)",
+      "Bash(cat \"/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\(frontend\\)/\\(site\\)/portfolio/[projectAccessor]/page.tsx\")",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/types -name *.ts)",
+      "Bash(cat \"/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\(frontend\\)/\\(site\\)/portfolio/projects/page.tsx\")",
+      "Bash(grep -c '\"\"tsx\"\"' package.json)",
+      "Bash(grep '\"\"tsx\"\"' package.json)",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/db/migrations -type f -name *.sql)",
+      "Bash(pnpm db:push --dry-run)"
+    ],
+    "additionalDirectories": [
+      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui"
+    ]
+  },
   "enabledPlugins": {
     "skill-creator@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,

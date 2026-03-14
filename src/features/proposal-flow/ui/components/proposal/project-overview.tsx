@@ -1,7 +1,6 @@
 'use client'
 
-import type { FieldWithValues, ProposalContext } from '@/features/proposal-flow/constants/project-overview-display'
-import type { Proposal } from '@/shared/db/schema'
+import type { FieldWithValues, ProposalOverviewContext } from '@/features/proposal-flow/constants/project-overview-display'
 import { motion } from 'motion/react'
 import { useCallback } from 'react'
 import { proposalFields } from '@/features/proposal-flow/constants/project-overview-display'
@@ -14,16 +13,27 @@ import { isTruthy } from '@/shared/types'
 export function ProjectOverview() {
   const proposal = useCurrentProposal()
 
-  const generateProposalFields = useCallback((proposal: Proposal) => {
-    const projectFields = proposal.projectJSON.data
-    const homeownerFields = proposal.homeownerJSON.data
-    const fundingFields = proposal.fundingJSON.data
-    const proposalCtx: ProposalContext & { scopes: string, exclusiveOffers: string } = {
-      ...homeownerFields,
+  const generateProposalFields = useCallback(() => {
+    if (!proposal.data) {
+      return []
+    }
+
+    const projectFields = proposal.data.projectJSON.data
+    const fundingFields = proposal.data.fundingJSON.data
+    const customer = proposal.data.customer
+
+    const proposalCtx: ProposalOverviewContext = {
+      name: customer?.name ?? '',
+      email: customer?.email ?? '',
+      phone: customer?.phone ?? '',
+      address: customer?.address ?? '',
+      city: customer?.city ?? '',
+      state: customer?.state ?? 'CA',
+      zip: customer?.zip ?? '',
       ...projectFields,
       ...fundingFields,
-      scopes: proposal.projectJSON.data.sow.map(sowSection => sowSection.scopes.map(scope => scope.label)).flat().join(', '),
-      exclusiveOffers: proposal.fundingJSON.data.incentives.filter(inc => inc.type === 'exclusive-offer').map(inc => inc.offer).join(', '),
+      scopes: proposal.data.projectJSON.data.sow.map(sowSection => sowSection.scopes.map(scope => scope.label)).flat().join(', '),
+      exclusiveOffers: proposal.data.fundingJSON.data.incentives.filter(inc => inc.type === 'exclusive-offer').map(inc => inc.offer).join(', '),
     }
 
     return proposalFields.map(section => ({
@@ -41,11 +51,6 @@ export function ProjectOverview() {
           displayValue: `${rawValue}`,
         }
 
-        if ('format' in field && field.type === 'number') {
-          fieldWithValue.displayValue = field.format(Number(proposalCtx[field.name] || 0))
-          return fieldWithValue
-        }
-
         if ('format' in field && (field.type === 'enum' || field.type === 'text')) {
           fieldWithValue.displayValue = field.format(String(proposalCtx[field.name] || ''), proposalCtx)
           return fieldWithValue
@@ -54,7 +59,7 @@ export function ProjectOverview() {
         return fieldWithValue
       }).filter(isTruthy),
     }))
-  }, [])
+  }, [proposal.data])
 
   if (proposal.isLoading) {
     return <LoadingState title="Loading Project Overview" description="This might take a few seconds" />
@@ -80,7 +85,7 @@ export function ProjectOverview() {
         </CardHeader>
         <CardContent className="space-y-8">
           <div className="space-y-8 rounded-lg ">
-            {generateProposalFields(proposal.data).map(section => (
+            {generateProposalFields().map(section => (
               <div
                 key={section.label}
                 className="flex flex-col md:flex-row gap-6 h-full items-center"
@@ -127,11 +132,6 @@ export function ProjectOverview() {
                 <p className="text-muted-foreground">{energyBenefits}</p>
               </div>
             )}
-          {/* <div>
-            <h4>Primary Objectives</h4>
-            <p className="text-muted-foreground">{`{{ho.motivations}}`}</p>
-            <p className="text-muted-foreground">{`{{ho.primaryGoals[]}}`}</p>
-          </div> */}
         </CardContent>
       </Card>
     </motion.div>

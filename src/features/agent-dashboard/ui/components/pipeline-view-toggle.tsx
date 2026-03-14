@@ -1,0 +1,35 @@
+'use client'
+
+import { KanbanIcon, TableIcon } from 'lucide-react'
+
+import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
+
+export type PipelineLayout = 'kanban' | 'table'
+
+interface Props {
+  value: PipelineLayout
+  onChange: (value: PipelineLayout) => void
+}
+
+export function PipelineViewToggle({ value, onChange }: Props) {
+  return (
+    <ToggleGroup
+      type="single"
+      size="sm"
+      variant="outline"
+      value={value}
+      onValueChange={(v) => {
+        if (v) {
+          onChange(v as PipelineLayout)
+        }
+      }}
+    >
+      <ToggleGroupItem value="kanban" aria-label="Kanban view">
+        <KanbanIcon className="h-4 w-4" />
+      </ToggleGroupItem>
+      <ToggleGroupItem value="table" aria-label="Table view">
+        <TableIcon className="h-4 w-4" />
+      </ToggleGroupItem>
+    </ToggleGroup>
+  )
+}

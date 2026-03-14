@@ -1,14 +1,15 @@
 import type z from 'zod'
-import type { FormMetaSection, FundingSection, HomeownerSection, ProjectSection } from '@/shared/entities/proposals/types'
+import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
 import type { ProposalStatus } from '@/shared/types/enums'
 import { relations } from 'drizzle-orm'
 import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { fundingSectionSchema, homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
+import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { customers } from './customers'
 import { financeOptions } from './finance-options'
+import { meetings } from './meetings'
 import { proposalStatusEnum } from './meta'
 
 export type { ProposalStatus }
@@ -23,9 +24,9 @@ export const proposals = pgTable('proposals', {
   token: text('token').notNull(),
   notionPageId: text('notion_page_id'),
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  meetingId: uuid('meeting_id').references(() => meetings.id, { onDelete: 'set null' }),
 
   formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>().notNull(),
-  homeownerJSON: jsonb('homeowner_JSON').$type<HomeownerSection>().notNull(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
   fundingJSON: jsonb('funding_JSON').$type<FundingSection>().notNull(),
 
@@ -49,28 +50,24 @@ export const proposalsRelations = relations(proposals, ({ one }) => ({
     fields: [proposals.financeOptionId],
     references: [financeOptions.id],
   }),
-  customer: one(customers, {
-    fields: [proposals.customerId],
-    references: [customers.id],
+  meeting: one(meetings, {
+    fields: [proposals.meetingId],
+    references: [meetings.id],
   }),
 }))
 
 export const selectProposalSchema = createSelectSchema(proposals, {
-  homeownerJSON: homeownerSectionSchema,
   projectJSON: projectSectionSchema,
   fundingJSON: fundingSectionSchema,
 })
 export type Proposal = z.infer<typeof selectProposalSchema>
 
 export const insertProposalSchema = createInsertSchema(proposals, {
-  homeownerJSON: homeownerSectionSchema,
   projectJSON: projectSectionSchema,
   fundingJSON: fundingSectionSchema,
 }).omit({
   id: true,
   token: true,
-  customerId: true,
-  createdAt: true,
   updatedAt: true,
 })
 

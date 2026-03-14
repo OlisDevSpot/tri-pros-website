@@ -62,9 +62,9 @@ export const proposalStageConfig: readonly PipelineStageConfig<ProposalPipelineS
 
 export const PROPOSAL_ALLOWED_DRAG_TRANSITIONS: Record<ProposalPipelineStage, readonly ProposalPipelineStage[]> = {
   proposal_draft: [],
-  proposal_sent: [],
-  contract_signed: [],
-  declined: [],
+  proposal_sent: ['contract_signed', 'declined'],
+  contract_signed: ['proposal_sent'],
+  declined: ['proposal_draft'],
 }
 
 export const PROPOSAL_BLOCKED_MESSAGES: Record<string, string> = {

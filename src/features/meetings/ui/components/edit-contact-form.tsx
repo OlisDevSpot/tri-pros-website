@@ -21,7 +21,7 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
 
-  const [contactId, setContactId] = useState(meeting.notionContactId ?? '')
+  const [contactId, setContactId] = useState('')
   const [contactName, setContactName] = useState(meeting.contactName ?? '')
 
   const updateMeeting = useMutation(
@@ -38,7 +38,6 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
   function handleSave() {
     updateMeeting.mutate({
       id: meeting.id,
-      notionContactId: contactId || undefined,
       contactName: contactName || undefined,
     })
   }

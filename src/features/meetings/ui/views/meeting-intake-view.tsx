@@ -1,7 +1,8 @@
 'use client'
 
-import type { JsonbSection } from '@/features/meetings/types'
-import type { Meeting } from '@/shared/db/schema'
+import type { CollectionField } from '@/features/meetings/types'
+import type { Customer, Meeting } from '@/shared/db/schema'
+
 import { AnimatePresence, motion } from 'motion/react'
 import { INTAKE_STEPS } from '@/features/meetings/constants/intake-steps'
 import { stepCompletionCount } from '@/features/meetings/lib/step-completion'
@@ -13,14 +14,16 @@ import { cn } from '@/shared/lib/utils'
 
 interface MeetingIntakeViewProps {
   currentStep: number
+  customer: Customer | null
   meeting: Meeting
   onCompleteIntake: () => void
-  onFieldSave: (jsonbKey: JsonbSection, fieldId: string, value: string | number) => void
+  onFieldSave: (field: CollectionField, value: string | number | boolean) => void
   onStepChange: (step: number) => void
 }
 
 export function MeetingIntakeView({
   currentStep,
+  customer,
   meeting,
   onCompleteIntake,
   onFieldSave,
@@ -30,7 +33,7 @@ export function MeetingIntakeView({
   const stepIndex = Math.min(Math.max(currentStep - 1, 0), stepCount - 1)
   const step = INTAKE_STEPS[stepIndex]!
 
-  const filledCount = stepCompletionCount(step, meeting)
+  const filledCount = stepCompletionCount(step, meeting, customer)
   const totalFields = step.fields.length
 
   function handleNext() {
@@ -69,7 +72,7 @@ export function MeetingIntakeView({
             exit={{ opacity: 0, x: -12 }}
             initial={{ opacity: 0, x: 12 }}
             transition={{ duration: 0.2 }}
-            className="mx-auto max-w-2xl"
+            className="w-full"
           >
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
@@ -98,7 +101,7 @@ export function MeetingIntakeView({
                     field.options && field.options.length > 6 && 'sm:col-span-2',
                   )}
                 >
-                  <FieldRenderer field={field} meeting={meeting} onSave={onFieldSave} />
+                  <FieldRenderer customer={customer} field={field} meeting={meeting} onSave={onFieldSave} />
                 </div>
               ))}
             </div>

@@ -26,60 +26,6 @@ export function ProjectFields({ pricingMode }: Props) {
     <section className="space-y-8">
       <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4 flex-wrap w-full">
-            <FormField
-              name="project.data.address"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="123 ABC Street" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="project.data.city"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Tarzana" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="project.data.state"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="CA" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="project.data.zip"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Zip *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="91335" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
           <div className="grid lg:grid-cols-3 gap-4">
             <FormField
               name="project.data.type"

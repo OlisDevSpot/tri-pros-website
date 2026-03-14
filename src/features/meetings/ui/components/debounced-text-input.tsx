@@ -1,13 +1,13 @@
 'use client'
 
-import type { CollectionField, JsonbSection } from '@/features/meetings/types'
+import type { CollectionField } from '@/features/meetings/types'
 import { useCallback, useRef, useState } from 'react'
 import { Input } from '@/shared/components/ui/input'
 
 interface DebouncedTextInputProps {
   field: CollectionField
   initialValue: string
-  onSave: (jsonbKey: JsonbSection, id: string, value: string) => void
+  onSave: (field: CollectionField, value: string) => void
 }
 
 export function DebouncedTextInput({ field, initialValue, onSave }: DebouncedTextInputProps) {
@@ -27,9 +27,9 @@ export function DebouncedTextInput({ field, initialValue, onSave }: DebouncedTex
       if (timer.current) {
         clearTimeout(timer.current)
       }
-      timer.current = setTimeout(() => onSave(field.jsonbKey, field.id, next), 600)
+      timer.current = setTimeout(() => onSave(field, next), 600)
     },
-    [field.id, field.jsonbKey, onSave],
+    [field, onSave],
   )
 
   return (

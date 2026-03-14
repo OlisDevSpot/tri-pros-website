@@ -34,14 +34,13 @@ export async function getPipelineStats(userId: string): Promise<PipelineStats> {
       eq(meetings.status, 'in_progress'),
     ))
 
-  // Completed meetings without proposals
+  // Completed meetings (status = 'completed', not yet converted)
   const [meetingDoneResult] = await db
     .select({ count: count() })
     .from(meetings)
     .where(and(
       eq(meetings.ownerId, userId),
       eq(meetings.status, 'completed'),
-      sql`${meetings.proposalId} IS NULL`,
     ))
 
   // Sent proposals with view counts — single query, split in JS

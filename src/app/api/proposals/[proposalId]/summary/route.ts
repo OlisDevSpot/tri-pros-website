@@ -26,7 +26,7 @@ export async function GET(
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const ho = proposal.homeownerJSON.data
+  const customer = proposal.customer
   const proj = proposal.projectJSON.data
   const fund = proposal.fundingJSON.data
   const pricingMode = proposal.formMetaJSON.pricingMode
@@ -38,16 +38,15 @@ export async function GET(
   lines.push('')
 
   lines.push('## Customer')
-  lines.push(`- **Name:** ${ho.name}`)
-  lines.push(`- **Email:** ${ho.email}`)
-  lines.push(`- **Phone:** ${ho.phoneNum}`)
-  if (ho.age) {
-    lines.push(`- **Age:** ${ho.age}`)
+  lines.push(`- **Name:** ${customer?.name ?? '—'}`)
+  lines.push(`- **Email:** ${customer?.email ?? '—'}`)
+  lines.push(`- **Phone:** ${customer?.phone ?? '—'}`)
+  if (customer?.address) {
+    lines.push(`- **Address:** ${customer.address}, ${customer.city}, ${customer.state ?? 'CA'} ${customer.zip}`)
   }
   lines.push('')
 
   lines.push('## Project')
-  lines.push(`- **Address:** ${proj.address}, ${proj.city}, ${proj.state} ${proj.zip}`)
   lines.push(`- **Type:** ${proj.type}`)
   lines.push(`- **Label:** ${proj.label}`)
   lines.push(`- **Time Allocated:** ${proj.timeAllocated}`)

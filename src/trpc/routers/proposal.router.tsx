@@ -3,7 +3,6 @@ import { eq } from 'drizzle-orm'
 import z from 'zod'
 import { ROOTS } from '@/shared/config/roots'
 import env from '@/shared/config/server-env'
-import { upsertCustomerFromNotion } from '@/shared/dal/server/customers/api'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
 import { createProposal, deleteProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
 import { getProposalViews, recordProposalView } from '@/shared/dal/server/proposals/proposal-views'
@@ -13,9 +12,7 @@ import { user } from '@/shared/db/schema/auth'
 import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
 import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
 import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
-import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { updatePageUrlProperty } from '@/shared/services/notion/dal/update-page-property'
-import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { resendClient } from '@/shared/services/resend/client'
 import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
 import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
@@ -58,27 +55,18 @@ export const proposalRouter = createTRPCRouter({
       return proposals
     }),
 
-  createProposal: baseProcedure
+  createProposal: agentProcedure
     .input(insertProposalSchema.strict())
     .mutation(async ({ input }) => {
       try {
-        // Resolve Notion contact → upsert customer → attach FK
-        let customerId: string | undefined
-        if (input.notionPageId) {
-          try {
-            const pages = await queryNotionDatabase('contacts', { id: input.notionPageId })
-            if (pages?.[0]) {
-              const contact = pageToContact(pages[0])
-              const customer = await upsertCustomerFromNotion(contact)
-              customerId = customer.id
-            }
-          }
-          catch {
-            // Non-fatal — proposal creation must not fail if Notion is unreachable
-          }
+        if (!input.meetingId) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'A meetingId is required to create a proposal',
+          })
         }
 
-        const proposal = await createProposal(input, customerId)
+        const proposal = await createProposal(input)
 
         if (!proposal) {
           throw new TRPCError({
@@ -92,14 +80,12 @@ export const proposalRouter = createTRPCRouter({
           await updatePageUrlProperty(proposal.notionPageId, `Proposals Link`, proposalUrl)
         }
 
-        const proposalData = {
-          proposal,
-          proposalUrl,
-        }
-
-        return proposalData
+        return { proposal, proposalUrl }
       }
       catch (e) {
+        if (e instanceof TRPCError) {
+          throw e
+        }
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           cause: e,
@@ -165,13 +151,12 @@ export const proposalRouter = createTRPCRouter({
         ownerId: ctx.session.user.id,
         status: 'draft',
         formMetaJSON: source.formMetaJSON,
-        homeownerJSON: source.homeownerJSON,
         projectJSON: source.projectJSON,
         fundingJSON: source.fundingJSON,
         financeOptionId: source.financeOptionId ?? undefined,
         notionPageId: source.notionPageId ?? undefined,
-        // intentionally omitted: docusignEnvelopeId, contractSentAt
-      }, source.customerId ?? undefined)
+        meetingId: source.meetingId ?? undefined,
+      })
 
       return duplicate
     }),
@@ -227,9 +212,13 @@ export const proposalRouter = createTRPCRouter({
             return
           }
 
-          const accessToken = await getAccessToken()
+          const fullProposal = await getProposal(input.proposalId)
+          if (!fullProposal) {
+            return
+          }
 
-          const body = buildEnvelopeBody(proposal, 'created')
+          const accessToken = await getAccessToken()
+          const body = buildEnvelopeBody(fullProposal, 'created')
 
           const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {
             method: 'POST',
@@ -304,7 +293,7 @@ export const proposalRouter = createTRPCRouter({
             return
           }
 
-          const customerName = proposal.homeownerJSON?.data?.name ?? 'Customer'
+          const customerName = proposal.customer?.name ?? 'Customer'
           const sourceLabel = input.source === 'email' ? 'Opened from email link' : 'Opened directly'
 
           await resendClient.emails.send({

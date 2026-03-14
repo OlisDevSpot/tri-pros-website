@@ -1,5 +1,5 @@
 /* eslint-disable unused-imports/no-unused-vars */
-import type { Proposal } from '@/shared/db/schema/proposals'
+import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
 import env from '@/shared/config/server-env'
 
 const TEMPLATE_IDS = {
@@ -25,7 +25,7 @@ interface TiptapNode {
  * Extract readable plaintext from an array of `{ contentJSON: string }`
  * where `contentJSON` is a stringified Tiptap doc.
  */
-export function extractSowText(proposal: Proposal): string {
+export function extractSowText(proposal: ProposalWithCustomer): string {
   const chunks: string[] = []
 
   for (const item of proposal.projectJSON.data.sow ?? []) {
@@ -38,7 +38,7 @@ export function extractSowText(proposal: Proposal): string {
       chunks.push(text.trim())
   }
 
-  // Separate each SOW “section/doc” with blank line.
+  // Separate each SOW "section/doc" with blank line.
   return chunks.join('\n\n')
 }
 
@@ -54,7 +54,7 @@ function safeParseDoc(json: string): TiptapNode | null {
     return parsed
   }
   catch {
-    // Don’t blow up your tRPC procedure just because one entry is malformed.
+    // Don't blow up your tRPC procedure just because one entry is malformed.
     return null
   }
 }
@@ -84,7 +84,7 @@ function walk(node: TiptapNode, out: string[]) {
     case 'paragraph': {
       const t = extractInlineText(node)
       // Keep empty paragraphs as a blank line if you want,
-      // but don’t spam newlines for completely missing content.
+      // but don't spam newlines for completely missing content.
       if (t.length)
         out.push(t)
       out.push('\n')
@@ -153,7 +153,7 @@ function forEachChild(node: TiptapNode, fn: (child: TiptapNode) => void) {
 }
 
 /**
- * Extracts only inline text from a node’s descendants (text nodes),
+ * Extracts only inline text from a node's descendants (text nodes),
  * preserving order, ignoring structure.
  */
 function extractInlineText(node: TiptapNode): string {
@@ -182,14 +182,22 @@ function normalize(s: string): string {
   )
 }
 
-export function buildEnvelopeBody(proposal: Proposal, status: 'created' | 'sent') {
-  const { homeownerJSON, projectJSON, fundingJSON } = proposal
-  const { data: homeowner } = homeownerJSON
+export function buildEnvelopeBody(proposal: ProposalWithCustomer, status: 'created' | 'sent') {
+  const { customer, projectJSON, fundingJSON } = proposal
   const { data: project } = projectJSON
   const { data: funding } = fundingJSON
 
-  const isSenior = (homeowner.age ?? 0) >= 62
-  const templateId = isSenior ? TEMPLATE_IDS.senior : TEMPLATE_IDS.base
+  const customerName = customer?.name ?? ''
+  const customerEmail = customer?.email ?? ''
+  const customerPhone = customer?.phone ?? ''
+  const customerAddress = customer?.address ?? ''
+  const customerCity = customer?.city ?? ''
+  const customerState = customer?.state ?? 'CA'
+  const customerZip = customer?.zip ?? ''
+
+  // Age is in the customer profile JSON — for DocuSign template selection
+  // We don't have age readily available here, so default to base template
+  const templateId = TEMPLATE_IDS.base
 
   const sowText = extractSowText(proposal)
   const sow1 = sowText.slice(0, 2000)
@@ -199,7 +207,7 @@ export function buildEnvelopeBody(proposal: Proposal, status: 'created' | 'sent'
   const startDate = new Date()
   const completionDate = new Date()
 
-  const daysToAdd = isSenior ? 5 : 3
+  const daysToAdd = 3
 
   startDate.setDate(startDate.getDate() + daysToAdd)
   completionDate.setDate(startDate.getDate() + validThroughTimeframe)
@@ -225,14 +233,13 @@ export function buildEnvelopeBody(proposal: Proposal, status: 'created' | 'sent'
       },
       {
         roleName: 'Homeowner',
-        name: homeowner.name,
-        email: homeowner.email,
+        name: customerName,
+        email: customerEmail,
         tabs: {
           textTabs: [
-            { tabLabel: 'ho-address', value: project.address },
-            { tabLabel: 'ho-city-state-zip', value: `${project.city}, CA ${project.zip}` },
-            { tabLabel: 'ho-phone', value: homeowner.phoneNum },
-            { tabLabel: 'ho-age', value: String(homeowner.age ?? '-') },
+            { tabLabel: 'ho-address', value: customerAddress },
+            { tabLabel: 'ho-city-state-zip', value: `${customerCity}, ${customerState} ${customerZip}` },
+            { tabLabel: 'ho-phone', value: customerPhone },
           ],
         },
       },

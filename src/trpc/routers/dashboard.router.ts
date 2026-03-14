@@ -1,12 +1,27 @@
 import { z } from 'zod'
 
-import { meetingPipelineStages } from '@/features/agent-dashboard/constants/pipeline-stages'
+import { meetingPipelineStages, proposalPipelineStages } from '@/features/agent-dashboard/constants/pipeline-stages'
 import { getActionQueue } from '@/shared/dal/server/dashboard/get-action-queue'
 import { getMeetingPipelineItems, getProposalPipelineItems } from '@/shared/dal/server/dashboard/get-pipeline-items'
 import { getPipelineStats } from '@/shared/dal/server/dashboard/get-pipeline-stats'
-import { moveMeetingPipelineItem } from '@/shared/dal/server/dashboard/move-pipeline-item'
+import { movePipelineItem } from '@/shared/dal/server/dashboard/move-pipeline-item'
 
 import { agentProcedure, createTRPCRouter } from '../init'
+
+const pipelineItemSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('proposal'),
+    pipelineItemId: z.string(),
+    fromStage: z.enum(proposalPipelineStages),
+    toStage: z.enum(proposalPipelineStages),
+  }),
+  z.object({
+    type: z.literal('meeting'),
+    pipelineItemId: z.string(),
+    fromStage: z.enum(meetingPipelineStages),
+    toStage: z.enum(meetingPipelineStages),
+  }),
+])
 
 export const dashboardRouter = createTRPCRouter({
   getActionQueue: agentProcedure.query(async ({ ctx }) => {
@@ -29,14 +44,10 @@ export const dashboardRouter = createTRPCRouter({
     return getProposalPipelineItems(userId)
   }),
 
-  moveMeetingPipelineItem: agentProcedure
-    .input(z.object({
-      meetingId: z.string().uuid(),
-      fromStage: z.enum(meetingPipelineStages),
-      toStage: z.enum(meetingPipelineStages),
-    }))
+  movePipelineItem: agentProcedure
+    .input(pipelineItemSchema)
     .mutation(async ({ ctx, input }) => {
-      await moveMeetingPipelineItem({
+      await movePipelineItem({
         ...input,
         userId: ctx.session.user.id,
       })

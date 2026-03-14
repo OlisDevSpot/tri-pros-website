@@ -16,35 +16,79 @@ import {
 } from '@/shared/constants/enums'
 
 // Field IDs map 1:1 to keys inside the JSONB section specified by jsonbKey.
+// `entity` determines whether the field is saved to the meeting or the customer.
 
 export const INTAKE_STEPS: IntakeStep[] = [
+  {
+    description: 'Understand what is driving them to act and what pain they are trying to solve.',
+    fields: [
+      {
+        entity: 'customer',
+        id: 'mainPain',
+        jsonbKey: 'customerProfileJSON',
+        label: 'Primary pain point',
+        options: meetingPainTypes,
+        type: 'select',
+      },
+      {
+        entity: 'customer',
+        id: 'secondaryPain',
+        jsonbKey: 'customerProfileJSON',
+        label: 'Secondary pain point (if any)',
+        options: meetingPainTypes,
+        type: 'select',
+      },
+      {
+        entity: 'customer',
+        id: 'triggerEvent',
+        jsonbKey: 'customerProfileJSON',
+        label: 'What triggered this visit?',
+        options: meetingTriggerEvents,
+        type: 'select',
+      },
+      {
+        entity: 'customer',
+        id: 'outcomePriority',
+        jsonbKey: 'customerProfileJSON',
+        label: 'What matters most to them?',
+        options: meetingOutcomePriorities,
+        type: 'select',
+      },
+    ],
+    id: 'pain-motivation',
+    title: 'Pain & Motivation',
+  },
   {
     description: 'Capture who is at the table and the household makeup. This shapes your entire approach.',
     fields: [
       {
+        entity: 'meeting',
         id: 'decisionMakersPresent',
-        jsonbKey: 'situationObjectiveProfileJSON',
+        jsonbKey: 'situationProfileJSON',
         label: 'Who is present today',
         options: meetingDecisionMakersPresentOptions,
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'familyStatus',
-        jsonbKey: 'situationObjectiveProfileJSON',
-        label: 'Household type',
+        jsonbKey: 'customerProfileJSON',
+        label: 'Relationship status',
         options: meetingFamilyStatuses,
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'ageGroup',
-        jsonbKey: 'situationObjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'Homeowner age group',
         options: meetingAgeGroups,
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'householdType',
-        jsonbKey: 'situationObjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'Household type',
         options: meetingHouseholdTypes,
         type: 'select',
@@ -57,20 +101,23 @@ export const INTAKE_STEPS: IntakeStep[] = [
     description: 'How long have they been here, what is their plan, and what do we know about the home itself?',
     fields: [
       {
+        entity: 'customer',
         id: 'timeInHome',
-        jsonbKey: 'situationObjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'Years in this home',
         options: meetingYearsInHome,
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'sellPlan',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'Planning to sell?',
         options: meetingSellPlans,
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'yearBuilt',
         jsonbKey: 'propertyProfileJSON',
         label: 'Year home was built',
@@ -78,6 +125,7 @@ export const INTAKE_STEPS: IntakeStep[] = [
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'hoa',
         jsonbKey: 'propertyProfileJSON',
         label: 'HOA?',
@@ -88,44 +136,10 @@ export const INTAKE_STEPS: IntakeStep[] = [
     title: 'Home & Situation',
   },
   {
-    description: 'Understand what is driving them to act and what pain they are trying to solve.',
-    fields: [
-      {
-        id: 'mainPain',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
-        label: 'Primary pain point',
-        options: meetingPainTypes,
-        type: 'select',
-      },
-      {
-        id: 'secondaryPain',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
-        label: 'Secondary pain point (if any)',
-        options: meetingPainTypes,
-        type: 'select',
-      },
-      {
-        id: 'triggerEvent',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
-        label: 'What triggered this visit?',
-        options: meetingTriggerEvents,
-        type: 'select',
-      },
-      {
-        id: 'outcomePriority',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
-        label: 'What matters most to them?',
-        options: meetingOutcomePriorities,
-        type: 'select',
-      },
-    ],
-    id: 'pain-motivation',
-    title: 'Pain & Motivation',
-  },
-  {
     description: 'Gauge their readiness, how competitive the situation is, and the strength of their commitment.',
     fields: [
       {
+        entity: 'customer',
         id: 'numQuotesReceived',
         jsonbKey: 'financialProfileJSON',
         label: 'How many other quotes have they received?',
@@ -134,23 +148,26 @@ export const INTAKE_STEPS: IntakeStep[] = [
         type: 'number',
       },
       {
+        entity: 'customer',
         id: 'decisionUrgencyRating',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'Decision urgency',
         options: meetingDecisionUrgencies,
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'projectNecessityRating',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'How necessary is this project to them? (1–10)',
         max: 10,
         min: 1,
         type: 'rating',
       },
       {
+        entity: 'customer',
         id: 'constructionOutlookFavorabilityRating',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'How favorable is their outlook on construction? (1–10)',
         max: 10,
         min: 1,
@@ -164,6 +181,7 @@ export const INTAKE_STEPS: IntakeStep[] = [
     description: 'Understand their financial picture to tailor the financing conversation.',
     fields: [
       {
+        entity: 'customer',
         id: 'creditScore',
         jsonbKey: 'financialProfileJSON',
         label: 'Estimated credit score range',
@@ -171,8 +189,9 @@ export const INTAKE_STEPS: IntakeStep[] = [
         type: 'select',
       },
       {
+        entity: 'customer',
         id: 'priorContractorExperience',
-        jsonbKey: 'homeownerSubjectiveProfileJSON',
+        jsonbKey: 'customerProfileJSON',
         label: 'Prior contractor experience',
         options: meetingPriorContractorExperience,
         type: 'select',

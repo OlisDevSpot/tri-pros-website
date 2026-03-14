@@ -1,25 +1,30 @@
 'use client'
 
-import type { CollectionField, JsonbSection } from '@/features/meetings/types'
-import type { Meeting } from '@/shared/db/schema'
+import type { CollectionField } from '@/features/meetings/types'
+import type { Customer, Meeting } from '@/shared/db/schema'
+import { getJsonbSection } from '@/features/meetings/lib/get-jsonb-section'
 import { DebouncedFieldInput } from '@/features/meetings/ui/components/debounced-field-input'
 import { RatingButtons } from '@/features/meetings/ui/components/rating-buttons'
 import { Badge } from '@/shared/components/ui/badge'
 import { Label } from '@/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { Switch } from '@/shared/components/ui/switch'
 
 interface FieldRendererProps {
+  customer: Customer | null
   field: CollectionField
   meeting: Meeting
-  onSave: (jsonbKey: JsonbSection, id: string, value: string | number) => void
+  onSave: (field: CollectionField, value: string | number | boolean) => void
 }
 
-export function FieldRenderer({ field, meeting, onSave }: FieldRendererProps) {
-  const section = (meeting[field.jsonbKey] ?? {}) as Record<string, unknown>
+export function FieldRenderer({ customer, field, meeting, onSave }: FieldRendererProps) {
+  const source = field.entity === 'customer' ? customer : meeting
+  const section = getJsonbSection(source, field.jsonbKey)
   const raw = section[field.id]
   const savedStr = typeof raw === 'string' ? raw : ''
   const savedNum = typeof raw === 'number' ? raw : null
-  const isSaved = savedStr !== '' || savedNum !== null
+  const savedBool = typeof raw === 'boolean' ? raw : null
+  const isSaved = savedStr !== '' || savedNum !== null || savedBool !== null
 
   return (
     <div className="flex flex-col gap-2">
@@ -37,8 +42,8 @@ export function FieldRenderer({ field, meeting, onSave }: FieldRendererProps) {
 
       {field.type === 'select' && field.options
         ? (
-            <Select value={savedStr} onValueChange={val => onSave(field.jsonbKey, field.id, val)}>
-              <SelectTrigger className="h-10">
+            <Select value={savedStr} onValueChange={val => onSave(field, val)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Select…" />
               </SelectTrigger>
               <SelectContent>
@@ -54,9 +59,16 @@ export function FieldRenderer({ field, meeting, onSave }: FieldRendererProps) {
           ? (
               <RatingButtons field={field} savedValue={savedNum} onSave={onSave} />
             )
-          : (
-              <DebouncedFieldInput field={field} initialValue={savedStr} onSave={onSave} />
-            )}
+          : field.type === 'boolean'
+            ? (
+                <Switch
+                  checked={raw === true}
+                  onCheckedChange={checked => onSave(field, checked)}
+                />
+              )
+            : (
+                <DebouncedFieldInput field={field} initialValue={savedStr} onSave={onSave} />
+              )}
     </div>
   )
 }

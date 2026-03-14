@@ -2,16 +2,28 @@ import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import { randomBytes } from 'node:crypto'
 import { and, count, desc, eq, getTableColumns, max } from 'drizzle-orm'
 import { db } from '@/shared/db'
+import { customers } from '@/shared/db/schema/customers'
+import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 
-export async function createProposal(data: InsertProposalSchema, customerId?: string) {
+export interface ProposalCustomer {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  city: string
+  state: string | null
+  zip: string
+}
+
+export async function createProposal(data: InsertProposalSchema) {
   try {
     const [proposal] = await db
       .insert(proposals)
       .values({
         ...data,
-        customerId: customerId ?? null,
         fundingJSON: {
           ...data.fundingJSON,
           data: {
@@ -32,13 +44,35 @@ export async function createProposal(data: InsertProposalSchema, customerId?: st
 }
 
 export async function getProposal(proposalId: string) {
-  const [proposal] = await db
-    .select()
+  const [row] = await db
+    .select({
+      ...getTableColumns(proposals),
+      customer: {
+        id: customers.id,
+        name: customers.name,
+        phone: customers.phone,
+        email: customers.email,
+        address: customers.address,
+        city: customers.city,
+        state: customers.state,
+        zip: customers.zip,
+      },
+    })
     .from(proposals)
+    .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+    .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(eq(proposals.id, proposalId))
 
-  return proposal
+  if (!row) {
+    return undefined
+  }
+
+  const customer = row.customer?.id ? (row.customer as ProposalCustomer) : null
+
+  return { ...row, customer }
 }
+
+export type ProposalWithCustomer = NonNullable<Awaited<ReturnType<typeof getProposal>>>
 
 export async function getProposals(userId: string) {
   return db
@@ -46,11 +80,14 @@ export async function getProposals(userId: string) {
       ...getTableColumns(proposals),
       viewCount: count(proposalViews.id),
       lastViewedAt: max(proposalViews.viewedAt),
+      customerName: customers.name,
     })
     .from(proposals)
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
+    .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+    .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(eq(proposals.ownerId, userId))
-    .groupBy(proposals.id)
+    .groupBy(proposals.id, customers.name)
     .orderBy(desc(proposals.createdAt))
 }
 

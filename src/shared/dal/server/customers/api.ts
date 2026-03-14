@@ -1,11 +1,9 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { Customer } from '@/shared/db/schema/customers'
 import type { Contact } from '@/shared/services/notion/lib/contacts/schema'
-import { and, eq, isNotNull, isNull } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
-import { meetings } from '@/shared/db/schema/meetings'
-import { proposals } from '@/shared/db/schema/proposals'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 
@@ -20,12 +18,12 @@ export async function upsertCustomerFromNotion(contact: Contact): Promise<Custom
     .values({
       notionContactId: contact.id,
       name: contact.name,
-      phone: contact.phone ?? null,
-      email: contact.email ?? null,
-      address: contact.address ?? null,
-      city: contact.city ?? '',
-      state: contact.state ?? null,
-      zip: contact.zip ?? '',
+      phone: contact.phone,
+      email: contact.email,
+      address: contact.address,
+      city: contact.city,
+      state: contact.state,
+      zip: contact.zip,
       syncedAt: now,
     })
     .onConflictDoUpdate({
@@ -40,6 +38,47 @@ export async function upsertCustomerFromNotion(contact: Contact): Promise<Custom
         zip: contact.zip ?? '',
         syncedAt: now,
       },
+    })
+    .returning()
+
+  return customer
+}
+
+// ── Homeowner-based find-or-create (no Notion required) ─────────────────────
+
+interface HomeownerData {
+  name: string
+  email: string
+  phone?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
+}
+
+export async function findOrCreateCustomerFromHomeowner(data: HomeownerData): Promise<Customer> {
+  // Try to find existing customer by email
+  const [existing] = await db
+    .select()
+    .from(customers)
+    .where(eq(customers.email, data.email))
+    .limit(1)
+
+  if (existing) {
+    return existing
+  }
+
+  const [customer] = await db
+    .insert(customers)
+    .values({
+      name: data.name,
+      email: data.email,
+      phone: data.phone ?? null,
+      address: data.address ?? null,
+      city: data.city ?? '',
+      state: data.state ?? null,
+      zip: data.zip ?? '',
+      syncedAt: new Date().toISOString(),
     })
     .returning()
 
@@ -87,55 +126,4 @@ export async function syncAllCustomers(): Promise<{ upserted: number }> {
     }
   }
   return { upserted }
-}
-
-// ── One-time backfill ─────────────────────────────────────────────────────────
-
-export async function backfillCustomers(): Promise<{ proposalsBackfilled: number, meetingsBackfilled: number }> {
-  let proposalsBackfilled = 0
-  let meetingsBackfilled = 0
-
-  // Proposals with a notionPageId but no customerId
-  const pendingProposals = await db
-    .select({ id: proposals.id, notionPageId: proposals.notionPageId })
-    .from(proposals)
-    .where(and(isNotNull(proposals.notionPageId), isNull(proposals.customerId)))
-
-  for (const proposal of pendingProposals) {
-    try {
-      const pages = await queryNotionDatabase('contacts', { id: proposal.notionPageId! }) as PageObjectResponse[]
-      if (!pages?.[0])
-        continue
-      const contact = pageToContact(pages[0])
-      const customer = await upsertCustomerFromNotion(contact)
-      await db.update(proposals).set({ customerId: customer.id }).where(eq(proposals.id, proposal.id))
-      proposalsBackfilled++
-    }
-    catch {
-      // Skip on individual failure — do not abort the backfill
-    }
-  }
-
-  // Meetings with a notionContactId but no customerId
-  const pendingMeetings = await db
-    .select({ id: meetings.id, notionContactId: meetings.notionContactId })
-    .from(meetings)
-    .where(and(isNotNull(meetings.notionContactId), isNull(meetings.customerId)))
-
-  for (const meeting of pendingMeetings) {
-    try {
-      const pages = await queryNotionDatabase('contacts', { id: meeting.notionContactId! }) as PageObjectResponse[]
-      if (!pages?.[0])
-        continue
-      const contact = pageToContact(pages[0])
-      const customer = await upsertCustomerFromNotion(contact)
-      await db.update(meetings).set({ customerId: customer.id }).where(eq(meetings.id, meeting.id))
-      meetingsBackfilled++
-    }
-    catch {
-      // Skip on individual failure
-    }
-  }
-
-  return { proposalsBackfilled, meetingsBackfilled }
 }

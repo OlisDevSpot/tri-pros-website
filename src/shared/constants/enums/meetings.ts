@@ -1,6 +1,7 @@
 export const meetingStatuses = ['in_progress', 'completed', 'converted'] as const
 
 // Setup fields (DB-backed)
+export const meetingTypes = ['Initial', 'Follow-up'] as const
 export const meetingDecisionMakersPresentOptions = [
   'All present',
   'Partially present (only wife)',
@@ -8,7 +9,7 @@ export const meetingDecisionMakersPresentOptions = [
   'Partially present (missing family member)',
   'None present',
 ] as const
-export const meetingAgeGroups = ['Young (18-35)', 'Adult (35-55)', 'Senior (55-70)', 'Elder (70+)'] as const
+export const meetingAgeGroups = ['Young (18-25)', 'Young Adult (25-40)', 'Adult (40-62)', 'Senior (62-78)', 'Elder (78+)'] as const
 export const meetingFamilyStatuses = ['Single man', 'Single woman', 'Couple', 'Family', 'Multi-family'] as const
 export const meetingHouseholdTypes = ['Senior(s)', 'Empty nester(s)', 'Family', 'Non-senior(s)', 'Multi-gen home', 'Other'] as const
 export const meetingOutcomePriorities = ['Price', 'Quality', 'Speed'] as const

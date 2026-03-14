@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
+import { useCallback, useState } from 'react'
 import { PastMeetingsTable } from '@/features/meetings/ui/components/table'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -12,6 +13,8 @@ import { useTRPC } from '@/trpc/helpers'
 export function PastMeetingsView() {
   const trpc = useTRPC()
   const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
+  const [filteredCount, setFilteredCount] = useState<number | null>(null)
+  const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [])
 
   if (meetings.isLoading) {
     return (
@@ -51,18 +54,17 @@ export function PastMeetingsView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4"
     >
-      <Card className="h-full w-full flex flex-col">
-        <CardHeader className="shrink-0">
+      <Card className="h-full w-full flex flex-col lg:p-6 border-0 lg:border bg-transparent lg:bg-card">
+        <CardHeader className="shrink-0 px-0">
           <CardTitle>Past Meetings</CardTitle>
           <CardDescription>
-            {meetings.data.length}
-            {' '}
-            total meeting
-            {meetings.data.length !== 1 ? 's' : ''}
+            {filteredCount !== null && filteredCount !== meetings.data.length
+              ? `${filteredCount} of ${meetings.data.length} meeting${meetings.data.length !== 1 ? 's' : ''}`
+              : `${meetings.data.length} total meeting${meetings.data.length !== 1 ? 's' : ''}`}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grow min-h-0 overflow-auto">
-          <PastMeetingsTable data={meetings.data} />
+        <CardContent className="grow min-h-0 overflow-auto px-0">
+          <PastMeetingsTable data={meetings.data} onFilteredCountChange={handleFilteredCountChange} />
         </CardContent>
       </Card>
     </motion.div>

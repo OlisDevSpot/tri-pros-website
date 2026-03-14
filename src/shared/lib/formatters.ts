@@ -64,3 +64,41 @@ export function convertUTCToPST(date: Date | string) {
   pstDate.setHours(pstDate.getHours() - 8)
   return pstDate
 }
+
+/**
+ * Returns a two-line date display:
+ * - `relative`: "Today", "Yesterday", "3 days ago", or "Mar 5, 2026"
+ * - `dayAtTime`: "Monday at 5:00 PM"
+ */
+export function formatDateCell(dateInput: string | Date): { relative: string, dayAtTime: string } {
+  const d = new Date(dateInput)
+  const now = new Date()
+
+  // Strip time for day comparison
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const diffDays = Math.round((startOfToday.getTime() - startOfDate.getTime()) / (1000 * 60 * 60 * 24))
+
+  let relative: string
+  if (diffDays === 0) {
+    relative = 'Today'
+  }
+  else if (diffDays === 1) {
+    relative = 'Yesterday'
+  }
+  else if (diffDays > 1 && diffDays <= 7) {
+    relative = `${diffDays} days ago`
+  }
+  else if (diffDays === -1) {
+    relative = 'Tomorrow'
+  }
+  else {
+    relative = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  const dayOfWeek = d.toLocaleDateString('en-US', { weekday: 'long' })
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const dayAtTime = `${dayOfWeek} at ${time}`
+
+  return { relative, dayAtTime }
+}

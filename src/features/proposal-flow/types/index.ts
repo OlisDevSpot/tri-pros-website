@@ -11,7 +11,6 @@ export interface ProposalStep<P> {
 
 export interface OverrideProposalValues {
   meta?: Partial<ProposalFormSchema['meta']>
-  homeowner?: Partial<ProposalFormSchema['homeowner']>
   project?: Partial<ProposalFormSchema['project']>
   funding?: Partial<ProposalFormSchema['funding']>
 }

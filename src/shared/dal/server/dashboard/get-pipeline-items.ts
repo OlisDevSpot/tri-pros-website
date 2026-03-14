@@ -19,7 +19,7 @@ export interface MeetingPipelineItem {
   customerEmail: string | null
   program: string | null
   createdAt: string
-  proposalId: string | null
+  scheduledFor: string | null
 }
 
 const MEETING_STATUS_TO_STAGE: Record<string, MeetingPipelineStage> = {
@@ -36,7 +36,7 @@ export async function getMeetingPipelineItems(userId: string): Promise<MeetingPi
       program: meetings.program,
       status: meetings.status,
       createdAt: meetings.createdAt,
-      proposalId: meetings.proposalId,
+      scheduledFor: meetings.scheduledFor,
       customerName: customers.name,
       customerPhone: customers.phone,
       customerEmail: customers.email,
@@ -55,7 +55,7 @@ export async function getMeetingPipelineItems(userId: string): Promise<MeetingPi
     customerEmail: m.customerEmail ?? null,
     program: m.program,
     createdAt: m.createdAt,
-    proposalId: m.proposalId,
+    scheduledFor: m.scheduledFor,
   }))
 }
 
@@ -87,9 +87,9 @@ export async function getProposalPipelineItems(userId: string): Promise<Proposal
     .select({
       id: proposals.id,
       status: proposals.status,
-      customerName: sql<string>`COALESCE(${proposals.homeownerJSON}->'data'->>'name', 'Unknown')`.as('customer_name'),
-      customerPhone: sql<string | null>`${proposals.homeownerJSON}->'data'->>'phoneNum'`.as('customer_phone'),
-      customerEmail: sql<string | null>`${proposals.homeownerJSON}->'data'->>'email'`.as('customer_email'),
+      customerName: sql<string>`COALESCE(${customers.name}, 'Unknown')`.as('customer_name'),
+      customerPhone: sql<string | null>`${customers.phone}`.as('customer_phone'),
+      customerEmail: sql<string | null>`${customers.email}`.as('customer_email'),
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'trade'->>'label'`.as('trade'),
       finalTcp: sql<number | null>`(${proposals.fundingJSON}->'data'->>'finalTcp')::numeric`.as('final_tcp'),
       sentAt: proposals.sentAt,
@@ -98,9 +98,11 @@ export async function getProposalPipelineItems(userId: string): Promise<Proposal
       lastViewedAt: max(proposalViews.viewedAt),
     })
     .from(proposals)
+    .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+    .leftJoin(customers, eq(customers.id, meetings.customerId))
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .where(eq(proposals.ownerId, userId))
-    .groupBy(proposals.id)
+    .groupBy(proposals.id, customers.name, customers.phone, customers.email)
     .orderBy(desc(proposals.createdAt))
 
   return rows.map(p => ({

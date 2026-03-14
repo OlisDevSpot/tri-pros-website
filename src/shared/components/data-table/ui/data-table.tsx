@@ -1,7 +1,7 @@
 'use client'
 
-import type { ColumnFiltersState, SortingState } from '@tanstack/react-table'
-import type { DataTableProps } from '@/shared/components/data-table/types'
+import type { ColumnFiltersState, FilterFnOption, SortingState } from '@tanstack/react-table'
+import type { DataTableProps, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
 
 import {
   flexRender,
@@ -11,10 +11,11 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { DataTableFilterBar } from '@/shared/components/data-table/data-table-filter-bar'
-import { DataTablePagination } from '@/shared/components/data-table/data-table-pagination'
+import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
+import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
+import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 
@@ -32,11 +33,43 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   entityName = 'row',
   rowDataAttribute = 'data-table-row',
   onActiveRowChange,
+  onFilteredCountChange,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
   const [sorting, setSorting] = useState<SortingState>(defaultSort ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
+  // Auto-register dateRange filterFns for any time-preset filters in config
+  const timePresetFilters = useMemo(
+    () => (filterConfig?.filter((f): f is DataTableTimePresetFilter => f.type === 'time-preset') ?? []),
+    [filterConfig],
+  )
+
+  const filterFns = useMemo(() => {
+    const fns: Record<string, ReturnType<typeof createDateRangeFilterFn<TData>>> = {}
+    for (const f of timePresetFilters) {
+      fns[`dateRange_${f.columnId}`] = createDateRangeFilterFn<TData>(f.presets)
+    }
+    return fns
+  }, [timePresetFilters])
+
+  // Patch columns to inject filterFn on time-preset columns
+  const patchedColumns = useMemo(() => {
+    if (timePresetFilters.length === 0) {
+      return columns
+    }
+
+    const timeColumnIds = new Set(timePresetFilters.map(f => f.columnId))
+
+    return columns.map((col) => {
+      const accessorKey = 'accessorKey' in col ? col.accessorKey as string : undefined
+      if (accessorKey && timeColumnIds.has(accessorKey)) {
+        return { ...col, filterFn: `dateRange_${accessorKey}` as FilterFnOption<TData> }
+      }
+      return col
+    })
+  }, [columns, timePresetFilters])
 
   // Notify parent of active row changes
   useEffect(() => {
@@ -69,7 +102,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   const table = useReactTable({
     data,
-    columns,
+    columns: patchedColumns,
+    filterFns,
     state: { sorting, columnFilters },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -84,10 +118,16 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     } as TMeta & { activeRowId: string | null },
   })
 
+  // Notify parent of filtered row count changes
+  const filteredCount = table.getFilteredRowModel().rows.length
+  useEffect(() => {
+    onFilteredCountChange?.(filteredCount)
+  }, [filteredCount, onFilteredCountChange])
+
   return (
     <div className="space-y-4">
       {filterConfig && filterConfig.length > 0 && (
-        <DataTableFilterBar table={table} filters={filterConfig} entityName={entityName} />
+        <DataTableFilterBar table={table} filters={filterConfig} />
       )}
 
       <div className="rounded-xl border border-border/50 overflow-hidden">

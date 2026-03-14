@@ -20,13 +20,14 @@ export interface CaseStudy {
 export type CollectionFieldType = 'select' | 'text' | 'number' | 'rating' | 'boolean'
 
 export type JsonbSection
-  = | 'financialProfileJSON'
-    | 'homeownerSubjectiveProfileJSON'
+  = | 'customerProfileJSON'
+    | 'financialProfileJSON'
     | 'programDataJSON'
     | 'propertyProfileJSON'
-    | 'situationObjectiveProfileJSON'
+    | 'situationProfileJSON'
 
 export interface CollectionField {
+  entity: 'customer' | 'meeting'
   id: string
   jsonbKey: JsonbSection
   label: string

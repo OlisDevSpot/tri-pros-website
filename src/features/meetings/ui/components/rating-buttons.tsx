@@ -1,13 +1,13 @@
 'use client'
 
-import type { CollectionField, JsonbSection } from '@/features/meetings/types'
+import type { CollectionField } from '@/features/meetings/types'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
 interface RatingButtonsProps {
   field: CollectionField
   savedValue: number | null
-  onSave: (jsonbKey: JsonbSection, id: string, value: number) => void
+  onSave: (field: CollectionField, value: number) => void
 }
 
 export function RatingButtons({ field, savedValue, onSave }: RatingButtonsProps) {
@@ -29,7 +29,7 @@ export function RatingButtons({ field, savedValue, onSave }: RatingButtonsProps)
           size="icon"
           type="button"
           variant="outline"
-          onClick={() => onSave(field.jsonbKey, field.id, n)}
+          onClick={() => onSave(field, n)}
         >
           {n}
         </Button>

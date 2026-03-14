@@ -9,3 +9,5 @@ export const dashboardStepParser = parseAsStringLiteral(dashboardSteps)
 export const editMeetingIdParser = parseAsString.withDefault('').withOptions({ clearOnDefault: true })
 
 export const proposalIdParser = parseAsString.withDefault('').withOptions({ clearOnDefault: true })
+
+export const editProjectIdParser = parseAsString.withDefault('').withOptions({ clearOnDefault: true })

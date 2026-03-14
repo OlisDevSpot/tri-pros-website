@@ -16,7 +16,6 @@ import { Label } from '@/shared/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Switch } from '@/shared/components/ui/switch'
 import { FundingFields } from './funding-fields'
-import { HomeownerFields } from './homeowner-fields'
 import { ProjectFields } from './project-fields'
 
 interface Props {
@@ -33,7 +32,6 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
   const defaultWithOverrides = {
     ...base,
     meta: { ...base.meta, ...(override.meta ?? {}) },
-    homeowner: { ...base.homeowner, ...(override.homeowner ?? {}) },
     project: { ...base.project, ...(override.project ?? {}) },
     funding: { ...base.funding, ...(override.funding ?? {}) },
   }
@@ -101,13 +99,6 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
             </span>
           </div>
         </CardHeader>
-        <CardHeader>
-          <CardTitle>Homeowner Information</CardTitle>
-          <CardDescription>Homeowner information</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <HomeownerFields />
-        </CardContent>
         <CardHeader>
           <CardTitle>Project Information</CardTitle>
           <CardDescription>Information relevant to the project success</CardDescription>

@@ -1,5 +1,5 @@
 import type z from 'zod'
-import { meetingBaseSchema } from '@/shared/entities/meetings/schemas'
+import { meetingBaseSchema } from '@/features/meetings/schemas/base-meeting-form-schema'
 
 export const tprMonthlySpecialSchema = meetingBaseSchema.extend({
 })

@@ -18,9 +18,9 @@ export function Heading() {
   }
 
   const { sow } = proposal.data.projectJSON.data
-  const { name } = proposal.data.homeownerJSON.data
+  const customerName = proposal.data.customer?.name ?? 'Customer'
 
-  const firstName = name.split(' ')[0]
+  const firstName = customerName.split(' ')[0]
   const firstTrade = sow[0]?.trade.label
 
   return (

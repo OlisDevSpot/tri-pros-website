@@ -14,6 +14,7 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Form } from '@/shared/components/ui/form'
 import { useUpdateProposal } from '@/shared/dal/client/proposals/mutations/use-update-proposal'
 import { useGetProposal } from '@/shared/dal/client/proposals/queries/use-get-proposal'
+import { CustomerInfoHeader } from '../components/customer-info-header'
 
 export function calculateProposalDiscounts(proposal: ProposalFormSchema) {
   const { funding } = proposal
@@ -46,7 +47,6 @@ export function EditProposalView() {
     if (proposal.data) {
       const initialValues: OverrideProposalValues = {
         meta: proposal.data.formMetaJSON,
-        homeowner: proposal.data.homeownerJSON,
         project: proposal.data.projectJSON,
         funding: proposal.data.fundingJSON,
       }
@@ -75,6 +75,8 @@ export function EditProposalView() {
     )
   }
 
+  const customer = proposal.data.customer
+
   function onSubmit(rawData: ProposalFormSchema) {
     if (!proposalId) {
       return
@@ -89,7 +91,6 @@ export function EditProposalView() {
       data: {
         label: rawData.project.data.label,
         formMetaJSON: rawData.meta,
-        homeownerJSON: rawData.homeowner,
         projectJSON: rawData.project,
         fundingJSON: {
           ...rawData.funding,
@@ -118,6 +119,11 @@ export function EditProposalView() {
       transition={{ duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4"
     >
+      {customer && (
+        <div className="shrink-0">
+          <CustomerInfoHeader customer={customer} />
+        </div>
+      )}
       <div
         className="h-full w-full overflow-auto pr-4"
       >

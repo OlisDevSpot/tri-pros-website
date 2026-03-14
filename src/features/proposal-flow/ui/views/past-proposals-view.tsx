@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
+import { useCallback, useState } from 'react'
 import { PastProposalsTable } from '@/features/proposal-flow/ui/components/table'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -9,6 +10,8 @@ import { useGetProposals } from '@/shared/dal/client/proposals/queries/use-get-p
 
 export function PastProposalsView() {
   const proposals = useGetProposals()
+  const [filteredCount, setFilteredCount] = useState<number | null>(null)
+  const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [])
 
   if (proposals.isLoading) {
     return (
@@ -52,14 +55,13 @@ export function PastProposalsView() {
         <CardHeader className="shrink-0 px-0">
           <CardTitle>Proposals</CardTitle>
           <CardDescription>
-            {proposals.data.length}
-            {' '}
-            total proposal
-            {proposals.data.length !== 1 ? 's' : ''}
+            {filteredCount !== null && filteredCount !== proposals.data.length
+              ? `${filteredCount} of ${proposals.data.length} proposal${proposals.data.length !== 1 ? 's' : ''}`
+              : `${proposals.data.length} total proposal${proposals.data.length !== 1 ? 's' : ''}`}
           </CardDescription>
         </CardHeader>
         <CardContent className="grow min-h-0 overflow-auto px-0">
-          <PastProposalsTable data={proposals.data} />
+          <PastProposalsTable data={proposals.data} onFilteredCountChange={handleFilteredCountChange} />
         </CardContent>
       </Card>
     </motion.div>

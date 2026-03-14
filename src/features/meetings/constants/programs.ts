@@ -43,6 +43,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
         },
         collectsData: [
           {
+            entity: 'meeting',
             id: 'scope',
             jsonbKey: 'programDataJSON',
             label: 'Scope they\'re interested in',
@@ -51,6 +52,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
             type: 'text',
           },
           {
+            entity: 'meeting',
             id: 'yrs',
             jsonbKey: 'programDataJSON',
             label: 'Years in this home',
@@ -84,6 +86,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
         },
         collectsData: [
           {
+            entity: 'meeting',
             id: 'timeline',
             jsonbKey: 'programDataJSON',
             label: 'When they want to move forward',
@@ -91,6 +94,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
             type: 'select',
           },
           {
+            entity: 'meeting',
             id: 'bill',
             jsonbKey: 'programDataJSON',
             label: 'Current monthly energy bill (optional)',

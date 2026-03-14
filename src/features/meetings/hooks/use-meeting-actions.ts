@@ -43,5 +43,15 @@ export function useMeetingActions() {
     }),
   )
 
-  return { deleteMeeting, duplicateMeeting, updateStatus }
+  const updateScheduledFor = useMutation(
+    trpc.meetingsRouter.update.mutationOptions({
+      onSuccess: () => {
+        invalidate()
+        toast.success('Scheduled date updated')
+      },
+      onError: () => toast.error('Failed to update scheduled date'),
+    }),
+  )
+
+  return { deleteMeeting, duplicateMeeting, updateStatus, updateScheduledFor }
 }

@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react'
 import type { IconType } from 'react-icons/lib'
 import type { Proposal } from '@/shared/db/schema'
 import {
-  BabyIcon,
   BanknoteArrowDownIcon,
   CircleUserIcon,
   DrillIcon,
@@ -16,31 +15,40 @@ import { formatAddress } from '@/shared/lib/formatters'
 
 export type Display = string | React.ReactNode
 
-export type ProposalContext
-  = Proposal['homeownerJSON']['data']
-    & Proposal['projectJSON']['data']
-    & Proposal['fundingJSON']['data']
+export type ProposalOverviewContext
+  = & {
+    name: string
+    email: string | null
+    phone: string | null
+    address: string | null
+    city: string
+    state: string | null
+    zip: string
+  }
+  & Proposal['projectJSON']['data']
+  & Proposal['fundingJSON']['data']
+  & { scopes: string, exclusiveOffers: string }
 
 export interface BaseField {
   label: string
-  name: keyof ProposalContext | string
+  name: keyof ProposalOverviewContext | string
   Icon?: LucideIcon | IconType
 }
 
 interface TextField extends BaseField {
   type?: 'text'
-  format?: (value: string, ctx: ProposalContext) => Display
+  format?: (value: string, ctx: ProposalOverviewContext) => Display
 }
 
 interface EnumField<T extends string> extends BaseField {
   type: 'enum'
   values: readonly T[]
-  format?: (value: T, ctx: ProposalContext) => Display
+  format?: (value: T, ctx: ProposalOverviewContext) => Display
 }
 
 interface NumberField extends BaseField {
   type: 'number'
-  format: (value: number, ctx: ProposalContext) => Display
+  format: (value: number, ctx: ProposalOverviewContext) => Display
 }
 
 type Field<E extends string = string> = BaseField | NumberField | TextField | EnumField<E>
@@ -57,7 +65,7 @@ interface Section {
 
 export const proposalFields = [
   {
-    label: 'Homeowner',
+    label: 'Customer',
     fields: [
       {
         type: 'text',
@@ -70,11 +78,14 @@ export const proposalFields = [
         label: 'Address',
         name: 'address',
         Icon: MapPinHouseIcon,
-        format: (value, ctx) => {
+        format: (_value, ctx) => {
           const { address, city, state, zip } = ctx
+          if (!address) {
+            return '—'
+          }
           return (
             <div className="whitespace-pre-line">
-              {formatAddress(address, city, state, zip)}
+              {formatAddress(address, city, state ?? 'CA', zip)}
             </div>
           )
         },
@@ -88,15 +99,8 @@ export const proposalFields = [
       {
         type: 'text',
         label: 'Phone',
-        name: 'phoneNum',
+        name: 'phone',
         Icon: PhoneIcon,
-      },
-      {
-        type: 'number',
-        label: 'Age',
-        name: 'age',
-        Icon: BabyIcon,
-        format: value => value ? `${value} years old` : '-',
       },
     ],
   },

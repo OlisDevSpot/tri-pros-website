@@ -1,19 +1,21 @@
 'use client'
 
-import type { CollectionField, JsonbSection } from '@/features/meetings/types'
-import type { Meeting } from '@/shared/db/schema'
+import type { CollectionField } from '@/features/meetings/types'
+import type { Customer, Meeting } from '@/shared/db/schema'
+import { getJsonbSection } from '@/features/meetings/lib/get-jsonb-section'
 import { DebouncedTextInput } from '@/features/meetings/ui/components/debounced-text-input'
 import { Label } from '@/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { cn } from '@/shared/lib/utils'
 
 interface StepDataContentProps {
+  customer: Customer | null
   fields: CollectionField[]
   meeting: Meeting
-  onSave: (jsonbKey: JsonbSection, fieldId: string, value: string) => void
+  onSave: (field: CollectionField, value: string | number | boolean) => void
 }
 
-export function StepDataContent({ fields, meeting, onSave }: StepDataContentProps) {
+export function StepDataContent({ customer, fields, meeting, onSave }: StepDataContentProps) {
   const hasFields = fields.length > 0
 
   return (
@@ -31,7 +33,8 @@ export function StepDataContent({ fields, meeting, onSave }: StepDataContentProp
       {hasFields && (
         <div className="flex flex-col gap-4">
           {fields.map((field) => {
-            const section = (meeting[field.jsonbKey] ?? {}) as Record<string, unknown>
+            const source = field.entity === 'customer' ? customer : meeting
+            const section = getJsonbSection(source, field.jsonbKey)
             const rawValue = section[field.id]
             const savedValue = typeof rawValue === 'string' ? rawValue : ''
 
@@ -51,7 +54,7 @@ export function StepDataContent({ fields, meeting, onSave }: StepDataContentProp
                   ? (
                       <Select
                         value={savedValue}
-                        onValueChange={val => onSave(field.jsonbKey, field.id, val)}
+                        onValueChange={val => onSave(field, val)}
                       >
                         <SelectTrigger className="h-9 text-sm">
                           <SelectValue placeholder="Select…" />

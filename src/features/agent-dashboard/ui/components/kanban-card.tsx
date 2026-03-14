@@ -82,7 +82,7 @@ export function KanbanCard({ item, href, isDragOverlay }: Props) {
 
         <div className="flex items-center justify-between">
           <p className="text-[11px] text-muted-foreground/70">{timeLabel}</p>
-          {item.type === 'meeting' && item.proposalId && (
+          {item.type === 'meeting' && item.stage === 'meeting_converted' && (
             <Badge variant="outline" className="text-[10px]">Has Proposal</Badge>
           )}
         </div>

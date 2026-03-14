@@ -13,7 +13,7 @@ export function SendProposalLink(props: Props) {
   const [message, setMessage] = useState('')
 
   const isSent = proposal.data?.status === 'sent'
-  const firstName = proposal.data?.homeownerJSON.data.name?.split(' ')[0] ?? 'your customer'
+  const firstName = proposal.data?.customer?.name?.split(' ')[0] ?? 'your customer'
 
   return (
     <div className="flex flex-col gap-3">

@@ -66,7 +66,9 @@ export function Proposal() {
     )
   }
 
-  const { token, homeownerJSON: { data: { email, name } } } = proposal.data
+  const { token, customer } = proposal.data
+  const customerEmail = customer?.email ?? ''
+  const customerName = customer?.name ?? 'Customer'
 
   const userRole = checkUserRole(sessionQuery.data?.user.email || '')
   const proposalSteps = generateProposalSteps(userRole)
@@ -106,9 +108,9 @@ export function Proposal() {
                   <step.Component onClick={(message) => {
                     sendProposalEmail.mutate({
                       proposalId: params.proposalId,
-                      email: email || '',
+                      email: customerEmail,
                       token: token || '',
-                      customerName: name,
+                      customerName,
                       message,
                     }, {
                       onSuccess: () => {

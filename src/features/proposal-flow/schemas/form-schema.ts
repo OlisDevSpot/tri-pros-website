@@ -1,11 +1,10 @@
 import z from 'zod'
-import { fundingSectionSchema, homeownerSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
+import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 
 export const proposalFormSchema = z.object({
   meta: z.object({
     pricingMode: z.enum(['total', 'breakdown']),
   }),
-  homeowner: homeownerSectionSchema,
   project: projectSectionSchema,
   funding: fundingSectionSchema,
 })
@@ -16,23 +15,8 @@ export const baseDefaultValues: ProposalFormSchema = {
   meta: {
     pricingMode: 'total',
   },
-  homeowner: {
-    data: {
-      name: '',
-      email: '',
-      phoneNum: '',
-      age: 0,
-    },
-    meta: {
-      enabled: true,
-    },
-  },
   project: {
     data: {
-      address: '',
-      city: '',
-      state: 'CA',
-      zip: '',
       type: 'general-remodeling',
       label: '',
       sow: [

@@ -14,24 +14,6 @@
  * Usage: import `painPoints` (nested by category) or `allPainPoints` (flat array)
  */
 
-// ─── Trade & Program Accessors ────────────────────────────────────────────────
-
-export const tradeAccessors = [
-  'roofing',
-  'hvac',
-  'windows',
-  'insulation',
-  'solar',
-  'foundation',
-  'bathroom',
-  'kitchen',
-  'flooring',
-  'paint',
-  'decking',
-] as const
-
-export type TradeAccessor = (typeof tradeAccessors)[number]
-
 export const programAccessors = [
   'energy-saver',
   'tpr-monthly-special',
@@ -100,63 +82,21 @@ export type HouseholdResonance
     | 'Multi-gen home'
 
 export interface PainPoint {
-  /** Unique machine-readable identifier. Use camelCase. */
   accessor: string
-
-  /** Human-readable label shown to the agent. */
   label: string
-
-  /**
-   * How severe this issue is for the homeowner's home or finances.
-   * 'variable' = context-dependent (e.g., depends on how long it's been ignored)
-   */
   severity: 'critical' | 'high' | 'medium' | 'low' | 'variable'
-
-  /**
-   * The primary emotional lever this pain point pulls.
-   * First entry is dominant; subsequent entries are supporting.
-   * Source: docs/customer/decision-psychology.md
-   */
   emotionalDrivers: [EmotionalDriver, ...EmotionalDriver[]]
-
-  /** How much this pain point, when confirmed, accelerates the close. */
   urgencyMultiplier: UrgencyMultiplier
-
   /**
    * Observable symptoms — what the homeowner says, shows, or complains about.
    * These are the discovery signals the agent listens for in Phase 1.
    */
   symptoms: string[]
-
-  /** Root causes that explain why this problem exists. */
   likelyCauses: string[]
-
-  /** Primary trades that address this pain point. */
-  trades: TradeAccessor[]
-
-  /**
-   * Trade complements — natural cross-sell pairings.
-   * Presenting these together increases contract size and delivers compounding ROI.
-   * Source: docs/company/services-catalog.md — "Natural Scope Pairings"
-   */
-  naturalPairings: TradeAccessor[]
-
-  /**
-   * Which programs this pain point fits best.
-   * Used to auto-suggest the right program during meeting intake.
-   */
-  programFit: ProgramAccessor[]
-
-  /**
-   * Household types where this pain point resonates most strongly.
-   * Guides tone and prioritization in Phase 1 discovery.
-   */
+  trades: string[]
+  naturalPairings: string[]
+  programFit: ProgramAccessor[] | null
   householdResonance: HouseholdResonance[]
-
-  /**
-   * Phase 1 discovery questions the agent asks to surface and confirm this pain point.
-   * Source: docs/sales/in-home-meeting-playbook.md — Discovery Questions
-   */
   discoveryQuestions: string[]
 
   /**
