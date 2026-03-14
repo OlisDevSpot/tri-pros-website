@@ -7,7 +7,6 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
-import { customers } from './customers'
 import { financeOptions } from './finance-options'
 import { meetings } from './meetings'
 import { proposalStatusEnum } from './meta'
@@ -22,21 +21,19 @@ export const proposals = pgTable('proposals', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   token: text('token').notNull(),
-  notionPageId: text('notion_page_id'),
-  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
-  meetingId: uuid('meeting_id').references(() => meetings.id, { onDelete: 'set null' }),
+  docusignEnvelopeId: text('docusign_envelope_id'),
 
   formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>().notNull(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
   fundingJSON: jsonb('funding_JSON').$type<FundingSection>().notNull(),
 
+  meetingId: uuid('meeting_id')
+    .references(() => meetings.id, { onDelete: 'set null' }),
   financeOptionId: integer('finance_option_id')
     .references(() => financeOptions.id, { onDelete: 'cascade' }),
 
-  docusignEnvelopeId: text('docusign_envelope_id'),
-  contractSentAt: timestamp('contract_sent_at', { mode: 'string', withTimezone: true }),
   sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
-
+  contractSentAt: timestamp('contract_sent_at', { mode: 'string', withTimezone: true }),
   createdAt,
   updatedAt,
 })

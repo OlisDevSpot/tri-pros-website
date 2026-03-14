@@ -3,17 +3,20 @@
 import { KanbanIcon, TableIcon } from 'lucide-react'
 
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
+import { cn } from '@/shared/lib/utils'
 
 export type PipelineLayout = 'kanban' | 'table'
 
 interface Props {
   value: PipelineLayout
   onChange: (value: PipelineLayout) => void
+  className?: string
 }
 
-export function PipelineViewToggle({ value, onChange }: Props) {
+export function PipelineViewToggle({ value, onChange, className }: Props) {
   return (
     <ToggleGroup
+      className={cn('', className)}
       type="single"
       size="sm"
       variant="outline"

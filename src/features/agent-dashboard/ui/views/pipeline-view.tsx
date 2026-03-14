@@ -136,7 +136,7 @@ export function PipelineView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
-      <div className="flex items-end gap-4 justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         {mode === 'meetings' && meetingsQuery.data
           ? <MeetingMetricsBar items={meetingsQuery.data} />
           : pipelineStats.data
@@ -144,13 +144,13 @@ export function PipelineView() {
             : <div />}
 
         <div className="flex items-center gap-3">
-          <PipelineViewToggle value={layout} onChange={setLayout} />
-          <Tabs value={mode} onValueChange={v => setMode(v as PipelineMode)}>
-            <TabsList>
-              <TabsTrigger value="meetings">Meetings</TabsTrigger>
-              <TabsTrigger value="proposals">Proposals</TabsTrigger>
+          <Tabs value={mode} onValueChange={v => setMode(v as PipelineMode)} className="w-full lg:order-2">
+            <TabsList className="w-full flex">
+              <TabsTrigger value="meetings" className="flex-1 w-full">Meetings</TabsTrigger>
+              <TabsTrigger value="proposals" className="flex-1">Proposals</TabsTrigger>
             </TabsList>
           </Tabs>
+          <PipelineViewToggle value={layout} onChange={setLayout} className="lg:order-1" />
         </div>
       </div>
 
