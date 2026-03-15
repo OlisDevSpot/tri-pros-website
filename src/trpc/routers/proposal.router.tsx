@@ -12,7 +12,6 @@ import { user } from '@/shared/db/schema/auth'
 import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
 import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
 import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
-import { updatePageUrlProperty } from '@/shared/services/notion/dal/update-page-property'
 import { resendClient } from '@/shared/services/resend/client'
 import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
 import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
@@ -75,10 +74,6 @@ export const proposalRouter = createTRPCRouter({
           })
         }
         const proposalUrl = `${ROOTS.proposalPublic({ absolute: true })}/proposal/${proposal.id}?token=${proposal.token}`
-
-        if (proposal.notionPageId) {
-          await updatePageUrlProperty(proposal.notionPageId, `Proposals Link`, proposalUrl)
-        }
 
         return { proposal, proposalUrl }
       }
@@ -154,7 +149,6 @@ export const proposalRouter = createTRPCRouter({
         projectJSON: source.projectJSON,
         fundingJSON: source.fundingJSON,
         financeOptionId: source.financeOptionId ?? undefined,
-        notionPageId: source.notionPageId ?? undefined,
         meetingId: source.meetingId ?? undefined,
       })
 

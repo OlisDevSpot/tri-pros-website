@@ -3,7 +3,6 @@ import { createHTTPTRPCContext } from '@/trpc/init'
 import { appRouter } from '@/trpc/routers/app'
 
 async function handler(req: Request) {
-  // GET NEXTJS REQUEST DETAILS AND ALLOW TRPC TO MUTATE THEM VIA CTX
   const resHeaders = new Headers()
 
   const trpcResponse = await fetchRequestHandler({
@@ -11,13 +10,19 @@ async function handler(req: Request) {
     req,
     router: appRouter,
     createContext: () => createHTTPTRPCContext({ req, resHeaders }),
+    onError: ({ error, path }) => {
+      console.error(`[tRPC] ${path}: ${error.message}`)
+    },
   })
 
-  const res = new Response(trpcResponse.body, {
+  // Merge tRPC response headers (including content-type) with custom headers
+  trpcResponse.headers.forEach((value, key) => {
+    resHeaders.set(key, value)
+  })
+
+  return new Response(trpcResponse.body, {
     status: trpcResponse.status,
     headers: resHeaders,
   })
-
-  return res
 }
 export { handler as GET, handler as POST }

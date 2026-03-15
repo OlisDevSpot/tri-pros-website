@@ -8,6 +8,7 @@ import { hubspotRouter } from './hubspot.router'
 import { landingRouter } from './landing.router'
 import { meetingsRouter } from './meetings.router'
 import { notionRouter } from './notion.router'
+import { pipelineRouter } from './pipeline.router'
 import { proposalRouter } from './proposal.router'
 import { showroomRouter } from './showroom.router'
 
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   landingRouter,
   meetingsRouter,
   notionRouter,
+  pipelineRouter,
   proposalRouter,
   showroomRouter,
 })

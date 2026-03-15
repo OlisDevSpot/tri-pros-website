@@ -2,8 +2,7 @@
 
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 
-import type { PipelineStageConfig } from '@/features/agent-dashboard/constants/pipeline-stages'
-import type { PipelineItem } from '@/shared/dal/server/dashboard/get-pipeline-items'
+import type { KanbanItem, KanbanStageConfig } from '@/shared/components/kanban/types'
 
 import {
   DndContext,
@@ -15,22 +14,24 @@ import {
 } from '@dnd-kit/core'
 import { useState } from 'react'
 
-import { KanbanColumn } from '@/features/agent-dashboard/ui/components/kanban-column'
-import { KanbanDragOverlay } from '@/features/agent-dashboard/ui/components/kanban-drag-overlay'
+import { KanbanColumn } from '@/shared/components/kanban/ui/kanban-column'
+import { KanbanDragOverlay } from '@/shared/components/kanban/ui/kanban-drag-overlay'
 
-interface Props {
-  stageConfig: readonly PipelineStageConfig[]
-  groupedItems: Record<string, PipelineItem[]>
+interface Props<T extends KanbanItem = KanbanItem> {
+  stageConfig: readonly KanbanStageConfig[]
+  groupedItems: Record<string, T[]>
   allowedTransitions: Record<string, readonly string[]>
   blockedMessages: Record<string, string>
   onMoveItem?: (itemId: string, fromStage: string, toStage: string) => void
   onBlockedTransition: (message: string) => void
   collapsedStages?: string[]
-  getItemHref: (item: PipelineItem) => string
+  getItemHref: (item: T) => string
   showColumnValues?: boolean
+  getItemValue?: (item: T) => number | null
+  renderCard: (item: T, href: string, isDragOverlay?: boolean) => React.ReactNode
 }
 
-export function KanbanBoard({
+export function KanbanBoard<T extends KanbanItem>({
   stageConfig,
   groupedItems,
   allowedTransitions,
@@ -40,8 +41,10 @@ export function KanbanBoard({
   collapsedStages = [],
   getItemHref,
   showColumnValues,
-}: Props) {
-  const [activeItem, setActiveItem] = useState<PipelineItem | null>(null)
+  getItemValue,
+  renderCard,
+}: Props<T>) {
+  const [activeItem, setActiveItem] = useState<T | null>(null)
 
   const pointerSensor = useSensor(PointerSensor, {
     activationConstraint: { distance: 8 },
@@ -54,7 +57,7 @@ export function KanbanBoard({
   const sensors = useSensors(pointerSensor, touchSensor, keyboardSensor)
 
   function handleDragStart(event: DragStartEvent) {
-    const item = event.active.data.current as PipelineItem | undefined
+    const item = event.active.data.current as T | undefined
     if (item) {
       setActiveItem(item)
     }
@@ -68,7 +71,7 @@ export function KanbanBoard({
       return
     }
 
-    const draggedItem = active.data.current as PipelineItem | undefined
+    const draggedItem = active.data.current as T | undefined
     if (!draggedItem) {
       return
     }
@@ -108,10 +111,12 @@ export function KanbanBoard({
             collapsed={collapsedStages.includes(stage.key)}
             getItemHref={getItemHref}
             showValueTotal={showColumnValues}
+            getItemValue={getItemValue}
+            renderCard={renderCard}
           />
         ))}
       </div>
-      <KanbanDragOverlay activeItem={activeItem} getItemHref={getItemHref} />
+      <KanbanDragOverlay activeItem={activeItem} getItemHref={getItemHref} renderCard={renderCard} />
     </DndContext>
   )
 }

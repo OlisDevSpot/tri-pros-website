@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "tsc": "tsc --noEmit",
     "generate:types": "payload generate:types --watch",
     "db:push": "drizzle-kit push",
     "db:reset": "tsx ./src/shared/db/lib/db-reset.ts",

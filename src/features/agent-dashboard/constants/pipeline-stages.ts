@@ -1,3 +1,5 @@
+import type { KanbanStageConfig } from '@/shared/components/kanban/types'
+
 import {
   CalendarCheckIcon,
   CalendarIcon,
@@ -18,14 +20,9 @@ export const meetingPipelineStages = [
 
 export type MeetingPipelineStage = (typeof meetingPipelineStages)[number]
 
-export interface PipelineStageConfig<S extends string = string> {
-  key: S
-  label: string
-  icon: typeof CalendarIcon
-  color: string
-}
+export type { KanbanStageConfig as PipelineStageConfig } from '@/shared/components/kanban/types'
 
-export const meetingStageConfig: readonly PipelineStageConfig<MeetingPipelineStage>[] = [
+export const meetingStageConfig: readonly KanbanStageConfig<MeetingPipelineStage>[] = [
   { key: 'meeting_set', label: 'Meeting Set', icon: CalendarIcon, color: 'blue' },
   { key: 'meeting_done', label: 'Meeting Done', icon: CalendarCheckIcon, color: 'yellow' },
   { key: 'meeting_converted', label: 'Converted', icon: GitMergeIcon, color: 'green' },
@@ -53,7 +50,7 @@ export const proposalPipelineStages = [
 
 export type ProposalPipelineStage = (typeof proposalPipelineStages)[number]
 
-export const proposalStageConfig: readonly PipelineStageConfig<ProposalPipelineStage>[] = [
+export const proposalStageConfig: readonly KanbanStageConfig<ProposalPipelineStage>[] = [
   { key: 'proposal_draft', label: 'Draft', icon: FileEditIcon, color: 'slate' },
   { key: 'proposal_sent', label: 'Sent', icon: SendIcon, color: 'orange' },
   { key: 'contract_signed', label: 'Signed', icon: CheckCircle2Icon, color: 'green' },

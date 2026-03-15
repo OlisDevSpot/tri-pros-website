@@ -1,48 +1,36 @@
 'use client'
 
-import type { PipelineStageConfig } from '@/features/agent-dashboard/constants/pipeline-stages'
-import type { PipelineItem } from '@/shared/dal/server/dashboard/get-pipeline-items'
+import type { KanbanItem, KanbanStageConfig } from '@/shared/components/kanban/types'
 
 import { useDroppable } from '@dnd-kit/core'
 import { ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { KanbanCard } from '@/features/agent-dashboard/ui/components/kanban-card'
-import { KanbanEmptyColumn } from '@/features/agent-dashboard/ui/components/kanban-empty-column'
+import { badgeColorMap, stageColorMap } from '@/shared/components/kanban/constants/color-maps'
+import { KanbanEmptyColumn } from '@/shared/components/kanban/ui/kanban-empty-column'
 import { Badge } from '@/shared/components/ui/badge'
+import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
-interface Props {
-  stage: PipelineStageConfig
-  items: PipelineItem[]
+interface Props<T extends KanbanItem = KanbanItem> {
+  stage: KanbanStageConfig
+  items: T[]
   collapsed?: boolean
-  getItemHref: (item: PipelineItem) => string
+  getItemHref: (item: T) => string
   showValueTotal?: boolean
+  getItemValue?: (item: T) => number | null
+  renderCard: (item: T, href: string, isDragOverlay?: boolean) => React.ReactNode
 }
 
-const stageColorMap: Record<string, string> = {
-  blue: 'border-t-blue-500',
-  yellow: 'border-t-yellow-500',
-  slate: 'border-t-slate-400',
-  orange: 'border-t-orange-500',
-  green: 'border-t-green-500',
-  red: 'border-t-red-500',
-}
-
-const badgeColorMap: Record<string, string> = {
-  blue: 'bg-blue-500/10 text-blue-600',
-  yellow: 'bg-yellow-500/10 text-yellow-600',
-  slate: 'bg-slate-500/10 text-slate-600',
-  orange: 'bg-orange-500/10 text-orange-600',
-  green: 'bg-green-500/10 text-green-600',
-  red: 'bg-red-500/10 text-red-600',
-}
-
-function formatCurrency(cents: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(cents)
-}
-
-export function KanbanColumn({ stage, items, collapsed: initialCollapsed, getItemHref, showValueTotal }: Props) {
+export function KanbanColumn<T extends KanbanItem>({
+  stage,
+  items,
+  collapsed: initialCollapsed,
+  getItemHref,
+  showValueTotal,
+  getItemValue,
+  renderCard,
+}: Props<T>) {
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed ?? false)
   const { setNodeRef, isOver } = useDroppable({ id: stage.key })
 
@@ -52,7 +40,7 @@ export function KanbanColumn({ stage, items, collapsed: initialCollapsed, getIte
 
   if (isCollapsed) {
     return (
-      <div className="min-w-[280px] flex-1">
+      <div className="min-w-70 flex-1">
         <button
           type="button"
           onClick={() => setIsCollapsed(false)}
@@ -73,7 +61,7 @@ export function KanbanColumn({ stage, items, collapsed: initialCollapsed, getIte
     <div
       ref={setNodeRef}
       className={cn(
-        'min-w-[280px] flex-1 flex flex-col rounded-lg border border-border/50 bg-muted/30 border-t-2 transition-all',
+        'min-w-70 flex-1 flex flex-col rounded-lg border border-border/50 bg-muted/30 border-t-2 transition-all',
         borderColor,
         isOver && 'ring-2 ring-primary/30 bg-primary/5',
       )}
@@ -84,10 +72,10 @@ export function KanbanColumn({ stage, items, collapsed: initialCollapsed, getIte
         <Badge variant="secondary" className={cn('text-xs', badgeColor)}>
           {items.length}
         </Badge>
-        {showValueTotal && (() => {
-          const total = items.reduce((sum, item) => sum + (('value' in item && item.value) ? Number(item.value) : 0), 0)
+        {showValueTotal && getItemValue && (() => {
+          const total = items.reduce((sum, item) => sum + (getItemValue(item) ?? 0), 0)
           return total > 0
-            ? <span className="text-xs font-semibold text-emerald-500 tabular-nums">{formatCurrency(total)}</span>
+            ? <span className="text-xs font-semibold text-emerald-500 tabular-nums">{formatAsDollars(total)}</span>
             : null
         })()}
         {initialCollapsed && (
@@ -105,7 +93,7 @@ export function KanbanColumn({ stage, items, collapsed: initialCollapsed, getIte
         {items.length === 0
           ? <KanbanEmptyColumn label={stage.label} />
           : items.map(item => (
-              <KanbanCard key={item.id} item={item} href={getItemHref(item)} />
+              <div key={item.id}>{renderCard(item, getItemHref(item))}</div>
             ))}
       </div>
     </div>
