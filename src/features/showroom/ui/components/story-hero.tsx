@@ -1,15 +1,19 @@
 'use client'
 
 import type { Project } from '@/shared/db/schema'
-import type { ShowroomProjectTrade } from '@/shared/entities/projects/types'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import { Badge } from '@/shared/components/ui/badge'
 
+interface NamedItem {
+  id: string
+  name: string
+}
+
 interface Props {
   project: Project
   heroUrl: string | undefined
-  trades: ShowroomProjectTrade[]
+  trades: NamedItem[]
 }
 
 export function StoryHero({ project, heroUrl, trades }: Props) {
@@ -18,7 +22,7 @@ export function StoryHero({ project, heroUrl, trades }: Props) {
     : null
 
   return (
-    <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
+    <section className="relative h-[70vh] min-h-125 overflow-hidden">
       {heroUrl
         ? (
             <motion.div
@@ -38,11 +42,11 @@ export function StoryHero({ project, heroUrl, trades }: Props) {
             </motion.div>
           )
         : (
-            <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/20" />
+            <div className="absolute inset-0 bg-linear-to-br from-muted to-muted-foreground/20" />
           )}
 
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
 
       {/* Content */}
       <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 lg:p-16">
@@ -70,7 +74,7 @@ export function StoryHero({ project, heroUrl, trades }: Props) {
               <div className="flex flex-wrap gap-2">
                 {trades.map(trade => (
                   <Badge key={trade.id} className="border-white/20 bg-white/15 text-white backdrop-blur-sm">
-                    {trade.label}
+                    {trade.name}
                   </Badge>
                 ))}
               </div>

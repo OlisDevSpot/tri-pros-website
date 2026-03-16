@@ -9,7 +9,6 @@ import { accessor, description, imageUrl, label, outcomeStatement, unsafeId } fr
 
 import { constructionTypeEnum } from './meta'
 import { trades } from './trades'
-import { x_projectScopes } from './x-project-scopes'
 import { x_scopeBenefits } from './x-scope-benefits'
 import { x_scopeMaterials } from './x-scope-materials'
 import { x_scopeVariables } from './x-scope-variables'
@@ -34,7 +33,6 @@ export const scopeRelations = relations(scopes, ({ one, many }) => ({
     fields: [scopes.tradeId],
     references: [trades.id],
   }),
-  x_projectScopes: many(x_projectScopes),
   x_scopeMaterials: many(x_scopeMaterials),
   x_scopeVariables: many(x_scopeVariables),
   x_scopeBenefits: many(x_scopeBenefits),

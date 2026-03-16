@@ -1,7 +1,7 @@
-import type { ShowroomProject, ShowroomProjectScope, ShowroomProjectTrade } from '@/shared/entities/projects/types'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import type { ShowroomProject } from '@/shared/entities/projects/types'
+import { and, desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { mediaFiles, projects, scopes, trades, x_projectScopes } from '@/shared/db/schema'
+import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 
 export async function getShowroomProjects(): Promise<ShowroomProject[]> {
   const rows = await db
@@ -30,43 +30,30 @@ export async function getShowroomProjects(): Promise<ShowroomProject[]> {
     return true
   })
 
-  const projectIds = uniqueRows.map(r => r.project.id)
-
-  if (projectIds.length === 0) {
+  if (uniqueRows.length === 0) {
     return []
   }
 
-  // Fetch scope/trade associations for all projects in one query
+  // Fetch scope IDs (Notion UUIDs) for all projects
   const scopeRows = await db
     .select({
       projectId: x_projectScopes.projectId,
-      scopeId: scopes.id,
-      scopeLabel: scopes.label,
-      tradeId: trades.id,
-      tradeLabel: trades.label,
+      scopeId: x_projectScopes.scopeId,
     })
     .from(x_projectScopes)
-    .innerJoin(scopes, eq(x_projectScopes.scopeId, scopes.id))
-    .innerJoin(trades, eq(scopes.tradeId, trades.id))
-    .orderBy(asc(trades.label), asc(scopes.label))
 
-  // Group scope/trade data by project
-  const scopesByProject = new Map<string, { scopes: ShowroomProjectScope[], trades: ShowroomProjectTrade[] }>()
+  // Group scope IDs by project
+  const scopesByProject = new Map<string, string[]>()
   for (const row of scopeRows) {
     if (!scopesByProject.has(row.projectId)) {
-      scopesByProject.set(row.projectId, { scopes: [], trades: [] })
+      scopesByProject.set(row.projectId, [])
     }
-    const entry = scopesByProject.get(row.projectId)!
-    entry.scopes.push({ id: row.scopeId, label: row.scopeLabel, tradeId: row.tradeId })
-    if (!entry.trades.some(t => t.id === row.tradeId)) {
-      entry.trades.push({ id: row.tradeId, label: row.tradeLabel })
-    }
+    scopesByProject.get(row.projectId)!.push(row.scopeId)
   }
 
   return uniqueRows.map(row => ({
     project: row.project,
     heroImage: row.heroImage,
-    trades: scopesByProject.get(row.project.id)?.trades ?? [],
-    scopes: scopesByProject.get(row.project.id)?.scopes ?? [],
+    scopeIds: scopesByProject.get(row.project.id) ?? [],
   }))
 }

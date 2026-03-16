@@ -17,29 +17,22 @@ export function ShowroomGridView() {
     trpc.showroomRouter.getProjects.queryOptions(),
   )
 
-  // Derive unique trades from project data (no separate query needed)
-  const allTrades = (() => {
-    const tradeMap = new Map<number, { id: number, label: string }>()
-    for (const p of projects) {
-      for (const t of p.trades) {
-        tradeMap.set(t.id, t)
-      }
-    }
-    return Array.from(tradeMap.values()).sort((a, b) => a.label.localeCompare(b.label))
-  })()
+  const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
 
   const {
     selectedTradeIds,
     selectedScopeIds,
     searchQuery,
     filteredProjects,
+    availableTrades,
     availableScopes,
     activeFilterCount,
     setSelectedTradeIds,
     setSelectedScopeIds,
     setSearchQuery,
     clearAll,
-  } = useShowroomFilters({ projects })
+  } = useShowroomFilters({ projects, allScopes, allTrades })
 
   return (
     <section className="bg-background py-20 lg:py-32" ref={ref}>
@@ -69,7 +62,7 @@ export function ShowroomGridView() {
           className="mb-10"
         >
           <ShowroomFilterBar
-            trades={allTrades}
+            trades={availableTrades}
             scopes={availableScopes}
             selectedTradeIds={selectedTradeIds}
             selectedScopeIds={selectedScopeIds}
@@ -92,7 +85,7 @@ export function ShowroomGridView() {
                 ))}
               </div>
             )
-          : <ShowroomGrid projects={filteredProjects} />}
+          : <ShowroomGrid projects={filteredProjects} allScopes={allScopes} allTrades={allTrades} />}
       </div>
     </section>
   )

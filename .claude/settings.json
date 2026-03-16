@@ -22,10 +22,22 @@
       "Bash(xargs ls:*)",
       "Bash(cat /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/dashboard/meetings/[meetingId]/page.tsx)",
       "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features -name *table* -type f)",
-      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/showroom/)"
+      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/showroom/)",
+      "Read(//home/olis-solutions/olis-v3/**)",
+      "Bash(npx playwright:*)",
+      "Bash(pnpm scrape-project:*)",
+      "Bash(grep -r from.*services/r2 --include=*.ts --include=*.tsx)",
+      "Bash(grep -n \"bucket\\\\|BUCKET\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/db/schema/*.ts)",
+      "Bash(grep -r \"scopeIds\\\\|x_projectScopes\\\\|projectScopes\" src/features/showroom/ --include=*.ts --include=*.tsx)",
+      "Bash(npx tsx -e \":*)",
+      "Bash(npx tsx:*)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(grep -r \"useSortable\\\\|DndContext\\\\|SortableContext\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src --include=*.tsx --include=*.ts)",
+      "Bash(grep -r @dnd-kit /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src --include=*.tsx --include=*.ts)"
     ],
     "additionalDirectories": [
-      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui"
+      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
+      "/tmp"
     ]
   },
   "enabledPlugins": {

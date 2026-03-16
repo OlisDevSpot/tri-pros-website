@@ -1,14 +1,18 @@
 'use client'
 
 import type { ShowroomProject } from '@/shared/entities/projects/types'
+import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
+import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { AnimatePresence, motion } from 'motion/react'
 import { ShowroomProjectCard } from './showroom-project-card'
 
 interface Props {
   projects: ShowroomProject[]
+  allScopes: ScopeOrAddon[]
+  allTrades: Trade[]
 }
 
-export function ShowroomGrid({ projects }: Props) {
+export function ShowroomGrid({ projects, allScopes, allTrades }: Props) {
   if (projects.length === 0) {
     return (
       <div className="py-20 text-center text-muted-foreground">
@@ -30,7 +34,12 @@ export function ShowroomGrid({ projects }: Props) {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
           >
-            <ShowroomProjectCard project={project} index={index} />
+            <ShowroomProjectCard
+              project={project}
+              index={index}
+              allScopes={allScopes}
+              allTrades={allTrades}
+            />
           </motion.div>
         ))}
       </AnimatePresence>

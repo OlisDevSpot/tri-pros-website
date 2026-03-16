@@ -1,10 +1,10 @@
 import type z from 'zod'
 
 import { relations } from 'drizzle-orm'
-import { integer, jsonb, pgTable, unique, uuid } from 'drizzle-orm/pg-core'
+import { integer, jsonb, pgTable, text, unique, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { id } from '@/shared/db/lib/schema-helpers'
-import { scopes, x_scopeMaterials } from '@/shared/db/schema'
+import { x_scopeMaterials } from '@/shared/db/schema'
 import { projects } from './projects'
 
 export const x_projectScopes = pgTable('x_project_scopes', {
@@ -12,9 +12,7 @@ export const x_projectScopes = pgTable('x_project_scopes', {
   projectId: uuid('project_id')
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),
-  scopeId: integer('scope_id')
-    .notNull()
-    .references(() => scopes.id, { onDelete: 'no action' }),
+  scopeId: text('scope_id').notNull(),
   scopeMaterialId: integer('scope_material_id')
     .references(() => x_scopeMaterials.id, { onDelete: 'cascade' }),
   variablesData: jsonb('variables_data').$type<Record<string, any>>(),
@@ -28,10 +26,6 @@ export const x_projectScopes = pgTable('x_project_scopes', {
 export const projectScopeRelations = relations(
   x_projectScopes,
   ({ one }) => ({
-    scope: one(scopes, {
-      fields: [x_projectScopes.scopeId],
-      references: [scopes.id],
-    }),
     project: one(projects, {
       fields: [x_projectScopes.projectId],
       references: [projects.id],

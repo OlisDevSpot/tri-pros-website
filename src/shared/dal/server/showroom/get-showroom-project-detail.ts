@@ -1,7 +1,7 @@
-import type { ShowroomProjectDetail, ShowroomProjectScope, ShowroomProjectTrade } from '@/shared/entities/projects/types'
+import type { ShowroomProjectDetail } from '@/shared/entities/projects/types'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { mediaFiles, projects, scopes, trades, x_projectScopes } from '@/shared/db/schema'
+import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 
 export async function getShowroomProjectDetail(accessor: string): Promise<ShowroomProjectDetail | null> {
   const [project] = await db
@@ -13,7 +13,6 @@ export async function getShowroomProjectDetail(accessor: string): Promise<Showro
     return null
   }
 
-  // Fetch media and scope/trade associations in parallel
   const [media, scopeRows] = await Promise.all([
     db
       .select()
@@ -22,31 +21,10 @@ export async function getShowroomProjectDetail(accessor: string): Promise<Showro
       .orderBy(asc(mediaFiles.sortOrder), desc(mediaFiles.createdAt)),
 
     db
-      .select({
-        scopeId: scopes.id,
-        scopeLabel: scopes.label,
-        tradeId: trades.id,
-        tradeLabel: trades.label,
-      })
+      .select({ scopeId: x_projectScopes.scopeId })
       .from(x_projectScopes)
-      .innerJoin(scopes, eq(x_projectScopes.scopeId, scopes.id))
-      .innerJoin(trades, eq(scopes.tradeId, trades.id))
-      .where(eq(x_projectScopes.projectId, project.id))
-      .orderBy(asc(trades.label), asc(scopes.label)),
+      .where(eq(x_projectScopes.projectId, project.id)),
   ])
-
-  const projectScopes: ShowroomProjectScope[] = scopeRows.map(r => ({
-    id: r.scopeId,
-    label: r.scopeLabel,
-    tradeId: r.tradeId,
-  }))
-
-  const tradeMap = new Map<number, ShowroomProjectTrade>()
-  for (const row of scopeRows) {
-    if (!tradeMap.has(row.tradeId)) {
-      tradeMap.set(row.tradeId, { id: row.tradeId, label: row.tradeLabel })
-    }
-  }
 
   return {
     project,
@@ -59,7 +37,6 @@ export async function getShowroomProjectDetail(accessor: string): Promise<Showro
       videos: media.filter(f => f.mimeType.startsWith('video/')),
       all: media,
     },
-    scopes: projectScopes,
-    trades: Array.from(tradeMap.values()),
+    scopeIds: scopeRows.map(r => r.scopeId),
   }
 }

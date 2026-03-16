@@ -5,7 +5,7 @@ import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 
 export interface ProjectForEdit {
   project: Project
-  scopeIds: number[]
+  scopeIds: string[]
   media: MediaFile[]
 }
 

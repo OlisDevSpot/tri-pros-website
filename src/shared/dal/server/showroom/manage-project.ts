@@ -5,7 +5,7 @@ import { projects, x_projectScopes } from '@/shared/db/schema'
 
 export async function createShowroomProject(
   data: InsertProject,
-  scopeIds: number[],
+  scopeIds: string[],
 ): Promise<Project> {
   const [project] = await db.insert(projects).values(data).returning()
 
@@ -24,7 +24,7 @@ export async function createShowroomProject(
 export async function updateShowroomProject(
   projectId: string,
   data: Partial<InsertProject>,
-  scopeIds?: number[],
+  scopeIds?: string[],
 ): Promise<Project> {
   const [project] = await db
     .update(projects)

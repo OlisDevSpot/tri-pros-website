@@ -4,7 +4,12 @@ import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
 import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import { useRef } from 'react'
-import { ReactCompareSlider } from 'react-compare-slider'
+import dynamic from 'next/dynamic'
+
+const ReactCompareSlider = dynamic(
+  () => import('react-compare-slider').then(mod => mod.ReactCompareSlider),
+  { ssr: false },
+)
 
 interface Props {
   media: ProjectMediaGroups

@@ -9,10 +9,13 @@
     "start": "next start",
     "lint": "next lint",
     "tsc": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:reset": "tsx ./src/shared/db/lib/db-reset.ts",
     "db:seed": "tsx ./src/shared/db/lib/db-seed.ts",
-    "email": "npx react-email -dir ./src/shared/services/resend/emails"
+    "email": "npx react-email -dir ./src/shared/services/resend/emails",
+    "scrape-project": "tsx scripts/portfolio-scraper/index.ts",
+    "import-project": "tsx scripts/portfolio-scraper/import-project.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
@@ -122,6 +125,7 @@
     "@antfu/eslint-config": "^6.3.0",
     "@eslint-react/eslint-plugin": "^2.3.11",
     "@eslint/eslintrc": "^3",
+    "@inquirer/prompts": "^8.3.2",
     "@react-email/preview-server": "5.2.8",
     "@tailwindcss/postcss": "^4",
     "@types/docusign-esign": "^5.19.9",
@@ -138,6 +142,7 @@
     "eslint-plugin-format": "^1.0.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "playwright": "^1.58.2",
     "shadcn": "^4.0.2",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",

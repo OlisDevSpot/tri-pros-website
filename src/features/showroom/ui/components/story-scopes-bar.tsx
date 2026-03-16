@@ -1,11 +1,15 @@
 'use client'
 
-import type { ShowroomProjectScope, ShowroomProjectTrade } from '@/shared/entities/projects/types'
 import { Badge } from '@/shared/components/ui/badge'
 
+interface NamedItem {
+  id: string
+  name: string
+}
+
 interface Props {
-  trades: ShowroomProjectTrade[]
-  scopes: ShowroomProjectScope[]
+  trades: NamedItem[]
+  scopes: NamedItem[]
 }
 
 export function StoryScopesBar({ trades, scopes }: Props) {
@@ -19,7 +23,7 @@ export function StoryScopesBar({ trades, scopes }: Props) {
         <div className="flex items-center gap-2">
           {trades.map(trade => (
             <Badge key={`trade-${trade.id}`} variant="default" className="shrink-0">
-              {trade.label}
+              {trade.name}
             </Badge>
           ))}
           {scopes.length > 0 && trades.length > 0 && (
@@ -27,7 +31,7 @@ export function StoryScopesBar({ trades, scopes }: Props) {
           )}
           {scopes.map(scope => (
             <Badge key={`scope-${scope.id}`} variant="outline" className="shrink-0">
-              {scope.label}
+              {scope.name}
             </Badge>
           ))}
         </div>

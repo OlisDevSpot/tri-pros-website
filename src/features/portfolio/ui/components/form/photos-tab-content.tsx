@@ -1,7 +1,7 @@
 'use client'
 
 import type { MediaFile } from '@/shared/db/schema'
-import { ProjectMediaManager } from '@/shared/components/portfolio/project-media-manager'
+import { SortableMediaManager } from '@/shared/components/portfolio/sortable-media-manager'
 
 interface Props {
   projectId: string
@@ -9,9 +9,9 @@ interface Props {
   onUpdate: () => void
 }
 
-export function MediaManagerFields({ projectId, mediaFiles, onUpdate }: Props) {
+export function PhotosTabContent({ projectId, mediaFiles, onUpdate }: Props) {
   return (
-    <ProjectMediaManager
+    <SortableMediaManager
       projectId={projectId}
       mediaFiles={mediaFiles}
       onUpdate={onUpdate}

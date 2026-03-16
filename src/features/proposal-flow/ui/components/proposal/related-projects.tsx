@@ -6,7 +6,11 @@ import { Logo } from '@/shared/components/logo'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { ROOTS } from '@/shared/config/roots'
 import { projectsData } from '@/shared/db/seeds/data/projects'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
+
+const PORTFOLIO_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.portfolioProjects]
 
 export function RelatedProjects() {
   const proposal = useCurrentProposal()
@@ -34,7 +38,7 @@ export function RelatedProjects() {
             <CardDescription>View similar completed projects from our portfolio. We prefer letting our results do the talking.</CardDescription>
           </div>
           <Button variant="outline" className="w-full sm:w-fit">
-            <Link href="/portfolio/projects">View Full Portfolio</Link>
+            <Link href={`${ROOTS.landing.portfolioProjects()}`}>View Full Portfolio</Link>
           </Button>
         </div>
       </CardHeader>
@@ -49,8 +53,8 @@ export function RelatedProjects() {
             >
               <div>
                 <CustomImageSlider
-                  beforeSrc={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-before.jpeg`}
-                  afterSrc={`https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${project.title}/hero-after.jpeg`}
+                  beforeSrc={`${PORTFOLIO_BASE}/${project.title}/hero-before.jpeg`}
+                  afterSrc={`${PORTFOLIO_BASE}/${project.title}/hero-after.jpeg`}
                 />
                 <div className="pointer-events-none opacity-100 group-hover:opacity-20 flex flex-col items-center justify-center transition h-full z-20 w-full border-5 border-primary/40 text-wrap relative">
                   <div className="h-fit bg-primary/40 w-full flex flex-col items-center justify-center group-active:opacity-30 transition">

@@ -1,9 +1,10 @@
 import type { ShowroomProject } from '@/shared/entities/projects/types'
 
 interface FilterCriteria {
-  tradeIds: number[]
-  scopeIds: number[]
+  tradeIds: string[]
+  scopeIds: string[]
   search: string
+  scopeToTradeMap: Map<string, string>
 }
 
 export function filterShowroomProjects(
@@ -22,18 +23,22 @@ export function filterShowroomProjects(
       }
     }
 
-    // Trade filter: project must have at least one matching trade
+    // Trade filter: project must have at least one scope belonging to a matching trade
     if (criteria.tradeIds.length > 0) {
-      const projectTradeIds = new Set(item.trades.map(t => t.id))
-      if (!criteria.tradeIds.some(id => projectTradeIds.has(id))) {
+      const tradeIdSet = new Set(criteria.tradeIds)
+      const hasMatchingTrade = item.scopeIds.some((scopeId) => {
+        const tradeId = criteria.scopeToTradeMap.get(scopeId)
+        return tradeId && tradeIdSet.has(tradeId)
+      })
+      if (!hasMatchingTrade) {
         return false
       }
     }
 
     // Scope filter: project must have at least one matching scope
     if (criteria.scopeIds.length > 0) {
-      const projectScopeIds = new Set(item.scopes.map(s => s.id))
-      if (!criteria.scopeIds.some(id => projectScopeIds.has(id))) {
+      const scopeIdSet = new Set(item.scopeIds)
+      if (!criteria.scopeIds.some(id => scopeIdSet.has(id))) {
         return false
       }
     }

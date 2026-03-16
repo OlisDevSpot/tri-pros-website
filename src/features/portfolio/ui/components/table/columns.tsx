@@ -52,7 +52,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
               onClick={e => e.stopPropagation()}
             >
               <EntityViewButton
-                href={`/portfolio/${row.original.accessor}`}
+                href={`${ROOTS.landing.portfolioProjects()}/${row.original.accessor}`}
                 external
               />
               <EntityEditButton

@@ -18,7 +18,7 @@ export const projectFormSchema = z.object({
   challengeDescription: z.string().nullable().optional(),
   solutionDescription: z.string().nullable().optional(),
   resultDescription: z.string().nullable().optional(),
-  scopeIds: z.array(z.number()),
+  scopeIds: z.array(z.string()),
 })
 
 export type ProjectFormData = z.infer<typeof projectFormSchema>

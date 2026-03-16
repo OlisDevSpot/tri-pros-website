@@ -9,10 +9,12 @@ import { createShowroomProject, deleteShowroomProject, getAllProjects, updateSho
 import { db } from '@/shared/db'
 import { insertMediaFilesSchema, mediaFiles } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
-import { BUCKET } from '@/shared/services/r2/client'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { deleteObject } from '@/shared/services/r2/delete-object'
 import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
+
+const PORTFOLIO_BUCKET = R2_BUCKETS.portfolioProjects
 
 export const showroomRouter = createTRPCRouter({
   // ── Public procedures ──────────────────────────────────────────────
@@ -78,9 +80,10 @@ export const showroomRouter = createTRPCRouter({
       const ext = extname(input.filename).toLowerCase()
       const fileId = crypto.randomUUID()
       const pathKey = `projects/${input.projectId}/${input.phase}/${fileId}${ext}`
-      const publicUrl = `http://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev/${pathKey}`
+      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET]}/${pathKey}`
 
       const uploadUrl = await getPresignedUploadUrl({
+        bucket: PORTFOLIO_BUCKET,
         pathKey,
         mimeType: input.mimeType,
       })
@@ -95,7 +98,7 @@ export const showroomRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const [created] = await db
         .insert(mediaFiles)
-        .values({ ...input, bucket: input.bucket ?? BUCKET })
+        .values({ ...input, bucket: input.bucket ?? PORTFOLIO_BUCKET })
         .returning()
 
       return created
@@ -105,7 +108,7 @@ export const showroomRouter = createTRPCRouter({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const [file] = await db
-        .select({ pathKey: mediaFiles.pathKey })
+        .select({ pathKey: mediaFiles.pathKey, bucket: mediaFiles.bucket })
         .from(mediaFiles)
         .where(eq(mediaFiles.id, input.id))
 
@@ -113,7 +116,7 @@ export const showroomRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
       }
 
-      await deleteObject(file.pathKey)
+      await deleteObject(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
       await db.delete(mediaFiles).where(eq(mediaFiles.id, input.id))
     }),
 

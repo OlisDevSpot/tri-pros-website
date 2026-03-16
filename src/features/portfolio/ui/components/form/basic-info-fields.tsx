@@ -12,7 +12,7 @@ export function BasicInfoFields() {
   return (
     <section className="space-y-8">
       <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
-        <div className="grid lg:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-4">
           <FormField
             name="title"
             control={form.control}

@@ -54,7 +54,6 @@ const envSchema = z.object({
   NOTION_API_KEY: z.string(),
 
   // CLOUDFLARE R2
-  R2_BUCKET_NAME: z.string(),
   R2_ACCOUNT_ID: z.string(),
   R2_TOKEN: z.string(),
   R2_ACCESS_KEY_ID: z.string(),

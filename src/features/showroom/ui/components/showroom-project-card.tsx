@@ -1,20 +1,34 @@
 'use client'
 
 import type { ShowroomProject } from '@/shared/entities/projects/types'
+import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
+import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { AnimatePresence, motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 
 interface Props {
   project: ShowroomProject
   index: number
+  allScopes: ScopeOrAddon[]
+  allTrades: Trade[]
 }
 
-export function ShowroomProjectCard({ project: item, index }: Props) {
-  const { project, heroImage, trades } = item
+export function ShowroomProjectCard({ project: item, index, allScopes, allTrades }: Props) {
+  const { project, heroImage, scopeIds } = item
+
+  const trades = useMemo(() => {
+    const scopeIdSet = new Set(scopeIds)
+    const tradeIdSet = new Set(
+      allScopes.filter(s => scopeIdSet.has(s.id)).map(s => s.relatedTrade),
+    )
+    return allTrades
+      .filter(t => tradeIdSet.has(t.id))
+      .map(t => ({ id: t.id, name: t.name }))
+  }, [scopeIds, allScopes, allTrades])
   const [hovered, setHovered] = useState(false)
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-60px' })
@@ -26,7 +40,7 @@ export function ShowroomProjectCard({ project: item, index }: Props) {
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.5, delay: (index % 3) * 0.1 }}
     >
-      <Link href={`${ROOTS.landing.portfolioProjects}/${project.accessor}`}>
+      <Link href={`${ROOTS.landing.portfolioProjects()}/${project.accessor}`}>
         <motion.div
           className="relative overflow-hidden rounded-xl bg-muted aspect-4/3 cursor-pointer"
           whileHover={{ scale: 1.02 }}
@@ -71,7 +85,7 @@ export function ShowroomProjectCard({ project: item, index }: Props) {
               <div className="flex flex-wrap gap-1">
                 {trades.slice(0, 3).map(trade => (
                   <Badge key={trade.id} variant="secondary" className="text-xs bg-white/20 text-white border-0">
-                    {trade.label}
+                    {trade.name}
                   </Badge>
                 ))}
                 {trades.length > 3 && (

@@ -121,7 +121,7 @@ export function EditProjectView({ projectId }: Props) {
         Back to Portfolio
       </Button>
 
-      <div className="h-full w-full overflow-auto pr-4">
+      <div className="min-h-0 w-full grow pr-4 lg:flex lg:flex-col lg:overflow-hidden overflow-auto">
         <Form {...form}>
           <ProjectForm
             isLoading={project.isLoading || updateProject.isPending}

@@ -4,18 +4,21 @@ import { CompanySocialButtons } from '@/shared/components/company-social-buttons
 import { LogoLink } from '@/shared/components/logo'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Separator } from '@/shared/components/ui/separator'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
+
+const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs]
 
 const DOCS = {
   license: {
     title: 'License',
     subtitle: 'Verified and current',
-    src: 'https://pub-e9f58acecb564416a1d1880ba1a88a7f.r2.dev/tpr-license.jpg',
+    src: `${DOCS_BASE}/tpr-license.jpg`,
     alt: 'Tri Pros Remodeling contractor license',
   },
   insurance: {
     title: 'Insurance',
     subtitle: 'Liability coverage on file',
-    src: 'https://pub-e9f58acecb564416a1d1880ba1a88a7f.r2.dev/tpr-coi-2026.jpg',
+    src: `${DOCS_BASE}/tpr-coi-2026.jpg`,
     alt: 'Tri Pros Remodeling certificate of insurance',
   },
 } as const
