@@ -3,14 +3,17 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { MeetingStatus } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { ArrowUpDownIcon, CheckIcon, CopyIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
-
 import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
 import { MEETING_STATUS_COLORS } from '@/features/meetings/constants/status-colors'
+import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
+import { DateCell } from '@/shared/components/data-table/ui/date-cell'
+import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
+import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { EntityDeleteButton } from '@/shared/components/entity-actions/entity-delete-button'
+import { EntityDuplicateButton } from '@/shared/components/entity-actions/entity-duplicate-button'
+import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
+import { EntityStartButton } from '@/shared/components/entity-actions/entity-start-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { meetingStatuses } from '@/shared/constants/enums'
 import { formatDateCell } from '@/shared/lib/formatters'
@@ -24,6 +27,7 @@ export interface MeetingTableMeta {
   onDelete: (meetingId: string) => void
   onUpdateStatus: (meetingId: string, status: MeetingStatus) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
+  onViewProfile: (customerId: string) => void
   isDuplicating: boolean
   isDeleting: boolean
 }
@@ -34,17 +38,7 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
   return [
     {
       accessorKey: 'contactName',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Meeting
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
+      header: ({ column }) => <SortableHeader column={column} label="Meeting" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
         const isActive = meta?.activeRowId === row.original.id
@@ -71,50 +65,22 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
             </Tooltip>
             <div
               className={cn(
-                'flex items-center gap-1 shrink-0 opacity-0 transition-opacity duration-150',
-                'group-hover:opacity-100',
-                isActive && 'opacity-100',
+                'flex items-center gap-1 shrink-0 opacity-0 pointer-events-none transition-opacity duration-150',
+                'group-hover:opacity-100 group-hover:pointer-events-auto',
+                isActive && 'opacity-100 pointer-events-auto',
               )}
               onClick={e => e.stopPropagation()}
             >
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() => meta?.onEdit(row.original.id)}
-              >
-                <PencilIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">Edit setup</span>
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+              <EntityEditButton onClick={() => meta?.onEdit(row.original.id)} />
+              <EntityDuplicateButton
                 disabled={meta?.isDuplicating}
                 onClick={() => meta?.onDuplicate(row.original.id)}
-              >
-                <CopyIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">Duplicate</span>
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
-                onClick={() => meta?.onStart(row.original.id)}
-              >
-                <PlayIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">Start meeting</span>
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-destructive hover:text-destructive"
+              />
+              <EntityStartButton onClick={() => meta?.onStart(row.original.id)} />
+              <EntityDeleteButton
                 disabled={meta?.isDeleting}
                 onClick={() => meta?.onDelete(row.original.id)}
-              >
-                <TrashIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">Delete</span>
-              </Button>
+              />
             </div>
           </div>
         )
@@ -123,64 +89,35 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
     {
       accessorKey: 'customerName',
       header: 'Customer',
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground truncate max-w-40 block">
-          {row.original.customerName ?? '—'}
-        </span>
-      ),
+      cell: ({ row, table }) => {
+        const meta = table.options.meta as MeetingTableMeta | undefined
+        return (
+          <CustomerNameCell
+            customerId={row.original.customerId}
+            customerName={row.original.customerName}
+            onViewProfile={meta?.onViewProfile}
+          />
+        )
+      },
     },
     {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
-        const current = row.original.status
-
         return (
-          <Popover>
-            <PopoverTrigger asChild onClick={e => e.stopPropagation()}>
-              <button type="button" className="cursor-pointer">
-                <Badge className={cn('capitalize text-xs', MEETING_STATUS_COLORS[current])}>
-                  {current.replace('_', ' ')}
-                </Badge>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-40 p-1" onClick={e => e.stopPropagation()}>
-              {meetingStatuses.map(status => (
-                <button
-                  key={status}
-                  type="button"
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm capitalize cursor-pointer',
-                    'hover:bg-accent hover:text-accent-foreground',
-                    status === current && 'font-medium',
-                  )}
-                  onClick={() => meta?.onUpdateStatus(row.original.id, status)}
-                >
-                  <CheckIcon className={cn('h-3.5 w-3.5 shrink-0', status === current ? 'opacity-100' : 'opacity-0')} />
-                  <Badge className={cn('capitalize text-xs', MEETING_STATUS_COLORS[status])}>
-                    {status.replace('_', ' ')}
-                  </Badge>
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
+          <StatusDropdownCell
+            currentStatus={row.original.status}
+            statuses={meetingStatuses}
+            colorMap={MEETING_STATUS_COLORS}
+            onChange={status => meta?.onUpdateStatus(row.original.id, status)}
+          />
         )
       },
     },
     {
       accessorKey: 'scheduledFor',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Scheduled For
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
+      header: ({ column }) => <SortableHeader column={column} label="Scheduled For" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
         const dateStr = row.original.scheduledFor
@@ -223,27 +160,8 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Created
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
-      cell: ({ row }) => {
-        const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
-
-        return (
-          <div className="flex flex-col max-w-40">
-            <span className="text-sm font-medium leading-tight">{relative}</span>
-            <span className="text-xs text-muted-foreground">{dayAtTime}</span>
-          </div>
-        )
-      },
+      header: ({ column }) => <SortableHeader column={column} label="Created" />,
+      cell: ({ row }) => <DateCell dateString={row.original.createdAt} />,
       sortingFn: 'datetime',
     },
   ]

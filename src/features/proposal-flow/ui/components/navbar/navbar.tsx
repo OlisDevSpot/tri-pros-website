@@ -34,7 +34,7 @@ export function ProposalPageNavbar() {
     <ProposalNavbarFrame>
       <Link
         className="h-full w-fit lex items-center justify-center transition px-8"
-        href={sessionQuery.data?.user ? `${ROOTS.proposalFlow()}` : '/'}
+        href={sessionQuery.data?.user ? `${ROOTS.dashboard.root}` : '/'}
       >
         <div className="flex items-center h-full gap-2">
           <ArrowLeftIcon size={20} />

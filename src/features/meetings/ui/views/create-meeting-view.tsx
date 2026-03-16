@@ -10,6 +10,7 @@ import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { NotionContactSearch } from '@/shared/components/notion/contact-search'
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
+import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CreateMeetingView() {
@@ -24,7 +25,7 @@ export function CreateMeetingView() {
     trpc.meetingsRouter.create.mutationOptions({
       onSuccess: (meeting) => {
         toast.success('Meeting started!')
-        router.push(`/dashboard/meetings/${meeting.id}`)
+        router.push(`${ROOTS.dashboard.meetings()}/${meeting.id}`)
       },
       onError: (err) => {
         toast.error(err.message)

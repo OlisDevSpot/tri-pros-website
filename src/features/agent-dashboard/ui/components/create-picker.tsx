@@ -29,7 +29,7 @@ export function CreatePicker() {
             className="justify-start gap-2"
             onClick={() => {
               setOpen(false)
-              router.push(`${ROOTS.dashboard()}?step=create-meeting`)
+              router.push(`${ROOTS.dashboard.root}?step=create-meeting`)
             }}
           >
             <CalendarIcon size={16} />
@@ -40,7 +40,7 @@ export function CreatePicker() {
             className="justify-start gap-2"
             onClick={() => {
               setOpen(false)
-              router.push(`${ROOTS.dashboard()}?step=create-proposal`)
+              router.push(`${ROOTS.dashboard.root}?step=create-proposal`)
             }}
           >
             <FileTextIcon size={16} />

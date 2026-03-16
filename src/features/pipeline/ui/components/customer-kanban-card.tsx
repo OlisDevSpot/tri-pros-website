@@ -4,10 +4,11 @@ import type { CustomerPipelineItem } from '@/features/pipeline/types'
 
 import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'
-import { CalendarIcon, FileTextIcon, GripVerticalIcon, UserIcon } from 'lucide-react'
+import { CalendarIcon, FileTextIcon, GripVerticalIcon } from 'lucide-react'
 
-import { Button } from '@/shared/components/ui/button'
+import { EntityProfileButton } from '@/shared/components/entity-actions/entity-profile-button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -17,10 +18,14 @@ interface Props {
 }
 
 export function CustomerKanbanCard({ item, isDragOverlay, onViewProfile }: Props) {
+  const isMobile = useIsMobile()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     data: item,
   })
+
+  const cardDragProps = !isDragOverlay && !isMobile ? { ...attributes, ...listeners } : {}
+  const handleDragProps = !isDragOverlay && isMobile ? { ...attributes, ...listeners } : {}
 
   return (
     <Card
@@ -30,12 +35,17 @@ export function CustomerKanbanCard({ item, isDragOverlay, onViewProfile }: Props
         isDragging && !isDragOverlay && 'opacity-30',
         isDragOverlay && 'shadow-lg rotate-1 scale-105',
       )}
-      {...(!isDragOverlay ? { ...attributes, ...listeners } : {})}
+      {...cardDragProps}
     >
       <CardContent className="p-3 space-y-1.5">
         <div className="flex items-center gap-2">
           {!isDragOverlay && (
-            <GripVerticalIcon size={14} className="text-muted-foreground/40 shrink-0 cursor-grab active:cursor-grabbing touch-none" />
+            <span
+              className="shrink-0 cursor-grab active:cursor-grabbing touch-none"
+              {...handleDragProps}
+            >
+              <GripVerticalIcon size={14} className="text-muted-foreground/40" />
+            </span>
           )}
           <span className="font-medium text-sm truncate flex-1">
             {item.name}
@@ -64,19 +74,13 @@ export function CustomerKanbanCard({ item, isDragOverlay, onViewProfile }: Props
           <p className="text-[11px] text-muted-foreground/70">
             {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
           </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
+          <EntityProfileButton
             onClick={(e) => {
               e.stopPropagation()
               onViewProfile(item.id)
             }}
             onPointerDown={e => e.stopPropagation()}
-          >
-            <UserIcon size={12} className="mr-1" />
-            Profile
-          </Button>
+          />
         </div>
       </CardContent>
     </Card>

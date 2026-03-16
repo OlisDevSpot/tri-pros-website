@@ -53,5 +53,6 @@ export interface DataTableProps<TData, TMeta = unknown> {
   pageSize?: number
   entityName?: string
   rowDataAttribute?: string
+  onRowClick?: (row: TData) => void
   onFilteredCountChange?: (count: number) => void
 }

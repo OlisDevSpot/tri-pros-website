@@ -17,10 +17,6 @@ const envSchema = z.object({
   // Database
   DATABASE_URL: z.string(),
 
-  // Payload
-  PAYLOAD_SECRET: z.string(),
-  PAYLOAD_DATABASE_URI: z.string(),
-
   // Better Auth
   BETTER_AUTH_URL: z.string().optional(),
   BETTER_AUTH_SECRET: z.string(),

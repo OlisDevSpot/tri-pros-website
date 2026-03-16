@@ -63,7 +63,7 @@ export function PastMeetingsView() {
               : `${meetings.data.length} total meeting${meetings.data.length !== 1 ? 's' : ''}`}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grow min-h-0 overflow-auto px-0">
+        <CardContent className="grow min-h-0 overflow-hidden px-0">
           <PastMeetingsTable data={meetings.data} onFilteredCountChange={handleFilteredCountChange} />
         </CardContent>
       </Card>

@@ -1,14 +1,20 @@
 const APP_ROOTS = {
   devBaseUrl: 'http://localhost:3000',
   prodBaseUrl: 'https://triprosremodeling.com',
-  dashboard: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard', options),
-  /** Agent-facing proposal management — lives under /dashboard now */
-  proposalFlow: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard', options),
-  /** Customer-facing public proposal link — MUST stay at /proposal-flow */
-  proposalPublic: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/proposal-flow', options),
-  /** Meeting sub-routes (e.g., /dashboard/meetings/[meetingId]) */
-  meetings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/meetings', options),
   authFlow: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/auth-flow', options),
+  landing: {
+    portfolio: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/portfolio', options),
+    portfolioProjects: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/portfolio/projects', options),
+    portfolioTestimonials: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/portfolio/testimonials', options),
+  },
+  dashboard: {
+    root: '/dashboard',
+    proposalFlow: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/proposals', options),
+    meetings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/meetings', options),
+  },
+  public: {
+    proposals: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/proposal-flow', options),
+  },
 } as const
 
 interface Options {

@@ -77,7 +77,7 @@ export function Proposal() {
     <div className="h-full overflow-auto">
       <div ref={setRootEl} id="proposal-container" className="h-full overflow-auto scroll-smooth">
         <div className="space-y-20 lg:pr-8">
-          <Heading />
+          <Heading role={userRole} />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
+import { ROOTS } from '@/shared/config/roots'
 
 interface Props {
   project: ShowroomProject
@@ -25,7 +26,7 @@ export function ShowroomProjectCard({ project: item, index }: Props) {
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.5, delay: (index % 3) * 0.1 }}
     >
-      <Link href={`/portfolio/${project.accessor}`}>
+      <Link href={`${ROOTS.landing.portfolioProjects}/${project.accessor}`}>
         <motion.div
           className="relative overflow-hidden rounded-xl bg-muted aspect-4/3 cursor-pointer"
           whileHover={{ scale: 1.02 }}
@@ -45,7 +46,7 @@ export function ShowroomProjectCard({ project: item, index }: Props) {
                 />
               )
             : (
-                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-muted-foreground/10">
+                <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-muted to-muted-foreground/10">
                   <Image
                     src="/company/logo/logo-light.svg"
                     alt="Tri Pros"

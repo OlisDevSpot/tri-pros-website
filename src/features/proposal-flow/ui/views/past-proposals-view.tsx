@@ -60,7 +60,7 @@ export function PastProposalsView() {
               : `${proposals.data.length} total proposal${proposals.data.length !== 1 ? 's' : ''}`}
           </CardDescription>
         </CardHeader>
-        <CardContent className="grow min-h-0 overflow-auto px-0">
+        <CardContent className="grow min-h-0 overflow-hidden px-0">
           <PastProposalsTable data={proposals.data} onFilteredCountChange={handleFilteredCountChange} />
         </CardContent>
       </Card>

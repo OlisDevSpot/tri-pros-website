@@ -7,7 +7,10 @@ import { useRouter } from 'next/navigation'
 
 import { meetingTableFilters } from '@/features/meetings/constants/table-filter-config'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
+import { CustomerProfileModal } from '@/features/pipeline/ui/components/customer-profile-modal'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { ROOTS } from '@/shared/config/roots'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { getColumns } from './columns'
 
 const columns = getColumns()
@@ -23,14 +26,19 @@ interface Props {
 export function PastMeetingsTable({ data, onFilteredCountChange }: Props) {
   const router = useRouter()
   const { deleteMeeting, duplicateMeeting, updateStatus, updateScheduledFor } = useMeetingActions()
+  const { open: openModal, setModal } = useModalStore()
 
   const meta = {
-    onEdit: (meetingId: string) => router.push(`/dashboard?step=edit-meeting&editMeetingId=${meetingId}`),
+    onEdit: (meetingId: string) => router.push(`${ROOTS.dashboard.root}?step=edit-meeting&editMeetingId=${meetingId}`),
     onDuplicate: (meetingId: string) => duplicateMeeting.mutate({ id: meetingId }),
-    onStart: (meetingId: string) => router.push(`/dashboard/meetings/${meetingId}`),
+    onStart: (meetingId: string) => router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`),
     onDelete: (meetingId: string) => deleteMeeting.mutate({ id: meetingId }),
     onUpdateStatus: (meetingId: string, status: string) => updateStatus.mutate({ id: meetingId, status: status as 'in_progress' | 'completed' | 'converted' }),
     onUpdateScheduledFor: (meetingId: string, date: Date) => updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
+    onViewProfile: (customerId: string) => {
+      setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
+      openModal()
+    },
     isDuplicating: duplicateMeeting.isPending,
     isDeleting: deleteMeeting.isPending,
   }

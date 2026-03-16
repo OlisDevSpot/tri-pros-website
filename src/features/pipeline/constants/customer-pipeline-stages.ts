@@ -25,11 +25,11 @@ export type CustomerPipelineStage = (typeof customerPipelineStages)[number]
 
 export const customerStageConfig: readonly KanbanStageConfig<CustomerPipelineStage>[] = [
   { key: 'meeting_scheduled', label: 'Meeting Scheduled', icon: CalendarIcon, color: 'blue' },
-  { key: 'meeting_in_progress', label: 'In Progress', icon: PlayCircleIcon, color: 'indigo' },
+  { key: 'meeting_in_progress', label: 'In Progress', icon: PlayCircleIcon, color: 'yellow' },
   { key: 'meeting_completed', label: 'Meeting Done', icon: CalendarCheckIcon, color: 'yellow' },
   { key: 'follow_up_scheduled', label: 'Follow-up', icon: RotateCwIcon, color: 'purple' },
-  { key: 'proposal_sent', label: 'Proposal Sent', icon: SendIcon, color: 'orange' },
-  { key: 'contract_sent', label: 'Contract Sent', icon: CheckCircle2Icon, color: 'cyan' },
+  { key: 'proposal_sent', label: 'Proposal Sent', icon: SendIcon, color: 'purple' },
+  { key: 'contract_sent', label: 'Contract Sent', icon: CheckCircle2Icon, color: 'purple' },
   { key: 'approved', label: 'Approved', icon: CheckCircle2Icon, color: 'green' },
   { key: 'declined', label: 'Declined', icon: XCircleIcon, color: 'red' },
 ]

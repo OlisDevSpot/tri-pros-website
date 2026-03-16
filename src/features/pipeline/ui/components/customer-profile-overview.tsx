@@ -1,10 +1,11 @@
 'use client'
 
+import type { LucideIcon } from 'lucide-react'
 import type { CustomerProfileData } from '@/features/pipeline/types'
 
 import { CalendarIcon, DollarSignIcon, EyeIcon, FileTextIcon } from 'lucide-react'
 
-import { Badge } from '@/shared/components/ui/badge'
+import { CustomerProfileDetails } from '@/features/pipeline/ui/components/customer-profile-details'
 import { Card, CardContent } from '@/shared/components/ui/card'
 
 interface Props {
@@ -14,7 +15,6 @@ interface Props {
 export function CustomerProfileOverview({ data }: Props) {
   const totalValue = data.allProposals.reduce((sum, p) => sum + (p.value ?? 0), 0)
   const totalViews = data.allProposals.reduce((sum, p) => sum + p.viewCount, 0)
-  const profile = data.customer.customerProfileJSON as Record<string, unknown> | null
 
   return (
     <div className="space-y-4">
@@ -25,34 +25,12 @@ export function CustomerProfileOverview({ data }: Props) {
         <StatCard icon={EyeIcon} label="Total Views" value={totalViews} />
       </div>
 
-      {profile && Object.keys(profile).length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">Key Insights</p>
-          <div className="flex flex-wrap gap-2">
-            {profile.triggerEvent != null && (
-              <Badge variant="secondary">{String(profile.triggerEvent)}</Badge>
-            )}
-            {profile.decisionTimeline != null && (
-              <Badge variant="secondary">{String(profile.decisionTimeline)}</Badge>
-            )}
-            {profile.decisionUrgencyRating != null && (
-              <Badge variant="secondary">
-                {`Urgency: ${String(profile.decisionUrgencyRating)}`}
-              </Badge>
-            )}
-            {profile.outcomePriority != null && (
-              <Badge variant="secondary">
-                {`Priority: ${String(profile.outcomePriority)}`}
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
+      <CustomerProfileDetails customer={data.customer} />
     </div>
   )
 }
 
-function StatCard({ icon: Icon, label, value }: { icon: typeof CalendarIcon, label: string, value: string | number }) {
+function StatCard({ icon: Icon, label, value }: { icon: LucideIcon, label: string, value: string | number }) {
   return (
     <Card>
       <CardContent className="py-3 px-4 flex items-center gap-3">

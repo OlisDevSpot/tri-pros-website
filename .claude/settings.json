@@ -14,7 +14,15 @@
       "Bash(git -C /home/olis-solutions/olis-v3/nextjs/tri-pros-website status)",
       "Bash(git -C /home/olis-solutions/olis-v3/nextjs/tri-pros-website diff --cached --stat)",
       "Bash(git -C /home/olis-solutions/olis-v3/nextjs/tri-pros-website log --oneline -5)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git stash:*)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(payload\\\\\\)/admin/)",
+      "Bash(pnpm install:*)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/dashboard/meetings/)",
+      "Bash(xargs ls:*)",
+      "Bash(cat /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/dashboard/meetings/[meetingId]/page.tsx)",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features -name *table* -type f)",
+      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/showroom/)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui"

@@ -1,8 +1,6 @@
 import type { BetterAuthSession } from '@/shared/auth/server'
-import config from '@payload-config'
 import { initTRPC, TRPCError } from '@trpc/server'
 import { headers as getHeaders } from 'next/headers'
-import { getPayload } from 'payload'
 import { cache } from 'react'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
@@ -48,17 +46,6 @@ const t = initTRPC.context<HTTPTRPCContext>().create({
 export const createTRPCRouter = t.router
 export const createCallerFactory = t.createCallerFactory
 export const baseProcedure = t.procedure
-
-export const payloadProcedure = t.procedure.use(async ({ ctx, next }) => {
-  const payload = await getPayload({ config })
-
-  return await next({
-    ctx: {
-      ...ctx,
-      payload,
-    },
-  })
-})
 
 export const agentProcedure = baseProcedure.use(async ({ ctx, next }) => {
   if (!ctx.session) {

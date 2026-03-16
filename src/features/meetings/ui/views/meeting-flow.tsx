@@ -25,6 +25,7 @@ import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
+import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -179,7 +180,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
     <header className="flex shrink-0 items-center gap-3 border-b border-border/40 px-4 py-2.5 md:px-6">
       <Link
         className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        href="/dashboard?step=meetings"
+        href={`${ROOTS.dashboard.root}?step=meetings`}
       >
         <ArrowLeftIcon className="size-4" />
         <span className="hidden sm:inline">Meetings</span>
@@ -274,7 +275,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
     }
   }
 
-  const proposalHref = `/dashboard?step=create-proposal&meetingId=${meetingId}`
+  const proposalHref = `${ROOTS.dashboard.root}?step=create-proposal&meetingId=${meetingId}`
 
   return (
     <div className="flex h-full flex-col">

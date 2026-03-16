@@ -2,10 +2,17 @@
 
 import type { CustomerProfileData } from '@/features/pipeline/types'
 
-import { CopyIcon, MailIcon, MapPinIcon, PhoneIcon } from 'lucide-react'
+import { CopyIcon, ExternalLinkIcon, GlobeIcon, MailIcon, MapPinIcon, PhoneIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/shared/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 interface Props {
@@ -23,43 +30,79 @@ export function CustomerProfileHeader({ customer }: Props) {
     .join(', ')
 
   return (
-    <div className="space-y-3">
-      <h2 className="text-xl font-semibold">{customer.name}</h2>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-        {customer.phone && (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+      {customer.phone && (
+        <span className="flex items-center gap-1.5">
+          <PhoneIcon size={14} className="shrink-0" />
+          <a
+            href={`tel:${customer.phone}`}
+            className="hover:text-foreground transition-colors"
+          >
+            {formatAsPhoneNumber(customer.phone)}
+          </a>
           <Button
             variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-sm"
+            size="icon"
+            className="h-6 w-6"
             onClick={() => copyToClipboard(customer.phone!, 'Phone')}
           >
-            <PhoneIcon size={14} />
-            {formatAsPhoneNumber(customer.phone)}
-            <CopyIcon size={11} className="opacity-50" />
+            <CopyIcon size={11} />
           </Button>
-        )}
+        </span>
+      )}
 
-        {customer.email && (
+      {customer.email && (
+        <span className="flex items-center gap-1.5">
+          <MailIcon size={14} className="shrink-0" />
+          <a
+            href={`mailto:${customer.email}`}
+            className="hover:text-foreground transition-colors"
+          >
+            {customer.email}
+          </a>
           <Button
             variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-sm"
+            size="icon"
+            className="h-6 w-6"
             onClick={() => copyToClipboard(customer.email!, 'Email')}
           >
-            <MailIcon size={14} />
-            {customer.email}
-            <CopyIcon size={11} className="opacity-50" />
+            <CopyIcon size={11} />
           </Button>
-        )}
+        </span>
+      )}
 
-        {address && (
-          <span className="flex items-center gap-1.5">
-            <MapPinIcon size={14} />
-            {address}
-          </span>
-        )}
-      </div>
+      {address && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer"
+            >
+              <MapPinIcon size={14} className="shrink-0" />
+              {address}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem
+              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank')}
+            >
+              <ExternalLinkIcon size={14} />
+              Open in Google Maps
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => window.open(`https://earth.google.com/web/search/${encodeURIComponent(address)}`, '_blank')}
+            >
+              <GlobeIcon size={14} />
+              Open in Google Earth
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => copyToClipboard(address, 'Address')}>
+              <CopyIcon size={14} />
+              Copy Address
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   )
 }

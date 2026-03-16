@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { NotionContactSearch } from '@/shared/components/notion/contact-search'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
+import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 
 interface EditContactFormProps {
@@ -29,7 +30,7 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
       onSuccess: () => {
         void queryClient.invalidateQueries(trpc.meetingsRouter.getAll.queryFilter())
         toast.success('Meeting updated')
-        router.push('/dashboard?step=meetings')
+        router.push(`${ROOTS.dashboard.root}?step=meetings`)
       },
       onError: () => toast.error('Failed to update meeting'),
     }),
@@ -54,7 +55,7 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
         className="self-start gap-2 -ml-2"
         size="sm"
         variant="ghost"
-        onClick={() => router.push('/dashboard?step=meetings')}
+        onClick={() => router.push(`${ROOTS.dashboard.root}?step=meetings`)}
       >
         <ArrowLeftIcon className="size-4" />
         Back to meetings

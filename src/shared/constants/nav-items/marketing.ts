@@ -1,4 +1,5 @@
 import type { NavItem } from '@/shared/types/nav'
+import { ROOTS } from '@/shared/config/roots'
 
 export const marketingNavItems = [
   {
@@ -59,12 +60,12 @@ export const marketingNavItems = [
     subItems: [
       {
         name: 'Projects',
-        href: '/portfolio/projects',
+        href: `${ROOTS.landing.portfolioProjects()}`,
         action: 'navigate',
       },
       {
         name: 'Testimonials',
-        href: '/portfolio/testimonials',
+        href: `${ROOTS.landing.portfolioTestimonials()}`,
         action: 'navigate',
       },
     ],

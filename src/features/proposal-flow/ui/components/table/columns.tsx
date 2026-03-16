@@ -2,13 +2,17 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { inferRouterOutputs } from '@trpc/server'
 import type { ProposalStatus } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
-import { ArrowUpDownIcon, CheckIcon, CopyIcon, EyeIcon, PencilIcon } from 'lucide-react'
-import Link from 'next/link'
+
+import { EyeIcon } from 'lucide-react'
 import { PROPOSAL_STATUS_COLORS } from '@/features/proposal-flow/constants/status-colors'
+import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
+import { DateCell } from '@/shared/components/data-table/ui/date-cell'
+import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
+import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { EntityDuplicateButton } from '@/shared/components/entity-actions/entity-duplicate-button'
+import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
+import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
 import { proposalStatuses } from '@/shared/constants/enums'
@@ -23,23 +27,14 @@ export interface ProposalTableMeta {
   isDuplicating: boolean
   onUpdateCreatedAt: (proposalId: string, date: Date) => void
   onUpdateStatus: (proposalId: string, status: ProposalStatus) => void
+  onViewProfile: (customerId: string) => void
 }
 
 export function getColumns(): ColumnDef<ProposalRow>[] {
   return [
     {
       accessorKey: 'label',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Proposal
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
+      header: ({ column }) => <SortableHeader column={column} label="Proposal" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
         const isActive = meta?.activeRowId === row.original.id
@@ -61,38 +56,23 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
             </Tooltip>
             <div
               className={cn(
-                'flex items-center gap-1 shrink-0 opacity-0 transition-opacity duration-150',
-                'group-hover:opacity-100',
-                isActive && 'opacity-100',
+                'flex items-center gap-1 shrink-0 opacity-0 pointer-events-none transition-opacity duration-150',
+                'group-hover:opacity-100 group-hover:pointer-events-auto',
+                isActive && 'opacity-100 pointer-events-auto',
               )}
               onClick={e => e.stopPropagation()}
             >
-              <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                <a
-                  href={`${ROOTS.proposalPublic()}/proposal/${row.original.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <EyeIcon className="h-3.5 w-3.5" />
-                  <span className="sr-only">View</span>
-                </a>
-              </Button>
-              <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                <Link href={`${ROOTS.dashboard()}?step=edit-proposal&proposalId=${row.original.id}`}>
-                  <PencilIcon className="h-3.5 w-3.5" />
-                  <span className="sr-only">Edit</span>
-                </Link>
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+              <EntityViewButton
+                href={`${ROOTS.public.proposals()}/proposal/${row.original.id}`}
+                external
+              />
+              <EntityEditButton
+                href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${row.original.id}`}
+              />
+              <EntityDuplicateButton
                 disabled={meta?.isDuplicating}
                 onClick={() => meta?.onDuplicate(row.original.id)}
-              >
-                <CopyIcon className="h-3.5 w-3.5" />
-                <span className="sr-only">Duplicate</span>
-              </Button>
+              />
             </div>
           </div>
         )
@@ -101,64 +81,35 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
     {
       accessorKey: 'customerName',
       header: 'Customer',
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground truncate max-w-40 block">
-          {row.original.customerName ?? '—'}
-        </span>
-      ),
+      cell: ({ row, table }) => {
+        const meta = table.options.meta as ProposalTableMeta | undefined
+        return (
+          <CustomerNameCell
+            customerId={row.original.customerId}
+            customerName={row.original.customerName}
+            onViewProfile={meta?.onViewProfile}
+          />
+        )
+      },
     },
     {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
-        const current = row.original.status
-
         return (
-          <Popover>
-            <PopoverTrigger asChild onClick={e => e.stopPropagation()}>
-              <button type="button" className="cursor-pointer">
-                <Badge className={cn('capitalize text-xs', PROPOSAL_STATUS_COLORS[current])}>
-                  {current}
-                </Badge>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="start" className="w-36 p-1" onClick={e => e.stopPropagation()}>
-              {proposalStatuses.map(status => (
-                <button
-                  key={status}
-                  type="button"
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm capitalize cursor-pointer',
-                    'hover:bg-accent hover:text-accent-foreground',
-                    status === current && 'font-medium',
-                  )}
-                  onClick={() => meta?.onUpdateStatus(row.original.id, status)}
-                >
-                  <CheckIcon className={cn('h-3.5 w-3.5 shrink-0', status === current ? 'opacity-100' : 'opacity-0')} />
-                  <Badge className={cn('capitalize text-xs', PROPOSAL_STATUS_COLORS[status])}>
-                    {status}
-                  </Badge>
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
+          <StatusDropdownCell
+            currentStatus={row.original.status}
+            statuses={proposalStatuses}
+            colorMap={PROPOSAL_STATUS_COLORS}
+            onChange={status => meta?.onUpdateStatus(row.original.id, status)}
+          />
         )
       },
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Created
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
+      header: ({ column }) => <SortableHeader column={column} label="Created" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
         const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
@@ -185,47 +136,13 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
     },
     {
       accessorKey: 'sentAt',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Sent
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
-      cell: ({ row }) => {
-        const dateStr = row.original.sentAt
-        if (!dateStr) {
-          return <span className="text-sm text-muted-foreground">—</span>
-        }
-        const { relative, dayAtTime } = formatDateCell(dateStr)
-
-        return (
-          <div className="flex flex-col max-w-40">
-            <span className="text-sm font-medium leading-tight">{relative}</span>
-            <span className="text-xs text-muted-foreground">{dayAtTime}</span>
-          </div>
-        )
-      },
+      header: ({ column }) => <SortableHeader column={column} label="Sent" />,
+      cell: ({ row }) => <DateCell dateString={row.original.sentAt} />,
       sortingFn: 'datetime',
     },
     {
       accessorKey: 'viewCount',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          <EyeIcon className="mr-1.5 h-3.5 w-3.5" />
-          Seen
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
+      header: ({ column }) => <SortableHeader column={column} label="Seen" icon={EyeIcon} />,
       cell: ({ row }) => {
         const views = row.original.viewCount
         const lastViewed = row.original.lastViewedAt

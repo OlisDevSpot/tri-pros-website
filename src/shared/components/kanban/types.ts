@@ -11,3 +11,10 @@ export interface KanbanStageConfig<S extends string = string> {
   icon: LucideIcon
   color: string
 }
+
+export interface KanbanColumnFilterConfig {
+  /** Stage keys that are visible by default. If omitted, all stages are visible. */
+  defaultVisible?: string[]
+  /** Stage keys that cannot be hidden (checkbox disabled). */
+  alwaysVisible?: string[]
+}

@@ -33,6 +33,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   entityName = 'row',
   rowDataAttribute = 'data-table-row',
   onActiveRowChange,
+  onRowClick,
   onFilteredCountChange,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
@@ -125,65 +126,74 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   }, [filteredCount, onFilteredCountChange])
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full gap-4">
       {filterConfig && filterConfig.length > 0 && (
-        <DataTableFilterBar table={table} filters={filterConfig} />
+        <div className="shrink-0">
+          <DataTableFilterBar table={table} filters={filterConfig} />
+        </div>
       )}
 
-      <div className="rounded-xl border border-border/50 overflow-hidden">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
-                {headerGroup.headers.map(header => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length > 0
-              ? table.getRowModel().rows.map((row) => {
-                  const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
+      <div className="grow min-h-0 overflow-y-auto">
+        <div className="rounded-xl border border-border/50 overflow-hidden">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
+                  {headerGroup.headers.map(header => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length > 0
+                ? table.getRowModel().rows.map((row) => {
+                    const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
 
-                  return (
-                    <TableRow
-                      key={row.id}
-                      className="group cursor-pointer border-border/50"
-                      onClick={() => {
-                        if (isMobile) {
-                          setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
-                        }
-                      }}
-                      {...rowProps}
-                    >
-                      {row.getVisibleCells().map(cell => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className="group cursor-pointer border-border/50"
+                        onClick={() => {
+                          if (onRowClick) {
+                            onRowClick(row.original)
+                          }
+                          else if (isMobile) {
+                            setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
+                          }
+                        }}
+                        {...rowProps}
+                      >
+                        {row.getVisibleCells().map(cell => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    )
+                  })
+                : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                        No
+                        {' '}
+                        {entityName}
+                        s match your filter.
+                      </TableCell>
                     </TableRow>
-                  )
-                })
-              : (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                      No
-                      {' '}
-                      {entityName}
-                      s match your filter.
-                    </TableCell>
-                  </TableRow>
-                )}
-          </TableBody>
-        </Table>
-      </div>
+                  )}
+            </TableBody>
+          </Table>
+        </div>
 
-      <DataTablePagination table={table} />
+        <div className="py-4">
+          <DataTablePagination table={table} />
+        </div>
+      </div>
     </div>
   )
 }

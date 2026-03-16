@@ -2,13 +2,14 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { inferRouterOutputs } from '@trpc/server'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { ArrowUpDownIcon, EyeIcon, PencilIcon, Trash2Icon } from 'lucide-react'
-import Link from 'next/link'
+import { DateCell } from '@/shared/components/data-table/ui/date-cell'
+import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
+import { EntityDeleteButton } from '@/shared/components/entity-actions/entity-delete-button'
+import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
+import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
-import { formatDateCell } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 type ProjectRow = inferRouterOutputs<AppRouter>['showroomRouter']['getAllProjects'][number]
@@ -22,17 +23,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
   return [
     {
       accessorKey: 'title',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Project
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
+      header: ({ column }) => <SortableHeader column={column} label="Project" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProjectTableMeta | undefined
 
@@ -55,31 +46,19 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
             </Tooltip>
             <div
               className={cn(
-                'flex items-center gap-1 shrink-0 opacity-0 transition-opacity duration-150',
-                'group-hover:opacity-100',
+                'flex items-center gap-1 shrink-0 opacity-0 pointer-events-none transition-opacity duration-150',
+                'group-hover:opacity-100 group-hover:pointer-events-auto',
               )}
               onClick={e => e.stopPropagation()}
             >
-              <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                <a
-                  href={`/portfolio/${row.original.accessor}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <EyeIcon className="h-3.5 w-3.5" />
-                  <span className="sr-only">View</span>
-                </a>
-              </Button>
-              <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                <Link href={`${ROOTS.dashboard()}?step=edit-project&editProjectId=${row.original.id}`}>
-                  <PencilIcon className="h-3.5 w-3.5" />
-                  <span className="sr-only">Edit</span>
-                </Link>
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+              <EntityViewButton
+                href={`/portfolio/${row.original.accessor}`}
+                external
+              />
+              <EntityEditButton
+                href={`${ROOTS.dashboard.root}?step=edit-project&editProjectId=${row.original.id}`}
+              />
+              <EntityDeleteButton
                 disabled={meta?.isDeleting}
                 onClick={() => {
                   // eslint-disable-next-line no-alert
@@ -87,10 +66,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
                     meta?.onDelete(row.original.id)
                   }
                 }}
-              >
-                <Trash2Icon className="h-3.5 w-3.5" />
-                <span className="sr-only">Delete</span>
-              </Button>
+              />
             </div>
           </div>
         )
@@ -129,45 +105,13 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
     {
       accessorKey: 'completedAt',
       header: 'Completed',
-      cell: ({ row }) => {
-        const dateStr = row.original.completedAt
-        if (!dateStr) {
-          return <span className="text-sm text-muted-foreground">&mdash;</span>
-        }
-        const { relative, dayAtTime } = formatDateCell(dateStr)
-
-        return (
-          <div className="flex flex-col max-w-40">
-            <span className="text-sm font-medium leading-tight">{relative}</span>
-            <span className="text-xs text-muted-foreground">{dayAtTime}</span>
-          </div>
-        )
-      },
+      cell: ({ row }) => <DateCell dateString={row.original.completedAt} />,
       sortingFn: 'datetime',
     },
     {
       accessorKey: 'createdAt',
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-3"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Created
-          <ArrowUpDownIcon className="ml-2 h-3.5 w-3.5 text-muted-foreground" />
-        </Button>
-      ),
-      cell: ({ row }) => {
-        const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
-
-        return (
-          <div className="flex flex-col max-w-40">
-            <span className="text-sm font-medium leading-tight">{relative}</span>
-            <span className="text-xs text-muted-foreground">{dayAtTime}</span>
-          </div>
-        )
-      },
+      header: ({ column }) => <SortableHeader column={column} label="Created" />,
+      cell: ({ row }) => <DateCell dateString={row.original.createdAt} />,
       sortingFn: 'datetime',
     },
   ]

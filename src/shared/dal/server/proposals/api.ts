@@ -80,6 +80,7 @@ export async function getProposals(userId: string) {
       ...getTableColumns(proposals),
       viewCount: count(proposalViews.id),
       lastViewedAt: max(proposalViews.viewedAt),
+      customerId: customers.id,
       customerName: customers.name,
     })
     .from(proposals)
@@ -87,7 +88,7 @@ export async function getProposals(userId: string) {
     .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(eq(proposals.ownerId, userId))
-    .groupBy(proposals.id, customers.name)
+    .groupBy(proposals.id, customers.id, customers.name)
     .orderBy(desc(proposals.createdAt))
 }
 

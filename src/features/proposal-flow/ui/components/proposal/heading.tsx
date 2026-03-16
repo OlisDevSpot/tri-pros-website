@@ -1,13 +1,22 @@
-import { CalendarIcon } from 'lucide-react'
+import type { UserRole } from '@/shared/types/enums'
+import { CalendarIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { companyInfo } from '@/features/landing/data/company'
+import { CustomerProfileModal } from '@/features/pipeline/ui/components/customer-profile-modal'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { Logo } from '@/shared/components/logo'
 import { Badge } from '@/shared/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
 
-export function Heading() {
+interface Props {
+  role: UserRole
+}
+
+export function Heading({ role }: Props) {
   const proposal = useCurrentProposal()
+  const { open: openModal, setModal } = useModalStore()
 
   if (proposal.isLoading) {
     return <div>Loading...</div>
@@ -15,6 +24,18 @@ export function Heading() {
 
   if (!proposal.data) {
     return null
+  }
+
+  function handleViewProfile(customerId: string | undefined) {
+    if (!customerId) {
+      return
+    }
+    setModal({
+      accessor: 'CustomerProfile',
+      Component: CustomerProfileModal,
+      props: { customerId },
+    })
+    openModal()
   }
 
   const { sow } = proposal.data.projectJSON.data
@@ -68,6 +89,18 @@ export function Heading() {
           <Logo variant="icon" className="size-5" />
           <p>{companyInfo.name}</p>
         </div>
+        {role === 'agent' && proposal.data.customer?.id && (
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleViewProfile(proposal.data?.customer?.id)}
+            >
+              <UserIcon className="size-4" />
+              {`View ${customerName}'s Profile`}
+            </Button>
+          </div>
+        )}
       </div>
     </motion.div>
   )

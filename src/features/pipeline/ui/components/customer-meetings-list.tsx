@@ -4,21 +4,16 @@ import type { CustomerProfileMeeting } from '@/features/pipeline/types'
 
 import { formatDistanceToNow } from 'date-fns'
 import { ExternalLinkIcon, FileTextIcon } from 'lucide-react'
-import Link from 'next/link'
 
+import { MEETING_LIST_STATUS_COLORS } from '@/features/pipeline/constants/meeting-status-colors'
+import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { ROOTS } from '@/shared/config/roots'
 
 interface Props {
   meetings: CustomerProfileMeeting[]
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  in_progress: 'bg-blue-500/10 text-blue-600',
-  completed: 'bg-yellow-500/10 text-yellow-600',
-  converted: 'bg-green-500/10 text-green-600',
 }
 
 export function CustomerMeetingsList({ meetings }: Props) {
@@ -33,7 +28,7 @@ export function CustomerMeetingsList({ meetings }: Props) {
           <CardContent className="py-3 px-4 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Badge variant="secondary" className={STATUS_COLORS[meeting.status] ?? ''}>
+                <Badge variant="secondary" className={MEETING_LIST_STATUS_COLORS[meeting.status] ?? ''}>
                   {meeting.status.replace('_', ' ')}
                 </Badge>
                 {meeting.program && (
@@ -44,11 +39,10 @@ export function CustomerMeetingsList({ meetings }: Props) {
                 <span className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
                 </span>
-                <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
-                  <Link href={`/dashboard/meetings/${meeting.id}`}>
-                    <ExternalLinkIcon size={14} />
-                  </Link>
-                </Button>
+                <EntityViewButton
+                  icon={ExternalLinkIcon}
+                  href={`${ROOTS.dashboard.meetings()}/${meeting.id}`}
+                />
               </div>
             </div>
 
@@ -68,11 +62,11 @@ export function CustomerMeetingsList({ meetings }: Props) {
                           {proposal.value.toLocaleString()}
                         </span>
                       )}
-                      <Button variant="ghost" size="icon" className="h-6 w-6" asChild>
-                        <Link href={`/dashboard?step=edit-proposal&proposalId=${proposal.id}`}>
-                          <ExternalLinkIcon size={12} />
-                        </Link>
-                      </Button>
+                      <EntityViewButton
+                        className="h-6 w-6"
+                        icon={ExternalLinkIcon}
+                        href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`}
+                      />
                     </div>
                   </div>
                 ))}

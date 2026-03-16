@@ -27,38 +27,39 @@ export function CustomerPipelineMetricsBar({ items }: Props) {
     return d >= weekAgo && (i.stage === 'meeting_scheduled' || i.stage === 'meeting_in_progress')
   }).length
 
+  const metrics = [
+    { label: 'Total Customers', value: String(totalCustomers) },
+    { label: 'Active Pipeline', value: `$${activePipelineValue.toLocaleString()}` },
+    { label: 'Conversion Rate', value: `${(conversionRate * 100).toFixed(1)}%` },
+    { label: 'Meetings This Week', value: String(meetingsThisWeek) },
+  ]
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <Card>
-        <CardContent className="py-3 text-center">
-          <span className="text-2xl font-bold">{totalCustomers}</span>
-          <p className="text-xs text-muted-foreground mt-0.5">Total Customers</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="py-3 text-center">
-          <span className="text-2xl font-bold">
-            $
-            {activePipelineValue.toLocaleString()}
-          </span>
-          <p className="text-xs text-muted-foreground mt-0.5">Active Pipeline</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="py-3 text-center">
-          <span className="text-2xl font-bold">
-            {(conversionRate * 100).toFixed(1)}
-            %
-          </span>
-          <p className="text-xs text-muted-foreground mt-0.5">Conversion Rate</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent className="py-3 text-center">
-          <span className="text-2xl font-bold">{meetingsThisWeek}</span>
-          <p className="text-xs text-muted-foreground mt-0.5">Meetings This Week</p>
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      {/* Mobile: compact vertical list */}
+      <div className="flex flex-col gap-1.5 lg:hidden">
+        {metrics.map(m => (
+          <div
+            key={m.label}
+            className="flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-card"
+          >
+            <span className="text-xs text-muted-foreground">{m.label}</span>
+            <span className="text-sm font-bold tabular-nums">{m.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: card grid */}
+      <div className="hidden lg:grid lg:grid-cols-4 gap-3">
+        {metrics.map(m => (
+          <Card key={m.label}>
+            <CardContent className="py-3 text-center">
+              <span className="text-2xl font-bold">{m.value}</span>
+              <p className="text-xs text-muted-foreground mt-0.5">{m.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </>
   )
 }

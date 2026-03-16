@@ -9,7 +9,7 @@ export const tprInternalNavItems = [
     subItems: [
       {
         name: 'Dashboard',
-        href: ROOTS.dashboard(),
+        href: ROOTS.dashboard.root,
         action: 'navigate',
       },
       {

@@ -73,7 +73,7 @@ export const proposalRouter = createTRPCRouter({
             cause: 'Proposal not created',
           })
         }
-        const proposalUrl = `${ROOTS.proposalPublic({ absolute: true })}/proposal/${proposal.id}?token=${proposal.token}`
+        const proposalUrl = `${ROOTS.public.proposals({ absolute: true })}/proposal/${proposal.id}?token=${proposal.token}`
 
         return { proposal, proposalUrl }
       }
@@ -173,7 +173,7 @@ export const proposalRouter = createTRPCRouter({
         subject: 'Your Proposal From Tri Pros Remodeling',
         react: (
           <ProposalEmail
-            proposalUrl={`${ROOTS.proposalPublic({ absolute: true, isProduction: true })}/proposal/${input.proposalId}?token=${input.token}&utm_source=email`}
+            proposalUrl={`${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${input.proposalId}?token=${input.token}&utm_source=email`}
             customerName={input.customerName}
             repMessage={input.message}
           />

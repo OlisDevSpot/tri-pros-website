@@ -3,8 +3,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { CustomerMeetingsList } from '@/features/pipeline/ui/components/customer-meetings-list'
-import { CustomerProfileDetails } from '@/features/pipeline/ui/components/customer-profile-details'
 import { CustomerProfileHeader } from '@/features/pipeline/ui/components/customer-profile-header'
+import { CustomerProfileKeyInsights } from '@/features/pipeline/ui/components/customer-profile-key-insights'
 import { CustomerProfileOverview } from '@/features/pipeline/ui/components/customer-profile-overview'
 import { CustomerProposalsList } from '@/features/pipeline/ui/components/customer-proposals-list'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
@@ -26,13 +26,17 @@ export function CustomerProfileModal({ customerId }: Props) {
     trpc.pipelineRouter.getCustomerProfile.queryOptions({ customerId }),
   )
 
+  const customerName = profileQuery.data?.customer.name
+  const title = customerName ? `${customerName}'s Profile` : 'Loading Profile...'
+  const profile = profileQuery.data?.customer.customerProfileJSON ?? null
+
   return (
     <Modal
       isOpen={isOpen}
       close={close}
-      title="Customer Profile"
-      description="View customer details, meetings, and proposals"
-      className="sm:max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+      title={title}
+      description={profile ? <CustomerProfileKeyInsights profile={profile} /> : undefined}
+      className="sm:max-w-4xl sm:h-[80vh] overflow-hidden flex flex-col"
     >
       {profileQuery.isPending && (
         <div className="w-full space-y-4 py-4">
@@ -58,12 +62,12 @@ export function CustomerProfileModal({ customerId }: Props) {
       )}
 
       {profileQuery.data && (
-        <div className="flex flex-col min-h-0 w-full">
+        <div className="flex flex-col min-h-0 flex-1 w-full">
           <CustomerProfileHeader customer={profileQuery.data.customer} />
           <Separator className="my-3" />
 
           <Tabs defaultValue="overview" className="flex-1 min-h-0 flex flex-col">
-            <TabsList className="w-full justify-start">
+            <TabsList className="w-full justify-start shrink-0">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="meetings">
                 {`Meetings (${profileQuery.data.meetings.length})`}
@@ -71,7 +75,6 @@ export function CustomerProfileModal({ customerId }: Props) {
               <TabsTrigger value="proposals">
                 {`Proposals (${profileQuery.data.allProposals.length})`}
               </TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto mt-3 pr-1">
@@ -83,9 +86,6 @@ export function CustomerProfileModal({ customerId }: Props) {
               </TabsContent>
               <TabsContent value="proposals" className="mt-0">
                 <CustomerProposalsList data={profileQuery.data} />
-              </TabsContent>
-              <TabsContent value="profile" className="mt-0">
-                <CustomerProfileDetails customer={profileQuery.data.customer} />
               </TabsContent>
             </div>
           </Tabs>

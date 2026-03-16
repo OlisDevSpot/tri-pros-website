@@ -13,6 +13,7 @@ import { PipelineViewToggle } from '@/features/agent-dashboard/ui/components/pip
 import {
   CUSTOMER_ALLOWED_DRAG_TRANSITIONS,
   CUSTOMER_BLOCKED_MESSAGES,
+  customerPipelineStages,
   customerStageConfig,
 } from '@/features/pipeline/constants/customer-pipeline-stages'
 import { groupCustomersByStage } from '@/features/pipeline/lib/group-customers-by-stage'
@@ -24,6 +25,7 @@ import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -70,7 +72,7 @@ export function CustomerPipelineView() {
   }, [setModal, openModal])
 
   function getItemHref(item: CustomerPipelineItem): string {
-    return `/dashboard?customer=${item.id}`
+    return `${ROOTS.dashboard.root}?customer=${item.id}`
   }
 
   function getItemValue(item: CustomerPipelineItem): number | null {
@@ -133,7 +135,15 @@ export function CustomerPipelineView() {
               </div>
             )
           : layout === 'table'
-            ? <CustomerPipelineTable data={pipelineQuery.data} />
+            ? (
+                <div className="h-full overflow-y-auto">
+                  <CustomerPipelineTable
+                    data={pipelineQuery.data}
+                    onRowClick={item => handleViewProfile(item.id)}
+                    onViewProfile={handleViewProfile}
+                  />
+                </div>
+              )
             : (
                 <KanbanBoard<CustomerPipelineItem>
                   stageConfig={customerStageConfig}
@@ -143,6 +153,9 @@ export function CustomerPipelineView() {
                   onMoveItem={handleMoveItem}
                   onBlockedTransition={handleBlockedTransition}
                   collapsedStages={['declined']}
+                  columnFilter={{
+                    defaultVisible: [...customerPipelineStages].filter(s => s !== 'declined'),
+                  }}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
