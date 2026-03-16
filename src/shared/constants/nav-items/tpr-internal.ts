@@ -4,19 +4,8 @@ import { ROOTS } from '@/shared/config/roots'
 
 export const tprInternalNavItems = [
   {
-    name: 'Flows',
-    action: 'readonly',
-    subItems: [
-      {
-        name: 'Dashboard',
-        href: ROOTS.dashboard.root,
-        action: 'navigate',
-      },
-      {
-        name: 'Showroom',
-        href: '/showroom',
-        action: 'navigate',
-      },
-    ],
+    name: 'Dashboard',
+    href: ROOTS.dashboard.root,
+    action: 'navigate',
   },
 ] as const satisfies NavItem[]

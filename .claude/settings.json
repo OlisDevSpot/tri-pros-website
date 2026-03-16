@@ -33,7 +33,8 @@
       "Bash(npx tsx:*)",
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "Bash(grep -r \"useSortable\\\\|DndContext\\\\|SortableContext\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src --include=*.tsx --include=*.ts)",
-      "Bash(grep -r @dnd-kit /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src --include=*.tsx --include=*.ts)"
+      "Bash(grep -r @dnd-kit /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src --include=*.tsx --include=*.ts)",
+      "Bash(grep -r \"from ''@inquirer/prompts''\" scripts/portfolio-scraper/)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
