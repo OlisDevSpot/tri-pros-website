@@ -3,9 +3,9 @@
 import type { inferRouterOutputs } from '@trpc/server'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { CustomerProfileModal } from '@/features/pipeline/ui/components/customer-profile-modal'
 import { proposalTableFilters } from '@/features/proposal-flow/constants/table-filter-config'
 import { useProposalActions } from '@/features/proposal-flow/hooks/use-proposal-actions'
+import { CustomerProfileModal } from '@/features/pipeline/ui/components/customer-profile-modal'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { getColumns } from './columns'

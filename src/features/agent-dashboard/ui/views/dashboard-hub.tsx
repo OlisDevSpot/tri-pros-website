@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 
-import { dashboardStepParser, editMeetingIdParser, editProjectIdParser } from '@/features/agent-dashboard/lib/url-parsers'
+import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { DashboardSidebar } from '@/features/agent-dashboard/ui/components/dashboard-sidebar'
 import { ActionCenterView } from '@/features/agent-dashboard/ui/views/action-center-view'
-import { PipelineView } from '@/features/agent-dashboard/ui/views/pipeline-view'
 import { CreateMeetingView } from '@/features/meetings/ui/views/create-meeting-view'
 import { EditMeetingSetupView } from '@/features/meetings/ui/views/edit-meeting-setup-view'
 import { PastMeetingsView } from '@/features/meetings/ui/views/past-meetings-view'
+import { CustomerPipelineView } from '@/features/pipeline/ui/views/customer-pipeline-view'
 import { CreateNewProposalView } from '@/features/proposal-flow/ui/views/create-new-proposal-view'
 import { EditProposalView } from '@/features/proposal-flow/ui/views/edit-proposal-view'
 import { PastProposalsView } from '@/features/proposal-flow/ui/views/past-proposals-view'
@@ -21,6 +21,7 @@ import { PortfolioProjectsView } from '@/features/showroom/ui/views/portfolio-pr
 import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { editMeetingIdParser, editProjectIdParser } from '@/shared/lib/url-parsers'
 
 export function DashboardHub() {
   const router = useRouter()
@@ -66,7 +67,7 @@ export function DashboardHub() {
         </AnimatePresence>
         <AnimatePresence>
           {step === 'pipeline' && (
-            <PipelineView key="pipeline" />
+            <CustomerPipelineView key="pipeline" />
           )}
         </AnimatePresence>
         <AnimatePresence>

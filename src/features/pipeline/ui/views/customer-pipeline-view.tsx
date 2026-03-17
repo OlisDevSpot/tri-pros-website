@@ -1,15 +1,14 @@
 'use client'
 
-import type { PipelineLayout } from '@/features/agent-dashboard/ui/components/pipeline-view-toggle'
 import type { CustomerPipelineStage } from '@/features/pipeline/constants/customer-pipeline-stages'
 import type { CustomerPipelineItem } from '@/features/pipeline/types'
+import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
-import { PipelineViewToggle } from '@/features/agent-dashboard/ui/components/pipeline-view-toggle'
 import {
   CUSTOMER_ALLOWED_DRAG_TRANSITIONS,
   CUSTOMER_BLOCKED_MESSAGES,
@@ -21,6 +20,7 @@ import { CustomerKanbanCard } from '@/features/pipeline/ui/components/customer-k
 import { CustomerPipelineMetricsBar } from '@/features/pipeline/ui/components/customer-pipeline-metrics-bar'
 import { CustomerPipelineTable } from '@/features/pipeline/ui/components/customer-pipeline-table'
 import { CustomerProfileModal } from '@/features/pipeline/ui/components/customer-profile-modal'
+import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -30,7 +30,7 @@ import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
-  const [layout, setLayout] = useState<PipelineLayout>('kanban')
+  const [layout, setLayout] = useState<DataViewType>('kanban')
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
 
@@ -120,7 +120,7 @@ export function CustomerPipelineView() {
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} />
-        <PipelineViewToggle value={layout} onChange={setLayout} />
+        <DataViewTypeToggle value={layout} onChange={setLayout} />
       </div>
 
       <div className="flex-1 min-h-0">
