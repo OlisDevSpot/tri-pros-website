@@ -1,13 +1,13 @@
 'use client'
 
 import { motion } from 'motion/react'
-import GeneralInquiryForm from '@/features/landing/ui/components/contact/general-inquiry-form'
-import ScheduleConsultationForm from '@/features/landing/ui/components/contact/schedule-consultation-form'
+import { GeneralInquiryForm } from '@/features/landing/ui/components/contact/general-inquiry-form'
+import { ScheduleConsultationForm } from '@/features/landing/ui/components/contact/schedule-consultation-form'
 import { TopSpacer } from '@/shared/components/top-spacer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { ViewportHero } from '@/shared/components/viewport-hero'
 
-export default function ContactHero() {
+export function ContactHero() {
   return (
     <ViewportHero className="lg:h-[50vh] max-lg:pb-12 pb-20">
       <TopSpacer>

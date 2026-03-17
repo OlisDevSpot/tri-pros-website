@@ -1,7 +1,7 @@
 'use client'
 
 import type { ProjectDetail } from '@/shared/entities/projects/types'
-import BottomCTA from '@/shared/components/cta'
+import { BottomCTA } from '@/shared/components/cta'
 import { BeforeAfterGallery } from '../components/portfolio/project/before-after-gallery'
 import { ProgressGallery } from '../components/portfolio/project/progress-gallery'
 import { ProjectBackstory } from '../components/portfolio/project/project-backstory'
@@ -14,7 +14,7 @@ interface Props {
 
 export function ProjectDetailView({ detail }: Props) {
   const { project, media } = detail
-  const heroUrl = media.hero[0]?.url ?? media.main[0]?.url
+  const heroUrl = media.hero[0]?.url ?? media.uncategorized[0]?.url
 
   return (
     <main>

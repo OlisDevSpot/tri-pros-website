@@ -4,7 +4,7 @@ import PastProjects from '@/features/landing/ui/components/home/past-projects'
 import ServicesPreview from '@/features/landing/ui/components/home/services-preview'
 import TestimonialsSection from '@/features/landing/ui/components/home/testimonials'
 import ValuePropositions from '@/features/landing/ui/components/home/value-proposition'
-import BottomCTA from '@/shared/components/cta'
+import { BottomCTA } from '@/shared/components/cta'
 
 export const metadata: Metadata = {
   title: 'Home',

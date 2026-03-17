@@ -4,7 +4,7 @@ import CompanyStory from '@/features/landing/ui/components/about/company-story'
 import CredentialsSection from '@/features/landing/ui/components/about/credentials'
 import { ProcessOverview } from '@/features/landing/ui/components/about/process-overview'
 import TeamSection from '@/features/landing/ui/components/about/team'
-import BottomCTA from '@/shared/components/cta'
+import { BottomCTA } from '@/shared/components/cta'
 
 export const metadata: Metadata = {
   title: 'About',

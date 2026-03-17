@@ -1,6 +1,6 @@
 'use client'
 
-import BottomCTA from '@/shared/components/cta'
+import { BottomCTA } from '@/shared/components/cta'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { ProcessOverview } from '../components/about/process-overview'
 import ServicesHero from '../components/services/service-hero'

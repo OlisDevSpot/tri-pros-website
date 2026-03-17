@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { ShowroomGridView } from '@/features/showroom/ui/views/showroom-grid-view'
-import BottomCTA from '@/shared/components/cta'
+import { BottomCTA } from '@/shared/components/cta'
 
 export const metadata: Metadata = {
   title: 'Portfolio',

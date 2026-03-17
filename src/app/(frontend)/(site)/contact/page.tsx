@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import ContactHero from '@/features/landing/ui/components/contact/contact-hero'
+import { ContactHero } from '@/features/landing/ui/components/contact/contact-hero'
 import ContactInfo from '@/features/landing/ui/components/contact/contact-info'
 
 export const metadata: Metadata = {
