@@ -19,12 +19,9 @@ export interface CaseStudy {
 
 export type CollectionFieldType = 'select' | 'text' | 'number' | 'rating' | 'boolean'
 
-export type JsonbSection
-  = | 'customerProfileJSON'
-    | 'financialProfileJSON'
-    | 'programDataJSON'
-    | 'propertyProfileJSON'
-    | 'situationProfileJSON'
+import type { JsonbSection } from '@/shared/types/jsonb'
+
+export type { JsonbSection } from '@/shared/types/jsonb'
 
 export interface CollectionField {
   entity: 'customer' | 'meeting'
@@ -46,6 +43,8 @@ export interface IntakeStep {
   title: string
 }
 
+import type { Customer } from '@/shared/db/schema'
+
 export interface MeetingContext {
   collectedData: {
     bill: string
@@ -55,15 +54,7 @@ export interface MeetingContext {
     triggerEvent: string
     yrs: string
   }
-  customer: {
-    address: string | null
-    city: string
-    email?: string | null
-    id: string
-    name: string
-    phone?: string | null
-    state: string | null
-  } | null
+  customer: Pick<Customer, 'id' | 'name' | 'address' | 'city' | 'email' | 'phone' | 'state'> | null
 }
 
 export interface MeetingStep {

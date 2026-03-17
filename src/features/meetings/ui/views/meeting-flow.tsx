@@ -91,10 +91,10 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
       ? {
           address: raw.address ?? null,
           city: raw.city ?? '',
-          email: raw.email,
+          email: raw.email ?? null,
           id: contactId,
           name: raw.name,
-          phone: raw.phone,
+          phone: raw.phone ?? null,
           state: raw.state ?? null,
         }
       : null

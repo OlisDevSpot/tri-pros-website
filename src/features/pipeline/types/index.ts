@@ -1,5 +1,6 @@
 import type { CustomerPipelineStage } from '../constants/customer-pipeline-stages'
-import type { Customer } from '@/shared/db/schema'
+
+import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 
 export interface CustomerPipelineItem {
   id: string
@@ -34,27 +35,13 @@ export interface CustomerPipelineRawData {
   latestActivityAt: string
 }
 
-export interface CustomerProfileMeeting {
-  id: string
-  program: string | null
-  status: string
-  scheduledFor: string | null
-  createdAt: string
-  proposals: CustomerProfileProposal[]
-}
+export type CustomerProfileMeeting =
+  Pick<Meeting, 'id' | 'program' | 'status' | 'scheduledFor' | 'createdAt'>
+  & { proposals: CustomerProfileProposal[] }
 
-export interface CustomerProfileProposal {
-  id: string
-  label: string | null
-  status: string
-  trade: string | null
-  value: number | null
-  sentAt: string | null
-  contractSentAt: string | null
-  viewCount: number
-  meetingId: string | null
-  createdAt: string
-}
+export type CustomerProfileProposal =
+  Pick<Proposal, 'id' | 'label' | 'status' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>
+  & { trade: string | null; value: number | null; viewCount: number }
 
 export interface CustomerProfileData {
   customer: Customer
