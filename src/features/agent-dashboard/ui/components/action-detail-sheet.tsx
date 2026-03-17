@@ -1,6 +1,6 @@
 'use client'
 
-import type { ActionItem } from '@/shared/dal/server/dashboard/get-action-queue'
+import type { ActionItem } from '@/features/agent-dashboard/dal/server/get-action-queue'
 
 import { formatDistanceToNow } from 'date-fns'
 import { ExternalLinkIcon, MailIcon, PhoneIcon } from 'lucide-react'

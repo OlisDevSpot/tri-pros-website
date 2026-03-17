@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
 import { meetingPipelineStages, proposalPipelineStages } from '@/features/agent-dashboard/constants/pipeline-stages'
-import { getActionQueue } from '@/shared/dal/server/dashboard/get-action-queue'
-import { getMeetingPipelineItems, getProposalPipelineItems } from '@/shared/dal/server/dashboard/get-pipeline-items'
-import { getPipelineStats } from '@/shared/dal/server/dashboard/get-pipeline-stats'
-import { movePipelineItem } from '@/shared/dal/server/dashboard/move-pipeline-item'
+import { getActionQueue } from '@/features/agent-dashboard/dal/server/get-action-queue'
+import { getMeetingPipelineItems, getProposalPipelineItems } from '@/features/agent-dashboard/dal/server/get-pipeline-items'
+import { getPipelineStats } from '@/features/agent-dashboard/dal/server/get-pipeline-stats'
+import { movePipelineItem } from '@/features/agent-dashboard/dal/server/move-pipeline-item'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ShowroomProjectView } from '@/features/showroom/ui/views/showroom-project-view'
-import { getShowroomProjectDetail } from '@/shared/dal/server/showroom/get-showroom-project-detail'
-import { getShowroomProjects } from '@/shared/dal/server/showroom/get-showroom-projects'
+import { getShowroomProjectDetail } from '@/features/showroom/dal/server/get-showroom-project-detail'
+import { getShowroomProjects } from '@/features/showroom/dal/server/get-showroom-projects'
 
 interface Props {
   params: Promise<{ projectAccessor: string }>

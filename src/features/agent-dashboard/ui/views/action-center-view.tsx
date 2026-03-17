@@ -1,7 +1,7 @@
 'use client'
 
 import type { ActionTier } from '@/features/agent-dashboard/constants/action-tiers'
-import type { ActionItem } from '@/shared/dal/server/dashboard/get-action-queue'
+import type { ActionItem } from '@/features/agent-dashboard/dal/server/get-action-queue'
 
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircleIcon } from 'lucide-react'

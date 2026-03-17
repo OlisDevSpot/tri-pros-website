@@ -12,8 +12,8 @@ import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Form } from '@/shared/components/ui/form'
-import { useUpdateProposal } from '@/shared/dal/client/proposals/mutations/use-update-proposal'
-import { useGetProposal } from '@/shared/dal/client/proposals/queries/use-get-proposal'
+import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
+import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
 import { CustomerInfoHeader } from '../components/customer-info-header'
 
 export function calculateProposalDiscounts(proposal: ProposalFormSchema) {

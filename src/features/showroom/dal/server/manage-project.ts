@@ -1,5 +1,5 @@
 import type { InsertProject, Project } from '@/shared/db/schema'
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { projects, x_projectScopes } from '@/shared/db/schema'
 
@@ -60,5 +60,5 @@ export async function getAllProjects(): Promise<Project[]> {
   return db
     .select()
     .from(projects)
-    .orderBy(projects.createdAt)
+    .orderBy(asc(projects.title))
 }

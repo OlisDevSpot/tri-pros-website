@@ -1,5 +1,5 @@
 import type { ShowroomProject } from '@/shared/entities/projects/types'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 
@@ -18,7 +18,7 @@ export async function getShowroomProjects(): Promise<ShowroomProject[]> {
       ),
     )
     .where(eq(projects.isPublic, true))
-    .orderBy(desc(projects.createdAt))
+    .orderBy(asc(projects.title))
 
   // Deduplicate: one row per project (take the first hero image match)
   const seen = new Set<string>()

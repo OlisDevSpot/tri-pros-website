@@ -33,7 +33,7 @@ export async function getShowroomProjectDetail(accessor: string): Promise<Showro
       before: media.filter(f => f.phase === 'before' && !f.mimeType.startsWith('video/')),
       during: media.filter(f => f.phase === 'during' && !f.mimeType.startsWith('video/')),
       after: media.filter(f => f.phase === 'after' && !f.mimeType.startsWith('video/')),
-      main: media.filter(f => f.phase === 'main' && !f.mimeType.startsWith('video/')),
+      uncategorized: media.filter(f => f.phase === 'uncategorized' && !f.mimeType.startsWith('video/')),
       videos: media.filter(f => f.mimeType.startsWith('video/')),
       all: media,
     },

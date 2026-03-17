@@ -11,7 +11,7 @@ import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-p
 import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { useSendProposalEmail } from '@/shared/dal/client/proposals/mutations/use-send-proposal-email'
+import { useSendProposalEmail } from '@/features/proposal-flow/dal/client/mutations/use-send-proposal-email'
 import { checkUserRole } from '@/shared/permissions/lib/check-user-role'
 import { useTRPC } from '@/trpc/helpers'
 import { Heading } from './heading'

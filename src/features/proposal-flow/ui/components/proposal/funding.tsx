@@ -11,8 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { useGetFinanceOptions } from '@/shared/dal/client/finance-options/queries/use-get-finance-options'
-import { useUpdateProposal } from '@/shared/dal/client/proposals/mutations/use-update-proposal'
+import { useGetFinanceOptions } from '@/features/proposal-flow/dal/client/queries/use-get-finance-options'
+import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { getLoanValues } from '@/shared/lib/loan-calculations'
 import { cn } from '@/shared/lib/utils'
 

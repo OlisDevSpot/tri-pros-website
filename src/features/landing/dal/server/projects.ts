@@ -18,7 +18,7 @@ export async function getPublicProjects(): Promise<PublicProject[]> {
       ),
     )
     .where(eq(projects.isPublic, true))
-    .orderBy(desc(projects.createdAt))
+    .orderBy(asc(projects.title))
 
   // Deduplicate: one row per project (take the first hero image match)
   const seen = new Set<string>()
@@ -54,7 +54,7 @@ export async function getProjectByAccessor(accessor: string): Promise<ProjectDet
       before: media.filter(f => f.phase === 'before' && !f.mimeType.startsWith('video/')),
       during: media.filter(f => f.phase === 'during' && !f.mimeType.startsWith('video/')),
       after: media.filter(f => f.phase === 'after' && !f.mimeType.startsWith('video/')),
-      main: media.filter(f => f.phase === 'main' && !f.mimeType.startsWith('video/')),
+      uncategorized: media.filter(f => f.phase === 'uncategorized' && !f.mimeType.startsWith('video/')),
       videos: media.filter(f => f.mimeType.startsWith('video/')),
       all: media,
     },

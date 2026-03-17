@@ -4,7 +4,6 @@ import { aiRouter } from './ai.router'
 import { customersRouter } from './customers.router'
 import { dashboardRouter } from './dashboard.router'
 import { docusignRouter } from './docusign.router'
-import { hubspotRouter } from './hubspot.router'
 import { landingRouter } from './landing.router'
 import { meetingsRouter } from './meetings.router'
 import { notionRouter } from './notion.router'
@@ -18,7 +17,6 @@ export const appRouter = createTRPCRouter({
   customersRouter,
   dashboardRouter,
   docusignRouter,
-  hubspotRouter,
   landingRouter,
   meetingsRouter,
   notionRouter,

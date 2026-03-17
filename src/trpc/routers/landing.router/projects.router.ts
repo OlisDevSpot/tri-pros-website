@@ -1,5 +1,5 @@
 import z from 'zod'
-import { getProjectByAccessor, getPublicProjects } from '@/shared/dal/server/landing/projects'
+import { getProjectByAccessor, getPublicProjects } from '@/features/landing/dal/server/projects'
 import { baseProcedure, createTRPCRouter } from '../../init'
 
 export const projectsRouter = createTRPCRouter({

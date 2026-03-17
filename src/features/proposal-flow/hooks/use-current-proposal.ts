@@ -1,5 +1,5 @@
 import { useParams } from 'next/navigation'
-import { useGetProposal } from '@/shared/dal/client/proposals/queries/use-get-proposal'
+import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
 
 export function useCurrentProposal() {
   const params = useParams() as { proposalId: string }

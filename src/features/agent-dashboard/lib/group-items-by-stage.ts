@@ -1,5 +1,5 @@
 import type { MeetingPipelineStage, ProposalPipelineStage } from '@/features/agent-dashboard/constants/pipeline-stages'
-import type { MeetingPipelineItem, ProposalPipelineItem } from '@/shared/dal/server/dashboard/get-pipeline-items'
+import type { MeetingPipelineItem, ProposalPipelineItem } from '@/features/agent-dashboard/dal/server/get-pipeline-items'
 
 import { meetingPipelineStages, proposalPipelineStages } from '@/features/agent-dashboard/constants/pipeline-stages'
 

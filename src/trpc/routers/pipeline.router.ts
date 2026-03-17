@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
 import { customerPipelineStages } from '@/features/pipeline/constants/customer-pipeline-stages'
-import { getCustomerPipelineItems } from '@/shared/dal/server/pipeline/get-customer-pipeline-items'
-import { getCustomerProfile } from '@/shared/dal/server/pipeline/get-customer-profile'
-import { moveCustomerPipelineItem } from '@/shared/dal/server/pipeline/move-customer-pipeline-item'
+import { getCustomerPipelineItems } from '@/features/pipeline/dal/server/get-customer-pipeline-items'
+import { getCustomerProfile } from '@/features/pipeline/dal/server/get-customer-profile'
+import { moveCustomerPipelineItem } from '@/features/pipeline/dal/server/move-customer-pipeline-item'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
