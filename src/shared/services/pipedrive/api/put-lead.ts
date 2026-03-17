@@ -1,4 +1,4 @@
-import type { GeneralInquiryFormSchema } from '@/features/landing/schemas/general-inquiry-form'
+import type { GeneralInquiryFormSchema } from '@/shared/entities/landing/schemas'
 import { TRPCError } from '@trpc/server'
 import {
   // LeadsApi,

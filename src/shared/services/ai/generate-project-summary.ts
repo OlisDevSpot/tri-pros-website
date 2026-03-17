@@ -1,4 +1,4 @@
-import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
 import { openai } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
 import { eq } from 'drizzle-orm'
