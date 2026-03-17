@@ -13,7 +13,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { companyInfo } from '@/features/landing/data/company'
+import { companyInfo } from '@/shared/constants/company'
 import { signOut, useSession } from '@/shared/auth/client'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
 import { LogoLink } from '@/shared/components/logo'

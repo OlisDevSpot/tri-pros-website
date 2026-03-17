@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { companyInfo } from '@/features/landing/data/company'
+import { companyInfo } from '@/shared/constants/company'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {

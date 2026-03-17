@@ -290,7 +290,10 @@ export function MultiSelectContent({
           <CommandList>{children}</CommandList>
         </Command>
       </div>
-      <PopoverContent className="min-w-(--radix-popover-trigger-width) p-0">
+      <PopoverContent
+        className="min-w-(--radix-popover-trigger-width) p-0"
+        onCloseAutoFocus={e => e.preventDefault()}
+      >
         <Command {...props}>
           {canSearch
             ? (

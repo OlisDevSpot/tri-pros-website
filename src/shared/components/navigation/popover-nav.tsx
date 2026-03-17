@@ -10,7 +10,6 @@ import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
-import { LinkHubspotButton } from '../buttons/auth/link-hubspot-button'
 import { SignInGoogleButton } from '../buttons/auth/sign-in-google-button'
 import { UserButton } from '../buttons/user-button'
 import { Separator } from '../ui/separator'
@@ -24,7 +23,7 @@ interface MobileNavProps {
 
 export function PopoverNav({
   isOpen,
-  setIsOpen,
+  setIsOpen: _setIsOpen,
   navItems,
 }: MobileNavProps) {
   const [selectedMarketingItemIndex, setSelectedMarketingItemIndex] = useState<number | null>(null)
@@ -123,15 +122,6 @@ export function PopoverNav({
                   </AnimatePresence>
                 </Fragment>
               ))}
-            </div>
-            <div className="mt-auto space-y-2 gap-4 w-full">
-              <div className="w-full px-3">
-                {isInternalUser(sessionQuery.data?.user) && (
-                  <LinkHubspotButton
-                    onLinkAccount={() => setIsOpen(false)}
-                  />
-                )}
-              </div>
             </div>
             {sessionQuery.data?.user ? <UserButton user={sessionQuery.data?.user} /> : <SignInGoogleButton />}
           </div>

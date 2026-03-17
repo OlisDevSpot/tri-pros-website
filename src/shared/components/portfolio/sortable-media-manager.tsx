@@ -1,9 +1,10 @@
 'use client'
 
-import type { DragEndEvent } from '@dnd-kit/core'
-import type { MediaPhase } from '@/features/portfolio/constants/media-phases'
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
 import type { MediaFile } from '@/shared/db/schema'
+import type { MediaPhase } from '@/shared/types/enums/media'
 import {
+  AutoScrollActivator,
   closestCenter,
   DndContext,
   KeyboardSensor,
@@ -13,16 +14,27 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { arrayMove, rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
-import { useMutation } from '@tanstack/react-query'
-import { Loader2, Plus } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ArrowRightIcon, Loader2, Plus, Trash2, X } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useCallback, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
-import { MEDIA_PHASES } from '@/features/portfolio/constants/media-phases'
+import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { mediaPhases } from '@/shared/constants/enums/media'
 import { useMediaUpload } from '@/shared/hooks/use-media-upload'
 import { useTRPC } from '@/trpc/helpers'
 import { SortablePhotoCard } from './sortable-photo-card'
+
+const AUTO_SCROLL_CONFIG = {
+  activator: AutoScrollActivator.Pointer,
+  acceleration: 100,
+  interval: 5,
+  threshold: { x: 0.1, y: 0.25 },
+}
 
 interface Props {
   projectId: string
@@ -32,9 +44,13 @@ interface Props {
 
 export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props) {
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
+  const editQueryOptions = trpc.showroomRouter.getProjectForEdit.queryOptions({ id: projectId })
   const { upload, isUploading } = useMediaUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [activePhase, setActivePhase] = useState<MediaPhase>('main')
+  const [activePhase, setActivePhase] = useState<MediaPhase>('uncategorized')
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
+  const [draggingId, setDraggingId] = useState<number | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -52,10 +68,47 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     }),
   )
 
+  const bulkDeleteMutation = useMutation(
+    trpc.showroomRouter.bulkDeleteMediaFiles.mutationOptions({
+      onSuccess: () => {
+        onUpdate()
+        setSelectedIds(new Set())
+        toast.success('Files deleted')
+      },
+      onError: () => toast.error('Failed to delete files'),
+    }),
+  )
+
   const reorderMutation = useMutation(
     trpc.showroomRouter.reorderMediaFiles.mutationOptions({
-      onSuccess: onUpdate,
-      onError: () => toast.error('Failed to reorder'),
+      onMutate: async ({ updates }) => {
+        await queryClient.cancelQueries(editQueryOptions)
+        const previous = queryClient.getQueryData(editQueryOptions.queryKey)
+
+        queryClient.setQueryData(editQueryOptions.queryKey, (old: typeof previous) => {
+          if (!old) {
+            return old
+          }
+          const orderMap = new Map(updates.map(u => [u.id, u.sortOrder]))
+          return {
+            ...old,
+            media: old.media.map(f =>
+              orderMap.has(f.id) ? { ...f, sortOrder: orderMap.get(f.id)! } : f,
+            ),
+          }
+        })
+
+        return { previous }
+      },
+      onError: (_err, _vars, context) => {
+        if (context?.previous) {
+          queryClient.setQueryData(editQueryOptions.queryKey, context.previous)
+        }
+        toast.error('Failed to reorder')
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries(editQueryOptions)
+      },
     }),
   )
 
@@ -66,6 +119,17 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
         toast.success('Hero image updated')
       },
       onError: () => toast.error('Failed to update hero image'),
+    }),
+  )
+
+  const movePhaseMutation = useMutation(
+    trpc.showroomRouter.moveMediaPhase.mutationOptions({
+      onSuccess: () => {
+        onUpdate()
+        setSelectedIds(new Set())
+        toast.success('Moved successfully')
+      },
+      onError: () => toast.error('Failed to move'),
     }),
   )
 
@@ -121,32 +185,196 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     toggleHeroMutation.mutate({ id: fileId, isHeroImage: !currentIsHero })
   }
 
+  function handleMovePhase(fileId: number, phase: string) {
+    movePhaseMutation.mutate({ ids: [fileId], phase: phase as MediaPhase })
+  }
+
+  function handleBulkMove(phase: MediaPhase) {
+    if (selectedIds.size === 0) {
+      return
+    }
+    movePhaseMutation.mutate({ ids: [...selectedIds], phase })
+  }
+
+  function handleBulkDelete() {
+    if (selectedIds.size === 0) {
+      return
+    }
+    // eslint-disable-next-line no-alert
+    if (window.confirm(`Delete ${selectedIds.size} file(s)? This cannot be undone.`)) {
+      bulkDeleteMutation.mutate({ ids: [...selectedIds] })
+    }
+  }
+
+  const handleSelectToggle = useCallback((id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      }
+      else {
+        next.add(id)
+      }
+      return next
+    })
+  }, [])
+
+  function handleSelectAllInPhase(phase: string) {
+    const phaseFileIds = mediaByPhase(phase).map(f => f.id)
+    const allSelected = phaseFileIds.every(id => selectedIds.has(id))
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (allSelected) {
+        phaseFileIds.forEach(id => next.delete(id))
+      }
+      else {
+        phaseFileIds.forEach(id => next.add(id))
+      }
+      return next
+    })
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setDraggingId(event.active.id as number)
+  }
+
   function handleDragEnd(event: DragEndEvent, phase: string) {
+    setDraggingId(null)
+
     const { active, over } = event
     if (!over || active.id === over.id) {
       return
     }
 
     const phaseFiles = mediaByPhase(phase)
-    const oldIndex = phaseFiles.findIndex(f => f.id === active.id)
-    const newIndex = phaseFiles.findIndex(f => f.id === over.id)
+    const activeId = active.id as number
+    const overId = over.id as number
+
+    const oldIndex = phaseFiles.findIndex(f => f.id === activeId)
+    const newIndex = phaseFiles.findIndex(f => f.id === overId)
 
     if (oldIndex === -1 || newIndex === -1) {
       return
     }
 
-    const reordered = arrayMove(phaseFiles, oldIndex, newIndex)
+    // Check if this is a group drag (dragged item is selected + others are selected too)
+    const isMultiDrag = selectedIds.has(activeId) && selectedIds.size > 1
+
+    if (!isMultiDrag) {
+      // Simple single-item reorder
+      const reordered = arrayMove(phaseFiles, oldIndex, newIndex)
+      const updates = reordered.map((f, i) => ({ id: f.id, sortOrder: i }))
+      reorderMutation.mutate({ updates })
+      return
+    }
+
+    // Multi-drag: move all selected items to the drop target position
+    const movingIds = new Set(
+      [...selectedIds].filter(id => phaseFiles.some(f => f.id === id)),
+    )
+    const stationary = phaseFiles.filter(f => !movingIds.has(f.id))
+    const moving = phaseFiles.filter(f => movingIds.has(f.id))
+
+    // Find where to insert in the stationary list
+    const insertIdx = stationary.findIndex(f => f.id === overId)
+    const insertAt = insertIdx === -1 ? stationary.length : insertIdx + 1
+
+    const reordered = [
+      ...stationary.slice(0, insertAt),
+      ...moving,
+      ...stationary.slice(insertAt),
+    ]
     const updates = reordered.map((f, i) => ({ id: f.id, sortOrder: i }))
     reorderMutation.mutate({ updates })
   }
 
+  function handleDragCancel() {
+    setDraggingId(null)
+  }
+
+  const selectionActive = selectedIds.size > 0
+  const isGroupDrag = draggingId !== null && selectedIds.has(draggingId) && selectedIds.size > 1
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {mediaFiles.length}
-        {' '}
-        file(s) attached. Drag to reorder within each phase.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {mediaFiles.length}
+          {' '}
+          file(s) attached. Drag to reorder within each phase.
+        </p>
+      </div>
+
+      {/* Bulk action toast — fixed near top of viewport via portal */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {selectionActive && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.15 }}
+              className="fixed left-1/2 top-4 z-50 -translate-x-1/2"
+            >
+              <div className="flex items-center gap-2 rounded-xl border bg-background/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+                <Badge variant="secondary">
+                  {selectedIds.size}
+                  {' '}
+                  selected
+                </Badge>
+
+                <div className="mx-1 h-4 w-px bg-border" />
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" size="sm">
+                      <ArrowRightIcon className="mr-1.5 h-3.5 w-3.5" />
+                      Move to
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {mediaPhases.map(phase => (
+                      <DropdownMenuItem
+                        key={phase}
+                        className="capitalize"
+                        onClick={() => handleBulkMove(phase)}
+                      >
+                        {phase}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleteMutation.isPending}
+                >
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  Delete
+                </Button>
+
+                <div className="mx-1 h-4 w-px bg-border" />
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
 
       <input
         ref={fileInputRef}
@@ -157,9 +385,9 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
         onChange={handleFileChange}
       />
 
-      <Tabs defaultValue="main">
+      <Tabs defaultValue="uncategorized">
         <TabsList>
-          {MEDIA_PHASES.map(phase => (
+          {mediaPhases.map(phase => (
             <TabsTrigger key={phase} value={phase} className="capitalize">
               {phase}
               {' ('}
@@ -169,60 +397,86 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
           ))}
         </TabsList>
 
-        {MEDIA_PHASES.map(phase => (
-          <TabsContent key={phase} value={phase} className="space-y-3">
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isUploading}
-                onClick={() => handleUploadClick(phase)}
-              >
-                {isUploading
-                  ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  : <Plus className="mr-1.5 h-3.5 w-3.5" />}
-                Upload
-              </Button>
-            </div>
+        {mediaPhases.map((phase) => {
+          const phaseFiles = mediaByPhase(phase)
 
-            {mediaByPhase(phase).length === 0
-              ? (
-                  <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-                    No
-                    {' '}
-                    {phase}
-                    {' '}
-                    photos yet
-                  </div>
-                )
-              : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={e => handleDragEnd(e, phase)}
+          return (
+            <TabsContent key={phase} value={phase} className="space-y-3">
+              <div className="flex items-center justify-between">
+                {phaseFiles.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => handleSelectAllInPhase(phase)}
                   >
-                    <SortableContext
-                      items={mediaByPhase(phase).map(f => f.id)}
-                      strategy={rectSortingStrategy}
-                    >
-                      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
-                        {mediaByPhase(phase).map(file => (
-                          <SortablePhotoCard
-                            key={file.id}
-                            file={file}
-                            onDelete={handleDelete}
-                            onToggleHero={handleToggleHero}
-                            isDeletePending={deleteMutation.isPending}
-                            isHeroPending={toggleHeroMutation.isPending}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
+                    {phaseFiles.every(f => selectedIds.has(f.id)) ? 'Deselect all' : 'Select all'}
+                  </Button>
                 )}
-          </TabsContent>
-        ))}
+                <div className="ml-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploading}
+                    onClick={() => handleUploadClick(phase)}
+                  >
+                    {isUploading
+                      ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      : <Plus className="mr-1.5 h-3.5 w-3.5" />}
+                    Upload
+                  </Button>
+                </div>
+              </div>
+
+              {phaseFiles.length === 0
+                ? (
+                    <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                      No
+                      {' '}
+                      {phase}
+                      {' '}
+                      photos yet
+                    </div>
+                  )
+                : (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragStart={handleDragStart}
+                      onDragEnd={e => handleDragEnd(e, phase)}
+                      onDragCancel={handleDragCancel}
+                      autoScroll={AUTO_SCROLL_CONFIG}
+                    >
+                      <SortableContext
+                        items={phaseFiles.map(f => f.id)}
+                        strategy={rectSortingStrategy}
+                      >
+                        <div className="grid gap-3 overflow-x-clip" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
+                          {phaseFiles.map(file => (
+                            <SortablePhotoCard
+                              key={file.id}
+                              file={file}
+                              onDelete={handleDelete}
+                              onToggleHero={handleToggleHero}
+                              onMovePhase={handleMovePhase}
+                              onNameUpdated={onUpdate}
+                              isDeletePending={deleteMutation.isPending}
+                              isHeroPending={toggleHeroMutation.isPending}
+                              isSelected={selectedIds.has(file.id)}
+                              onSelectToggle={handleSelectToggle}
+                              selectionActive={selectionActive}
+                              isGroupDragged={isGroupDrag && selectedIds.has(file.id) && file.id !== draggingId}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  )}
+            </TabsContent>
+          )
+        })}
       </Tabs>
     </div>
   )

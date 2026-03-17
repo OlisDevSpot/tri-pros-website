@@ -2,8 +2,8 @@
 
 import { motion } from 'motion/react'
 import Link from 'next/link'
-import { companyInfo } from '@/features/landing/data/company'
-import { footerData } from '@/features/landing/data/footer'
+import { companyInfo } from '@/shared/constants/company'
+import { footerData } from '@/shared/constants/footer'
 import { LogoLink } from './logo'
 
 export default function Footer() {
