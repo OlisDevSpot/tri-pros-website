@@ -5,9 +5,9 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 import { useRouter } from 'next/navigation'
 
+import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { meetingTableFilters } from '@/features/meetings/constants/table-filter-config'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
-import { CustomerProfileModal } from '@/features/pipeline/ui/components'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'

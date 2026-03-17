@@ -1,6 +1,6 @@
 export const dashboardSteps = [
   'action-center',
-  'pipeline',
+  'customer-pipelines',
   'meetings',
   'create-meeting',
   'edit-meeting',

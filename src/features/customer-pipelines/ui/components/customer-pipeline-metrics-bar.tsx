@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerPipelineItem } from '@/features/pipeline/types'
+import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 
 import { Card, CardContent } from '@/shared/components/ui/card'
 

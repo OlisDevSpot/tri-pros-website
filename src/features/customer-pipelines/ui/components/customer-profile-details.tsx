@@ -1,13 +1,13 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/pipeline/types'
+import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 
 import {
   customerProfileLabels,
   financialProfileLabels,
   propertyProfileLabels,
-} from '@/features/pipeline/constants/profile-field-labels'
-import { ProfileCard } from '@/features/pipeline/ui/components/profile-card'
+} from '@/features/customer-pipelines/constants/profile-field-labels'
+import { ProfileCard } from '@/features/customer-pipelines/ui/components/profile-card'
 
 interface Props {
   customer: CustomerProfileData['customer']

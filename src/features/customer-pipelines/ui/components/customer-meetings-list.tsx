@@ -1,11 +1,11 @@
 'use client'
 
-import type { CustomerProfileMeeting } from '@/features/pipeline/types'
+import type { CustomerProfileMeeting } from '@/features/customer-pipelines/types'
 
 import { formatDistanceToNow } from 'date-fns'
 import { ExternalLinkIcon, FileTextIcon } from 'lucide-react'
 
-import { MEETING_LIST_STATUS_COLORS } from '@/features/pipeline/constants/meeting-status-colors'
+import { MEETING_LIST_STATUS_COLORS } from '@/features/customer-pipelines/constants/meeting-status-colors'
 import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Badge } from '@/shared/components/ui/badge'

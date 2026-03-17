@@ -2,6 +2,7 @@ import type {
   electricProviders,
   incentiveTypes,
   projectTypes,
+  proposalPipelineStages,
   proposalStatuses,
   validThroughTimeframes,
   variableDataTypes,
@@ -17,3 +18,4 @@ export type VariableGroup = (typeof variableGroups)[number]
 export type IncentiveType = (typeof incentiveTypes)[number]
 export type ValidThroughTimeframe = (typeof validThroughTimeframes)[number]
 export type ViewSource = (typeof viewSources)[number]
+export type ProposalPipelineStage = (typeof proposalPipelineStages)[number]

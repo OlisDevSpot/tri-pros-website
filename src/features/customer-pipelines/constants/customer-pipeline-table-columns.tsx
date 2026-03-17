@@ -1,10 +1,10 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import type { CustomerPipelineItem } from '@/features/pipeline/types'
+import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 
 import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon } from 'lucide-react'
 
-import { customerStageConfig } from '@/features/pipeline/constants/customer-pipeline-stages'
+import { customerStageConfig } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { Badge } from '@/shared/components/ui/badge'
 

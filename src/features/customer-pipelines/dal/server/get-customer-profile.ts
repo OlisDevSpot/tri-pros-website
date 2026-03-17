@@ -1,4 +1,4 @@
-import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProposal } from '@/features/pipeline/types'
+import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
 import { TRPCError } from '@trpc/server'
 import { count, desc, eq, sql } from 'drizzle-orm'

@@ -1,9 +1,9 @@
-import type { CustomerPipelineStage } from '@/features/pipeline/constants/customer-pipeline-stages'
+import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
-import { CUSTOMER_ALLOWED_DRAG_TRANSITIONS } from '@/features/pipeline/constants/customer-pipeline-stages'
+import { CUSTOMER_ALLOWED_DRAG_TRANSITIONS } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'

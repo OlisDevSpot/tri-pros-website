@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
-import { customerPipelineStages } from '@/features/pipeline/constants/customer-pipeline-stages'
-import { getCustomerPipelineItems } from '@/features/pipeline/dal/server/get-customer-pipeline-items'
-import { getCustomerProfile } from '@/features/pipeline/dal/server/get-customer-profile'
-import { moveCustomerPipelineItem } from '@/features/pipeline/dal/server/move-customer-pipeline-item'
+import { customerPipelineStages } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import { getCustomerPipelineItems } from '@/features/customer-pipelines/dal/server/get-customer-pipeline-items'
+import { getCustomerProfile } from '@/features/customer-pipelines/dal/server/get-customer-profile'
+import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
-export const pipelineRouter = createTRPCRouter({
+export const customerPipelinesRouter = createTRPCRouter({
   getCustomerPipelineItems: agentProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id
     return getCustomerPipelineItems(userId)

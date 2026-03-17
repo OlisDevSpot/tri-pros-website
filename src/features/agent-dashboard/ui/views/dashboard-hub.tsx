@@ -8,8 +8,8 @@ import { useEffect } from 'react'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { DashboardSidebar } from '@/features/agent-dashboard/ui/components/dashboard-sidebar'
 import { ActionCenterView } from '@/features/agent-dashboard/ui/views/action-center-view'
+import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
 import { CreateMeetingView, EditMeetingSetupView, PastMeetingsView } from '@/features/meetings/ui/views'
-import { CustomerPipelineView } from '@/features/pipeline/ui/views'
 import { CreateNewProposalView, EditProposalView, PastProposalsView } from '@/features/proposal-flow/ui/views'
 import { CreateProjectView, EditProjectView, PortfolioProjectsView } from '@/features/showroom/ui/views'
 import { useSession } from '@/shared/auth/client'
@@ -60,8 +60,8 @@ export function DashboardHub() {
           )}
         </AnimatePresence>
         <AnimatePresence>
-          {step === 'pipeline' && (
-            <CustomerPipelineView key="pipeline" />
+          {step === 'customer-pipelines' && (
+            <CustomerPipelineView key="customer-pipelines" />
           )}
         </AnimatePresence>
         <AnimatePresence>

@@ -88,7 +88,7 @@ export function PastProjects() {
       <div
         className={cn(
           'relative w-full overflow-x-hidden',
-          !isMobile ? 'h-[400px]' : 'h-[250px]',
+          !isMobile ? 'h-100' : 'h-62.5',
         )}
       >
         <div

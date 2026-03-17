@@ -1,11 +1,11 @@
 'use client'
 
-import type { CustomerPipelineItem } from '@/features/pipeline/types'
+import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 
 import { useMemo } from 'react'
 
-import { getPipelineColumns } from '@/features/pipeline/constants/pipeline-table-columns'
-import { pipelineTableFilters } from '@/features/pipeline/constants/pipeline-table-filters'
+import { getPipelineColumns } from '@/features/customer-pipelines/constants/customer-pipeline-table-columns'
+import { pipelineTableFilters } from '@/features/customer-pipelines/constants/customer-pipeline-table-filters'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 
 interface Props {

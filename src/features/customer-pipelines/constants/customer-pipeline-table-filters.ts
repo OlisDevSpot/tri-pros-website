@@ -1,6 +1,6 @@
 import type { DataTableFilterConfig } from '@/shared/components/data-table/types'
 
-import { customerStageConfig } from '@/features/pipeline/constants/customer-pipeline-stages'
+import { customerStageConfig } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
 
 export const pipelineTableFilters: DataTableFilterConfig[] = [
   {

@@ -11,7 +11,7 @@ interface SidebarItem {
 
 export const dashboardSidebarItems: readonly SidebarItem[] = [
   { step: 'action-center', icon: ZapIcon, label: 'Actions', enabled: true },
-  { step: 'pipeline', icon: GitBranchIcon, label: 'Pipeline', enabled: true },
+  { step: 'customer-pipelines', icon: GitBranchIcon, label: 'Pipeline', enabled: true },
   { step: 'meetings', icon: CalendarIcon, label: 'Meetings', enabled: true },
   { step: 'proposals', icon: FileTextIcon, label: 'Proposals', enabled: true },
   { step: 'showroom', icon: ImageIcon, label: 'Showroom', enabled: true },

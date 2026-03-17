@@ -1,11 +1,11 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/pipeline/types'
+import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 
 import { formatDistanceToNow } from 'date-fns'
 import { useState } from 'react'
 
-import { ProposalRow } from '@/features/pipeline/ui/components/proposal-row'
+import { ProposalRow } from '@/features/customer-pipelines/ui/components/proposal-row'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
 

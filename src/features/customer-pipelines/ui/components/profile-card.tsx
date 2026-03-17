@@ -1,6 +1,6 @@
 'use client'
 
-import { formatProfileValue } from '@/features/pipeline/lib/format-profile-value'
+import { formatProfileValue } from '@/features/customer-pipelines/lib/format-profile-value'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 
 interface Props {

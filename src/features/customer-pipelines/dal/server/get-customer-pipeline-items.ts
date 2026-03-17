@@ -1,8 +1,8 @@
-import type { CustomerPipelineItem, CustomerPipelineRawData } from '@/features/pipeline/types'
+import type { CustomerPipelineItem, CustomerPipelineRawData } from '@/features/customer-pipelines/types'
 
 import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
 
-import { computeCustomerStage } from '@/features/pipeline/lib/compute-customer-stage'
+import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'

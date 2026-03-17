@@ -1,7 +1,7 @@
 import type { UserRole } from '@/shared/types/enums'
 import { CalendarIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { CustomerProfileModal } from '@/features/pipeline/ui/components'
+import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { Logo } from '@/shared/components/logo'
 import { Badge } from '@/shared/components/ui/badge'

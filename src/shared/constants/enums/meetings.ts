@@ -41,3 +41,11 @@ export const meetingPainTypes = [
 ] as const
 export const meetingDecisionUrgencies = ['ASAP', '1–2 weeks', '1 month', '3+ months'] as const
 export const meetingCreditScoreRanges = ['< 600', '600–630', '630–650', '650–700', '700–749', '750–800', '> 800'] as const
+
+// Pipeline stages (customer journey — meeting phase)
+export const meetingPipelineStages = [
+  'meeting_scheduled',
+  'meeting_in_progress',
+  'meeting_completed',
+  'follow_up_scheduled',
+] as const

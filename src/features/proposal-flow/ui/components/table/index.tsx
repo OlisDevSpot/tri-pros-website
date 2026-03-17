@@ -3,7 +3,7 @@
 import type { inferRouterOutputs } from '@trpc/server'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { CustomerProfileModal } from '@/features/pipeline/ui/components'
+import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { proposalTableFilters } from '@/features/proposal-flow/constants/table-filter-config'
 import { useProposalActions } from '@/features/proposal-flow/hooks/use-proposal-actions'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'

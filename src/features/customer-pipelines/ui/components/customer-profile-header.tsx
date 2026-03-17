@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/pipeline/types'
+import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 
 import { CopyIcon, ExternalLinkIcon, GlobeIcon, MailIcon, MapPinIcon, PhoneIcon } from 'lucide-react'
 import { toast } from 'sonner'

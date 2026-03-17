@@ -1,11 +1,11 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/pipeline/types'
+import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 
 import { CalendarIcon, DollarSignIcon, EyeIcon, FileTextIcon } from 'lucide-react'
 
-import { CustomerProfileDetails } from '@/features/pipeline/ui/components/customer-profile-details'
-import { StatCard } from '@/features/pipeline/ui/components/stat-card'
+import { CustomerProfileDetails } from '@/features/customer-pipelines/ui/components/customer-profile-details'
+import { StatCard } from '@/features/customer-pipelines/ui/components/stat-card'
 
 interface Props {
   data: CustomerProfileData

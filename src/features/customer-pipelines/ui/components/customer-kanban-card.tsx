@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerPipelineItem } from '@/features/pipeline/types'
+import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 
 import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'

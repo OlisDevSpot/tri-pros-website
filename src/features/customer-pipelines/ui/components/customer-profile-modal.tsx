@@ -2,11 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query'
 
-import { CustomerMeetingsList } from '@/features/pipeline/ui/components/customer-meetings-list'
-import { CustomerProfileHeader } from '@/features/pipeline/ui/components/customer-profile-header'
-import { CustomerProfileKeyInsights } from '@/features/pipeline/ui/components/customer-profile-key-insights'
-import { CustomerProfileOverview } from '@/features/pipeline/ui/components/customer-profile-overview'
-import { CustomerProposalsList } from '@/features/pipeline/ui/components/customer-proposals-list'
+import { CustomerMeetingsList } from '@/features/customer-pipelines/ui/components/customer-meetings-list'
+import { CustomerProfileHeader } from '@/features/customer-pipelines/ui/components/customer-profile-header'
+import { CustomerProfileKeyInsights } from '@/features/customer-pipelines/ui/components/customer-profile-key-insights'
+import { CustomerProfileOverview } from '@/features/customer-pipelines/ui/components/customer-profile-overview'
+import { CustomerProposalsList } from '@/features/customer-pipelines/ui/components/customer-proposals-list'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { Separator } from '@/shared/components/ui/separator'
@@ -23,7 +23,7 @@ export function CustomerProfileModal({ customerId }: Props) {
   const trpc = useTRPC()
 
   const profileQuery = useQuery(
-    trpc.pipelineRouter.getCustomerProfile.queryOptions({ customerId }),
+    trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }),
   )
 
   const customerName = profileQuery.data?.customer.name

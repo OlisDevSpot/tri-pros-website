@@ -9,6 +9,7 @@ import type {
   meetingHouseholdTypes,
   meetingOutcomePriorities,
   meetingPainTypes,
+  meetingPipelineStages,
   meetingPriorContractorExperience,
   meetingSellPlans,
   meetingStatuses,
@@ -33,3 +34,4 @@ export type MeetingAgeGroup = (typeof meetingAgeGroups)[number]
 export type MeetingPainType = (typeof meetingPainTypes)[number]
 export type MeetingDecisionUrgency = (typeof meetingDecisionUrgencies)[number]
 export type MeetingCreditScoreRange = (typeof meetingCreditScoreRanges)[number]
+export type MeetingPipelineStage = (typeof meetingPipelineStages)[number]

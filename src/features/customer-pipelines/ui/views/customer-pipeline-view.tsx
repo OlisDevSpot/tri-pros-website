@@ -1,7 +1,7 @@
 'use client'
 
-import type { CustomerPipelineStage } from '@/features/pipeline/constants/customer-pipeline-stages'
-import type { CustomerPipelineItem } from '@/features/pipeline/types'
+import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -14,12 +14,12 @@ import {
   CUSTOMER_BLOCKED_MESSAGES,
   customerPipelineStages,
   customerStageConfig,
-} from '@/features/pipeline/constants/customer-pipeline-stages'
-import { groupCustomersByStage } from '@/features/pipeline/lib/group-customers-by-stage'
-import { CustomerKanbanCard } from '@/features/pipeline/ui/components/customer-kanban-card'
-import { CustomerPipelineMetricsBar } from '@/features/pipeline/ui/components/customer-pipeline-metrics-bar'
-import { CustomerPipelineTable } from '@/features/pipeline/ui/components/customer-pipeline-table'
-import { CustomerProfileModal } from '@/features/pipeline/ui/components/customer-profile-modal'
+} from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
+import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
+import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar'
+import { CustomerPipelineTable } from '@/features/customer-pipelines/ui/components/customer-pipeline-table'
+import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
@@ -35,11 +35,11 @@ export function CustomerPipelineView() {
   const { open: openModal, setModal } = useModalStore()
 
   const pipelineQuery = useQuery(
-    trpc.pipelineRouter.getCustomerPipelineItems.queryOptions(),
+    trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions(),
   )
 
   const moveMutation = useMutation(
-    trpc.pipelineRouter.moveCustomerPipelineItem.mutationOptions({
+    trpc.customerPipelinesRouter.moveCustomerPipelineItem.mutationOptions({
       onError: () => {
         toast.error('Failed to move customer. Please try again.')
         pipelineQuery.refetch()
