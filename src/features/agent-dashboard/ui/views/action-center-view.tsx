@@ -1,6 +1,5 @@
 'use client'
 
-import type { ActionTier } from '@/features/agent-dashboard/constants/action-tiers'
 import type { ActionItem } from '@/features/agent-dashboard/dal/server/get-action-queue'
 
 import { useQuery } from '@tanstack/react-query'
@@ -8,26 +7,14 @@ import { CheckCircleIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
 
-import { actionTierConfig, actionTiers } from '@/features/agent-dashboard/constants/action-tiers'
+import { actionTierConfig } from '@/features/agent-dashboard/constants/action-tiers'
+import { groupByTier } from '@/features/agent-dashboard/lib/group-items-by-tier'
 import { ActionCard } from '@/features/agent-dashboard/ui/components/action-card'
 import { ActionDetailSheet } from '@/features/agent-dashboard/ui/components/action-detail-sheet'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useTRPC } from '@/trpc/helpers'
-
-function groupByTier(items: ActionItem[]): Map<ActionTier, ActionItem[]> {
-  const groups = new Map<ActionTier, ActionItem[]>()
-
-  for (const tier of actionTiers) {
-    const tierItems = items.filter(item => item.tier === tier)
-    if (tierItems.length > 0) {
-      groups.set(tier, tierItems)
-    }
-  }
-
-  return groups
-}
 
 export function ActionCenterView() {
   const trpc = useTRPC()

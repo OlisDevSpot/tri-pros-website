@@ -5,12 +5,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { BottomCTA } from '@/shared/components/cta'
 import { useTRPC } from '@/trpc/helpers'
-import { StoryChallenge } from '../components/story-challenge'
-import { StoryGallery } from '../components/story-gallery'
-import { StoryHero } from '../components/story-hero'
-import { StorySolution } from '../components/story-solution'
-import { StoryTestimonial } from '../components/story-testimonial'
-import { StoryTimeline } from '../components/story-timeline'
+import { StoryChallenge } from '@/features/showroom/ui/components/story-challenge'
+import { StoryGallery } from '@/features/showroom/ui/components/story-gallery'
+import { StoryHero } from '@/features/showroom/ui/components/story-hero'
+import { StorySolution } from '@/features/showroom/ui/components/story-solution'
+import { StoryTestimonial } from '@/features/showroom/ui/components/story-testimonial'
+import { StoryTimeline } from '@/features/showroom/ui/components/story-timeline'
 
 interface Props {
   detail: ShowroomProjectDetail

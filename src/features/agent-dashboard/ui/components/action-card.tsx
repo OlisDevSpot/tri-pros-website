@@ -5,6 +5,7 @@ import type { ActionItem } from '@/features/agent-dashboard/dal/server/get-actio
 import { formatDistanceToNow } from 'date-fns'
 
 import { actionTierConfig } from '@/features/agent-dashboard/constants/action-tiers'
+import { tierColorMap } from '@/features/agent-dashboard/constants/tier-color-map'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -12,14 +13,6 @@ import { Card, CardContent } from '@/shared/components/ui/card'
 interface Props {
   item: ActionItem
   onSelect: (item: ActionItem) => void
-}
-
-const tierColorMap: Record<string, string> = {
-  red: 'bg-red-500/10 text-red-500 border-red-500/20',
-  orange: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
-  yellow: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  blue: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  muted: 'bg-muted text-muted-foreground border-muted',
 }
 
 export function ActionCard({ item, onSelect }: Props) {

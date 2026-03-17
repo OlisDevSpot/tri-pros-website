@@ -4,7 +4,7 @@ import type { MediaFile } from '@/shared/db/schema'
 import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import { useRef } from 'react'
-import { JOURNEY_STEPS } from '../../constants/journey-steps'
+import { JOURNEY_STEPS } from '@/features/showroom/constants/journey-steps'
 
 interface Props {
   duringPhotos: MediaFile[]

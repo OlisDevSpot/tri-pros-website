@@ -5,17 +5,11 @@ import type { MediaPhase } from '@/shared/types/enums/media'
 import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { PHASE_LABELS } from '@/features/showroom/constants/phase-labels'
 import { Badge } from '@/shared/components/ui/badge'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { cn } from '@/shared/lib/utils'
-import { PhotoLightbox } from './photo-lightbox'
-
-const PHASE_LABELS: Record<MediaPhase, string> = {
-  before: 'Before',
-  during: 'During',
-  after: 'After',
-  uncategorized: 'Gallery',
-}
+import { PhotoLightbox } from '@/features/showroom/ui/components/photo-lightbox'
 
 interface Props {
   media: ProjectMediaGroups

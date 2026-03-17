@@ -4,7 +4,7 @@ import type { ShowroomProject } from '@/shared/entities/projects/types'
 import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { AnimatePresence, motion } from 'motion/react'
-import { ShowroomProjectCard } from './showroom-project-card'
+import { ShowroomProjectCard } from '@/features/showroom/ui/components/showroom-project-card'
 
 interface Props {
   projects: ShowroomProject[]

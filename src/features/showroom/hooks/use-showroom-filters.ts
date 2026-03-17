@@ -5,7 +5,7 @@ import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
-import { filterShowroomProjects } from '../lib/filter-projects'
+import { filterShowroomProjects } from '@/features/showroom/lib/filter-projects'
 
 interface UseShowroomFiltersOptions {
   projects: ShowroomProject[]
