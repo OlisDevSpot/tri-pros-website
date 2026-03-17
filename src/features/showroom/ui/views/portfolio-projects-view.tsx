@@ -5,12 +5,12 @@ import { PlusIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useQueryState } from 'nuqs'
 import { useCallback, useState } from 'react'
+import { dashboardStepParser } from '@/features/agent-dashboard/lib'
 import { PortfolioProjectsTable } from '@/features/showroom/ui/components/table'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { useTRPC } from '@/trpc/helpers'
 
 export function PortfolioProjectsView() {

@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { ProcessOverview } from '@/features/landing/ui/components/about/process-overview'
+import { ProcessOverview } from '@/features/landing/ui/components'
 import { CompanySocialButtons } from '@/shared/components/company-social-buttons'
 import { LogoLink } from '@/shared/components/logo'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'

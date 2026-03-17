@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { useQueryState } from 'nuqs'
 
 import { dashboardSidebarItems } from '@/features/agent-dashboard/constants/sidebar-items'
+import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { CreatePicker } from '@/features/agent-dashboard/ui/components/create-picker'
 import { Logo } from '@/shared/components/logo'
 import { Button } from '@/shared/components/ui/button'
-import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 
 export function DashboardSidebar() {
   const [step, setStep] = useQueryState('step', dashboardStepParser)
