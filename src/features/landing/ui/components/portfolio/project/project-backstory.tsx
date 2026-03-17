@@ -1,8 +1,11 @@
 'use client'
 
 import type { ProjectDetail } from '@/shared/entities/projects/types'
+
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
+
+import { Stat } from '@/features/landing/ui/components/portfolio/project/stat'
 
 interface Props {
   project: NonNullable<ProjectDetail>['project']
@@ -62,14 +65,5 @@ export function ProjectBackstory({ project }: Props) {
         </div>
       </div>
     </section>
-  )
-}
-
-function Stat({ label, value }: { label: string, value: string }) {
-  return (
-    <div className="bg-muted/40 rounded-xl p-5 space-y-1">
-      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
-      <p className="text-foreground font-semibold text-lg">{value}</p>
-    </div>
   )
 }
