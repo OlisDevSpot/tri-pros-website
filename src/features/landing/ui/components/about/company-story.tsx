@@ -5,7 +5,7 @@ import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 import { FounderStory } from './founder-story'
 
-export default function CompanyStory() {
+export function CompanyStory() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 

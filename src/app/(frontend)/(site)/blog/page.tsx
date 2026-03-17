@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import BlogHero from '@/features/landing/ui/components/blog/blog-hero'
+import { BlogHero } from '@/features/landing/ui/components/blog/blog-hero'
 import { BlogpostsSection } from '@/features/landing/ui/components/blog/blogposts-section'
 
 export const metadata: Metadata = {

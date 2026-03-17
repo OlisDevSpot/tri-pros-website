@@ -7,7 +7,7 @@ import { credentials } from '@/features/landing/data/company/credentials'
 import { stats } from '@/features/landing/data/company/stats'
 import DecorativeLine from '@/shared/components/decorative-line'
 
-export default function CredentialsSection() {
+export function CredentialsSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 

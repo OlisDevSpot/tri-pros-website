@@ -6,7 +6,7 @@ import { Button } from '@/shared/components/ui/button'
 import { useFeatureStore } from '@/shared/hooks/use-feature-store'
 import { cn } from '@/shared/lib/utils'
 
-export default function ServiceCard({
+export function ServiceCard({
   service,
   index,
 }: {

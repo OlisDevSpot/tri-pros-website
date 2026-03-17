@@ -9,9 +9,9 @@ import { services } from '@/features/landing/data/company/services'
 import { Button } from '@/shared/components/ui/button'
 import { useFeatureStore } from '@/shared/hooks/use-feature-store'
 import { cn } from '@/shared/lib/utils'
-import ServiceCard from './service-card'
+import { ServiceCard } from './service-card'
 
-export default function ServicesListScroll() {
+export function ServicesListScroll() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   const { featureInView } = useFeatureStore()

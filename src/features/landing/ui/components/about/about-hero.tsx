@@ -11,7 +11,7 @@ import { ViewportHero } from '@/shared/components/viewport-hero'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
-export default function AboutHero() {
+export function AboutHero() {
   const isMobile = useIsMobile()
 
   return (

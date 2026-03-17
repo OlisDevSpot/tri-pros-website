@@ -9,7 +9,7 @@ import { services } from '@/features/landing/data/company/services'
 import DecorativeLine from '@/shared/components/decorative-line'
 import { Button } from '@/shared/components/ui/button'
 
-export default function ServicesPreview() {
+export function ServicesPreview() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 

@@ -7,7 +7,7 @@ import { TopSpacer } from '@/shared/components/top-spacer'
 import { Button } from '@/shared/components/ui/button'
 import { ViewportHero } from '@/shared/components/viewport-hero'
 
-export default function ServicesHero() {
+export function ServicesHero() {
   return (
     <ViewportHero>
       {/* Background Img */}

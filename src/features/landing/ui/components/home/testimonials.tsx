@@ -8,7 +8,7 @@ import { useRef } from 'react'
 import { companyInfo, testimonials } from '@/features/landing/data/company'
 import DecorativeLine from '@/shared/components/decorative-line'
 
-export default function TestimonialsSection() {
+export function TestimonialsSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 

@@ -14,7 +14,7 @@ const offices = [
   },
 ]
 
-export default function ContactInfo() {
+export function ContactInfo() {
   return (
     <section className="bg-foreground py-16 lg:py-24 text-background w-full">
       <div className="container">

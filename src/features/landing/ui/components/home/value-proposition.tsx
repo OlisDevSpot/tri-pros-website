@@ -10,7 +10,7 @@ import DecorativeLine from '@/shared/components/decorative-line'
 import { Button } from '@/shared/components/ui/button'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 
-export default function ValuePropositions() {
+export function ValuePropositions() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
   const scrolled = useHasScrolled()

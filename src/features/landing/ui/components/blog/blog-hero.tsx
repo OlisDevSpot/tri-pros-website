@@ -29,7 +29,7 @@ const childVariants: Variants = {
   visible: { opacity: 1, y: 0 },
 }
 
-export default function BlogHero() {
+export function BlogHero() {
   return (
     <ViewportHero>
       <TopSpacer>

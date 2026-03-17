@@ -9,7 +9,7 @@ import { services } from '@/features/landing/data/company/services'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
-export default function ServicesList() {
+export function ServicesList() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 

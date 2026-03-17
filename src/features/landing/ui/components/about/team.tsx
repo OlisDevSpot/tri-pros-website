@@ -10,7 +10,7 @@ import { teamMembers } from '@/features/landing/data/company/team-members'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
 import DecorativeLine from '@/shared/components/decorative-line'
 
-export default function TeamSection() {
+export function TeamSection() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 

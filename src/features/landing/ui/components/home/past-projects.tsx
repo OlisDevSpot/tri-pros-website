@@ -21,7 +21,7 @@ const photos = [
 const SLOW_DURATION = 25
 const FAST_DURATION = 75
 
-export default function PastProjects() {
+export function PastProjects() {
   const containerRef = useRef(null)
   const isInView = useInView(containerRef, { once: true, margin: '-100px' })
   const isMobile = useIsMobile()
