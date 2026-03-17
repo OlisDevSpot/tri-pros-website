@@ -1,29 +1,39 @@
 'use client'
 
 import type { Project } from '@/shared/db/schema'
+import { ArrowRight } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
+import Link from 'next/link'
 import { useRef } from 'react'
+import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
+
+interface NamedItem {
+  id: string
+  name: string
+}
+
+interface TradeWithScopes {
+  trade: NamedItem
+  scopes: NamedItem[]
+}
 
 interface Props {
   project: Project
-  tradesCount: number
-  scopesCount: number
+  tradesWithScopes: TradeWithScopes[]
 }
 
-export function StorySolution({ project, tradesCount, scopesCount }: Props) {
+export function StorySolution({ project, tradesWithScopes }: Props) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-80px' })
 
-  const hasContent = project.solutionDescription || project.resultDescription
+  const hasContent = project.solutionDescription || project.resultDescription || tradesWithScopes.length > 0
   if (!hasContent) {
     return null
   }
 
   const stats = [
     project.projectDuration && { label: 'Duration', value: project.projectDuration },
-    tradesCount > 0 && { label: 'Trades', value: String(tradesCount) },
-    scopesCount > 0 && { label: 'Scopes', value: String(scopesCount) },
     project.completedAt && {
       label: 'Completed',
       value: new Date(project.completedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
@@ -46,6 +56,7 @@ export function StorySolution({ project, tradesCount, scopesCount }: Props) {
         </motion.div>
 
         <div className="grid gap-10 lg:grid-cols-3">
+          {/* Left column — text content */}
           <div className="space-y-6 lg:col-span-2">
             {project.solutionDescription && (
               <motion.p
@@ -70,21 +81,68 @@ export function StorySolution({ project, tradesCount, scopesCount }: Props) {
                 </p>
               </motion.div>
             )}
+
+            {/* Stats row */}
+            {stats.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+                transition={{ duration: 0.6, delay: 0.25 }}
+                className="flex gap-3"
+              >
+                {stats.map(stat => (
+                  <Card key={stat.label} className="bg-background/60">
+                    <CardContent className="px-5 py-3">
+                      <p className="text-xl font-bold text-foreground">{stat.value}</p>
+                      <p className="text-xs text-muted-foreground">{stat.label}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </motion.div>
+            )}
           </div>
 
-          {/* Stats */}
-          {stats.length > 0 && (
+          {/* Right column — trades & scopes breakdown */}
+          {tradesWithScopes.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="grid grid-cols-2 gap-3"
+              className="space-y-4"
             >
-              {stats.map(stat => (
-                <Card key={stat.label} className="bg-background/60">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{stat.label}</p>
+              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Trades & Scopes
+              </p>
+              {tradesWithScopes.map(({ trade, scopes }) => (
+                <Card key={trade.id} className="bg-background/60">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Badge className="bg-primary text-primary-foreground">{trade.name}</Badge>
+                      <Link
+                        href={`/portfolio/projects?trades=${trade.id}`}
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        View similar
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                    {scopes.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {scopes.map(scope => (
+                          <Link
+                            key={scope.id}
+                            href={`/portfolio/projects?scopes=${scope.id}`}
+                          >
+                            <Badge
+                              variant="outline"
+                              className="cursor-pointer transition-colors hover:bg-primary/10 hover:border-primary/30"
+                            >
+                              {scope.name}
+                            </Badge>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

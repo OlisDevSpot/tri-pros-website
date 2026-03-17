@@ -21,6 +21,16 @@ export function MetadataTabContent() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Trades & Scopes</CardTitle>
+          <CardDescription>Select the trades and scopes of work included in this project</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TradeScopePickerFields />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Story Content</CardTitle>
           <CardDescription>Tell the story of this project from start to finish</CardDescription>
         </CardHeader>
@@ -36,16 +46,6 @@ export function MetadataTabContent() {
         </CardHeader>
         <CardContent>
           <HomeownerFields />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Scopes</CardTitle>
-          <CardDescription>Select the trades and scopes of work included in this project</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TradeScopePickerFields />
         </CardContent>
       </Card>
     </div>

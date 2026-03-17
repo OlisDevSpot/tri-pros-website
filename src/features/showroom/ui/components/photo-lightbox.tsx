@@ -1,0 +1,158 @@
+'use client'
+
+import type { MediaFile } from '@/shared/db/schema'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import Image from 'next/image'
+import { useCallback, useEffect } from 'react'
+import { cn } from '@/shared/lib/utils'
+
+interface Props {
+  photos: MediaFile[]
+  currentIndex: number
+  onClose: () => void
+  onNavigate: (index: number) => void
+}
+
+export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Props) {
+  const photo = photos[currentIndex]
+
+  const goNext = useCallback(() => {
+    onNavigate((currentIndex + 1) % photos.length)
+  }, [currentIndex, photos.length, onNavigate])
+
+  const goPrev = useCallback(() => {
+    onNavigate((currentIndex - 1 + photos.length) % photos.length)
+  }, [currentIndex, photos.length, onNavigate])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+      if (e.key === 'ArrowRight') {
+        goNext()
+      }
+      if (e.key === 'ArrowLeft') {
+        goPrev()
+      }
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose, goNext, goPrev])
+
+  if (!photo) {
+    return null
+  }
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 z-50 flex flex-col bg-black/95"
+      >
+        {/* Top bar */}
+        <div className="flex shrink-0 items-center justify-between px-4 py-3">
+          <span className="text-sm text-white/60">
+            {currentIndex + 1}
+            {' '}
+            /
+            {' '}
+            {photos.length}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="Close lightbox"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Main image area */}
+        <div className="relative flex min-h-0 flex-1 items-center justify-center px-14">
+          {/* Prev button */}
+          {photos.length > 1 && (
+            <button
+              type="button"
+              onClick={goPrev}
+              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Image */}
+          <motion.div
+            key={photo.id}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            className="relative h-full w-full"
+          >
+            <Image
+              src={photo.url}
+              alt={photo.name}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          </motion.div>
+
+          {/* Next button */}
+          {photos.length > 1 && (
+            <button
+              type="button"
+              onClick={goNext}
+              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-3 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+        </div>
+
+        {/* Thumbnail strip */}
+        {photos.length > 1 && (
+          <div className="shrink-0 border-t border-white/10 bg-black/80 px-4 py-3">
+            <div className="mx-auto flex max-w-4xl gap-2 overflow-x-auto pb-1">
+              {photos.map((thumb, i) => (
+                <button
+                  key={thumb.id}
+                  type="button"
+                  onClick={() => onNavigate(i)}
+                  className={cn(
+                    'relative h-14 w-20 shrink-0 overflow-hidden rounded-md transition-all',
+                    i === currentIndex
+                      ? 'ring-2 ring-primary ring-offset-1 ring-offset-black'
+                      : 'opacity-50 hover:opacity-80',
+                  )}
+                  aria-label={`View photo ${i + 1}`}
+                >
+                  <Image
+                    src={thumb.url}
+                    alt={thumb.name}
+                    fill
+                    className="object-cover"
+                    sizes="80px"
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
+  )
+}

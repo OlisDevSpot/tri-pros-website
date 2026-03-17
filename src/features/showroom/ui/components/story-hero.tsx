@@ -10,13 +10,18 @@ interface NamedItem {
   name: string
 }
 
+interface TradeWithScopes {
+  trade: NamedItem
+  scopes: NamedItem[]
+}
+
 interface Props {
   project: Project
   heroUrl: string | undefined
-  trades: NamedItem[]
+  tradesWithScopes: TradeWithScopes[]
 }
 
-export function StoryHero({ project, heroUrl, trades }: Props) {
+export function StoryHero({ project, heroUrl, tradesWithScopes }: Props) {
   const formattedDate = project.completedAt
     ? new Date(project.completedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null
@@ -45,7 +50,8 @@ export function StoryHero({ project, heroUrl, trades }: Props) {
             <div className="absolute inset-0 bg-linear-to-br from-muted to-muted-foreground/20" />
           )}
 
-      {/* Gradient overlay */}
+      {/* Gradient overlays — top for navbar visibility, bottom for content */}
+      <div className="absolute inset-0 bg-linear-to-b from-background/70 via-transparent to-transparent" />
       <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
 
       {/* Content */}
@@ -66,16 +72,33 @@ export function StoryHero({ project, heroUrl, trades }: Props) {
             <h1 className="mb-3 text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
               {project.title}
             </h1>
-            <p className="mb-4 text-lg text-white/80">
+            <p className="mb-5 text-lg text-white/80">
               {project.city}
               {project.state ? `, ${project.state}` : ''}
             </p>
-            {trades.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {trades.map(trade => (
-                  <Badge key={trade.id} className="border-white/20 bg-white/15 text-white backdrop-blur-sm">
-                    {trade.name}
-                  </Badge>
+
+            {/* Trades → Scopes grouped layout */}
+            {tradesWithScopes.length > 0 && (
+              <div className="flex flex-wrap gap-4">
+                {tradesWithScopes.map(({ trade, scopes }) => (
+                  <div key={trade.id} className="flex flex-col gap-1.5">
+                    <Badge className="w-fit bg-primary text-primary-foreground">
+                      {trade.name}
+                    </Badge>
+                    {scopes.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pl-1">
+                        {scopes.map(scope => (
+                          <Badge
+                            key={scope.id}
+                            variant="outline"
+                            className="border-white/20 bg-white/10 text-white/90 backdrop-blur-sm"
+                          >
+                            {scope.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}

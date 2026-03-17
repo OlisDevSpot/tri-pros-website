@@ -38,14 +38,14 @@ export function ProjectForm({ isLoading, initialValues, onSubmit, projectId, med
             <>
               {/* Desktop: side-by-side */}
               <div className="hidden min-h-0 flex-1 gap-6 lg:flex">
-                <div className="flex-2 min-w-0 overflow-y-auto">
+                <div className="flex-2 min-w-0 overflow-y-auto p-1">
                   <PhotosTabContent
                     projectId={projectId}
                     mediaFiles={mediaFiles}
                     onUpdate={onMediaUpdate}
                   />
                 </div>
-                <div className="flex-1 min-h-0 overflow-y-auto">
+                <div className="flex-1 min-h-0 overflow-y-auto p-1">
                   <MetadataTabContent />
                 </div>
               </div>

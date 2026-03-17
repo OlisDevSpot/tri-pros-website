@@ -3,7 +3,8 @@
 import type { ShowroomProject } from '@/shared/entities/projects/types'
 import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
-import { useMemo, useState } from 'react'
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
+import { useMemo } from 'react'
 import { filterShowroomProjects } from '../lib/filter-projects'
 
 interface UseShowroomFiltersOptions {
@@ -13,9 +14,18 @@ interface UseShowroomFiltersOptions {
 }
 
 export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowroomFiltersOptions) {
-  const [selectedTradeIds, setSelectedTradeIds] = useState<string[]>([])
-  const [selectedScopeIds, setSelectedScopeIds] = useState<string[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTradeIds, setSelectedTradeIds] = useQueryState(
+    'trades',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  )
+  const [selectedScopeIds, setSelectedScopeIds] = useQueryState(
+    'scopes',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  )
+  const [searchQuery, setSearchQuery] = useQueryState(
+    'q',
+    parseAsString.withDefault(''),
+  )
 
   // Build a scope→trade mapping from Notion data
   const scopeToTradeMap = useMemo(() => {
@@ -57,15 +67,22 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
 
   // When trades change, clear any scope selections that no longer apply
   const handleTradeChange = (tradeIds: string[]) => {
-    setSelectedTradeIds(tradeIds)
+    setSelectedTradeIds(tradeIds.length > 0 ? tradeIds : null)
     if (tradeIds.length > 0) {
-      setSelectedScopeIds(prev =>
-        prev.filter((scopeId) => {
-          const tradeId = scopeToTradeMap.get(scopeId)
-          return tradeId && tradeIds.includes(tradeId)
-        }),
-      )
+      const validScopes = selectedScopeIds.filter((scopeId) => {
+        const tradeId = scopeToTradeMap.get(scopeId)
+        return tradeId && tradeIds.includes(tradeId)
+      })
+      setSelectedScopeIds(validScopes.length > 0 ? validScopes : null)
     }
+  }
+
+  const handleScopeChange = (scopeIds: string[]) => {
+    setSelectedScopeIds(scopeIds.length > 0 ? scopeIds : null)
+  }
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query || null)
   }
 
   const filteredProjects = useMemo(
@@ -79,9 +96,9 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
   )
 
   const clearAll = () => {
-    setSelectedTradeIds([])
-    setSelectedScopeIds([])
-    setSearchQuery('')
+    setSelectedTradeIds(null)
+    setSelectedScopeIds(null)
+    setSearchQuery(null)
   }
 
   const activeFilterCount = selectedTradeIds.length + selectedScopeIds.length + (searchQuery ? 1 : 0)
@@ -95,8 +112,8 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
     availableScopes,
     activeFilterCount,
     setSelectedTradeIds: handleTradeChange,
-    setSelectedScopeIds,
-    setSearchQuery,
+    setSelectedScopeIds: handleScopeChange,
+    setSearchQuery: handleSearchChange,
     clearAll,
   }
 }
