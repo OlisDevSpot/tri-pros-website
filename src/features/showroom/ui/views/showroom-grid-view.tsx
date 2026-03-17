@@ -3,10 +3,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
-import { useTRPC } from '@/trpc/helpers'
 import { useShowroomFilters } from '@/features/showroom/hooks/use-showroom-filters'
 import { ShowroomFilterBar } from '@/features/showroom/ui/components/showroom-filter-bar'
 import { ShowroomGrid } from '@/features/showroom/ui/components/showroom-grid'
+import { useTRPC } from '@/trpc/helpers'
 
 export function ShowroomGridView() {
   const trpc = useTRPC()

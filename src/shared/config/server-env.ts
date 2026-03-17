@@ -36,12 +36,6 @@ const envSchema = z.object({
   PIPEDRIVE_BASE_URL: z.string(),
   PIPEDRIVE_API_KEY: z.string(),
 
-  // HUBSPOT
-  HUBSPOT_BASE_URL: z.string(),
-  HUBSPOT_CLIENT_ID: z.string(),
-  HUBSPOT_CLIENT_SECRET: z.string(),
-  HUBSPOT_APP_REDIRECT_URL: z.string(),
-
   // DOCUSIGN
   DS_DEV_USER_ID: z.string().optional(),
   DS_USER_ID: z.string(),

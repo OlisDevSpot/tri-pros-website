@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { nextCookies } from 'better-auth/next-js'
-import { genericOAuth, hubspot, openAPI } from 'better-auth/plugins'
+import { openAPI } from 'better-auth/plugins'
 import env from '@/shared/config/server-env'
 import { db } from '@/shared/db'
 import * as schema from '@/shared/db/schema'
@@ -67,21 +67,6 @@ export const auth = betterAuth({
   plugins: [
     nextCookies(),
     openAPI(),
-    genericOAuth({
-      config: [
-        hubspot({
-          clientId: env.HUBSPOT_CLIENT_ID,
-          clientSecret: env.HUBSPOT_CLIENT_SECRET,
-          scopes: [
-            'oauth',
-            'crm.objects.contacts.read',
-            'crm.objects.contacts.write',
-            'crm.objects.deals.read',
-            'crm.objects.deals.write',
-          ],
-        }),
-      ],
-    }),
   ],
   advanced: {
     crossSubDomainCookies: {

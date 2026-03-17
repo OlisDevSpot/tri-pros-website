@@ -35,13 +35,13 @@ export interface CustomerPipelineRawData {
   latestActivityAt: string
 }
 
-export type CustomerProfileMeeting =
-  Pick<Meeting, 'id' | 'program' | 'status' | 'scheduledFor' | 'createdAt'>
-  & { proposals: CustomerProfileProposal[] }
+export type CustomerProfileMeeting
+  = Pick<Meeting, 'id' | 'program' | 'status' | 'scheduledFor' | 'createdAt'>
+    & { proposals: CustomerProfileProposal[] }
 
-export type CustomerProfileProposal =
-  Pick<Proposal, 'id' | 'label' | 'status' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>
-  & { trade: string | null; value: number | null; viewCount: number }
+export type CustomerProfileProposal
+  = Pick<Proposal, 'id' | 'label' | 'status' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>
+    & { trade: string | null, value: number | null, viewCount: number }
 
 export interface CustomerProfileData {
   customer: Customer

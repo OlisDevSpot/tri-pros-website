@@ -1,3 +1,7 @@
+import type { Customer } from '@/shared/db/schema'
+
+import type { JsonbSection } from '@/shared/types/jsonb'
+
 export type ProgramAccessor = 'tpr-monthly-special' | 'energy-savings-plus' | 'senior-citizen-program'
 
 export type BuyTriggerType = 'urgency' | 'scarcity' | 'authority' | 'risk-reduction' | 'social-proof'
@@ -18,8 +22,6 @@ export interface CaseStudy {
 }
 
 export type CollectionFieldType = 'select' | 'text' | 'number' | 'rating' | 'boolean'
-
-import type { JsonbSection } from '@/shared/types/jsonb'
 
 export type { JsonbSection } from '@/shared/types/jsonb'
 
@@ -42,8 +44,6 @@ export interface IntakeStep {
   id: string
   title: string
 }
-
-import type { Customer } from '@/shared/db/schema'
 
 export interface MeetingContext {
   collectedData: {

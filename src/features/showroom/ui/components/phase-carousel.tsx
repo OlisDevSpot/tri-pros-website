@@ -2,6 +2,7 @@
 
 import type { CarouselApi } from '@/shared/components/ui/carousel'
 import type { MediaFile } from '@/shared/db/schema'
+import Image from 'next/image'
 import { useCallback, useState } from 'react'
 import {
   Carousel,
@@ -11,7 +12,6 @@ import {
   CarouselPrevious,
 } from '@/shared/components/ui/carousel'
 import { cn } from '@/shared/lib/utils'
-import Image from 'next/image'
 
 interface PhaseCarouselProps {
   photos: MediaFile[]

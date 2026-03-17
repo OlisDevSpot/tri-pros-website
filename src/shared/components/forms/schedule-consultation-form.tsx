@@ -7,12 +7,12 @@ import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { scheduleConsultationDefaultValues as defaultValues, scheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import { Button } from '@/shared/components/ui/button'
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { scheduleConsultationDefaultValues as defaultValues, scheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
 export function ScheduleConsultationForm() {

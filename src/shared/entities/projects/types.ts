@@ -9,7 +9,7 @@ export interface ProjectMediaGroups {
   before: MediaFile[]
   during: MediaFile[]
   after: MediaFile[]
-  main: MediaFile[]
+  uncategorized: MediaFile[]
   videos: MediaFile[]
   all: MediaFile[]
 }

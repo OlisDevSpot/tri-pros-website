@@ -3,14 +3,14 @@
 import type { ShowroomProjectDetail } from '@/shared/entities/projects/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { BottomCTA } from '@/shared/components/cta'
-import { useTRPC } from '@/trpc/helpers'
 import { StoryChallenge } from '@/features/showroom/ui/components/story-challenge'
 import { StoryGallery } from '@/features/showroom/ui/components/story-gallery'
 import { StoryHero } from '@/features/showroom/ui/components/story-hero'
 import { StorySolution } from '@/features/showroom/ui/components/story-solution'
 import { StoryTestimonial } from '@/features/showroom/ui/components/story-testimonial'
 import { StoryTimeline } from '@/features/showroom/ui/components/story-timeline'
+import { BottomCTA } from '@/shared/components/cta'
+import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   detail: ShowroomProjectDetail

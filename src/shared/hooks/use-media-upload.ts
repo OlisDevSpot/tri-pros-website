@@ -1,6 +1,7 @@
 'use client'
 
 import type { InsertMediaFilesSchema } from '@/shared/db/schema'
+import type { MediaPhase } from '@/shared/types/enums/media'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTRPC } from '@/trpc/helpers'
@@ -10,7 +11,7 @@ type UploadMeta = Omit<InsertMediaFilesSchema, 'bucket' | 'pathKey' | 'url'>
 interface UploadInput {
   file: File
   projectId: string
-  phase: 'before' | 'during' | 'after' | 'main'
+  phase: MediaPhase
   meta: UploadMeta
 }
 

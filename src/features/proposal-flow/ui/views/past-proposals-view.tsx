@@ -2,11 +2,11 @@
 
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
+import { useGetProposals } from '@/features/proposal-flow/dal/client/queries/use-get-proposals'
 import { PastProposalsTable } from '@/features/proposal-flow/ui/components/table'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { useGetProposals } from '@/features/proposal-flow/dal/client/queries/use-get-proposals'
 
 export function PastProposalsView() {
   const proposals = useGetProposals()

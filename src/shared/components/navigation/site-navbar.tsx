@@ -13,11 +13,11 @@ import {
   useRef,
   useState,
 } from 'react'
-import { companyInfo } from '@/shared/constants/company'
 import { signOut, useSession } from '@/shared/auth/client'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
 import { LogoLink } from '@/shared/components/logo'
 import { ThemeToggleButton } from '@/shared/components/theme-toggle-button'
+import { companyInfo } from '@/shared/constants/company'
 import { generateNavItemsGroups, marketingNavItems } from '@/shared/constants/nav-items'
 import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'

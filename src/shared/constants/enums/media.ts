@@ -1,1 +1,1 @@
-export const mediaPhases = ['before', 'during', 'after', 'main'] as const
+export const mediaPhases = ['uncategorized', 'before', 'during', 'after'] as const

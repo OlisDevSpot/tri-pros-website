@@ -25,6 +25,10 @@ export const projects = pgTable('projects', {
   challengeDescription: text('challenge_description'),
   solutionDescription: text('solution_description'),
   resultDescription: text('result_description'),
+  beforeDescription: text('before_description'),
+  duringDescription: text('during_description'),
+  afterDescription: text('after_description'),
+  mainDescription: text('main_description'),
   createdAt,
   updatedAt,
 })

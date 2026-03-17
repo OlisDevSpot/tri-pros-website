@@ -18,6 +18,10 @@ export const projectFormSchema = z.object({
   challengeDescription: z.string().nullable().optional(),
   solutionDescription: z.string().nullable().optional(),
   resultDescription: z.string().nullable().optional(),
+  beforeDescription: z.string().nullable().optional(),
+  duringDescription: z.string().nullable().optional(),
+  afterDescription: z.string().nullable().optional(),
+  mainDescription: z.string().nullable().optional(),
   scopeIds: z.array(z.string()),
 })
 
@@ -41,5 +45,9 @@ export const projectFormDefaults: ProjectFormData = {
   challengeDescription: null,
   solutionDescription: null,
   resultDescription: null,
+  beforeDescription: null,
+  duringDescription: null,
+  afterDescription: null,
+  mainDescription: null,
   scopeIds: [],
 }
