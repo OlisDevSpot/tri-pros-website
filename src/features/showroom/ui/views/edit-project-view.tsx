@@ -11,7 +11,7 @@ import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
-import { ProjectForm } from '@/features/portfolio/ui/components/form'
+import { ProjectForm } from '@/features/showroom/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
@@ -62,6 +62,10 @@ export function EditProjectView({ projectId }: Props) {
       challengeDescription: p.challengeDescription ?? null,
       solutionDescription: p.solutionDescription ?? null,
       resultDescription: p.resultDescription ?? null,
+      beforeDescription: p.beforeDescription ?? null,
+      duringDescription: p.duringDescription ?? null,
+      afterDescription: p.afterDescription ?? null,
+      mainDescription: p.mainDescription ?? null,
       scopeIds,
     } satisfies ProjectFormData
   }, [project.data])

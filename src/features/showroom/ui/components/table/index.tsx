@@ -3,8 +3,8 @@
 import type { inferRouterOutputs } from '@trpc/server'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { portfolioTableFilters } from '@/features/portfolio/constants/table-filter-config'
-import { useProjectActions } from '@/features/portfolio/hooks/use-project-actions'
+import { portfolioTableFilters } from '@/features/showroom/constants/table-filter-config'
+import { useProjectActions } from '@/features/showroom/hooks/use-project-actions'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { getColumns } from './columns'
 
