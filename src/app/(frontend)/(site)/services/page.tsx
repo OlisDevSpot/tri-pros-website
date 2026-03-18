@@ -1,16 +1,18 @@
 import type { Metadata } from 'next'
-import { ServicesView } from '@/features/landing/ui/views/services-view'
+
+import { ServicesOverviewView } from '@/features/landing/ui/views/services-overview-view'
 
 export const metadata: Metadata = {
-  title: 'Services',
+  title: 'Services | Tri Pros Remodeling',
   description:
-    'Comprehensive construction services including custom homes, luxury renovations, commercial projects, and design-build services. View our complete service portfolio and pricing.',
+    'Licensed, insured, and warranted home improvement services in Southern California. Energy-efficient construction, luxury renovations, and more.',
 }
 
+// Next.js requires export default for page files
 export default function ServicesPage() {
   return (
     <main className="h-full">
-      <ServicesView />
+      <ServicesOverviewView />
     </main>
   )
 }
