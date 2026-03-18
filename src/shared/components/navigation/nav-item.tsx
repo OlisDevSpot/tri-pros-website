@@ -11,7 +11,7 @@ interface Props {
   item: TNavItem
   index: number
   isActive: boolean
-  onClick?: () => void
+  onClick?: (e: React.MouseEvent) => void
   onMouseEnter?: () => void
   selectedItemIndex: number | null
   width?: MotionValue<number>
@@ -50,32 +50,48 @@ export function NavItem({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onMouseEnter={onMouseEnter}
-      onClick={() => {
-        onClick?.()
+      onClick={(e) => {
+        onClick?.(e)
       }}
       className="w-full min-w-fit"
     >
-      <Link
-        href={item.action === 'readonly' ? '#' : item.href}
-        className={cn(
-          'relative inline-block px-6 py-3 2xl:px-8 2xl:py-4 hover:text-foreground/70 transition-colors duration-200 font-medium',
-          scrolled ? 'text-foreground' : 'text-foreground',
-          isActive ? 'text-primary hover:text-primary' : '',
-          item.action === 'readonly' && 'cursor-default',
-        )}
-      >
-        <div className="flex gap-2 items-center w-fit">
-          {item.name}
-          {item.action === 'readonly' && item.subItems.length > 0 && (
-            <ChevronUpIcon
+      {item.action === 'readonly'
+        ? (
+            <button
+              type="button"
               className={cn(
-                'size-4 transition-transform -mr-2',
-                selectedItemIndex === index || isActive ? 'rotate-180' : '',
+                'relative inline-block px-6 py-3 2xl:px-8 2xl:py-4 hover:text-foreground/70 transition-colors duration-200 font-medium cursor-default',
+                scrolled ? 'text-foreground' : 'text-foreground',
+                isActive ? 'text-primary hover:text-primary' : '',
               )}
-            />
+            >
+              <div className="flex gap-2 items-center w-fit">
+                {item.name}
+                {item.subItems.length > 0 && (
+                  <ChevronUpIcon
+                    className={cn(
+                      'size-4 transition-transform -mr-2',
+                      selectedItemIndex === index || isActive ? 'rotate-180' : '',
+                    )}
+                  />
+                )}
+              </div>
+            </button>
+          )
+        : (
+            <Link
+              href={item.href}
+              className={cn(
+                'relative inline-block px-6 py-3 2xl:px-8 2xl:py-4 hover:text-foreground/70 transition-colors duration-200 font-medium',
+                scrolled ? 'text-foreground' : 'text-foreground',
+                isActive ? 'text-primary hover:text-primary' : '',
+              )}
+            >
+              <div className="flex gap-2 items-center w-fit">
+                {item.name}
+              </div>
+            </Link>
           )}
-        </div>
-      </Link>
     </motion.div>
   )
 }
