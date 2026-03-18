@@ -54,6 +54,8 @@ function parseArgs(): CliFlags {
     verbose: false,
     pages: null,
     multiProject: null,
+    source: null,
+    limit: 0,
   }
 
   const positional: string[] = []
@@ -66,6 +68,23 @@ function parseArgs(): CliFlags {
     else if (arg === '--help' || arg === '-h') {
       printUsage()
       process.exit(0)
+    }
+    else if (arg === '--source') {
+      const next = args[++i]
+      if (!next) {
+        console.error('Error: --source requires a value (e.g. --source homeadvisor)\n')
+        process.exit(1)
+      }
+      flags.source = next
+    }
+    else if (arg === '--limit') {
+      const next = args[++i]
+      const parsed = Number.parseInt(next, 10)
+      if (!next || Number.isNaN(parsed) || parsed < 1) {
+        console.error('Error: --limit requires a positive number (e.g. --limit 5)\n')
+        process.exit(1)
+      }
+      flags.limit = parsed
     }
     else if (arg === '--pages') {
       const next = args[++i]
@@ -100,12 +119,11 @@ function parseArgs(): CliFlags {
     process.exit(1)
   }
 
-  // Scopes description is optional in multi-project mode (prompted per group)
-  if (!flags.scopesDescription && !flags.multiProject) {
-    console.error('Error: Scopes description is required\n')
-    printUsage()
-    process.exit(1)
-  }
+  // Scopes description is optional when:
+  //   - --multi-project mode (prompted per group)
+  //   - --source flag (prompted interactively)
+  //   - Auto-detected site scraper (validated in main() after async import)
+  // We skip validation here — main() handles the final check.
 
   if (flags.pages && flags.multiProject) {
     console.error('Error: --pages and --multi-project cannot be used together\n')
@@ -121,18 +139,27 @@ Portfolio Project Scraper — Tri Pros Remodeling
 
 Usage:
   pnpm scrape-project <url> "<scopes description>" [flags]
+  pnpm scrape-project <url> --source <name> [flags]
   pnpm scrape-project <url> --multi-project [selector] [flags]
 
 Arguments:
   url                 URL to scrape project images from
   scopes description  Comma-separated trade/scope names (e.g., "kitchen remodel, flooring")
-                      Optional with --multi-project (you'll be prompted per group instead)
+                      Optional with --multi-project and --source (prompted later)
 
 Flags:
   --classify                Classify images by phase (before/during/after) using GPT-4o vision
   --headful                 Run browser in visible mode (for debugging)
   -v, --verbose             Log every URL found and every filter decision
   -h, --help                Show this help message
+
+  --source <name>           Use a site-specific scraper (e.g. --source homeadvisor).
+                            Handles site-specific UI interactions (carousels, dialogs, etc.)
+                            Auto-detected from URL domain when not specified.
+
+  --limit <n>               Max number of items to scrape from a site-specific source.
+                            Useful for large pages (e.g. --limit 5 to grab first 5 projects).
+                            Only applies to --source scrapers. Default: no limit.
 
   --pages <param=range>     Scrape a paginated project across multiple URLs.
                             Merges all images into a single project.
@@ -149,6 +176,10 @@ Flags:
                                         --multi-project "div.project-card"
                                         --multi-project "section.gallery-group"
 
+Registered site scrapers:
+  - homeadvisor      Domains: homeadvisor.com
+                     Scrapes carousel dialogs (click thumbnail -> extract dialog images)
+
 Auto-generated fields:
   Title         Unique artsy single-word name (tracked to avoid repeats)
   City          Random SoCal city within 40 miles of Studio City
@@ -160,6 +191,10 @@ Examples:
   pnpm scrape-project "https://contractor-site.com/gallery" "roofing, HVAC"
   pnpm scrape-project "https://photos.example.com/album" "kitchen remodel" --classify
   pnpm scrape-project "https://example.com/project" "bathroom remodel" --verbose
+
+  # Site-specific: HomeAdvisor carousel scraping (auto-detected or explicit)
+  pnpm scrape-project "https://www.homeadvisor.com/rated.Company.12345.html" "kitchen"
+  pnpm scrape-project "https://www.homeadvisor.com/rated.Company.12345.html" --source homeadvisor
 
   # Paginated: scrape pages 1-5 of a gallery
   pnpm scrape-project "https://example.com/gallery" "kitchen" --pages "page=1-5"
@@ -345,6 +380,10 @@ async function processSingleProject(opts: {
   classifyFlag: boolean
   headful: boolean
   label?: string
+  /** Browser session cookies for authenticated downloads */
+  cookies?: string
+  /** Source URL (used as Referer for downloads) */
+  sourceUrl?: string
   /** When set, prompts for scopes per group instead of using matchedScopes */
   perGroupScopes?: {
     allScopes: { id: string, name: string, entryType: string }[]
@@ -385,7 +424,10 @@ async function processSingleProject(opts: {
 
   console.log(`\n${prefix}Downloading ${opts.images.length} images to ${imageDir}...`)
   const { downloadImages } = await import('./download-images')
-  const downloadedFiles = await downloadImages(opts.images, imageDir)
+  const downloadedFiles = await downloadImages(opts.images, imageDir, {
+    cookies: opts.cookies,
+    referer: opts.sourceUrl,
+  })
   console.log(`  Successfully downloaded ${downloadedFiles.length} images`)
 
   if (downloadedFiles.length === 0) {
@@ -448,13 +490,43 @@ async function main(): Promise<void> {
 
   const notionApiKey = process.env.NOTION_API_KEY!
 
-  const mode = flags.multiProject
-    ? 'multi-project'
-    : flags.pages
-      ? 'paginated'
-      : 'standard'
+  // ---- SITE-SPECIFIC SCRAPER DETECTION ----
+  const { findScraperByName, findScraperByUrl } = await import('./site-scrapers/registry')
+
+  let siteScraper = flags.source
+    ? findScraperByName(flags.source)
+    : findScraperByUrl(flags.url)
+
+  if (flags.source && !siteScraper) {
+    console.error(`Error: Unknown site scraper "${flags.source}"`)
+    const { listScrapers } = await import('./site-scrapers/registry')
+    const available = listScrapers()
+    if (available.length > 0) {
+      console.error(`Available scrapers: ${available.map(s => s.name).join(', ')}`)
+    }
+    process.exit(1)
+  }
+
+  // Deferred scope validation — if no site scraper, no multi-project, and no scopes, error
+  if (!flags.scopesDescription && !flags.multiProject && !siteScraper) {
+    console.error('Error: Scopes description is required\n')
+    printUsage()
+    process.exit(1)
+  }
+
+  const mode = siteScraper
+    ? `site:${siteScraper.name}`
+    : flags.multiProject
+      ? 'multi-project'
+      : flags.pages
+        ? 'paginated'
+        : 'standard'
 
   console.log(`\n=== Portfolio Project Scraper (${mode} mode) ===\n`)
+
+  if (siteScraper && !flags.source) {
+    console.log(`  Auto-detected site scraper: ${siteScraper.name}`)
+  }
 
   // Step 1: Fetch scopes from Notion
   console.log('[1] Fetching scopes from Notion...')
@@ -462,7 +534,7 @@ async function main(): Promise<void> {
   const allScopes = await fetchAllScopes(notionApiKey)
   console.log(`  Loaded ${allScopes.length} scopes from Notion`)
 
-  // In multi-project mode, scopes are prompted per group — skip upfront matching
+  // In multi-project mode or site scraper mode, scopes may be prompted later
   let matchedScopes: import('./types').MatchedScope[] = []
   if (flags.scopesDescription) {
     matchedScopes = fuzzyMatchScopes(allScopes, flags.scopesDescription)
@@ -472,32 +544,118 @@ async function main(): Promise<void> {
     }
   }
 
+  // ---- SITE-SPECIFIC SCRAPER MODE ----
+  if (siteScraper) {
+    console.log(`\n[2] Running ${siteScraper.name} scraper...`)
+    const result = await siteScraper.scrape({
+      url: flags.url,
+      headful: flags.headful,
+      verbose: flags.verbose,
+      limit: flags.limit,
+    })
+
+    // Check if the scraper returned multi-project results
+    const isMulti = 'kind' in result && result.kind === 'multi'
+
+    if (isMulti) {
+      const { groups, metadata } = result
+
+      if (groups.length === 0) {
+        console.error('  ERROR: No projects found on the page.')
+        process.exit(1)
+      }
+
+      console.log(`\n  Found ${groups.length} projects:`)
+      for (let i = 0; i < groups.length; i++) {
+        console.log(`    ${i + 1}. "${groups[i].heading}" — ${groups[i].images.length} images`)
+      }
+
+      // Process each project group (prompted for scopes per project)
+      for (let i = 0; i < groups.length; i++) {
+        const group = groups[i]
+        const label = `${i + 1}/${groups.length}: "${group.heading}"`
+
+        console.log(`\n${'='.repeat(60)}`)
+        console.log(`  Processing: ${group.heading}`)
+        console.log(`${'='.repeat(60)}`)
+
+        await processSingleProject({
+          images: group.images,
+          metadata: { ...metadata, title: group.heading },
+          matchedScopes: [],
+          classifyFlag: flags.classify,
+          headful: flags.headful,
+          label,
+          sourceUrl: flags.url,
+          perGroupScopes: {
+            allScopes,
+            fuzzyMatchScopes,
+            groupHeading: group.heading,
+          },
+        })
+      }
+
+      console.log(`\n=== All ${groups.length} projects processed ===\n`)
+    }
+    else {
+      // Single-project site scraper result
+      const singleResult = result as import('./types').ScrapeResult
+
+      if (matchedScopes.length === 0) {
+        const { input } = await import('@inquirer/prompts')
+        const scopeInput = await input({
+          message: 'Scopes (comma-separated, e.g. "kitchen remodel, flooring"):',
+        })
+        if (scopeInput.trim()) {
+          matchedScopes = fuzzyMatchScopes(allScopes, scopeInput)
+          console.log(`  Matched ${matchedScopes.length} scopes`)
+          for (const s of matchedScopes) {
+            console.log(`    - ${s.name} (${s.entryType})`)
+          }
+        }
+      }
+
+      await processSingleProject({
+        images: singleResult.images,
+        metadata: singleResult.metadata,
+        matchedScopes,
+        classifyFlag: flags.classify,
+        headful: flags.headful,
+        cookies: singleResult.cookies,
+        sourceUrl: flags.url,
+      })
+    }
+
+    console.log('')
+    process.exit(0)
+  }
+
   // ---- MULTI-PROJECT MODE ----
   if (flags.multiProject) {
     console.log('\n[2] Scraping multi-project page...')
     const { scrapeMultiProjectPage } = await import('./scrape-images')
-    const { groups, metadata } = await scrapeMultiProjectPage(
+    const multiResult = await scrapeMultiProjectPage(
       flags.url,
       flags.multiProject,
       flags.headful,
       flags.verbose,
     )
 
-    if (groups.length === 0) {
+    if (multiResult.groups.length === 0) {
       console.error('  ERROR: No project groups found on the page.')
       console.error('  Try providing a CSS selector: --multi-project "div.project-card"')
       process.exit(1)
     }
 
-    console.log(`\n  Found ${groups.length} project groups:`)
-    for (let i = 0; i < groups.length; i++) {
-      console.log(`    ${i + 1}. "${groups[i].heading}" — ${groups[i].images.length} images`)
+    console.log(`\n  Found ${multiResult.groups.length} project groups:`)
+    for (let i = 0; i < multiResult.groups.length; i++) {
+      console.log(`    ${i + 1}. "${multiResult.groups[i].heading}" — ${multiResult.groups[i].images.length} images`)
     }
 
     // Process each group as a separate project, prompting for scopes per group
-    for (let i = 0; i < groups.length; i++) {
-      const group = groups[i]
-      const label = `${i + 1}/${groups.length}: "${group.heading}"`
+    for (let i = 0; i < multiResult.groups.length; i++) {
+      const group = multiResult.groups[i]
+      const label = `${i + 1}/${multiResult.groups.length}: "${group.heading}"`
 
       console.log(`\n${'='.repeat(60)}`)
       console.log(`  Processing group: ${group.heading}`)
@@ -505,11 +663,13 @@ async function main(): Promise<void> {
 
       await processSingleProject({
         images: group.images,
-        metadata: { ...metadata, title: group.heading },
+        metadata: { ...multiResult.metadata, title: group.heading },
         matchedScopes: [],
         classifyFlag: flags.classify,
         headful: flags.headful,
         label,
+        cookies: multiResult.cookies,
+        sourceUrl: flags.url,
         perGroupScopes: {
           allScopes,
           fuzzyMatchScopes,
@@ -518,7 +678,7 @@ async function main(): Promise<void> {
       })
     }
 
-    console.log(`\n=== All ${groups.length} groups processed ===\n`)
+    console.log(`\n=== All ${multiResult.groups.length} groups processed ===\n`)
     process.exit(0)
   }
 
@@ -526,7 +686,7 @@ async function main(): Promise<void> {
   if (flags.pages) {
     console.log(`\n[2] Scraping ${flags.pages.pageNumbers.length} pages (${flags.pages.param}=${flags.pages.pageNumbers.join(',')})...`)
     const { scrapePaginatedImages } = await import('./scrape-images')
-    const { images, metadata } = await scrapePaginatedImages(
+    const paginatedResult = await scrapePaginatedImages(
       flags.url,
       flags.pages,
       flags.headful,
@@ -534,11 +694,12 @@ async function main(): Promise<void> {
     )
 
     await processSingleProject({
-      images,
-      metadata,
+      images: paginatedResult.images,
+      metadata: paginatedResult.metadata,
       matchedScopes,
       classifyFlag: flags.classify,
       headful: flags.headful,
+      sourceUrl: flags.url,
     })
 
     console.log('')
@@ -548,14 +709,16 @@ async function main(): Promise<void> {
   // ---- STANDARD MODE (single URL, single project) ----
   console.log('\n[2] Scraping images from URL...')
   const { scrapeImages } = await import('./scrape-images')
-  const { images, metadata } = await scrapeImages(flags.url, flags.headful, flags.verbose)
+  const scrapeResult = await scrapeImages(flags.url, flags.headful, flags.verbose)
 
   await processSingleProject({
-    images,
-    metadata,
+    images: scrapeResult.images,
+    metadata: scrapeResult.metadata,
     matchedScopes,
     classifyFlag: flags.classify,
     headful: flags.headful,
+    cookies: scrapeResult.cookies,
+    sourceUrl: flags.url,
   })
 
   console.log('')

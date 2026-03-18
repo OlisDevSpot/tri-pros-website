@@ -1,3 +1,5 @@
+import type { MediaPhase } from '@/shared/types/enums/media'
+
 export interface ScrapedImage {
   url: string
   alt?: string
@@ -14,6 +16,8 @@ export interface PageMetadata {
 export interface ScrapeResult {
   images: ScrapedImage[]
   metadata: PageMetadata
+  /** Browser session cookies (for authenticated downloads) */
+  cookies?: string
 }
 
 export interface ProjectContentOutput {
@@ -43,7 +47,7 @@ export interface ProjectPromptAnswers {
   classifyImages: boolean
 }
 
-export type ImagePhase = 'hero' | 'before' | 'during' | 'after' | 'main'
+export type ImagePhase = 'hero' | MediaPhase
 
 export interface PhaseClassification {
   filename: string
@@ -67,6 +71,8 @@ export interface MultiProjectGroup {
 export interface MultiProjectResult {
   groups: MultiProjectGroup[]
   metadata: PageMetadata
+  /** Browser session cookies (for authenticated downloads) */
+  cookies?: string
 }
 
 export interface CliFlags {
@@ -79,4 +85,8 @@ export interface CliFlags {
   pages: PagesConfig | null
   /** Multi-project page — extract grouped sections from a single URL */
   multiProject: string | null // CSS selector or 'auto'
+  /** Explicit site-specific scraper name (e.g. "homeadvisor") — overrides auto-detection */
+  source: string | null
+  /** Max items to scrape from site-specific scrapers (0 = no limit) */
+  limit: number
 }

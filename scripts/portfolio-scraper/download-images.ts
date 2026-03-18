@@ -3,6 +3,13 @@ import path from 'node:path'
 import { DOWNLOAD_CONCURRENCY } from './constants'
 import type { ScrapedImage } from './types'
 
+export interface DownloadOptions {
+  /** Cookie header string from the browser session (e.g. "name=value; name2=value2") */
+  cookies?: string
+  /** Referer URL (the page we scraped from) */
+  referer?: string
+}
+
 function detectImageType(buffer: Buffer): string | null {
   if (buffer.length < 4) return null
 
@@ -17,13 +24,24 @@ async function downloadSingle(
   image: ScrapedImage,
   outputDir: string,
   index: number,
+  opts: DownloadOptions,
 ): Promise<string | null> {
   try {
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+    }
+
+    if (opts.referer) {
+      headers['Referer'] = opts.referer
+    }
+
+    if (opts.cookies) {
+      headers['Cookie'] = opts.cookies
+    }
+
     const response = await fetch(image.url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'image/*,*/*',
-      },
+      headers,
       signal: AbortSignal.timeout(15000),
     })
 
@@ -65,6 +83,7 @@ async function downloadSingle(
 export async function downloadImages(
   images: ScrapedImage[],
   outputDir: string,
+  opts: DownloadOptions = {},
 ): Promise<string[]> {
   fs.mkdirSync(outputDir, { recursive: true })
 
@@ -78,7 +97,7 @@ export async function downloadImages(
 
     const results = await Promise.all(
       batch.map((image, batchIdx) =>
-        downloadSingle(image, outputDir, batchStartIndex + batchIdx),
+        downloadSingle(image, outputDir, batchStartIndex + batchIdx, opts),
       ),
     )
 

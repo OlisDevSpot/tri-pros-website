@@ -142,7 +142,6 @@ For proposal creation guidance, see `proposal/creation-guide.md`.
 
 | System | Role |
 |---|---|
-| HubSpot | Contact management, lead records |
 | Pipedrive | Deal pipeline (stages, activities, forecasting) |
 | Monday.com | Task management, project tracking, lead follow-up |
 | DocuSign | E-signature for contracts |

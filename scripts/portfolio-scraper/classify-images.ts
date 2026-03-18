@@ -3,6 +3,7 @@ import path from 'node:path'
 import { openai } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
 import { z } from 'zod'
+import { mediaPhases } from '@/shared/constants/enums/media'
 import { CLASSIFY_SYSTEM_PROMPT } from './constants'
 import type { ImagePhase, PhaseClassification } from './types'
 
@@ -11,7 +12,7 @@ const BATCH_SIZE = 4
 const classificationSchema = z.object({
   classifications: z.array(z.object({
     index: z.number(),
-    phase: z.enum(['hero', 'before', 'during', 'after', 'main']),
+    phase: z.enum(['hero', ...mediaPhases]),
   })),
 })
 
@@ -53,8 +54,8 @@ async function classifyBatch(
   })
 
   if (!output) {
-    console.warn('  [WARN] Classification batch returned no output, defaulting to "main"')
-    return imagePaths.map(filename => ({ filename, phase: 'main' as ImagePhase }))
+    console.warn('  [WARN] Classification batch returned no output, defaulting to "uncategorized"')
+    return imagePaths.map(filename => ({ filename, phase: 'uncategorized' as ImagePhase }))
   }
 
   return output.classifications.map((c, idx) => ({

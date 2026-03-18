@@ -37,9 +37,16 @@ export interface DataTableTimePresetFilter extends DataTableFilterBase {
   presets: readonly TimePreset[]
 }
 
+export interface DataTableMultiSelectFilter extends DataTableFilterBase {
+  type: 'multi-select'
+  placeholder?: string
+  options: readonly { label: string, value: string }[]
+}
+
 export type DataTableFilterConfig
   = DataTableSearchFilter
     | DataTableSelectFilter
+    | DataTableMultiSelectFilter
     | DataTableTimePresetFilter
 
 // -- DataTable props --

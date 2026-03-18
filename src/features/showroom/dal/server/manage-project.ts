@@ -1,5 +1,5 @@
 import type { InsertProject, Project } from '@/shared/db/schema'
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { projects, x_projectScopes } from '@/shared/db/schema'
 
@@ -56,9 +56,36 @@ export async function deleteShowroomProject(projectId: string): Promise<void> {
   await db.delete(projects).where(eq(projects.id, projectId))
 }
 
-export async function getAllProjects(): Promise<Project[]> {
-  return db
+interface ProjectWithScopeIds extends Project {
+  scopeIds: string[]
+}
+
+export async function getAllProjects(): Promise<ProjectWithScopeIds[]> {
+  const rows = await db
     .select()
     .from(projects)
     .orderBy(asc(projects.title))
+
+  const scopeRows = rows.length > 0
+    ? await db
+        .select({
+          projectId: x_projectScopes.projectId,
+          scopeId: x_projectScopes.scopeId,
+        })
+        .from(x_projectScopes)
+        .where(inArray(x_projectScopes.projectId, rows.map(r => r.id)))
+    : []
+
+  const scopesByProject = new Map<string, string[]>()
+  for (const row of scopeRows) {
+    if (!scopesByProject.has(row.projectId)) {
+      scopesByProject.set(row.projectId, [])
+    }
+    scopesByProject.get(row.projectId)!.push(row.scopeId)
+  }
+
+  return rows.map(project => ({
+    ...project,
+    scopeIds: scopesByProject.get(project.id) ?? [],
+  }))
 }

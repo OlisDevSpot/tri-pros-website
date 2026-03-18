@@ -48,12 +48,12 @@ src/
     hooks/           # Shared React hooks
     lib/             # Utilities (formatters, loan-calculations, etc.)
     permissions/     # Role-based access control helpers
-    services/        # External service clients (ai, docusign, hubspot, monday, notion, pipedrive, r2, resend, upstash)
+    services/        # External service clients (ai, docusign, monday, notion, pipedrive, r2, resend, upstash)
     types/           # Shared TypeScript types
   trpc/              # tRPC setup and routers
     init.ts          # Procedure types: baseProcedure, agentProcedure (auth-required)
     server.ts        # Server-side tRPC client (server-only)
-    routers/         # app, ai, construction, docusign, hubspot, landing, notion, proposal
+    routers/         # app, ai, construction, docusign, landing, notion, proposal
 ```
 
 ### tRPC
@@ -67,7 +67,7 @@ The server-side proxy (`src/trpc/server.ts`) is marked `server-only` and uses Re
 
 ### Authentication
 
-**better-auth** with Drizzle adapter (Postgres). Google OAuth and HubSpot OAuth are configured. Users signing up with a `@triprosremodeling.com` email are auto-assigned the `agent` role.
+**better-auth** with Drizzle adapter (Postgres). Google OAuth is configured. Users signing up with a `@triprosremodeling.com` email are auto-assigned the `agent` role.
 
 User roles: `user`, `homeowner`, `agent`, `super-admin`.
 
@@ -78,7 +78,7 @@ Validated at startup with Zod — the app will exit with a clear error if requir
 - `src/shared/config/server-env.ts` — All server-side env vars (DATABASE_URL, BETTER_AUTH_SECRET, third-party API keys, etc.)
 - `src/shared/config/client-env.ts` — Only `NEXT_PUBLIC_*` vars
 
-Env file: `.env` at project root. See `server-env.ts` for the full list of required variables (Resend, Monday, Pipedrive, HubSpot, DocuSign, Notion, Cloudflare R2, Upstash QStash).
+Env file: `.env` at project root. See `server-env.ts` for the full list of required variables (Resend, Monday, Pipedrive, DocuSign, Notion, Cloudflare R2, Upstash QStash).
 
 ### Key Integrations
 

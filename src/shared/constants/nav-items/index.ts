@@ -1,5 +1,6 @@
 import type { UserRole } from '@/shared/types/enums'
 import type { DynamicNavSections, NavItemsGroup } from '@/shared/types/nav'
+import { checkIsInternalUser } from '@/shared/auth/lib/is-internal-user'
 import { marketingNavItems } from './marketing'
 import { tprInternalNavItems } from './tpr-internal'
 
@@ -24,7 +25,7 @@ interface Options {
 }
 
 export function generateNavItemsGroups({ userRole }: Options): Partial<Record<DynamicNavSections, NavItemsGroup>> {
-  if (userRole === 'agent') {
+  if (checkIsInternalUser(userRole)) {
     return {
       ...baseNavItems,
       'tpr-internal': {

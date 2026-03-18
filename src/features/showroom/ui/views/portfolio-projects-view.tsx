@@ -1,10 +1,12 @@
 'use client'
 
+import type { DataTableMultiSelectFilter } from '@/shared/components/data-table/types'
+
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useQueryState } from 'nuqs'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib'
 import { PortfolioProjectsTable } from '@/features/showroom/ui/components/table'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -17,8 +19,57 @@ export function PortfolioProjectsView() {
   const trpc = useTRPC()
   const [, setStep] = useQueryState('step', dashboardStepParser)
   const projects = useQuery(trpc.showroomRouter.getAllProjects.queryOptions())
+  const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const [filteredCount, setFilteredCount] = useState<number | null>(null)
   const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [])
+
+  // Map scope IDs -> trade IDs, and build trade name lookup
+  const { enrichedProjects, tradeFilter } = useMemo(() => {
+    if (!projects.data) {
+      return { enrichedProjects: [], tradeFilter: undefined }
+    }
+
+    const scopeToTrade = new Map<string, string>()
+    for (const scope of allScopes) {
+      scopeToTrade.set(scope.id, scope.relatedTrade)
+    }
+
+    const tradeNameMap = new Map<string, string>()
+    for (const trade of allTrades) {
+      tradeNameMap.set(trade.id, trade.name)
+    }
+
+    const usedTradeIds = new Set<string>()
+    const enriched = projects.data.map((project) => {
+      const tradeIds = new Set<string>()
+      for (const scopeId of project.scopeIds) {
+        const tradeId = scopeToTrade.get(scopeId)
+        if (tradeId) {
+          tradeIds.add(tradeId)
+          usedTradeIds.add(tradeId)
+        }
+      }
+      const tradeNames = [...tradeIds]
+        .map(id => tradeNameMap.get(id))
+        .filter(Boolean) as string[]
+      return { ...project, tradeNames }
+    })
+
+    const filter: DataTableMultiSelectFilter = {
+      id: 'trades',
+      label: 'Trades',
+      type: 'multi-select',
+      placeholder: 'All trades',
+      columnId: 'tradeNames',
+      options: allTrades
+        .filter(t => usedTradeIds.has(t.id))
+        .map(t => ({ label: t.name, value: t.name }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    }
+
+    return { enrichedProjects: enriched, tradeFilter: filter }
+  }, [projects.data, allScopes, allTrades])
 
   if (projects.isLoading) {
     return (
@@ -74,7 +125,7 @@ export function PortfolioProjectsView() {
           </Button>
         </CardHeader>
         <CardContent className="grow min-h-0 overflow-auto px-0">
-          <PortfolioProjectsTable data={projects.data} onFilteredCountChange={handleFilteredCountChange} />
+          <PortfolioProjectsTable data={enrichedProjects} tradeFilter={tradeFilter} onFilteredCountChange={handleFilteredCountChange} />
         </CardContent>
       </Card>
     </motion.div>

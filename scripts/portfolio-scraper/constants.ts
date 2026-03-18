@@ -16,6 +16,7 @@ export const SKIP_URL_PATTERNS = [
   '/logo/',
   '-logo.',
   '_logo.',
+  '/logos/',
   '/sprite',
   '/tracking',
   '/pixel',
@@ -23,6 +24,24 @@ export const SKIP_URL_PATTERNS = [
   'data:image',
   '.svg',
   '.gif',
+
+  // Tracking pixels & ad networks
+  'd.adroll.com',
+  'bat.bing.com',
+  'facebook.com/tr',
+  'google-analytics.com',
+  'googletagmanager.com',
+  'doubleclick.net',
+  'analytics.',
+  '/cm/',       // common tracking pixel path (adroll cm endpoints)
+  'gravatar.com',
+
+  // WordPress / Elementor site chrome
+  '/elementor/thumbs/',
+  '/thegem/',
+  '/wp-includes/',
+  'woocommerce',
+  'wp-emoji',
 ]
 
 // Minimum file size in bytes — applied at download time, not scrape time

@@ -4,8 +4,8 @@ import type { TradeRow } from '@/features/showroom/lib/group-scopes-by-trade'
 import type { ProjectFormData } from '@/shared/entities/projects/schemas'
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
-import { useCallback, useReducer, useRef } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { groupScopesByTrade } from '@/features/showroom/lib/group-scopes-by-trade'
 import { Button } from '@/shared/components/ui/button'
 import { useTRPC } from '@/trpc/helpers'
@@ -43,17 +43,22 @@ export function TradeScopePickerFields() {
 
   const [rows, dispatch] = useReducer(rowsReducer, [])
 
-  // Initialize rows once when scopes load
-  if (allScopes.length > 0 && !initializedRef.current) {
-    initializedRef.current = true
-    const scopeIds = form.getValues('scopeIds')
-    if (scopeIds.length > 0) {
-      const grouped = groupScopesByTrade(scopeIds, allScopes)
+  // Watch scopeIds reactively so we catch the form.reset() from initialValues
+  const watchedScopeIds = useWatch({ control: form.control, name: 'scopeIds' })
+
+  // Initialize rows when both allScopes and form scopeIds become available
+  useEffect(() => {
+    if (allScopes.length === 0 || initializedRef.current) {
+      return
+    }
+    if (watchedScopeIds.length > 0) {
+      initializedRef.current = true
+      const grouped = groupScopesByTrade(watchedScopeIds, allScopes)
       if (grouped.length > 0) {
         dispatch({ type: 'init', rows: grouped })
       }
     }
-  }
+  }, [watchedScopeIds, allScopes])
 
   const syncToForm = useCallback((updatedRows: TradeRow[]) => {
     const flat = updatedRows.flatMap(r => r.scopeIds)

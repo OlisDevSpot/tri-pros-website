@@ -1,6 +1,6 @@
 'use client'
 
-import type { ColumnFiltersState, FilterFnOption, SortingState } from '@tanstack/react-table'
+import type { ColumnFiltersState, FilterFnOption, SortingState, VisibilityState } from '@tanstack/react-table'
 import type { DataTableProps, DataTableTimePresetFilter } from '@/shared/components/data-table/types'
 
 import {
@@ -40,6 +40,18 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
   const [sorting, setSorting] = useState<SortingState>(defaultSort ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
+  // Auto-hide columns with meta.hidden
+  const columnVisibility = useMemo<VisibilityState>(() => {
+    const visibility: VisibilityState = {}
+    for (const col of columns) {
+      const key = 'accessorKey' in col ? col.accessorKey as string : undefined
+      if (key && (col.meta as { hidden?: boolean } | undefined)?.hidden) {
+        visibility[key] = false
+      }
+    }
+    return visibility
+  }, [columns])
 
   // Auto-register dateRange filterFns for any time-preset filters in config
   const timePresetFilters = useMemo(
@@ -105,7 +117,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     data,
     columns: patchedColumns,
     filterFns,
-    state: { sorting, columnFilters },
+    state: { sorting, columnFilters, columnVisibility },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),

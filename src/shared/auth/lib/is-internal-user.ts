@@ -1,5 +1,6 @@
-import type { BetterAuthUser } from '../server'
+import type { UserRole } from '@/shared/types/enums'
 
-export function isInternalUser(user: BetterAuthUser | undefined) {
-  return user?.role === 'agent' || user?.role === 'super-admin'
+export function checkIsInternalUser(role: UserRole | undefined) {
+  const isInternal = role === 'agent' || role === 'super-admin'
+  return isInternal
 }

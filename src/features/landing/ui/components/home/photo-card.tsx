@@ -9,7 +9,7 @@ export function PhotoCard({ photo }: { photo: string }) {
 
   return (
     <motion.div
-      className="relative h-full min-w-[500px] rounded-md overflow-hidden"
+      className="relative h-full min-w-125 rounded-md overflow-hidden"
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
       onClick={() => router.push('/portfolio')}

@@ -15,7 +15,8 @@
     "db:seed": "tsx ./src/shared/db/lib/db-seed.ts",
     "email": "npx react-email -dir ./src/shared/services/resend/emails",
     "scrape-project": "tsx scripts/portfolio-scraper/index.ts",
-    "import-project": "tsx scripts/portfolio-scraper/import-project.ts"
+    "import-project": "tsx scripts/portfolio-scraper/import-project.ts",
+    "portfolio": "tsx scripts/portfolio-manager.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
@@ -25,7 +26,6 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.1.1",
-    "@hubspot/api-client": "^13.4.0",
     "@mondaydotcomorg/api": "^12.0.1",
     "@neondatabase/serverless": "^1.0.2",
     "@notion-render/client": "^0.0.2",

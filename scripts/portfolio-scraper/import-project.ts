@@ -5,6 +5,7 @@ import process from 'node:process'
 import readline from 'node:readline'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { eq } from 'drizzle-orm'
+import type { MediaPhase } from '@/shared/types/enums/media'
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
@@ -14,6 +15,7 @@ import { OUTPUT_BASE_DIR } from './constants'
 
 const BUCKET = R2_BUCKETS.portfolioProjects
 const R2_PUBLIC_BASE = R2_PUBLIC_DOMAINS[BUCKET]
+const IMPORTED_DIR = path.join(OUTPUT_BASE_DIR, 'imported')
 
 const MIME_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -21,8 +23,6 @@ const MIME_TYPES: Record<string, string> = {
   '.png': 'image/png',
   '.webp': 'image/webp',
 }
-
-type MediaPhase = 'before' | 'during' | 'after' | 'main'
 
 interface AvailableProject {
   name: string
@@ -34,7 +34,7 @@ function getAvailableProjects(): AvailableProject[] {
   if (!fs.existsSync(OUTPUT_BASE_DIR)) return []
 
   return fs.readdirSync(OUTPUT_BASE_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
+    .filter((d) => d.isDirectory() && d.name !== 'imported')
     .map((d) => {
       const dir = path.join(OUTPUT_BASE_DIR, d.name)
       const hasJson = fs.existsSync(path.join(dir, 'project.json'))
@@ -45,6 +45,21 @@ function getAvailableProjects(): AvailableProject[] {
       return { name: d.name, hasJson, imageCount }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function moveToImported(folderPath: string): void {
+  const folderName = path.basename(folderPath)
+  const dest = path.join(IMPORTED_DIR, folderName)
+
+  fs.mkdirSync(IMPORTED_DIR, { recursive: true })
+
+  // If destination already exists (e.g. re-run), remove it first
+  if (fs.existsSync(dest)) {
+    fs.rmSync(dest, { recursive: true })
+  }
+
+  fs.renameSync(folderPath, dest)
+  console.log(`  Moved to imported/${folderName}`)
 }
 
 function promptUser(question: string): Promise<string> {
@@ -148,8 +163,8 @@ Examples:
 function detectPhase(filename: string, phasesMap: Record<string, string> | null): MediaPhase {
   if (phasesMap && phasesMap[filename]) {
     const phase = phasesMap[filename]
-    if (['before', 'during', 'after', 'main', 'hero'].includes(phase)) {
-      return phase === 'hero' ? 'main' : phase as MediaPhase
+    if (['before', 'during', 'after', 'uncategorized', 'hero'].includes(phase)) {
+      return phase === 'hero' ? 'uncategorized' : phase as MediaPhase
     }
   }
 
@@ -158,7 +173,7 @@ function detectPhase(filename: string, phasesMap: Record<string, string> | null)
   if (lower.startsWith('during')) return 'during'
   if (lower.startsWith('after')) return 'after'
 
-  return 'main'
+  return 'uncategorized'
 }
 
 function isHeroFromPhases(filename: string, phasesMap: Record<string, string> | null): boolean {
@@ -194,6 +209,7 @@ async function uploadToR2(
 
 interface ImportResult {
   folder: string
+  folderPath: string
   status: 'imported' | 'skipped' | 'failed'
   reason?: string
   projectId?: string
@@ -208,7 +224,7 @@ async function importProject(folderPath: string): Promise<ImportResult> {
   // 1. Read and validate project.json
   const projectJsonPath = path.join(folderPath, 'project.json')
   if (!fs.existsSync(projectJsonPath)) {
-    return { folder: folderName, status: 'failed', reason: 'missing project.json' }
+    return { folder: folderName, folderPath, status: 'failed', reason: 'missing project.json' }
   }
 
   const rawJson = JSON.parse(fs.readFileSync(projectJsonPath, 'utf-8'))
@@ -223,7 +239,7 @@ async function importProject(folderPath: string): Promise<ImportResult> {
 
   const parsed = projectFormSchema.safeParse(projectData)
   if (!parsed.success) {
-    return { folder: folderName, status: 'failed', reason: 'validation failed' }
+    return { folder: folderName, folderPath, status: 'failed', reason: 'validation failed' }
   }
 
   const data = parsed.data
@@ -243,7 +259,7 @@ async function importProject(folderPath: string): Promise<ImportResult> {
 
   if (existing) {
     console.log(`  Skipped — already exists (id: ${existing.id})`)
-    return { folder: folderName, status: 'skipped', reason: 'duplicate', accessor: data.accessor }
+    return { folder: folderName, folderPath, status: 'skipped', reason: 'duplicate', accessor: data.accessor }
   }
 
   // Create project in Postgres
@@ -320,6 +336,7 @@ async function importProject(folderPath: string): Promise<ImportResult> {
 
   return {
     folder: folderName,
+    folderPath,
     status: 'imported',
     projectId: project.id,
     accessor: project.accessor,
@@ -342,12 +359,17 @@ async function main(): Promise<void> {
       try {
         const result = await importProject(folderPaths[i])
         results.push(result)
+
+        // Move to imported/ on success or duplicate skip
+        if (result.status === 'imported' || result.status === 'skipped') {
+          moveToImported(result.folderPath)
+        }
       }
       catch (error) {
         const folderName = path.basename(folderPaths[i])
         const message = error instanceof Error ? error.message : String(error)
         console.error(`  Failed: ${message}`)
-        results.push({ folder: folderName, status: 'failed', reason: message })
+        results.push({ folder: folderName, folderPath: folderPaths[i], status: 'failed', reason: message })
       }
     }
 
@@ -379,7 +401,12 @@ async function main(): Promise<void> {
   }
   else {
     console.log('\n=== Project Importer ===')
-    await importProject(folderPaths[0])
+    const result = await importProject(folderPaths[0])
+
+    if (result.status === 'imported' || result.status === 'skipped') {
+      moveToImported(result.folderPath)
+    }
+
     console.log('')
   }
 

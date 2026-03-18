@@ -1,6 +1,24 @@
 import { chromium } from 'playwright'
+import type { Browser, BrowserContext, Page } from 'playwright'
 import { ALLOWED_EXTENSIONS, SKIP_URL_PATTERNS } from './constants'
 import type { MultiProjectGroup, MultiProjectResult, PagesConfig, ScrapeResult, ScrapedImage } from './types'
+
+/** Launch a stealth browser + context that avoids basic bot detection */
+export async function launchStealthBrowser(headful: boolean): Promise<{ browser: Browser, context: BrowserContext, page: Page }> {
+  const browser = await chromium.launch({
+    headless: !headful,
+    args: ['--disable-blink-features=AutomationControlled'],
+  })
+  const context = await browser.newContext({
+    viewport: { width: 1920, height: 1080 },
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  })
+  await context.addInitScript(/* js */ `
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+  `)
+  const page = await context.newPage()
+  return { browser, context, page }
+}
 
 function shouldSkipUrl(url: string): boolean {
   const lower = url.toLowerCase()
@@ -96,23 +114,34 @@ const EXTRACT_IMAGES_SCRIPT = /* js */ `
     if (best) urls.push({ url: best, source: 'picture-source-best' });
   }
 
-  // 3. a tags linking to images
+  // 3. a tags linking to images (href or lightbox data attributes)
   var anchors = Array.from(document.querySelectorAll('a[href]'));
   for (var i = 0; i < anchors.length; i++) {
-    var href = anchors[i].getAttribute('href') || '';
-    if (/\\.(jpg|jpeg|png|webp)(\\?|$)/i.test(href)) {
+    var anchor = anchors[i];
+    var href = anchor.getAttribute('href') || '';
+    if (/\\.(jpg|jpeg|png|webp)(\\?|#|$)/i.test(href)) {
       urls.push({ url: href, source: 'a-href' });
+    }
+    // Elementor / lightbox galleries: full-res URL in data attributes
+    var lightboxAttrs = ['data-src', 'data-full', 'data-large', 'data-image',
+      'data-original', 'data-hi-res'];
+    for (var j = 0; j < lightboxAttrs.length; j++) {
+      var lbVal = anchor.getAttribute(lightboxAttrs[j]);
+      if (lbVal && /\\.(jpg|jpeg|png|webp)(\\?|#|$)/i.test(lbVal)) {
+        urls.push({ url: lbVal, source: 'a-' + lightboxAttrs[j] });
+      }
     }
   }
 
-  // 4. data-* image attributes on non-img elements
+  // 4. data-* image attributes on non-img, non-anchor elements
   var dataAttrs = ['data-src', 'data-image', 'data-full', 'data-large',
-    'data-original', 'data-bg', 'data-background-image', 'data-hi-res'];
+    'data-original', 'data-bg', 'data-background-image', 'data-hi-res',
+    'data-thumbnail'];
   var dataEls = Array.from(document.querySelectorAll(
-    '[data-src],[data-image],[data-full],[data-large],[data-original],[data-bg],[data-background-image],[data-hi-res]'
+    '[data-src],[data-image],[data-full],[data-large],[data-original],[data-bg],[data-background-image],[data-hi-res],[data-thumbnail]'
   ));
   for (var i = 0; i < dataEls.length; i++) {
-    if (dataEls[i].tagName === 'IMG') continue;
+    if (dataEls[i].tagName === 'IMG' || dataEls[i].tagName === 'A') continue;
     for (var j = 0; j < dataAttrs.length; j++) {
       var val = dataEls[i].getAttribute(dataAttrs[j]);
       if (val && val.indexOf('data:') !== 0) {
@@ -171,12 +200,7 @@ export async function scrapeImages(
   headful: boolean = false,
   verbose: boolean = false,
 ): Promise<ScrapeResult> {
-  const browser = await chromium.launch({ headless: !headful })
-  const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  })
-  const page = await context.newPage()
+  const { browser, page } = await launchStealthBrowser(headful)
 
   const log = verbose
     ? (msg: string) => console.log(`  [VERBOSE] ${msg}`)
@@ -184,7 +208,11 @@ export async function scrapeImages(
 
   try {
     console.log(`  Navigating to ${url}...`)
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 })
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    // Wait for network to settle, but don't fail if it doesn't fully idle
+    await page.waitForLoadState('networkidle').catch(() => {
+      log('Network didn\'t fully idle — continuing')
+    })
 
     await dismissPopups(page, log)
 
@@ -192,10 +220,77 @@ export async function scrapeImages(
     await page.evaluate(AUTO_SCROLL_SCRIPT)
     await page.waitForTimeout(2000)
 
-    const rawUrls: Array<{ url: string, alt?: string, source: string }> =
+    // Scroll back to top and wait again — some galleries only render
+    // after being scrolled into view, then need time to load images
+    await page.evaluate('window.scrollTo(0, 0)')
+    await page.waitForTimeout(1000)
+    await page.evaluate(AUTO_SCROLL_SCRIPT)
+    await page.waitForTimeout(2000)
+
+    // Collect images from the main frame
+    let rawUrls: Array<{ url: string, alt?: string, source: string }> =
       await page.evaluate(EXTRACT_IMAGES_SCRIPT)
 
+    log(`Raw URLs from main frame: ${rawUrls.length}`)
+
+    // If main frame has no images, check all child frames (iframes)
+    if (rawUrls.length === 0) {
+      const frames = page.frames()
+      log(`Checking ${frames.length} frames (main + iframes)...`)
+
+      for (const frame of frames) {
+        if (frame === page.mainFrame()) continue
+        try {
+          const frameUrl = frame.url()
+          log(`  Frame: ${frameUrl}`)
+          const frameUrls: Array<{ url: string, alt?: string, source: string }> =
+            await frame.evaluate(EXTRACT_IMAGES_SCRIPT)
+          if (frameUrls.length > 0) {
+            log(`  Found ${frameUrls.length} URLs in iframe: ${frameUrl}`)
+            rawUrls.push(...frameUrls)
+          }
+        }
+        catch {
+          // Cross-origin frame or detached — skip
+        }
+      }
+    }
+
     log(`Raw URLs extracted: ${rawUrls.length}`)
+
+    // Debug: if still 0 URLs, dump page state to help diagnose
+    if (rawUrls.length === 0) {
+      const debugInfo: {
+        imgCount: number, anchorCount: number, bgCount: number, bodyLen: number
+        iframeCount: number, shadowHostCount: number, sampleHtml: string
+      } = await page.evaluate(/* js */ `
+          (function() {
+            var imgs = document.querySelectorAll('img').length;
+            var anchors = document.querySelectorAll('a[href]').length;
+            var iframes = document.querySelectorAll('iframe').length;
+            var withBg = 0;
+            var all = document.querySelectorAll('*');
+            var shadowHosts = 0;
+            for (var i = 0; i < all.length; i++) {
+              if (i < 500) {
+                var bg = window.getComputedStyle(all[i]).backgroundImage;
+                if (bg && bg !== 'none') withBg++;
+              }
+              if (all[i].shadowRoot) shadowHosts++;
+            }
+            // Grab a sample of the HTML to see what's actually on the page
+            var body = document.body.innerHTML;
+            var sample = body.slice(0, 500).replace(/\\s+/g, ' ');
+            return {
+              imgCount: imgs, anchorCount: anchors, bgCount: withBg,
+              bodyLen: body.length, iframeCount: iframes, shadowHostCount: shadowHosts,
+              sampleHtml: sample
+            };
+          })();
+        `)
+      console.log(`  [DEBUG] Page: ${debugInfo.imgCount} <img>, ${debugInfo.anchorCount} <a>, ${debugInfo.bgCount} bg-images, ${debugInfo.iframeCount} iframes, ${debugInfo.shadowHostCount} shadow hosts, ${debugInfo.bodyLen} chars`)
+      console.log(`  [DEBUG] HTML sample: ${debugInfo.sampleHtml.slice(0, 300)}`)
+    }
 
     const metadata: { title: string, description: string, bodyText: string } =
       await page.evaluate(EXTRACT_METADATA_SCRIPT)
@@ -256,7 +351,11 @@ export async function scrapeImages(
       console.log(`  Filter stats: empty=${skippedEmpty} normalize=${skippedNormalize} duplicate=${skippedDuplicate} pattern=${skippedPattern} extension=${skippedExtension}`)
     }
 
-    return { images, metadata }
+    // Extract cookies from the browser session so downloads can reuse them
+    const browserCookies = await page.context().cookies()
+    const cookieHeader = browserCookies.map(c => `${c.name}=${c.value}`).join('; ')
+
+    return { images, metadata, cookies: cookieHeader || undefined }
   }
   finally {
     await browser.close()
@@ -383,12 +482,7 @@ export async function scrapeMultiProjectPage(
   headful: boolean = false,
   verbose: boolean = false,
 ): Promise<MultiProjectResult> {
-  const browser = await chromium.launch({ headless: !headful })
-  const context = await browser.newContext({
-    viewport: { width: 1920, height: 1080 },
-    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  })
-  const page = await context.newPage()
+  const { browser, page } = await launchStealthBrowser(headful)
 
   const log = verbose
     ? (msg: string) => console.log(`  [VERBOSE] ${msg}`)
@@ -396,7 +490,8 @@ export async function scrapeMultiProjectPage(
 
   try {
     console.log(`  Navigating to ${url}...`)
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 })
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await page.waitForLoadState('networkidle').catch(() => {})
 
     await dismissPopups(page, log)
 
@@ -441,7 +536,11 @@ export async function scrapeMultiProjectPage(
     }
 
     console.log(`  Found ${groups.length} project groups with images`)
-    return { groups, metadata }
+
+    const browserCookies = await page.context().cookies()
+    const cookieHeader = browserCookies.map(c => `${c.name}=${c.value}`).join('; ')
+
+    return { groups, metadata, cookies: cookieHeader || undefined }
   }
   finally {
     await browser.close()

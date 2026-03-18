@@ -7,10 +7,12 @@ import {
   projectTypes,
   proposalStatuses,
   tradeLocations,
+  userRoles,
   variableDataTypes,
   viewSources,
 } from '@/shared/constants/enums'
 
+export const userRoleEnum = pgEnum('user_role', userRoles)
 export const constructionTypeEnum = pgEnum('construction_type', constructionTypes)
 export const dataTypeEnum = pgEnum('data_type', variableDataTypes)
 export const homeAreaEnum = pgEnum('home_area', homeAreas)

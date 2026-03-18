@@ -12,7 +12,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/
 import { ROOTS } from '@/shared/config/roots'
 import { cn } from '@/shared/lib/utils'
 
-type ProjectRow = inferRouterOutputs<AppRouter>['showroomRouter']['getAllProjects'][number]
+type ProjectRow = inferRouterOutputs<AppRouter>['showroomRouter']['getAllProjects'][number] & {
+  tradeNames: string[]
+}
 
 export interface ProjectTableMeta {
   onDelete: (projectId: string) => void
@@ -113,6 +115,20 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
       header: ({ column }) => <SortableHeader column={column} label="Created" />,
       cell: ({ row }) => <DateCell dateString={row.original.createdAt} />,
       sortingFn: 'datetime',
+    },
+    {
+      accessorKey: 'tradeNames',
+      header: () => null,
+      cell: () => null,
+      enableHiding: true,
+      filterFn: (row, _columnId, filterValue: string[]) => {
+        if (!filterValue || filterValue.length === 0) {
+          return true
+        }
+        const rowTrades = row.original.tradeNames
+        return filterValue.some(trade => rowTrades.includes(trade))
+      },
+      meta: { hidden: true },
     },
   ]
 }

@@ -5,7 +5,7 @@ import type { DynamicNavSections, NavItemsGroup } from '@/shared/types/nav'
 import { AnimatePresence, motion } from 'motion/react'
 import { Fragment, useState } from 'react'
 import { useSession } from '@/shared/auth/client'
-import { isInternalUser } from '@/shared/auth/lib/is-internal-user'
+import { checkIsInternalUser } from '@/shared/auth/lib/is-internal-user'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
@@ -33,6 +33,8 @@ export function PopoverNav({
   const matches = useMatchMedia()
   const sessionQuery = useSession()
 
+  const isInternalUser = checkIsInternalUser(sessionQuery.data?.user?.role)
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -50,7 +52,7 @@ export function PopoverNav({
         >
           <div className="px-4 py-4 space-y-4 flex flex-col items-center h-full justify-between">
             <div className="flex flex-col gap-4 items-center w-full">
-              {isInternalUser(sessionQuery.data?.user) && navItems['tpr-internal']?.items.map((item, index) => (
+              {isInternalUser && navItems['tpr-internal']?.items.map((item, index) => (
                 <Fragment key={item.name}>
                   <NavItem
                     item={item}

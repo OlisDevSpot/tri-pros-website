@@ -80,22 +80,26 @@ export function HomeownerFields() {
           <FormField
             name="completedAt"
             control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Completion Date</FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    value={field.value ?? ''}
-                    onChange={e => field.onChange(e.target.value || null)}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                    ref={field.ref}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              // DB stores ISO timestamps; <input type="date"> needs YYYY-MM-DD
+              const dateValue = field.value ? field.value.slice(0, 10) : ''
+              return (
+                <FormItem>
+                  <FormLabel>Completion Date</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      value={dateValue}
+                      onChange={e => field.onChange(e.target.value || null)}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
           />
         </div>
       </div>

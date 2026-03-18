@@ -12,10 +12,12 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib'
 import { ProjectForm } from '@/features/showroom/ui/components/form'
+import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
+import { ROOTS } from '@/shared/config/roots'
 import { projectFormDefaults, projectFormSchema } from '@/shared/entities/projects/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -115,15 +117,23 @@ export function EditProjectView({ projectId }: Props) {
       transition={{ duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4"
     >
-      <Button
-        variant="ghost"
-        size="sm"
-        className="self-start"
-        onClick={() => setStep('showroom')}
-      >
-        <ArrowLeftIcon className="mr-2 h-4 w-4" />
-        Back to Portfolio
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setStep('showroom')}
+        >
+          <ArrowLeftIcon className="mr-2 h-4 w-4" />
+          Back to Portfolio
+        </Button>
+        <EntityViewButton
+          href={`${ROOTS.landing.portfolioProjects()}/${project.data.project.accessor}`}
+          external
+          showLabel
+          size="sm"
+          className="h-auto w-auto px-2"
+        />
+      </div>
 
       <div className="min-h-0 w-full grow pr-4 lg:flex lg:flex-col lg:overflow-hidden overflow-auto">
         <Form {...form}>
