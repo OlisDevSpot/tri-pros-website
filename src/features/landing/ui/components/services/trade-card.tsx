@@ -19,10 +19,10 @@ export function TradeCard({ trade, pillarSlug }: TradeCardProps) {
     >
       {/* Cover Image */}
       <div className="relative aspect-[16/10] w-full overflow-hidden">
-        {trade.coverImageUrl
+        {trade.images[0]
           ? (
               <Image
-                src={trade.coverImageUrl}
+                src={trade.images[0]}
                 alt={trade.name}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"

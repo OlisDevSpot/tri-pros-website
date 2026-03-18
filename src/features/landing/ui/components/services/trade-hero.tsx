@@ -8,7 +8,7 @@ import { Button } from '@/shared/components/ui/button'
 interface TradeHeroProps {
   tradeName: string
   outcomeStatement: string
-  coverImageUrl: string | null
+  images: string[]
   defaultHeroImage: string
   pillarSlug: PillarSlug
   pillarTitle: string
@@ -17,12 +17,12 @@ interface TradeHeroProps {
 export function TradeHero({
   tradeName,
   outcomeStatement,
-  coverImageUrl,
+  images,
   defaultHeroImage,
   pillarSlug,
   pillarTitle,
 }: TradeHeroProps) {
-  const imageUrl = coverImageUrl ?? defaultHeroImage
+  const imageUrl = images[0] ?? defaultHeroImage
 
   return (
     <section className="relative min-h-[70vh] w-full flex items-center justify-center overflow-hidden">

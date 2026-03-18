@@ -2,6 +2,7 @@ import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { unstable_cache } from 'next/cache'
 
+import { getTradeImages } from '@/features/landing/lib/get-trade-images'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToScope } from '@/shared/services/notion/lib/scopes/adapter'
 import { pageToTrade } from '@/shared/services/notion/lib/trades/adapter'
@@ -10,6 +11,7 @@ export type PillarSlug = 'energy-efficient-construction' | 'luxury-renovations'
 
 export type TradeWithScopes = Trade & {
   scopes: ScopeOrAddon[]
+  images: string[]
 }
 
 const PILLAR_TYPE_MAP: Record<PillarSlug, string[]> = {
@@ -50,9 +52,21 @@ export async function getTradesByPillar(pillarSlug: PillarSlug): Promise<TradeWi
     scopesByTrade.set(scope.relatedTrade, existing)
   }
 
+  // Fetch images per trade in parallel — each trade's scope IDs map to different projects
+  const imagesByTradeId = new Map<string, string[]>()
+  await Promise.all(
+    pillarTrades.map(async (trade) => {
+      const images = trade.relatedScopes.length > 0
+        ? await getTradeImages(trade.relatedScopes)
+        : []
+      imagesByTradeId.set(trade.id, images)
+    }),
+  )
+
   return pillarTrades.map(trade => ({
     ...trade,
     scopes: scopesByTrade.get(trade.id) ?? [],
+    images: imagesByTradeId.get(trade.id) ?? [],
   }))
 }
 

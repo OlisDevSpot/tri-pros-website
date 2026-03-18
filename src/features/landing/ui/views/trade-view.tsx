@@ -32,7 +32,7 @@ export function TradeView({ trade, pillarSlug }: TradeViewProps) {
       <TradeHero
         tradeName={trade.name}
         outcomeStatement={outcomeStatement}
-        coverImageUrl={trade.coverImageUrl}
+        images={trade.images}
         defaultHeroImage={pillarConfig.defaultHeroImage}
         pillarSlug={pillarSlug}
         pillarTitle={pillarConfig.title}
