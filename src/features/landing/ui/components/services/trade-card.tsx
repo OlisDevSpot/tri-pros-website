@@ -18,7 +18,7 @@ export function TradeCard({ trade, pillarSlug }: TradeCardProps) {
       className="group block rounded-xl border border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
     >
       {/* Cover Image */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden">
+      <div className="relative aspect-16/10 w-full overflow-hidden">
         {trade.images[0]
           ? (
               <Image
@@ -30,7 +30,7 @@ export function TradeCard({ trade, pillarSlug }: TradeCardProps) {
               />
             )
           : (
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
+              <div className="absolute inset-0 bg-linear-to-br from-primary/20 via-primary/10 to-muted" />
             )}
       </div>
 

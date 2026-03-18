@@ -17,18 +17,21 @@ const COMPARISON_ROWS = [
   {
     label: 'CA Contractor\'s License',
     triPros: true,
+    triProsNote: null,
     other: false,
     otherNote: null,
   },
   {
     label: 'Licensed & Bonded',
     triPros: true,
+    triProsNote: null,
     other: false,
     otherNote: null,
   },
   {
     label: 'General Liability ($2M)',
     triPros: true,
+    triProsNote: null,
     other: false,
     otherNote: 'No \u2014 you\'re liable',
   },

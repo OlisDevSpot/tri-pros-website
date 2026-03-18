@@ -18,4 +18,4 @@ export const TRADE_PROPERTIES_MAP = {
     label: 'Scopes',
     type: 'relation',
   },
-} as const satisfies RawPropertyMap<Trade>
+} as const satisfies RawPropertyMap<Omit<Trade, 'slug' | 'coverImageUrl'>>

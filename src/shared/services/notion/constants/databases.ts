@@ -27,7 +27,7 @@ type RawDatbaseMap = {
       | RawPropertyMap<Contact>
       | RawPropertyMap<Meeting>
       | RawPropertyMap<Project>
-      | RawPropertyMap<Trade>
+      | RawPropertyMap<Omit<Trade, 'slug' | 'coverImageUrl'>>
       | RawPropertyMap<ScopeOrAddon>
       | RawPropertyMap<SOW>
     properties: ZodRawShape

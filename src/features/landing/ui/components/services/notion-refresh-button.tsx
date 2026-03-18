@@ -34,7 +34,7 @@ export function NotionRefreshButton() {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => revalidate.mutate({})}
+      onClick={() => revalidate.mutate()}
       disabled={revalidate.isPending}
       className="fixed top-4 right-4 z-50 opacity-50 hover:opacity-100 transition-opacity"
       aria-label="Refresh Notion cache"
