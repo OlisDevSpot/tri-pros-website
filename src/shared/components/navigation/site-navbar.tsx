@@ -46,7 +46,6 @@ export function SiteNavbar() {
   const { data: session, isPending } = useSession()
   const { setModal, open: openAuthModal } = useAuthModalStore()
   const [authError] = useQueryState('error', { defaultValue: '' })
-  const [mounted, setMounted] = useState(false)
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
@@ -86,12 +85,6 @@ export function SiteNavbar() {
   }, [setModal])
 
   useEffect(() => {
-    if (!isPending)
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setMounted(true)
-  }, [isPending])
-
-  useEffect(() => {
     if (authError) {
       // eslint-disable-next-line no-alert
       alert(authError.replaceAll('_', ' '))
@@ -99,9 +92,6 @@ export function SiteNavbar() {
   }, [authError])
 
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
-
-  if (!mounted)
-    return null
 
   function closeNavigation() {
     setSelectedItemIndex(null)
