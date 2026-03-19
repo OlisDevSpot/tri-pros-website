@@ -22,6 +22,7 @@ Currently the CRM runs partially on Notion:
 Add to `package.json` (pnpm install):
 - `@upstash/ratelimit` — rate limiting for public intake endpoints
 - `@upstash/redis` — required peer dependency for `@upstash/ratelimit`
+- `nanoid` — cryptographically secure token generation for `lead_sources.token`
 
 ---
 
@@ -90,7 +91,45 @@ Non-query, non-indexed — JSONB is appropriate.
 
 When updating `insertCustomerSchema` in `customers.ts`, add `leadMetaJSON: leadMetaSchema.optional()` to the drizzle-zod override — without this the inferred type will be `unknown`.
 
-### 1.4 New `customer_notes` table
+### 1.4 New `lead_sources` table
+
+**File:** `src/shared/db/schema/lead-sources.ts`
+
+```ts
+export const leadSources = pgTable('lead_sources', {
+  id,
+  name: text('name').notNull(),                           // "Telemarketing Leads - Philippines"
+  slug: text('slug').notNull().unique(),                  // 'telemarketing_leads_philippines'
+  token: text('token').notNull().unique(),                // nanoid(21) — used in intake URL
+  formConfigJSON: jsonb('form_config_json').$type<LeadSourceFormConfig>().notNull(),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt,
+  updatedAt,
+})
+```
+
+**File:** `src/shared/entities/lead-sources/schemas.ts`
+
+```ts
+export const leadSourceFormConfigSchema = z.object({
+  leadType: leadTypeSchema,                // z.enum(leadTypes)
+  showEmail: z.boolean(),
+  requireEmail: z.boolean(),
+  showMeetingScheduler: z.boolean(),
+  requireMeetingScheduler: z.boolean(),
+  showMp3Upload: z.boolean(),
+  showNotes: z.boolean(),
+})
+export type LeadSourceFormConfig = z.infer<typeof leadSourceFormConfigSchema>
+```
+
+**Seed script:** `scripts/seed-lead-sources.ts` — inserts the 4 initial lead sources with generated tokens. Idempotent (skip if slug already exists). Tokens are generated with `nanoid(21)` and are permanent — do not regenerate on re-run.
+
+**Intake URL:** `/intake/[token]` (dynamic path segment, not query param). Lead sources share their unique URL with external parties. If a lead source's token is compromised, revoke by setting `isActive = false` and inserting a new record with a new token.
+
+**`customers.leadSource`** remains the enum string (not a FK to `lead_sources.id`). Customers store the derived slug value — self-contained and immune to lead source record changes. The `lead_sources` table is for token validation and form configuration only.
+
+### 1.5 New `customer_notes` table
 
 **File:** `src/shared/db/schema/customer-notes.ts`
 
@@ -111,7 +150,7 @@ export const insertCustomerNoteSchema = createInsertSchema(customerNotes).omit({
 - Exported individually and via `src/shared/db/schema/index.ts`
 - Table created now; CRUD UI is a future feature
 
-### 1.5 Address field constraint behaviour
+### 1.6 Address field constraint behaviour
 
 `customers.city` and `customers.zip` are `notNull()`. The intake form address autocomplete is **required** — submission is blocked until a place is confirmed, ensuring city/zip are always populated from the place result. Fallback: `city: ''`, `zip: ''` for contacts where these cannot be extracted (rare non-US edge case). Migration script uses the same fallback.
 
@@ -141,9 +180,20 @@ export const insertCustomerNoteSchema = createInsertSchema(customerNotes).omit({
 | relatedMeetingsIds | **dropped** | FK relationship covers this |
 | relatedProjectsIds | **dropped** | Out of scope |
 
-No mp3 recordings are migrated — `leadMetaJSON.mp3RecordingKey` is null for all migrated contacts.
+### 2.2 MP3 recording migration (per-contact, best-effort)
 
-### 2.2 Lead classification via "Closed By" Notion property
+Notion contacts may have a call recording attached as a `files`-type property. This is NOT in the permanent `CONTACT_PROPERTIES_MAP` (migration-only read).
+
+**Strategy:**
+1. After fetching the raw `PageObjectResponse`, scan `page.properties` for any property where `type === 'files'`
+2. For each file entry: check if the URL (Notion signed URL) ends with `.mp3` (case-insensitive)
+3. If found: download the file (Notion signed URLs expire in 1 hour — run migration without delay between fetch and download), upload to R2 `telemarketingRecordings` bucket with key `recordings/migrated-{notionContactId}-{timestamp}.mp3`
+4. Store the R2 key in `leadMetaJSON.mp3RecordingKey`
+5. On any failure (download error, R2 error, no mp3 found): log and continue — mp3 is non-critical, the customer row is inserted without it
+
+**No permanent additions** to `CONTACT_PROPERTIES_MAP`, `contactSchema`, or `pageToContact` — migration reads raw `PageObjectResponse` directly.
+
+### 2.3 Lead classification via "Closed By" Notion property
 
 The script reads the raw `Closed By` property directly from the Notion page response — NOT added to the permanent `CONTACT_PROPERTIES_MAP` adapter (migration-only read).
 
@@ -166,23 +216,32 @@ The script reads the raw `Closed By` property directly from the Notion page resp
 
 ### 3.1 Route
 
-**Public page** (no auth): `src/app/(frontend)/(site)/intake/page.tsx`
-Shareable URL per lead source. No login required.
+**Public page** (no auth): `src/app/(frontend)/(site)/intake/[token]/page.tsx`
+Dynamic route — each lead source has a unique unguessable token (nanoid 21 chars) embedded in the URL.
 
-### 3.2 URL param
+Shareable URL per lead source: `https://app.triprosremodeling.com/intake/<token>`
+No login required. Token validity checked server-side before rendering the form.
 
-Single nuqs param: `?source=telemarketing_leads_philippines|noy|quoteme|other`
+If token is invalid or `isActive = false` → render a "This link is no longer active" page (no 500, no redirect leak).
 
-`leadType` is derived in code from `leadSource` — no second param needed. If `source` param is missing or invalid, the form defaults to `other` / `manual`.
+### 3.2 Token-based access control
+
+No nuqs URL params for form configuration. All configuration comes from the `lead_sources` DB record resolved by token.
+
+**`intakeRouter.getByToken`** — `baseProcedure`
+- Input: `{ token: string }`
+- Queries `lead_sources` table by token
+- If not found or `isActive = false` → throws `NOT_FOUND`
+- Returns: `{ leadSourceId: string, slug: string, name: string, formConfig: LeadSourceFormConfig }`
+
+The page server component fetches this before rendering. Client form receives `formConfig` as props — no token passed to client.
 
 ### 3.3 Feature structure
 
 ```
 src/features/intake/
-  constants/
-    form-configs.ts         ← per-source IntakeFormConfig objects
   schemas/
-    intake-form-schema.ts   ← base zod schema refined per config
+    intake-form-schema.ts   ← base zod schema refined per formConfig
   ui/
     views/
       intake-form-view.tsx
@@ -190,29 +249,20 @@ src/features/intake/
       address-autocomplete-field.tsx   ← Google Places autocomplete + static map preview
       mp3-upload-field.tsx             ← R2 upload, telemarketing only
       meeting-scheduler-field.tsx      ← datetime picker + "Closed By" agent select, telemarketing only
+scripts/
+  seed-lead-sources.ts      ← seeds 4 initial lead_sources rows with tokens
 ```
 
-### 3.4 Form configuration
+> No `constants/form-configs.ts` — configuration lives in DB. `seed-lead-sources.ts` is the canonical source of truth for initial config values.
 
-```ts
-type IntakeFormConfig = {
-  leadSource: LeadSource
-  leadType: LeadType
-  showEmail: boolean
-  requireEmail: boolean
-  showMeetingScheduler: boolean
-  requireMeetingScheduler: boolean
-  showMp3Upload: boolean
-  showNotes: boolean
-}
-```
+### 3.4 Initial lead source seed data
 
-| Source | leadType | email | meeting scheduler | required? | mp3 | notes |
-|---|---|---|---|---|---|---|
-| `telemarketing_leads_philippines` | `appointment_set` | ❌ | ✅ | required | ✅ optional | ❌ |
-| `noy` | `needs_confirmation` | optional | ❌ | — | ❌ | ✅ |
-| `quoteme` | `needs_confirmation` | optional | ❌ | — | ❌ | ✅ |
-| `other` | `manual` | optional | optional | optional | ❌ | ✅ |
+| Name | slug | leadType | email | scheduler | required? | mp3 | notes |
+|---|---|---|---|---|---|---|---|
+| Telemarketing Leads - Philippines | `telemarketing_leads_philippines` | `appointment_set` | ❌ | ✅ | required | ✅ | ❌ |
+| Noy | `noy` | `needs_confirmation` | optional | ❌ | — | ❌ | ✅ |
+| QuoteMe | `quoteme` | `needs_confirmation` | optional | ❌ | — | ❌ | ✅ |
+| Other | `other` | `manual` | optional | optional | optional | ❌ | ✅ |
 
 **Shared fields (all sources):** name (required), phone (required), address via autocomplete (required).
 
@@ -280,6 +330,10 @@ When `showMeetingScheduler` is true and a datetime + agent are provided, a `meet
 - Input: explicit schema (NOT from `insertCustomerSchema`) — accepts only: `name`, `phone`, `address`, `city`, `state`, `zip`, `email?`, `notes?`, `leadSource`, `leadType`, `leadMetaJSON?`, `scheduledFor?`, `closedById?`
 - Creates customer + optional meeting + optional note
 - Returns `{ customerId: string }`
+
+**New:** `intakeRouter.getByToken` — `baseProcedure`
+- Input: `{ token: string }`
+- Returns: `{ leadSourceId, slug, name, formConfig: LeadSourceFormConfig }` or throws `NOT_FOUND`
 
 **New:** `intakeRouter.getInternalUsers` — `baseProcedure`
 - No input
@@ -370,6 +424,7 @@ Fix: remove `contactId` / `contactQuery`. Build `MeetingContext.customer` direct
 - Notion projects DB migration
 - Post-sale project management in the app
 - Customer notes UI (table is created; CRUD UI is a future feature)
+- Lead source management UI (seed script is sufficient; UI is a future feature)
 - Removing `notionContactId` from the schema
 - CAPTCHA on the intake form
 - `syncedAt` column rename
@@ -381,23 +436,25 @@ Fix: remove `contactId` / `contactQuery`. Build `MeetingContext.customer` direct
 ### New files
 - `src/shared/constants/enums/leads.ts`
 - `src/shared/types/enums/leads.ts`
+- `src/shared/db/schema/lead-sources.ts`
 - `src/shared/db/schema/customer-notes.ts`
-- `src/features/intake/constants/form-configs.ts`
+- `src/shared/entities/lead-sources/schemas.ts`
 - `src/features/intake/schemas/intake-form-schema.ts`
 - `src/features/intake/ui/views/intake-form-view.tsx`
 - `src/features/intake/ui/components/address-autocomplete-field.tsx`
 - `src/features/intake/ui/components/mp3-upload-field.tsx`
 - `src/features/intake/ui/components/meeting-scheduler-field.tsx`
 - `src/shared/components/customer-search.tsx`
-- `src/app/(frontend)/(site)/intake/page.tsx`
+- `src/app/(frontend)/(site)/intake/[token]/page.tsx`
 - `src/trpc/routers/intake.router.ts`
 - `scripts/migrate-notion-contacts.ts`
+- `scripts/seed-lead-sources.ts`
 
 ### Modified files
-- `package.json` — add `@upstash/ratelimit`, `@upstash/redis`
+- `package.json` — add `@upstash/ratelimit`, `@upstash/redis`, `nanoid`
 - `src/shared/db/schema/customers.ts` — add 3 columns (`leadSource`, `leadType`, `leadMetaJSON`); add `leadMetaJSON` JSONB override to `insertCustomerSchema`
 - `src/shared/db/schema/meta.ts` — add `leadSourceEnum`, `leadTypeEnum`
-- `src/shared/db/schema/index.ts` — export `customerNotes`
+- `src/shared/db/schema/index.ts` — export `customerNotes`, `leadSources`
 - `src/shared/constants/enums/index.ts` — re-export from `leads.ts`
 - `src/shared/types/enums/index.ts` — re-export from `leads.ts`
 - `src/shared/entities/customers/schemas.ts` — add `leadMetaSchema` + `LeadMeta`
