@@ -81,7 +81,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
       </div>
 
       {/* Time grid */}
-      <ScrollArea className="flex-1" type="always">
+      <ScrollArea className="h-175" type="always">
         <div className="flex">
           {/* Hours column */}
           <div className="relative w-16 shrink-0">
