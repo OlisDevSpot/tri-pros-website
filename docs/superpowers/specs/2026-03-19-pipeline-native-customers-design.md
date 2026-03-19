@@ -34,6 +34,8 @@ type: text('type'),  // 'Fresh' | 'Follow-up' | 'Rehash'
 
 Added to `insertMeetingSchema` as required (Zod validated against `meetingTypes` const). DB migration: `ALTER TABLE meetings ADD COLUMN type text`.
 
+**`insertMeetingSchema` `.omit()` change required:** `customerId` is currently in the `.omit()` block. Remove it so the `create` procedure can accept it from the caller. Make it required in the tRPC input validator (`z.string().uuid()`).
+
 > The existing `situationProfileJSON.meetingType` field is now redundant. Leave it in place for this iteration — a cleanup pass is out of scope here.
 
 ### 1c. `meetingScopesJSON` — new JSONB column on `meetings`
@@ -335,6 +337,16 @@ const orphanMeetings = await db
     eq(meetings.status, 'completed'),
   ))
   .orderBy(desc(meetings.createdAt))
+```
+
+The mapping block that follows (lines 186–203 in the current file) reads `m.contactName` as `customerName`. After the query change the select shape no longer includes `contactName` — update the mapping to use `m.customerName` instead:
+
+```ts
+// Before:
+customerName: m.contactName ?? 'Unknown',
+
+// After:
+customerName: m.customerName,  // COALESCE in query guarantees non-null
 ```
 
 Tier logic (HOT_NOW, HOT_LEAD, FOLLOW_UP_DUE, STALE, NO_PROPOSAL) is unchanged.
