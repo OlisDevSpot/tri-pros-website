@@ -203,13 +203,9 @@ function WeekDayColumn<T extends CalendarEvent>({
               className="absolute p-0.5"
               style={finalStyle}
             >
-              <button
-                type="button"
-                className="h-full w-full cursor-pointer text-left"
-                onClick={() => onEventClick?.(event)}
-              >
+              <div className="h-full w-full">
                 {renderCard(event)}
-              </button>
+              </div>
             </div>
           )
         }),
