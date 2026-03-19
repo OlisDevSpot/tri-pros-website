@@ -1,5 +1,6 @@
 'use client'
 
+import type { ProjectRow } from '@/features/showroom/ui/components/table/columns'
 import type { DataTableMultiSelectFilter } from '@/shared/components/data-table/types'
 
 import { useQuery } from '@tanstack/react-query'
@@ -8,6 +9,8 @@ import { motion } from 'motion/react'
 import { useQueryState } from 'nuqs'
 import { useCallback, useMemo, useState } from 'react'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib'
+import { useProjectActions } from '@/features/showroom/hooks/use-project-actions'
+import { ProjectDetailSheet } from '@/features/showroom/ui/components/project-detail-sheet'
 import { PortfolioProjectsTable } from '@/features/showroom/ui/components/table'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -22,7 +25,14 @@ export function PortfolioProjectsView() {
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const [filteredCount, setFilteredCount] = useState<number | null>(null)
+  const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const { deleteProject } = useProjectActions()
   const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [])
+  const handleRowClick = useCallback((project: ProjectRow) => {
+    setSelectedProject(project)
+    setIsSheetOpen(true)
+  }, [])
 
   // Map scope IDs -> trade IDs, and build trade name lookup
   const { enrichedProjects, tradeFilter } = useMemo(() => {
@@ -125,9 +135,22 @@ export function PortfolioProjectsView() {
           </Button>
         </CardHeader>
         <CardContent className="grow min-h-0 overflow-auto px-0">
-          <PortfolioProjectsTable data={enrichedProjects} tradeFilter={tradeFilter} onFilteredCountChange={handleFilteredCountChange} />
+          <PortfolioProjectsTable
+            data={enrichedProjects}
+            tradeFilter={tradeFilter}
+            onFilteredCountChange={handleFilteredCountChange}
+            onRowClick={handleRowClick}
+          />
         </CardContent>
       </Card>
+      <ProjectDetailSheet
+        project={selectedProject}
+        isOpen={isSheetOpen}
+        close={() => setIsSheetOpen(false)}
+        onDelete={selectedProject
+          ? () => deleteProject.mutate({ id: selectedProject.id })
+          : undefined}
+      />
     </motion.div>
   )
 }
