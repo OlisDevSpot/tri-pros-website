@@ -60,7 +60,7 @@ export function CalendarHeader({
         </div>
 
         <span className="text-sm font-semibold">{monthYear}</span>
-        <span className="text-xs text-muted-foreground">{getRangeText(activeView, currentDate)}</span>
+        <span className="ml-1 text-xs text-muted-foreground">{getRangeText(activeView, currentDate)}</span>
       </div>
 
       {/* Right side: view toggle + Saturday filter */}

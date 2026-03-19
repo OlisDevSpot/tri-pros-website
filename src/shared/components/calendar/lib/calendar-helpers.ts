@@ -16,7 +16,7 @@ import {
   subWeeks,
 } from 'date-fns'
 
-const FORMAT_STRING = 'MMM d, yyyy'
+const FORMAT_STRING = 'MM/dd/yy'
 
 export interface CalendarCell {
   day: number
