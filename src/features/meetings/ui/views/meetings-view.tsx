@@ -1,7 +1,8 @@
 'use client'
 
-import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 import type { inferRouterOutputs } from '@trpc/server'
+
+import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { useQuery } from '@tanstack/react-query'
@@ -14,10 +15,10 @@ import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions
 import { MeetingCalendar } from '@/features/meetings/ui/components/calendar/meeting-calendar'
 import { PastMeetingsTable } from '@/features/meetings/ui/components/table'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
+import { StatBar } from '@/shared/components/stat-bar/ui/stat-bar'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { StatBar } from '@/shared/components/stat-bar/ui/stat-bar'
 import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -25,8 +26,7 @@ type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][numb
 
 export function MeetingsView() {
   const [layout, setLayout] = useState<DataViewType>('calendar')
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null)
-  const [filteredCount, setFilteredCount] = useState<number | null>(null)
+  const [dateRange, setDateRange] = useState<{ from: Date, to: Date } | null>(null)
 
   const trpc = useTRPC()
   const router = useRouter()
@@ -52,8 +52,6 @@ export function MeetingsView() {
   const handleDeleteMeeting = useCallback((meetingId: string) => {
     deleteMeeting.mutate({ id: meetingId })
   }, [deleteMeeting])
-
-  const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [])
 
   const statsData = useMemo((): MeetingRow[] => {
     if (layout !== 'calendar' || !dateRange || !meetings.data) {
@@ -128,7 +126,6 @@ export function MeetingsView() {
           : (
               <PastMeetingsTable
                 data={meetings.data}
-                onFilteredCountChange={handleFilteredCountChange}
               />
             )}
       </div>

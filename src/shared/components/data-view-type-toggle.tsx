@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/utils'
 
 export type DataViewType = 'kanban' | 'table' | 'calendar'
 
-const VIEW_CONFIG: Record<DataViewType, { icon: typeof KanbanIcon; label: string }> = {
+const VIEW_CONFIG: Record<DataViewType, { icon: typeof KanbanIcon, label: string }> = {
   kanban: { icon: KanbanIcon, label: 'Kanban view' },
   table: { icon: TableIcon, label: 'Table view' },
   calendar: { icon: CalendarDaysIcon, label: 'Calendar view' },

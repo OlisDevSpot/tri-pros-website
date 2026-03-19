@@ -1,7 +1,8 @@
 'use client'
 
-import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { inferRouterOutputs } from '@trpc/server'
+
+import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { useCallback, useMemo } from 'react'
@@ -21,7 +22,7 @@ interface MeetingCalendarProps {
   onStartMeeting: (meetingId: string) => void
   onDuplicateMeeting: (meetingId: string) => void
   onDeleteMeeting: (meetingId: string) => void
-  onDateRangeChange?: (range: { from: Date; to: Date }) => void
+  onDateRangeChange?: (range: { from: Date, to: Date }) => void
 }
 
 export function MeetingCalendar({

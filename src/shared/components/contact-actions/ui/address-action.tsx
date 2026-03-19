@@ -28,7 +28,7 @@ export function AddressAction({ address, className, compact = false }: AddressAc
             'flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer',
             className,
           )}
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           <MapPinIcon size={14} className="shrink-0" />
           {!compact && <span className="truncate">{address}</span>}
@@ -36,23 +36,23 @@ export function AddressAction({ address, className, compact = false }: AddressAc
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem
-          onClick={() =>
+          onClick={() => {
             window.open(
               `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
               '_blank',
             )
-          }
+          }}
         >
           <ExternalLinkIcon size={14} />
           Open in Google Maps
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={() =>
+          onClick={() => {
             window.open(
               `https://earth.google.com/web/search/${encodeURIComponent(address)}`,
               '_blank',
             )
-          }
+          }}
         >
           <GlobeIcon size={14} />
           Open in Google Earth
