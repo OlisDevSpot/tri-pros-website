@@ -14,15 +14,15 @@ interface Props {
 export function StatBarItem({ icon: Icon, label, value, displayValue, color }: Props) {
   return (
     <div>
-      {/* Mobile */}
-      <div className="relative flex h-12 w-40 items-center gap-2 overflow-hidden rounded-lg border border-border/50 px-2 lg:hidden">
+      {/* Mobile — centered vertical layout */}
+      <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-lg border border-border/50 py-3 lg:hidden">
         <Icon size={36} className={cn('absolute -right-1 -top-1 opacity-[0.07]', color)} />
-        <span className="relative text-sm font-semibold tabular-nums">{displayValue ?? value}</span>
-        <span className="relative truncate text-[10px] text-muted-foreground">{label}</span>
+        <span className="relative text-lg font-bold tabular-nums">{displayValue ?? value}</span>
+        <span className="relative text-[10px] text-muted-foreground">{label}</span>
       </div>
 
-      {/* Desktop */}
-      <Card className="relative hidden h-[72px] w-44 overflow-hidden px-4 py-3 lg:flex lg:items-center">
+      {/* Desktop — fixed height, equal width via grid */}
+      <Card className="relative hidden h-[72px] overflow-hidden px-4 py-3 lg:flex lg:items-center">
         <Icon size={52} className={cn('absolute -right-1.5 -top-1.5 opacity-[0.07]', color)} />
         <div className="relative min-w-0">
           <p className="text-2xl font-semibold leading-tight tabular-nums">{displayValue ?? value}</p>
