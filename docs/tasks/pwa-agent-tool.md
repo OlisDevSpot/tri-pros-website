@@ -1,6 +1,6 @@
 # Task: PWA Agent Tool
 
-**Status:** 🟢 SPEC ONLY — no plan yet; partially implemented
+**Status:** ✅ COMPLETE — verified 2026-03-19
 **Branch:** `main`
 **Spec:** `docs/superpowers/specs/2026-03-19-pwa-agent-tool-design.md`
 **Plan:** _Not yet written_

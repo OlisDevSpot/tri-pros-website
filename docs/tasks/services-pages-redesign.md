@@ -1,6 +1,6 @@
 # Task: Services Pages Redesign
 
-**Status:** 🟢 HAS PLAN — not started
+**Status:** 🔵 PARTIALLY DONE — routes + components built but not satisfied with results; needs redesign
 **Branch:** `main`
 **Spec:** `docs/superpowers/specs/2026-03-18-services-pages-redesign.md`
 **Plan:** `docs/superpowers/plans/2026-03-18-services-pages-redesign.md`

@@ -14,11 +14,20 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 
 ---
 
-## 🟡 Blocked (waiting on a prerequisite task)
+## 🟡 Blocked (waiting on a prerequisite)
 
 | # | Task | One-liner | Blocked By | Context |
 |---|------|-----------|-----------|---------|
 | 6 | **Pipeline Native Customers** | Add `needs_confirmation` stage, `CreateMeetingModal`, `meetingScopesJSON`, remove dashboard shortcuts | Task #1 (Notion migration must run first) | [pipeline-native-customers.md](./pipeline-native-customers.md) |
+| 9 | **Meta Ads Integration** | Scripts built; blocked on publishing the Meta app before `pnpm meta init-account` can run | Meta app must be set to Published mode | [meta-ads-integration.md](./meta-ads-integration.md) |
+
+---
+
+## 🔵 Partially Done (code merged, needs rework or completion)
+
+| # | Task | One-liner | Status | Context |
+|---|------|-----------|--------|---------|
+| 7 | **Services Pages Redesign** | Pillar pages from Notion with ISR — trade-specific service landing pages | Routes + components built, not satisfied with results | [services-pages-redesign.md](./services-pages-redesign.md) |
 
 ---
 
@@ -26,10 +35,7 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 
 | # | Task | One-liner | Branch | Context |
 |---|------|-----------|--------|---------|
-| 7 | **Services Pages Redesign** | Pillar pages from Notion with ISR — trade-specific service landing pages | `main` | [services-pages-redesign.md](./services-pages-redesign.md) |
 | 8 | **Google Drive Upload Integration** | Agents can upload project photos to Google Drive from the showroom editor | `main` | [google-drive-upload.md](./google-drive-upload.md) |
-| 9 | **Meta Ads Integration** | Scripts + Marketing API to track lead sources and attribution from Meta campaigns | `main` | [meta-ads-integration.md](./meta-ads-integration.md) |
-| 10 | **PWA Agent Tool** | Convert app to PWA (Add to Home Screen on iPhone) with splash screen animation | `main` | [pwa-agent-tool.md](./pwa-agent-tool.md) |
 
 ---
 
@@ -42,6 +48,7 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 | 4 | **P0 Navigation UX Fixes** | All 5 tasks done — ROOTS routes, button semantics, mounted guard removed, popover close-on-nav, zero hardcoded URLs |
 | 5 | **P1 Mobile Gaps** | BaseSheet + ProjectDetailSheet wired, footer cleaned (ROOTS URLs, no newsletter, typo fixed) |
 | 11 | **Multi-Pipeline Customer System** | Schema + rehash/dead stage constants + pipeline-config + DAL + tRPC + PipelineSelect UI all verified in codebase |
+| 10 | **PWA Agent Tool** | manifest, splash screen, install prompt, icons, Apple meta tags — all wired in layout |
 | 12 | **Trade Page Conversion** | All new components (TradeSymptomsBand, TradeBeforeAfter) + constants (pain-headlines, symptoms, before-after, benefits) verified in codebase |
 
 ---

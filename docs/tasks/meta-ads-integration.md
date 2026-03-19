@@ -1,6 +1,6 @@
 # Task: Meta Ads Integration
 
-**Status:** 🟢 HAS PLAN — not started
+**Status:** 🟡 BLOCKED — all scripts built; blocked on Meta app needing to be Published before `pnpm meta init-account` can run. See `docs/meta-ads-session-handoff.md` for full context.
 **Branch:** `main`
 **Plan:** `docs/superpowers/plans/2026-03-18-meta-ads-integration.md`
 **Date Planned:** 2026-03-18
