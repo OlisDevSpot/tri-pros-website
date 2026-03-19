@@ -1,3 +1,5 @@
+import type { CustomerPipeline } from '@/shared/types/enums'
+
 import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 
 import { TRPCError } from '@trpc/server'
@@ -5,19 +7,32 @@ import { and, eq } from 'drizzle-orm'
 
 import { ACTIVE_ALLOWED_DRAG_TRANSITIONS } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import { db } from '@/shared/db'
+import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
 
 interface MoveParams {
   customerId: string
-  fromStage: CustomerPipelineStage
-  toStage: CustomerPipelineStage
+  fromStage: string
+  toStage: string
+  pipeline: CustomerPipeline
   userId: string
 }
 
-export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, userId }: MoveParams): Promise<void> {
-  const allowed = ACTIVE_ALLOWED_DRAG_TRANSITIONS[fromStage]
-  if (!allowed.includes(toStage)) {
+export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, pipeline, userId }: MoveParams): Promise<void> {
+  // For rehash/dead pipelines, drag simply updates pipelineStage
+  if (pipeline !== 'active') {
+    await db
+      .update(customers)
+      .set({ pipelineStage: toStage })
+      .where(eq(customers.id, customerId))
+    return
+  }
+
+  const activeFromStage = fromStage as CustomerPipelineStage
+  const activeToStage = toStage as CustomerPipelineStage
+  const allowed = ACTIVE_ALLOWED_DRAG_TRANSITIONS[activeFromStage]
+  if (!allowed.includes(activeToStage)) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
       message: `Transition from ${fromStage} to ${toStage} is not allowed`,

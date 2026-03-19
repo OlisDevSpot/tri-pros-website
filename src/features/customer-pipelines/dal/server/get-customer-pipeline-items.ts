@@ -1,3 +1,5 @@
+import type { CustomerPipeline } from '@/shared/types/enums'
+
 import type { CustomerPipelineItem, CustomerPipelineRawData } from '@/features/customer-pipelines/types'
 
 import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
@@ -8,7 +10,38 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
 
-export async function getCustomerPipelineItems(userId: string): Promise<CustomerPipelineItem[]> {
+export async function getCustomerPipelineItems(userId: string, pipeline: CustomerPipeline = 'active'): Promise<CustomerPipelineItem[]> {
+  if (pipeline !== 'active') {
+    const rows = await db
+      .select({
+        id: customers.id,
+        name: customers.name,
+        phone: customers.phone,
+        email: customers.email,
+        address: customers.address,
+        city: customers.city,
+        pipelineStage: customers.pipelineStage,
+      })
+      .from(customers)
+      .where(eq(customers.pipeline, pipeline))
+      .orderBy(desc(customers.updatedAt))
+
+    return rows.map((row): CustomerPipelineItem => ({
+      id: row.id,
+      type: 'customer',
+      stage: (row.pipelineStage ?? (pipeline === 'rehash' ? 'schedule_manager_meeting' : 'mostly_dead')) as CustomerPipelineItem['stage'],
+      name: row.name,
+      phone: row.phone,
+      email: row.email,
+      address: row.address,
+      city: row.city,
+      totalPipelineValue: 0,
+      meetingCount: 0,
+      proposalCount: 0,
+      latestActivityAt: '',
+    }))
+  }
+
   const rows = await db
     .select({
       customerId: customers.id,
@@ -28,6 +61,7 @@ export async function getCustomerPipelineItems(userId: string): Promise<Customer
       eq(meetings.customerId, customers.id),
       eq(meetings.ownerId, userId),
     ))
+    .where(eq(customers.pipeline, 'active'))
     .groupBy(customers.id)
     .orderBy(desc(max(meetings.createdAt)))
 

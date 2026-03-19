@@ -11,8 +11,9 @@ export function groupCustomersByStage(
   ) as Record<CustomerPipelineStage, CustomerPipelineItem[]>
 
   for (const item of items) {
-    if (item.stage in grouped) {
-      grouped[item.stage].push(item)
+    const stage = item.stage as string
+    if (stage in grouped) {
+      grouped[stage as CustomerPipelineStage].push(item)
     }
   }
 
