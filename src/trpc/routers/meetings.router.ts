@@ -1,10 +1,10 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import { TRPCError } from '@trpc/server'
-import { and, desc, eq, getTableColumns } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
 import z from 'zod'
 import { upsertCustomerFromNotion } from '@/shared/dal/server/customers/api'
 import { db } from '@/shared/db'
-import { customers, insertMeetingSchema, meetings, proposals } from '@/shared/db/schema'
+import { customers, insertMeetingSchema, meetings, proposals, user } from '@/shared/db/schema'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { agentProcedure, createTRPCRouter } from '../init'
@@ -149,5 +149,55 @@ export const meetingsRouter = createTRPCRouter({
       await db
         .delete(meetings)
         .where(and(eq(meetings.id, input.id), eq(meetings.ownerId, ctx.session.user.id)))
+    }),
+
+  // List all internal users (agents + super-admins) for the owner assignment dropdown.
+  // Only users with 'assign' permission on Meeting may call this.
+  getInternalUsers: agentProcedure
+    .query(async ({ ctx }) => {
+      if (ctx.ability.cannot('assign', 'Meeting')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
+      }
+
+      const internalUsers = await db
+        .select({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          role: user.role,
+        })
+        .from(user)
+        .where(
+          inArray(user.role, ['agent', 'super-admin']),
+        )
+        .orderBy(user.name)
+
+      return internalUsers
+    }),
+
+  // Reassign meeting ownership to another internal user.
+  // Only users with 'assign' permission on Meeting may call this.
+  assignOwner: agentProcedure
+    .input(z.object({
+      meetingId: z.string().uuid(),
+      newOwnerId: z.string().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.ability.cannot('assign', 'Meeting')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
+      }
+
+      const [updated] = await db
+        .update(meetings)
+        .set({ ownerId: input.newOwnerId })
+        .where(eq(meetings.id, input.meetingId))
+        .returning()
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      }
+
+      return updated
     }),
 })

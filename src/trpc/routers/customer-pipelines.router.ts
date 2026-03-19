@@ -39,8 +39,8 @@ export const customerPipelinesRouter = createTRPCRouter({
       pipeline: z.enum(customerPipelines),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.session.user.role !== 'super-admin') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can move customers between pipelines' })
+      if (ctx.ability.cannot('manage', 'CustomerPipeline')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to move customers between pipelines' })
       }
       await moveCustomerToPipeline(input.customerId, input.pipeline)
     }),
