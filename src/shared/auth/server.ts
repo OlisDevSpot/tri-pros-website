@@ -25,6 +25,13 @@ export const auth = betterAuth({
       redirectURI: `${env.NEXT_PUBLIC_BASE_URL}/api/auth/callback/google`,
       accessType: 'offline',
       prompt: 'select_account consent',
+      // scope is new — first time explicitly configured; adds drive.readonly for Picker
+      scope: [
+        'openid',
+        'email',
+        'profile',
+        'https://www.googleapis.com/auth/drive.readonly',
+      ],
     },
   },
   databaseHooks: {
