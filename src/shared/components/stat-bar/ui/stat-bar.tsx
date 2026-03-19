@@ -30,7 +30,7 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
   }
 
   return (
-    <div className={cn('grid grid-cols-2 gap-1.5 lg:gap-3', LG_COLS_MAP[items.length] ?? 'lg:grid-cols-4', className)}>
+    <div className={cn('grid w-fit grid-cols-2 gap-1.5 lg:gap-3', LG_COLS_MAP[items.length] ?? 'lg:grid-cols-4', className)}>
       {items.map((item) => {
         const value = item.getValue(data)
         return (
