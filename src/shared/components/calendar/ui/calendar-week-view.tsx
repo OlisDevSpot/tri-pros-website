@@ -2,8 +2,9 @@
 
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
 import { format, isToday, parseISO } from 'date-fns'
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 
 import {
   formatHour,
@@ -13,12 +14,14 @@ import {
   groupEvents,
 } from '@/shared/components/calendar/lib/calendar-helpers'
 import { CalendarTimeIndicator } from '@/shared/components/calendar/ui/calendar-time-indicator'
+import { ScrollBar } from '@/shared/components/ui/scroll-area'
 
 const START_HOUR = 8
 const END_HOUR = 22
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR)
 const HOUR_HEIGHT_PX = 156
 const DAY_MIN_WIDTH_PX = 150
+
 interface Props<T extends CalendarEvent> {
   events: T[]
   currentDate: Date
@@ -38,126 +41,102 @@ export function CalendarWeekView<T extends CalendarEvent>({
     () => getWeekDays(currentDate, hiddenDays),
     [currentDate, hiddenDays],
   )
-  const headerScrollRef = useRef<HTMLDivElement>(null)
-  const bodyScrollRef = useRef<HTMLDivElement>(null)
 
   const colCount = weekDays.length
   const gridMinWidth = colCount * DAY_MIN_WIDTH_PX
-
-  // Sync horizontal scroll between header and body
-  function handleHeaderScroll() {
-    if (headerScrollRef.current && bodyScrollRef.current) {
-      bodyScrollRef.current.scrollLeft = headerScrollRef.current.scrollLeft
-    }
-  }
-
-  function handleBodyScroll() {
-    if (headerScrollRef.current && bodyScrollRef.current) {
-      headerScrollRef.current.scrollLeft = bodyScrollRef.current.scrollLeft
-    }
-  }
+  const totalMinWidth = 64 + gridMinWidth // hours col + day grid
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Week header */}
-      <div className="flex border-b">
-        <div className="w-16 shrink-0 bg-background" />
-        <div
-          ref={headerScrollRef}
-          className="flex-1 overflow-x-hidden"
-          onScroll={handleHeaderScroll}
-        >
-          <div
-            className="grid border-l"
-            style={{
-              gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
-              minWidth: `${gridMinWidth}px`,
-            }}
-          >
-            {weekDays.map(day => (
-              <div
-                key={day.toISOString()}
-                className="py-2 text-center text-xs font-medium text-muted-foreground"
-              >
-                <span className="block sm:hidden">
-                  {format(day, 'EEE').charAt(0)}
-                  <span className="block text-xs font-semibold text-foreground">
-                    {format(day, 'd')}
-                  </span>
-                </span>
-                <span className="hidden sm:inline">
-                  {format(day, 'EE')}
-                  {' '}
-                  <span
-                    className={
-                      isToday(day)
-                        ? 'ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground'
-                        : 'ml-1 font-semibold text-foreground'
-                    }
-                  >
-                    {format(day, 'd')}
-                  </span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Time grid — vertical overflow scrolls, horizontal synced with header */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Hours column — fixed, never scrolls horizontally */}
-        <div className="w-16 shrink-0 overflow-y-auto bg-background" style={{ scrollbarWidth: 'none' }}>
-          <div>
-            {HOURS.map((hour, index) => (
-              <div
-                key={hour}
-                className="relative"
-                style={{ height: `${HOUR_HEIGHT_PX}px` }}
-              >
-                {index !== 0 && (
-                  <div className="absolute -top-3 right-2 flex h-6 items-center">
-                    <span className="text-xs text-muted-foreground">
-                      {formatHour(hour)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Day columns — scrolls both directions */}
-        <div
-          ref={bodyScrollRef}
-          className="flex-1 overflow-auto border-l"
-          onScroll={handleBodyScroll}
-        >
-          <div className="relative" style={{ minWidth: `${gridMinWidth}px` }}>
+    <ScrollAreaPrimitive.Root className="relative h-175" type="always">
+      <ScrollAreaPrimitive.Viewport className="size-full rounded-[inherit]">
+        <div style={{ minWidth: `${totalMinWidth}px` }}>
+          {/* Week header */}
+          <div className="sticky top-0 z-10 flex border-b bg-background">
+            <div className="sticky left-0 z-20 w-16 shrink-0 bg-background" />
             <div
-              className="grid divide-x"
+              className="grid flex-1 border-l"
               style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
             >
-              {weekDays.map((day) => {
-                const dayEvents = getEventsForDay(events, day)
-                const groupedEvents = groupEvents(dayEvents)
+              {weekDays.map(day => (
+                <div
+                  key={day.toISOString()}
+                  className="py-2 text-center text-xs font-medium text-muted-foreground"
+                >
+                  <span className="block sm:hidden">
+                    {format(day, 'EEE').charAt(0)}
+                    <span className="block text-xs font-semibold text-foreground">
+                      {format(day, 'd')}
+                    </span>
+                  </span>
+                  <span className="hidden sm:inline">
+                    {format(day, 'EE')}
+                    {' '}
+                    <span
+                      className={
+                        isToday(day)
+                          ? 'ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground'
+                          : 'ml-1 font-semibold text-foreground'
+                      }
+                    >
+                      {format(day, 'd')}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-                return (
-                  <WeekDayColumn
-                    key={day.toISOString()}
-                    day={day}
-                    groupedEvents={groupedEvents}
-                    renderCard={renderCard}
-                  />
-                )
-              })}
+          {/* Time grid */}
+          <div className="flex">
+            {/* Hours column — sticky on horizontal scroll */}
+            <div className="sticky left-0 z-20 w-16 shrink-0 bg-background">
+              {HOURS.map((hour, index) => (
+                <div
+                  key={hour}
+                  className="relative"
+                  style={{ height: `${HOUR_HEIGHT_PX}px` }}
+                >
+                  {index !== 0 && (
+                    <div className="absolute -top-3 right-2 flex h-6 items-center">
+                      <span className="text-xs text-muted-foreground">
+                        {formatHour(hour)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
 
-            <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
+            {/* Week grid */}
+            <div className="relative flex-1 border-l">
+              <div
+                className="grid divide-x"
+                style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+              >
+                {weekDays.map((day) => {
+                  const dayEvents = getEventsForDay(events, day)
+                  const groupedEvents = groupEvents(dayEvents)
+
+                  return (
+                    <WeekDayColumn
+                      key={day.toISOString()}
+                      day={day}
+                      groupedEvents={groupedEvents}
+                      renderCard={renderCard}
+                    />
+                  )
+                })}
+              </div>
+
+              <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar orientation="vertical" />
+      <ScrollBar orientation="horizontal" />
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
   )
 }
 
