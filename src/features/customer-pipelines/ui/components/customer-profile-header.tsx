@@ -3,7 +3,6 @@
 import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 
 import { CopyIcon, ExternalLinkIcon, GlobeIcon, MailIcon, MapPinIcon, PhoneIcon } from 'lucide-react'
-import { toast } from 'sonner'
 
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -13,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
+import { copyToClipboard } from '@/shared/lib/clipboard'
 import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 interface Props {
@@ -20,11 +20,6 @@ interface Props {
 }
 
 export function CustomerProfileHeader({ customer }: Props) {
-  function copyToClipboard(text: string, label: string) {
-    navigator.clipboard.writeText(text)
-    toast.success(`${label} copied`)
-  }
-
   const address = [customer.address, customer.city, customer.state, customer.zip]
     .filter(Boolean)
     .join(', ')
