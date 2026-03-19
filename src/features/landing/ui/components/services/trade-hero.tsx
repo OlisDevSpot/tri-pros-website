@@ -14,6 +14,7 @@ interface TradeHeroProps {
   defaultHeroImage: string
   pillarSlug: PillarSlug
   pillarTitle: string
+  painHeadline: string
 }
 
 const trustItems = [
@@ -30,6 +31,7 @@ export function TradeHero({
   defaultHeroImage,
   pillarSlug,
   pillarTitle,
+  painHeadline,
 }: TradeHeroProps) {
   const imageUrl = images[0] ?? defaultHeroImage
 
@@ -71,7 +73,7 @@ export function TradeHero({
         </nav>
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 max-w-4xl mx-auto">
-          {tradeName}
+          {painHeadline}
         </h1>
 
         <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-8 leading-relaxed">
