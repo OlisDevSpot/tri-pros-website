@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { extname } from 'node:path'
 import { TRPCError } from '@trpc/server'
 import { and, eq, inArray } from 'drizzle-orm'
@@ -14,6 +15,7 @@ import { refreshAccessToken } from '@/shared/services/google-drive/lib/refresh-a
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { deleteObject } from '@/shared/services/r2/delete-object'
 import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
+import { putObject } from '@/shared/services/r2/put-object'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
 const PORTFOLIO_BUCKET = R2_BUCKETS.portfolioProjects
@@ -243,5 +245,74 @@ export const showroomRouter = createTRPCRouter({
         .where(eq(account.id, googleAccount.id))
 
       return { accessToken }
+    }),
+
+  // ── Agent: Google Drive → R2 upload ───────────────────────────────
+
+  uploadFromDriveFile: agentProcedure
+    .input(z.object({
+      driveFileId: z.string(),
+      name: z.string(),
+      mimeType: z.string(),
+      projectId: z.string().uuid(),
+      phase: z.enum(mediaPhases),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const googleAccount = await db.query.account.findFirst({
+        where: and(
+          eq(account.userId, ctx.session.user.id),
+          eq(account.providerId, 'google'),
+        ),
+      })
+
+      if (!googleAccount?.refreshToken) {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'No Google Drive connection — please sign out and sign in again' })
+      }
+
+      const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000)
+      let accessToken = googleAccount.accessToken
+      if (!googleAccount.accessTokenExpiresAt || googleAccount.accessTokenExpiresAt <= fiveMinutesFromNow) {
+        const refreshed = await refreshAccessToken({ refreshToken: googleAccount.refreshToken })
+        await db
+          .update(account)
+          .set({ accessToken: refreshed.accessToken, accessTokenExpiresAt: refreshed.expiresAt })
+          .where(eq(account.id, googleAccount.id))
+        accessToken = refreshed.accessToken
+      }
+
+      const driveResponse = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${input.driveFileId}?alt=media`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      )
+
+      if (!driveResponse.ok) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Drive download failed (${driveResponse.status} ${driveResponse.statusText})`,
+        })
+      }
+
+      const ext = input.name.includes('.') ? `.${input.name.split('.').pop()}` : ''
+      const fileUuid = crypto.randomUUID()
+      const pathKey = `projects/${input.projectId}/${input.phase}/${fileUuid}${ext}`
+      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET]}/${pathKey}`
+
+      const buffer = Buffer.from(await driveResponse.arrayBuffer())
+      await putObject(PORTFOLIO_BUCKET, pathKey, buffer, input.mimeType)
+
+      const [created] = await db
+        .insert(mediaFiles)
+        .values({
+          name: input.name.replace(/\.[^/.]+$/, ''),
+          url: publicUrl,
+          pathKey,
+          bucket: PORTFOLIO_BUCKET,
+          mimeType: input.mimeType,
+          phase: input.phase,
+          projectId: input.projectId,
+        })
+        .returning()
+
+      return created
     }),
 })

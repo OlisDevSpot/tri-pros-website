@@ -27,7 +27,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { useMediaUpload } from '@/shared/hooks/use-media-upload'
 import { useGooglePicker } from '@/shared/services/google-drive/hooks/use-google-picker'
-import { downloadDriveFile } from '@/shared/services/google-drive/lib/download-drive-file'
 import { useTRPC } from '@/trpc/helpers'
 import { SortablePhotoCard } from './sortable-photo-card'
 import { UploadSourcePopover } from './upload-source-popover'
@@ -142,26 +141,23 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     enabled: false,
   })
 
+  const uploadFromDriveMutation = useMutation(trpc.showroomRouter.uploadFromDriveFile.mutationOptions())
+
   const { isLoading: isPickerLoading, openPicker } = useGooglePicker({
     onFilesPicked: async (files) => {
       for (const picked of files) {
         try {
-          const file = await downloadDriveFile(picked, currentAccessTokenRef.current!)
-          await upload({
-            file,
+          await uploadFromDriveMutation.mutateAsync({
+            driveFileId: picked.id,
+            name: picked.name,
+            mimeType: picked.mimeType,
             projectId,
             phase: activePhase,
-            meta: {
-              name: picked.name.replace(/\.[^/.]+$/, ''),
-              mimeType: picked.mimeType,
-              fileExtension: picked.name.includes('.') ? `.${picked.name.split('.').pop()}` : '',
-              phase: activePhase,
-              projectId,
-            },
           })
         }
-        catch {
-          toast.error(`Failed to import ${picked.name} from Google Drive`)
+        catch (err) {
+          const message = err instanceof Error ? err.message : 'Unknown error'
+          toast.error(`Failed to import ${picked.name}: ${message}`)
         }
       }
       onUpdate()
