@@ -5,6 +5,7 @@ const command = process.argv[2]
 
 const commands: Record<string, { file: string; description: string }> = {
   verify: { file: 'scripts/meta/setup/verify-credentials.ts', description: 'Smoke test all credentials' },
+  'init-account': { file: 'scripts/meta/setup/initialize-account.ts', description: 'One-time setup: pixel + first campaign + retargeting audience' },
   performance: { file: 'scripts/meta/reports/pull-performance.ts', description: 'Pull campaign stats (optional: date preset)' },
   'manage-ad': { file: 'scripts/meta/ads/manage-ad.ts', description: 'Interactively pause or activate an ad' },
   'create-campaign': { file: 'scripts/meta/campaigns/create-campaign.ts', description: 'Wizard: create campaign → ad set → ad' },

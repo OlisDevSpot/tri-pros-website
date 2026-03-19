@@ -52,6 +52,7 @@ async function main() {
       objective,
       status: 'PAUSED', // Always start paused — activate manually after review
       special_ad_categories: [],
+      is_adset_budget_sharing_enabled: false, // Budget on ad set, not campaign level
     },
   })
   campaignId = campaign.id
@@ -75,6 +76,7 @@ async function main() {
       daily_budget: Math.round(dailyBudgetDollars * 100), // Meta uses cents
       billing_event: 'IMPRESSIONS',
       optimization_goal: OPTIMIZATION_GOAL[objective] ?? 'REACH',
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       targeting: {
         geo_locations: {
           regions: [{ key: '3847', name: 'California', country: 'US' }], // California state — refine to DMA/city for SoCal-only

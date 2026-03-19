@@ -9,6 +9,9 @@ interface MetaErrorShape {
   type: string
   code: number
   fbtrace_id: string
+  error_subcode?: number
+  error_user_msg?: string
+  error_user_title?: string
 }
 
 export class MetaApiError extends Error {
@@ -17,8 +20,11 @@ export class MetaApiError extends Error {
     public type: string,
     message: string,
     public fbtrace_id: string,
+    public subcode?: number,
+    public userMsg?: string,
   ) {
-    super(message)
+    // Include user-friendly message in the error text when available
+    super(userMsg ? `${message} — ${userMsg}` : message)
     this.name = 'MetaApiError'
   }
 }
@@ -62,7 +68,7 @@ export async function metaFetch<T>(endpoint: string, options: FetchOptions = {})
     if (!err) {
       throw new MetaApiError(res.status, 'UnknownError', `Meta API error (HTTP ${res.status})`, '')
     }
-    throw new MetaApiError(err.code, err.type, err.message, err.fbtrace_id)
+    throw new MetaApiError(err.code, err.type, err.message, err.fbtrace_id, err.error_subcode, err.error_user_msg)
   }
 
   return json as T
