@@ -3,6 +3,7 @@
 import type { inferRouterOutputs } from '@trpc/server'
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
+import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { useCallback, useMemo } from 'react'
@@ -23,6 +24,10 @@ interface MeetingCalendarProps {
   onDuplicateMeeting: (meetingId: string) => void
   onDeleteMeeting: (meetingId: string) => void
   onDateRangeChange?: (range: { from: Date, to: Date }) => void
+  activeView?: CalendarViewType
+  onViewChange?: (view: CalendarViewType) => void
+  showSaturday?: boolean
+  onToggleSaturday?: () => void
 }
 
 export function MeetingCalendar({
@@ -33,6 +38,10 @@ export function MeetingCalendar({
   onDuplicateMeeting,
   onDeleteMeeting,
   onDateRangeChange,
+  activeView,
+  onViewChange,
+  showSaturday,
+  onToggleSaturday,
 }: MeetingCalendarProps) {
   const events = useMemo(() => data.map(toCalendarEvent), [data])
 
@@ -71,6 +80,10 @@ export function MeetingCalendar({
       renderCard={renderCard}
       renderCompact={renderCompact}
       onDateRangeChange={onDateRangeChange}
+      activeView={activeView}
+      onViewChange={onViewChange}
+      showSaturday={showSaturday}
+      onToggleSaturday={onToggleSaturday}
     />
   )
 }

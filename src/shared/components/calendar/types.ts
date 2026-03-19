@@ -20,5 +20,9 @@ export interface CalendarBoardProps<T extends CalendarEvent> {
   renderCompact: (event: T) => React.ReactNode
   onEventClick?: (event: T) => void
   onDateRangeChange?: (range: { from: Date, to: Date }) => void
+  activeView?: CalendarViewType
+  onViewChange?: (view: CalendarViewType) => void
+  showSaturday?: boolean
+  onToggleSaturday?: () => void
   className?: string
 }

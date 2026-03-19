@@ -3,30 +3,21 @@
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 
 import { formatDate } from 'date-fns'
-import { ChevronLeftIcon, ChevronRightIcon, FilterIcon } from 'lucide-react'
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 import { getRangeText, navigateDate } from '@/shared/components/calendar/lib/calendar-helpers'
-import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { Checkbox } from '@/shared/components/ui/checkbox'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 
 interface Props {
   currentDate: Date
   activeView: CalendarViewType
-  showSaturday: boolean
   onDateChange: (date: Date) => void
-  onViewChange: (view: CalendarViewType) => void
-  onToggleSaturday: () => void
 }
 
 export function CalendarHeader({
   currentDate,
   activeView,
-  showSaturday,
   onDateChange,
-  onViewChange,
-  onToggleSaturday,
 }: Props) {
   const monthYear = formatDate(currentDate, 'MMM yyyy')
 
@@ -43,8 +34,7 @@ export function CalendarHeader({
   }
 
   return (
-    <div className="flex items-center justify-between border-b px-4 py-2">
-      {/* Left side: navigation */}
+    <div className="flex items-center border-b px-4 py-2">
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={handleToday}>
           Today
@@ -67,54 +57,6 @@ export function CalendarHeader({
         <div className="flex flex-col gap-0.5 sm:hidden">
           <span className="text-sm font-semibold leading-tight">{monthYear}</span>
           <span className="text-[10px] leading-tight text-muted-foreground">{getRangeText(activeView, currentDate)}</span>
-        </div>
-      </div>
-
-      {/* Right side: Saturday filter + view toggle */}
-      <div className="flex items-center gap-2">
-        {/* Saturday filter — only visible in week view */}
-        {activeView === 'week' && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <FilterIcon size={14} />
-                <span className="hidden sm:inline">Days</span>
-                <Badge variant="secondary" className="px-1.5 text-[10px]">
-                  {showSaturday ? '7' : '6'}
-                </Badge>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-48 p-3">
-              <p className="mb-3 text-sm font-medium">Visible Days</p>
-              <label className="flex cursor-pointer items-center gap-2">
-                <Checkbox
-                  checked={showSaturday}
-                  onCheckedChange={onToggleSaturday}
-                />
-                <span className="text-sm">Show Saturday</span>
-              </label>
-            </PopoverContent>
-          </Popover>
-        )}
-
-        {/* View toggle */}
-        <div className="flex rounded-md border">
-          <Button
-            variant={activeView === 'week' ? 'default' : 'ghost'}
-            size="sm"
-            className="rounded-r-none"
-            onClick={() => onViewChange('week')}
-          >
-            Week
-          </Button>
-          <Button
-            variant={activeView === 'month' ? 'default' : 'ghost'}
-            size="sm"
-            className="rounded-l-none"
-            onClick={() => onViewChange('month')}
-          >
-            Month
-          </Button>
         </div>
       </div>
     </div>
