@@ -145,13 +145,13 @@ export function CustomerPipelineView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
-      <div className="flex flex-col gap-2 lg:gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
-        <div className="flex items-center justify-between gap-2">
-          {isSuperAdmin && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-          <div className="ml-auto">
-            <DataViewTypeToggle value={layout} onChange={setLayout} />
+        <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+          <div className="flex items-center gap-2">
+            {isSuperAdmin && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           </div>
+          <DataViewTypeToggle value={layout} onChange={setLayout} />
         </div>
       </div>
 
