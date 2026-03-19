@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from 'react'
 
-export function CalendarTimeIndicator() {
+interface Props {
+  startHour?: number
+  endHour?: number
+}
+
+export function CalendarTimeIndicator({ startHour = 8, endHour = 22 }: Props) {
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -12,7 +17,15 @@ export function CalendarTimeIndicator() {
 
   const hours = now.getHours()
   const minutes = now.getMinutes()
-  const topPercent = ((hours * 60 + minutes) / (24 * 60)) * 100
+  const currentMinutes = hours * 60 + minutes
+  const rangeStart = startHour * 60
+  const rangeEnd = endHour * 60
+
+  if (currentMinutes < rangeStart || currentMinutes > rangeEnd) {
+    return null
+  }
+
+  const topPercent = ((currentMinutes - rangeStart) / (rangeEnd - rangeStart)) * 100
 
   return (
     <div

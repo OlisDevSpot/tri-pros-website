@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 const STATUS_DOT_COLORS: Record<MeetingStatus, string> = {
@@ -29,9 +28,9 @@ const STATUS_DOT_COLORS: Record<MeetingStatus, string> = {
 }
 
 const STATUS_BG_TINTS: Record<MeetingStatus, string> = {
-  in_progress: 'bg-sky-500/5',
-  completed: 'bg-emerald-500/5',
-  converted: 'bg-violet-500/5',
+  in_progress: 'bg-sky-500/5 border-sky-500/20',
+  completed: 'bg-emerald-500/5 border-emerald-500/20',
+  converted: 'bg-violet-500/5 border-violet-500/20',
 }
 
 interface MeetingCalendarCardProps {
@@ -56,19 +55,21 @@ export function MeetingCalendarCard({
 
   const program = MEETING_PROGRAMS.find(p => p.accessor === event.program)
 
-  const formattedAddress = [event.customerAddress, event.customerCity]
+  const addressLine1 = event.customerAddress ?? ''
+  const addressLine2 = [event.customerCity, event.customerState, event.customerZip]
     .filter(Boolean)
     .join(', ')
+  const fullAddress = [addressLine1, addressLine2].filter(Boolean).join(', ')
 
   return (
     <div
       className={cn(
-        'group relative flex flex-col gap-1 rounded-md border p-2 text-xs cursor-pointer transition-colors hover:border-foreground/20',
+        'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
         STATUS_BG_TINTS[event.status],
       )}
       onClick={() => onNavigate(event.meetingId)}
     >
-      {/* Row 1: Status dot + program badge */}
+      {/* Row 1: Status dot + customer name + actions */}
       <div className="flex items-center gap-1.5 min-w-0">
         <span
           className={cn(
@@ -76,46 +77,9 @@ export function MeetingCalendarCard({
             STATUS_DOT_COLORS[event.status],
           )}
         />
-        {program && (
-          <Badge
-            className={cn(
-              'text-[10px] px-1.5 py-0 leading-4 truncate',
-              programAccentMap[program.accentColor].badge,
-            )}
-          >
-            {program.name}
-          </Badge>
-        )}
-      </div>
-
-      {/* Row 2: Customer name */}
-      {event.customerName && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <p className="font-medium truncate leading-tight">
-              {event.customerName}
-            </p>
-          </TooltipTrigger>
-          <TooltipContent side="top" align="start">
-            {event.customerName}
-          </TooltipContent>
-        </Tooltip>
-      )}
-
-      {/* Row 3: Phone + actions menu */}
-      <div className="flex items-center justify-between gap-1">
-        {event.customerPhone
-          ? (
-              <div
-                className="min-w-0 text-muted-foreground"
-                onClick={e => e.stopPropagation()}
-              >
-                <PhoneAction phone={event.customerPhone} className="text-[11px]" />
-              </div>
-            )
-          : (
-              <div />
-            )}
+        <span className="font-medium truncate flex-1 leading-tight">
+          {event.customerName ?? event.contactName ?? 'Unknown'}
+        </span>
         <div
           className={cn(
             'shrink-0 opacity-0 transition-opacity',
@@ -125,8 +89,8 @@ export function MeetingCalendarCard({
         >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
-                <MoreHorizontalIcon className="h-3.5 w-3.5" />
+              <Button variant="ghost" size="icon" className="h-5 w-5">
+                <MoreHorizontalIcon className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -159,13 +123,42 @@ export function MeetingCalendarCard({
         </div>
       </div>
 
-      {/* Row 4: Address */}
-      {formattedAddress && (
+      {/* Row 2: Program badge */}
+      {program && (
+        <Badge
+          className={cn(
+            'w-fit text-[10px] px-1.5 py-0 leading-4 truncate',
+            programAccentMap[program.accentColor].badge,
+          )}
+        >
+          {program.name}
+        </Badge>
+      )}
+
+      {/* Row 3: Phone */}
+      {event.customerPhone && (
         <div
-          className="text-muted-foreground min-w-0"
+          className="min-w-0 text-muted-foreground"
           onClick={e => e.stopPropagation()}
         >
-          <AddressAction address={formattedAddress} className="text-[11px]" />
+          <PhoneAction phone={event.customerPhone} className="text-[11px]" />
+        </div>
+      )}
+
+      {/* Row 4: Address (2 lines) */}
+      {fullAddress && (
+        <div
+          className="min-w-0 text-muted-foreground"
+          onClick={e => e.stopPropagation()}
+        >
+          <AddressAction address={fullAddress} className="text-[11px]">
+            <div className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer min-w-0">
+              <span className="min-w-0">
+                {addressLine1 && <span className="block truncate">{addressLine1}</span>}
+                {addressLine2 && <span className="block truncate text-[10px] opacity-70">{addressLine2}</span>}
+              </span>
+            </div>
+          </AddressAction>
         </div>
       )}
     </div>

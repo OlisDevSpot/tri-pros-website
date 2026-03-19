@@ -138,16 +138,22 @@ export function getEventBlockStyle<T extends CalendarEvent>(
   day: Date,
   groupIndex: number,
   groupSize: number,
+  startHour = 0,
+  endHour = 24,
 ): { top: string, width: string, left: string, height: string } {
   const startDate = parseISO(event.startAt)
   const endDate = event.endAt ? parseISO(event.endAt) : new Date(startDate.getTime() + 60 * 60 * 1000)
   const dayStart = startOfDay(day)
+  const rangeStartMinutes = startHour * 60
+  const totalVisibleMinutes = (endHour - startHour) * 60
+
   const eventStart = startDate < dayStart ? dayStart : startDate
   const startMinutes = (eventStart.getTime() - dayStart.getTime()) / 60000
   const durationMinutes = (endDate.getTime() - eventStart.getTime()) / 60000
 
-  const top = (startMinutes / 1440) * 100
-  const height = (Math.max(durationMinutes, 15) / 1440) * 100
+  const clampedStart = Math.max(startMinutes - rangeStartMinutes, 0)
+  const top = (clampedStart / totalVisibleMinutes) * 100
+  const height = (Math.max(durationMinutes, 30) / totalVisibleMinutes) * 100
   const width = 100 / groupSize
   const left = groupIndex * width
 

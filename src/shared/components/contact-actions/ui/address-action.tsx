@@ -16,23 +16,26 @@ interface AddressActionProps {
   address: string
   className?: string
   compact?: boolean
+  children?: React.ReactNode
 }
 
-export function AddressAction({ address, className, compact = false }: AddressActionProps) {
+export function AddressAction({ address, className, compact = false, children }: AddressActionProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            'flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer',
-            className,
-          )}
-          onClick={e => e.stopPropagation()}
-        >
-          <MapPinIcon size={14} className="shrink-0" />
-          {!compact && <span className="truncate">{address}</span>}
-        </button>
+        {children ?? (
+          <button
+            type="button"
+            className={cn(
+              'flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer',
+              className,
+            )}
+            onClick={e => e.stopPropagation()}
+          >
+            <MapPinIcon size={14} className="shrink-0" />
+            {!compact && <span className="truncate">{address}</span>}
+          </button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem

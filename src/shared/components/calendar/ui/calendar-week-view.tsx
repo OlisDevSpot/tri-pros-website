@@ -15,8 +15,10 @@ import {
 import { CalendarTimeIndicator } from '@/shared/components/calendar/ui/calendar-time-indicator'
 import { ScrollArea } from '@/shared/components/ui/scroll-area'
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i)
-const HOUR_HEIGHT_PX = 96
+const START_HOUR = 8
+const END_HOUR = 22
+const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR)
+const HOUR_HEIGHT_PX = 120
 
 interface Props<T extends CalendarEvent> {
   events: T[]
@@ -122,7 +124,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
               })}
             </div>
 
-            <CalendarTimeIndicator />
+            <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
           </div>
         </div>
       </ScrollArea>
@@ -169,6 +171,8 @@ function WeekDayColumn<T extends CalendarEvent>({
             day,
             groupIndex,
             groupedEvents.length,
+            START_HOUR,
+            END_HOUR,
           )
 
           // If no overlap, use full width
