@@ -9,9 +9,9 @@ import { LogoLink } from './logo'
 export default function Footer() {
   return (
     <footer className="text-foreground lg:sticky lg:bottom-0 w-full z-1 min-h-fit bg-muted">
-      <div className="container pt-16 pb-12">
+      <div className="container pt-8 pb-6">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2">
             <motion.div
@@ -61,10 +61,10 @@ export default function Footer() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <h3 className=" font-bold text-lg text-foreground mb-4">
+              <h3 className=" font-bold text-lg text-foreground mb-3">
                 {section.title}
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {section.links.map(link => (
                   <li key={link.name}>
                     <Link
@@ -85,9 +85,9 @@ export default function Footer() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="mt-12 pt-8 border-t border-primary-foreground/20"
+          className="mt-6 pt-6 border-t border-primary-foreground/20"
         >
-          <h3 className=" font-bold text-lg text-foreground mb-6">
+          <h3 className=" font-bold text-lg text-foreground mb-3">
             Contact Information
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -115,28 +115,11 @@ export default function Footer() {
           </div>
         </motion.div>
 
-        {/* Newsletter Signup */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-12 pt-8 border-t border-primary-foreground/20"
-        >
-          <div className="max-w-md">
-            <h3 className=" font-bold text-lg text-foreground mb-4">
-              Stay Updated
-            </h3>
-            <p className="text-foreground text-sm mb-4">
-              Get the latest construction tips, project showcases, and company
-              news.
-            </p>
-          </div>
-        </motion.div>
       </div>
 
       {/* Bottom Bar */}
       <div className="border-t border-primary-foreground/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
             <div className="text-foreground/70 text-sm">
               ©
@@ -144,8 +127,7 @@ export default function Footer() {
               {new Date().getFullYear()}
               {' '}
               {companyInfo.name}
-              . All rights
-              rights reserved.
+              . All rights reserved.
             </div>
             <div className="flex space-x-6 text-sm">
               <Link
