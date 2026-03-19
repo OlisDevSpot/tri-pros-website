@@ -74,7 +74,7 @@ export async function getProposal(proposalId: string) {
 
 export type ProposalWithCustomer = NonNullable<Awaited<ReturnType<typeof getProposal>>>
 
-export async function getProposals(userId: string) {
+export async function getProposals(userId: string, options?: { omni?: boolean }) {
   return db
     .select({
       ...getTableColumns(proposals),
@@ -87,7 +87,7 @@ export async function getProposals(userId: string) {
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
     .leftJoin(customers, eq(customers.id, meetings.customerId))
-    .where(eq(proposals.ownerId, userId))
+    .where(options?.omni ? undefined : eq(proposals.ownerId, userId))
     .groupBy(proposals.id, customers.id, customers.name)
     .orderBy(desc(proposals.createdAt))
 }

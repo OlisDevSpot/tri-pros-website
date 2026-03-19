@@ -16,7 +16,8 @@ export const customerPipelinesRouter = createTRPCRouter({
     }).optional())
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      return getCustomerPipelineItems(userId, input?.pipeline ?? 'active')
+      const isOmni = ctx.session.user.role === 'super-admin'
+      return getCustomerPipelineItems(userId, input?.pipeline ?? 'active', { omni: isOmni })
     }),
 
   moveCustomerPipelineItem: agentProcedure
