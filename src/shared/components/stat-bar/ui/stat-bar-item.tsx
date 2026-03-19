@@ -13,7 +13,7 @@ interface Props {
 
 export function StatBarItem({ icon: Icon, label, value, displayValue, color }: Props) {
   return (
-    <>
+    <div>
       {/* Mobile */}
       <div className="relative flex h-12 items-center gap-2 overflow-hidden rounded-lg border border-border/50 px-2 lg:hidden">
         <Icon size={36} className={cn('absolute -right-1 -top-1 opacity-[0.07]', color)} />
@@ -29,6 +29,6 @@ export function StatBarItem({ icon: Icon, label, value, displayValue, color }: P
           <p className="truncate text-xs text-muted-foreground">{label}</p>
         </div>
       </Card>
-    </>
+    </div>
   )
 }
