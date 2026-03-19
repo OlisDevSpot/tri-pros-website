@@ -7,6 +7,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon, GripVerticalIcon } from 'lucide-react'
 
+import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   ContextMenu,
@@ -17,7 +18,6 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/shared/components/ui/context-menu'
-import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
 import { customerPipelines } from '@/shared/constants/enums'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
@@ -53,7 +53,7 @@ export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, isSup
     <Card
       ref={!isDragOverlay ? setNodeRef : undefined}
       className={cn(
-        'cursor-pointer transition-colors duration-200 hover:bg-accent/20',
+        'cursor-pointer transition-colors duration-200 hover:bg-primary/5',
         isDragging && !isDragOverlay && 'opacity-30',
         isDragOverlay && 'shadow-lg rotate-1 scale-105',
       )}

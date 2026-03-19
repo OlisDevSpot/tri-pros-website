@@ -2,13 +2,15 @@
 
 import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 
+import { SpinnerLoader } from '@/shared/components/loaders/spinner-loader'
 import { Card, CardContent } from '@/shared/components/ui/card'
 
 interface Props {
   items: CustomerPipelineItem[]
+  isLoading?: boolean
 }
 
-export function CustomerPipelineMetricsBar({ items }: Props) {
+export function CustomerPipelineMetricsBar({ items, isLoading }: Props) {
   const totalCustomers = items.length
   const activePipelineValue = items
     .filter(i => i.stage !== 'declined' && i.stage !== 'approved')
@@ -44,7 +46,9 @@ export function CustomerPipelineMetricsBar({ items }: Props) {
             className="flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-card"
           >
             <span className="text-xs text-muted-foreground">{m.label}</span>
-            <span className="text-sm font-bold tabular-nums">{m.value}</span>
+            <span className="text-sm font-bold tabular-nums">
+              {isLoading ? <SpinnerLoader /> : m.value}
+            </span>
           </div>
         ))}
       </div>
@@ -54,7 +58,9 @@ export function CustomerPipelineMetricsBar({ items }: Props) {
         {metrics.map(m => (
           <Card key={m.label}>
             <CardContent className="py-3 text-center">
-              <span className="text-2xl font-bold">{m.value}</span>
+              <span className="text-2xl font-bold">
+                {isLoading ? <SpinnerLoader /> : m.value}
+              </span>
               <p className="text-xs text-muted-foreground mt-0.5">{m.label}</p>
             </CardContent>
           </Card>

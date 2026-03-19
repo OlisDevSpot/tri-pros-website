@@ -4,7 +4,7 @@ import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 import type { CustomerPipeline } from '@/shared/types/enums'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
@@ -24,6 +24,7 @@ import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
@@ -36,9 +37,10 @@ export function CustomerPipelineView() {
 
   const config = pipelineConfigs[pipeline]
 
-  const pipelineQuery = useQuery(
-    trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }),
-  )
+  const pipelineQuery = useQuery({
+    ...trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }),
+    placeholderData: keepPreviousData,
+  })
 
   const moveMutation = useMutation(
     trpc.customerPipelinesRouter.moveCustomerPipelineItem.mutationOptions({
@@ -112,7 +114,10 @@ export function CustomerPipelineView() {
     [handleViewProfile, handleMoveToPipeline, pipeline, isSuperAdmin],
   )
 
-  if (pipelineQuery.isLoading) {
+  const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
+  const isSwitching = pipelineQuery.isFetching && !pipelineQuery.isLoading
+
+  if (isInitialLoad) {
     return (
       <LoadingState
         title="Loading Pipeline"
@@ -141,14 +146,14 @@ export function CustomerPipelineView() {
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-        <CustomerPipelineMetricsBar items={pipelineQuery.data} />
+        <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex items-center gap-2">
           {isSuperAdmin && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           <DataViewTypeToggle value={layout} onChange={setLayout} />
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
         {pipelineQuery.data.length === 0
           ? (
               <div className="w-full h-full flex items-center justify-center">
