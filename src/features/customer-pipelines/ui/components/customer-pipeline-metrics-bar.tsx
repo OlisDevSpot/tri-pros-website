@@ -38,17 +38,17 @@ export function CustomerPipelineMetricsBar({ items, isLoading }: Props) {
 
   return (
     <>
-      {/* Mobile: compact vertical list */}
-      <div className="flex flex-col gap-1.5 lg:hidden">
+      {/* Mobile: 2x2 grid */}
+      <div className="grid grid-cols-2 gap-1.5 lg:hidden">
         {metrics.map(m => (
           <div
             key={m.label}
-            className="flex items-center justify-between px-3 py-2 rounded-lg border border-border/50 bg-card"
+            className="flex flex-col items-center justify-center px-2 py-2 rounded-lg border border-border/50 bg-card"
           >
-            <span className="text-xs text-muted-foreground">{m.label}</span>
-            <span className="text-sm font-bold tabular-nums">
+            <span className="h-5 flex items-center text-sm font-bold tabular-nums">
               {isLoading ? <SpinnerLoader /> : m.value}
             </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5">{m.label}</span>
           </div>
         ))}
       </div>
@@ -58,7 +58,7 @@ export function CustomerPipelineMetricsBar({ items, isLoading }: Props) {
         {metrics.map(m => (
           <Card key={m.label}>
             <CardContent className="py-3 text-center">
-              <span className="text-2xl font-bold">
+              <span className="h-8 flex items-center justify-center text-2xl font-bold tabular-nums">
                 {isLoading ? <SpinnerLoader /> : m.value}
               </span>
               <p className="text-xs text-muted-foreground mt-0.5">{m.label}</p>
