@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { meetingTableFilters } from '@/features/meetings/constants/table-filter-config'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
+import { useSession } from '@/shared/auth/client'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
@@ -25,10 +26,12 @@ interface Props {
 
 export function PastMeetingsTable({ data, onFilteredCountChange }: Props) {
   const router = useRouter()
+  const { data: session } = useSession()
   const { deleteMeeting, duplicateMeeting, updateStatus, updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
 
   const meta = {
+    userRole: session?.user?.role,
     onEdit: (meetingId: string) => router.push(`${ROOTS.dashboard.root}?step=edit-meeting&editMeetingId=${meetingId}`),
     onDuplicate: (meetingId: string) => duplicateMeeting.mutate({ id: meetingId }),
     onStart: (meetingId: string) => router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`),

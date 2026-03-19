@@ -3,6 +3,8 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { MeetingStatus } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
+import { MoreHorizontal } from 'lucide-react'
+
 import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
 import { MEETING_STATUS_COLORS } from '@/features/meetings/constants/status-colors'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
@@ -10,10 +12,16 @@ import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { EntityDeleteButton } from '@/shared/components/entity-actions/entity-delete-button'
-import { EntityDuplicateButton } from '@/shared/components/entity-actions/entity-duplicate-button'
 import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
 import { EntityStartButton } from '@/shared/components/entity-actions/entity-start-button'
+import { Button } from '@/shared/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { meetingStatuses } from '@/shared/constants/enums'
 import { formatDateCell } from '@/shared/lib/formatters'
@@ -21,6 +29,7 @@ import { cn } from '@/shared/lib/utils'
 
 export interface MeetingTableMeta {
   activeRowId: string | null
+  userRole: string | undefined
   onEdit: (meetingId: string) => void
   onDuplicate: (meetingId: string) => void
   onStart: (meetingId: string) => void
@@ -72,15 +81,34 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
               onClick={e => e.stopPropagation()}
             >
               <EntityEditButton onClick={() => meta?.onEdit(row.original.id)} />
-              <EntityDuplicateButton
-                disabled={meta?.isDuplicating}
-                onClick={() => meta?.onDuplicate(row.original.id)}
-              />
               <EntityStartButton onClick={() => meta?.onStart(row.original.id)} />
-              <EntityDeleteButton
-                disabled={meta?.isDeleting}
-                onClick={() => meta?.onDelete(row.original.id)}
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    disabled={meta?.isDuplicating}
+                    onClick={() => meta?.onDuplicate(row.original.id)}
+                  >
+                    Duplicate
+                  </DropdownMenuItem>
+                  {meta?.userRole === 'super-admin' && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled={meta?.isDeleting}
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => meta?.onDelete(row.original.id)}
+                      >
+                        Delete
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         )
