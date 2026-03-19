@@ -12,7 +12,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { KanbanColumn } from '@/shared/components/kanban/ui/kanban-column'
 import { KanbanColumnFilter } from '@/shared/components/kanban/ui/kanban-column-filter'
@@ -55,6 +55,18 @@ export function KanbanBoard<T extends KanbanItem>({
     }
     return new Set(stageConfig.map(s => s.key))
   })
+
+  // Reset visible stages when stage config changes (e.g., switching pipelines)
+  const stageKeys = stageConfig.map(s => s.key).join(',')
+  useEffect(() => {
+    if (columnFilter?.defaultVisible) {
+      setVisibleStages(new Set(columnFilter.defaultVisible))
+    }
+    else {
+      setVisibleStages(new Set(stageConfig.map(s => s.key)))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when stages change
+  }, [stageKeys])
 
   const alwaysVisible = useMemo(
     () => new Set(columnFilter?.alwaysVisible ?? []),
