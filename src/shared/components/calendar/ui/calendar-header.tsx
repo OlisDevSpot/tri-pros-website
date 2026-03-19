@@ -59,11 +59,18 @@ export function CalendarHeader({
           </Button>
         </div>
 
-        <span className="text-sm font-semibold">{monthYear}</span>
-        <span className="ml-1 text-xs text-muted-foreground">{getRangeText(activeView, currentDate)}</span>
+        {/* Desktop: single line */}
+        <span className="hidden text-sm font-semibold sm:inline">{monthYear}</span>
+        <span className="ml-1 hidden text-xs text-muted-foreground sm:inline">{getRangeText(activeView, currentDate)}</span>
+
+        {/* Mobile: stacked */}
+        <div className="flex flex-col gap-0.5 sm:hidden">
+          <span className="text-sm font-semibold leading-tight">{monthYear}</span>
+          <span className="text-[10px] leading-tight text-muted-foreground">{getRangeText(activeView, currentDate)}</span>
+        </div>
       </div>
 
-      {/* Right side: view toggle + Saturday filter */}
+      {/* Right side: Saturday filter + view toggle */}
       <div className="flex items-center gap-2">
         {/* Saturday filter — only visible in week view */}
         {activeView === 'week' && (
@@ -71,7 +78,7 @@ export function CalendarHeader({
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5">
                 <FilterIcon size={14} />
-                Days
+                <span className="hidden sm:inline">Days</span>
                 <Badge variant="secondary" className="px-1.5 text-[10px]">
                   {showSaturday ? '7' : '6'}
                 </Badge>

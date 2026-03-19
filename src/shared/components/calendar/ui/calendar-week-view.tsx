@@ -43,13 +43,13 @@ export function CalendarWeekView<T extends CalendarEvent>({
   const colCount = weekDays.length
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-x-auto">
       {/* Week header */}
       <div className="flex border-b">
         <div className="w-16 shrink-0" />
         <div
-          className="grid flex-1 border-l"
-          style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+          className="grid border-l"
+          style={{ gridTemplateColumns: `repeat(${colCount}, minmax(150px, 1fr))` }}
         >
           {weekDays.map(day => (
             <div
@@ -106,7 +106,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
           <div className="relative flex-1 border-l">
             <div
               className="grid divide-x"
-              style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+              style={{ gridTemplateColumns: `repeat(${colCount}, minmax(150px, 1fr))` }}
             >
               {weekDays.map((day) => {
                 const dayEvents = getEventsForDay(events, day)
