@@ -30,8 +30,8 @@ If credentials fail, run `pnpm meta verify` first to diagnose.
 
 ## After Mutating Operations
 
-After create-campaign or manage-ad runs, open Ads Manager in the browser using Playwright to visually confirm the change:
-`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=1552723459154642`
+After `create-campaign` or `manage-ad` runs, the script prints an `ADS MANAGER URL` at the end of its output.
+Open that URL in the browser using Playwright to visually confirm the change.
 
 ## Rules
 

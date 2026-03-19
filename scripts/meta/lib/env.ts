@@ -1,3 +1,4 @@
+/* eslint-disable node/prefer-global/process */
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { config } from 'dotenv'
@@ -9,7 +10,6 @@ config({ path: path.resolve(__dirname, '..', '..', '..', '.env.meta') })
 
 const REQUIRED = [
   'META_APP_ID',
-  'META_APP_SECRET',
   'META_ACCESS_TOKEN',
   'META_AD_ACCOUNT_ID',
   'META_PAGE_ID',
@@ -25,7 +25,6 @@ for (const key of REQUIRED) {
 
 export const metaEnv = {
   appId: process.env.META_APP_ID as string,
-  appSecret: process.env.META_APP_SECRET as string,
   accessToken: process.env.META_ACCESS_TOKEN as string,
   adAccountId: process.env.META_AD_ACCOUNT_ID as string, // already act_ prefixed
   pageId: process.env.META_PAGE_ID as string,

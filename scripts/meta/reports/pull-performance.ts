@@ -4,8 +4,16 @@ import { metaFetch } from '../lib/client.js'
 import { printTable, printInfo, printError } from '../lib/formatters.js'
 import type { Insight, MetaPaginatedResponse } from '../lib/types.js'
 
-const DATE_PRESET = process.argv[2] ?? 'last_7d'
-// Supported: today, yesterday, last_7d, last_14d, last_28d, last_30d, last_month, this_month
+const VALID_PRESETS = ['today', 'yesterday', 'last_7d', 'last_14d', 'last_28d', 'last_30d', 'last_month', 'this_month'] as const
+type DatePreset = (typeof VALID_PRESETS)[number]
+
+const rawPreset = process.argv[2] ?? 'last_7d'
+if (!VALID_PRESETS.includes(rawPreset as DatePreset)) {
+  console.error(`❌  Invalid date preset: "${rawPreset}"`)
+  console.error(`    Valid options: ${VALID_PRESETS.join(', ')}`)
+  process.exit(1)
+}
+const DATE_PRESET = rawPreset as DatePreset
 
 async function main() {
   printInfo(`Fetching campaign performance (${DATE_PRESET})...`)

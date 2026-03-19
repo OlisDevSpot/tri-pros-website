@@ -11,8 +11,20 @@ const OBJECTIVES = [
   { value: 'OUTCOME_ENGAGEMENT', name: 'Engagement — boost post likes, comments, shares' },
 ] as const
 
+const OPTIMIZATION_GOAL: Record<string, string> = {
+  OUTCOME_LEADS: 'LEAD_GENERATION',
+  OUTCOME_AWARENESS: 'REACH',
+  OUTCOME_TRAFFIC: 'LINK_CLICKS',
+  OUTCOME_ENGAGEMENT: 'POST_ENGAGEMENT',
+}
+
 async function main() {
   console.log('\n🚀  Meta Campaign Creator — Tri Pros Remodeling\n')
+
+  // Track created resource IDs so we can report them on partial failure
+  let campaignId: string | undefined
+  let adSetId: string | undefined
+  let creativeId: string | undefined
 
   // ── Step 1: Campaign ──────────────────────────────────────────────
   const campaignName = await input({
@@ -42,6 +54,7 @@ async function main() {
       special_ad_categories: [],
     },
   })
+  campaignId = campaign.id
   printSuccess(`Campaign created: ${campaign.id}`)
 
   // ── Step 2: Ad Set ────────────────────────────────────────────────
@@ -61,10 +74,10 @@ async function main() {
       campaign_id: campaign.id,
       daily_budget: Math.round(dailyBudgetDollars * 100), // Meta uses cents
       billing_event: 'IMPRESSIONS',
-      optimization_goal: objective === 'OUTCOME_LEADS' ? 'LEAD_GENERATION' : 'REACH',
+      optimization_goal: OPTIMIZATION_GOAL[objective] ?? 'REACH',
       targeting: {
         geo_locations: {
-          regions: [{ key: '3847', name: 'California', country: 'US' }], // Southern California
+          regions: [{ key: '3847', name: 'California', country: 'US' }], // California state — refine to DMA/city for SoCal-only
         },
         age_min: ageMin,
         age_max: ageMax,
@@ -73,6 +86,7 @@ async function main() {
       start_time: new Date(Date.now() + 60_000).toISOString(), // 1 min from now
     },
   })
+  adSetId = adSet.id
   printSuccess(`Ad set created: ${adSet.id}`)
 
   // ── Step 3: Ad Creative + Ad ──────────────────────────────────────
@@ -122,6 +136,7 @@ async function main() {
       },
     },
   })
+  creativeId = creative.id
   printSuccess(`Creative created: ${creative.id}`)
 
   printInfo('Creating ad...')
@@ -147,5 +162,12 @@ async function main() {
 
 main().catch((err) => {
   printError(err.message)
+  // Print any already-created resource IDs so the operator can clean them up manually
+  if (campaignId ?? adSetId ?? creativeId) {
+    console.error('\n  ⚠️  Partial creation — clean up the following resources in Ads Manager:')
+    if (campaignId) console.error(`    Campaign:  ${campaignId}`)
+    if (adSetId) console.error(`    Ad Set:    ${adSetId}`)
+    if (creativeId) console.error(`    Creative:  ${creativeId}`)
+  }
   process.exit(1)
 })

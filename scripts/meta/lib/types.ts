@@ -1,6 +1,7 @@
 // scripts/meta/lib/types.ts
 
-export interface MetaApiError {
+/** Shape of the raw error envelope returned by the Meta Graph API. */
+export interface MetaApiErrorResponse {
   error: {
     message: string
     type: string

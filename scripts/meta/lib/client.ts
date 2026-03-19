@@ -45,10 +45,23 @@ export async function metaFetch<T>(endpoint: string, options: FetchOptions = {})
     body: body ? JSON.stringify(body) : undefined,
   })
 
-  const json = await res.json() as T | { error: MetaErrorShape }
+  let json: unknown
+  try {
+    json = await res.json()
+  } catch {
+    throw new MetaApiError(
+      res.status,
+      'ParseError',
+      `Meta API returned non-JSON response (HTTP ${res.status} ${res.statusText})`,
+      '',
+    )
+  }
 
-  if (!res.ok || 'error' in (json as object)) {
-    const err = (json as { error: MetaErrorShape }).error
+  if (!res.ok || (typeof json === 'object' && json !== null && 'error' in json)) {
+    const err = (json as { error?: MetaErrorShape }).error
+    if (!err) {
+      throw new MetaApiError(res.status, 'UnknownError', `Meta API error (HTTP ${res.status})`, '')
+    }
     throw new MetaApiError(err.code, err.type, err.message, err.fbtrace_id)
   }
 
