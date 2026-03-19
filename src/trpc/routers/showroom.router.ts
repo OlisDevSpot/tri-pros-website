@@ -319,6 +319,7 @@ export const showroomRouter = createTRPCRouter({
           pathKey,
           bucket: PORTFOLIO_BUCKET,
           mimeType: input.mimeType,
+          fileExtension: ext,
           phase: input.phase,
           projectId: input.projectId,
         })
