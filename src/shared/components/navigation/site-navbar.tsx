@@ -25,6 +25,7 @@ import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
+import { useAbility } from '@/shared/permissions/hooks'
 import { SignInModal } from '../dialogs/modals/sign-in-modal'
 import { SpinnerLoader2 } from '../loaders/spinner-loader-2'
 import { NavItem } from './nav-item'
@@ -45,6 +46,7 @@ const navContainerVariants: Variants = {
 
 export function SiteNavbar() {
   const { data: session, isPending } = useSession()
+  const ability = useAbility()
   const { setModal, open: openAuthModal } = useAuthModalStore()
   const [authError] = useQueryState('error', { defaultValue: '' })
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
@@ -63,10 +65,10 @@ export function SiteNavbar() {
   const subitemsContainerRef = useRef<HTMLDivElement | null>(null)
 
   const getPopoverNavItems = useCallback(() => {
-    const items = generateNavItemsGroups({ userRole: session?.user?.role })
+    const items = generateNavItemsGroups({ ability })
 
     return items
-  }, [session])
+  }, [ability])
 
   // const hasPopoverItems = useMemo(() => {
   //   return Object.values(getPopoverNavItems()).flatMap(group => group?.items).filter(Boolean).length > 0

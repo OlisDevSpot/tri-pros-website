@@ -12,7 +12,6 @@ import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-p
 import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { checkUserRole } from '@/shared/permissions/lib/check-user-role'
 import { useTRPC } from '@/trpc/helpers'
 import { Heading } from './heading'
 
@@ -70,7 +69,7 @@ export function Proposal() {
   const customerEmail = customer?.email ?? ''
   const customerName = customer?.name ?? 'Customer'
 
-  const userRole = checkUserRole(sessionQuery.data?.user.email || '')
+  const userRole = sessionQuery.data?.user?.role ?? 'user'
   const proposalSteps = generateProposalSteps(userRole)
 
   return (

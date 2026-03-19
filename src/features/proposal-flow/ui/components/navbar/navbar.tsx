@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ROOTS } from '@/shared/config/roots'
 import { useActiveSection } from '@/shared/hooks/use-active-section'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { checkUserRole } from '@/shared/permissions/lib/check-user-role'
 import { ProposalNavbarFrame } from './navbar-frame'
 
 export function ProposalPageNavbar() {
@@ -21,7 +20,7 @@ export function ProposalPageNavbar() {
   const currentStepIndex = pathnameChunks.findIndex(p => p === 'proposal')
   const sessionQuery = useSession()
 
-  const userRole = checkUserRole(sessionQuery.data?.user.email || '')
+  const userRole = sessionQuery.data?.user?.role ?? 'user'
   const proposalSteps = generateProposalSteps(userRole)
 
   const { rootEl } = useScrollRoot()
