@@ -57,12 +57,14 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
     })
     .from(customers)
-    .innerJoin(meetings, options?.omni
-      ? eq(meetings.customerId, customers.id)
-      : and(
-        eq(meetings.customerId, customers.id),
-        eq(meetings.ownerId, userId),
-      ),
+    .innerJoin(
+      meetings,
+      options?.omni
+        ? eq(meetings.customerId, customers.id)
+        : and(
+            eq(meetings.customerId, customers.id),
+            eq(meetings.ownerId, userId),
+          ),
     )
     .where(eq(customers.pipeline, 'active'))
     .groupBy(customers.id)
@@ -86,12 +88,13 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .innerJoin(customers, eq(customers.id, meetings.customerId))
-    .where(options?.omni
-      ? inArray(customers.id, customerIds)
-      : and(
-        eq(proposals.ownerId, userId),
-        inArray(customers.id, customerIds),
-      ),
+    .where(
+      options?.omni
+        ? inArray(customers.id, customerIds)
+        : and(
+            eq(proposals.ownerId, userId),
+            inArray(customers.id, customerIds),
+          ),
     )
     .groupBy(customers.id)
 

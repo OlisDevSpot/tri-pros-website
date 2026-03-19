@@ -17,29 +17,35 @@ export function CalendarBoard<T extends CalendarEvent>({
   config,
   renderCard,
   renderCompact,
-  onEventClick,
+  onEventClick: _onEventClick,
   onDateRangeChange,
+  activeView: controlledView,
+  onViewChange: _onViewChange,
+  showSaturday: controlledShowSaturday,
+  onToggleSaturday: _onToggleSaturday,
   className,
 }: CalendarBoardProps<T>) {
   const defaultView = config?.defaultView ?? 'week'
 
   const [currentDate, setCurrentDate] = useState(() => new Date())
-  const [activeView, setActiveView] = useState<CalendarViewType>(defaultView)
+  const [internalView, _setInternalView] = useState<CalendarViewType>(defaultView)
+  const [internalHiddenDays, setInternalHiddenDays] = useState<number[]>(config?.hiddenDays ?? DEFAULT_HIDDEN_DAYS)
 
-  // Hidden days state — Saturday (6) hidden by default in week view
-  const initialHiddenDays = config?.hiddenDays ?? DEFAULT_HIDDEN_DAYS
-  const [hiddenDays, setHiddenDays] = useState<number[]>(initialHiddenDays)
-
-  const showSaturday = !hiddenDays.includes(6)
-
-  const handleToggleSaturday = useCallback(() => {
-    setHiddenDays((prev) => {
-      if (prev.includes(6)) {
-        return prev.filter(d => d !== 6)
-      }
-      return [...prev, 6]
-    })
+  // Internal toggle — always called unconditionally to satisfy rules-of-hooks
+  const _internalToggleSaturday = useCallback(() => {
+    setInternalHiddenDays(prev =>
+      prev.includes(6) ? prev.filter(d => d !== 6) : [...prev, 6],
+    )
   }, [])
+
+  // Use controlled props if provided, otherwise internal state
+  const activeView = controlledView ?? internalView
+
+  const showSaturday = controlledShowSaturday ?? !internalHiddenDays.includes(6)
+
+  const hiddenDays = showSaturday
+    ? (config?.hiddenDays ?? DEFAULT_HIDDEN_DAYS).filter(d => d !== 6)
+    : [...new Set([...(config?.hiddenDays ?? DEFAULT_HIDDEN_DAYS), 6])]
 
   // Fire onDateRangeChange when currentDate or activeView changes
   const range = useMemo(
@@ -56,10 +62,7 @@ export function CalendarBoard<T extends CalendarEvent>({
       <CalendarHeader
         currentDate={currentDate}
         activeView={activeView}
-        showSaturday={showSaturday}
         onDateChange={setCurrentDate}
-        onViewChange={setActiveView}
-        onToggleSaturday={handleToggleSaturday}
       />
 
       <div className="w-full overflow-hidden">
@@ -69,7 +72,6 @@ export function CalendarBoard<T extends CalendarEvent>({
             currentDate={currentDate}
             hiddenDays={hiddenDays}
             renderCard={renderCard}
-            onEventClick={onEventClick}
           />
         )}
 
@@ -78,7 +80,6 @@ export function CalendarBoard<T extends CalendarEvent>({
             events={events}
             currentDate={currentDate}
             renderCompact={renderCompact}
-            onEventClick={onEventClick}
           />
         )}
       </div>

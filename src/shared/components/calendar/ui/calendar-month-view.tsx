@@ -22,7 +22,7 @@ export function CalendarMonthView<T extends CalendarEvent>({
   events,
   currentDate,
   renderCompact,
-  onEventClick,
+  onEventClick: _onEventClick,
 }: Props<T>) {
   const cells = useMemo(() => getCalendarCells(currentDate), [currentDate])
 

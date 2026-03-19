@@ -33,7 +33,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
   currentDate,
   hiddenDays,
   renderCard,
-  onEventClick,
+  onEventClick: _onEventClick,
 }: Props<T>) {
   const weekDays = useMemo(
     () => getWeekDays(currentDate, hiddenDays),
@@ -42,92 +42,95 @@ export function CalendarWeekView<T extends CalendarEvent>({
 
   const colCount = weekDays.length
 
-  return (
-    <div className="flex h-full flex-col overflow-x-auto">
-      {/* Week header */}
-      <div className="flex border-b">
-        <div className="w-16 shrink-0" />
-        <div
-          className="grid border-l"
-          style={{ gridTemplateColumns: `repeat(${colCount}, minmax(150px, 1fr))` }}
-        >
-          {weekDays.map(day => (
-            <div
-              key={day.toISOString()}
-              className="py-2 text-center text-xs font-medium text-muted-foreground"
-            >
-              <span className="block sm:hidden">
-                {format(day, 'EEE').charAt(0)}
-                <span className="block text-xs font-semibold text-foreground">
-                  {format(day, 'd')}
-                </span>
-              </span>
-              <span className="hidden sm:inline">
-                {format(day, 'EE')}
-                {' '}
-                <span
-                  className={
-                    isToday(day)
-                      ? 'ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground'
-                      : 'ml-1 font-semibold text-foreground'
-                  }
-                >
-                  {format(day, 'd')}
-                </span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+  const minContentWidth = 64 + colCount * 150 // 64px hours col + 150px per day
 
-      {/* Time grid */}
-      <ScrollArea className="h-175" type="always">
-        <div className="flex">
-          {/* Hours column */}
-          <div className="relative w-16 shrink-0">
-            {HOURS.map((hour, index) => (
+  return (
+    <div className="h-full overflow-x-auto">
+      <div className="flex flex-col" style={{ minWidth: `${minContentWidth}px` }}>
+        {/* Week header */}
+        <div className="flex border-b">
+          <div className="w-16 shrink-0" />
+          <div
+            className="grid flex-1 border-l"
+            style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+          >
+            {weekDays.map(day => (
               <div
-                key={hour}
-                className="relative"
-                style={{ height: `${HOUR_HEIGHT_PX}px` }}
+                key={day.toISOString()}
+                className="py-2 text-center text-xs font-medium text-muted-foreground"
               >
-                {index !== 0 && (
-                  <div className="absolute -top-3 right-2 flex h-6 items-center">
-                    <span className="text-xs text-muted-foreground">
-                      {formatHour(hour)}
-                    </span>
-                  </div>
-                )}
+                <span className="block sm:hidden">
+                  {format(day, 'EEE').charAt(0)}
+                  <span className="block text-xs font-semibold text-foreground">
+                    {format(day, 'd')}
+                  </span>
+                </span>
+                <span className="hidden sm:inline">
+                  {format(day, 'EE')}
+                  {' '}
+                  <span
+                    className={
+                      isToday(day)
+                        ? 'ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground'
+                        : 'ml-1 font-semibold text-foreground'
+                    }
+                  >
+                    {format(day, 'd')}
+                  </span>
+                </span>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Week grid */}
-          <div className="relative flex-1 border-l">
-            <div
-              className="grid divide-x"
-              style={{ gridTemplateColumns: `repeat(${colCount}, minmax(150px, 1fr))` }}
-            >
-              {weekDays.map((day) => {
-                const dayEvents = getEventsForDay(events, day)
-                const groupedEvents = groupEvents(dayEvents)
-
-                return (
-                  <WeekDayColumn
-                    key={day.toISOString()}
-                    day={day}
-                    groupedEvents={groupedEvents}
-                    renderCard={renderCard}
-                    onEventClick={onEventClick}
-                  />
-                )
-              })}
+        {/* Time grid */}
+        <ScrollArea className="h-175" type="always">
+          <div className="flex">
+            {/* Hours column */}
+            <div className="relative w-16 shrink-0">
+              {HOURS.map((hour, index) => (
+                <div
+                  key={hour}
+                  className="relative"
+                  style={{ height: `${HOUR_HEIGHT_PX}px` }}
+                >
+                  {index !== 0 && (
+                    <div className="absolute -top-3 right-2 flex h-6 items-center">
+                      <span className="text-xs text-muted-foreground">
+                        {formatHour(hour)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
 
-            <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
+            {/* Week grid */}
+            <div className="relative flex-1 border-l">
+              <div
+                className="grid divide-x"
+                style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+              >
+                {weekDays.map((day) => {
+                  const dayEvents = getEventsForDay(events, day)
+                  const groupedEvents = groupEvents(dayEvents)
+
+                  return (
+                    <WeekDayColumn
+                      key={day.toISOString()}
+                      day={day}
+                      groupedEvents={groupedEvents}
+                      renderCard={renderCard}
+                    />
+                  )
+                })}
+              </div>
+
+              <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
+            </div>
           </div>
-        </div>
-      </ScrollArea>
+        </ScrollArea>
+      </div>
     </div>
   )
 }
@@ -143,7 +146,7 @@ function WeekDayColumn<T extends CalendarEvent>({
   day,
   groupedEvents,
   renderCard,
-  onEventClick,
+  onEventClick: _onEventClick,
 }: WeekDayColumnProps<T>) {
   const todayHighlight = isToday(day) ? 'bg-primary/5' : ''
 
