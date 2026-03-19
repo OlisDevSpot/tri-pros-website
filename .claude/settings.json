@@ -102,7 +102,9 @@
       "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/)",
       "Bash(pnpm list:*)",
       "Bash(node scripts/generate-pwa-icons.mjs)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git remote:*)",
+      "Bash(gh auth:*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
