@@ -31,19 +31,20 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
         {/* Collapsed: single row of badges */}
         <button
           type="button"
-          className="flex w-full items-center justify-center gap-4 rounded-lg border border-border/50 px-3 py-2 transition-colors hover:bg-accent/50"
+          className="grid w-full grid-cols-[1fr_auto] items-center rounded-lg border border-border/50 px-3 py-2 transition-colors hover:bg-accent/50"
           onClick={() => setExpanded(prev => !prev)}
         >
-          {computedItems.map(item => (
-            <div key={item.key} className="flex items-center gap-1.5">
-              <item.icon size={14} className={cn('text-muted-foreground', item.color)} />
-              <span className="text-sm font-semibold tabular-nums">
-                {isLoading ? '–' : (item.renderValue?.(item.computedValue) ?? item.computedValue)}
-              </span>
-            </div>
-          ))}
+          <div className="flex items-center justify-center gap-4">
+            {computedItems.map(item => (
+              <div key={item.key} className="flex items-center gap-1.5">
+                <item.icon size={14} className={cn('text-muted-foreground', item.color)} />
+                <span className="text-sm font-semibold tabular-nums">
+                  {isLoading ? '–' : (item.renderValue?.(item.computedValue) ?? item.computedValue)}
+                </span>
+              </div>
+            ))}
+          </div>
           <motion.div
-            className="ml-auto"
             animate={{ rotate: expanded ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
