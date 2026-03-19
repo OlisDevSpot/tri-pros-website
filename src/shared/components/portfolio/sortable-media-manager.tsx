@@ -14,8 +14,8 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { arrayMove, rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowRightIcon, Loader2, Plus, Trash2, X } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowRightIcon, Trash2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -26,8 +26,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { useMediaUpload } from '@/shared/hooks/use-media-upload'
+import { useGooglePicker } from '@/shared/services/google-drive/hooks/use-google-picker'
+import { downloadDriveFile } from '@/shared/services/google-drive/lib/download-drive-file'
 import { useTRPC } from '@/trpc/helpers'
 import { SortablePhotoCard } from './sortable-photo-card'
+import { UploadSourcePopover } from './upload-source-popover'
 
 const AUTO_SCROLL_CONFIG = {
   activator: AutoScrollActivator.Pointer,
@@ -48,6 +51,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   const editQueryOptions = trpc.showroomRouter.getProjectForEdit.queryOptions({ id: projectId })
   const { upload, isUploading } = useMediaUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const currentAccessTokenRef = useRef<string | null>(null)
   const [activePhase, setActivePhase] = useState<MediaPhase>('uncategorized')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
   const [draggingId, setDraggingId] = useState<number | null>(null)
@@ -133,6 +137,37 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     }),
   )
 
+  const { refetch: fetchAccessToken } = useQuery({
+    ...trpc.showroomRouter.getGoogleAccessToken.queryOptions(),
+    enabled: false,
+  })
+
+  const { isLoading: isPickerLoading, openPicker } = useGooglePicker({
+    onFilesPicked: async (files) => {
+      for (const picked of files) {
+        try {
+          const file = await downloadDriveFile(picked, currentAccessTokenRef.current!)
+          await upload({
+            file,
+            projectId,
+            phase: activePhase,
+            meta: {
+              name: picked.name.replace(/\.[^/.]+$/, ''),
+              mimeType: picked.mimeType,
+              fileExtension: picked.name.includes('.') ? `.${picked.name.split('.').pop()}` : '',
+              phase: activePhase,
+              projectId,
+            },
+          })
+        }
+        catch {
+          toast.error(`Failed to import ${picked.name} from Google Drive`)
+        }
+      }
+      onUpdate()
+    },
+  })
+
   const mediaByPhase = (phase: string): MediaFile[] =>
     mediaFiles
       .filter(f => f.phase === phase && !f.mimeType.startsWith('video/'))
@@ -141,6 +176,17 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   function handleUploadClick(phase: MediaPhase) {
     setActivePhase(phase)
     fileInputRef.current?.click()
+  }
+
+  async function handleGoogleDriveClick(phase: MediaPhase) {
+    setActivePhase(phase)
+    const { data } = await fetchAccessToken()
+    if (!data?.accessToken) {
+      toast.error('Could not connect to Google Drive')
+      return
+    }
+    currentAccessTokenRef.current = data.accessToken
+    openPicker(data.accessToken)
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -415,18 +461,12 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
                   </Button>
                 )}
                 <div className="ml-auto">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isUploading}
-                    onClick={() => handleUploadClick(phase)}
-                  >
-                    {isUploading
-                      ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      : <Plus className="mr-1.5 h-3.5 w-3.5" />}
-                    Upload
-                  </Button>
+                  <UploadSourcePopover
+                    onLocalUpload={() => handleUploadClick(phase)}
+                    onGoogleDriveUpload={() => handleGoogleDriveClick(phase)}
+                    isUploading={isUploading}
+                    isPickerLoading={isPickerLoading}
+                  />
                 </div>
               </div>
 
