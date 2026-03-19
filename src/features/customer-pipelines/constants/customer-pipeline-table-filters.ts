@@ -1,6 +1,6 @@
 import type { DataTableFilterConfig } from '@/shared/components/data-table/types'
 
-import { customerStageConfig } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import { activeStageConfig } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 
 export const pipelineTableFilters: DataTableFilterConfig[] = [
   {
@@ -16,6 +16,6 @@ export const pipelineTableFilters: DataTableFilterConfig[] = [
     label: 'Stage',
     columnId: 'stage',
     placeholder: 'All stages',
-    options: customerStageConfig.map(s => ({ label: s.label, value: s.key })),
+    options: activeStageConfig.map(s => ({ label: s.label, value: s.key })),
   },
 ]

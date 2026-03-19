@@ -1,7 +1,7 @@
-import type { CustomerPipelineStage } from '../constants/customer-pipeline-stages'
+import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
 import type { CustomerPipelineItem } from '../types'
 
-import { customerPipelineStages } from '../constants/customer-pipeline-stages'
+import { customerPipelineStages } from '../constants/active-pipeline-stages'
 
 export function groupCustomersByStage(
   items: CustomerPipelineItem[],

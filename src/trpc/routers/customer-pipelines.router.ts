@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { customerPipelineStages } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import { customerPipelineStages } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import { getCustomerPipelineItems } from '@/features/customer-pipelines/dal/server/get-customer-pipeline-items'
 import { getCustomerProfile } from '@/features/customer-pipelines/dal/server/get-customer-profile'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'

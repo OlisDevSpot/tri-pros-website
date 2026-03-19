@@ -4,7 +4,7 @@ import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon } from 'lucide-react'
 
-import { customerStageConfig } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import { activeStageConfig } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { Badge } from '@/shared/components/ui/badge'
 
@@ -43,7 +43,7 @@ export function getPipelineColumns(): ColumnDef<CustomerPipelineItem>[] {
       accessorKey: 'stage',
       header: 'Stage',
       cell: ({ row }) => {
-        const config = customerStageConfig.find(s => s.key === row.original.stage)
+        const config = activeStageConfig.find(s => s.key === row.original.stage)
         return (
           <Badge variant="secondary" className={STAGE_BADGE_COLORS[row.original.stage] ?? ''}>
             {config?.label ?? row.original.stage}

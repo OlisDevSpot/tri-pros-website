@@ -1,4 +1,4 @@
-import type { CustomerPipelineStage } from '../constants/customer-pipeline-stages'
+import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
 
 interface StageInput {
   hasCompletedMeeting: boolean

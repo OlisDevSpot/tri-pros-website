@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 
@@ -10,11 +10,11 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
 import {
-  CUSTOMER_ALLOWED_DRAG_TRANSITIONS,
-  CUSTOMER_BLOCKED_MESSAGES,
+  ACTIVE_ALLOWED_DRAG_TRANSITIONS,
+  ACTIVE_BLOCKED_MESSAGES,
+  activeStageConfig,
   customerPipelineStages,
-  customerStageConfig,
-} from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+} from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
 import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar'
@@ -146,10 +146,10 @@ export function CustomerPipelineView() {
               )
             : (
                 <KanbanBoard<CustomerPipelineItem>
-                  stageConfig={customerStageConfig}
+                  stageConfig={activeStageConfig}
                   groupedItems={groupCustomersByStage(pipelineQuery.data)}
-                  allowedTransitions={CUSTOMER_ALLOWED_DRAG_TRANSITIONS}
-                  blockedMessages={CUSTOMER_BLOCKED_MESSAGES}
+                  allowedTransitions={ACTIVE_ALLOWED_DRAG_TRANSITIONS}
+                  blockedMessages={ACTIVE_BLOCKED_MESSAGES}
                   onMoveItem={handleMoveItem}
                   onBlockedTransition={handleBlockedTransition}
                   collapsedStages={['declined']}

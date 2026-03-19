@@ -1,9 +1,9 @@
-import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
-import { CUSTOMER_ALLOWED_DRAG_TRANSITIONS } from '@/features/customer-pipelines/constants/customer-pipeline-stages'
+import { ACTIVE_ALLOWED_DRAG_TRANSITIONS } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
@@ -16,7 +16,7 @@ interface MoveParams {
 }
 
 export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, userId }: MoveParams): Promise<void> {
-  const allowed = CUSTOMER_ALLOWED_DRAG_TRANSITIONS[fromStage]
+  const allowed = ACTIVE_ALLOWED_DRAG_TRANSITIONS[fromStage]
   if (!allowed.includes(toStage)) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
