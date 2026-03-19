@@ -18,7 +18,7 @@ import { ScrollArea } from '@/shared/components/ui/scroll-area'
 const START_HOUR = 8
 const END_HOUR = 22
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR)
-const HOUR_HEIGHT_PX = 120
+const HOUR_HEIGHT_PX = 156
 
 interface Props<T extends CalendarEvent> {
   events: T[]
@@ -43,7 +43,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
   const colCount = weekDays.length
 
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Week header */}
       <div className="flex border-b">
         <div className="w-16 shrink-0" />
@@ -81,7 +81,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
       </div>
 
       {/* Time grid */}
-      <ScrollArea className="h-[736px]" type="always">
+      <ScrollArea className="flex-1" type="always">
         <div className="flex">
           {/* Hours column */}
           <div className="relative w-16 shrink-0">
