@@ -31,7 +31,7 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
         {/* Collapsed: single row of badges */}
         <button
           type="button"
-          className="flex w-full items-center gap-2 rounded-lg border border-border/50 px-3 py-2 transition-colors hover:bg-accent/50"
+          className="flex w-full items-center gap-4 rounded-lg border border-border/50 px-3 py-2 transition-colors hover:bg-accent/50"
           onClick={() => setExpanded(prev => !prev)}
         >
           {computedItems.map(item => (
