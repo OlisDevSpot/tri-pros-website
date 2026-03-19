@@ -49,7 +49,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
       <div className="flex flex-col" style={{ minWidth: `${minContentWidth}px` }}>
         {/* Week header */}
         <div className="flex border-b">
-          <div className="w-16 shrink-0" />
+          <div className="sticky left-0 z-20 w-16 shrink-0 bg-background" />
           <div
             className="grid flex-1 border-l"
             style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -86,8 +86,8 @@ export function CalendarWeekView<T extends CalendarEvent>({
         {/* Time grid */}
         <ScrollArea className="h-175" type="always">
           <div className="flex">
-            {/* Hours column */}
-            <div className="relative w-16 shrink-0">
+            {/* Hours column — sticky on horizontal scroll */}
+            <div className="sticky left-0 z-20 w-16 shrink-0 bg-background">
               {HOURS.map((hour, index) => (
                 <div
                   key={hour}
