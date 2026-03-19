@@ -74,14 +74,9 @@ export function CalendarMonthView<T extends CalendarEvent>({
                 )}
               >
                 {dayEvents.slice(0, MAX_VISIBLE_EVENTS).map(event => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    className="w-full cursor-pointer text-left"
-                    onClick={() => onEventClick?.(event)}
-                  >
+                  <div key={event.id} className="w-full text-left">
                     {renderCompact(event)}
-                  </button>
+                  </div>
                 ))}
 
                 {overflowCount > 0 && cell.currentMonth && (
