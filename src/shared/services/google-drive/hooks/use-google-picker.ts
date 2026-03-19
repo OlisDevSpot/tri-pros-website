@@ -43,9 +43,9 @@ export function useGooglePicker({ onFilesPicked }: UseGooglePickerOptions): UseG
         window.gapi.load('picker', () => {
           setIsLoading(false)
 
-          const view = new google.picker.DocsView()
-            .setMimeTypes('image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif')
-            .setIncludeFolders(false)
+          const view = new google.picker.DocsView(google.picker.ViewId.DOCS_IMAGES)
+            .setIncludeFolders(true)
+            .setSelectFolderEnabled(false)
 
           new google.picker.PickerBuilder()
             .setOAuthToken(accessToken)

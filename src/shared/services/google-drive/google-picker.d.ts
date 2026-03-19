@@ -8,9 +8,15 @@ declare namespace google.picker {
     MULTISELECT_ENABLED = 'multiselect-enabled',
   }
 
+  enum ViewId {
+    DOCS_IMAGES = 'docs-images',
+  }
+
   class DocsView {
-    setMimeTypes: (mimeTypes: string) => DocsView
+    constructor(viewId?: ViewId)
     setIncludeFolders: (include: boolean) => DocsView
+    setMimeTypes: (mimeTypes: string) => DocsView
+    setSelectFolderEnabled: (enabled: boolean) => DocsView
   }
 
   class PickerBuilder {
