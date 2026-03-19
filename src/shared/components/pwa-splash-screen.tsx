@@ -74,6 +74,7 @@ function useSplashVisibility() {
 
     if (isStandalone && !alreadyShown) {
       sessionStorage.setItem(SPLASH_KEY, '1')
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setVisible(true)
     }
   }, [])

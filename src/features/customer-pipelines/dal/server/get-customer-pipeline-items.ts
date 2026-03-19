@@ -10,7 +10,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
 
-export async function getCustomerPipelineItems(userId: string, pipeline: CustomerPipeline = 'active'): Promise<CustomerPipelineItem[]> {
+export async function getCustomerPipelineItems(userId: string, pipeline: CustomerPipeline = 'active', options?: { omni?: boolean }): Promise<CustomerPipelineItem[]> {
   if (pipeline !== 'active') {
     const rows = await db
       .select({
@@ -57,10 +57,15 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
     })
     .from(customers)
-    .innerJoin(meetings, and(
-      eq(meetings.customerId, customers.id),
-      eq(meetings.ownerId, userId),
-    ))
+    .innerJoin(
+      meetings,
+      options?.omni
+        ? eq(meetings.customerId, customers.id)
+        : and(
+            eq(meetings.customerId, customers.id),
+            eq(meetings.ownerId, userId),
+          ),
+    )
     .where(eq(customers.pipeline, 'active'))
     .groupBy(customers.id)
     .orderBy(desc(max(meetings.createdAt)))
@@ -83,10 +88,14 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .innerJoin(customers, eq(customers.id, meetings.customerId))
-    .where(and(
-      eq(proposals.ownerId, userId),
-      inArray(customers.id, customerIds),
-    ))
+    .where(
+      options?.omni
+        ? inArray(customers.id, customerIds)
+        : and(
+            eq(proposals.ownerId, userId),
+            inArray(customers.id, customerIds),
+          ),
+    )
     .groupBy(customers.id)
 
   const proposalMap = new Map(proposalRows.map(r => [r.customerId, r]))

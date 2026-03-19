@@ -10,17 +10,24 @@ import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
-  // Get all meetings for the current agent, newest first
+  // Get all meetings — super-admin sees all, agents see their own
   getAll: agentProcedure
     .query(async ({ ctx }) => {
+      const isOmni = ctx.session.user.role === 'super-admin'
+
       return db
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
+          customerPhone: customers.phone,
+          customerAddress: customers.address,
+          customerCity: customers.city,
+          customerState: customers.state,
+          customerZip: customers.zip,
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
-        .where(eq(meetings.ownerId, ctx.session.user.id))
+        .where(isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id))
         .orderBy(desc(meetings.createdAt))
     }),
 
@@ -135,6 +142,7 @@ export const meetingsRouter = createTRPCRouter({
           ownerId: ctx.session.user.id,
           customerId: original.customerId,
           contactName: original.contactName,
+          scheduledFor: original.scheduledFor,
           situationProfileJSON: original.situationProfileJSON,
         })
         .returning()

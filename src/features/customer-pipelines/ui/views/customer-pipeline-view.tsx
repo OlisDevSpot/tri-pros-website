@@ -147,8 +147,10 @@ export function CustomerPipelineView() {
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
-        <div className="flex items-center gap-2">
-          {isSuperAdmin && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+        <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+          <div className="flex items-center gap-2">
+            {isSuperAdmin && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+          </div>
           <DataViewTypeToggle value={layout} onChange={setLayout} />
         </div>
       </div>
