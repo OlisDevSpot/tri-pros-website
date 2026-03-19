@@ -17,6 +17,11 @@ export const meetingsRouter = createTRPCRouter({
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
+          customerPhone: customers.phone,
+          customerAddress: customers.address,
+          customerCity: customers.city,
+          customerState: customers.state,
+          customerZip: customers.zip,
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
