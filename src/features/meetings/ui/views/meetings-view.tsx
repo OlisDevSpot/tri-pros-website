@@ -115,53 +115,55 @@ export function MeetingsView() {
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <StatBar items={meetingsStatConfig} data={statsData} />
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {/* Calendar-specific controls — only visible in calendar layout */}
-          {layout === 'calendar' && (
-            <>
-              {calendarView === 'week' && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <FilterIcon size={14} />
-                      <span className="hidden sm:inline">Days</span>
-                      <Badge variant="secondary" className="px-1.5 text-[10px]">
-                        {showSaturday ? '7' : '6'}
-                      </Badge>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-48 p-3">
-                    <p className="mb-3 text-sm font-medium">Visible Days</p>
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <Checkbox
-                        checked={showSaturday}
-                        onCheckedChange={handleToggleSaturday}
-                      />
-                      <span className="text-sm">Show Saturday</span>
-                    </label>
-                  </PopoverContent>
-                </Popover>
-              )}
-              <div className="flex rounded-md border">
-                <Button
-                  variant={calendarView === 'week' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="rounded-r-none"
-                  onClick={() => setCalendarView('week')}
-                >
-                  Week
-                </Button>
-                <Button
-                  variant={calendarView === 'month' ? 'default' : 'ghost'}
-                  size="sm"
-                  className="rounded-l-none"
-                  onClick={() => setCalendarView('month')}
-                >
-                  Month
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            {layout === 'calendar' && (
+              <>
+                {calendarView === 'week' && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5">
+                        <FilterIcon size={14} />
+                        <span className="hidden sm:inline">Days</span>
+                        <Badge variant="secondary" className="px-1.5 text-[10px]">
+                          {showSaturday ? '7' : '6'}
+                        </Badge>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-48 p-3">
+                      <p className="mb-3 text-sm font-medium">Visible Days</p>
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <Checkbox
+                          checked={showSaturday}
+                          onCheckedChange={handleToggleSaturday}
+                        />
+                        <span className="text-sm">Show Saturday</span>
+                      </label>
+                    </PopoverContent>
+                  </Popover>
+                )}
+                <div className="flex rounded-md border">
+                  <Button
+                    variant={calendarView === 'week' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="rounded-r-none"
+                    onClick={() => setCalendarView('week')}
+                  >
+                    Week
+                  </Button>
+                  <Button
+                    variant={calendarView === 'month' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="rounded-l-none"
+                    onClick={() => setCalendarView('month')}
+                  >
+                    Month
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
           <DataViewTypeToggle
             value={layout}
             onChange={setLayout}
