@@ -5,7 +5,6 @@ import type { StatBarItemConfig } from '@/shared/components/stat-bar/types'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 
-import { SpinnerLoader } from '@/shared/components/loaders/spinner-loader'
 import { cn } from '@/shared/lib/utils'
 
 import { StatBarItem } from './stat-bar-item'
@@ -20,17 +19,9 @@ interface StatBarProps<T> {
 export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T>) {
   const [expanded, setExpanded] = useState(false)
 
-  if (isLoading) {
-    return (
-      <div className={cn('flex h-12 items-center', className)}>
-        <SpinnerLoader />
-      </div>
-    )
-  }
-
   const computedItems = items.map(item => ({
     ...item,
-    computedValue: item.getValue(data),
+    computedValue: isLoading ? 0 : item.getValue(data),
   }))
 
   return (
@@ -47,7 +38,7 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
             <div key={item.key} className="flex items-center gap-1.5">
               <item.icon size={14} className={cn('text-muted-foreground', item.color)} />
               <span className="text-sm font-semibold tabular-nums">
-                {item.renderValue?.(item.computedValue) ?? item.computedValue}
+                {isLoading ? '–' : (item.renderValue?.(item.computedValue) ?? item.computedValue)}
               </span>
             </div>
           ))}
@@ -81,6 +72,7 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
                     value={item.computedValue}
                     displayValue={item.renderValue?.(item.computedValue)}
                     color={item.color}
+                    isLoading={isLoading}
                   />
                 ))}
               </div>
@@ -99,6 +91,7 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
             value={item.computedValue}
             displayValue={item.renderValue?.(item.computedValue)}
             color={item.color}
+            isLoading={isLoading}
           />
         ))}
       </div>
