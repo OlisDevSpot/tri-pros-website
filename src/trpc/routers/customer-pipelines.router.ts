@@ -16,7 +16,8 @@ export const customerPipelinesRouter = createTRPCRouter({
     }).optional())
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
-      return getCustomerPipelineItems(userId, input?.pipeline ?? 'active')
+      const isOmni = ctx.ability.can('manage', 'all')
+      return getCustomerPipelineItems(userId, input?.pipeline ?? 'active', isOmni)
     }),
 
   moveCustomerPipelineItem: agentProcedure
@@ -27,9 +28,11 @@ export const customerPipelinesRouter = createTRPCRouter({
       pipeline: z.enum(customerPipelines).default('active'),
     }))
     .mutation(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
       await moveCustomerPipelineItem({
         ...input,
         userId: ctx.session.user.id,
+        isOmni,
       })
     }),
 

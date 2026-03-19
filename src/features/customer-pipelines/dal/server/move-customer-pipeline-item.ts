@@ -17,9 +17,10 @@ interface MoveParams {
   toStage: string
   pipeline: CustomerPipeline
   userId: string
+  isOmni?: boolean
 }
 
-export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, pipeline, userId }: MoveParams): Promise<void> {
+export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, pipeline, userId, isOmni = false }: MoveParams): Promise<void> {
   // For rehash/dead pipelines, drag simply updates pipelineStage
   if (pipeline !== 'active') {
     await db
@@ -51,7 +52,7 @@ export async function moveCustomerPipelineItem({ customerId, fromStage, toStage,
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        eq(meetings.ownerId, userId),
+        isOmni ? undefined : eq(meetings.ownerId, userId),
         eq(meetings.status, 'in_progress'),
       ))
       .orderBy(meetings.createdAt)
@@ -79,7 +80,7 @@ export async function moveCustomerPipelineItem({ customerId, fromStage, toStage,
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
         eq(meetings.customerId, customerId),
-        eq(proposals.ownerId, userId),
+        isOmni ? undefined : eq(proposals.ownerId, userId),
         eq(proposals.status, 'sent'),
       ))
 

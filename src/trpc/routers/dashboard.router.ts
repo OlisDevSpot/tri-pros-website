@@ -5,6 +5,7 @@ import { agentProcedure, createTRPCRouter } from '../init'
 export const dashboardRouter = createTRPCRouter({
   getActionQueue: agentProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id
-    return getActionQueue(userId)
+    const isOmni = ctx.ability.can('manage', 'all')
+    return getActionQueue(userId, isOmni)
   }),
 })

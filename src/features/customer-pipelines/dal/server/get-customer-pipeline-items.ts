@@ -10,7 +10,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
 
-export async function getCustomerPipelineItems(userId: string, pipeline: CustomerPipeline = 'active'): Promise<CustomerPipelineItem[]> {
+export async function getCustomerPipelineItems(userId: string, pipeline: CustomerPipeline = 'active', isOmni = false): Promise<CustomerPipelineItem[]> {
   if (pipeline !== 'active') {
     const rows = await db
       .select({
@@ -59,7 +59,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     .from(customers)
     .innerJoin(meetings, and(
       eq(meetings.customerId, customers.id),
-      eq(meetings.ownerId, userId),
+      isOmni ? undefined : eq(meetings.ownerId, userId),
     ))
     .where(eq(customers.pipeline, 'active'))
     .groupBy(customers.id)
@@ -84,7 +84,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
     .innerJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
-      eq(proposals.ownerId, userId),
+      isOmni ? undefined : eq(proposals.ownerId, userId),
       inArray(customers.id, customerIds),
     ))
     .groupBy(customers.id)

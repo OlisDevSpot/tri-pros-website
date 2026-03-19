@@ -112,7 +112,7 @@ const TIER_ORDER: Record<ActionTier, number> = {
   NO_PROPOSAL: 5,
 }
 
-export async function getActionQueue(userId: string): Promise<ActionItem[]> {
+export async function getActionQueue(userId: string, isOmni = false): Promise<ActionItem[]> {
   // 1. Sent proposals with view data
   const sentProposals = await db
     .select({
@@ -130,7 +130,7 @@ export async function getActionQueue(userId: string): Promise<ActionItem[]> {
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .where(and(
-      eq(proposals.ownerId, userId),
+      isOmni ? undefined : eq(proposals.ownerId, userId),
       eq(proposals.status, 'sent'),
     ))
     .groupBy(proposals.id, customers.name, customers.phone, customers.email)
@@ -146,7 +146,7 @@ export async function getActionQueue(userId: string): Promise<ActionItem[]> {
     })
     .from(meetings)
     .where(and(
-      eq(meetings.ownerId, userId),
+      isOmni ? undefined : eq(meetings.ownerId, userId),
       eq(meetings.status, 'completed'),
     ))
     .orderBy(desc(meetings.createdAt))

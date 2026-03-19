@@ -13,6 +13,7 @@ export const meetingsRouter = createTRPCRouter({
   // Get all meetings for the current agent, newest first
   getAll: agentProcedure
     .query(async ({ ctx }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
       return db
         .select({
           ...getTableColumns(meetings),
@@ -20,7 +21,7 @@ export const meetingsRouter = createTRPCRouter({
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
-        .where(eq(meetings.ownerId, ctx.session.user.id))
+        .where(isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id))
         .orderBy(desc(meetings.createdAt))
     }),
 
@@ -123,10 +124,11 @@ export const meetingsRouter = createTRPCRouter({
   duplicate: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
       const [original] = await db
         .select()
         .from(meetings)
-        .where(and(eq(meetings.id, input.id), eq(meetings.ownerId, ctx.session.user.id)))
+        .where(and(eq(meetings.id, input.id), isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id)))
 
       if (!original) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
@@ -145,13 +147,14 @@ export const meetingsRouter = createTRPCRouter({
       return created
     }),
 
-  // Delete a meeting (only allowed for the owner)
+  // Delete a meeting (owner or super-admin)
   delete: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
       await db
         .delete(meetings)
-        .where(and(eq(meetings.id, input.id), eq(meetings.ownerId, ctx.session.user.id)))
+        .where(and(eq(meetings.id, input.id), isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id)))
     }),
 
   // List all internal users (agents + super-admins) for the owner assignment dropdown.

@@ -48,8 +48,9 @@ export const proposalRouter = createTRPCRouter({
   getProposals: agentProcedure
     .query(async ({ ctx }) => {
       const { user } = ctx.session
+      const isOmni = ctx.ability.can('manage', 'all')
 
-      const proposals = await getProposals(user.id)
+      const proposals = await getProposals(user.id, isOmni)
 
       return proposals
     }),
