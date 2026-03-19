@@ -5,7 +5,7 @@ export interface TradeBenefit {
   stat?: string
 }
 
-export const tradeBenefits: Record<string, TradeBenefit[]> = {
+export const tradeBenefits: Partial<Record<string, TradeBenefit[]>> = {
   'hvac': [
     { title: 'Lower Utility Bills', description: 'High-SEER systems that cut heating and cooling costs dramatically', stat: '–40–60%' },
     { title: 'Consistent Comfort', description: 'Even temperatures throughout your home, every room, every season' },
