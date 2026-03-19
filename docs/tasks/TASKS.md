@@ -33,15 +33,6 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 
 ---
 
-## 🔵 Partially Done (code merged, plan still has open steps)
-
-| # | Task | One-liner | Status | Context |
-|---|------|-----------|--------|---------|
-| 11 | **Multi-Pipeline Customer System** | `pipeline` + `pipelineStage` columns + toggle UI — DB changes merged, needs validation | Columns + toggle merged | [multi-pipeline-system.md](./multi-pipeline-system.md) |
-| 12 | **Trade Page Conversion** | Convert static trade pages to dynamic DB-driven pages with correct H1/benefits | Partial commits merged | [trade-page-conversion.md](./trade-page-conversion.md) |
-
----
-
 ## ✅ Completed
 
 | # | Task | Completed |
@@ -50,6 +41,8 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 | 3 | **Cross-Feature Import Rules** | All cross-feature imports go through proper `index.ts` entrypoints — no internal reaching |
 | 4 | **P0 Navigation UX Fixes** | All 5 tasks done — ROOTS routes, button semantics, mounted guard removed, popover close-on-nav, zero hardcoded URLs |
 | 5 | **P1 Mobile Gaps** | BaseSheet + ProjectDetailSheet wired, footer cleaned (ROOTS URLs, no newsletter, typo fixed) |
+| 11 | **Multi-Pipeline Customer System** | Schema + rehash/dead stage constants + pipeline-config + DAL + tRPC + PipelineSelect UI all verified in codebase |
+| 12 | **Trade Page Conversion** | All new components (TradeSymptomsBand, TradeBeforeAfter) + constants (pain-headlines, symptoms, before-after, benefits) verified in codebase |
 
 ---
 

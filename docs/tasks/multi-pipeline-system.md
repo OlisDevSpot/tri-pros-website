@@ -1,6 +1,6 @@
 # Task: Multi-Pipeline Customer System
 
-**Status:** 🔵 PARTIALLY DONE — DB columns + toggle UI merged; validation/cleanup may remain
+**Status:** ✅ COMPLETE — verified 2026-03-19
 **Branch:** `main`
 **Spec:** `docs/superpowers/specs/2026-03-18-multi-pipeline-customer-system-design.md`
 **Plan:** `docs/superpowers/plans/2026-03-18-multi-pipeline-customer-system.md`

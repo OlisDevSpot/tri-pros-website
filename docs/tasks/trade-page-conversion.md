@@ -1,6 +1,6 @@
 # Task: Trade Page Conversion
 
-**Status:** 🔵 PARTIALLY DONE — commits show partial implementation; check remaining steps
+**Status:** ✅ COMPLETE — verified 2026-03-19
 **Branch:** `main`
 **Spec:** `docs/superpowers/specs/2026-03-18-trade-page-conversion.md`
 **Plan:** `docs/superpowers/plans/2026-03-18-trade-page-conversion.md`
