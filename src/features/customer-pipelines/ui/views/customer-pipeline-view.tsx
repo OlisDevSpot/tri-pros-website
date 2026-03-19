@@ -185,7 +185,7 @@ export function CustomerPipelineView() {
                   collapsedStages={pipeline === 'active' ? ['declined'] : []}
                   columnFilter={pipeline === 'active'
                     ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
-                    : undefined}
+                    : { defaultVisible: [...config.stages] }}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
