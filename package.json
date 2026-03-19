@@ -16,7 +16,8 @@
     "email": "npx react-email -dir ./src/shared/services/resend/emails",
     "scrape-project": "tsx scripts/portfolio-scraper/index.ts",
     "import-project": "tsx scripts/portfolio-scraper/import-project.ts",
-    "portfolio": "tsx scripts/portfolio-manager.ts"
+    "portfolio": "tsx scripts/portfolio-manager.ts",
+    "meta": "tsx scripts/meta/index.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
