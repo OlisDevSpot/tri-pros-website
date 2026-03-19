@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { pillarConfigs } from '@/features/landing/constants/pillar-config'
 import { tradeBeforeAfter } from '@/features/landing/constants/trade-before-after'
 import { tradeBenefits } from '@/features/landing/constants/trade-benefits'
-import { tradeOutcomeStatements } from '@/features/landing/constants/trade-outcome-statements'
 import { tradePainHeadlines } from '@/features/landing/constants/trade-pain-headlines'
 import { tradePairings } from '@/features/landing/constants/trade-pairings'
 import { tradeSymptoms } from '@/features/landing/constants/trade-symptoms'
@@ -39,8 +38,6 @@ export function TradeView({ trade, pillarSlug }: TradeViewProps) {
   const symptoms = tradeSymptoms[trade.slug] ?? []
   const beforeAfter = tradeBeforeAfter[trade.slug]
 
-  const outcomeStatement = tradeOutcomeStatements[trade.slug]
-    ?? `Professional ${trade.name.toLowerCase()} services backed by a written workmanship warranty.`
   const benefits = tradeBenefits[trade.slug] ?? []
   const pairings = tradePairings[trade.slug] ?? []
 
@@ -48,7 +45,6 @@ export function TradeView({ trade, pillarSlug }: TradeViewProps) {
     <main>
       <TradeHero
         tradeName={trade.name}
-        outcomeStatement={outcomeStatement}
         images={trade.images}
         defaultHeroImage={pillarConfig.defaultHeroImage}
         pillarSlug={pillarSlug}

@@ -9,7 +9,6 @@ import { companyInfo } from '@/shared/constants/company'
 
 interface TradeHeroProps {
   tradeName: string
-  outcomeStatement: string
   images: string[]
   defaultHeroImage: string
   pillarSlug: PillarSlug
@@ -26,7 +25,6 @@ const trustItems = [
 
 export function TradeHero({
   tradeName,
-  outcomeStatement,
   images,
   defaultHeroImage,
   pillarSlug,
@@ -72,12 +70,12 @@ export function TradeHero({
           </ol>
         </nav>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 max-w-4xl mx-auto">
-          {painHeadline}
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 max-w-4xl mx-auto">
+          {tradeName}
         </h1>
 
         <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-8 leading-relaxed">
-          {outcomeStatement}
+          {painHeadline}
         </p>
 
         <div className="flex flex-col items-center gap-6">

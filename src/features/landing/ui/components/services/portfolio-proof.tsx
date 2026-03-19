@@ -11,7 +11,7 @@ export async function PortfolioProof({ tradeName }: PortfolioProofProps) {
   const allProjects = await getPublicProjects()
 
   const tradeNameLower = tradeName.toLowerCase()
-  const matchingProjects = allProjects
+  const tradeSpecific = allProjects
     .filter((p) => {
       const requirements = p.project.hoRequirements
       if (!requirements || !Array.isArray(requirements)) {
@@ -22,6 +22,9 @@ export async function PortfolioProof({ tradeName }: PortfolioProofProps) {
       )
     })
     .slice(0, 3)
+
+  // Fall back to any public projects when none match this trade
+  const matchingProjects = tradeSpecific.length > 0 ? tradeSpecific : allProjects.slice(0, 3)
 
   if (matchingProjects.length === 0) {
     return null
