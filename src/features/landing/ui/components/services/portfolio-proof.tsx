@@ -27,49 +27,112 @@ export async function PortfolioProof({ tradeName }: PortfolioProofProps) {
     return null
   }
 
+  const [featured, ...minis] = matchingProjects
+
+  const cityList = matchingProjects
+    .map(p => p.project.city)
+    .filter(Boolean)
+    .join(', ')
+
   return (
     <section className="container py-16 lg:py-24">
-      <h2 className="text-3xl sm:text-4xl font-bold text-foreground text-center mb-12">
-        See Our Work in Action
-      </h2>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {matchingProjects.map(({ project, heroImage }) => (
-          <Link
-            key={project.id}
-            href={`/portfolio/${project.accessor}`}
-            className="group block overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-lg"
-          >
-            <div className="relative aspect-4/3 overflow-hidden">
-              {heroImage?.url
-                ? (
-                    <Image
-                      src={heroImage.url}
-                      alt={project.title}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  )
-                : (
-                    <div className="absolute inset-0 bg-muted flex items-center justify-center">
-                      <span className="text-sm text-muted-foreground">No image</span>
-                    </div>
-                  )}
-            </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                {project.title}
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {project.city}
-                {', '}
-                {project.state}
-              </p>
-            </div>
-          </Link>
-        ))}
+      <div className="text-center mb-12">
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">
+          Real results
+        </p>
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
+          A home transformed — just like yours.
+        </h2>
+        {cityList && (
+          <p className="text-sm text-muted-foreground mt-3">
+            {cityList}
+            {' '}
+            — real Tri Pros projects near you
+          </p>
+        )}
       </div>
+
+      {/* Featured card */}
+      <div className="grid sm:grid-cols-2 rounded-xl overflow-hidden border bg-card mb-6">
+        <div className="relative h-52 sm:h-auto">
+          {featured.heroImage?.url
+            ? (
+                <Image
+                  src={featured.heroImage.url}
+                  alt={featured.project.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, 50vw"
+                  priority
+                />
+              )
+            : (
+                <div className="absolute inset-0 bg-muted" />
+              )}
+        </div>
+        <div className="p-6 flex flex-col justify-between">
+          <div>
+            {featured.project.backstory && (
+              <blockquote className="text-sm text-muted-foreground italic leading-relaxed border-l-2 border-primary pl-4 mb-4">
+                {featured.project.backstory}
+              </blockquote>
+            )}
+            <p className="text-xs font-semibold text-foreground">
+              {featured.project.title}
+            </p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-0.5">
+              {featured.project.city}
+              {featured.project.state ? `, ${featured.project.state}` : ''}
+            </p>
+          </div>
+          <Link
+            href={`/portfolio/${featured.project.accessor}`}
+            className="text-sm font-semibold text-primary hover:underline mt-4 inline-block"
+          >
+            See full project →
+          </Link>
+        </div>
+      </div>
+
+      {/* Mini cards */}
+      {minis.length > 0 && (
+        <div className="grid sm:grid-cols-2 gap-4">
+          {minis.map(({ project, heroImage }) => (
+            <Link
+              key={project.id}
+              href={`/portfolio/${project.accessor}`}
+              className="group block overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-lg"
+            >
+              <div className="relative h-36 overflow-hidden">
+                {heroImage?.url
+                  ? (
+                      <Image
+                        src={heroImage.url}
+                        alt={project.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, 50vw"
+                      />
+                    )
+                  : (
+                      <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">No image</span>
+                      </div>
+                    )}
+              </div>
+              <div className="p-4">
+                <p className="text-xs font-semibold text-foreground">
+                  {project.title}
+                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-0.5">
+                  {project.city}
+                  {project.state ? `, ${project.state}` : ''}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
