@@ -60,9 +60,11 @@ export function KanbanBoard<T extends KanbanItem>({
   const stageKeys = stageConfig.map(s => s.key).join(',')
   useEffect(() => {
     if (columnFilter?.defaultVisible) {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setVisibleStages(new Set(columnFilter.defaultVisible))
     }
     else {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setVisibleStages(new Set(stageConfig.map(s => s.key)))
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when stages change

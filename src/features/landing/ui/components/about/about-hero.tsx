@@ -119,7 +119,7 @@ export function AboutHero() {
               transition={{ duration: 0.8, delay: 0.3 }}
               className="relative h-full min-h-fit mb-4"
             >
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl h-full min-h-[400px]">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl h-full min-h-100">
                 <Image
                   src="/hero-photos/modern-house-2.png"
                   alt="Tri Pros Remodeling founder and team"

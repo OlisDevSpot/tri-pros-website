@@ -73,14 +73,43 @@
       "Bash(grep -r \"from ''''@/features\" src/shared/)",
       "Bash(find src/features/*/dal -type f)",
       "Bash(grep -r \"from ''''@/features/portfolio\" src/)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(node_modules/.bin/tsx scripts/meta/setup/verify-credentials.ts)",
+      "Bash(Does for Your Home\" vs generic\\):*)",
+      "Bash(node_modules/.bin/tsx scripts/meta/reports/pull-performance.ts last_7d)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/ads/manage-ad.ts)",
+      "Bash(/home/olis-solutions/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.5/skills/brainstorming/scripts/start-server.sh --project-dir /home/olis-solutions/olis-v3/nextjs/tri-pros-website --host 0.0.0.0 --url-host localhost)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/campaigns/create-campaign.ts)",
+      "Bash(node_modules/.bin/tsx scripts/meta/index.ts)",
+      "Bash(node_modules/.bin/tsx scripts/meta/index.ts verify)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/index.ts)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/lib/client.ts)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/lib/env.ts)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/reports/pull-performance.ts)",
+      "Bash(git push:*)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/setup/initialize-account.ts)",
+      "Bash(pnpm meta:*)",
+      "Bash(source .env.meta)",
+      "Bash(node_modules/.bin/tsx -e \":*)",
+      "Bash(node_modules/.bin/tsx /tmp/meta-diag.ts)",
+      "Bash(node_modules/.bin/tsx /tmp/meta-diag2.ts)",
+      "Bash(node_modules/.bin/tsx /tmp/meta-diag3.ts)",
+      "Bash(node_modules/.bin/tsx /tmp/meta-diag4.ts)",
+      "Bash(node_modules/.bin/tsx /tmp/meta-cleanup.ts)",
+      "Bash(node_modules/.bin/tsx --check scripts/meta/lib/client.ts scripts/meta/setup/initialize-account.ts scripts/meta/campaigns/create-campaign.ts)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
       "/tmp",
-      "/home/olis-solutions/.claude"
+      "/home/olis-solutions/.claude",
+      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.claude"
     ]
   },
+  "enabledMcpjsonServers": [
+    "playwright",
+    "shadcn"
+  ],
   "enabledPlugins": {
     "skill-creator@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,

@@ -1,8 +1,9 @@
+/* eslint-disable node/prefer-global/process */
 // scripts/meta/campaigns/create-campaign.ts
-import { input, select, number } from '@inquirer/prompts'
-import { metaEnv } from '../lib/env.js'
+import { input, number, select } from '@inquirer/prompts'
 import { metaFetch } from '../lib/client.js'
-import { printSuccess, printError, printInfo } from '../lib/formatters.js'
+import { metaEnv } from '../lib/env.js'
+import { printError, printInfo, printSuccess } from '../lib/formatters.js'
 
 const OBJECTIVES = [
   { value: 'OUTCOME_LEADS', name: 'Lead Generation — collect contact info (recommended for Tri Pros)' },
@@ -18,13 +19,13 @@ const OPTIMIZATION_GOAL: Record<string, string> = {
   OUTCOME_ENGAGEMENT: 'POST_ENGAGEMENT',
 }
 
+// Module-scope tracking so the catch handler can report orphaned resources
+let campaignId: string | undefined
+let adSetId: string | undefined
+let creativeId: string | undefined
+
 async function main() {
   console.log('\n🚀  Meta Campaign Creator — Tri Pros Remodeling\n')
-
-  // Track created resource IDs so we can report them on partial failure
-  let campaignId: string | undefined
-  let adSetId: string | undefined
-  let creativeId: string | undefined
 
   // ── Step 1: Campaign ──────────────────────────────────────────────
   const campaignName = await input({
@@ -167,9 +168,12 @@ main().catch((err) => {
   // Print any already-created resource IDs so the operator can clean them up manually
   if (campaignId ?? adSetId ?? creativeId) {
     console.error('\n  ⚠️  Partial creation — clean up the following resources in Ads Manager:')
-    if (campaignId) console.error(`    Campaign:  ${campaignId}`)
-    if (adSetId) console.error(`    Ad Set:    ${adSetId}`)
-    if (creativeId) console.error(`    Creative:  ${creativeId}`)
+    if (campaignId)
+      console.error(`    Campaign:  ${campaignId}`)
+    if (adSetId)
+      console.error(`    Ad Set:    ${adSetId}`)
+    if (creativeId)
+      console.error(`    Creative:  ${creativeId}`)
   }
   process.exit(1)
 })
