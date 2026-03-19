@@ -27,7 +27,7 @@ export function BaseSheet({
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
           {description != null && (
-            <SheetDescription>
+            <SheetDescription asChild={typeof description !== 'string'}>
               {typeof description === 'string' ? description : <div>{description}</div>}
             </SheetDescription>
           )}

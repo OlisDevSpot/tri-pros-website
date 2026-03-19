@@ -12,11 +12,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/
 import { ROOTS } from '@/shared/config/roots'
 import { cn } from '@/shared/lib/utils'
 
-type ProjectRow = inferRouterOutputs<AppRouter>['showroomRouter']['getAllProjects'][number] & {
+export type ProjectRow = inferRouterOutputs<AppRouter>['showroomRouter']['getAllProjects'][number] & {
   tradeNames: string[]
 }
 
 export interface ProjectTableMeta {
+  activeRowId: string | null
   onDelete: (projectId: string) => void
   isDeleting: boolean
 }
@@ -28,6 +29,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
       header: ({ column }) => <SortableHeader column={column} label="Project" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProjectTableMeta | undefined
+        const isActive = meta?.activeRowId === row.original.id
 
         return (
           <div className="flex items-center justify-between gap-4">
@@ -50,6 +52,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
               className={cn(
                 'flex items-center gap-1 shrink-0 opacity-0 pointer-events-none transition-opacity duration-150',
                 'group-hover:opacity-100 group-hover:pointer-events-auto',
+                isActive && 'opacity-100 pointer-events-auto',
               )}
               onClick={e => e.stopPropagation()}
             >
