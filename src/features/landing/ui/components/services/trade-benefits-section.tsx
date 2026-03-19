@@ -7,10 +7,11 @@ import { useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 
 interface TradeBenefitsSectionProps {
+  tradeName: string
   benefits: { title: string, description: string }[]
 }
 
-export function TradeBenefitsSection({ benefits }: TradeBenefitsSectionProps) {
+export function TradeBenefitsSection({ tradeName, benefits }: TradeBenefitsSectionProps) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
@@ -27,7 +28,11 @@ export function TradeBenefitsSection({ benefits }: TradeBenefitsSectionProps) {
         className="text-center mb-12"
       >
         <h2 className="text-3xl sm:text-4xl font-bold text-foreground">
-          What This Means for Your Home
+          What
+          {' '}
+          {tradeName}
+          {' '}
+          Does for Your Home
         </h2>
       </motion.div>
 

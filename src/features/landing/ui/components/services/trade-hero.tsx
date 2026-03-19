@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
+import { companyInfo } from '@/shared/constants/company'
 
 interface TradeHeroProps {
   tradeName: string
@@ -14,6 +15,13 @@ interface TradeHeroProps {
   pillarSlug: PillarSlug
   pillarTitle: string
 }
+
+const trustItems = [
+  `CA Lic. #${companyInfo.licenses[0].licenseNumber}`,
+  'A+ BBB Rating',
+  `${companyInfo.combinedYearsExperience}+ Years Combined Experience`,
+  `${companyInfo.numProjects}+ Projects Completed`,
+]
 
 export function TradeHero({
   tradeName,
@@ -70,11 +78,22 @@ export function TradeHero({
           {outcomeStatement}
         </p>
 
-        <Button asChild size="lg" variant="cta">
-          <Link href={ROOTS.landing.contact()}>
-            Schedule Your Free Consultation
-          </Link>
-        </Button>
+        <div className="flex flex-col items-center gap-6">
+          <Button asChild size="lg" variant="cta">
+            <Link href={ROOTS.landing.contact()}>
+              Schedule Your Free Consultation
+            </Link>
+          </Button>
+
+          <ul className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            {trustItems.map((item, i) => (
+              <li key={item} className="flex items-center gap-2 text-sm text-white/75">
+                {i > 0 && <span className="hidden sm:block text-white/40" aria-hidden="true">·</span>}
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   )
