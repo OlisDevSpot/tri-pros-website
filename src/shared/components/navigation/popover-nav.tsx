@@ -5,13 +5,14 @@ import type { DynamicNavSections, NavItemsGroup } from '@/shared/types/nav'
 import { AnimatePresence, motion } from 'motion/react'
 import { Fragment, useState } from 'react'
 import { useSession } from '@/shared/auth/client'
-import { checkIsInternalUser } from '@/shared/auth/lib/is-internal-user'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
+import { useAbility } from '@/shared/permissions/hooks'
 
 import { SignInGoogleButton } from '../buttons/auth/sign-in-google-button'
 import { UserButton } from '../buttons/user-button'
+import { ThemeToggleInline } from '../theme-toggle-inline'
 import { Separator } from '../ui/separator'
 import { NavItem } from './nav-item'
 
@@ -37,7 +38,8 @@ export function PopoverNav({
   const matches = useMatchMedia()
   const sessionQuery = useSession()
 
-  const isInternalUser = checkIsInternalUser(sessionQuery.data?.user?.role)
+  const ability = useAbility()
+  const isInternalUser = ability.can('access', 'Dashboard')
 
   return (
     <AnimatePresence onExitComplete={onExitComplete}>
@@ -150,7 +152,12 @@ export function PopoverNav({
                 </Fragment>
               ))}
             </div>
-            {sessionQuery.data?.user ? <UserButton user={sessionQuery.data?.user} /> : <SignInGoogleButton />}
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                {sessionQuery.data?.user ? <UserButton user={sessionQuery.data?.user} /> : <SignInGoogleButton />}
+              </div>
+              <ThemeToggleInline />
+            </div>
           </div>
         </motion.div>
       )}

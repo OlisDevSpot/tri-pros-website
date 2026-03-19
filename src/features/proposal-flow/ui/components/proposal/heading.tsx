@@ -1,22 +1,18 @@
-import type { UserRole } from '@/shared/types/enums'
 import { CalendarIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { checkIsInternalUser } from '@/shared/auth/lib/is-internal-user'
 import { Logo } from '@/shared/components/logo'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { companyInfo } from '@/shared/constants/company'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
+import { useAbility } from '@/shared/permissions/hooks'
 
-interface Props {
-  role: UserRole
-}
-
-export function Heading({ role }: Props) {
+export function Heading() {
   const proposal = useCurrentProposal()
+  const ability = useAbility()
   const { open: openModal, setModal } = useModalStore()
 
   if (proposal.isLoading) {
@@ -90,7 +86,7 @@ export function Heading({ role }: Props) {
           <Logo variant="icon" className="size-5" />
           <p>{companyInfo.name}</p>
         </div>
-        {checkIsInternalUser(role) && proposal.data.customer?.id && (
+        {ability.can('read', 'Customer') && proposal.data.customer?.id && (
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Button
               variant="outline"

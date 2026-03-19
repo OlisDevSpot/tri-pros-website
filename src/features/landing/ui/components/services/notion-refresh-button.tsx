@@ -4,16 +4,14 @@ import { useMutation } from '@tanstack/react-query'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { useSession } from '@/shared/auth/client'
-import { checkIsInternalUser } from '@/shared/auth/lib/is-internal-user'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
+import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 export function NotionRefreshButton() {
   const trpc = useTRPC()
-  const session = useSession()
-  const isInternal = checkIsInternalUser(session.data?.user?.role)
+  const ability = useAbility()
 
   const revalidate = useMutation(
     trpc.notionRouter.revalidateNotionCache.mutationOptions({
@@ -26,7 +24,7 @@ export function NotionRefreshButton() {
     }),
   )
 
-  if (!isInternal) {
+  if (ability.cannot('update', 'Project')) {
     return null
   }
 
