@@ -396,6 +396,20 @@ After migration:
 
 ---
 
+---
+
+## Implementation Notes
+
+1. **`MeetingContext.customer.id` in `meeting-flow.tsx`:** The current code sets `id: contactId` (a Notion page ID string). After migration, `dbCustomer.id` is a Postgres UUID. Before removing the Notion re-fetch, grep `MeetingContext` consumers for any usage of `customer.id` that treats it as a Notion identifier. Also ensure the null guard on `dbCustomer` (from the left-join) is applied before constructing the context object.
+
+2. **Pre-existing env bug in `client-env.ts`:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional` is missing the call parentheses — should be `.optional()`. Fix this alongside the migration work since the intake form address autocomplete depends on this key.
+
+3. **`createFromIntake` is intentionally non-transactional:** The customer insert and the optional `customer_notes` insert are two separate DB calls, not wrapped in a transaction. A notes insert failure does not roll back the customer. This is acceptable — notes are informational.
+
+4. **`meetings.create` input schema:** `customerId` is in `insertMeetingSchema`'s `.omit()` list. The updated `create` procedure must use `.extend({ customerId: z.string().uuid() })` to add it back to the input.
+
+---
+
 ## Out of Scope (This Spec)
 
 - Notion projects DB migration
