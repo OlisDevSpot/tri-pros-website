@@ -26,12 +26,12 @@ interface Props {
   item: CustomerPipelineItem
   currentPipeline: CustomerPipeline
   isDragOverlay?: boolean
-  isSuperAdmin?: boolean
+  canManagePipeline?: boolean
   onViewProfile: (customerId: string) => void
   onMoveToPipeline?: (customerId: string, pipeline: CustomerPipeline) => void
 }
 
-export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, isSuperAdmin, onViewProfile, onMoveToPipeline }: Props) {
+export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, canManagePipeline, onViewProfile, onMoveToPipeline }: Props) {
   const isMobile = useIsMobile()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
@@ -101,7 +101,7 @@ export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, isSup
     </Card>
   )
 
-  if (isSuperAdmin && onMoveToPipeline && !isDragOverlay) {
+  if (canManagePipeline && onMoveToPipeline && !isDragOverlay) {
     return (
       <ContextMenu>
         <ContextMenuTrigger asChild>

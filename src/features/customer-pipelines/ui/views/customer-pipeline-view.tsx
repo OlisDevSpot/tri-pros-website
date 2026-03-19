@@ -16,7 +16,6 @@ import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/com
 import { CustomerPipelineTable } from '@/features/customer-pipelines/ui/components/customer-pipeline-table'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipeline-select'
-import { useSession } from '@/shared/auth/client'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
@@ -25,6 +24,7 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
+import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
@@ -32,8 +32,8 @@ export function CustomerPipelineView() {
   const [pipeline, setPipeline] = useState<CustomerPipeline>('active')
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
-  const session = useSession()
-  const isSuperAdmin = session.data?.user?.role === 'super-admin'
+  const ability = useAbility()
+  const canManagePipeline = ability.can('manage', 'CustomerPipeline')
 
   const config = pipelineConfigs[pipeline]
 
@@ -106,12 +106,12 @@ export function CustomerPipelineView() {
         item={item}
         currentPipeline={pipeline}
         isDragOverlay={isDragOverlay}
-        isSuperAdmin={isSuperAdmin}
+        canManagePipeline={canManagePipeline}
         onViewProfile={handleViewProfile}
         onMoveToPipeline={handleMoveToPipeline}
       />
     ),
-    [handleViewProfile, handleMoveToPipeline, pipeline, isSuperAdmin],
+    [handleViewProfile, handleMoveToPipeline, pipeline, canManagePipeline],
   )
 
   const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
@@ -148,7 +148,7 @@ export function CustomerPipelineView() {
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex items-center gap-2">
-          {isSuperAdmin && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+          {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           <DataViewTypeToggle value={layout} onChange={setLayout} />
         </div>
       </div>
