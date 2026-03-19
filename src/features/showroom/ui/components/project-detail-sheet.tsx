@@ -1,7 +1,6 @@
 'use client'
 
-import type { inferRouterOutputs } from '@trpc/server'
-import type { AppRouter } from '@/trpc/routers/app'
+import type { ProjectRow } from './table/columns'
 
 import { useRouter } from 'next/navigation'
 import { BaseSheet } from '@/shared/components/dialogs/sheets/base-sheet'
@@ -9,10 +8,6 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { cn } from '@/shared/lib/utils'
-
-type ProjectRow = inferRouterOutputs<AppRouter>['showroomRouter']['getAllProjects'][number] & {
-  tradeNames: string[]
-}
 
 interface ProjectDetailSheetProps {
   project: ProjectRow | null
