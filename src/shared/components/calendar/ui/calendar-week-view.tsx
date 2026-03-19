@@ -19,6 +19,7 @@ const START_HOUR = 8
 const END_HOUR = 22
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR)
 const HOUR_HEIGHT_PX = 156
+const DAY_MIN_WIDTH_PX = 150
 
 interface Props<T extends CalendarEvent> {
   events: T[]
@@ -41,18 +42,20 @@ export function CalendarWeekView<T extends CalendarEvent>({
   )
 
   const colCount = weekDays.length
-
-  const minContentWidth = 64 + colCount * 150 // 64px hours col + 150px per day
+  const gridMinWidth = colCount * DAY_MIN_WIDTH_PX
 
   return (
-    <div className="h-full overflow-x-auto">
-      <div className="flex flex-col" style={{ minWidth: `${minContentWidth}px` }}>
-        {/* Week header */}
-        <div className="flex border-b">
-          <div className="sticky left-0 z-20 w-16 shrink-0 bg-background" />
+    <div className="flex h-full flex-col">
+      {/* Week header — hours label is fixed, days scroll */}
+      <div className="flex border-b">
+        <div className="w-16 shrink-0 bg-background" />
+        <div className="flex-1 overflow-x-auto">
           <div
-            className="grid flex-1 border-l"
-            style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+            className="grid border-l"
+            style={{
+              gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+              minWidth: `${gridMinWidth}px`,
+            }}
           >
             {weekDays.map(day => (
               <div
@@ -82,55 +85,55 @@ export function CalendarWeekView<T extends CalendarEvent>({
             ))}
           </div>
         </div>
-
-        {/* Time grid */}
-        <ScrollArea className="h-175" type="always">
-          <div className="flex">
-            {/* Hours column — sticky on horizontal scroll */}
-            <div className="sticky left-0 z-20 w-16 shrink-0 bg-background">
-              {HOURS.map((hour, index) => (
-                <div
-                  key={hour}
-                  className="relative"
-                  style={{ height: `${HOUR_HEIGHT_PX}px` }}
-                >
-                  {index !== 0 && (
-                    <div className="absolute -top-3 right-2 flex h-6 items-center">
-                      <span className="text-xs text-muted-foreground">
-                        {formatHour(hour)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Week grid */}
-            <div className="relative flex-1 border-l">
-              <div
-                className="grid divide-x"
-                style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
-              >
-                {weekDays.map((day) => {
-                  const dayEvents = getEventsForDay(events, day)
-                  const groupedEvents = groupEvents(dayEvents)
-
-                  return (
-                    <WeekDayColumn
-                      key={day.toISOString()}
-                      day={day}
-                      groupedEvents={groupedEvents}
-                      renderCard={renderCard}
-                    />
-                  )
-                })}
-              </div>
-
-              <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
-            </div>
-          </div>
-        </ScrollArea>
       </div>
+
+      {/* Time grid — hours column is fixed, day columns scroll */}
+      <ScrollArea className="h-175" type="always">
+        <div className="flex">
+          {/* Hours column — always visible */}
+          <div className="sticky left-0 z-20 w-16 shrink-0 bg-background">
+            {HOURS.map((hour, index) => (
+              <div
+                key={hour}
+                className="relative"
+                style={{ height: `${HOUR_HEIGHT_PX}px` }}
+              >
+                {index !== 0 && (
+                  <div className="absolute -top-3 right-2 flex h-6 items-center">
+                    <span className="text-xs text-muted-foreground">
+                      {formatHour(hour)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Week grid — scrolls horizontally */}
+          <div className="relative flex-1 border-l" style={{ minWidth: `${gridMinWidth}px` }}>
+            <div
+              className="grid divide-x"
+              style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
+            >
+              {weekDays.map((day) => {
+                const dayEvents = getEventsForDay(events, day)
+                const groupedEvents = groupEvents(dayEvents)
+
+                return (
+                  <WeekDayColumn
+                    key={day.toISOString()}
+                    day={day}
+                    groupedEvents={groupedEvents}
+                    renderCard={renderCard}
+                  />
+                )
+              })}
+            </div>
+
+            <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
+          </div>
+        </div>
+      </ScrollArea>
     </div>
   )
 }
@@ -178,7 +181,6 @@ function WeekDayColumn<T extends CalendarEvent>({
             END_HOUR,
           )
 
-          // If no overlap, use full width
           const hasOverlap = groupedEvents.length > 1
             && groupedEvents.some(
               (otherGroup, otherIndex) =>
