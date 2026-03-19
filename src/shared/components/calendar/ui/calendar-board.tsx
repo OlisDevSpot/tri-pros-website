@@ -62,7 +62,7 @@ export function CalendarBoard<T extends CalendarEvent>({
         onToggleSaturday={handleToggleSaturday}
       />
 
-      <div className="w-full overflow-hidden">
+      <div className="w-full overflow-hidden" style={{ height: 'calc(100vh - 280px)' }}>
         {activeView === 'week' && (
           <CalendarWeekView
             events={events}
