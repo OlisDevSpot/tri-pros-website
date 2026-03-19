@@ -68,7 +68,7 @@ export const meetingsRouter = createTRPCRouter({
       return updated
     }),
 
-  // Get a single meeting by ID, with nested customer data
+  // Get a single meeting by ID, with nested customer data and owner info
   getById: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ input }) => {
@@ -76,9 +76,12 @@ export const meetingsRouter = createTRPCRouter({
         .select({
           ...getTableColumns(meetings),
           customer: getTableColumns(customers),
+          ownerName: user.name,
+          ownerImage: user.image,
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
+        .leftJoin(user, eq(user.id, meetings.ownerId))
         .where(eq(meetings.id, input.id))
 
       if (!row) {

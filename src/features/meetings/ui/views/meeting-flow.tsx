@@ -12,6 +12,7 @@ import { getProgramByAccessor } from '@/features/meetings/constants/programs'
 import { modeParser, stepParser } from '@/features/meetings/constants/query-parsers'
 import { getJsonbSection } from '@/features/meetings/lib/get-jsonb-section'
 import { BuyTriggerBar } from '@/features/meetings/ui/components/buy-trigger-bar'
+import { MeetingOwnerSelect } from '@/features/meetings/ui/components/meeting-owner-select'
 import { ProgramQuickPick } from '@/features/meetings/ui/components/program-quick-pick'
 import { StepDataPanel } from '@/features/meetings/ui/components/step-data-panel'
 import { StepProgress } from '@/features/meetings/ui/components/step-progress'
@@ -26,6 +27,8 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
+import { cn } from '@/shared/lib/utils'
+import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -35,6 +38,8 @@ interface MeetingFlowViewProps {
 export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const ability = useAbility()
+  const canAssignMeeting = ability.can('assign', 'Meeting')
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.getById.queryOptions({ id: meetingId }),
@@ -220,7 +225,18 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
         </Button>
       </div>
 
-      <div className="ml-auto hidden h-6 w-20 sm:block">
+      {canAssignMeeting && meeting && (
+        <div className="ml-auto">
+          <MeetingOwnerSelect
+            meetingId={meetingId}
+            currentOwnerId={meeting.ownerId}
+            currentOwnerName={meeting.ownerName}
+            currentOwnerImage={meeting.ownerImage}
+          />
+        </div>
+      )}
+
+      <div className={cn(!canAssignMeeting && 'ml-auto', 'hidden h-6 w-20 sm:block')}>
         <Logo variant="right" />
       </div>
     </header>
