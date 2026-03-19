@@ -131,7 +131,7 @@ The fallback lives in `trade-view.tsx`, not in `TradeHero`. The prop is always a
 ```
 
 New constant needed: `src/features/landing/constants/trade-pain-headlines.ts`
-- Keyed by trade slug
+- Type: `Partial<Record<string, string>>` — sparse lookup, fallback handled at call site
 - Energy trades: loss-aversion framing ("Your [X] is costing you more than it should.")
 - Luxury trades: desire framing ("The [X] your home deserves — built to last.")
 - Fallback handled at call site in `trade-view.tsx` (see above)
@@ -164,8 +164,8 @@ interface TradeSymptomsBandProps {
 New constant needed: `src/features/landing/constants/trade-symptoms.ts`
 
 ```ts
-// Example entries
-export const tradeSymptoms: Record<string, string[]> = {
+// Sparse lookup — not all slugs are covered, so use Partial<Record>
+export const tradeSymptoms: Partial<Record<string, string[]>> = {
   'hvac': [
     'Rooms that won't stay at the right temperature',
     'Energy bill over $250/mo',
@@ -225,7 +225,8 @@ interface TradeBeforeAfterProps {
 New constant needed: `src/features/landing/constants/trade-before-after.ts`
 
 ```ts
-export const tradeBeforeAfter: Record<string, { before: string[], after: string[] }> = {
+// Sparse lookup — not all slugs are covered, so use Partial<Record>
+export const tradeBeforeAfter: Partial<Record<string, { before: string[], after: string[] }>> = {
   'kitchen-remodel': {
     before: [
       'Cabinets that don't close right',
