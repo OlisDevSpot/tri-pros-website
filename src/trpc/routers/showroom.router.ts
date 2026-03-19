@@ -281,14 +281,25 @@ export const showroomRouter = createTRPCRouter({
       }
 
       const driveResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${input.driveFileId}?alt=media`,
+        `https://www.googleapis.com/drive/v3/files/${input.driveFileId}?alt=media&supportsAllDrives=true`,
         { headers: { Authorization: `Bearer ${accessToken}` } },
       )
 
       if (!driveResponse.ok) {
+        const errorBody = await driveResponse.json().catch(() => ({})) as { error?: { message?: string, errors?: { reason?: string }[] } }
+        const reason = errorBody.error?.errors?.[0]?.reason
+        const googleMessage = errorBody.error?.message ?? driveResponse.statusText
+
+        if (driveResponse.status === 403 && reason === 'insufficientPermissions') {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Google Drive access not authorized. Please sign out and sign back in to grant Drive permission.',
+          })
+        }
+
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: `Drive download failed (${driveResponse.status} ${driveResponse.statusText})`,
+          message: `Drive download failed (${driveResponse.status}): ${googleMessage}`,
         })
       }
 
