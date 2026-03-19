@@ -47,37 +47,19 @@ All new Google Drive logic lives under `src/shared/services/google-drive/`.
 
 These must be done before deployment.
 
-### 4.1 API Key — Hardening `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+### 4.1 OAuth Consent Screen — Add Drive Scope ✅ Done
 
-In GCP Console → APIs & Services → Credentials → the Maps key:
+`https://www.googleapis.com/auth/drive.readonly` has already been added to the OAuth consent screen in GCP. Since `prompt: 'select_account consent'` is set in `server.ts`, agents will be prompted to grant Drive access on their next login.
 
-| Setting | Value |
-|---|---|
-| Application restrictions | HTTP referrers |
-| Allowed referrers | `https://triprosremodeling.com/*`, `https://www.triprosremodeling.com/*`, `http://localhost:3000/*` |
-| API restrictions | Maps JavaScript API, Places API (New), **Google Picker API** |
+### 4.2 Enable Google Picker API
 
-This key is safe to remain `NEXT_PUBLIC_` because it is referrer-restricted and scoped to read-only browser APIs only.
-
-### 4.2 OAuth Consent Screen — Add Drive Scope
-
-In GCP Console → APIs & Services → OAuth consent screen → Scopes:
-
-Add `https://www.googleapis.com/auth/drive.readonly`
-
-Since `prompt: 'select_account consent'` is already set in `server.ts`, all agents will be shown the updated consent screen on their **next login** and asked to grant Drive access — no forced re-auth is required.
-
-### 4.3 Enable Google Picker API
-
-In GCP Console → APIs & Services → Library: enable **Google Picker API** on the project.
+In GCP Console → APIs & Services → Library: enable **Google Picker API** on the project. No API key is required for the Picker — `setDeveloperKey()` is omitted because the OAuth token alone is sufficient for accessing the user's own Drive files.
 
 ---
 
-## 5. Environment Variable Change
+## 5. Environment Variables
 
-`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is currently declared `.optional()` in both `server-env.ts` and `client-env.ts`. The Picker widget requires this key at runtime — if absent, the picker silently fails. Change both declarations from `z.string().optional()` to `z.string()`.
-
-**No new variables are added.** This is a strictness upgrade to an existing variable.
+No environment variable changes. `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is not used by the Picker — `setDeveloperKey()` is omitted since the OAuth token alone is sufficient for accessing the user's own Drive files. All token operations use the existing `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
 ---
 
@@ -193,8 +175,7 @@ The access token is accepted by `openPicker` at call time (not stored in hook st
      .setIncludeFolders(false)
 
    new google.picker.PickerBuilder()
-     .setDeveloperKey(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!)
-     .setOAuthToken(accessToken)
+     .setOAuthToken(accessToken)  // no setDeveloperKey — OAuth token is sufficient
      .addView(view)
      .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
      .setCallback(pickerCallback)
@@ -370,8 +351,6 @@ Click "From Google Drive"
 
 | File | Change |
 |---|---|
-| `src/shared/config/server-env.ts` | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`: `.optional()` → `.string()` |
-| `src/shared/config/client-env.ts` | Same |
 | `src/shared/auth/server.ts` | Add `scope` array (first time configured) |
 | `src/shared/services/google-drive/types.ts` | **New** — `PickedFile` type |
 | `src/shared/services/google-drive/lib/refresh-access-token.ts` | **New** — server-only token refresh utility |
@@ -381,7 +360,7 @@ Click "From Google Drive"
 | `src/shared/components/portfolio/sortable-media-manager.tsx` | Add Drive handler + ref + replace Upload button |
 | `src/trpc/routers/showroom.router.ts` | Add `getGoogleAccessToken` agentProcedure |
 
-**No new environment variables.** Existing `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — the last of which moves from optional to required.
+**No environment variable changes.** Uses existing `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` only.
 
 ---
 
