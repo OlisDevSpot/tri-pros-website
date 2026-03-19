@@ -3,7 +3,7 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 
 import { format, isToday, parseISO } from 'date-fns'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 
 import {
   formatHour,
@@ -13,14 +13,12 @@ import {
   groupEvents,
 } from '@/shared/components/calendar/lib/calendar-helpers'
 import { CalendarTimeIndicator } from '@/shared/components/calendar/ui/calendar-time-indicator'
-import { ScrollArea } from '@/shared/components/ui/scroll-area'
 
 const START_HOUR = 8
 const END_HOUR = 22
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR)
 const HOUR_HEIGHT_PX = 156
 const DAY_MIN_WIDTH_PX = 150
-
 interface Props<T extends CalendarEvent> {
   events: T[]
   currentDate: Date
@@ -40,16 +38,35 @@ export function CalendarWeekView<T extends CalendarEvent>({
     () => getWeekDays(currentDate, hiddenDays),
     [currentDate, hiddenDays],
   )
+  const headerScrollRef = useRef<HTMLDivElement>(null)
+  const bodyScrollRef = useRef<HTMLDivElement>(null)
 
   const colCount = weekDays.length
   const gridMinWidth = colCount * DAY_MIN_WIDTH_PX
 
+  // Sync horizontal scroll between header and body
+  function handleHeaderScroll() {
+    if (headerScrollRef.current && bodyScrollRef.current) {
+      bodyScrollRef.current.scrollLeft = headerScrollRef.current.scrollLeft
+    }
+  }
+
+  function handleBodyScroll() {
+    if (headerScrollRef.current && bodyScrollRef.current) {
+      headerScrollRef.current.scrollLeft = bodyScrollRef.current.scrollLeft
+    }
+  }
+
   return (
     <div className="flex h-full flex-col">
-      {/* Week header — hours label is fixed, days scroll */}
+      {/* Week header */}
       <div className="flex border-b">
         <div className="w-16 shrink-0 bg-background" />
-        <div className="flex-1 overflow-x-auto">
+        <div
+          ref={headerScrollRef}
+          className="flex-1 overflow-x-hidden"
+          onScroll={handleHeaderScroll}
+        >
           <div
             className="grid border-l"
             style={{
@@ -87,11 +104,11 @@ export function CalendarWeekView<T extends CalendarEvent>({
         </div>
       </div>
 
-      {/* Time grid — hours column is fixed, day columns scroll */}
-      <ScrollArea className="h-175" type="always">
-        <div className="flex">
-          {/* Hours column — always visible */}
-          <div className="sticky left-0 z-20 w-16 shrink-0 bg-background">
+      {/* Time grid — vertical overflow scrolls, horizontal synced with header */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Hours column — fixed, never scrolls horizontally */}
+        <div className="w-16 shrink-0 overflow-y-auto bg-background" style={{ scrollbarWidth: 'none' }}>
+          <div>
             {HOURS.map((hour, index) => (
               <div
                 key={hour}
@@ -108,9 +125,15 @@ export function CalendarWeekView<T extends CalendarEvent>({
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Week grid — scrolls horizontally */}
-          <div className="relative flex-1 border-l" style={{ minWidth: `${gridMinWidth}px` }}>
+        {/* Day columns — scrolls both directions */}
+        <div
+          ref={bodyScrollRef}
+          className="flex-1 overflow-auto border-l"
+          onScroll={handleBodyScroll}
+        >
+          <div className="relative" style={{ minWidth: `${gridMinWidth}px` }}>
             <div
               className="grid divide-x"
               style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -133,7 +156,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
             <CalendarTimeIndicator startHour={START_HOUR} endHour={END_HOUR} />
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
