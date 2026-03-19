@@ -28,8 +28,7 @@ export function CalendarHeader({
   onViewChange,
   onToggleSaturday,
 }: Props) {
-  const month = formatDate(currentDate, 'MMMM')
-  const year = currentDate.getFullYear()
+  const monthYear = formatDate(currentDate, 'MMM yyyy')
 
   function handlePrevious() {
     onDateChange(navigateDate(currentDate, activeView, 'previous'))
@@ -44,14 +43,14 @@ export function CalendarHeader({
   }
 
   return (
-    <div className="flex flex-col gap-4 border-b p-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex items-center justify-between border-b px-4 py-2">
       {/* Left side: navigation */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={handleToday}>
           Today
         </Button>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevious}>
             <ChevronLeftIcon className="h-4 w-4" />
           </Button>
@@ -60,16 +59,8 @@ export function CalendarHeader({
           </Button>
         </div>
 
-        <div className="space-y-0.5">
-          <span className="text-lg font-semibold">
-            {month}
-            {' '}
-            {year}
-          </span>
-          <p className="text-sm text-muted-foreground">
-            {getRangeText(activeView, currentDate)}
-          </p>
-        </div>
+        <span className="text-sm font-semibold">{monthYear}</span>
+        <span className="text-xs text-muted-foreground">{getRangeText(activeView, currentDate)}</span>
       </div>
 
       {/* Right side: view toggle + Saturday filter */}
