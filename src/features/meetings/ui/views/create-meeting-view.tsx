@@ -37,7 +37,7 @@ export function CreateMeetingView() {
     createMeeting.mutate({
       notionContactId: contactId,
       contactName: contactName || undefined,
-      scheduledFor: scheduledFor?.toISOString(),
+      scheduledFor: scheduledFor?.toISOString() ?? new Date().toISOString(),
     })
   }
 

@@ -21,7 +21,7 @@ export const meetings = pgTable('meetings', {
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   contactName: text('contact_name'),
   program: text('program'),
-  scheduledFor: timestamp('scheduled_for', { mode: 'string', withTimezone: true }),
+  scheduledFor: timestamp('scheduled_for', { mode: 'string', withTimezone: true }).notNull(),
   status: meetingStatusEnum('status').notNull().default('in_progress'),
   situationProfileJSON: jsonb('situation_objective_profile_json').$type<SituationProfile>(),
   programDataJSON: jsonb('program_data_json').$type<ProgramData>(),

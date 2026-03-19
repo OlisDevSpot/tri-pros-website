@@ -135,6 +135,7 @@ export const meetingsRouter = createTRPCRouter({
           ownerId: ctx.session.user.id,
           customerId: original.customerId,
           contactName: original.contactName,
+          scheduledFor: original.scheduledFor,
           situationProfileJSON: original.situationProfileJSON,
         })
         .returning()
