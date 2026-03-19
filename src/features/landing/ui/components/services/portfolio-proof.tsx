@@ -30,9 +30,9 @@ export async function PortfolioProof({ tradeName }: PortfolioProofProps) {
   const [featured, ...minis] = matchingProjects
 
   const cityList = matchingProjects
-    .map(p => p.project.city)
+    .map(p => [p.project.city, p.project.state].filter(Boolean).join(', '))
     .filter(Boolean)
-    .join(', ')
+    .join(' · ')
 
   return (
     <section className="container py-16 lg:py-24">
