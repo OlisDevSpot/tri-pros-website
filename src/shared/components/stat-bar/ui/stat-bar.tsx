@@ -1,4 +1,9 @@
+'use client'
+
 import type { StatBarItemConfig } from '@/shared/components/stat-bar/types'
+
+import { AnimatePresence, motion } from 'motion/react'
+import { useState } from 'react'
 
 import { SpinnerLoader } from '@/shared/components/loaders/spinner-loader'
 import { cn } from '@/shared/lib/utils'
@@ -13,6 +18,8 @@ interface StatBarProps<T> {
 }
 
 export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T>) {
+  const [expanded, setExpanded] = useState(false)
+
   if (isLoading) {
     return (
       <div className={cn('flex h-12 items-center', className)}>
@@ -21,21 +28,80 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
     )
   }
 
+  const computedItems = items.map(item => ({
+    ...item,
+    computedValue: item.getValue(data),
+  }))
+
   return (
-    <div className={cn('grid grid-cols-2 gap-1.5 lg:grid-cols-4 lg:gap-3', className)}>
-      {items.map((item) => {
-        const value = item.getValue(data)
-        return (
+    <div className={className}>
+      {/* Mobile — collapsible */}
+      <div className="lg:hidden">
+        {/* Collapsed: single row of badges */}
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 rounded-lg border border-border/50 px-3 py-2 transition-colors hover:bg-accent/50"
+          onClick={() => setExpanded(prev => !prev)}
+        >
+          {computedItems.map(item => (
+            <div key={item.key} className="flex items-center gap-1.5">
+              <item.icon size={14} className={cn('text-muted-foreground', item.color)} />
+              <span className="text-sm font-semibold tabular-nums">
+                {item.renderValue?.(item.computedValue) ?? item.computedValue}
+              </span>
+            </div>
+          ))}
+          <motion.div
+            className="ml-auto"
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" className="text-muted-foreground">
+              <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+          </motion.div>
+        </button>
+
+        {/* Expanded: full 2x2 card grid */}
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-2 gap-1.5 pt-2">
+                {computedItems.map(item => (
+                  <StatBarItem
+                    key={item.key}
+                    icon={item.icon}
+                    label={item.label}
+                    value={item.computedValue}
+                    displayValue={item.renderValue?.(item.computedValue)}
+                    color={item.color}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Desktop — always visible grid */}
+      <div className="hidden lg:grid lg:grid-cols-4 lg:gap-3">
+        {computedItems.map(item => (
           <StatBarItem
             key={item.key}
             icon={item.icon}
             label={item.label}
-            value={value}
-            displayValue={item.renderValue?.(value)}
+            value={item.computedValue}
+            displayValue={item.renderValue?.(item.computedValue)}
             color={item.color}
           />
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }
