@@ -53,7 +53,7 @@ export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, isSup
     <Card
       ref={!isDragOverlay ? setNodeRef : undefined}
       className={cn(
-        'transition-opacity cursor-pointer hover:bg-accent/50',
+        'cursor-pointer transition-colors duration-200 hover:bg-accent/20',
         isDragging && !isDragOverlay && 'opacity-30',
         isDragOverlay && 'shadow-lg rotate-1 scale-105',
       )}
