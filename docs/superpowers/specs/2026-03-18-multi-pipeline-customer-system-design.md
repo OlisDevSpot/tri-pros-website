@@ -7,7 +7,7 @@ The customer-pipelines feature currently supports a single pipeline with 8 compu
 - **Rehash**: stages are manually set by super-admin (`schedule_manager_meeting` -> `made_contact` -> `meeting_scheduled`)
 - **Dead**: stages are manually set by super-admin (`mostly_dead` -> `really_dead`)
 
-Only super-admin users can see the pipeline toggle and move customers between pipelines. Agents see only the "Active" pipeline. A 30-day timer tracks how long a customer has been in their current pipeline, visible in the UI.
+Only super-admin users can see the pipeline toggle and move customers between pipelines. Agents see only the "Active" pipeline.
 
 ## Schema Changes
 
@@ -16,12 +16,10 @@ Only super-admin users can see the pipeline toggle and move customers between pi
 ```typescript
 pipeline: customerPipelineEnum('pipeline').notNull().default('active')
 pipelineStage: text('pipeline_stage')       // null = compute from data (active pipeline)
-pipelineMovedAt: timestamp('pipeline_moved_at', { mode: 'string', withTimezone: true })  // when customer was moved to current pipeline
 ```
 
 - `pipeline`: which pipeline bucket the customer belongs to
 - `pipelineStage`: explicitly stored stage for rehash/dead pipelines. **null** for active pipeline (stage is computed from meetings/proposals)
-- `pipelineMovedAt`: timestamp of last pipeline move, used for 30-day countdown display
 
 ### New enum
 
@@ -98,7 +96,7 @@ Currently fetches all customers with meetings for a given user. Needs to:
 
 ### New procedure: `moveCustomerPipeline`
 
-Super-admin only. Sets `pipeline`, `pipelineStage`, and `pipelineMovedAt` on a customer.
+Super-admin only. Sets `pipeline` and `pipelineStage` on a customer.
 
 ```typescript
 input: {
@@ -108,13 +106,13 @@ input: {
 }
 ```
 
-When moving to `active`: set `pipelineStage = null`, `pipelineMovedAt = now()`.
-When moving to `rehash`: set `pipelineStage = 'schedule_manager_meeting'` (first stage), `pipelineMovedAt = now()`.
-When moving to `dead`: set `pipelineStage = 'mostly_dead'` (first stage), `pipelineMovedAt = now()`.
+When moving to `active`: set `pipelineStage = null`.
+When moving to `rehash`: set `pipelineStage = 'schedule_manager_meeting'` (first stage).
+When moving to `dead`: set `pipelineStage = 'mostly_dead'` (first stage).
 
 ### Stage drag within rehash/dead
 
-Super-admin can drag customers between stages within rehash/dead. This updates only `pipelineStage` (not `pipeline` or `pipelineMovedAt`).
+Super-admin can drag customers between stages within rehash/dead. This updates only `pipelineStage` (not `pipeline`).
 
 ## UI Changes
 
@@ -123,14 +121,6 @@ Super-admin can drag customers between stages within rehash/dead. This updates o
 A `Select` dropdown in the pipeline view header, next to the existing `DataViewTypeToggle`. Shows current pipeline name ("Active", "Rehash", "Dead"). Only rendered when `user.role === 'super-admin'`.
 
 When toggled, the kanban/table re-queries with the selected pipeline filter. Stage config, columns, and allowed transitions update to match the selected pipeline.
-
-### 30-Day Timer Badge
-
-Each customer card in the kanban shows a small badge with time remaining in current pipeline:
-- Computed from `pipelineMovedAt`: `30 - daysSince(pipelineMovedAt)`
-- Format: "23d left", "5d left", "Expired" (if > 30 days)
-- Color: green (> 15d), yellow (5-15d), red (< 5d), gray (expired)
-- Only shown for rehash/dead pipelines (active pipeline doesn't have a time limit)
 
 ### Role Gating
 
