@@ -11,7 +11,6 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 | # | Task | One-liner | Branch | Context |
 |---|------|-----------|--------|---------|
 | 1 | **Notion CRM Migration** | Remove Notion as the customer source; customers become first-class DB citizens with their own entry flow | `migrating-notion` | [notion-crm-migration.md](./notion-crm-migration.md) |
-| 2 | **Codebase Quality Remediation** | Fix import violations, merge `portfolio` into `showroom`, enforce feature boundaries | `main` | [codebase-quality-remediation.md](./codebase-quality-remediation.md) |
 | 3 | **Cross-Feature Import Rules** | Enforce strict import directionality — no `features/` → `features/` reaching into internals | `main` | [cross-feature-import-rules.md](./cross-feature-import-rules.md) |
 | 4 | **P0 Navigation UX Fixes** | Fix 4 broken nav patterns: active state, mobile close, scroll lock, back button | `main` | [p0-navigation-ux-fixes.md](./p0-navigation-ux-fixes.md) |
 | 5 | **P1 Mobile Gaps** | Add showroom mobile sheet + missing footer on mobile | `main` | [p1-mobile-gaps.md](./p1-mobile-gaps.md) |
@@ -43,6 +42,14 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 |---|------|-----------|--------|---------|
 | 11 | **Multi-Pipeline Customer System** | `pipeline` + `pipelineStage` columns + toggle UI — DB changes merged, needs validation | Columns + toggle merged | [multi-pipeline-system.md](./multi-pipeline-system.md) |
 | 12 | **Trade Page Conversion** | Convert static trade pages to dynamic DB-driven pages with correct H1/benefits | Partial commits merged | [trade-page-conversion.md](./trade-page-conversion.md) |
+
+---
+
+## ✅ Completed
+
+| # | Task | Completed |
+|---|------|-----------|
+| 2 | **Codebase Quality Remediation** | All 11 tasks done — DAL moved, portfolio merged, imports fixed, types derived, components extracted |
 
 ---
 
