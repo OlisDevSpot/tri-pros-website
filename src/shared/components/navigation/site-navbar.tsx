@@ -4,7 +4,7 @@ import type { Variants } from 'motion/react'
 import { CalendarPlus2Icon, LogInIcon, LogOutIcon, MenuIcon, PhoneIcon } from 'lucide-react'
 import { animate, AnimatePresence, motion, useMotionValue } from 'motion/react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import {
   useCallback,
@@ -49,11 +49,13 @@ export function SiteNavbar() {
   const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null)
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
+  const router = useRouter()
   const scrolled = useHasScrolled(10)
   const isMobile = useIsMobile()
   const pathname = usePathname()
   const matches = useMatchMedia()
 
+  const pendingNavRef = useRef<string | null>(null)
   const width = useMotionValue(0)
   const left = useMotionValue(0)
   const subitemsContainerHeight = useMotionValue(150)
@@ -92,6 +94,18 @@ export function SiteNavbar() {
   }, [authError])
 
   const isActive = (href: string) => `/${pathname.split('/')[1]}` === href
+
+  function handlePopoverNavigate(href: string) {
+    pendingNavRef.current = href
+    setIsPopoverOpen(false)
+  }
+
+  function handlePopoverExitComplete() {
+    if (pendingNavRef.current) {
+      router.push(pendingNavRef.current)
+      pendingNavRef.current = null
+    }
+  }
 
   function closeNavigation() {
     setSelectedItemIndex(null)
@@ -388,6 +402,8 @@ export function SiteNavbar() {
           isOpen={isPopoverOpen}
           setIsOpen={setIsPopoverOpen}
           navItems={getPopoverNavItems()}
+          onNavigate={handlePopoverNavigate}
+          onExitComplete={handlePopoverExitComplete}
         />
       </motion.nav>
     </>

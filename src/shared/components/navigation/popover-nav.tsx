@@ -19,12 +19,16 @@ interface MobileNavProps {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
   navItems: Partial<Record<DynamicNavSections, NavItemsGroup>>
+  onNavigate: (href: string) => void
+  onExitComplete?: () => void
 }
 
 export function PopoverNav({
   isOpen,
   setIsOpen: _setIsOpen,
   navItems,
+  onNavigate,
+  onExitComplete,
 }: MobileNavProps) {
   const [selectedMarketingItemIndex, setSelectedMarketingItemIndex] = useState<number | null>(null)
   const [selectedAgentItemIndex, setSelectedAgentItemIndex] = useState<number | null>(null)
@@ -36,7 +40,7 @@ export function PopoverNav({
   const isInternalUser = checkIsInternalUser(sessionQuery.data?.user?.role)
 
   return (
-    <AnimatePresence>
+    <AnimatePresence onExitComplete={onExitComplete}>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0, x: 100 }}
@@ -58,8 +62,14 @@ export function PopoverNav({
                     item={item}
                     index={0}
                     isActive={false}
-                    onClick={() => {
-                      setSelectedAgentItemIndex(prev => prev === index ? null : index)
+                    onClick={(e) => {
+                      if (item.action === 'navigate') {
+                        e.preventDefault()
+                        onNavigate(item.href)
+                      }
+                      else {
+                        setSelectedAgentItemIndex(prev => prev === index ? null : index)
+                      }
                     }}
                     selectedItemIndex={null}
                   />
@@ -78,7 +88,13 @@ export function PopoverNav({
                             item={subItem}
                             index={subItemIndex}
                             isActive={false}
-                            selectedItemIndex={selectedAgentItemIndex}
+                            onClick={(e) => {
+                              if ('href' in subItem) {
+                                e.preventDefault()
+                                onNavigate(subItem.href)
+                              }
+                            }}
+                            selectedItemIndex={null}
                           />
                         ))}
                       </motion.div>
@@ -93,8 +109,14 @@ export function PopoverNav({
                     item={item}
                     index={0}
                     isActive={false}
-                    onClick={() => {
-                      setSelectedMarketingItemIndex(prev => prev === index ? null : index)
+                    onClick={(e) => {
+                      if (item.action === 'navigate') {
+                        e.preventDefault()
+                        onNavigate(item.href)
+                      }
+                      else {
+                        setSelectedMarketingItemIndex(prev => prev === index ? null : index)
+                      }
                     }}
                     selectedItemIndex={selectedMarketingItemIndex}
                   />
@@ -113,8 +135,11 @@ export function PopoverNav({
                             item={subItem}
                             index={subItemIndex}
                             isActive={false}
-                            onClick={() => {
-                              setSelectedMarketingItemIndex(subItemIndex)
+                            onClick={(e) => {
+                              if ('href' in subItem) {
+                                e.preventDefault()
+                                onNavigate(subItem.href)
+                              }
                             }}
                             selectedItemIndex={null}
                           />
