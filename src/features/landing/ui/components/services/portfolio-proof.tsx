@@ -11,20 +11,27 @@ export async function PortfolioProof({ tradeName }: PortfolioProofProps) {
   const allProjects = await getPublicProjects()
 
   const tradeNameLower = tradeName.toLowerCase()
-  const tradeSpecific = allProjects
-    .filter((p) => {
-      const requirements = p.project.hoRequirements
-      if (!requirements || !Array.isArray(requirements)) {
-        return false
-      }
-      return requirements.some(req =>
-        req.toLowerCase().includes(tradeNameLower),
-      )
-    })
-    .slice(0, 3)
 
-  // Fall back to any public projects when none match this trade
-  const matchingProjects = tradeSpecific.length > 0 ? tradeSpecific : allProjects.slice(0, 3)
+  // Score each project by how well it matches this trade:
+  // 2 = trade is the only trade on the project (exclusive)
+  // 1 = trade is one of multiple trades on the project
+  // 0 = trade not present (fallback filler)
+  function tradeMatchScore(reqs: string[] | null | undefined): number {
+    if (!reqs || !Array.isArray(reqs) || reqs.length === 0) {
+      return 0
+    }
+    const matchCount = reqs.filter(r => r.toLowerCase().includes(tradeNameLower)).length
+    if (matchCount === 0) {
+      return 0
+    }
+    return matchCount === reqs.length ? 2 : 1
+  }
+
+  const scored = allProjects
+    .map(p => ({ p, score: tradeMatchScore(p.project.hoRequirements) }))
+    .sort((a, b) => b.score - a.score)
+
+  const matchingProjects = scored.slice(0, 3).map(({ p }) => p)
 
   if (matchingProjects.length === 0) {
     return null
