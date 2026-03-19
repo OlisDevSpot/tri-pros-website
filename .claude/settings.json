@@ -97,7 +97,11 @@
       "Bash(node_modules/.bin/tsx /tmp/meta-diag3.ts)",
       "Bash(node_modules/.bin/tsx /tmp/meta-diag4.ts)",
       "Bash(node_modules/.bin/tsx /tmp/meta-cleanup.ts)",
-      "Bash(node_modules/.bin/tsx --check scripts/meta/lib/client.ts scripts/meta/setup/initialize-account.ts scripts/meta/campaigns/create-campaign.ts)"
+      "Bash(node_modules/.bin/tsx --check scripts/meta/lib/client.ts scripts/meta/setup/initialize-account.ts scripts/meta/campaigns/create-campaign.ts)",
+      "Bash(bash /home/olis-solutions/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.5/skills/brainstorming/scripts/start-server.sh --project-dir /home/olis-solutions/olis-v3/nextjs/tri-pros-website)",
+      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/)",
+      "Bash(pnpm list:*)",
+      "Bash(node scripts/generate-pwa-icons.mjs)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

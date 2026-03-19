@@ -65,22 +65,18 @@ function SplashAnimation() {
 
 // ── Visibility Hook ─────────────────────────────────────────────────────────
 
-function computeInitialVisibility() {
-  if (typeof window === 'undefined') {
-    return false
-  }
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-  const alreadyShown = sessionStorage.getItem(SPLASH_KEY)
-
-  if (isStandalone && !alreadyShown) {
-    sessionStorage.setItem(SPLASH_KEY, '1')
-    return true
-  }
-  return false
-}
-
 function useSplashVisibility() {
-  const [visible, setVisible] = useState(computeInitialVisibility)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    const alreadyShown = sessionStorage.getItem(SPLASH_KEY)
+
+    if (isStandalone && !alreadyShown) {
+      sessionStorage.setItem(SPLASH_KEY, '1')
+      setVisible(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!visible) {
