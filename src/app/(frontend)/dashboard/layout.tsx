@@ -1,10 +1,12 @@
 import { Suspense } from 'react'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
+import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <GlobalDialogs />
+      <PwaInstallPrompt />
       <div
         className="h-dvh flex flex-col"
         data-no-gutter-stable

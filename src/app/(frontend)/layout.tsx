@@ -1,6 +1,7 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/shared/components/providers'
+import { PwaSplashScreen } from '@/shared/components/pwa-splash-screen'
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -39,16 +40,24 @@ export const metadata: Metadata = {
     default: 'Tri Pros Remodeling',
     template: '%s | Tri Pros Remodeling',
   },
-  icons: [
-    {
-      url: '/company/logo/logo-light.svg',
-      media: '(prefers-color-scheme: light)',
-    },
-    {
-      url: '/company/logo/logo-dark.svg',
-      media: '(prefers-color-scheme: dark)',
-    },
-  ],
+  icons: {
+    icon: [
+      {
+        url: '/company/logo/logo-light.svg',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        url: '/company/logo/logo-dark.svg',
+        media: '(prefers-color-scheme: dark)',
+      },
+    ],
+    apple: '/pwa/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'TPR',
+    statusBarStyle: 'black-translucent',
+  },
   description: 'Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.',
   keywords: 'luxury construction, custom homes, premium renovations, commercial construction, elite builders',
   authors: [{ name: 'Tri Pros Remodeling' }],
@@ -90,6 +99,10 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  themeColor: '#03AFED',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -106,6 +119,7 @@ export default function RootLayout({
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
         <Providers>
+          <PwaSplashScreen />
           {children}
         </Providers>
       </body>
