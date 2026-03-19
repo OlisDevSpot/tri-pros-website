@@ -3,16 +3,23 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { ProposalStatus } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { EyeIcon } from 'lucide-react'
+import { CopyIcon, EyeIcon, MoreHorizontal, TrashIcon } from 'lucide-react'
 import { PROPOSAL_STATUS_COLORS } from '@/features/proposal-flow/constants/status-colors'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { EntityDuplicateButton } from '@/shared/components/entity-actions/entity-duplicate-button'
 import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
 import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
+import { Button } from '@/shared/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
 import { proposalStatuses } from '@/shared/constants/enums'
@@ -23,8 +30,11 @@ type ProposalRow = inferRouterOutputs<AppRouter>['proposalRouter']['getProposals
 
 export interface ProposalTableMeta {
   activeRowId: string | null
+  userRole: string | undefined
   onDuplicate: (proposalId: string) => void
+  onDelete: (proposalId: string) => void
   isDuplicating: boolean
+  isDeleting: boolean
   onUpdateCreatedAt: (proposalId: string, date: Date) => void
   onUpdateStatus: (proposalId: string, status: ProposalStatus) => void
   onViewProfile: (customerId: string) => void
@@ -69,10 +79,35 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
               <EntityEditButton
                 href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${row.original.id}`}
               />
-              <EntityDuplicateButton
-                disabled={meta?.isDuplicating}
-                onClick={() => meta?.onDuplicate(row.original.id)}
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    disabled={meta?.isDuplicating}
+                    onClick={() => meta?.onDuplicate(row.original.id)}
+                  >
+                    <CopyIcon className="h-3.5 w-3.5" />
+                    Duplicate
+                  </DropdownMenuItem>
+                  {meta?.userRole === 'super-admin' && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        disabled={meta?.isDeleting}
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => meta?.onDelete(row.original.id)}
+                      >
+                        <TrashIcon className="h-3.5 w-3.5" />
+                        Delete
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         )
