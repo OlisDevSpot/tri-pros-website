@@ -1,6 +1,6 @@
 import { extname } from 'node:path'
 import { TRPCError } from '@trpc/server'
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { getProjectForEdit } from '@/features/showroom/dal/server/get-project-for-edit'
 import { getShowroomProjectDetail } from '@/features/showroom/dal/server/get-showroom-project-detail'
@@ -8,8 +8,9 @@ import { getShowroomProjects } from '@/features/showroom/dal/server/get-showroom
 import { createShowroomProject, deleteShowroomProject, getAllProjects, updateShowroomProject } from '@/features/showroom/dal/server/manage-project'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
-import { insertMediaFilesSchema, mediaFiles } from '@/shared/db/schema'
+import { account, insertMediaFilesSchema, mediaFiles } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
+import { refreshAccessToken } from '@/shared/services/google-drive/lib/refresh-access-token'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { deleteObject } from '@/shared/services/r2/delete-object'
 import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
@@ -209,5 +210,38 @@ export const showroomRouter = createTRPCRouter({
         .update(mediaFiles)
         .set({ isHeroImage: input.isHeroImage })
         .where(eq(mediaFiles.id, input.id))
+    }),
+
+  // ── Agent: Google Drive token ──────────────────────────────────────
+
+  getGoogleAccessToken: agentProcedure
+    .query(async ({ ctx }) => {
+      const googleAccount = await db.query.account.findFirst({
+        where: and(
+          eq(account.userId, ctx.session.user.id),
+          eq(account.providerId, 'google'),
+        ),
+      })
+
+      if (!googleAccount) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'No Google account linked' })
+      }
+
+      if (!googleAccount.refreshToken) {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Google Drive connection expired — please sign out and sign in again' })
+      }
+
+      const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000)
+      if (googleAccount.accessTokenExpiresAt && googleAccount.accessTokenExpiresAt > fiveMinutesFromNow) {
+        return { accessToken: googleAccount.accessToken! }
+      }
+
+      const { accessToken, expiresAt } = await refreshAccessToken({ refreshToken: googleAccount.refreshToken })
+      await db
+        .update(account)
+        .set({ accessToken, accessTokenExpiresAt: expiresAt })
+        .where(eq(account.id, googleAccount.id))
+
+      return { accessToken }
     }),
 })
