@@ -15,6 +15,7 @@ import {
 } from '@/shared/components/calendar/lib/calendar-helpers'
 import { CalendarTimeIndicator } from '@/shared/components/calendar/ui/calendar-time-indicator'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
+import { cn } from '@/shared/lib/utils'
 
 const START_HOUR = 8
 const END_HOUR = 22
@@ -60,24 +61,21 @@ export function CalendarWeekView<T extends CalendarEvent>({
               {weekDays.map(day => (
                 <div
                   key={day.toISOString()}
-                  className="py-2 text-center text-xs font-medium text-muted-foreground"
+                  className={cn(
+                    'py-2 text-center text-xs font-medium text-muted-foreground',
+                    isToday(day) && 'bg-primary/10',
+                  )}
                 >
                   <span className="block sm:hidden">
                     {format(day, 'EEE').charAt(0)}
-                    <span className="block text-xs font-semibold text-foreground">
+                    <span className={cn('block text-xs font-semibold', isToday(day) ? 'text-primary' : 'text-foreground')}>
                       {format(day, 'd')}
                     </span>
                   </span>
                   <span className="hidden sm:inline">
                     {format(day, 'EE')}
                     {' '}
-                    <span
-                      className={
-                        isToday(day)
-                          ? 'ml-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground'
-                          : 'ml-1 font-semibold text-foreground'
-                      }
-                    >
+                    <span className={cn('ml-1 font-semibold', isToday(day) ? 'text-primary' : 'text-foreground')}>
                       {format(day, 'd')}
                     </span>
                   </span>
