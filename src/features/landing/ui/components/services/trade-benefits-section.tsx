@@ -1,14 +1,16 @@
 'use client'
 
+import type { TradeBenefit } from '@/features/landing/constants/trade-benefits'
+
 import { CheckCircle2 } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
-
 import { useRef } from 'react'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 
 interface TradeBenefitsSectionProps {
   tradeName: string
-  benefits: { title: string, description: string }[]
+  benefits: TradeBenefit[]
 }
 
 export function TradeBenefitsSection({ tradeName, benefits }: TradeBenefitsSectionProps) {
@@ -46,9 +48,17 @@ export function TradeBenefitsSection({ tradeName, benefits }: TradeBenefitsSecti
           >
             <Card className="h-full text-center">
               <CardHeader className="items-center pb-0">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-                  <CheckCircle2 className="size-6 text-primary" />
-                </div>
+                {benefit.stat != null
+                  ? (
+                      <span className="text-2xl font-black text-primary mb-2">
+                        {benefit.stat}
+                      </span>
+                    )
+                  : (
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-2">
+                        <CheckCircle2 className="size-5 text-primary/60" />
+                      </div>
+                    )}
                 <CardTitle className="text-lg">{benefit.title}</CardTitle>
               </CardHeader>
               <CardContent>
