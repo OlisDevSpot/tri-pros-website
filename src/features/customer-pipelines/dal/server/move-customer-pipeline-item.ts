@@ -1,6 +1,6 @@
-import type { CustomerPipeline } from '@/shared/types/enums'
-
 import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/active-pipeline-stages'
+
+import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'

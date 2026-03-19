@@ -1,6 +1,6 @@
-import type { CustomerPipeline } from '@/shared/types/enums'
-
 import type { CustomerPipelineItem, CustomerPipelineRawData } from '@/features/customer-pipelines/types'
+
+import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
 

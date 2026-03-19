@@ -1,7 +1,7 @@
-import type { DeadPipelineStage } from '../constants/dead-pipeline-stages'
-import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
-
 import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
+import type { DeadPipelineStage } from '../constants/dead-pipeline-stages'
+
+import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
 
 import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 

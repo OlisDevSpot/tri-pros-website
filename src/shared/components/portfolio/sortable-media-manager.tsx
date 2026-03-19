@@ -145,7 +145,14 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
 
   const { isLoading: isPickerLoading, openPicker } = useGooglePicker({
     onFilesPicked: async (files) => {
-      for (const picked of files) {
+      const total = files.length
+      const toastId = toast.loading(`Importing ${total} photo${total !== 1 ? 's' : ''} from Google Drive…`)
+
+      let succeeded = 0
+      let failed = 0
+
+      for (const [index, picked] of files.entries()) {
+        toast.loading(`Importing from Google Drive… (${index + 1} / ${total})`, { id: toastId })
         try {
           await uploadFromDriveMutation.mutateAsync({
             driveFileId: picked.id,
@@ -154,12 +161,25 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
             projectId,
             phase: activePhase,
           })
+          succeeded++
         }
         catch (err) {
+          failed++
           const message = err instanceof Error ? err.message : 'Unknown error'
           toast.error(`Failed to import ${picked.name}: ${message}`)
         }
       }
+
+      if (failed === 0) {
+        toast.success(`Imported ${succeeded} photo${succeeded !== 1 ? 's' : ''} from Google Drive`, { id: toastId })
+      }
+      else if (succeeded === 0) {
+        toast.error(`Failed to import all ${total} photos`, { id: toastId })
+      }
+      else {
+        toast.warning(`Imported ${succeeded} / ${total} photos (${failed} failed)`, { id: toastId })
+      }
+
       onUpdate()
     },
   })

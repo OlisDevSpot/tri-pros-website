@@ -1,19 +1,17 @@
-import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
 import type { CustomerPipelineItem } from '../types'
 
-import { customerPipelineStages } from '../constants/active-pipeline-stages'
-
-export function groupCustomersByStage(
+export function groupCustomersByStage<T extends string>(
   items: CustomerPipelineItem[],
-): Record<CustomerPipelineStage, CustomerPipelineItem[]> {
+  stages: readonly T[],
+): Record<T, CustomerPipelineItem[]> {
   const grouped = Object.fromEntries(
-    customerPipelineStages.map(stage => [stage, [] as CustomerPipelineItem[]]),
-  ) as Record<CustomerPipelineStage, CustomerPipelineItem[]>
+    stages.map(stage => [stage, [] as CustomerPipelineItem[]]),
+  ) as Record<T, CustomerPipelineItem[]>
 
   for (const item of items) {
     const stage = item.stage as string
     if (stage in grouped) {
-      grouped[stage as CustomerPipelineStage].push(item)
+      grouped[stage as T].push(item)
     }
   }
 

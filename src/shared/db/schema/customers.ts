@@ -1,10 +1,10 @@
 import type z from 'zod'
 import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
 import { jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
-import { customerPipelineEnum } from './meta'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
+import { customerPipelineEnum } from './meta'
 
 export const customers = pgTable('customers', {
   id,

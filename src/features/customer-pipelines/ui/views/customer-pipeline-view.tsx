@@ -1,25 +1,22 @@
 'use client'
 
-import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import type { DataViewType } from '@/shared/components/data-view-type-toggle'
+import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
-import {
-  ACTIVE_ALLOWED_DRAG_TRANSITIONS,
-  ACTIVE_BLOCKED_MESSAGES,
-  activeStageConfig,
-  customerPipelineStages,
-} from '@/features/customer-pipelines/constants/active-pipeline-stages'
+import { pipelineConfigs } from '@/features/customer-pipelines/constants/pipeline-config'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
 import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar'
 import { CustomerPipelineTable } from '@/features/customer-pipelines/ui/components/customer-pipeline-table'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
+import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipeline-select'
+import { useSession } from '@/shared/auth/client'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
@@ -31,11 +28,16 @@ import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
   const [layout, setLayout] = useState<DataViewType>('kanban')
+  const [pipeline, setPipeline] = useState<CustomerPipeline>('active')
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
+  const session = useSession()
+  const isSuperAdmin = session.data?.user?.role === 'super-admin'
+
+  const config = pipelineConfigs[pipeline]
 
   const pipelineQuery = useQuery(
-    trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions(),
+    trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }),
   )
 
   const moveMutation = useMutation(
@@ -53,8 +55,9 @@ export function CustomerPipelineView() {
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
     moveMutation.mutate({
       customerId: itemId,
-      fromStage: fromStage as CustomerPipelineStage,
-      toStage: toStage as CustomerPipelineStage,
+      fromStage,
+      toStage,
+      pipeline,
     })
   }
 
@@ -120,7 +123,10 @@ export function CustomerPipelineView() {
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} />
-        <DataViewTypeToggle value={layout} onChange={setLayout} />
+        <div className="flex items-center gap-2">
+          {isSuperAdmin && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+          <DataViewTypeToggle value={layout} onChange={setLayout} />
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">
@@ -146,16 +152,16 @@ export function CustomerPipelineView() {
               )
             : (
                 <KanbanBoard<CustomerPipelineItem>
-                  stageConfig={activeStageConfig}
-                  groupedItems={groupCustomersByStage(pipelineQuery.data)}
-                  allowedTransitions={ACTIVE_ALLOWED_DRAG_TRANSITIONS}
-                  blockedMessages={ACTIVE_BLOCKED_MESSAGES}
+                  stageConfig={config.stageConfig}
+                  groupedItems={groupCustomersByStage(pipelineQuery.data, config.stages)}
+                  allowedTransitions={config.allowedTransitions}
+                  blockedMessages={config.blockedMessages}
                   onMoveItem={handleMoveItem}
                   onBlockedTransition={handleBlockedTransition}
-                  collapsedStages={['declined']}
-                  columnFilter={{
-                    defaultVisible: [...customerPipelineStages].filter(s => s !== 'declined'),
-                  }}
+                  collapsedStages={pipeline === 'active' ? ['declined'] : []}
+                  columnFilter={pipeline === 'active'
+                    ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
+                    : undefined}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
