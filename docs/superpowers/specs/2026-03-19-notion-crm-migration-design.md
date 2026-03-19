@@ -31,13 +31,14 @@ Add to `package.json` (pnpm install):
 
 | Column | Type | Notes |
 |---|---|---|
-| `initMeetingAt` | `timestamp (withTimezone)` | First scheduled appointment datetime, migrated from Notion or set via intake form |
 | `leadSource` | `leadSourceEnum` | Which entity provided the lead |
 | `leadType` | `leadTypeEnum` | Classification of how the lead was entered |
-| `leadMetaJSON` | `jsonb ($type<LeadMeta>)` | Non-query setup fields: mp3 key, assigned salesrep (see 1.3) |
+| `leadMetaJSON` | `jsonb ($type<LeadMeta>)` | Non-query setup fields: mp3 key only (see 1.3) |
 
 `notionContactId` column remains — harmless, used by migration skip logic.
-`syncedAt` column remains — updated during migration. **Known tech debt:** post-migration, `syncedAt` will be set on every new customer row regardless of Notion origin; the column name becomes misleading. Renaming is out of scope for this spec.
+`syncedAt` column remains — updated during migration. **Known tech debt:** post-migration, `syncedAt` will be set on every new customer row regardless of Notion origin. Renaming is out of scope for this spec.
+
+> **Note:** `initMeetingAt` is NOT added to the customers table. It was a Notion-era workaround for UI limitations. The `meetings.scheduledFor` column is the correct home for appointment datetime. Customers are already linked to meetings via FK.
 
 ### 1.2 New enums
 
@@ -80,15 +81,14 @@ Both TS types barrel-exported via `src/shared/types/enums/index.ts`.
 
 ```ts
 export const leadMetaSchema = z.object({
-  mp3RecordingKey: z.string().optional(),    // Cloudflare R2 object key for telemarketing call recording
-  assignedSalesrep: z.string().optional(),   // salesrep name from SALESREPS const (telemarketing only)
+  mp3RecordingKey: z.string().optional(), // Cloudflare R2 object key for telemarketing call recording
 })
 export type LeadMeta = z.infer<typeof leadMetaSchema>
 ```
 
-`assignedSalesrep` lives in JSONB because it is informational metadata, not a query target. Both fields are non-query, non-indexed — JSONB is appropriate.
+Non-query, non-indexed — JSONB is appropriate.
 
-When updating `insertCustomerSchema` in `customers.ts`, add `leadMetaJSON: leadMetaSchema.optional()` to the drizzle-zod override alongside the existing JSONB overrides — without this the inferred type for `leadMetaJSON` will be `unknown` rather than `LeadMeta`.
+When updating `insertCustomerSchema` in `customers.ts`, add `leadMetaJSON: leadMetaSchema.optional()` to the drizzle-zod override — without this the inferred type will be `unknown`.
 
 ### 1.4 New `customer_notes` table
 
@@ -103,16 +103,17 @@ export const customerNotes = pgTable('customer_notes', {
   createdAt,
   updatedAt,
 })
+export const selectCustomerNoteSchema = createSelectSchema(customerNotes)
+export const insertCustomerNoteSchema = createInsertSchema(customerNotes).omit({ id: true, createdAt: true, updatedAt: true })
 ```
 
-- `authorId` is nullable — Drizzle makes columns without `.notNull()` nullable; no explicit `.nullable()` needed
+- `authorId` nullable (no `.notNull()` = nullable in Drizzle)
 - Exported individually and via `src/shared/db/schema/index.ts`
-- This spec creates the table only; CRUD UI is a future feature
-- Export `selectCustomerNoteSchema = createSelectSchema(customerNotes)` and `insertCustomerNoteSchema = createInsertSchema(customerNotes).omit({ id: true, createdAt: true, updatedAt: true })` — consistent with every other table in the project
+- Table created now; CRUD UI is a future feature
 
 ### 1.5 Address field constraint behaviour
 
-`customers.city` and `customers.zip` are `notNull()` in the schema. The intake form uses a Google Places autocomplete that populates `city` and `zip` from the resolved place. The autocomplete field is **required** for all lead sources — form submission is blocked until a place is selected from the autocomplete dropdown, ensuring city and zip are always populated. Fallback values match the existing DAL pattern: `city: ''`, `zip: ''` for contacts where city/zip cannot be extracted from the place result (rare edge case for non-US addresses). The migration script uses the same `''` fallback for Notion contacts missing these fields.
+`customers.city` and `customers.zip` are `notNull()`. The intake form address autocomplete is **required** — submission is blocked until a place is confirmed, ensuring city/zip are always populated from the place result. Fallback: `city: ''`, `zip: ''` for contacts where these cannot be extracted (rare non-US edge case). Migration script uses the same fallback.
 
 ---
 
@@ -120,8 +121,8 @@ export const customerNotes = pgTable('customer_notes', {
 
 **File:** `scripts/migrate-notion-contacts.ts`
 **Run:** `pnpm tsx scripts/migrate-notion-contacts.ts`
-**Safety:** Idempotent — skips existing customers via `onConflictDoUpdate` on `notionContactId` (existing `upsertCustomerFromNotion` pattern). Re-running is safe.
-**Error strategy:** Log-and-skip per contact — a malformed Notion page never aborts the full sync. Each failure is logged with the Notion page ID for manual review.
+**Safety:** Idempotent — skips existing customers via `onConflictDoUpdate` on `notionContactId`. Re-running is safe.
+**Error strategy:** Log-and-skip per contact — malformed pages never abort the full sync.
 
 ### 2.1 Field mapping
 
@@ -134,8 +135,8 @@ export const customerNotes = pgTable('customer_notes', {
 | city | `customers.city` | fallback `''` if missing |
 | state | `customers.state` | |
 | zip | `customers.zip` | fallback `''` if missing |
-| initMeetingAt | `customers.initMeetingAt` | nullable |
 | notes | **skipped** | No existing notes worth migrating |
+| initMeetingAt | **dropped** | No destination column; field removed from schema |
 | ownerId | **dropped** | Notion user IDs don't map to app users |
 | relatedMeetingsIds | **dropped** | FK relationship covers this |
 | relatedProjectsIds | **dropped** | Out of scope |
@@ -144,7 +145,7 @@ No mp3 recordings are migrated — `leadMetaJSON.mp3RecordingKey` is null for al
 
 ### 2.2 Lead classification via "Closed By" Notion property
 
-The script reads the raw `Closed By` property directly from the Notion page response — this property is NOT added to the permanent `CONTACT_PROPERTIES_MAP` adapter (migration-only read).
+The script reads the raw `Closed By` property directly from the Notion page response — NOT added to the permanent `CONTACT_PROPERTIES_MAP` adapter (migration-only read).
 
 | "Closed By" value | `leadType` | `leadSource` |
 |---|---|---|
@@ -157,7 +158,7 @@ The script reads the raw `Closed By` property directly from the Notion page resp
 - Notion meetings DB — pre-app scheduling records, superseded by the richer Postgres `meetings` table
 - Notion projects DB — out of scope
 - No Notion rows are modified or deleted (read-only access)
-- Historical call recordings — `leadMetaJSON.mp3RecordingKey` left null for migrated contacts
+- Historical call recordings
 
 ---
 
@@ -180,22 +181,20 @@ Single nuqs param: `?source=telemarketing_leads_philippines|noy|quoteme|other`
 src/features/intake/
   constants/
     form-configs.ts         ← per-source IntakeFormConfig objects
-    salesreps.ts            ← static list of agent names for telemarketing dropdown
   schemas/
-    intake-form-schema.ts   ← base zod schema (all fields optional at root, refined per config)
+    intake-form-schema.ts   ← base zod schema refined per config
   ui/
     views/
       intake-form-view.tsx
     components/
       address-autocomplete-field.tsx   ← Google Places autocomplete + static map preview
       mp3-upload-field.tsx             ← R2 upload, telemarketing only
-      meeting-scheduler-field.tsx      ← datetime picker + salesrep select, telemarketing only
+      meeting-scheduler-field.tsx      ← datetime picker + "Closed By" agent select, telemarketing only
 ```
 
 ### 3.4 Form configuration
 
 ```ts
-// src/features/intake/constants/form-configs.ts
 type IntakeFormConfig = {
   leadSource: LeadSource
   leadType: LeadType
@@ -215,80 +214,76 @@ type IntakeFormConfig = {
 | `quoteme` | `needs_confirmation` | optional | ❌ | — | ❌ | ✅ |
 | `other` | `manual` | optional | optional | optional | ❌ | ✅ |
 
-**Shared fields (all sources):** name (required), phone (required), address via autocomplete (required — populates address, city, state, zip).
+**Shared fields (all sources):** name (required), phone (required), address via autocomplete (required).
 
 ### 3.5 Address UX
 
 Uses `@vis.gl/react-google-maps` (already a project dependency).
 
-- Single **Places Autocomplete** input is the only address field visible to the user
-- On place selection: auto-populates `address`, `city`, `state`, `zip` in form state from the place result's address components
-- A **static map** renders below the input, centered on the resolved coordinates, once a place is confirmed
-- Map height: 200px on mobile, 240px on desktop
-- If the address is cleared, the static map disappears
-- `lat`/`lng` from the place result are used internally by the component for map rendering only — they are **not** exposed via `onChange` and are **not** stored in the DB
+- Single **Places Autocomplete** input — on selection auto-populates `address`, `city`, `state`, `zip` from place result components
+- A **static map** renders below once a place is confirmed, centered on resolved coordinates
+- Map height: 200px mobile, 240px desktop. Disappears if address is cleared.
+- `lat`/`lng` kept internal to the component (map preview only) — not exposed via `onChange`, not stored in DB
 
 ```ts
-// Component signature
 interface AddressAutocompleteFieldProps {
   onChange: (fields: { address: string; city: string; state: string; zip: string }) => void
   onClear: () => void
 }
 ```
 
-### 3.6 Salesrep selector (telemarketing only)
+`APIProvider` from `@vis.gl/react-google-maps` must be rendered in `intake-form-view.tsx` wrapping the form content. The intake page is a standalone public route — the existing site layout does not include it. API key read from `process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
 
-Since the intake form is public (no auth), the salesrep is selected from a **static const array** of agent names:
+### 3.6 "Closed By" selector — dynamic agent list (telemarketing only)
 
-```ts
-// src/features/intake/constants/salesreps.ts
-export const SALESREPS = ['Austin', 'Rico', 'Mei Ann', 'Angelica'] as const
-export type Salesrep = (typeof SALESREPS)[number]
-```
+The intake form is public (no auth) but must allow selection of which internal agent is closing the lead. This is solved by fetching internal users from the app's Postgres `user` table at form load time.
 
-Selected salesrep name is stored in `leadMetaJSON.assignedSalesrep` (see 1.3). This keeps the `meetings` table schema unchanged for this spec.
+**New procedure:** `intakeRouter.getInternalUsers` — `baseProcedure` (public, read-only)
+- Queries `user` table for rows where `role IN ('agent', 'super-admin')` using the same logic as `isInternalUser()`
+- Returns: `Array<{ id: string, name: string }>` — only id and name, no sensitive data
+- Result used to populate the "Closed By" dropdown in `meeting-scheduler-field.tsx`
+- Selected user `id` becomes `meetings.ownerId` when the meeting is created
 
-### 3.7 Submission flow — no meeting created from intake
+No static `SALESREPS` const or hardcoded user ID map. The list is always current as agents are added/removed via Google OAuth with `@triprosremodeling.com` email domain assignment.
 
-**Key decision:** The intake form does NOT create a `meetings` row. The intake form is public and unauthenticated — `meetings.ownerId` is `NOT NULL` and requires an authenticated agent. Creating a meeting without an owner would violate the schema.
+### 3.7 Submission flow — meeting IS created from intake (telemarketing)
 
-Instead:
-- `initMeetingAt` is stored on the customer record (the scheduled appointment time as metadata)
-- `leadMetaJSON.assignedSalesrep` stores who is assigned
-- When the scheduled time approaches, an agent opens the customer from the pipeline (which shows `initMeetingAt`) and clicks **Start Meeting** → `create-meeting-view.tsx` pre-populated with `?customerId=<uuid>` — the formal meeting record is created at that point with a proper `ownerId`
+When `showMeetingScheduler` is true and a datetime + agent are provided, a `meetings` row **is** created as part of the intake submission. The selected agent's user ID (`closedById`) becomes `meetings.ownerId`.
 
 **Submission steps:**
-1. If `showMp3Upload` and file present → obtain presigned URL from `intakeRouter.getRecordingUploadUrl`, upload file directly to R2, receive the object key
+1. If `showMp3Upload` and file present → obtain presigned URL from `intakeRouter.getRecordingUploadUrl`, upload to R2, receive object key
 2. Call `customersRouter.createFromIntake` (`baseProcedure`, rate-limited):
-   - Creates `customers` row with `leadSource`, `leadType`, `initMeetingAt`, `leadMetaJSON` (mp3 key + assignedSalesrep)
+   - Creates `customers` row with `leadSource`, `leadType`, `leadMetaJSON` (mp3 key)
    - If notes field populated → inserts row into `customer_notes` (authorId: null)
-3. Returns success — form shows a confirmation message. No redirect (form is reusable per lead source).
+   - If `scheduledFor` + `closedById` provided → inserts `meetings` row with `scheduledFor`, `ownerId = closedById`, `customerId`, `status = 'in_progress'`
+   - If notes field populated → inserts row into `customer_notes` (authorId: null)
+3. Returns `{ customerId }` — form shows confirmation message, no redirect
 
-`createFromIntake` is a single atomic tRPC call. The R2 upload (step 1) happens client-side before calling tRPC; the resulting key is passed as part of the tRPC input.
+`createFromIntake` is a single tRPC call. The R2 upload (step 1) precedes it client-side; the key is passed as input. Customer insert and optional meeting/notes inserts are intentionally non-transactional — a notes or meeting insert failure does not roll back the customer (see Implementation Notes).
 
 ### 3.8 R2 upload — security model
 
-**Bucket:** `telemarketingRecordings: 'tpr-telemarketing-recordings'` — new entry in `R2_BUCKETS` in `src/shared/services/r2/buckets.ts`.
+**Bucket:** `telemarketingRecordings: 'tpr-telemarketing-recordings'` — new entry in `R2_BUCKETS`.
 
-**Type fix required:** `R2_PUBLIC_DOMAINS` is currently typed as `Record<R2BucketName, string>`. Adding a third bucket makes `R2BucketName` a three-member union, requiring a matching entry in `R2_PUBLIC_DOMAINS`. The telemarketing recordings bucket is private (no public domain). Fix: change the type to `Partial<Record<R2BucketName, string>>` — public buckets have entries, private buckets do not. This is a non-breaking change.
+**Type fix:** Change `R2_PUBLIC_DOMAINS` type from `Record<R2BucketName, string>` to `Partial<Record<R2BucketName, string>>` — telemarketing bucket is private (no public domain entry).
 
 **Key path:** `recordings/{timestamp}-{randomUUID}.mp3`
-**Presigned URL procedure:** `intakeRouter.getRecordingUploadUrl` — `baseProcedure`, protected by Upstash rate limiting via `@upstash/ratelimit` (5 presigned URL requests per IP per hour)
-**File constraints enforced server-side before issuing URL:** content type must be `audio/mpeg` or `audio/mp4`, max size 100MB
-**Expiry:** presigned URL valid for 15 minutes
+**Presigned URL procedure:** `intakeRouter.getRecordingUploadUrl` — `baseProcedure` + Upstash rate limiting (5 requests/IP/hour)
+**File constraints:** content type `audio/mpeg` or `audio/mp4`, max 100MB, presigned URL valid 15 minutes
+**Spam/bot protection:** Upstash rate limiting + honeypot field (CSS-hidden). CAPTCHA is a future step.
 
-**File:** New `src/trpc/routers/intake.router.ts` containing `getRecordingUploadUrl` and any future public intake procedures. `createFromIntake` stays in `customersRouter` for co-location with customer DAL.
-
-**Spam/bot protection:** Upstash rate limiting (via `@upstash/ratelimit` + `@upstash/redis`) is the primary defence. A honeypot hidden field is added to the form (hidden via CSS, not `display:none`). CAPTCHA is acknowledged as a future hardening step and is not in scope for this spec.
-
-**Deployment prerequisite:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` must be set in production. The intake form's address autocomplete is a required field — if the key is absent, the form will be stuck. This key is currently `optional()` in `client-env.ts`; it must be set as required in the deployment environment even if the schema is not changed.
+**Deployment prerequisite:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` must be set in production. Currently marked `optional()` in `client-env.ts` — must be set as required in the deployment environment.
 
 ### 3.9 tRPC procedures
 
 **New:** `customersRouter.createFromIntake` — `baseProcedure` + Upstash rate limit
-- Input: explicitly defined schema (NOT derived from `insertCustomerSchema`) to prevent client-controlled `syncedAt`, `notionContactId`, `pipeline`, `pipelineStage` fields. The input schema accepts only: `name`, `phone`, `address`, `city`, `state`, `zip`, `email?`, `notes?`, `initMeetingAt?`, `leadSource`, `leadType`, `leadMetaJSON?`
-- Creates customer row + optional `customer_notes` row
+- Input: explicit schema (NOT from `insertCustomerSchema`) — accepts only: `name`, `phone`, `address`, `city`, `state`, `zip`, `email?`, `notes?`, `leadSource`, `leadType`, `leadMetaJSON?`, `scheduledFor?`, `closedById?`
+- Creates customer + optional meeting + optional note
 - Returns `{ customerId: string }`
+
+**New:** `intakeRouter.getInternalUsers` — `baseProcedure`
+- No input
+- Returns: `Array<{ id: string, name: string }>` for all `role IN ('agent', 'super-admin')` users
 
 **New:** `intakeRouter.getRecordingUploadUrl` — `baseProcedure` + Upstash rate limit
 - Input: `{ fileName: string, contentType: 'audio/mpeg' | 'audio/mp4' }`
@@ -303,110 +298,70 @@ Instead:
 **File:** `src/shared/components/customer-search.tsx`
 Replaces `src/shared/components/notion/contact-search.tsx`.
 
-**Two modes controlled by props:**
-
 ```ts
 interface CustomerSearchProps {
-  value: string              // selected customerId
+  value: string
   onSelect: (id: string, name: string) => void
   onClear: () => void
   prefillCustomerId?: string // skips search, fetches + renders this customer directly
 }
 ```
 
-- **Search mode** (`prefillCustomerId` absent): agent types name or phone → search → select from badge results
-- **Pre-populated mode** (`prefillCustomerId` provided): fetches customer by ID, renders in selected state immediately — no search interaction required
+- **Search mode** (`prefillCustomerId` absent): type name/phone → search → select from results
+- **Pre-populated mode** (`prefillCustomerId` provided): fetches by ID, renders selected immediately
 
-Used in `create-meeting-view.tsx` (both modes) and any future customer lookup context (pipeline search, customer linking).
+### 4.2 `customersRouter.search` + `getById`
 
-### 4.2 `customersRouter.search` procedure
+**`search`** — `agentProcedure`, `ilike` on `name` and `phone`, returns `Array<{ id, name, phone, address }>`
+**`getById`** — `agentProcedure`, single customer by UUID, used by pre-populated mode
 
-**New procedure** on `customersRouter`:
-- Input: `{ query: string }` — `ilike` match against `name` and `phone`
-- Returns: `Array<{ id, name, phone, address }>`
-- `agentProcedure` — search is agent-only, not public
+### 4.3 `meetings.create` — simplified
 
-**New procedure:** `customersRouter.getById` — `agentProcedure`, returns single customer by UUID. Used by pre-populated mode.
-
-### 4.3 `meetings.create` mutation — simplified
-
-**Remove:**
-- `notionContactId` input field
-- `queryNotionDatabase('contacts', ...)` call
-- `upsertCustomerFromNotion(contact)` call
-- `pageToContact` import
-
-**Add:**
-- `customerId: z.string().uuid()` input — agent selects an existing customer
-
-Meeting creation becomes a simple insert with no external API call.
+**Remove:** `notionContactId` input, `queryNotionDatabase` call, `upsertCustomerFromNotion` call, `pageToContact` import
+**Add:** `customerId: z.string().uuid()` via `.extend()` on `insertMeetingSchema` (since `customerId` is in the schema's `.omit()` list)
 
 ### 4.4 `create-meeting-view.tsx`
 
 - Replace `<NotionContactSearch>` with `<CustomerSearch>`
-- Read optional `?customerId` nuqs param → pass as `prefillCustomerId` to `<CustomerSearch>`
-- Pass `customerId` (not `notionContactId`) to the `meetings.create` mutation
+- Read `?customerId` nuqs param → pass as `prefillCustomerId`
+- Pass `customerId` to `meetings.create`
 
 ### 4.5 `meeting-flow.tsx` — remove Notion contact re-fetch
 
-Lines 69–113 of `meeting-flow.tsx` currently:
-1. Read `meeting.customer.notionContactId`
-2. Fire `trpc.notionRouter.contacts.getSingleById` to fetch the contact from Notion
-3. Use the result to build `MeetingContext.customer` (fields: `address`, `city`, `email`, `name`, `phone`, `state`)
+Lines 69–113 currently: read `notionContactId` → fetch from Notion → build `MeetingContext.customer`.
 
-After migration, `meetings.getById` already joins `customers` and returns `meeting.customer` with the same fields — the Notion re-fetch is redundant. Fix:
-- Remove `contactId` / `contactQuery` entirely
-- Build `MeetingContext.customer` directly from `dbCustomer` (already loaded as `meeting.customer`)
-- The shape is identical — no downstream changes to `MeetingContext` consumers needed
+Fix: remove `contactId` / `contactQuery`. Build `MeetingContext.customer` directly from `dbCustomer` (already in `meeting.customer` from the left-join). Null-guard `dbCustomer` before construction.
 
-`meeting-flow.tsx` is added to the **Modified files** changelist.
+**Implementation note:** `MeetingContext.customer.id` currently receives a Notion page ID string. After migration it will be a Postgres UUID. Before removing the Notion fetch, grep `MeetingContext` consumers to confirm nothing uses `customer.id` as a Notion identifier.
 
 ### 4.6 `edit-contact-form.tsx` — migrate to `CustomerSearch`
 
-`src/features/meetings/ui/components/edit-contact-form.tsx` currently:
-- Renders `<NotionContactSearch>` to find a contact
-- On save, only writes `contactName` to the meeting (not `customerId`)
+- Replace `<NotionContactSearch>` with `<CustomerSearch>` (search mode)
+- On save: write both `customerId` (FK) and `contactName` — `insertMeetingSchema.partial()` already accepts `customerId`, no schema change needed
 
-After migration:
-- Replace `<NotionContactSearch>` with `<CustomerSearch>` (search mode, no prefill)
-- On save, write **both** `customerId` (FK) and `contactName` to the meeting update mutation
-- The `meetings.update` input already accepts `customerId` via `insertMeetingSchema.partial()` — no schema change needed
+### 4.7 Notion router cleanup
 
-`edit-contact-form.tsx` is added to the **Modified files** changelist.
-
-### 4.7 `intake-form-view.tsx` — `APIProvider` placement
-
-`@vis.gl/react-google-maps` requires an ancestor `<APIProvider apiKey={...}>` for `useMapsLibrary` to work. The intake page is a standalone public route; the existing site layout does not include `APIProvider`.
-
-`APIProvider` must be rendered in `intake-form-view.tsx`, wrapping the form content. The API key is read from `process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
-
-### 4.8 Notion router cleanup
-
-**Before deleting `contacts.router.ts`:** grep for `notionRouter.contacts` and `trpc.notionRouter.contacts` across the entire codebase. Known call sites (all addressed in this spec): `create-meeting-view.tsx`, `meeting-flow.tsx`, `edit-contact-form.tsx`, `contact-search.tsx`. Verify no others exist before deletion.
+**Before deleting `contacts.router.ts`:** grep `notionRouter.contacts` / `trpc.notionRouter.contacts` across the codebase. Known sites (all addressed above): `create-meeting-view.tsx`, `meeting-flow.tsx`, `edit-contact-form.tsx`, `contact-search.tsx`.
 
 - `src/trpc/routers/notion.router/contacts.router.ts` — deleted
 - `src/shared/components/notion/contact-search.tsx` — deleted
-- `src/shared/services/notion/` infrastructure remains — still active for trades, scopes, SOWs
-- `notionRouter` remains in `app.ts` — without the `contacts` sub-router
+- Notion infrastructure remains for trades, scopes, SOWs
 
-**Dead code to clean up (follow-up pass, not in this spec):**
-- `customersRouter.syncFromNotion` — calls `syncAllCustomers()` which hits the Notion API; no callers post-migration
-- `customersRouter.getByNotionId` — no callers post-migration
-- `syncCustomersJob` QStash job handler (`src/shared/services/upstash/jobs/sync-customers.ts`) — calls `syncAllCustomers()`; disable the scheduled QStash job and remove the handler
-
----
+**Dead code — follow-up pass:**
+- `customersRouter.syncFromNotion` + `customersRouter.getByNotionId` — no callers post-migration
+- `syncCustomersJob` QStash handler — calls `syncAllCustomers()`; disable the scheduled job
 
 ---
 
 ## Implementation Notes
 
-1. **`MeetingContext.customer.id` in `meeting-flow.tsx`:** The current code sets `id: contactId` (a Notion page ID string). After migration, `dbCustomer.id` is a Postgres UUID. Before removing the Notion re-fetch, grep `MeetingContext` consumers for any usage of `customer.id` that treats it as a Notion identifier. Also ensure the null guard on `dbCustomer` (from the left-join) is applied before constructing the context object.
+1. **`MeetingContext.customer.id`:** Currently a Notion page ID. After migration it becomes a Postgres UUID. Verify no consumers use it as a Notion identifier before removing the re-fetch in `meeting-flow.tsx`.
 
-2. **Pre-existing env bug in `client-env.ts`:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional` is missing the call parentheses — should be `.optional()`. Fix this alongside the migration work since the intake form address autocomplete depends on this key.
+2. **Pre-existing env bug:** `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional` in `client-env.ts` is missing the call parentheses (`.optional` vs `.optional()`). Fix alongside this work.
 
-3. **`createFromIntake` is intentionally non-transactional:** The customer insert and the optional `customer_notes` insert are two separate DB calls, not wrapped in a transaction. A notes insert failure does not roll back the customer. This is acceptable — notes are informational.
+3. **`createFromIntake` non-transactional:** Customer insert + meeting insert + notes insert are separate calls. Notes/meeting failures do not roll back the customer. Acceptable — the customer record is the critical entity.
 
-4. **`meetings.create` input schema:** `customerId` is in `insertMeetingSchema`'s `.omit()` list. The updated `create` procedure must use `.extend({ customerId: z.string().uuid() })` to add it back to the input.
+4. **`meetings.create` input schema:** `customerId` is in `insertMeetingSchema`'s `.omit()` list. Use `.extend({ customerId: z.string().uuid() })` to add it.
 
 ---
 
@@ -416,8 +371,8 @@ After migration:
 - Post-sale project management in the app
 - Customer notes UI (table is created; CRUD UI is a future feature)
 - Removing `notionContactId` from the schema
-- CAPTCHA on the intake form (Upstash rate limiting + honeypot is the initial defence)
-- `syncedAt` column rename (acknowledged tech debt)
+- CAPTCHA on the intake form
+- `syncedAt` column rename
 
 ---
 
@@ -428,7 +383,6 @@ After migration:
 - `src/shared/types/enums/leads.ts`
 - `src/shared/db/schema/customer-notes.ts`
 - `src/features/intake/constants/form-configs.ts`
-- `src/features/intake/constants/salesreps.ts` *(feature-internal const + type co-located — intentional deviation from shared enum convention)*
 - `src/features/intake/schemas/intake-form-schema.ts`
 - `src/features/intake/ui/views/intake-form-view.tsx`
 - `src/features/intake/ui/components/address-autocomplete-field.tsx`
@@ -441,20 +395,21 @@ After migration:
 
 ### Modified files
 - `package.json` — add `@upstash/ratelimit`, `@upstash/redis`
-- `src/shared/db/schema/customers.ts` — add 4 columns (`initMeetingAt`, `leadSource`, `leadType`, `leadMetaJSON`); add `leadMetaJSON: leadMetaSchema.optional()` to `insertCustomerSchema` override
+- `src/shared/db/schema/customers.ts` — add 3 columns (`leadSource`, `leadType`, `leadMetaJSON`); add `leadMetaJSON` JSONB override to `insertCustomerSchema`
 - `src/shared/db/schema/meta.ts` — add `leadSourceEnum`, `leadTypeEnum`
 - `src/shared/db/schema/index.ts` — export `customerNotes`
 - `src/shared/constants/enums/index.ts` — re-export from `leads.ts`
 - `src/shared/types/enums/index.ts` — re-export from `leads.ts`
-- `src/shared/entities/customers/schemas.ts` — add `leadMetaSchema` + `LeadMeta` type
-- `src/shared/services/r2/buckets.ts` — add `telemarketingRecordings` bucket; change `R2_PUBLIC_DOMAINS` type to `Partial<Record<R2BucketName, string>>`
+- `src/shared/entities/customers/schemas.ts` — add `leadMetaSchema` + `LeadMeta`
+- `src/shared/services/r2/buckets.ts` — add `telemarketingRecordings`; change `R2_PUBLIC_DOMAINS` to `Partial<Record<R2BucketName, string>>`
+- `src/shared/config/client-env.ts` — fix `.optional` → `.optional()` on Maps API key
 - `src/trpc/routers/app.ts` — register `intakeRouter`
-- `src/trpc/routers/customers.router.ts` — add `search`, `getById`, `createFromIntake` procedures
-- `src/trpc/routers/meetings.router.ts` — simplify `create` procedure (remove Notion dependency)
+- `src/trpc/routers/customers.router.ts` — add `search`, `getById`, `createFromIntake`
+- `src/trpc/routers/meetings.router.ts` — simplify `create` (remove Notion dependency)
 - `src/trpc/routers/notion.router/index.ts` — remove `contacts` sub-router
 - `src/features/meetings/ui/views/create-meeting-view.tsx` — swap search component + mutation input
-- `src/features/meetings/ui/views/meeting-flow.tsx` — remove Notion contact re-fetch; source `MeetingContext.customer` from `dbCustomer` directly (see 4.5)
-- `src/features/meetings/ui/components/edit-contact-form.tsx` — replace `NotionContactSearch` with `CustomerSearch`; update mutation to write `customerId` (see 4.6)
+- `src/features/meetings/ui/views/meeting-flow.tsx` — remove Notion re-fetch; source from `dbCustomer`
+- `src/features/meetings/ui/components/edit-contact-form.tsx` — `CustomerSearch` + write `customerId`
 - `src/shared/dal/server/customers/api.ts` — extend upsert for new columns
 
 ### Deleted files
