@@ -52,6 +52,22 @@ export function CustomerPipelineView() {
     }),
   )
 
+  const moveToPipelineMutation = useMutation(
+    trpc.customerPipelinesRouter.moveCustomerToPipeline.mutationOptions({
+      onSuccess: () => {
+        toast.success('Customer moved to pipeline')
+        pipelineQuery.refetch()
+      },
+      onError: () => {
+        toast.error('Failed to move customer between pipelines')
+      },
+    }),
+  )
+
+  const handleMoveToPipeline = useCallback((customerId: string, targetPipeline: CustomerPipeline) => {
+    moveToPipelineMutation.mutate({ customerId, pipeline: targetPipeline })
+  }, [moveToPipelineMutation])
+
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
     moveMutation.mutate({
       customerId: itemId,
@@ -86,11 +102,14 @@ export function CustomerPipelineView() {
     (item: CustomerPipelineItem, _href: string, isDragOverlay?: boolean) => (
       <CustomerKanbanCard
         item={item}
+        currentPipeline={pipeline}
         isDragOverlay={isDragOverlay}
+        isSuperAdmin={isSuperAdmin}
         onViewProfile={handleViewProfile}
+        onMoveToPipeline={handleMoveToPipeline}
       />
     ),
-    [handleViewProfile],
+    [handleViewProfile, handleMoveToPipeline, pipeline, isSuperAdmin],
   )
 
   if (pipelineQuery.isLoading) {

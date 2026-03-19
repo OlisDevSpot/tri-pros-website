@@ -2,13 +2,8 @@
 
 import type { CustomerPipeline } from '@/shared/types/enums'
 
+import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-
-const PIPELINE_LABELS: Record<CustomerPipeline, string> = {
-  active: 'Active',
-  rehash: 'Rehash',
-  dead: 'Dead',
-}
 
 interface Props {
   value: CustomerPipeline

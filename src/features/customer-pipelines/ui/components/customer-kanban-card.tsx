@@ -1,23 +1,37 @@
 'use client'
 
 import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
+import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { useDraggable } from '@dnd-kit/core'
 import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon, GripVerticalIcon } from 'lucide-react'
 
-import { EntityProfileButton } from '@/shared/components/entity-actions/entity-profile-button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from '@/shared/components/ui/context-menu'
+import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
+import { customerPipelines } from '@/shared/constants/enums'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
   item: CustomerPipelineItem
+  currentPipeline: CustomerPipeline
   isDragOverlay?: boolean
+  isSuperAdmin?: boolean
   onViewProfile: (customerId: string) => void
+  onMoveToPipeline?: (customerId: string, pipeline: CustomerPipeline) => void
 }
 
-export function CustomerKanbanCard({ item, isDragOverlay, onViewProfile }: Props) {
+export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, isSuperAdmin, onViewProfile, onMoveToPipeline }: Props) {
   const isMobile = useIsMobile()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
@@ -27,14 +41,23 @@ export function CustomerKanbanCard({ item, isDragOverlay, onViewProfile }: Props
   const cardDragProps = !isDragOverlay && !isMobile ? { ...attributes, ...listeners } : {}
   const handleDragProps = !isDragOverlay && isMobile ? { ...attributes, ...listeners } : {}
 
-  return (
+  function handleClick() {
+    if (!isDragging && !isDragOverlay) {
+      onViewProfile(item.id)
+    }
+  }
+
+  const otherPipelines = customerPipelines.filter(p => p !== currentPipeline)
+
+  const cardContent = (
     <Card
       ref={!isDragOverlay ? setNodeRef : undefined}
       className={cn(
-        'transition-opacity',
+        'transition-opacity cursor-pointer hover:bg-accent/50',
         isDragging && !isDragOverlay && 'opacity-30',
         isDragOverlay && 'shadow-lg rotate-1 scale-105',
       )}
+      onClick={handleClick}
       {...cardDragProps}
     >
       <CardContent className="p-3 space-y-1.5">
@@ -68,21 +91,40 @@ export function CustomerKanbanCard({ item, isDragOverlay, onViewProfile }: Props
             <FileTextIcon size={11} />
             {item.proposalCount}
           </span>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] text-muted-foreground/70">
-            {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
-          </p>
-          <EntityProfileButton
-            onClick={(e) => {
-              e.stopPropagation()
-              onViewProfile(item.id)
-            }}
-            onPointerDown={e => e.stopPropagation()}
-          />
+          {item.latestActivityAt && (
+            <span className="ml-auto text-[11px] text-muted-foreground/70">
+              {formatDistanceToNow(new Date(item.latestActivityAt), { addSuffix: true })}
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>
   )
+
+  if (isSuperAdmin && onMoveToPipeline && !isDragOverlay) {
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          {cardContent}
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>Move to Pipeline</ContextMenuSubTrigger>
+            <ContextMenuSubContent>
+              {otherPipelines.map(p => (
+                <ContextMenuItem
+                  key={p}
+                  onClick={() => onMoveToPipeline(item.id, p)}
+                >
+                  {PIPELINE_LABELS[p]}
+                </ContextMenuItem>
+              ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
+        </ContextMenuContent>
+      </ContextMenu>
+    )
+  }
+
+  return cardContent
 }
