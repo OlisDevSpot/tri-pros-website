@@ -1,6 +1,7 @@
 import { pgEnum } from 'drizzle-orm/pg-core'
 import {
   constructionTypes,
+  customerPipelines,
   homeAreas,
   mediaPhases,
   meetingStatuses,
@@ -26,3 +27,6 @@ export const meetingStatusEnum = pgEnum('meeting_status', meetingStatuses)
 
 // PROPOSALS
 export const proposalStatusEnum = pgEnum('proposal_status', proposalStatuses)
+
+// CUSTOMER PIPELINES
+export const customerPipelineEnum = pgEnum('customer_pipeline', customerPipelines)

@@ -1,6 +1,7 @@
 import type z from 'zod'
 import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
 import { jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
+import { customerPipelineEnum } from './meta'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
@@ -18,6 +19,8 @@ export const customers = pgTable('customers', {
   customerProfileJSON: jsonb('customer_profile_json').$type<CustomerProfile>(),
   propertyProfileJSON: jsonb('property_profile_json').$type<PropertyProfile>(),
   financialProfileJSON: jsonb('financial_profile_json').$type<FinancialProfile>(),
+  pipeline: customerPipelineEnum('pipeline').notNull().default('active'),
+  pipelineStage: text('pipeline_stage'),
   syncedAt: timestamp('synced_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   createdAt,
   updatedAt,
