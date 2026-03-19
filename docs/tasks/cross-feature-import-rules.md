@@ -1,6 +1,6 @@
 # Task: Cross-Feature Import Rules
 
-**Status:** 🔴 READY — can be executed independently (pairs well with quality remediation)
+**Status:** ✅ COMPLETE — verified 2026-03-19
 **Branch:** `main`
 **Spec:** `docs/superpowers/specs/2026-03-17-cross-feature-import-rules-design.md`
 **Plan:** `docs/superpowers/plans/2026-03-17-cross-feature-import-rules.md`

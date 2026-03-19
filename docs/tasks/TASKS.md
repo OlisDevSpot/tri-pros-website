@@ -11,9 +11,6 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 | # | Task | One-liner | Branch | Context |
 |---|------|-----------|--------|---------|
 | 1 | **Notion CRM Migration** | Remove Notion as the customer source; customers become first-class DB citizens with their own entry flow | `migrating-notion` | [notion-crm-migration.md](./notion-crm-migration.md) |
-| 3 | **Cross-Feature Import Rules** | Enforce strict import directionality — no `features/` → `features/` reaching into internals | `main` | [cross-feature-import-rules.md](./cross-feature-import-rules.md) |
-| 4 | **P0 Navigation UX Fixes** | Fix 4 broken nav patterns: active state, mobile close, scroll lock, back button | `main` | [p0-navigation-ux-fixes.md](./p0-navigation-ux-fixes.md) |
-| 5 | **P1 Mobile Gaps** | Add showroom mobile sheet + missing footer on mobile | `main` | [p1-mobile-gaps.md](./p1-mobile-gaps.md) |
 
 ---
 
@@ -50,6 +47,9 @@ Central index of all open, in-progress, and blocked tasks. Each row links to a c
 | # | Task | Completed |
 |---|------|-----------|
 | 2 | **Codebase Quality Remediation** | All 11 tasks done — DAL moved, portfolio merged, imports fixed, types derived, components extracted |
+| 3 | **Cross-Feature Import Rules** | All cross-feature imports go through proper `index.ts` entrypoints — no internal reaching |
+| 4 | **P0 Navigation UX Fixes** | All 5 tasks done — ROOTS routes, button semantics, mounted guard removed, popover close-on-nav, zero hardcoded URLs |
+| 5 | **P1 Mobile Gaps** | BaseSheet + ProjectDetailSheet wired, footer cleaned (ROOTS URLs, no newsletter, typo fixed) |
 
 ---
 
