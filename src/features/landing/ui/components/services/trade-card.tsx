@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 import { tradeOutcomeStatements } from '@/features/landing/constants/trade-outcome-statements'
 import { Badge } from '@/shared/components/ui/badge'
+import { ROOTS } from '@/shared/config/roots'
 
 interface TradeCardProps {
   trade: TradeWithScopes
@@ -14,7 +15,7 @@ interface TradeCardProps {
 export function TradeCard({ trade, pillarSlug }: TradeCardProps) {
   return (
     <Link
-      href={`/services/${pillarSlug}/${trade.slug}`}
+      href={ROOTS.landing.servicesTrade(pillarSlug, trade.slug)}
       className="group block rounded-xl border border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
     >
       {/* Cover Image */}

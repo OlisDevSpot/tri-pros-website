@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
 
 interface TradeHeroProps {
   tradeName: string
@@ -41,14 +42,14 @@ export function TradeHero({
         <nav aria-label="Breadcrumb" className="mb-8">
           <ol className="flex items-center justify-center gap-2 text-sm text-white/70">
             <li>
-              <Link href="/services" className="hover:text-white transition-colors">
+              <Link href={ROOTS.landing.services()} className="hover:text-white transition-colors">
                 Services
               </Link>
             </li>
             <li aria-hidden="true">/</li>
             <li>
               <Link
-                href={`/services/${pillarSlug}`}
+                href={ROOTS.landing.servicesPillar(pillarSlug)}
                 className="hover:text-white transition-colors"
               >
                 {pillarTitle}
@@ -70,7 +71,7 @@ export function TradeHero({
         </p>
 
         <Button asChild size="lg" variant="cta">
-          <Link href="/contact">
+          <Link href={ROOTS.landing.contact()}>
             Schedule Your Free Consultation
           </Link>
         </Button>

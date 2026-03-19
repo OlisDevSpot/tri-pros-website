@@ -12,6 +12,7 @@ import { TopSpacer } from '@/shared/components/top-spacer'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ViewportHero } from '@/shared/components/viewport-hero'
+import { ROOTS } from '@/shared/config/roots'
 import { ComparisonTable } from '../components/services/comparison-table'
 import { NaturalPairings } from '../components/services/natural-pairings'
 import { NotionRefreshButton } from '../components/services/notion-refresh-button'
@@ -108,7 +109,7 @@ export function PillarView({ pillarSlug, trades }: PillarViewProps) {
                 variant="default"
                 className="text-lg h-14"
               >
-                <Link href="/contact">Schedule Your Free Consultation</Link>
+                <Link href={ROOTS.landing.contact()}>Schedule Your Free Consultation</Link>
               </Button>
             </motion.div>
           </div>

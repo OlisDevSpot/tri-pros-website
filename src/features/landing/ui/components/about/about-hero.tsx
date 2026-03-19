@@ -8,6 +8,7 @@ import { companyInfo } from '@/features/landing/data/company'
 import { TopSpacer } from '@/shared/components/top-spacer'
 import { Button } from '@/shared/components/ui/button'
 import { ViewportHero } from '@/shared/components/viewport-hero'
+import { ROOTS } from '@/shared/config/roots'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
@@ -95,7 +96,7 @@ export function AboutHero() {
                     variant="default"
                     className="text-lg h-16 w-full"
                   >
-                    <Link href="/contact">Meet Our Team</Link>
+                    <Link href={ROOTS.landing.contact()}>Meet Our Team</Link>
                   </Button>
                 </motion.div>
                 <motion.div className="w-full">
@@ -105,7 +106,7 @@ export function AboutHero() {
                     variant="outline"
                     className="text-lg h-16 w-full"
                   >
-                    <Link href="/portfolio">View Our Legacy</Link>
+                    <Link href={ROOTS.landing.portfolioProjects()}>View Our Legacy</Link>
                   </Button>
                 </motion.div>
               </motion.div>

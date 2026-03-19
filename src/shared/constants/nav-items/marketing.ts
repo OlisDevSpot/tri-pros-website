@@ -4,12 +4,12 @@ import { ROOTS } from '@/shared/config/roots'
 export const marketingNavItems = [
   {
     name: 'Tri Pros Experience',
-    href: '/experience',
+    href: ROOTS.landing.experience(),
     action: 'navigate',
   },
   {
     name: 'About',
-    href: '/about',
+    href: ROOTS.landing.about(),
     action: 'navigate',
   },
   {
@@ -18,12 +18,12 @@ export const marketingNavItems = [
     subItems: [
       {
         name: 'Community Commitment',
-        href: '/community/commitment',
+        href: ROOTS.landing.communityCommitment(),
         action: 'navigate',
       },
       {
         name: 'Join Our Efforts',
-        href: '/community/join',
+        href: ROOTS.landing.communityJoin(),
         action: 'navigate',
       },
     ],
@@ -34,22 +34,22 @@ export const marketingNavItems = [
     subItems: [
       {
         name: 'Energy-Efficient Construction',
-        href: '/services/energy-efficient-construction',
+        href: ROOTS.landing.servicesPillar('energy-efficient-construction'),
         action: 'navigate',
       },
       {
         name: 'Luxury Renovations',
-        href: '/services/luxury-renovations',
+        href: ROOTS.landing.servicesPillar('luxury-renovations'),
         action: 'navigate',
       },
       {
         name: 'Design-Build Services',
-        href: '/services/design-build',
+        href: ROOTS.landing.servicesPillar('design-build'),
         action: 'navigate',
       },
       {
         name: 'Commercial Projects',
-        href: '/services/commercial',
+        href: ROOTS.landing.servicesPillar('commercial'),
         action: 'navigate',
       },
     ],
@@ -60,24 +60,21 @@ export const marketingNavItems = [
     subItems: [
       {
         name: 'Projects',
-        href: `${ROOTS.landing.portfolioProjects()}`,
+        href: ROOTS.landing.portfolioProjects(),
         action: 'navigate',
       },
       {
         name: 'Testimonials',
-        href: `${ROOTS.landing.portfolioTestimonials()}`,
+        href: ROOTS.landing.portfolioTestimonials(),
         action: 'navigate',
       },
     ],
   },
   {
     name: 'Blog',
-    href: '/blog',
+    href: ROOTS.landing.blog(),
     action: 'navigate',
   },
-] as const satisfies NavItem[]
+] satisfies NavItem[]
 
-type ServiceSlugsRaw = Extract<typeof marketingNavItems[number], { name: 'Services' }>['subItems'][number]['href']
-type RemoveServices<T> = T extends `/services/${infer Rest}` ? Rest : never
-
-export type ServiceSlugs = RemoveServices<ServiceSlugsRaw>
+export type ServiceSlugs = 'energy-efficient-construction' | 'luxury-renovations' | 'commercial' | 'design-build'

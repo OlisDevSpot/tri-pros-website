@@ -17,6 +17,7 @@ import { signOut, useSession } from '@/shared/auth/client'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
 import { LogoLink } from '@/shared/components/logo'
 import { ThemeToggleButton } from '@/shared/components/theme-toggle-button'
+import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { generateNavItemsGroups, marketingNavItems } from '@/shared/constants/nav-items'
 import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
@@ -331,7 +332,7 @@ export function SiteNavbar() {
                           asChild
                         >
                           <Link
-                            href="/contact"
+                            href={ROOTS.landing.contact()}
                             className="flex items-center gap-2 px-2"
                           >
                             {matches['2xl']

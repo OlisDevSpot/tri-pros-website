@@ -8,6 +8,7 @@ import { useRef } from 'react'
 import { services } from '@/features/landing/data/company/services'
 import DecorativeLine from '@/shared/components/decorative-line'
 import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
 
 export function ServicesPreview() {
   const ref = useRef(null)
@@ -150,7 +151,7 @@ export function ServicesPreview() {
               asChild
             >
               <Link
-                href="/services"
+                href={ROOTS.landing.services()}
                 className="inline-flex items-center space-x-2 px-8 hover:shadow-lg transition-shadow duration-200"
               >
                 <span>Explore All Services</span>

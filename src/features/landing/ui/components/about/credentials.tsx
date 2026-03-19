@@ -6,6 +6,7 @@ import { useRef } from 'react'
 import { credentials } from '@/features/landing/data/company/credentials'
 import { stats } from '@/features/landing/data/company/stats'
 import DecorativeLine from '@/shared/components/decorative-line'
+import { ROOTS } from '@/shared/config/roots'
 
 export function CredentialsSection() {
   const ref = useRef(null)
@@ -168,7 +169,7 @@ export function CredentialsSection() {
             </motion.a>
 
             <motion.a
-              href="/contact"
+              href={ROOTS.landing.contact()}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="bg-foreground/10 text-secondary-foreground rounded-lg p-4 hover:bg-foreground/20 transition-colors duration-200"

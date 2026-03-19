@@ -2,6 +2,7 @@ import { ArrowRightCircle } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { ROOTS } from '@/shared/config/roots'
 
 export function PhotoCard({ photo }: { photo: string }) {
   const [hovered, setHovered] = useState(false)
@@ -12,7 +13,7 @@ export function PhotoCard({ photo }: { photo: string }) {
       className="relative h-full min-w-125 rounded-md overflow-hidden"
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      onClick={() => router.push('/portfolio')}
+      onClick={() => router.push(ROOTS.landing.portfolioProjects())}
     >
       <AnimatePresence>
         {hovered && (

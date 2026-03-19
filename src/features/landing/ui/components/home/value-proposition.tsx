@@ -8,6 +8,7 @@ import { companyInfo } from '@/features/landing/data/company'
 import { valueProps } from '@/features/landing/data/value-prop'
 import DecorativeLine from '@/shared/components/decorative-line'
 import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 
 export function ValuePropositions() {
@@ -109,7 +110,7 @@ export function ValuePropositions() {
               className="h-14 px-8 text-lg"
               asChild
             >
-              <Link href="/about">
+              <Link href={ROOTS.landing.about()}>
                 <span>Learn About Our Process</span>
                 <motion.span
                   animate={{ x: [0, 5, 0] }}

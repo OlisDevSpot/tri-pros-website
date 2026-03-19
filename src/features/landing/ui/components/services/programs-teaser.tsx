@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 import { useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
 import { cn } from '@/shared/lib/utils'
 
 const PILLAR_COPY = {
@@ -51,7 +52,7 @@ export function ProgramsTeaser({ pillarType }: ProgramsTeaserProps) {
         </p>
 
         <Button asChild size="lg" variant="cta">
-          <Link href="/contact">
+          <Link href={ROOTS.landing.contact()}>
             Find Out What You Qualify For
           </Link>
         </Button>

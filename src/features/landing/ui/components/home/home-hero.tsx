@@ -10,6 +10,7 @@ import { Badge } from '@/shared/components/ui/badge'
 
 import { Button } from '@/shared/components/ui/button'
 import { ViewportHero } from '@/shared/components/viewport-hero'
+import { ROOTS } from '@/shared/config/roots'
 
 const parentVariant: Variants = {
   initial: {
@@ -126,7 +127,7 @@ export function HomeHero() {
                     size="lg"
                     className="h-14 text-lg w-full"
                   >
-                    <Link href="/contact">Schedule</Link>
+                    <Link href={ROOTS.landing.contact()}>Schedule</Link>
                   </Button>
                 </motion.div>
                 <motion.div
@@ -140,7 +141,7 @@ export function HomeHero() {
                     size="lg"
                     className="h-14 text-lg w-full"
                   >
-                    <Link href="/portfolio">View Portfolio</Link>
+                    <Link href={ROOTS.landing.portfolioProjects()}>View Portfolio</Link>
                   </Button>
                 </motion.div>
               </motion.div>

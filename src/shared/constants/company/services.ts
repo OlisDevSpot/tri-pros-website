@@ -1,4 +1,5 @@
 import type { ServiceSlugs } from '@/shared/constants/nav-items/marketing'
+import { ROOTS } from '@/shared/config/roots'
 
 interface Service {
   slug: ServiceSlugs
@@ -31,9 +32,7 @@ export const services: Service[] = [
     timeline: '0.5 - 5 months',
     priceRange: '$10k - $250k',
     image: '/hero-photos/modern-house-1.png',
-    get href() {
-      return `/services/${this.slug}`
-    },
+    href: ROOTS.landing.servicesPillar('energy-efficient-construction'),
     icon: '🏠',
   },
   {
@@ -53,7 +52,7 @@ export const services: Service[] = [
     timeline: '3 - 12 months',
     priceRange: '$100k - $1M+',
     image: '/hero-photos/modern-house-2.png',
-    href: '/services/renovations',
+    href: ROOTS.landing.servicesPillar('luxury-renovations'),
     icon: '🔨',
   },
   {
@@ -73,7 +72,7 @@ export const services: Service[] = [
     timeline: '6 - 24 months',
     priceRange: '$250k - $5M+',
     image: '/hero-photos/commercial-construction-2.jpg',
-    href: '/services/commercial',
+    href: ROOTS.landing.servicesPillar('commercial'),
     icon: '🏢',
   },
   {
@@ -93,7 +92,7 @@ export const services: Service[] = [
     timeline: '4 - 16 months',
     priceRange: '$200k - $2M+',
     image: '/hero-photos/modern-house-4.webp',
-    href: '/services/design-build',
+    href: ROOTS.landing.servicesPillar('design-build'),
     icon: '📐',
   },
-] as const
+]

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { TopSpacer } from '@/shared/components/top-spacer'
 import { Button } from '@/shared/components/ui/button'
 import { ViewportHero } from '@/shared/components/viewport-hero'
+import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 
 const HERO_STATS = [
@@ -96,7 +97,7 @@ export function ServicesOverviewHero() {
               variant="default"
               className="text-lg h-14 flex-1"
             >
-              <Link href="/contact">Schedule Your Free Consultation</Link>
+              <Link href={ROOTS.landing.contact()}>Schedule Your Free Consultation</Link>
             </Button>
             <Button
               asChild
@@ -104,7 +105,7 @@ export function ServicesOverviewHero() {
               variant="outline"
               className="text-lg h-14 flex-1"
             >
-              <Link href="/portfolio/projects">See Our Work</Link>
+              <Link href={ROOTS.landing.portfolioProjects()}>See Our Work</Link>
             </Button>
           </motion.div>
         </div>

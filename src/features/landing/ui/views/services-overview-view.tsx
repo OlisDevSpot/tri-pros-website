@@ -1,4 +1,5 @@
 import { BottomCTA } from '@/shared/components/cta'
+import { ROOTS } from '@/shared/config/roots'
 
 import { ProcessOverview } from '../components/about/process-overview'
 import { ComparisonTable } from '../components/services/comparison-table'
@@ -20,14 +21,14 @@ export function ServicesOverviewView() {
             title="Energy-Efficient Construction"
             description="Stop paying your utility company for your home's inefficiency. Compounding savings from insulation, HVAC, windows, solar, and roofing upgrades."
             tradePreview={['HVAC', 'Solar', 'Windows', 'Insulation']}
-            href="/services/energy-efficient-construction"
+            href={ROOTS.landing.servicesPillar('energy-efficient-construction')}
             pillarType="energy"
           />
           <PillarCard
             title="Luxury Renovations"
             description="The home you've always wanted — built by people who'll still be here when you need us. Kitchens, bathrooms, flooring, additions, and more."
             tradePreview={['Kitchen', 'Bathroom', 'Flooring', 'ADU']}
-            href="/services/luxury-renovations"
+            href={ROOTS.landing.servicesPillar('luxury-renovations')}
             pillarType="luxury"
           />
         </div>
@@ -39,12 +40,12 @@ export function ServicesOverviewView() {
           <PillarCardSecondary
             title="Commercial Construction"
             description="Office, retail, and medical facilities built to spec."
-            href="/contact"
+            href={ROOTS.landing.contact()}
           />
           <PillarCardSecondary
             title="Design-Build Services"
             description="Streamlined design and construction under one roof."
-            href="/contact"
+            href={ROOTS.landing.contact()}
           />
         </div>
       </section>
