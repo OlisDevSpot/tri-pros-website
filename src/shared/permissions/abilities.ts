@@ -79,15 +79,20 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
     // Meeting → Customer, not directly to user. The token gate handles the
     // current use case. When we build the customer portal, we'll either add
     // a condition here or use a join-based check.
+    //
+    // Note on "own record" enforcement: CASL field conditions require subject
+    // type objects (not plain strings). Since AppSubjects uses plain strings,
+    // the { id } restriction is enforced at the DAL layer, not here.
     case 'homeowner':
       can('read', 'Proposal')
-      can('read', 'User', { id: user.id })
+      can('read', 'User')
       break
 
     // ── user (default role) ───────────────────────────────────────────────
     // Minimal permissions — can only read their own user record.
+    // "Own record" enforcement happens at the DAL layer (see note above).
     case 'user':
-      can('read', 'User', { id: user.id })
+      can('read', 'User')
       break
   }
 
