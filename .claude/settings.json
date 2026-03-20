@@ -110,7 +110,11 @@
       "Bash(git status:*)",
       "Bash(grep -v '^\\\\* main$')",
       "Bash(git fetch:*)",
-      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/projects/[projectAccessor]/)"
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/projects/[projectAccessor]/)",
+      "Bash(printf '\\\\x1B[B\\\\n')",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(pnpm tsx:*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
