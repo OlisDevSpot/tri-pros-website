@@ -25,7 +25,7 @@ export function DashboardHub({ authState }: DashboardHubProps) {
 
   if (authState.status === 'unauthenticated') {
     return (
-      <div className="h-full w-full flex flex-col lg:flex-row gap-4 justify-between py-4 lg:py-8">
+      <div className="h-full w-full flex flex-col-reverse lg:flex-row gap-4 justify-between py-4 lg:py-8">
         <nav className="h-(--sidebar-height) lg:h-50 border border-primary/20 p-4 rounded-xl w-full lg:w-(--sidebar-width) shrink-0" />
         <div className="w-full h-full flex flex-col items-center justify-center gap-4 border rounded-lg">
           <ErrorState
@@ -39,7 +39,7 @@ export function DashboardHub({ authState }: DashboardHubProps) {
   }
 
   return (
-    <div className="h-full w-full flex flex-col lg:flex-row gap-4 justify-between py-4 lg:py-8">
+    <div className="h-full w-full flex flex-col-reverse lg:flex-row gap-4 justify-between py-4 lg:py-8">
       <nav className="h-(--sidebar-height) lg:h-fit border border-primary/20 p-4 rounded-xl w-full lg:w-(--sidebar-width) shrink-0">
         <DashboardSidebar />
       </nav>
