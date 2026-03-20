@@ -85,8 +85,8 @@ async function downloadAndUploadMp3(url: string, notionContactId: string): Promi
 async function main() {
   console.log('Fetching all Notion contacts…')
 
-  const response = await notionClient.databases.query({
-    database_id: notionDatabasesMeta.contacts.id,
+  const response = await notionClient.dataSources.query({
+    data_source_id: notionDatabasesMeta.contacts.id,
   })
 
   const pages = response.results as PageObjectResponse[]
