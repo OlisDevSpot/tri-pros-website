@@ -16,9 +16,10 @@ import { cn } from '@/shared/lib/utils'
 interface PhaseCarouselProps {
   photos: MediaFile[]
   phaseLabel: string
+  onPhotoClick?: (index: number) => void
 }
 
-export function PhaseCarousel({ photos, phaseLabel }: PhaseCarouselProps) {
+export function PhaseCarousel({ photos, phaseLabel, onPhotoClick }: PhaseCarouselProps) {
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)
 
@@ -44,7 +45,7 @@ export function PhaseCarousel({ photos, phaseLabel }: PhaseCarouselProps) {
         className="w-full"
       >
         <CarouselContent className="-ml-3">
-          {photos.map(photo => (
+          {photos.map((photo, index) => (
             <CarouselItem
               key={photo.id}
               className={cn(
@@ -54,7 +55,12 @@ export function PhaseCarousel({ photos, phaseLabel }: PhaseCarouselProps) {
                   : 'basis-[85%] sm:basis-[70%] md:basis-[55%] lg:basis-[45%]',
               )}
             >
-              <div className="relative aspect-video overflow-hidden rounded-xl shadow-lg">
+              <button
+                type="button"
+                onClick={() => onPhotoClick?.(index)}
+                className="relative block w-full aspect-video overflow-hidden rounded-xl shadow-lg cursor-pointer"
+                aria-label={`View ${phaseLabel} photo ${index + 1}`}
+              >
                 <Image
                   src={photo.url}
                   alt={photo.name}
@@ -62,7 +68,7 @@ export function PhaseCarousel({ photos, phaseLabel }: PhaseCarouselProps) {
                   className="object-cover"
                   sizes="(max-width: 640px) 85vw, (max-width: 768px) 70vw, (max-width: 1024px) 55vw, 45vw"
                 />
-              </div>
+              </button>
             </CarouselItem>
           ))}
         </CarouselContent>
