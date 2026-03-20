@@ -4,10 +4,11 @@ import { useMutation } from '@tanstack/react-query'
 import { CalendarIcon, PlayIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
+import { useQueryState } from 'nuqs'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { CustomerSearch } from '@/shared/components/customer-search'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { NotionContactSearch } from '@/shared/components/notion/contact-search'
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
 import { ROOTS } from '@/shared/config/roots'
@@ -17,9 +18,12 @@ export function CreateMeetingView() {
   const router = useRouter()
   const trpc = useTRPC()
 
-  const [contactId, setContactId] = useState('')
+  const [customerId, setCustomerId] = useState('')
   const [contactName, setContactName] = useState('')
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(undefined)
+
+  // ?customerId param from pipeline customer card
+  const [prefillId] = useQueryState('customerId')
 
   const createMeeting = useMutation(
     trpc.meetingsRouter.create.mutationOptions({
@@ -27,15 +31,13 @@ export function CreateMeetingView() {
         toast.success('Meeting started!')
         router.push(`${ROOTS.dashboard.meetings()}/${meeting.id}`)
       },
-      onError: (err) => {
-        toast.error(err.message)
-      },
+      onError: err => toast.error(err.message),
     }),
   )
 
   function handleStart() {
     createMeeting.mutate({
-      notionContactId: contactId,
+      customerId,
       contactName: contactName || undefined,
       scheduledFor: scheduledFor?.toISOString() ?? new Date().toISOString(),
     })
@@ -58,20 +60,20 @@ export function CreateMeetingView() {
             </span>
           )}
         </p>
-        <NotionContactSearch
-          value={contactId}
+        <CustomerSearch
           onSelect={(id, name) => {
-            setContactId(id)
+            setCustomerId(id)
             setContactName(name)
           }}
           onClear={() => {
-            setContactId('')
+            setCustomerId('')
             setContactName('')
           }}
+          prefillCustomerId={prefillId ?? undefined}
         />
-        {!contactId && (
+        {!customerId && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Select a contact to start a meeting.
+            Select a customer to start a meeting.
           </p>
         )}
       </div>
@@ -91,7 +93,7 @@ export function CreateMeetingView() {
 
       <Button
         className="w-full gap-2 py-6 text-base font-semibold"
-        disabled={!contactId || createMeeting.isPending}
+        disabled={!customerId || createMeeting.isPending}
         size="lg"
         onClick={handleStart}
       >

@@ -1,11 +1,28 @@
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
+import { eq, ilike, or } from 'drizzle-orm'
 import z from 'zod'
+import env from '@/shared/config/server-env'
+import { leadSources, leadTypes } from '@/shared/constants/enums'
 import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
 import { db } from '@/shared/db'
+import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
-import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
-import { agentProcedure, createTRPCRouter } from '../init'
+import { meetings } from '@/shared/db/schema/meetings'
+import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
+
+const redis = new Redis({
+  url: env.UPSTASH_REDIS_REST_URL,
+  token: env.UPSTASH_REDIS_REST_TOKEN,
+})
+
+const intakeRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '1 h'),
+  prefix: 'intake:submit',
+})
 
 export const customersRouter = createTRPCRouter({
   // Fetch all locally-cached customers
@@ -26,6 +43,23 @@ export const customersRouter = createTRPCRouter({
     .input(z.object({ notionContactId: z.string() }))
     .query(async ({ input }) => {
       return getCustomerByNotionId(input.notionContactId)
+    }),
+
+  // Search customers by name or phone
+  search: agentProcedure
+    .input(z.object({ query: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const q = `%${input.query}%`
+      return db
+        .select({
+          id: customers.id,
+          name: customers.name,
+          phone: customers.phone,
+          address: customers.address,
+        })
+        .from(customers)
+        .where(or(ilike(customers.name, q), ilike(customers.phone, q)))
+        .limit(10)
     }),
 
   // Update customer profile JSONB fields (used during meeting intake)
@@ -56,5 +90,64 @@ export const customersRouter = createTRPCRouter({
   syncFromNotion: agentProcedure
     .mutation(async () => {
       return syncAllCustomers()
+    }),
+
+  // Public intake form submission — creates customer + optional note + optional meeting
+  createFromIntake: baseProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      phone: z.string().min(1),
+      address: z.string().optional(),
+      city: z.string().min(1),
+      state: z.string().length(2).optional(),
+      zip: z.string().min(1),
+      email: z.string().email().optional(),
+      notes: z.string().optional(),
+      leadSource: z.enum(leadSources),
+      leadType: z.enum(leadTypes),
+      leadMetaJSON: leadMetaSchema.optional(),
+      scheduledFor: z.string().optional(),
+      closedById: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { notes, scheduledFor, closedById, ...customerData } = input
+
+      // Rate limit by IP
+      const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
+      const { success } = await intakeRatelimit.limit(ip)
+      if (!success) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
+      }
+
+      // 1. Insert customer
+      const [customer] = await db
+        .insert(customers)
+        .values({ ...customerData, zip: customerData.zip || '' })
+        .returning()
+
+      if (!customer) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create customer' })
+      }
+
+      // 2. Insert note (if provided) — failure is non-fatal
+      if (notes) {
+        await db.insert(customerNotes).values({
+          customerId: customer.id,
+          content: notes,
+          authorId: null,
+        }).catch(e => console.error('Note insert failed (non-fatal):', e))
+      }
+
+      // 3. Insert meeting (if scheduler provided) — failure is non-fatal
+      if (scheduledFor && closedById) {
+        await db.insert(meetings).values({
+          customerId: customer.id,
+          ownerId: closedById,
+          scheduledFor,
+          status: 'in_progress',
+        }).catch(e => console.error('Meeting insert failed (non-fatal):', e))
+      }
+
+      return { customerId: customer.id }
     }),
 })
