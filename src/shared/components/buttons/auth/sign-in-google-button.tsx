@@ -1,6 +1,6 @@
 'use client'
 
-import type { LoginFormSchema } from '@/shared/auth/schemas/auth-schemas'
+import type { LoginFormSchema } from '@/shared/auth/schemas'
 import { FaGoogle } from 'react-icons/fa6'
 
 import { signIn } from '@/shared/auth/client'

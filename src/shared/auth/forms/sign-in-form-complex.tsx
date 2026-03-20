@@ -1,10 +1,10 @@
 'use client'
 
-import type { LoginFormSchema } from '@/shared/auth/schemas/auth-schemas'
+import type { LoginFormSchema } from '@/shared/auth/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
-import { loginFormSchema } from '@/shared/auth/schemas/auth-schemas'
+import { loginFormSchema } from '@/shared/auth/schemas'
 
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
