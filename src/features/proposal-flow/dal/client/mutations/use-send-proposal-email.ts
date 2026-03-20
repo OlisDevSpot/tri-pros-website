@@ -5,9 +5,9 @@ export function useSendProposalEmail() {
   const queryClient = useQueryClient()
 
   const trpc = useTRPC()
-  return useMutation(trpc.proposalRouter.sendProposalEmail.mutationOptions({
+  return useMutation(trpc.proposalsRouter.sendProposalEmail.mutationOptions({
     onSuccess: ({ proposal }) => {
-      queryClient.invalidateQueries(trpc.proposalRouter.getProposal.queryOptions({ proposalId: proposal.id }))
+      queryClient.invalidateQueries(trpc.proposalsRouter.getProposal.queryOptions({ proposalId: proposal.id }))
     },
   }))
 }

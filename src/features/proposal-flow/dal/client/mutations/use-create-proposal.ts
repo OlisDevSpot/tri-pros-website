@@ -5,9 +5,9 @@ export function useCreateProposal() {
   const queryClient = useQueryClient()
 
   const trpc = useTRPC()
-  return useMutation(trpc.proposalRouter.createProposal.mutationOptions({
+  return useMutation(trpc.proposalsRouter.createProposal.mutationOptions({
     onSuccess: () => {
-      queryClient.invalidateQueries(trpc.proposalRouter.getProposals.queryOptions())
+      queryClient.invalidateQueries(trpc.proposalsRouter.getProposals.queryOptions())
     },
   }))
 }

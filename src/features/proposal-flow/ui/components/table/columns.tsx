@@ -26,7 +26,7 @@ import { proposalStatuses } from '@/shared/constants/enums'
 import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
-type ProposalRow = inferRouterOutputs<AppRouter>['proposalRouter']['getProposals'][number]
+type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['getProposals'][number]
 
 export interface ProposalTableMeta {
   activeRowId: string | null

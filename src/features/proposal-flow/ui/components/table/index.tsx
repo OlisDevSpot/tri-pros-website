@@ -11,7 +11,7 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { getColumns } from './columns'
 
-type ProposalRow = inferRouterOutputs<AppRouter>['proposalRouter']['getProposals'][number]
+type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['getProposals'][number]
 
 const columns = getColumns()
 const defaultSort = [{ id: 'createdAt', desc: true }]

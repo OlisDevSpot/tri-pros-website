@@ -9,7 +9,7 @@ import { useTRPC } from '@/trpc/helpers'
 export function MyProposalsDashboardView() {
   const trpc = useTRPC()
   const { data: proposals = [], isLoading } = useQuery(
-    trpc.proposalRouter.getProposals.queryOptions(),
+    trpc.proposalsRouter.getProposals.queryOptions(),
   )
 
   if (isLoading) {

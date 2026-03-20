@@ -4,5 +4,5 @@ import { useTRPC } from '@/trpc/helpers'
 
 export function useGetProposals(options?: UseQueryOptions) {
   const trpc = useTRPC()
-  return useQuery(trpc.proposalRouter.getProposals.queryOptions(undefined, options as any))
+  return useQuery(trpc.proposalsRouter.getProposals.queryOptions(undefined, options as any))
 }

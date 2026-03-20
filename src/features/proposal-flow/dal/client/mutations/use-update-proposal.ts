@@ -5,10 +5,10 @@ export function useUpdateProposal() {
   const queryClient = useQueryClient()
 
   const trpc = useTRPC()
-  return useMutation(trpc.proposalRouter.updateProposal.mutationOptions({
+  return useMutation(trpc.proposalsRouter.updateProposal.mutationOptions({
     onSuccess: (data) => {
-      queryClient.invalidateQueries(trpc.proposalRouter.getProposal.queryOptions({ proposalId: data.id }))
-      queryClient.invalidateQueries(trpc.proposalRouter.getProposals.queryOptions())
+      queryClient.invalidateQueries(trpc.proposalsRouter.getProposal.queryOptions({ proposalId: data.id }))
+      queryClient.invalidateQueries(trpc.proposalsRouter.getProposals.queryOptions())
     },
   }))
 }

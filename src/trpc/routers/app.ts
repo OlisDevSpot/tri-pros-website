@@ -8,7 +8,7 @@ import { docusignRouter } from './docusign.router'
 import { landingRouter } from './landing.router'
 import { meetingsRouter } from './meetings.router'
 import { notionRouter } from './notion.router'
-import { proposalRouter } from './proposal.router'
+import { proposalsRouter } from './proposals.router'
 import { showroomRouter } from './showroom.router'
 
 export const appRouter = createTRPCRouter({
@@ -21,7 +21,7 @@ export const appRouter = createTRPCRouter({
   meetingsRouter,
   notionRouter,
   customerPipelinesRouter,
-  proposalRouter,
+  proposalsRouter,
   showroomRouter,
 })
 

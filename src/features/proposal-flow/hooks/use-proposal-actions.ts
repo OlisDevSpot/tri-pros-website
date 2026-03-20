@@ -5,14 +5,14 @@ import { useTRPC } from '@/trpc/helpers'
 export function useProposalActions() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const invalidate = () => queryClient.invalidateQueries(trpc.proposalRouter.getProposals.queryOptions())
+  const invalidate = () => queryClient.invalidateQueries(trpc.proposalsRouter.getProposals.queryOptions())
 
-  const deleteProposal = useMutation(trpc.proposalRouter.deleteProposal.mutationOptions({
+  const deleteProposal = useMutation(trpc.proposalsRouter.deleteProposal.mutationOptions({
     onSuccess: invalidate,
     onError: () => toast.error('Failed to delete proposal'),
   }))
 
-  const duplicateProposal = useMutation(trpc.proposalRouter.duplicateProposal.mutationOptions({
+  const duplicateProposal = useMutation(trpc.proposalsRouter.duplicateProposal.mutationOptions({
     onSuccess: () => {
       invalidate()
       toast.success('Proposal duplicated')
@@ -20,7 +20,7 @@ export function useProposalActions() {
     onError: () => toast.error('Failed to duplicate proposal'),
   }))
 
-  const updateProposal = useMutation(trpc.proposalRouter.updateProposal.mutationOptions({
+  const updateProposal = useMutation(trpc.proposalsRouter.updateProposal.mutationOptions({
     onSuccess: () => {
       invalidate()
       toast.success('Status updated')

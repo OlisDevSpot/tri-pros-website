@@ -6,12 +6,12 @@ import { useTRPC } from '@/trpc/helpers'
 type TRPCClient = ReturnType<typeof useTRPC>
 
 type GetProposalQueryOptions
-  = Parameters<TRPCClient['proposalRouter']['getProposal']['queryOptions']>[1]
+  = Parameters<TRPCClient['proposalsRouter']['getProposal']['queryOptions']>[1]
 
 type RouterOutputs = inferRouterOutputs<AppRouter>
-type GetProposalOutput = RouterOutputs['proposalRouter']['getProposal']
+type GetProposalOutput = RouterOutputs['proposalsRouter']['getProposal']
 
 export function useGetProposal(proposalId: string, options?: GetProposalQueryOptions) {
   const trpc = useTRPC()
-  return useQuery(trpc.proposalRouter.getProposal.queryOptions<GetProposalOutput>({ proposalId }, options as any))
+  return useQuery(trpc.proposalsRouter.getProposal.queryOptions<GetProposalOutput>({ proposalId }, options as any))
 }

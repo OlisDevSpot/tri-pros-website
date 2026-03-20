@@ -17,7 +17,7 @@ import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
 import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
-export const proposalRouter = createTRPCRouter({
+export const proposalsRouter = createTRPCRouter({
   getProposal: baseProcedure
     .input(z.object({
       proposalId: z.string(),
