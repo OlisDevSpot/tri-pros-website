@@ -1,5 +1,6 @@
 export * from './construction'
 export * from './customer-pipelines'
+export * from './leads'
 export * from './media'
 export * from './meetings'
 export * from './proposals'
