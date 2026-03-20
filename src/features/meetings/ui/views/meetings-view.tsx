@@ -172,7 +172,7 @@ export function MeetingsView() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {layout === 'calendar'
           ? (
               <MeetingCalendar

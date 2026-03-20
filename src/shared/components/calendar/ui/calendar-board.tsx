@@ -58,14 +58,14 @@ export function CalendarBoard<T extends CalendarEvent>({
   }, [range, onDateRangeChange])
 
   return (
-    <div className={cn('w-full rounded-xl border', className)}>
+    <div className={cn('flex h-full w-full flex-col rounded-xl border', className)}>
       <CalendarHeader
         currentDate={currentDate}
         activeView={activeView}
         onDateChange={setCurrentDate}
       />
 
-      <div className="w-full overflow-hidden">
+      <div className="w-full flex-1 min-h-0 overflow-hidden">
         {activeView === 'week' && (
           <CalendarWeekView
             events={events}

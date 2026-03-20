@@ -48,7 +48,7 @@ export function CalendarWeekView<T extends CalendarEvent>({
   const totalMinWidth = 64 + gridMinWidth // hours col + day grid
 
   return (
-    <ScrollAreaPrimitive.Root className="relative h-175" type="always">
+    <ScrollAreaPrimitive.Root className="relative h-full" type="always">
       <ScrollAreaPrimitive.Viewport className="size-full rounded-[inherit]">
         <div style={{ minWidth: `${totalMinWidth}px` }}>
           {/* Week header */}
