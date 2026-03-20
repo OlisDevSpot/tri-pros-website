@@ -1,7 +1,6 @@
 'use client'
 
-import { AbilityProvider } from '@/shared/permissions/provider'
-
+import { AbilityProvider } from './casl-provider'
 import { NuqsProvider } from './nuqs-adapter'
 import { ThemeProvider } from './theme-provider'
 import { ToasterProvider } from './toaster-provider'

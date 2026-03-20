@@ -68,14 +68,14 @@ export function CalendarWeekView<T extends CalendarEvent>({
                 >
                   <span className="block sm:hidden">
                     {format(day, 'EEE').charAt(0)}
-                    <span className={cn('block text-xs font-semibold', isToday(day) ? 'text-white' : 'text-foreground')}>
+                    <span className={cn('block text-xs font-semibold', isToday(day) ? 'text-foreground' : 'text-foreground')}>
                       {format(day, 'd')}
                     </span>
                   </span>
                   <span className="hidden sm:inline">
                     {format(day, 'EE')}
                     {' '}
-                    <span className={cn('ml-1 font-semibold', isToday(day) ? 'text-white' : 'text-foreground')}>
+                    <span className={cn('ml-1 font-semibold', isToday(day) ? 'text-foreground' : 'text-foreground')}>
                       {format(day, 'd')}
                     </span>
                   </span>

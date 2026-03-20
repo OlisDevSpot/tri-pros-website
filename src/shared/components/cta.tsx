@@ -3,8 +3,8 @@
 import { motion, useInView } from 'motion/react'
 import { useRef } from 'react'
 
-import { GeneralInquiryForm } from '@/shared/components/forms/general-inquiry-form'
-import { ScheduleConsultationForm } from '@/shared/components/forms/schedule-consultation-form'
+import { GeneralInquiryForm } from '@/features/landing/ui/components/forms/general-inquiry-form'
+import { ScheduleConsultationForm } from '@/features/landing/ui/components/forms/schedule-consultation-form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 export function BottomCTA() {

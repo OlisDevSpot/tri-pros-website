@@ -12,7 +12,7 @@ import { useAbility } from '@/shared/permissions/hooks'
 
 import { SignInGoogleButton } from '../buttons/auth/sign-in-google-button'
 import { UserButton } from '../buttons/user-button'
-import { ThemeToggleInline } from '../theme-toggle-inline'
+import { ThemeToggleButton } from '../theme-toggle-button'
 import { Separator } from '../ui/separator'
 import { NavItem } from './nav-item'
 
@@ -156,7 +156,7 @@ export function PopoverNav({
               <div className="min-w-0 flex-1">
                 {sessionQuery.data?.user ? <UserButton user={sessionQuery.data?.user} /> : <SignInGoogleButton />}
               </div>
-              <ThemeToggleInline />
+              <ThemeToggleButton />
             </div>
           </div>
         </motion.div>

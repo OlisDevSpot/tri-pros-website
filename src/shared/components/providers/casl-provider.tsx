@@ -13,8 +13,8 @@
 import { useMemo } from 'react'
 import { useSession } from '@/shared/auth/client'
 
-import { defineAbilitiesFor } from './abilities'
-import { AbilityContext } from './context'
+import { defineAbilitiesFor } from '../../permissions/abilities'
+import { AbilityContext } from '../../permissions/context'
 
 export function AbilityProvider({ children }: { children: React.ReactNode }) {
   const session = useSession()
@@ -24,12 +24,12 @@ export function AbilityProvider({ children }: { children: React.ReactNode }) {
   // useMemo prevents unnecessary rebuilds on every render.
   const ability = useMemo(
     () => defineAbilitiesFor(user ? { id: user.id, role: user.role } : null),
-    [user?.id, user?.role],
+    [user],
   )
 
   return (
-    <AbilityContext.Provider value={ability}>
+    <AbilityContext value={ability}>
       {children}
-    </AbilityContext.Provider>
+    </AbilityContext>
   )
 }

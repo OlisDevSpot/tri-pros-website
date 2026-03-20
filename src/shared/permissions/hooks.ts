@@ -9,10 +9,10 @@
 
 import type { AppAbility } from './types'
 
-import { useContext } from 'react'
+import { use } from 'react'
 
 import { AbilityContext } from './context'
 
 export function useAbility(): AppAbility {
-  return useContext(AbilityContext)
+  return use(AbilityContext)
 }
