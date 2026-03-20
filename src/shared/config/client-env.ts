@@ -4,7 +4,7 @@ import z from 'zod'
 
 const envSchema = z.object({
   NEXT_PUBLIC_BASE_URL: z.string(),
-  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional,
+  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
 })
 
 export type env = z.infer<typeof envSchema>
