@@ -104,7 +104,13 @@
       "Bash(node scripts/generate-pwa-icons.mjs)",
       "Bash(git log:*)",
       "Bash(git remote:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/trpc/routers/proposal*)",
+      "Bash(git reset:*)",
+      "Bash(git status:*)",
+      "Bash(grep -v '^\\\\* main$')",
+      "Bash(git fetch:*)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/projects/[projectAccessor]/)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

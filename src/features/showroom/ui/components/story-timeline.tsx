@@ -108,7 +108,7 @@ export function StoryTimeline({ project, media }: Props) {
                     <PhaseCarousel
                       photos={phase.photos}
                       phaseLabel={phase.label}
-                      onPhotoClick={(index) => handlePhotoClick(phase.key, index)}
+                      onPhotoClick={index => handlePhotoClick(phase.key, index)}
                     />
                   </div>
                 </motion.div>
