@@ -7,7 +7,7 @@ import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { DashboardSidebar } from '@/features/agent-dashboard/ui/components/dashboard-sidebar'
 import { ActionCenterView } from '@/features/agent-dashboard/ui/views/action-center-view'
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
-import { CreateMeetingView, EditMeetingSetupView, PastMeetingsView } from '@/features/meetings/ui/views'
+import { CreateMeetingView, EditMeetingSetupView, MeetingsView } from '@/features/meetings/ui/views'
 import { CreateNewProposalView, EditProposalView, PastProposalsView } from '@/features/proposal-flow/ui/views'
 import { CreateProjectView, EditProjectView, PortfolioProjectsView } from '@/features/showroom/ui/views'
 import { SignInGoogleButton } from '@/shared/components/buttons/auth/sign-in-google-button'
@@ -56,7 +56,7 @@ export function DashboardHub({ authState }: DashboardHubProps) {
         </AnimatePresence>
         <AnimatePresence>
           {step === 'meetings' && (
-            <PastMeetingsView key="meetings" />
+            <MeetingsView key="meetings" />
           )}
         </AnimatePresence>
         <AnimatePresence>

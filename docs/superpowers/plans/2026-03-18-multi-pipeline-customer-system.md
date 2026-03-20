@@ -411,7 +411,7 @@ interface Props {
 export function PipelineSelect({ value, onChange }: Props) {
   return (
     <Select value={value} onValueChange={v => onChange(v as CustomerPipeline)}>
-      <SelectTrigger className="w-[140px]">
+      <SelectTrigger className="w-35">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
