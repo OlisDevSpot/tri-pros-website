@@ -33,7 +33,7 @@ export function calculateProposalDiscounts(proposal: ProposalFormSchema) {
 export function EditProposalView() {
   const [proposalId] = useQueryState('proposalId')
 
-  const proposal = useGetProposal(proposalId!, { enabled: !!proposalId })
+  const proposal = useGetProposal(proposalId!, undefined, { enabled: !!proposalId })
   const updateProposal = useUpdateProposal()
 
   const form = useForm<ProposalFormSchema>({
