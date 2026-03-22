@@ -1,18 +1,23 @@
 /* eslint-disable node/prefer-global/process */
 'use client'
 
+import type { IntakeFormData } from '@/features/intake/schemas/intake-form-schema'
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
 import type { LeadSource, LeadType } from '@/shared/types/enums'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { APIProvider } from '@vis.gl/react-google-maps'
-import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { intakeFormDefaultValues, intakeFormSchema } from '@/features/intake/schemas/intake-form-schema'
 import { AddressAutocompleteField } from '@/features/intake/ui/components/address-autocomplete-field'
-import { MeetingSchedulerField } from '@/features/intake/ui/components/meeting-scheduler-field'
+import { ClosedByField } from '@/features/intake/ui/components/closed-by-field'
+import { IntakeTradeScopePicker } from '@/features/intake/ui/components/intake-trade-scope-picker'
+import { MeetingDateField } from '@/features/intake/ui/components/meeting-date-field'
 import { Mp3UploadField } from '@/features/intake/ui/components/mp3-upload-field'
 import { Button } from '@/shared/components/ui/button'
+import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -24,183 +29,208 @@ interface IntakeFormViewProps {
 
 export function IntakeFormView({ leadSourceSlug, formConfig, leadSourceName }: IntakeFormViewProps) {
   const trpc = useTRPC()
-  const [submitted, setSubmitted] = useState(false)
 
-  // Form state
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [notes, setNotes] = useState('')
-  const [address, setAddress] = useState('')
-  const [city, setCity] = useState('')
-  const [state, setState] = useState('')
-  const [zip, setZip] = useState('')
-  const [scheduledFor, setScheduledFor] = useState('')
-  const [closedById, setClosedById] = useState('')
-  const [mp3Key, setMp3Key] = useState('')
-  const [honeypot, setHoneypot] = useState('')
+  const form = useForm<IntakeFormData>({
+    resolver: zodResolver(intakeFormSchema),
+    defaultValues: intakeFormDefaultValues,
+  })
 
   const submit = useMutation(
     trpc.customersRouter.createFromIntake.mutationOptions({
-      onSuccess: () => setSubmitted(true),
+      onSuccess: () => form.reset({ ...intakeFormDefaultValues, _honeypot: 'submitted' }),
       onError: err => toast.error(err.message),
     }),
   )
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  const isSubmitted = form.watch('_honeypot') === 'submitted'
 
-    if (honeypot) {
-      return
-    }
-
-    if (!name || !phone || !city || !zip) {
-      toast.error('Please fill in all required fields')
-      return
-    }
-
-    if (formConfig.requireMeetingScheduler && (!scheduledFor || !closedById)) {
-      toast.error('Appointment date and agent are required')
+  function onSubmit(data: IntakeFormData) {
+    if (data._honeypot && data._honeypot !== 'submitted') {
       return
     }
 
     submit.mutate({
-      name,
-      phone,
-      email: email || undefined,
-      address: address || undefined,
-      city,
-      state: state || undefined,
-      zip,
-      notes: notes || undefined,
-      leadSource: leadSourceSlug as LeadSource,
+      name: data.name,
+      phone: data.phone,
+      city: data.city,
+      zip: data.zip,
+      email: data.email || undefined,
+      address: data.address || undefined,
+      state: data.state || undefined,
+      notes: data.notes || undefined,
+      leadSource: leadSourceSlug,
       leadType: formConfig.leadType as LeadType,
-      leadMetaJSON: mp3Key ? { mp3RecordingKey: mp3Key } : undefined,
-      scheduledFor: scheduledFor || undefined,
-      closedById: closedById || undefined,
+      leadMetaJSON: {
+        mp3RecordingKey: data.mp3Key || undefined,
+        closedBy: data.closedBy || undefined,
+        scheduledFor: data.scheduledFor || undefined,
+        requestedTrades: data.tradeRows.filter(r => r.tradeId),
+      },
     })
   }
 
-  if (submitted) {
+  if (isSubmitted) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
         <p className="text-2xl font-semibold">Contact Added</p>
         <p className="text-muted-foreground">The lead has been successfully submitted.</p>
+        <Button
+          variant="outline"
+          onClick={() => form.reset(intakeFormDefaultValues)}
+        >
+          Submit Another
+        </Button>
       </div>
     )
   }
 
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <h1 className="text-xl font-semibold">
-          {'New Lead — '}
-          {leadSourceName}
-        </h1>
-
-        {/* Honeypot — hidden from real users */}
-        <input
-          tabIndex={-1}
-          aria-hidden="true"
-          className="absolute -top-2499.75 left-0 opacity-0"
-          value={honeypot}
-          onChange={e => setHoneypot(e.target.value)}
-        />
-
-        {/* Name */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="name">
-            {'Full Name '}
-            <span className="text-destructive">*</span>
-          </Label>
-          <Input id="name" required value={name} onChange={e => setName(e.target.value)} />
-        </div>
-
-        {/* Phone */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="phone">
-            {'Phone '}
-            <span className="text-destructive">*</span>
-          </Label>
-          <Input id="phone" type="tel" required value={phone} onChange={e => setPhone(e.target.value)} />
-        </div>
-
-        {/* Email (conditional) */}
-        {formConfig.showEmail && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="email">
-              Email
-              {formConfig.requireEmail && <span className="ml-1 text-destructive">*</span>}
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              required={formConfig.requireEmail}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Address */}
-        <div className="flex flex-col gap-1.5">
-          <Label>
-            {'Address '}
-            <span className="text-destructive">*</span>
-          </Label>
-          <AddressAutocompleteField
-            onChange={(fields) => {
-              setAddress(fields.address)
-              setCity(fields.city)
-              setState(fields.state)
-              setZip(fields.zip)
-            }}
-            onClear={() => {
-              setAddress('')
-              setCity('')
-              setState('')
-              setZip('')
-            }}
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+          {/* Honeypot — hidden from real users */}
+          <input
+            tabIndex={-1}
+            aria-hidden="true"
+            className="absolute -top-[9999px] left-0 opacity-0"
+            {...form.register('_honeypot')}
           />
-        </div>
 
-        {/* MP3 upload (conditional) */}
-        {formConfig.showMp3Upload && (
-          <div className="flex flex-col gap-1.5">
-            <Label>Call Recording (optional)</Label>
-            <Mp3UploadField customerName={name} onUploaded={setMp3Key} onClear={() => setMp3Key('')} />
-          </div>
-        )}
-
-        {/* Meeting scheduler (conditional) */}
-        {formConfig.showMeetingScheduler && (
-          <MeetingSchedulerField
-            scheduledFor={scheduledFor}
-            closedById={closedById}
-            onDateChange={setScheduledFor}
-            onAgentChange={setClosedById}
-            required={formConfig.requireMeetingScheduler}
+          {/* Name */}
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {'Full Name '}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <Input {...field} />
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        )}
 
-        {/* Notes (conditional) */}
-        {formConfig.showNotes && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              rows={3}
-              placeholder="Any context about this lead…"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
+          {/* Phone */}
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {'Phone '}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <Input type="tel" {...field} />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Email (conditional) */}
+          {formConfig.showEmail && (
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Email
+                    {formConfig.requireEmail && <span className="ml-1 text-destructive">*</span>}
+                  </FormLabel>
+                  <Input type="email" {...field} />
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-        )}
+          )}
 
-        <Button type="submit" size="lg" disabled={submit.isPending} className="w-full py-6">
-          {submit.isPending ? 'Submitting…' : 'Submit Lead'}
-        </Button>
-      </form>
+          {/* Address */}
+          <FormField
+            control={form.control}
+            name="address"
+            render={() => (
+              <FormItem>
+                <FormLabel>
+                  {'Address '}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <AddressAutocompleteField
+                  onChange={(fields) => {
+                    form.setValue('address', fields.address)
+                    form.setValue('city', fields.city)
+                    form.setValue('state', fields.state)
+                    form.setValue('zip', fields.zip)
+                  }}
+                  onClear={() => {
+                    form.setValue('address', '')
+                    form.setValue('city', '')
+                    form.setValue('state', '')
+                    form.setValue('zip', '')
+                  }}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Trade/Scope Picker */}
+          <IntakeTradeScopePicker />
+
+          {/* MP3 upload (conditional) */}
+          {formConfig.showMp3Upload && (
+            <FormField
+              control={form.control}
+              name="mp3Key"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Call Recording (optional)</FormLabel>
+                  <Mp3UploadField
+                    customerName={form.watch('name')}
+                    onUploaded={key => form.setValue('mp3Key', key)}
+                    onClear={() => form.setValue('mp3Key', '')}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {/* Meeting date (conditional) */}
+          {formConfig.showMeetingScheduler && (
+            <MeetingDateField required={formConfig.requireMeetingScheduler} />
+          )}
+
+          {/* Closed By (conditional — only when closedByOptions configured) */}
+          {formConfig.closedByOptions && formConfig.closedByOptions.length > 0 && (
+            <ClosedByField options={formConfig.closedByOptions} />
+          )}
+
+          {/* Notes (conditional) */}
+          {formConfig.showNotes && (
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <Textarea
+                    rows={3}
+                    placeholder="Any context about this lead…"
+                    {...field}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          <Button type="submit" size="lg" disabled={submit.isPending} className="w-full py-6">
+            {submit.isPending ? 'Submitting…' : 'Submit Lead'}
+          </Button>
+        </form>
+      </Form>
     </APIProvider>
   )
 }
