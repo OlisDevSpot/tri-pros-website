@@ -9,7 +9,6 @@ import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } fr
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
-import { meetings } from '@/shared/db/schema/meetings'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
@@ -106,11 +105,9 @@ export const customersRouter = createTRPCRouter({
       leadSource: z.enum(leadSources),
       leadType: z.enum(leadTypes),
       leadMetaJSON: leadMetaSchema.optional(),
-      scheduledFor: z.string().optional(),
-      closedById: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { notes, scheduledFor, closedById, ...customerData } = input
+      const { notes, ...customerData } = input
 
       // Rate limit by IP
       const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
@@ -136,16 +133,6 @@ export const customersRouter = createTRPCRouter({
           content: notes,
           authorId: null,
         }).catch(e => console.error('Note insert failed (non-fatal):', e))
-      }
-
-      // 3. Insert meeting (if scheduler provided) — failure is non-fatal
-      if (scheduledFor && closedById) {
-        await db.insert(meetings).values({
-          customerId: customer.id,
-          ownerId: closedById,
-          scheduledFor,
-          status: 'in_progress',
-        }).catch(e => console.error('Meeting insert failed (non-fatal):', e))
       }
 
       return { customerId: customer.id }
