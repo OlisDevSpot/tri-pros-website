@@ -1,12 +1,8 @@
-import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import { TRPCError } from '@trpc/server'
 import { and, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
 import z from 'zod'
-import { upsertCustomerFromNotion } from '@/shared/dal/server/customers/api'
 import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, meetings, proposals, user } from '@/shared/db/schema'
-import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
-import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
@@ -33,23 +29,14 @@ export const meetingsRouter = createTRPCRouter({
   // Create a new meeting record (called when an agent starts a meeting)
   create: agentProcedure
     .input(insertMeetingSchema.extend({
-      notionContactId: z.string().min(1, 'A Notion contact is required'),
+      customerId: z.string().uuid('A customer is required'),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { notionContactId, ...meetingData } = input
-
-      // Resolve Notion contact → upsert customer
-      const pages = await queryNotionDatabase('contacts', { id: notionContactId }) as PageObjectResponse[]
-      if (!pages?.[0]) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Notion contact not found' })
-      }
-
-      const contact = pageToContact(pages[0])
-      const customer = await upsertCustomerFromNotion(contact)
+      const { customerId, ...meetingData } = input
 
       const [created] = await db
         .insert(meetings)
-        .values({ ...meetingData, ownerId: ctx.session.user.id, customerId: customer.id })
+        .values({ ...meetingData, ownerId: ctx.session.user.id, customerId })
         .returning()
 
       return created
@@ -57,7 +44,10 @@ export const meetingsRouter = createTRPCRouter({
 
   // Patch a meeting with updated fields (called as data is collected)
   update: agentProcedure
-    .input(insertMeetingSchema.partial().extend({ id: z.string().uuid() }))
+    .input(insertMeetingSchema.partial().extend({
+      id: z.string().uuid(),
+      customerId: z.string().uuid().optional(),
+    }))
     .mutation(async ({ input }) => {
       const { id, ...rest } = input
 

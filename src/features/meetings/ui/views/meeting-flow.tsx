@@ -70,37 +70,19 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
   const [mode, setMode] = useQueryState('mode', modeParser)
 
-  // Contact data for personalised program content
-  const contactId = meetingQuery.data?.customer?.notionContactId ?? ''
-  const contactQuery = useQuery(
-    trpc.notionRouter.contacts.getSingleById.queryOptions(
-      { id: contactId },
-      { enabled: !!contactId },
-    ),
-  )
-
   const meeting = meetingQuery.data
   const dbCustomer = meeting?.customer ?? null
 
   const ctx = useMemo<MeetingContext>(() => {
-    const raw = contactQuery.data as {
-      address?: string | null
-      city?: string
-      email?: string | null
-      name?: string
-      phone?: string | null
-      state?: string | null
-    } | undefined
-
-    const ctxCustomer = raw?.name
+    const ctxCustomer = dbCustomer
       ? {
-          address: raw.address ?? null,
-          city: raw.city ?? '',
-          email: raw.email ?? null,
-          id: contactId,
-          name: raw.name,
-          phone: raw.phone ?? null,
-          state: raw.state ?? null,
+          address: dbCustomer.address ?? null,
+          city: dbCustomer.city ?? '',
+          email: dbCustomer.email ?? null,
+          id: dbCustomer.id,
+          name: dbCustomer.name,
+          phone: dbCustomer.phone ?? null,
+          state: dbCustomer.state ?? null,
         }
       : null
 
@@ -115,7 +97,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
       },
       customer: ctxCustomer,
     }
-  }, [contactQuery.data, contactId, meeting, dbCustomer])
+  }, [meeting, dbCustomer])
 
   function handleFieldSave(field: CollectionField, value: string | number | boolean) {
     if (field.entity === 'customer' && dbCustomer?.id) {

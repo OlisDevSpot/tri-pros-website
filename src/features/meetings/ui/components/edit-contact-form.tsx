@@ -7,7 +7,7 @@ import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { NotionContactSearch } from '@/shared/components/notion/contact-search'
+import { CustomerSearch } from '@/shared/components/customer-search'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
@@ -22,7 +22,7 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
 
-  const [contactId, setContactId] = useState('')
+  const [customerId, setCustomerId] = useState('')
   const [contactName, setContactName] = useState(meeting.contactName ?? '')
 
   const updateMeeting = useMutation(
@@ -40,6 +40,7 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
     updateMeeting.mutate({
       id: meeting.id,
       contactName: contactName || undefined,
+      ...(customerId ? { customerId } : {}),
     })
   }
 
@@ -72,16 +73,15 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
             </span>
           )}
         </p>
-        <NotionContactSearch
-          value={contactId}
+        <CustomerSearch
           onSelect={(id, name) => {
-            setContactId(id)
+            setCustomerId(id)
             setContactName(name)
           }}
           onClear={() => {
-            setContactId('')
-            setContactName('')
+            setCustomerId('')
           }}
+          prefillCustomerId={meeting.customerId ?? undefined}
         />
         <p className="mt-2 text-xs text-muted-foreground">
           To edit profile data, open the meeting and use the Intake view.

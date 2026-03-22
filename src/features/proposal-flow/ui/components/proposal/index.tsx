@@ -9,14 +9,13 @@ import { customizableSections, generateProposalSteps } from '@/features/proposal
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useSendProposalEmail } from '@/features/proposal-flow/dal/client/mutations/use-send-proposal-email'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 import { Heading } from './heading'
 
 export function Proposal() {
-  const sessionQuery = useSession()
   const params = useParams() as { proposalId: string }
   const searchParams = useSearchParams()
   const sendProposalEmail = useSendProposalEmail()
@@ -25,6 +24,7 @@ export function Proposal() {
   const trpc = useTRPC()
   const recordView = useMutation(trpc.proposalsRouter.recordView.mutationOptions())
   const sendContract = useMutation(trpc.docusignRouter.sendContractForSigning.mutationOptions())
+  const ability = useAbility()
   const hasRecorded = useRef(false)
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function Proposal() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposal.data])
 
-  if (sessionQuery.isPending || proposal.isLoading) {
+  if (proposal.isLoading) {
     return (
       <LoadingState
         title="Loading Proposal"
@@ -56,11 +56,11 @@ export function Proposal() {
     )
   }
 
-  if (!proposal.data) {
+  if (proposal.isError || !proposal.data) {
     return (
       <ErrorState
         title="Error: Could not load proposal"
-        description="Please try again"
+        description={proposal.error?.message ?? 'Please try again'}
       />
     )
   }
@@ -69,8 +69,8 @@ export function Proposal() {
   const customerEmail = customer?.email ?? ''
   const customerName = customer?.name ?? 'Customer'
 
-  const userRole = sessionQuery.data?.user?.role ?? 'user'
-  const proposalSteps = generateProposalSteps(userRole)
+  const viewerRole = ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
+  const proposalSteps = generateProposalSteps(viewerRole)
 
   return (
     <div className="h-full overflow-auto">

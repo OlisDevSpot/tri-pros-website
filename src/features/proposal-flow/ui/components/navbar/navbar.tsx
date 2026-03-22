@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
-import { useSession } from '@/shared/auth/client'
 import { Logo } from '@/shared/components/logo'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { ROOTS } from '@/shared/config/roots'
 import { useActiveSection } from '@/shared/hooks/use-active-section'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { useAbility } from '@/shared/permissions/hooks'
 import { ProposalNavbarFrame } from './navbar-frame'
 
 export function ProposalPageNavbar() {
@@ -18,10 +18,10 @@ export function ProposalPageNavbar() {
   const router = useRouter()
   const pathnameChunks = usePathname().split('/')
   const currentStepIndex = pathnameChunks.findIndex(p => p === 'proposal')
-  const sessionQuery = useSession()
-
-  const userRole = sessionQuery.data?.user?.role ?? 'user'
-  const proposalSteps = generateProposalSteps(userRole)
+  const ability = useAbility()
+  const viewerRole = ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
+  const proposalSteps = generateProposalSteps(viewerRole)
+  const backHref = ability.can('access', 'Dashboard') ? ROOTS.dashboard.root : '/'
 
   const { rootEl } = useScrollRoot()
   const activeSectionId = useActiveSection(proposalSteps.map(step => step.accessor), { rootEl })
@@ -33,7 +33,7 @@ export function ProposalPageNavbar() {
     <ProposalNavbarFrame>
       <Link
         className="h-full w-fit lex items-center justify-center transition px-8"
-        href={sessionQuery.data?.user ? `${ROOTS.dashboard.root}` : '/'}
+        href={backHref}
       >
         <div className="flex items-center h-full gap-2">
           <ArrowLeftIcon size={20} />

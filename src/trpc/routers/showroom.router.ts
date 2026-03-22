@@ -84,7 +84,7 @@ export const showroomRouter = createTRPCRouter({
       const ext = extname(input.filename).toLowerCase()
       const fileId = crypto.randomUUID()
       const pathKey = `projects/${input.projectId}/${input.phase}/${fileId}${ext}`
-      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET]}/${pathKey}`
+      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET] ?? ''}/${pathKey}`
 
       const uploadUrl = await getPresignedUploadUrl({
         bucket: PORTFOLIO_BUCKET,
@@ -306,7 +306,7 @@ export const showroomRouter = createTRPCRouter({
       const ext = input.name.includes('.') ? `.${input.name.split('.').pop()}` : ''
       const fileUuid = crypto.randomUUID()
       const pathKey = `projects/${input.projectId}/${input.phase}/${fileUuid}${ext}`
-      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET]}/${pathKey}`
+      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET] ?? ''}/${pathKey}`
 
       const buffer = Buffer.from(await driveResponse.arrayBuffer())
       await putObject(PORTFOLIO_BUCKET, pathKey, buffer, input.mimeType)

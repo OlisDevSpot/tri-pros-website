@@ -110,7 +110,39 @@
       "Bash(git status:*)",
       "Bash(grep -v '^\\\\* main$')",
       "Bash(git fetch:*)",
-      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/projects/[projectAccessor]/)"
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/projects/[projectAccessor]/)",
+      "Bash(printf '\\\\x1B[B\\\\n')",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(pnpm tsx:*)",
+      "Bash(node_modules/.bin/tsx scripts/meta/setup/create-audience-fix.ts)",
+      "Bash(node_modules/.bin/tsx scripts/meta/setup/create-retargeting-audience.ts)",
+      "Bash(grep -v '^$')",
+      "Bash(grep -E \"\\\\.\\(tsx?|json\\)$\")",
+      "Bash(pnpm ls:*)",
+      "mcp__playwright__browser_navigate",
+      "WebFetch(domain:www.facebook.com)",
+      "WebFetch(domain:kitchenremodelingseo.com)",
+      "WebFetch(domain:info.builderfunnel.com)",
+      "WebFetch(domain:zeely.ai)",
+      "WebFetch(domain:improveandgrow.com)",
+      "WebFetch(domain:hookagency.com)",
+      "WebFetch(domain:forwardfirstmedia.com)",
+      "WebFetch(domain:nomadicadvertising.com)",
+      "WebFetch(domain:fatcatstrategies.com)",
+      "Bash(code --list-extensions)",
+      "mcp__playwright__browser_install",
+      "Skill(sc:git)",
+      "Skill(sc:git:*)",
+      "Bash(node -e \"let d='''''''';process.stdin.on\\(''''data'''',c=>d+=c\\);process.stdin.on\\(''''end'''',\\(\\)=>{const j=JSON.parse\\(d\\);if\\(!j.tool_input?.command?.startsWith\\(''''git commit''''\\)\\){process.exit\\(0\\)}console.log\\(JSON.stringify\\({continue:false,reason:''''pre-commit check triggered''''}\\)\\)}\\)\")",
+      "Bash(node -e \"const s = require\\(''fs''\\).readFileSync\\(''.claude/settings.json'',''utf8''\\); JSON.parse\\(s\\); const h = JSON.parse\\(s\\).hooks.PreToolUse[0]; console.log\\(''matcher:'', h.matcher\\); console.log\\(''type:'', h.hooks[0].type\\); console.log\\(''timeout:'', h.hooks[0].timeout\\); console.log\\(''JSON valid: true''\\)\")",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src -type f -name *viewport*hero* -o -name *ViewportHero*)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/intake/)",
+      "Bash(grep -r \"TradeSelect\\\\|ScopeSelect\\\\|trade.*select\\\\|scope.*select\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src --include=*.tsx --include=*.ts)",
+      "Bash(echo \"TSC exit: $?\")",
+      "Bash(echo \"LINT exit: $?\")",
+      "Bash(gh repo:*)",
+      "Bash(cat /home/olis-solutions/olis-v3/nextjs/tri-pros-website/.github/workflows/*.yml)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
@@ -123,6 +155,21 @@
     "playwright",
     "shadcn"
   ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(node -e \"const d=require('fs').readFileSync('/dev/stdin','utf8');const j=JSON.parse(d);process.stdout.write(j.tool_input?.command||'')\" 2>/dev/null); case \"$CMD\" in 'git commit'*) cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website && TSC=$(pnpm tsc --noEmit 2>&1) && LINT=$(pnpm lint 2>&1) && exit 0 || echo '{\"decision\":\"block\",\"reason\":\"Pre-commit gate: tsc or lint failed. Fix all errors before committing.\"}' ;; *) exit 0 ;; esac",
+            "timeout": 120,
+            "statusMessage": "Running pre-commit checks (tsc + lint)..."
+          }
+        ]
+      }
+    ]
+  },
   "enabledPlugins": {
     "skill-creator@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,

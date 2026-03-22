@@ -1,6 +1,6 @@
-import type { ProposalFormSchema } from '../../schemas/form-schema'
 import type { OverrideProposalValues } from '../../types'
 
+import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'motion/react'
 import { useQueryState } from 'nuqs'
@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
+import { calculateProposalDiscounts } from '@/features/proposal-flow/lib/calculate-proposal-discounts'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -16,24 +17,10 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Form } from '@/shared/components/ui/form'
 import { CustomerInfoHeader } from '../components/customer-info-header'
 
-export function calculateProposalDiscounts(proposal: ProposalFormSchema) {
-  const { funding } = proposal
-
-  const totalDiscounts = funding.data.incentives.reduce((acc, cur) => {
-    if (cur.type === 'discount') {
-      return acc + cur.amount
-    }
-
-    return acc
-  }, 0)
-
-  return totalDiscounts
-}
-
 export function EditProposalView() {
   const [proposalId] = useQueryState('proposalId')
 
-  const proposal = useGetProposal(proposalId!, { enabled: !!proposalId })
+  const proposal = useGetProposal(proposalId!, undefined, { enabled: !!proposalId })
   const updateProposal = useUpdateProposal()
 
   const form = useForm<ProposalFormSchema>({

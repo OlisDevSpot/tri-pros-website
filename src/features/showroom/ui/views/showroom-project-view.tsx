@@ -3,6 +3,7 @@
 import type { ShowroomProjectDetail } from '@/shared/entities/projects/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { StoryBeforeAfter } from '@/features/showroom/ui/components/story-before-after'
 import { StoryChallenge } from '@/features/showroom/ui/components/story-challenge'
 import { StoryGallery } from '@/features/showroom/ui/components/story-gallery'
 import { StoryHero } from '@/features/showroom/ui/components/story-hero'
@@ -52,6 +53,7 @@ export function ShowroomProjectView({ detail }: Props) {
     <main>
       <StoryHero project={project} heroUrl={heroUrl} tradesWithScopes={tradesWithScopes} />
       <StoryChallenge project={project} mainImage={media.uncategorized[0]} />
+      <StoryBeforeAfter project={project} media={media} />
       {hasTimelinePhotos && <StoryTimeline project={project} media={media} />}
       <StorySolution project={project} tradesWithScopes={tradesWithScopes} />
       <StoryGallery media={media} />

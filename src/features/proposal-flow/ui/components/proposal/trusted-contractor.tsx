@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Separator } from '@/shared/components/ui/separator'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 
-const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs]
+const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs] ?? ''
 
 const DOCS = {
   license: {

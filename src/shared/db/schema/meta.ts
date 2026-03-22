@@ -3,6 +3,8 @@ import {
   constructionTypes,
   customerPipelines,
   homeAreas,
+  leadSources,
+  leadTypes,
   mediaPhases,
   meetingStatuses,
   projectTypes,
@@ -30,3 +32,7 @@ export const proposalStatusEnum = pgEnum('proposal_status', proposalStatuses)
 
 // CUSTOMER PIPELINES
 export const customerPipelineEnum = pgEnum('customer_pipeline', customerPipelines)
+
+// LEADS
+export const leadSourceEnum = pgEnum('lead_source', leadSources)
+export const leadTypeEnum = pgEnum('lead_type', leadTypes)

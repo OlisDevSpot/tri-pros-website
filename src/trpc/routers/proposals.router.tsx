@@ -9,6 +9,7 @@ import { getProposalViews, recordProposalView } from '@/shared/dal/server/propos
 import { db } from '@/shared/db'
 import { insertProposalSchema } from '@/shared/db/schema'
 import { user } from '@/shared/db/schema/auth'
+import { defineAbilitiesFor } from '@/shared/permissions/abilities'
 import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
 import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
 import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
@@ -21,28 +22,33 @@ export const proposalsRouter = createTRPCRouter({
   getProposal: baseProcedure
     .input(z.object({
       proposalId: z.string(),
+      token: z.string().optional(),
     }))
-    .query(async ({ input }) => {
-      try {
-        const proposal = await getProposal(input.proposalId)
+    .query(async ({ input, ctx }) => {
+      const proposal = await getProposal(input.proposalId)
 
-        if (!proposal) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            cause: 'Proposal not found',
-          })
-        }
+      if (!proposal) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Proposal not found',
+        })
+      }
 
-        return proposal
+      // Access check: valid session with read permission OR valid share token
+      const ability = defineAbilitiesFor(
+        ctx.session ? { id: ctx.session.user.id, role: ctx.session.user.role } : null,
+      )
+      const canRead = ability.can('read', 'Proposal')
+      const hasValidToken = input.token && proposal.token === input.token
+
+      if (!canRead && !hasValidToken) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'A valid token or authenticated session is required to view this proposal',
+        })
       }
-      catch (e) {
-        if (e instanceof TRPCError && e.code === 'NOT_FOUND') {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            cause: e,
-          })
-        }
-      }
+
+      return proposal
     }),
 
   getProposals: agentProcedure
@@ -96,29 +102,32 @@ export const proposalsRouter = createTRPCRouter({
       data: insertProposalSchema.partial().strict(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const user = ctx.session?.user
+      // Same dual-gate as getProposal: CASL ability OR valid share token
+      const ability = defineAbilitiesFor(
+        ctx.session ? { id: ctx.session.user.id, role: ctx.session.user.role } : null,
+      )
+      const canUpdate = ability.can('update', 'Proposal')
 
-      if (user) {
-        try {
-          const proposal = await updateProposal(user.id, input.proposalId, input.data)
-          return proposal
+      if (canUpdate) {
+        const proposal = await updateProposal(ctx.session!.user.id, input.proposalId, input.data)
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
         }
-        catch {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            cause: 'Unauthorized',
-          })
-        }
+        return proposal
       }
 
+      // Token-based access for unauthenticated homeowners
       if (!input.token) {
         throw new TRPCError({
           code: 'UNAUTHORIZED',
-          cause: 'Unauthorized',
+          message: 'A valid token or authenticated session is required to update this proposal',
         })
       }
 
       const proposal = await updateProposal(input.token, input.proposalId, input.data)
+      if (!proposal) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token or proposal not found' })
+      }
 
       return proposal
     }),

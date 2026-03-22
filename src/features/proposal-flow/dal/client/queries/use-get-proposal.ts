@@ -11,7 +11,7 @@ type GetProposalQueryOptions
 type RouterOutputs = inferRouterOutputs<AppRouter>
 type GetProposalOutput = RouterOutputs['proposalsRouter']['getProposal']
 
-export function useGetProposal(proposalId: string, options?: GetProposalQueryOptions) {
+export function useGetProposal(proposalId: string, token?: string, options?: GetProposalQueryOptions) {
   const trpc = useTRPC()
-  return useQuery(trpc.proposalsRouter.getProposal.queryOptions<GetProposalOutput>({ proposalId }, options as any))
+  return useQuery(trpc.proposalsRouter.getProposal.queryOptions<GetProposalOutput>({ proposalId, token }, options as any))
 }

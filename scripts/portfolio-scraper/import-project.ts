@@ -14,7 +14,7 @@ import { r2Client } from '@/shared/services/r2/client'
 import { OUTPUT_BASE_DIR } from './constants'
 
 const BUCKET = R2_BUCKETS.portfolioProjects
-const R2_PUBLIC_BASE = R2_PUBLIC_DOMAINS[BUCKET]
+const R2_PUBLIC_BASE = R2_PUBLIC_DOMAINS[BUCKET] ?? ''
 const IMPORTED_DIR = path.join(OUTPUT_BASE_DIR, 'imported')
 
 const MIME_TYPES: Record<string, string> = {
