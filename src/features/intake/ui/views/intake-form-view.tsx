@@ -1,3 +1,4 @@
+/* eslint-disable node/prefer-global/process */
 'use client'
 
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
@@ -13,7 +14,6 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
-import clientEnv from '@/shared/config/client-env'
 import { useTRPC } from '@/trpc/helpers'
 
 interface IntakeFormViewProps {
@@ -91,7 +91,7 @@ export function IntakeFormView({ leadSourceSlug, formConfig, leadSourceName }: I
   }
 
   return (
-    <APIProvider apiKey={clientEnv.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
+    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
         <h1 className="text-xl font-semibold">
           {'New Lead — '}
@@ -102,7 +102,7 @@ export function IntakeFormView({ leadSourceSlug, formConfig, leadSourceName }: I
         <input
           tabIndex={-1}
           aria-hidden="true"
-          className="absolute -top-[9999px] left-0 opacity-0"
+          className="absolute -top-2499.75 left-0 opacity-0"
           value={honeypot}
           onChange={e => setHoneypot(e.target.value)}
         />
@@ -168,7 +168,7 @@ export function IntakeFormView({ leadSourceSlug, formConfig, leadSourceName }: I
         {formConfig.showMp3Upload && (
           <div className="flex flex-col gap-1.5">
             <Label>Call Recording (optional)</Label>
-            <Mp3UploadField onUploaded={setMp3Key} onClear={() => setMp3Key('')} />
+            <Mp3UploadField customerName={name} onUploaded={setMp3Key} onClear={() => setMp3Key('')} />
           </div>
         )}
 

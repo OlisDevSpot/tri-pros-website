@@ -62,6 +62,7 @@ export const intakeRouter = createTRPCRouter({
   getRecordingUploadUrl: baseProcedure
     .input(z.object({
       contentType: z.enum(['audio/mpeg', 'audio/mp4']),
+      customerName: z.string().min(1),
     }))
     .mutation(async ({ input, ctx }) => {
       // Rate limit by IP
@@ -75,11 +76,11 @@ export const intakeRouter = createTRPCRouter({
         })
       }
 
-      const timestamp = Date.now()
-      const key = `recordings/${timestamp}-${crypto.randomUUID()}.mp3`
+      const slug = input.customerName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      const key = `recordings/${slug}-${crypto.randomUUID()}.mp3`
 
       const uploadUrl = await getPresignedUploadUrl({
-        bucket: R2_BUCKETS.telemarketingRecordings,
+        bucket: R2_BUCKETS.homeownerFiles,
         pathKey: key,
         mimeType: input.contentType,
         expiresIn: 900,

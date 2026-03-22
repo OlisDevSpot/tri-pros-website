@@ -3,8 +3,8 @@
 import type { ShowroomProject } from '@/shared/entities/projects/types'
 import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
-import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
-import { useMemo } from 'react'
+import { parseAsArrayOf, parseAsInteger, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useCallback, useMemo } from 'react'
 import { filterShowroomProjects } from '@/features/showroom/lib/filter-projects'
 
 interface UseShowroomFiltersOptions {
@@ -25,6 +25,14 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
   const [searchQuery, setSearchQuery] = useQueryState(
     'q',
     parseAsString.withDefault(''),
+  )
+  const [page, setPage] = useQueryState(
+    'page',
+    parseAsInteger.withDefault(1),
+  )
+  const [perPage, setPerPage] = useQueryState(
+    'perPage',
+    parseAsStringLiteral(['10', '20'] as const).withDefault('10'),
   )
 
   // Build a scope→trade mapping from Notion data
@@ -65,9 +73,12 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
     }
   }, [projects, allScopes, allTrades, selectedTradeIds])
 
+  const resetPage = useCallback(() => setPage(null), [setPage])
+
   // When trades change, clear any scope selections that no longer apply
   const handleTradeChange = (tradeIds: string[]) => {
     setSelectedTradeIds(tradeIds.length > 0 ? tradeIds : null)
+    resetPage()
     if (tradeIds.length > 0) {
       const validScopes = selectedScopeIds.filter((scopeId) => {
         const tradeId = scopeToTradeMap.get(scopeId)
@@ -79,10 +90,12 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
 
   const handleScopeChange = (scopeIds: string[]) => {
     setSelectedScopeIds(scopeIds.length > 0 ? scopeIds : null)
+    resetPage()
   }
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query || null)
+    resetPage()
   }
 
   const filteredProjects = useMemo(
@@ -95,10 +108,26 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
     [projects, selectedTradeIds, selectedScopeIds, searchQuery, scopeToTradeMap],
   )
 
+  const perPageNum = Number(perPage)
+  const totalFiltered = filteredProjects.length
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / perPageNum))
+  const safePage = Math.min(page, totalPages)
+
+  const paginatedProjects = useMemo(
+    () => filteredProjects.slice((safePage - 1) * perPageNum, safePage * perPageNum),
+    [filteredProjects, safePage, perPageNum],
+  )
+
   const clearAll = () => {
     setSelectedTradeIds(null)
     setSelectedScopeIds(null)
     setSearchQuery(null)
+    resetPage()
+  }
+
+  const handlePerPageChange = (value: '10' | '20') => {
+    setPerPage(value === '10' ? null : value)
+    resetPage()
   }
 
   const activeFilterCount = selectedTradeIds.length + selectedScopeIds.length + (searchQuery ? 1 : 0)
@@ -107,10 +136,16 @@ export function useShowroomFilters({ projects, allScopes, allTrades }: UseShowro
     selectedTradeIds,
     selectedScopeIds,
     searchQuery,
-    filteredProjects,
+    filteredProjects: paginatedProjects,
+    totalFiltered,
     availableTrades,
     availableScopes,
     activeFilterCount,
+    page: safePage,
+    perPage,
+    totalPages,
+    setPage: (p: number) => setPage(p === 1 ? null : p),
+    setPerPage: handlePerPageChange,
     setSelectedTradeIds: handleTradeChange,
     setSelectedScopeIds: handleScopeChange,
     setSearchQuery: handleSearchChange,

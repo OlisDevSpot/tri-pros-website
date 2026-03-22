@@ -8,11 +8,12 @@ import { Button } from '@/shared/components/ui/button'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Mp3UploadFieldProps {
+  customerName: string
   onUploaded: (key: string) => void
   onClear: () => void
 }
 
-export function Mp3UploadField({ onUploaded, onClear }: Mp3UploadFieldProps) {
+export function Mp3UploadField({ customerName, onUploaded, onClear }: Mp3UploadFieldProps) {
   const trpc = useTRPC()
   const inputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState('')
@@ -36,7 +37,7 @@ export function Mp3UploadField({ onUploaded, onClear }: Mp3UploadFieldProps) {
     }
 
     try {
-      const { uploadUrl, key } = await getUploadUrl.mutateAsync({ contentType: 'audio/mpeg' })
+      const { uploadUrl, key } = await getUploadUrl.mutateAsync({ contentType: 'audio/mpeg', customerName })
       await fetch(uploadUrl, {
         method: 'PUT',
         body: file,

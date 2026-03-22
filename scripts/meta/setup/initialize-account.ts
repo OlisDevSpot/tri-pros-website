@@ -118,6 +118,7 @@ async function main() {
       billing_event: 'IMPRESSIONS',
       optimization_goal: 'LEAD_GENERATION',
       bid_strategy: 'LOWEST_COST_WITHOUT_CAP', // Let Meta optimize for lowest cost per lead
+      promoted_object: { page_id: metaEnv.pageId },
       targeting: {
         geo_locations: { regions: GEO_REGIONS },
         age_min: AGE_MIN,
@@ -176,10 +177,8 @@ async function main() {
     body: {
       name: 'Website Visitors — 30 Days',
       description: 'People who visited tripros.com in the last 30 days — retargeting seed audience',
-      pixel_id: pixel.id,
-      subtype: 'WEBSITE',
-      retention_days: 30,
-      rule: {
+      // Meta v21.0 requires `rule` as a JSON string, not a nested object
+      rule: JSON.stringify({
         inclusions: {
           operator: 'or',
           rules: [
@@ -193,7 +192,7 @@ async function main() {
             },
           ],
         },
-      },
+      }),
     },
   })
   audienceId = audience.id

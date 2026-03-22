@@ -102,29 +102,32 @@ export const proposalsRouter = createTRPCRouter({
       data: insertProposalSchema.partial().strict(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const user = ctx.session?.user
+      // Same dual-gate as getProposal: CASL ability OR valid share token
+      const ability = defineAbilitiesFor(
+        ctx.session ? { id: ctx.session.user.id, role: ctx.session.user.role } : null,
+      )
+      const canUpdate = ability.can('update', 'Proposal')
 
-      if (user) {
-        try {
-          const proposal = await updateProposal(user.id, input.proposalId, input.data)
-          return proposal
+      if (canUpdate) {
+        const proposal = await updateProposal(ctx.session!.user.id, input.proposalId, input.data)
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
         }
-        catch {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            cause: 'Unauthorized',
-          })
-        }
+        return proposal
       }
 
+      // Token-based access for unauthenticated homeowners
       if (!input.token) {
         throw new TRPCError({
           code: 'UNAUTHORIZED',
-          cause: 'Unauthorized',
+          message: 'A valid token or authenticated session is required to update this proposal',
         })
       }
 
       const proposal = await updateProposal(input.token, input.proposalId, input.data)
+      if (!proposal) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token or proposal not found' })
+      }
 
       return proposal
     }),

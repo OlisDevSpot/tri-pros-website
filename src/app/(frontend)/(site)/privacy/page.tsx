@@ -20,10 +20,9 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2>1. Who We Are</h2>
           <p>
-            Tri Pros Remodeling (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates the website{' '}
-            <strong>triprosremodeling.com</strong> and related services. We are a
-            residential construction and remodeling company based in Southern
-            California.
+            {'Tri Pros Remodeling (\u201Cwe,\u201D \u201Cus,\u201D or \u201Cour\u201D) operates the website '}
+            <strong>triprosremodeling.com</strong>
+            {' and related services. We are a residential construction and remodeling company based in Southern California.'}
           </p>
         </section>
 
@@ -32,27 +31,24 @@ export default function PrivacyPolicyPage() {
           <p>We may collect the following types of information:</p>
           <ul>
             <li>
-              <strong>Contact information</strong> — name, email address, phone
-              number, and home address provided when you request an estimate,
-              schedule a meeting, or contact us.
+              <strong>Contact information</strong>
+              {' — name, email address, phone number, and home address provided when you request an estimate, schedule a meeting, or contact us.'}
             </li>
             <li>
-              <strong>Property information</strong> — details about your home
-              (age, square footage, scope of desired work) shared during
-              consultations.
+              <strong>Property information</strong>
+              {' — details about your home (age, square footage, scope of desired work) shared during consultations.'}
             </li>
             <li>
-              <strong>Account data</strong> — email and authentication
-              information when you sign in via Google OAuth.
+              <strong>Account data</strong>
+              {' — email and authentication information when you sign in via Google OAuth.'}
             </li>
             <li>
-              <strong>Usage data</strong> — pages visited, time on site, browser
-              type, and device information collected automatically through
-              cookies and analytics.
+              <strong>Usage data</strong>
+              {' — pages visited, time on site, browser type, and device information collected automatically through cookies and analytics.'}
             </li>
             <li>
-              <strong>Communications</strong> — messages, emails, and call
-              recordings when you interact with our team.
+              <strong>Communications</strong>
+              {' — messages, emails, and call recordings when you interact with our team.'}
             </li>
           </ul>
         </section>
@@ -72,22 +68,22 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2>4. How We Share Your Information</h2>
           <p>
-            We do <strong>not</strong> sell your personal information. We may
-            share information with:
+            {'We do '}
+            <strong>not</strong>
+            {' sell your personal information. We may share information with:'}
           </p>
           <ul>
             <li>
-              <strong>Service providers</strong> — trusted third parties that
-              help us operate (e.g., email delivery, e-signature, cloud
-              hosting, analytics).
+              <strong>Service providers</strong>
+              {' — trusted third parties that help us operate (e.g., email delivery, e-signature, cloud hosting, analytics).'}
             </li>
             <li>
-              <strong>Legal requirements</strong> — when required by law,
-              court order, or governmental request.
+              <strong>Legal requirements</strong>
+              {' — when required by law, court order, or governmental request.'}
             </li>
             <li>
-              <strong>Business transfers</strong> — in connection with a
-              merger, acquisition, or sale of assets.
+              <strong>Business transfers</strong>
+              {' — in connection with a merger, acquisition, or sale of assets.'}
             </li>
           </ul>
         </section>

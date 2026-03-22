@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { CheckIcon, SearchIcon, XIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTRPC } from '@/trpc/helpers'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -18,6 +18,7 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState('')
   const [selectedName, setSelectedName] = useState('')
+  const prefillHandledRef = useRef(false)
 
   // Pre-populated mode: fetch customer by ID on mount
   const prefillQuery = useQuery(
@@ -27,12 +28,13 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
     ),
   )
 
-  useEffect(() => {
-    if (prefillQuery.data && !selectedId) {
-      handleSelect(prefillQuery.data.id, prefillQuery.data.name)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally run only when prefill data arrives
-  }, [prefillQuery.data])
+  // Derive prefill into state without useEffect — handle on first render where data is available
+  if (prefillQuery.data && !selectedId && !prefillHandledRef.current) {
+    prefillHandledRef.current = true
+    setSelectedId(prefillQuery.data.id)
+    setSelectedName(prefillQuery.data.name)
+    onSelect(prefillQuery.data.id, prefillQuery.data.name)
+  }
 
   const searchQuery = useQuery(
     trpc.customersRouter.search.queryOptions(
@@ -41,12 +43,12 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
     ),
   )
 
-  function handleSelect(id: string, name: string) {
+  const handleSelect = useCallback((id: string, name: string) => {
     setSelectedId(id)
     setSelectedName(name)
     setQuery('')
     onSelect(id, name)
-  }
+  }, [onSelect])
 
   function handleClear() {
     setSelectedId('')

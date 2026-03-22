@@ -19,11 +19,12 @@ const HERO_STATS = [
 
 export function ServicesOverviewHero() {
   return (
-    <ViewportHero>
-      {/* Background Image */}
+    <ViewportHero className="bg-black">
+      {/* Background image with cinematic overlay */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        initial={{ opacity: 0, scale: 1.05 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.4, ease: 'easeOut' }}
         className="absolute inset-0 z-0"
       >
         <Image
@@ -33,77 +34,98 @@ export function ServicesOverviewHero() {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-linear-to-r from-background/80 to-background/50" />
       </motion.div>
 
+      {/* Cinematic overlays */}
+      <div className="absolute inset-0 z-1 bg-black/45" />
+      <div className="absolute inset-0 z-1 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.5)_100%)]" />
+
       <TopSpacer>
-        <div className="h-full relative container flex flex-col gap-8 z-10 justify-center">
-          {/* Headline */}
+        <div className="relative z-10 flex h-full flex-col items-center justify-center gap-8 text-center">
+          {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 backdrop-blur-md"
           >
-            <h1 className="font-bold leading-tight">
-              Your Home. Done Right.
-              {' '}
-              <span className="text-[color-mix(in_oklch,var(--primary)_80%,var(--foreground)_10%)]">
-                Backed Forever.
-              </span>
-            </h1>
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/80">
+              Our Services
+            </span>
           </motion.div>
 
-          {/* Subheadline */}
-          <motion.p
+          {/* Headline */}
+          <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-xl leading-relaxed max-w-2xl"
+            transition={{ duration: 0.7, delay: 0.35 }}
+            className="max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-8xl"
           >
-            {`Licensed. Insured. Warranted. ${companyInfo.numProjects}+ Southern California homes transformed.`}
+            Your Home. Done Right.
+            {' '}
+            <span className="bg-linear-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+              Backed Forever.
+            </span>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="max-w-2xl text-lg font-light text-white/70 sm:text-xl"
+          >
+            Licensed. Insured. Warranted.
+            {' '}
+            {companyInfo.numProjects}
+            + Southern California homes transformed.
           </motion.p>
 
-          {/* Stats Strip */}
+          {/* Stats strip — frosted glass pills */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl"
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="flex flex-wrap items-center justify-center gap-3"
           >
-            {HERO_STATS.map((stat, index) => (
+            {HERO_STATS.map((stat, i) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.7 + index * 0.1 }}
-                className="text-center py-4 border bg-background/70 rounded-sm border-border/50 shadow-xl"
+                transition={{ duration: 0.4, delay: 0.8 + i * 0.08 }}
+                className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 backdrop-blur-md"
               >
-                <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <span className="text-lg font-bold text-white">{stat.value}</span>
+                <span className="ml-1.5 text-sm text-white/60">{stat.label}</span>
               </motion.div>
             ))}
           </motion.div>
 
-          {/* CTA Buttons */}
+          {/* Decorative line */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 1, delay: 1 }}
+            className="h-px w-32 bg-linear-to-r from-transparent via-white/30 to-transparent"
+          />
+
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.0 }}
-            className="flex flex-col sm:flex-row gap-4 max-w-lg"
+            transition={{ duration: 0.6, delay: 1.1 }}
+            className="flex flex-col gap-4 sm:flex-row"
           >
-            <Button
-              asChild
-              size="lg"
-              variant="default"
-              className="text-lg h-14 flex-1"
-            >
+            <Button asChild size="lg" variant="default" className="h-14 text-lg">
               <Link href={ROOTS.landing.contact()}>Schedule Your Free Consultation</Link>
             </Button>
             <Button
               asChild
               size="lg"
               variant="outline"
-              className="text-lg h-14 flex-1"
+              className="h-14 border-white/20 bg-white/5 text-lg text-white backdrop-blur-md hover:bg-white/10 hover:text-white"
             >
               <Link href={ROOTS.landing.portfolioProjects()}>See Our Work</Link>
             </Button>

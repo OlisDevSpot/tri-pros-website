@@ -9,8 +9,10 @@
  *        Per-contact failure is logged and skipped, never aborts the run.
  */
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
-import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { Buffer } from 'node:buffer'
 import process from 'node:process'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { eq } from 'drizzle-orm'
 import { db } from '../src/shared/db'
 import { customers } from '../src/shared/db/schema/customers'
 import { notionClient } from '../src/shared/services/notion/client'
@@ -57,7 +59,7 @@ async function findMp3InPage(page: PageObjectResponse): Promise<string | null> {
   return null
 }
 
-async function downloadAndUploadMp3(url: string, notionContactId: string): Promise<string | null> {
+async function downloadAndUploadMp3(url: string, customerId: string): Promise<string | null> {
   try {
     const response = await fetch(url)
     if (!response.ok) {
@@ -65,10 +67,10 @@ async function downloadAndUploadMp3(url: string, notionContactId: string): Promi
     }
 
     const buffer = Buffer.from(await response.arrayBuffer())
-    const key = `recordings/migrated-${notionContactId}-${Date.now()}.mp3`
+    const key = `${customerId}/recordings/${Date.now()}-${crypto.randomUUID()}.mp3`
 
     await r2Client.send(new PutObjectCommand({
-      Bucket: R2_BUCKETS.telemarketingRecordings,
+      Bucket: R2_BUCKETS.homeownerFiles,
       Key: key,
       Body: buffer,
       ContentType: 'audio/mpeg',
@@ -77,7 +79,7 @@ async function downloadAndUploadMp3(url: string, notionContactId: string): Promi
     return key
   }
   catch (e) {
-    console.error(`  MP3 upload failed for ${notionContactId}:`, e)
+    console.error(`  MP3 upload failed for ${customerId}:`, e)
     return null
   }
 }
@@ -111,18 +113,8 @@ async function main() {
 
       const { leadSource, leadType } = classifyContact(closedBy)
 
-      // Check for MP3
-      let mp3RecordingKey: string | undefined
-      const mp3Url = await findMp3InPage(page)
-      if (mp3Url) {
-        console.log(`  Found MP3 for ${contact.name}, uploading…`)
-        const key = await downloadAndUploadMp3(mp3Url, page.id)
-        if (key) {
-          mp3RecordingKey = key
-        }
-      }
-
-      await db
+      // Upsert customer first to get the customerId
+      const [row] = await db
         .insert(customers)
         .values({
           notionContactId: page.id,
@@ -135,7 +127,6 @@ async function main() {
           zip: contact.zip || '',
           leadSource,
           leadType,
-          leadMetaJSON: mp3RecordingKey ? { mp3RecordingKey } : undefined,
         })
         .onConflictDoUpdate({
           target: customers.notionContactId,
@@ -148,6 +139,22 @@ async function main() {
             leadType,
           },
         })
+        .returning({ id: customers.id })
+
+      const customerId = row.id
+
+      // Upload MP3 if present (uses customerId for path)
+      const mp3Url = await findMp3InPage(page)
+      if (mp3Url) {
+        console.log(`  Found MP3 for ${contact.name}, uploading…`)
+        const key = await downloadAndUploadMp3(mp3Url, customerId)
+        if (key) {
+          await db
+            .update(customers)
+            .set({ leadMetaJSON: { mp3RecordingKey: key } })
+            .where(eq(customers.id, customerId))
+        }
+      }
 
       console.log(`Synced: ${contact.name} (${leadSource})`)
       synced++

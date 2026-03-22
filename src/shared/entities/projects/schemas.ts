@@ -1,5 +1,23 @@
 import { z } from 'zod'
 
+// --- JSONB entity schemas ---
+
+export const beforeAfterPairSchema = z.object({
+  beforeMediaId: z.number(),
+  afterMediaId: z.number(),
+  label: z.string(),
+  confidence: z.number().min(0).max(1),
+})
+
+export const beforeAfterPairsSchema = z.object({
+  pairs: z.array(beforeAfterPairSchema),
+})
+
+export type BeforeAfterPair = z.infer<typeof beforeAfterPairSchema>
+export type BeforeAfterPairs = z.infer<typeof beforeAfterPairsSchema>
+
+// --- Form schemas ---
+
 export const projectFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(80),
   accessor: z.string().min(1, 'Slug is required').max(80),

@@ -66,7 +66,7 @@ export function AddressAutocompleteField({ onChange, onClear }: AddressAutocompl
       onChange({ address, city, state, zip })
     })
 
-    return () => placesLib.event.clearInstanceListeners(autocomplete)
+    return () => google.maps.event.clearInstanceListeners(autocomplete)
   }, [placesLib, onChange])
 
   function handleClear() {
@@ -102,7 +102,7 @@ export function AddressAutocompleteField({ onChange, onClear }: AddressAutocompl
       </div>
 
       {resolvedLoc && (
-        <div className="h-[200px] overflow-hidden rounded-lg border border-border md:h-[240px]">
+        <div className="h-50 overflow-hidden rounded-lg border border-border md:h-60">
           <Map
             center={resolvedLoc}
             zoom={16}
