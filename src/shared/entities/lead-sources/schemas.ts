@@ -9,6 +9,7 @@ export const leadSourceFormConfigSchema = z.object({
   requireMeetingScheduler: z.boolean(),
   showMp3Upload: z.boolean(),
   showNotes: z.boolean(),
+  closedByOptions: z.array(z.string()).optional(),
 })
 
 export type LeadSourceFormConfig = z.infer<typeof leadSourceFormConfigSchema>

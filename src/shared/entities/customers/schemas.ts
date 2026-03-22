@@ -53,6 +53,12 @@ export type PropertyProfile = z.infer<typeof propertyProfileSchema>
 export type FinancialProfile = z.infer<typeof financialProfileSchema>
 
 export const leadMetaSchema = z.object({
-  mp3RecordingKey: z.string().optional(), // Cloudflare R2 object key for call recording
+  mp3RecordingKey: z.string().optional(),
+  closedBy: z.string().optional(),
+  scheduledFor: z.string().optional(),
+  requestedTrades: z.array(z.object({
+    tradeId: z.string(),
+    scopeIds: z.array(z.string()),
+  })).optional(),
 })
 export type LeadMeta = z.infer<typeof leadMetaSchema>
