@@ -9,7 +9,7 @@ import { useFormContext, useWatch } from 'react-hook-form'
 import { groupScopesByTrade } from '@/features/showroom/lib/group-scopes-by-trade'
 import { Button } from '@/shared/components/ui/button'
 import { useTRPC } from '@/trpc/helpers'
-import { TradeScopeRow } from './trade-scope-row'
+import { TradeScopeRow } from '@/shared/components/trade-scope-row'
 
 type RowsAction
   = | { type: 'init', rows: TradeRow[] }
