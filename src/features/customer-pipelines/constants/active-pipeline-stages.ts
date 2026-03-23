@@ -4,6 +4,7 @@ import {
   CalendarCheckIcon,
   CalendarIcon,
   CheckCircle2Icon,
+  ClockIcon,
   PlayCircleIcon,
   RotateCwIcon,
   SendIcon,
@@ -18,6 +19,7 @@ export const customerPipelineStages = [...meetingPipelineStages, ...proposalPipe
 export type CustomerPipelineStage = (typeof customerPipelineStages)[number]
 
 export const activeStageConfig: readonly KanbanStageConfig<CustomerPipelineStage>[] = [
+  { key: 'needs_confirmation', label: 'Needs Confirmation', icon: ClockIcon, color: 'gray' },
   { key: 'meeting_scheduled', label: 'Meeting Scheduled', icon: CalendarIcon, color: 'blue' },
   { key: 'meeting_in_progress', label: 'In Progress', icon: PlayCircleIcon, color: 'yellow' },
   { key: 'meeting_completed', label: 'Meeting Done', icon: CalendarCheckIcon, color: 'yellow' },
@@ -29,6 +31,7 @@ export const activeStageConfig: readonly KanbanStageConfig<CustomerPipelineStage
 ]
 
 export const ACTIVE_ALLOWED_DRAG_TRANSITIONS: Record<CustomerPipelineStage, readonly CustomerPipelineStage[]> = {
+  needs_confirmation: ['meeting_scheduled'],
   meeting_scheduled: ['meeting_in_progress'],
   meeting_in_progress: ['meeting_completed'],
   meeting_completed: [],

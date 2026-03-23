@@ -14,6 +14,7 @@ import type {
   meetingSellPlans,
   meetingStatuses,
   meetingTriggerEvents,
+  meetingTypes,
   meetingYearBuiltRanges,
   meetingYearsInHome,
 } from '@/shared/constants/enums/meetings'
@@ -35,3 +36,4 @@ export type MeetingPainType = (typeof meetingPainTypes)[number]
 export type MeetingDecisionUrgency = (typeof meetingDecisionUrgencies)[number]
 export type MeetingCreditScoreRange = (typeof meetingCreditScoreRanges)[number]
 export type MeetingPipelineStage = (typeof meetingPipelineStages)[number]
+export type MeetingType = (typeof meetingTypes)[number]
