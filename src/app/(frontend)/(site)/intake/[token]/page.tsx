@@ -3,7 +3,6 @@ import { eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
 import { TopSpacer } from '@/shared/components/top-spacer'
-import { ViewportHero } from '@/shared/components/viewport-hero'
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
@@ -28,9 +27,9 @@ export default async function IntakePage({ params }: Props) {
   const formConfig = leadSourceFormConfigSchema.parse(row.formConfigJSON)
 
   return (
-    <ViewportHero className="bg-background">
+    <main className="min-h-screen bg-background">
       <TopSpacer>
-        <div className="mx-auto flex h-full w-full max-w-lg flex-col items-center justify-center gap-8 px-4 py-10">
+        <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-8 px-4 py-10">
           <div className="text-center">
             <h1 className="text-3xl font-bold tracking-tight">New Lead</h1>
             <p className="mt-2 text-muted-foreground">{row.name}</p>
@@ -43,6 +42,6 @@ export default async function IntakePage({ params }: Props) {
           </div>
         </div>
       </TopSpacer>
-    </ViewportHero>
+    </main>
   )
 }

@@ -5,6 +5,7 @@ import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 import { CalendarIcon, DollarSignIcon, EyeIcon, FileTextIcon } from 'lucide-react'
 
 import { CustomerProfileDetails } from '@/features/customer-pipelines/ui/components/customer-profile-details'
+import { CustomerRecordingPlayer } from '@/features/customer-pipelines/ui/components/customer-recording-player'
 import { StatCard } from '@/features/customer-pipelines/ui/components/stat-card'
 
 interface Props {
@@ -24,6 +25,7 @@ export function CustomerProfileOverview({ data }: Props) {
         <StatCard icon={EyeIcon} label="Total Views" value={totalViews} />
       </div>
 
+      <CustomerRecordingPlayer customerId={data.customer.id} />
       <CustomerProfileDetails customer={data.customer} />
     </div>
   )

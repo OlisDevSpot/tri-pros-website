@@ -25,7 +25,7 @@ export function AddressPredictionsDropdown({
 }: AddressPredictionsDropdownProps) {
   return (
     <Popover open={isOpen}>
-      <PopoverAnchor virtualRef={anchorRef} />
+      <PopoverAnchor virtualRef={anchorRef as React.RefObject<HTMLDivElement>} />
       <PopoverContent
         className="w-[var(--radix-popover-trigger-width)] p-0"
         align="start"

@@ -94,6 +94,75 @@ Env file: `.env` at project root. See `server-env.ts` for the full list of requi
 
 Tailwind v4, shadcn/ui (Radix primitives), lucide-react icons, motion for animations. Component config at `components.json`.
 
+## GitHub Workflow
+
+**Project Board:** https://github.com/users/OlisDevSpot/projects/3
+**Issues:** https://github.com/OlisDevSpot/tri-pros-website/issues
+
+### Branch Convention
+`{type}/{issue-number}-{short-description}`
+Types: `feat`, `fix`, `refactor`, `chore`
+
+### PR Process
+1. Create branch from `main`
+2. Work + commit (conventional commits: `feat(scope):`, `fix(scope):`, etc.)
+3. Self-review: run `pnpm lint` + `pnpm build`, review diff
+4. Open PR with template (Summary, Changes, Self-Review, Test Plan)
+5. Link issue with `Closes #N`
+6. Wait for CI + human review
+
+### Labels
+- **Area:** `area:frontend`, `area:backend`, `area:infrastructure`, `area:sales-flow`, `area:integrations`, `area:showroom`
+- **Priority:** `P0` (urgent), `P1` (important), `P2` (nice-to-have), `P3` (backlog)
+- **Type:** `type:feature`, `type:bug`, `type:refactor`, `type:chore`
+- **Agent:** `claude` — tags issues as agent-eligible (not a status — status lives on the project board)
+
+### Project Board Status (source of truth)
+The GitHub Projects board Status field is the **single source of truth** for issue progress:
+`Backlog` → `Ready` → `In Progress` → `In Review` → `Done`
+
+**Do NOT use labels for status.** Always update the board directly via `gh project item-edit`.
+
+#### Board IDs (for `gh project item-edit`)
+```
+Project ID:       PVT_kwHOCqZfGM4BSgDZ
+Status field ID:  PVTSSF_lAHOCqZfGM4BSgDZzhAA_t4
+Options:
+  Backlog:        0046b823
+  Ready:          9a551858
+  In Progress:    8a3f5937
+  In Review:      e461e967
+  Done:           254997a9
+```
+
+#### How to move an issue on the board
+```bash
+# 1. Find the item ID for the issue
+gh project item-list 3 --owner OlisDevSpot --format json | python3 -c "
+import json,sys; items=json.load(sys.stdin)['items']
+for i in items: print(f'#{i[\"content\"][\"number\"]} {i[\"title\"]}: item_id={i[\"id\"]} status={i[\"status\"]}')"
+
+# 2. Move it (replace ITEM_ID and OPTION_ID)
+gh project item-edit --project-id PVT_kwHOCqZfGM4BSgDZ \
+  --id ITEM_ID \
+  --field-id PVTSSF_lAHOCqZfGM4BSgDZzhAA_t4 \
+  --single-select-option-id OPTION_ID
+```
+
+#### Built-in automations (already enabled)
+- **Item closed** → moves to `Done` (triggered by `Closes #N` in merged PR)
+- **Pull request merged** → moves to `Done`
+- **Item reopened** → moves back
+
+### Agent Workflow
+1. Check board for issues in `Ready` status with `claude` label
+2. Move issue to `In Progress` on the board via `gh project item-edit`
+3. Create branch → work → self-review (lint + build + diff review)
+4. Open PR with `Closes #N` → move issue to `In Review` on the board
+5. When blocked: move issue to `Backlog`, add a comment explaining what's needed
+6. On merge: GitHub automatically moves to `Done`
+7. When discovering new work: create a new issue, add to project board in `Backlog`
+
 
 ## WHO WE ARE
 

@@ -14,12 +14,12 @@ export const intakeFormSchema = z.object({
   city: z.string().min(1, 'City is required'),
   zip: z.string().min(3, 'ZIP is required'),
   tradeRows: z.array(tradeRowSchema).min(1, 'At least one trade is required'),
+  notes: z.string().min(1, 'Notes are required'),
 
   // Optional (toggled by formConfig)
   email: z.string().email('Invalid email').optional().or(z.literal('')),
   address: z.string().optional(),
   state: z.string().length(2).optional(),
-  notes: z.string().optional(),
   scheduledFor: z.string().optional(),
   closedBy: z.string().optional(),
   mp3Key: z.string().optional(),

@@ -1,7 +1,7 @@
 'use client'
 
 import type { AddressFields } from '@/shared/lib/google-maps-helpers'
-import { Map, useMapsLibrary } from '@vis.gl/react-google-maps'
+import { AdvancedMarker, InfoWindow, Map, Pin, useMapsLibrary } from '@vis.gl/react-google-maps'
 import { MapPinIcon, XIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
@@ -44,6 +44,8 @@ export function AddressAutocomplete({
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
   // Dummy div for PlacesService (requires an HTMLDivElement)
   const placesServiceDivRef = useRef<HTMLDivElement | null>(null)
+  // Skip next fetch after selection (prevents debounced fullAddress from reopening dropdown)
+  const skipNextFetchRef = useRef(false)
 
   // State
   const [inputValue, setInputValue] = useState(defaultValue)
@@ -75,6 +77,11 @@ export function AddressAutocomplete({
   useEffect(() => {
     const service = autocompleteServiceRef.current
     if (!service || !sessionTokenRef.current) {
+      return
+    }
+
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false
       return
     }
 
@@ -130,6 +137,7 @@ export function AddressAutocomplete({
           }
 
           const parsed = parseAddressComponents(place)
+          skipNextFetchRef.current = true
           setInputValue(parsed.fullAddress)
           setResolvedLoc(parsed.location)
           setPredictions([])
@@ -192,8 +200,18 @@ export function AddressAutocomplete({
             zoom={16}
             gestureHandling="none"
             disableDefaultUI
+            mapId="address-autocomplete-map"
             style={{ width: '100%', height: '100%' }}
-          />
+          >
+            <AdvancedMarker position={resolvedLoc}>
+              <Pin background="#ef4444" borderColor="#dc2626" glyphColor="#ffffff" />
+            </AdvancedMarker>
+            {inputValue && (
+              <InfoWindow position={resolvedLoc} pixelOffset={[0, -40]} headerDisabled>
+                <p className="text-xs font-medium" style={{ color: '#111827' }}>{inputValue}</p>
+              </InfoWindow>
+            )}
+          </Map>
         </div>
       )}
     </div>

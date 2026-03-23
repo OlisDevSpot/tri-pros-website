@@ -16,7 +16,7 @@ export const generalInquiryFormSchema = z.object({
     location: z.object({
       lat: z.number(),
       lng: z.number(),
-    }),
+    }).nullable().optional(),
   }).optional(),
   inquiryDescription: z.string().min(1, { message: 'Description is required' }),
 })

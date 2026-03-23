@@ -44,8 +44,8 @@ export async function putLead(input: GeneralInquiryFormSchema) {
       // address
       location: {
         address: input.address?.fullAddress,
-        lat: input.address?.location.lat,
-        lng: input.address?.location.lng,
+        lat: input.address?.location?.lat,
+        lng: input.address?.location?.lng,
       },
     }),
   })

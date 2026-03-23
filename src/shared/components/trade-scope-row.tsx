@@ -61,7 +61,7 @@ export function TradeScopeRow({
         onValuesChange={onScopesChange}
       >
         <MultiSelectTrigger className="flex-1" disabled={!tradeId || scopesQuery.isLoading}>
-          <MultiSelectValue placeholder={scopesQuery.isLoading ? 'Loading...' : 'Select scopes'} />
+          <MultiSelectValue placeholder={scopesQuery.isLoading ? 'Loading...' : 'Select scopes'} overflowBehavior="cutoff" />
         </MultiSelectTrigger>
         <MultiSelectContent
           search={{
