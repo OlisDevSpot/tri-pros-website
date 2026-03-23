@@ -10,7 +10,7 @@ interface SidebarItem {
 }
 
 export const dashboardSidebarItems: readonly SidebarItem[] = [
-  { step: 'customer-pipelines', icon: GitBranchIcon, label: 'Pipeline', enabled: true },
+  { step: 'customer-pipelines', icon: GitBranchIcon, label: 'Pipelines', enabled: true },
   { step: 'meetings', icon: CalendarIcon, label: 'Meetings', enabled: true },
   { step: 'proposals', icon: FileTextIcon, label: 'Proposals', enabled: true },
   { step: 'showroom', icon: ImageIcon, label: 'Showroom', enabled: true },
