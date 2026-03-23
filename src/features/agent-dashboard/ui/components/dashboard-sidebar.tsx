@@ -6,7 +6,6 @@ import { useQueryState } from 'nuqs'
 
 import { dashboardSidebarItems } from '@/features/agent-dashboard/constants/sidebar-items'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
-import { CreatePicker } from '@/features/agent-dashboard/ui/components/create-picker'
 import { Logo } from '@/shared/components/logo'
 import { Button } from '@/shared/components/ui/button'
 
@@ -23,7 +22,6 @@ export function DashboardSidebar() {
           </div>
         </div>
       </Link>
-      <CreatePicker />
       {dashboardSidebarItems.map(item => (
         <Button
           key={item.step}

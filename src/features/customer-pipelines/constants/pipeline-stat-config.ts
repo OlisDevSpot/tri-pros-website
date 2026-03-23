@@ -46,6 +46,7 @@ export const pipelineStatConfig: StatBarItemConfig<CustomerPipelineItem>[] = [
       return data.filter(
         item =>
           (item.stage === 'meeting_scheduled' || item.stage === 'meeting_in_progress')
+          && item.latestActivityAt !== null
           && new Date(item.latestActivityAt) >= weekAgo,
       ).length
     },

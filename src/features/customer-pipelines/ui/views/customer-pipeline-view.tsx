@@ -5,10 +5,12 @@ import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { ZapIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { pipelineConfigs } from '@/features/customer-pipelines/constants/pipeline-config'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
@@ -16,11 +18,13 @@ import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/com
 import { CustomerPipelineTable } from '@/features/customer-pipelines/ui/components/customer-pipeline-table'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipeline-select'
+import { CreateMeetingModal } from '@/features/meetings/ui/components/create-meeting-modal'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
@@ -28,8 +32,10 @@ import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
+  const [isActionCenterOpen, setIsActionCenterOpen] = useState(false)
   const [layout, setLayout] = useState<DataViewType>('kanban')
   const [pipeline, setPipeline] = useState<CustomerPipeline>('active')
+  const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
   const ability = useAbility()
@@ -71,6 +77,15 @@ export function CustomerPipelineView() {
   }, [moveToPipelineMutation])
 
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
+    // Intercept: needs_confirmation → meeting_scheduled opens modal instead
+    if (fromStage === 'needs_confirmation' && toStage === 'meeting_scheduled') {
+      const item = pipelineQuery.data?.find(i => i.id === itemId)
+      if (item) {
+        setCreateMeetingForCustomer({ id: item.id, name: item.name })
+      }
+      return
+    }
+
     moveMutation.mutate({
       customerId: itemId,
       fromStage,
@@ -82,6 +97,13 @@ export function CustomerPipelineView() {
   function handleBlockedTransition(message: string) {
     toast.info(message)
   }
+
+  const handleCreateMeeting = useCallback((customerId: string) => {
+    const item = pipelineQuery.data?.find(i => i.id === customerId)
+    if (item) {
+      setCreateMeetingForCustomer({ id: item.id, name: item.name })
+    }
+  }, [pipelineQuery.data])
 
   const handleViewProfile = useCallback((customerId: string) => {
     setModal({
@@ -109,9 +131,10 @@ export function CustomerPipelineView() {
         canManagePipeline={canManagePipeline}
         onViewProfile={handleViewProfile}
         onMoveToPipeline={handleMoveToPipeline}
+        onCreateMeeting={handleCreateMeeting}
       />
     ),
-    [handleViewProfile, handleMoveToPipeline, pipeline, canManagePipeline],
+    [handleViewProfile, handleMoveToPipeline, handleCreateMeeting, pipeline, canManagePipeline],
   )
 
   const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
@@ -149,6 +172,13 @@ export function CustomerPipelineView() {
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsActionCenterOpen(true)}
+            >
+              <ZapIcon size={16} />
+            </Button>
             {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           </div>
           <DataViewTypeToggle value={layout} onChange={setLayout} />
@@ -195,6 +225,19 @@ export function CustomerPipelineView() {
                 />
               )}
       </div>
+      {createMeetingForCustomer && (
+        <CreateMeetingModal
+          isOpen={!!createMeetingForCustomer}
+          onClose={() => setCreateMeetingForCustomer(null)}
+          onSuccess={() => pipelineQuery.refetch()}
+          customerId={createMeetingForCustomer.id}
+          customerName={createMeetingForCustomer.name}
+        />
+      )}
+      <ActionCenterSheet
+        isOpen={isActionCenterOpen}
+        onClose={() => setIsActionCenterOpen(false)}
+      />
     </motion.div>
   )
 }

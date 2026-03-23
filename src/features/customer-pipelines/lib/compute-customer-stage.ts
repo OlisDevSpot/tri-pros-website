@@ -39,5 +39,9 @@ export function computeCustomerStage(data: StageInput): CustomerPipelineStage {
     return 'meeting_in_progress'
   }
 
-  return 'meeting_scheduled'
+  if (data.hasScheduledFutureMeeting) {
+    return 'meeting_scheduled'
+  }
+
+  return 'needs_confirmation'
 }

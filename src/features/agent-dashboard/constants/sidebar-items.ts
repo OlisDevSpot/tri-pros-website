@@ -1,16 +1,15 @@
 import type { DashboardStep } from '@/features/agent-dashboard/types'
 
-import { CalendarIcon, FileTextIcon, GitBranchIcon, ImageIcon, ZapIcon } from 'lucide-react'
+import { CalendarIcon, FileTextIcon, GitBranchIcon, ImageIcon } from 'lucide-react'
 
 interface SidebarItem {
   step: DashboardStep
-  icon: typeof ZapIcon
+  icon: typeof GitBranchIcon
   label: string
   enabled: boolean
 }
 
 export const dashboardSidebarItems: readonly SidebarItem[] = [
-  { step: 'action-center', icon: ZapIcon, label: 'Actions', enabled: true },
   { step: 'customer-pipelines', icon: GitBranchIcon, label: 'Pipeline', enabled: true },
   { step: 'meetings', icon: CalendarIcon, label: 'Meetings', enabled: true },
   { step: 'proposals', icon: FileTextIcon, label: 'Proposals', enabled: true },

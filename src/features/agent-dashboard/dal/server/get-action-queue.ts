@@ -140,11 +140,12 @@ export async function getActionQueue(userId: string, isOmni = false): Promise<Ac
   const orphanMeetings = await db
     .select({
       id: meetings.id,
-      contactName: meetings.contactName,
+      customerName: sql<string>`COALESCE(${customers.name}, ${meetings.contactName}, 'Unknown')`.as('customer_name'),
       program: meetings.program,
       createdAt: meetings.createdAt,
     })
     .from(meetings)
+    .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
       isOmni ? undefined : eq(meetings.ownerId, userId),
       eq(meetings.status, 'completed'),
@@ -187,7 +188,7 @@ export async function getActionQueue(userId: string, isOmni = false): Promise<Ac
     id: m.id,
     type: 'meeting',
     tier: 'NO_PROPOSAL' as const,
-    customerName: m.contactName ?? 'Unknown',
+    customerName: m.customerName,
     customerPhone: null,
     customerEmail: null,
     program: m.program,

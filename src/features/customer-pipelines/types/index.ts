@@ -17,7 +17,7 @@ export interface CustomerPipelineItem {
   totalPipelineValue: number
   meetingCount: number
   proposalCount: number
-  latestActivityAt: string
+  latestActivityAt: string | null
 }
 
 export interface CustomerPipelineRawData {
@@ -35,7 +35,7 @@ export interface CustomerPipelineRawData {
   proposalStatuses: string[]
   hasSentContract: boolean
   totalPipelineValue: number
-  latestActivityAt: string
+  latestActivityAt: string | null
 }
 
 export type CustomerProfileMeeting

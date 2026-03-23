@@ -9,7 +9,7 @@ export function toCalendarEvent(meeting: MeetingRow): MeetingCalendarEvent {
   return {
     id: meeting.id,
     meetingId: meeting.id,
-    startAt: meeting.scheduledFor,
+    startAt: meeting.scheduledFor ?? meeting.createdAt,
     title: meeting.contactName ?? meeting.customerName ?? 'Unknown',
     status: meeting.status,
     program: meeting.program,

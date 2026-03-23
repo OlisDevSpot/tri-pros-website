@@ -8,7 +8,7 @@ import {
 
 export const situationProfileSchema = z.object({
   decisionMakersPresent: z.enum(meetingDecisionMakersPresentOptions),
-  meetingType: z.enum(meetingTypes),
+  meetingType: z.enum(meetingTypes).catch(undefined as unknown as 'Fresh'),
 }).partial()
 
 export const programDataSchema = z.object({
@@ -20,3 +20,13 @@ export const programDataSchema = z.object({
 
 export type SituationProfile = z.infer<typeof situationProfileSchema>
 export type ProgramData = z.infer<typeof programDataSchema>
+
+// Meeting scopes — JSONB on meetings table
+export const meetingScopeEntrySchema = z.object({
+  trade: z.object({ id: z.string(), label: z.string() }),
+  scopes: z.array(z.object({ id: z.string(), label: z.string() })),
+})
+export type MeetingScopeEntry = z.infer<typeof meetingScopeEntrySchema>
+
+export const meetingScopesSchema = z.array(meetingScopeEntrySchema)
+export type MeetingScopes = z.infer<typeof meetingScopesSchema>

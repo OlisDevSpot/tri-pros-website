@@ -7,6 +7,7 @@ import {
   PlayCircleIcon,
   RotateCwIcon,
   SendIcon,
+  UserCheckIcon,
   XCircleIcon,
 } from 'lucide-react'
 
@@ -18,6 +19,7 @@ export const customerPipelineStages = [...meetingPipelineStages, ...proposalPipe
 export type CustomerPipelineStage = (typeof customerPipelineStages)[number]
 
 export const activeStageConfig: readonly KanbanStageConfig<CustomerPipelineStage>[] = [
+  { key: 'needs_confirmation', label: 'Needs Confirmation', icon: UserCheckIcon, color: 'orange' },
   { key: 'meeting_scheduled', label: 'Meeting Scheduled', icon: CalendarIcon, color: 'blue' },
   { key: 'meeting_in_progress', label: 'In Progress', icon: PlayCircleIcon, color: 'yellow' },
   { key: 'meeting_completed', label: 'Meeting Done', icon: CalendarCheckIcon, color: 'yellow' },
@@ -29,6 +31,7 @@ export const activeStageConfig: readonly KanbanStageConfig<CustomerPipelineStage
 ]
 
 export const ACTIVE_ALLOWED_DRAG_TRANSITIONS: Record<CustomerPipelineStage, readonly CustomerPipelineStage[]> = {
+  needs_confirmation: ['meeting_scheduled'],
   meeting_scheduled: ['meeting_in_progress'],
   meeting_in_progress: ['meeting_completed'],
   meeting_completed: [],
@@ -40,6 +43,7 @@ export const ACTIVE_ALLOWED_DRAG_TRANSITIONS: Record<CustomerPipelineStage, read
 }
 
 export const ACTIVE_BLOCKED_MESSAGES: Record<string, string> = {
+  'needs_confirmation->meeting_scheduled': 'Scheduling a meeting…',
   'meeting_completed->proposal_sent': 'Create a proposal from the meeting page',
   'meeting_completed->follow_up_scheduled': 'Schedule a follow-up meeting from the meeting page',
   'proposal_sent->contract_sent': 'Contracts are sent via DocuSign',

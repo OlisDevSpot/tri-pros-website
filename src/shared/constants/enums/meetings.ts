@@ -1,7 +1,7 @@
 export const meetingStatuses = ['in_progress', 'completed', 'converted'] as const
 
 // Setup fields (DB-backed)
-export const meetingTypes = ['Initial', 'Follow-up'] as const
+export const meetingTypes = ['Fresh', 'Follow-up', 'Rehash'] as const
 export const meetingDecisionMakersPresentOptions = [
   'All present',
   'Partially present (only wife)',
@@ -44,6 +44,7 @@ export const meetingCreditScoreRanges = ['< 600', '600–630', '630–650', '650
 
 // Pipeline stages (customer journey — meeting phase)
 export const meetingPipelineStages = [
+  'needs_confirmation',
   'meeting_scheduled',
   'meeting_in_progress',
   'meeting_completed',

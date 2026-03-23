@@ -57,13 +57,13 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
     })
     .from(customers)
-    .innerJoin(meetings, and(
+    .leftJoin(meetings, and(
       eq(meetings.customerId, customers.id),
       isOmni ? undefined : eq(meetings.ownerId, userId),
     ))
     .where(eq(customers.pipeline, 'active'))
     .groupBy(customers.id)
-    .orderBy(desc(max(meetings.createdAt)))
+    .orderBy(desc(customers.updatedAt))
 
   if (rows.length === 0) {
     return []
@@ -115,7 +115,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
       totalPipelineValue: pData?.totalPipelineValue ? Number(pData.totalPipelineValue) : 0,
-      latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? row.customerId,
+      latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? null,
     }
 
     const stage = computeCustomerStage({

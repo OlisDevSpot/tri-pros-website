@@ -70,6 +70,9 @@ export function MeetingsView() {
       return meetings.data ?? []
     }
     return meetings.data.filter((m) => {
+      if (!m.scheduledFor) {
+        return false
+      }
       const d = new Date(m.scheduledFor)
       return d >= dateRange.from && d <= dateRange.to
     })

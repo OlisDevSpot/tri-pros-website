@@ -5,9 +5,8 @@ import { useQueryState } from 'nuqs'
 
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { DashboardSidebar } from '@/features/agent-dashboard/ui/components/dashboard-sidebar'
-import { ActionCenterView } from '@/features/agent-dashboard/ui/views/action-center-view'
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
-import { CreateMeetingView, EditMeetingSetupView, MeetingsView } from '@/features/meetings/ui/views'
+import { EditMeetingSetupView, MeetingsView } from '@/features/meetings/ui/views'
 import { CreateNewProposalView, EditProposalView, PastProposalsView } from '@/features/proposal-flow/ui/views'
 import { CreateProjectView, EditProjectView, PortfolioProjectsView } from '@/features/showroom/ui/views'
 import { SignInGoogleButton } from '@/shared/components/buttons/auth/sign-in-google-button'
@@ -45,11 +44,6 @@ export function DashboardHub({ authState }: DashboardHubProps) {
       </nav>
       <div className="relative w-full h-full overflow-hidden min-h-0">
         <AnimatePresence>
-          {step === 'action-center' && (
-            <ActionCenterView key="action-center" />
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
           {step === 'customer-pipelines' && (
             <CustomerPipelineView key="customer-pipelines" />
           )}
@@ -57,11 +51,6 @@ export function DashboardHub({ authState }: DashboardHubProps) {
         <AnimatePresence>
           {step === 'meetings' && (
             <MeetingsView key="meetings" />
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'create-meeting' && (
-            <CreateMeetingView key="create-meeting" />
           )}
         </AnimatePresence>
         <AnimatePresence>
