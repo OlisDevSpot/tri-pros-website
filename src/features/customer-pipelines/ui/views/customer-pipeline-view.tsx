@@ -16,6 +16,7 @@ import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/com
 import { CustomerPipelineTable } from '@/features/customer-pipelines/ui/components/customer-pipeline-table'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipeline-select'
+import { CreateMeetingModal } from '@/features/meetings/ui/components/create-meeting-modal'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
@@ -30,6 +31,7 @@ import { useTRPC } from '@/trpc/helpers'
 export function CustomerPipelineView() {
   const [layout, setLayout] = useState<DataViewType>('kanban')
   const [pipeline, setPipeline] = useState<CustomerPipeline>('active')
+  const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
   const ability = useAbility()
@@ -71,6 +73,15 @@ export function CustomerPipelineView() {
   }, [moveToPipelineMutation])
 
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
+    // Intercept: needs_confirmation → meeting_scheduled opens modal instead
+    if (fromStage === 'needs_confirmation' && toStage === 'meeting_scheduled') {
+      const item = pipelineQuery.data?.find(i => i.id === itemId)
+      if (item) {
+        setCreateMeetingForCustomer({ id: item.id, name: item.name })
+      }
+      return
+    }
+
     moveMutation.mutate({
       customerId: itemId,
       fromStage,
@@ -82,6 +93,13 @@ export function CustomerPipelineView() {
   function handleBlockedTransition(message: string) {
     toast.info(message)
   }
+
+  const handleCreateMeeting = useCallback((customerId: string) => {
+    const item = pipelineQuery.data?.find(i => i.id === customerId)
+    if (item) {
+      setCreateMeetingForCustomer({ id: item.id, name: item.name })
+    }
+  }, [pipelineQuery.data])
 
   const handleViewProfile = useCallback((customerId: string) => {
     setModal({
@@ -109,9 +127,10 @@ export function CustomerPipelineView() {
         canManagePipeline={canManagePipeline}
         onViewProfile={handleViewProfile}
         onMoveToPipeline={handleMoveToPipeline}
+        onCreateMeeting={handleCreateMeeting}
       />
     ),
-    [handleViewProfile, handleMoveToPipeline, pipeline, canManagePipeline],
+    [handleViewProfile, handleMoveToPipeline, handleCreateMeeting, pipeline, canManagePipeline],
   )
 
   const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
@@ -195,6 +214,15 @@ export function CustomerPipelineView() {
                 />
               )}
       </div>
+      {createMeetingForCustomer && (
+        <CreateMeetingModal
+          isOpen={!!createMeetingForCustomer}
+          onClose={() => setCreateMeetingForCustomer(null)}
+          onSuccess={() => pipelineQuery.refetch()}
+          customerId={createMeetingForCustomer.id}
+          customerName={createMeetingForCustomer.name}
+        />
+      )}
     </motion.div>
   )
 }

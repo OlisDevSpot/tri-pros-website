@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon, GripVerticalIcon } from 'lucide-react'
 
 import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
+import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import {
   ContextMenu,
@@ -29,9 +30,10 @@ interface Props {
   canManagePipeline?: boolean
   onViewProfile: (customerId: string) => void
   onMoveToPipeline?: (customerId: string, pipeline: CustomerPipeline) => void
+  onCreateMeeting?: (customerId: string) => void
 }
 
-export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, canManagePipeline, onViewProfile, onMoveToPipeline }: Props) {
+export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, canManagePipeline, onViewProfile, onMoveToPipeline, onCreateMeeting }: Props) {
   const isMobile = useIsMobile()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
@@ -97,6 +99,19 @@ export function CustomerKanbanCard({ item, currentPipeline, isDragOverlay, canMa
             </span>
           )}
         </div>
+
+        {item.stage === 'needs_confirmation' && onCreateMeeting && (
+          <Button
+            size="sm"
+            className="w-full mt-1"
+            onClick={(e) => {
+              e.stopPropagation()
+              onCreateMeeting(item.id)
+            }}
+          >
+            + Schedule Meeting
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
