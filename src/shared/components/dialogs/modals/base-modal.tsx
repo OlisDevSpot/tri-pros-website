@@ -34,15 +34,6 @@ export function Modal({
           'sm:h-auto sm:max-h-[85vh] sm:rounded-lg sm:border sm:p-6',
           className,
         )}
-        onInteractOutside={(event) => {
-          // Prevent closing when clicking Google Places dropdown
-          if (
-            event.target instanceof HTMLElement
-            && event.target.closest('.pac-container')
-          ) {
-            event.preventDefault()
-          }
-        }}
       >
         <div className="flex w-full items-start justify-between gap-4">
           <DialogHeader className="flex-1 min-w-0">
