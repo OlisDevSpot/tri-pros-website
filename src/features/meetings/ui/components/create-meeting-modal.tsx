@@ -30,7 +30,7 @@ export function CreateMeetingModal({
 }: CreateMeetingModalProps) {
   const trpc = useTRPC()
 
-  const [type, setType] = useState<MeetingType | null>(null)
+  const [type, setType] = useState<MeetingType>('Fresh')
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(undefined)
   const [scopes, setScopes] = useState<MeetingScopes>([])
 
@@ -44,7 +44,7 @@ export function CreateMeetingModal({
   )
 
   function handleClose() {
-    setType(null)
+    setType('Fresh')
     setScheduledFor(undefined)
     setScopes([])
     onClose()
