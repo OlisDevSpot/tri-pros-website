@@ -72,18 +72,20 @@ export function AddressPredictionsDropdown(props: AddressPredictionsDropdownProp
 Main component — the only address input consumers need to use.
 
 ```ts
+// Exported from address-autocomplete.tsx for consumer use
 interface AddressFields {
   address: string
   city: string
   state: string
   zip: string
   fullAddress: string
-  location?: { lat: number; lng: number }
+  location: { lat: number; lng: number } | null
 }
 
 interface AddressAutocompleteProps {
   onSelect: (fields: AddressFields) => void
   onClear?: () => void
+  defaultValue?: string   // pre-populate input (e.g., edit forms)
   placeholder?: string
   disabled?: boolean
   showMap?: boolean       // default false
@@ -93,6 +95,8 @@ interface AddressAutocompleteProps {
 
 export function AddressAutocomplete(props: AddressAutocompleteProps): React.ReactElement
 ```
+
+**Note on `AddressFields` naming:** The field names (`address`, `zip`) are intentionally generic. Consumers map them to their own schema names (e.g., the general-inquiry form maps `address` → `street`, `zip` → `zipCode`). This keeps the component schema-agnostic.
 
 **Internal state:**
 - `inputValue: string` — raw text from the input
@@ -108,14 +112,17 @@ export function AddressAutocomplete(props: AddressAutocompleteProps): React.Reac
 3. `useEffect` watches `debouncedValue`:
    - If `debouncedValue.length < minChars` → clear predictions, close dropdown
    - Otherwise → call `autocompleteService.getPlacePredictions({ input, sessionToken, componentRestrictions: { country: 'us' }, types: ['address'] })`
-   - On success → set predictions, open dropdown
+   - On success (`status === OK`) → set predictions, open dropdown
+   - On error → clear predictions, close dropdown (silent fail — the input remains usable as plain text)
 4. User selects a prediction (via `AddressPredictionsDropdown` `onSelect`):
    - Call `placesService.getDetails({ placeId, sessionToken, fields: ['address_components', 'formatted_address', 'geometry'] })`
-   - Parse address components using helper functions (reuse logic from `google-maps-helpers.ts`)
+   - On error → close dropdown, regenerate session token (silent fail)
+   - Parse address components using `parseAddressComponents` from `google-maps-helpers.ts` (uses the existing `getCityName` function which handles the LA neighborhood logic)
    - Set `inputValue` to `formatted_address`, set `resolvedLoc` from geometry
    - Call `props.onSelect(parsedFields)`
    - Close dropdown, generate new session token
 5. Clear button → reset all state, call `props.onClear?.()`
+6. On mount, if `defaultValue` is provided → set `inputValue` to it (no API call, no dropdown)
 
 **Session token lifecycle:**
 - Created on mount: `new google.maps.places.AutocompleteSessionToken()`
@@ -172,10 +179,18 @@ export function AddressAutocomplete(props: AddressAutocompleteProps): React.Reac
 - Add `showMap` prop
 - `onSelect` and `onClear` callbacks match the existing shape — `onChange` maps to `onSelect`, field mapping stays the same
 
+### `src/shared/components/dialogs/modals/base-modal.tsx`
+
+- Remove the `onInteractOutside` handler that checks for `.pac-container`. The Google Places widget dropdown no longer exists — the new component uses a React-controlled Popover, so this workaround is dead code.
+
 ### `src/shared/lib/google-maps-helpers.ts`
 
-- Add a new `parseAddressComponents` function that encapsulates the address parsing logic currently duplicated in `AddressAutocompleteField`. This function takes `google.maps.places.PlaceResult` and returns `AddressFields`.
+- Add a new `parseAddressComponents` function that takes `google.maps.places.PlaceResult` and returns `AddressFields`. Uses the existing `getCityName` function (which handles the Los Angeles neighborhood fallback logic — critical for a SoCal remodeling company).
 - Keep existing `extractPart` function (may be used elsewhere).
+
+### `src/features/landing/ui/components/forms/general-inquiry-form.tsx` (additional note)
+
+- The `APIProvider` currently wraps only the address `FormControl`. It must be hoisted to wrap the entire form (or at least the `AddressAutocomplete` component's ancestor tree) so `useMapsLibrary('places')` has access to the provider context.
 
 ---
 
@@ -189,6 +204,17 @@ export function AddressAutocomplete(props: AddressAutocompleteProps): React.Reac
 | **Google Cloud quota** | Daily request cap set in Cloud Console (the real guardrail) |
 
 ---
+
+## Accessibility
+
+- The `Input` must have `role="combobox"`, `aria-expanded={isOpen}`, `aria-controls` pointing to the CommandList id, and `aria-autocomplete="list"`
+- cmdk handles `aria-activedescendant` for highlighted items internally within the `Command` scope, but since our input is external, we pass `aria-activedescendant` manually based on the currently selected CommandItem
+- `PopoverContent` uses `onOpenAutoFocus={e => e.preventDefault()}` to keep focus in the input
+
+## Known Limitations
+
+- **No controlled `value` prop** — the component manages its own `inputValue` state. Consumers set initial text via `defaultValue` but cannot drive ongoing value changes from outside. This is acceptable for the current create-only forms. If edit-form support is needed later, a controlled mode can be added.
+- **Mobile focus** — iOS Safari can be unreliable with focus management inside Popovers. Should be manually tested on iOS after implementation.
 
 ## Out of Scope
 
