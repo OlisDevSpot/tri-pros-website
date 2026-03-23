@@ -1,8 +1,10 @@
 import { TRPCError } from '@trpc/server'
 import { and, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
 import z from 'zod'
+import { meetingTypes } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, meetings, proposals, user } from '@/shared/db/schema'
+import { meetingScopesSchema } from '@/shared/entities/meetings/schemas'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
@@ -28,8 +30,11 @@ export const meetingsRouter = createTRPCRouter({
 
   // Create a new meeting record (called when an agent starts a meeting)
   create: agentProcedure
-    .input(insertMeetingSchema.extend({
+    .input(z.object({
       customerId: z.string().uuid('A customer is required'),
+      type: z.enum(meetingTypes),
+      scheduledFor: z.string().optional(),
+      meetingScopesJSON: meetingScopesSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { customerId, ...meetingData } = input
