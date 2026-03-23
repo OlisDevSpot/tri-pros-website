@@ -10,11 +10,11 @@ import { APIProvider } from '@vis.gl/react-google-maps'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { intakeFormDefaultValues, intakeFormSchema } from '@/features/intake/schemas/intake-form-schema'
-import { AddressAutocompleteField } from '@/features/intake/ui/components/address-autocomplete-field'
 import { ClosedByField } from '@/features/intake/ui/components/closed-by-field'
 import { IntakeTradeScopePicker } from '@/features/intake/ui/components/intake-trade-scope-picker'
 import { MeetingDateField } from '@/features/intake/ui/components/meeting-date-field'
 import { Mp3UploadField } from '@/features/intake/ui/components/mp3-upload-field'
+import { AddressAutocomplete } from '@/shared/components/inputs/address-autocomplete'
 import { Button } from '@/shared/components/ui/button'
 import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
@@ -155,8 +155,9 @@ export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewPro
                   {'Address '}
                   <span className="text-destructive">*</span>
                 </FormLabel>
-                <AddressAutocompleteField
-                  onChange={(fields) => {
+                <AddressAutocomplete
+                  showMap
+                  onSelect={(fields) => {
                     form.setValue('address', fields.address)
                     form.setValue('city', fields.city)
                     form.setValue('state', fields.state)
@@ -206,24 +207,25 @@ export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewPro
             <ClosedByField options={formConfig.closedByOptions} />
           )}
 
-          {/* Notes (conditional) */}
-          {formConfig.showNotes && (
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <Textarea
-                    rows={3}
-                    placeholder="Any context about this lead…"
-                    {...field}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+          {/* Notes (required) */}
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  {'Notes '}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <Textarea
+                  rows={3}
+                  placeholder="Any context about this lead…"
+                  {...field}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           <Button type="submit" size="lg" disabled={submit.isPending} className="w-full py-6">
             {submit.isPending ? 'Submitting…' : 'Submit Lead'}
