@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { FaTimeline } from 'react-icons/fa6'
 import { projectTypes } from '@/shared/constants/enums'
-import { formatAddress } from '@/shared/lib/formatters'
+import { formatAddress, formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 export type Display = string | React.ReactNode
 
@@ -101,6 +101,7 @@ export const proposalFields = [
         label: 'Phone',
         name: 'phone',
         Icon: PhoneIcon,
+        format: (val: string) => formatAsPhoneNumber(val),
       },
     ],
   },

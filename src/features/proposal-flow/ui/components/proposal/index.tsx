@@ -105,6 +105,10 @@ export function Proposal() {
                 )}
                 {customizableSections.includes(step.accessor) && step.accessor === 'send-proposal' && (
                   <step.Component onClick={(message) => {
+                    if (!customerEmail) {
+                      toast.error('Email is not configured')
+                      return
+                    }
                     sendProposalEmail.mutate({
                       proposalId: params.proposalId,
                       email: customerEmail,

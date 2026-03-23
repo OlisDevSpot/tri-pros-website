@@ -1,10 +1,11 @@
-import { CalendarIcon, UserIcon } from 'lucide-react'
+import { CalendarIcon, PencilIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { Logo } from '@/shared/components/logo'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
@@ -95,6 +96,20 @@ export function Heading() {
             >
               <UserIcon className="size-4" />
               {`View ${customerName}'s Profile`}
+            </Button>
+          </div>
+        )}
+        {ability.can('update', 'Proposal') && (
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.data.id}`}>
+                <PencilIcon className="size-4" />
+                Edit Proposal
+              </a>
             </Button>
           </div>
         )}

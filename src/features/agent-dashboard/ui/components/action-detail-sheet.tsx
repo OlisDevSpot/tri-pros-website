@@ -19,6 +19,7 @@ import {
   SheetTitle,
 } from '@/shared/components/ui/sheet'
 import { ROOTS } from '@/shared/config/roots'
+import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 interface Props {
   item: ActionItem | null
@@ -72,7 +73,7 @@ export function ActionDetailSheet({ item, onClose }: Props) {
               <Button variant="outline" size="sm" className="justify-start gap-2" asChild>
                 <a href={`tel:${item.customerPhone}`}>
                   <PhoneIcon size={14} />
-                  {item.customerPhone}
+                  {formatAsPhoneNumber(item.customerPhone)}
                 </a>
               </Button>
             )}
