@@ -2,11 +2,13 @@
 
 import type { CollectionField } from '@/features/meetings/types'
 import type { Customer, Meeting } from '@/shared/db/schema'
+import type { MeetingScopes } from '@/shared/entities/meetings/schemas'
 
 import { AnimatePresence, motion } from 'motion/react'
 import { INTAKE_STEPS } from '@/features/meetings/constants/intake-steps'
 import { stepCompletionCount } from '@/features/meetings/lib/step-completion'
 import { FieldRenderer } from '@/features/meetings/ui/components/field-renderer'
+import { MeetingScopesPicker } from '@/features/meetings/ui/components/meeting-scopes-picker'
 import { StepProgress } from '@/features/meetings/ui/components/step-progress'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
@@ -18,6 +20,7 @@ interface MeetingIntakeViewProps {
   meeting: Meeting
   onCompleteIntake: () => void
   onFieldSave: (field: CollectionField, value: string | number | boolean) => void
+  onScopeChange: (scopes: MeetingScopes) => void
   onStepChange: (step: number) => void
 }
 
@@ -27,6 +30,7 @@ export function MeetingIntakeView({
   meeting,
   onCompleteIntake,
   onFieldSave,
+  onScopeChange,
   onStepChange,
 }: MeetingIntakeViewProps) {
   const stepCount = INTAKE_STEPS.length
@@ -62,6 +66,15 @@ export function MeetingIntakeView({
       </div>
 
       <Separator className="shrink-0" />
+
+      {/* Persistent scopes panel — always visible */}
+      <div className="px-1">
+        <MeetingScopesPicker
+          value={meeting.meetingScopesJSON ?? []}
+          onChange={onScopeChange}
+        />
+      </div>
+      <Separator />
 
       {/* Step content */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-6">

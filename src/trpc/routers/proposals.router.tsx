@@ -9,6 +9,7 @@ import { getProposalViews, recordProposalView } from '@/shared/dal/server/propos
 import { db } from '@/shared/db'
 import { insertProposalSchema } from '@/shared/db/schema'
 import { user } from '@/shared/db/schema/auth'
+import { meetings } from '@/shared/db/schema/meetings'
 import { defineAbilitiesFor } from '@/shared/permissions/abilities'
 import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
 import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
@@ -63,13 +64,46 @@ export const proposalsRouter = createTRPCRouter({
 
   createProposal: agentProcedure
     .input(insertProposalSchema.strict())
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input: rawInput }) => {
       try {
-        if (!input.meetingId) {
+        if (!rawInput.meetingId) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'A meetingId is required to create a proposal',
           })
+        }
+
+        // Snapshot meeting scopes into proposal SOW
+        let input = rawInput
+        const [meetingRow] = await db
+          .select({ meetingScopesJSON: meetings.meetingScopesJSON })
+          .from(meetings)
+          .where(eq(meetings.id, rawInput.meetingId))
+
+        if (meetingRow?.meetingScopesJSON && meetingRow.meetingScopesJSON.length > 0) {
+          const projectJSON = (rawInput.projectJSON ?? {}) as Record<string, unknown>
+          const data = (projectJSON.data ?? {}) as Record<string, unknown>
+
+          if (!data.sow) {
+            const sowFromScopes = meetingRow.meetingScopesJSON.map(entry => ({
+              trade: entry.trade,
+              scopes: entry.scopes,
+              title: '',
+              contentJSON: '',
+              html: '',
+            }))
+
+            input = {
+              ...rawInput,
+              projectJSON: {
+                ...projectJSON,
+                data: {
+                  ...data,
+                  sow: sowFromScopes,
+                },
+              },
+            } as typeof rawInput
+          }
         }
 
         const proposal = await createProposal(input)

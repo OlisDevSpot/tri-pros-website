@@ -236,6 +236,9 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
             meeting={meeting}
             onCompleteIntake={handleCompleteIntake}
             onFieldSave={handleFieldSave}
+            onScopeChange={(scopes) => {
+              updateMeeting.mutate({ id: meetingId, meetingScopesJSON: scopes })
+            }}
             onStepChange={s => void setCurrentStep(s)}
           />
         </div>
