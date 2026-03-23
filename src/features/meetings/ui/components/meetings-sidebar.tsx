@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeftIcon, HistoryIcon, PlusIcon } from 'lucide-react'
+import { ArrowLeftIcon, HistoryIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
 import { meetingsDashboardStepParser } from '@/features/meetings/lib/url-parsers'
@@ -20,15 +20,6 @@ export function MeetingsSidebar() {
           </div>
         </div>
       </Link>
-      <Button
-        data-active={step === 'create-meeting'}
-        size="icon"
-        variant={step === 'create-meeting' ? 'default' : 'outline'}
-        className="data-[active=true]:bg-primary/80 lg:data-[active=true]:h-20"
-        onClick={() => setStep('create-meeting')}
-      >
-        <PlusIcon size={20} />
-      </Button>
       <Button
         data-active={step === 'past-meetings'}
         size="icon"

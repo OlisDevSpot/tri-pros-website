@@ -1,6 +1,6 @@
 import { parseAsString, parseAsStringLiteral } from 'nuqs'
 
-export const meetingsDashboardStepParser = parseAsStringLiteral(['past-meetings', 'create-meeting', 'edit-meeting'] as const)
+export const meetingsDashboardStepParser = parseAsStringLiteral(['past-meetings', 'edit-meeting'] as const)
   .withDefault('past-meetings')
   .withOptions({ clearOnDefault: false })
 

@@ -6,7 +6,6 @@ import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 import { editMeetingIdParser, meetingsDashboardStepParser } from '@/features/meetings/lib/url-parsers'
 import { MeetingsSidebar } from '@/features/meetings/ui/components/meetings-sidebar'
-import { CreateMeetingView } from '@/features/meetings/ui/views/create-meeting-view'
 import { EditMeetingSetupView } from '@/features/meetings/ui/views/edit-meeting-setup-view'
 import { PastMeetingsView } from '@/features/meetings/ui/views/past-meetings-view'
 import { useSession } from '@/shared/auth/client'
@@ -52,11 +51,6 @@ export function MeetingsDashboard() {
         <AnimatePresence>
           {step === 'past-meetings' && (
             <PastMeetingsView key="past-meetings" />
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'create-meeting' && (
-            <CreateMeetingView key="create-meeting" />
           )}
         </AnimatePresence>
         <AnimatePresence>
