@@ -5,10 +5,12 @@ import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { ZapIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 
+import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { pipelineConfigs } from '@/features/customer-pipelines/constants/pipeline-config'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
@@ -22,6 +24,7 @@ import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
@@ -29,6 +32,7 @@ import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
+  const [isActionCenterOpen, setIsActionCenterOpen] = useState(false)
   const [layout, setLayout] = useState<DataViewType>('kanban')
   const [pipeline, setPipeline] = useState<CustomerPipeline>('active')
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
@@ -168,6 +172,13 @@ export function CustomerPipelineView() {
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsActionCenterOpen(true)}
+            >
+              <ZapIcon size={16} />
+            </Button>
             {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           </div>
           <DataViewTypeToggle value={layout} onChange={setLayout} />
@@ -223,6 +234,10 @@ export function CustomerPipelineView() {
           customerName={createMeetingForCustomer.name}
         />
       )}
+      <ActionCenterSheet
+        isOpen={isActionCenterOpen}
+        onClose={() => setIsActionCenterOpen(false)}
+      />
     </motion.div>
   )
 }
