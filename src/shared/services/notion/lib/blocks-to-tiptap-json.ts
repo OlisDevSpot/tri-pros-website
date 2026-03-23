@@ -17,6 +17,7 @@ interface NotionBlock {
   id: string
   type: string
   has_children: boolean
+  children?: NotionBlock[]
   [key: string]: any // holds e.g. block.paragraph, block.heading_2, etc
 }
 
@@ -93,6 +94,22 @@ function runHandlers(handlers: BlockHandler[], block: NotionBlock): BlockHandler
   return { kind: 'skip' }
 }
 
+/** ---------- Nested list helper ---------- */
+
+/**
+ * Converts child blocks (from a list item with has_children) into a nested
+ * TipTap list node (bulletList or orderedList). Processes children through
+ * the same notionBlocksToTiptapDoc pipeline, then extracts the list node.
+ */
+function childrenToNestedList(children: NotionBlock[]): TiptapNode | null {
+  const childDoc = notionBlocksToTiptapDoc(children)
+  // The child doc will contain list nodes — return the first one found
+  const nestedList = childDoc.content?.find(
+    n => n.type === 'bulletList' || n.type === 'orderedList',
+  )
+  return nestedList ?? null
+}
+
 /** ---------- Block handlers ---------- */
 
 function handleDivider(block: NotionBlock): BlockHandlerResult {
@@ -130,14 +147,22 @@ function handleBulletedListItem(block: NotionBlock): BlockHandlerResult {
     return { kind: 'skip' }
   const rt: NotionRichText[] = block.bulleted_list_item?.rich_text ?? []
 
+  const itemContent: TiptapNode[] = [
+    {
+      type: 'paragraph',
+      content: notionRichTextToTiptap(rt),
+    },
+  ]
+
+  if (block.children?.length) {
+    const nested = childrenToNestedList(block.children)
+    if (nested)
+      itemContent.push(nested)
+  }
+
   const item: TiptapNode = {
     type: 'listItem',
-    content: [
-      {
-        type: 'paragraph',
-        content: notionRichTextToTiptap(rt),
-      },
-    ],
+    content: itemContent,
   }
 
   return { kind: 'listItem', listType: 'bulletList', item }
@@ -148,14 +173,22 @@ function handleNumberedListItem(block: NotionBlock): BlockHandlerResult {
     return { kind: 'skip' }
   const rt: NotionRichText[] = block.numbered_list_item?.rich_text ?? []
 
+  const itemContent: TiptapNode[] = [
+    {
+      type: 'paragraph',
+      content: notionRichTextToTiptap(rt),
+    },
+  ]
+
+  if (block.children?.length) {
+    const nested = childrenToNestedList(block.children)
+    if (nested)
+      itemContent.push(nested)
+  }
+
   const item: TiptapNode = {
     type: 'listItem',
-    content: [
-      {
-        type: 'paragraph',
-        content: notionRichTextToTiptap(rt),
-      },
-    ],
+    content: itemContent,
   }
 
   return { kind: 'listItem', listType: 'orderedList', item }
