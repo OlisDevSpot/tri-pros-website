@@ -24,10 +24,9 @@ import { useTRPC } from '@/trpc/helpers'
 interface IntakeFormViewProps {
   leadSourceSlug: LeadSource
   formConfig: LeadSourceFormConfig
-  leadSourceName: string
 }
 
-export function IntakeFormView({ leadSourceSlug, formConfig, leadSourceName }: IntakeFormViewProps) {
+export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewProps) {
   const trpc = useTRPC()
 
   const form = useForm<IntakeFormData>({

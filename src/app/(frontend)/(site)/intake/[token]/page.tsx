@@ -2,10 +2,10 @@ import type { LeadSource } from '@/shared/types/enums'
 import { eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
-import { db } from '@/shared/db'
-import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { TopSpacer } from '@/shared/components/top-spacer'
 import { ViewportHero } from '@/shared/components/viewport-hero'
+import { db } from '@/shared/db'
+import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 
 interface Props {
@@ -38,7 +38,6 @@ export default async function IntakePage({ params }: Props) {
           <div className="w-full rounded-xl border border-border bg-card p-6 shadow-sm">
             <IntakeFormView
               leadSourceSlug={row.slug as LeadSource}
-              leadSourceName={row.name}
               formConfig={formConfig}
             />
           </div>
