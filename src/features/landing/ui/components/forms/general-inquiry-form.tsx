@@ -106,7 +106,7 @@ export function GeneralInquiryForm() {
                         form.setValue('address.state', state)
                         form.setValue('address.zipCode', zip)
                         form.setValue('address.fullAddress', fullAddress)
-                        form.setValue('address.location', location)
+                        form.setValue('address.location', location ?? undefined)
                       }}
                     />
                     <FormMessage />

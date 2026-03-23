@@ -93,7 +93,9 @@ export function getPipelineColumns(): ColumnDef<CustomerPipelineItem>[] {
       header: 'Last Activity',
       cell: ({ row }) => (
         <span className="text-muted-foreground text-sm">
-          {formatDistanceToNow(new Date(row.original.latestActivityAt), { addSuffix: true })}
+          {row.original.latestActivityAt
+            ? formatDistanceToNow(new Date(row.original.latestActivityAt), { addSuffix: true })
+            : '—'}
         </span>
       ),
     },
