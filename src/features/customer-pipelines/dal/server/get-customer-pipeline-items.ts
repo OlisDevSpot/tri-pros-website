@@ -57,13 +57,13 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
     })
     .from(customers)
-    .innerJoin(meetings, and(
+    .leftJoin(meetings, and(
       eq(meetings.customerId, customers.id),
       isOmni ? undefined : eq(meetings.ownerId, userId),
     ))
     .where(eq(customers.pipeline, 'active'))
     .groupBy(customers.id)
-    .orderBy(desc(max(meetings.createdAt)))
+    .orderBy(desc(customers.updatedAt))
 
   if (rows.length === 0) {
     return []
