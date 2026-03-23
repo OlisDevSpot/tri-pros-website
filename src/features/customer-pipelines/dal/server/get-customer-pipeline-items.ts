@@ -115,7 +115,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
       totalPipelineValue: pData?.totalPipelineValue ? Number(pData.totalPipelineValue) : 0,
-      latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? row.customerId,
+      latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? null,
     }
 
     const stage = computeCustomerStage({
