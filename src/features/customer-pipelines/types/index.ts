@@ -1,9 +1,9 @@
 import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
 import type { DeadPipelineStage } from '../constants/dead-pipeline-stages'
-
 import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
-
 import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
+import type { CustomerNote } from '@/shared/db/schema/customer-notes'
+import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
 
 export interface CustomerPipelineItem {
   id: string
@@ -39,15 +39,37 @@ export interface CustomerPipelineRawData {
 }
 
 export type CustomerProfileMeeting
-  = Pick<Meeting, 'id' | 'program' | 'status' | 'scheduledFor' | 'createdAt'>
+  = Pick<Meeting, 'id' | 'type' | 'program' | 'status' | 'scheduledFor' | 'createdAt' | 'updatedAt'>
     & { proposals: CustomerProfileProposal[] }
 
 export type CustomerProfileProposal
   = Pick<Proposal, 'id' | 'label' | 'status' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>
     & { trade: string | null, value: number | null, viewCount: number }
 
+export interface CustomerProfileProposalView {
+  id: string
+  proposalId: string
+  viewedAt: string
+  source: string
+}
+
+export interface CustomerFormValues {
+  name: string
+  phone: string
+  email: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  customerProfileJSON: Partial<CustomerProfile>
+  financialProfileJSON: Partial<FinancialProfile>
+  propertyProfileJSON: Partial<PropertyProfile>
+}
+
 export interface CustomerProfileData {
   customer: Customer
   meetings: CustomerProfileMeeting[]
   allProposals: CustomerProfileProposal[]
+  notes: CustomerNote[]
+  proposalViews: CustomerProfileProposalView[]
 }
