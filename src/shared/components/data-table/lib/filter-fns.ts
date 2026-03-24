@@ -24,6 +24,14 @@ export function createDateRangeFilterFn<TData>(presets: readonly TimePreset[]): 
       return false
     }
 
-    return cellValue >= from && cellValue <= to
+    const cellDate = new Date(cellValue).getTime()
+    const fromDate = new Date(from).getTime()
+    const toDate = new Date(to).getTime()
+
+    if (Number.isNaN(cellDate)) {
+      return false
+    }
+
+    return cellDate >= fromDate && cellDate <= toDate
   }
 }

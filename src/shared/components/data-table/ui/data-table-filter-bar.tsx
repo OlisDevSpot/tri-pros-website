@@ -143,68 +143,61 @@ export function DataTableFilterBar<TData>({ table, filters }: Props<TData>) {
   const activeSelectCount = activeSelectFilterCount + activeMultiSelectFilterCount
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-3">
-        {searchFilters.map(filter => (
-          <DebouncedSearchInput
-            key={filter.id}
-            placeholder={filter.placeholder ?? 'Filter...'}
-            value={(table.getColumn(filter.columnId)?.getFilterValue() as string) ?? ''}
-            onChange={v => table.getColumn(filter.columnId)?.setFilterValue(v)}
-            className="max-w-72 flex-1 md:flex-none"
-          />
-        ))}
+    <div className="flex items-center gap-3">
+      {searchFilters.map(filter => (
+        <DebouncedSearchInput
+          key={filter.id}
+          placeholder={filter.placeholder ?? 'Filter...'}
+          value={(table.getColumn(filter.columnId)?.getFilterValue() as string) ?? ''}
+          onChange={v => table.getColumn(filter.columnId)?.setFilterValue(v)}
+          className="max-w-72 flex-1 md:flex-none"
+        />
+      ))}
 
-        {!isMobile && timePresetFilters.map(filter => (
-          <DataTableTimePresetFilter key={filter.id} filter={filter} table={table} />
-        ))}
-
-        {isMobile && (selectFilters.length > 0 || multiSelectFilters.length > 0)
-          ? (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon" className="relative shrink-0">
-                    <SlidersHorizontal className="size-4" />
-                    {activeSelectCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                        {activeSelectCount}
-                      </span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-56 space-y-3 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">Filters</p>
-                  {selectFilters.map(filter => (
-                    <div key={filter.id} className="space-y-1">
-                      <label className="text-xs text-muted-foreground">{filter.label}</label>
-                      <SelectFilter filter={filter} table={table} />
-                    </div>
-                  ))}
-                  {multiSelectFilters.map(filter => (
-                    <div key={filter.id} className="space-y-1">
-                      <label className="text-xs text-muted-foreground">{filter.label}</label>
-                      <MultiSelectFilterControl filter={filter} table={table} />
-                    </div>
-                  ))}
-                </PopoverContent>
-              </Popover>
-            )
-          : (
-              <>
-                {selectFilters.map(filter => (
-                  <SelectFilter key={filter.id} filter={filter} table={table} />
-                ))}
-                {multiSelectFilters.map(filter => (
-                  <MultiSelectFilterControl key={filter.id} filter={filter} table={table} />
-                ))}
-              </>
-            )}
-
-      </div>
-
-      {isMobile && timePresetFilters.map(filter => (
+      {timePresetFilters.map(filter => (
         <DataTableTimePresetFilter key={filter.id} filter={filter} table={table} />
       ))}
+
+      {isMobile && (selectFilters.length > 0 || multiSelectFilters.length > 0)
+        ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="relative shrink-0">
+                  <SlidersHorizontal className="size-4" />
+                  {activeSelectCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                      {activeSelectCount}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-56 space-y-3 p-3">
+                <p className="text-xs font-medium text-muted-foreground">Filters</p>
+                {selectFilters.map(filter => (
+                  <div key={filter.id} className="space-y-1">
+                    <label className="text-xs text-muted-foreground">{filter.label}</label>
+                    <SelectFilter filter={filter} table={table} />
+                  </div>
+                ))}
+                {multiSelectFilters.map(filter => (
+                  <div key={filter.id} className="space-y-1">
+                    <label className="text-xs text-muted-foreground">{filter.label}</label>
+                    <MultiSelectFilterControl filter={filter} table={table} />
+                  </div>
+                ))}
+              </PopoverContent>
+            </Popover>
+          )
+        : (
+            <>
+              {selectFilters.map(filter => (
+                <SelectFilter key={filter.id} filter={filter} table={table} />
+              ))}
+              {multiSelectFilters.map(filter => (
+                <MultiSelectFilterControl key={filter.id} filter={filter} table={table} />
+              ))}
+            </>
+          )}
     </div>
   )
 }

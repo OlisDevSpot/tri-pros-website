@@ -3,7 +3,12 @@
 import type { Table } from '@tanstack/react-table'
 import type { DataTableTimePresetFilter as TimePresetFilterConfig } from '@/shared/components/data-table/types'
 
-import { ToggleGroup, ToggleGroupItem } from '@/shared/components/ui/toggle-group'
+import { CalendarDays, Check, X } from 'lucide-react'
+import { useState } from 'react'
+
+import { Button } from '@/shared/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { cn } from '@/shared/lib/utils'
 
 interface Props<TData> {
   filter: TimePresetFilterConfig
@@ -11,29 +16,77 @@ interface Props<TData> {
 }
 
 export function DataTableTimePresetFilter<TData>({ filter, table }: Props<TData>) {
+  const [open, setOpen] = useState(false)
   const currentValue = (table.getColumn(filter.columnId)?.getFilterValue() as string) ?? ''
+  const activePreset = filter.presets.find(p => p.value === currentValue)
+
+  function handleSelect(value: string) {
+    const next = value === currentValue ? '' : value
+    table.getColumn(filter.columnId)?.setFilterValue(next || undefined)
+    if (next) {
+      setOpen(false)
+    }
+  }
+
+  function handleClear() {
+    table.getColumn(filter.columnId)?.setFilterValue(undefined)
+  }
 
   return (
-    <ToggleGroup
-      type="single"
-      value={currentValue}
-      onValueChange={(value) => {
-        table.getColumn(filter.columnId)?.setFilterValue(value || undefined)
-      }}
-      variant="outline"
-      size="sm"
-      className="w-full md:w-auto"
-    >
-      {filter.presets.map(preset => (
-        <ToggleGroupItem
-          key={preset.value}
-          value={preset.value}
-          aria-label={`Filter by ${preset.label}`}
-          className="flex-1 md:flex-none px-3 text-xs"
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            'gap-1.5 text-xs font-normal',
+            activePreset && 'border-primary/50 bg-primary/5 text-primary',
+          )}
         >
-          {preset.label}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+          <CalendarDays className="size-3.5" />
+          <span>{activePreset ? activePreset.label : filter.label}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-44 p-1">
+        <div className="flex flex-col">
+          {filter.presets.map(preset => (
+            <button
+              key={preset.value}
+              type="button"
+              onClick={() => handleSelect(preset.value)}
+              className={cn(
+                'flex items-center justify-between rounded-sm px-2.5 py-1.5 text-sm transition-colors',
+                'hover:bg-accent hover:text-accent-foreground',
+                'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                preset.value === currentValue && 'bg-accent font-medium',
+              )}
+            >
+              <span>{preset.label}</span>
+              {preset.value === currentValue && (
+                <Check className="size-3.5 text-primary" />
+              )}
+            </button>
+          ))}
+
+          {activePreset && (
+            <>
+              <div className="my-1 border-t border-border" />
+              <button
+                type="button"
+                onClick={handleClear}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-sm px-2.5 py-1.5 text-sm text-muted-foreground transition-colors',
+                  'hover:bg-accent hover:text-accent-foreground',
+                  'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+                )}
+              >
+                <X className="size-3" />
+                <span>Clear filter</span>
+              </button>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
