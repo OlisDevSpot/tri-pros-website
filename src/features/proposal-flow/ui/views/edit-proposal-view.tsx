@@ -16,6 +16,7 @@ import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { CustomerInfoHeader } from '../components/customer-info-header'
@@ -111,28 +112,39 @@ export function EditProposalView() {
       transition={{ duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4"
     >
-      {customer && (
-        <div className="shrink-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-          <CustomerInfoHeader customer={customer} />
+      <div className="shrink-0 flex flex-col sm:flex-row sm:items-start gap-3">
+        {customer && (
+          <div className="flex-1 min-w-0">
+            <CustomerInfoHeader customer={customer} />
+          </div>
+        )}
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
+          <Button
+            type="submit"
+            form="proposal-form"
+            disabled={proposal.isLoading || updateProposal.isPending}
+            className="whitespace-nowrap"
+          >
+            Update & Preview
+          </Button>
           {proposalId && (
             <EntityViewButton
               href={`${ROOTS.public.proposals()}/proposal/${proposalId}`}
               external
               showLabel
               size="sm"
-              className="h-8 w-auto gap-1.5 px-3 shrink-0 self-end sm:self-start"
+              className="h-9 w-auto gap-1.5 px-3 whitespace-nowrap"
             />
           )}
         </div>
-      )}
-      <div
-        className="h-full w-full overflow-auto pr-4"
-      >
+      </div>
+      <div className="h-full w-full overflow-auto pr-4">
         <Form {...form}>
           <ProposalForm
             isLoading={proposal.isLoading || updateProposal.isPending}
             initialValues={initProposalValues}
             onSubmit={onSubmit}
+            hideSubmitButton
           />
         </Form>
       </div>

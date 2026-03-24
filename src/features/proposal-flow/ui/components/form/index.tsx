@@ -22,6 +22,7 @@ interface Props {
   onSubmit: (data: ProposalFormSchema) => void
   isLoading: boolean
   initialValues?: OverrideProposalValues
+  hideSubmitButton?: boolean
 }
 
 function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialValues'] = {}): ProposalFormSchema {
@@ -39,7 +40,7 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
   return defaultWithOverrides
 }
 
-export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
+export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitButton }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const [proposalId] = useQueryState('proposalId')
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
@@ -62,6 +63,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
 
   return (
     <form
+      id="proposal-form"
       onSubmit={form.handleSubmit(onSubmit, onInvalid)}
       className="space-y-8 w-full h-auto"
     >
@@ -153,14 +155,16 @@ export function ProposalForm({ isLoading, onSubmit, initialValues }: Props) {
           <div className="text-red-500">{JSON.stringify(form.formState.errors, null, 2)}</div>
         </div>
       )}
-      <div className="flex items-center gap-2">
-        <Button
-          type="submit"
-          disabled={isLoading}
-        >
-          {proposalId ? 'Update & Preview' : 'Save & Preview'}
-        </Button>
-      </div>
+      {!hideSubmitButton && (
+        <div className="flex items-center gap-2">
+          <Button
+            type="submit"
+            disabled={isLoading}
+          >
+            {proposalId ? 'Update & Preview' : 'Save & Preview'}
+          </Button>
+        </div>
+      )}
     </form>
   )
 }
