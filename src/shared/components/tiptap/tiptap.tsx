@@ -9,6 +9,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { BoldIcon, ItalicIcon, StrikethroughIcon } from 'lucide-react'
 import { useImperativeHandle } from 'react'
 import { cn } from '@/shared/lib/utils'
+import { SpinnerLoader2 } from '../loaders/spinner-loader-2'
 import { Button } from '../ui/button'
 import { TipTapMenuBar } from './menu-bar'
 
@@ -21,10 +22,12 @@ export interface TiptapHandle {
 interface Props {
   onChange: ({ html, json }: { html: string, json: any }) => void
   initialValues?: string
+  isLoading?: boolean
+  loadingMessage?: string
   ref?: React.RefObject<TiptapHandle | null>
 }
 
-export function Tiptap({ ref, onChange, initialValues }: Props) {
+export function Tiptap({ ref, onChange, initialValues, isLoading, loadingMessage }: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -121,7 +124,7 @@ export function Tiptap({ ref, onChange, initialValues }: Props) {
           <StrikethroughIcon />
         </Button>
       </BubbleMenu>
-      <div className="tiptap w-full min-h-62.5 flex flex-col">
+      <div className="tiptap w-full min-h-62.5 flex flex-col relative">
         <div className="min-h-10 w-full shrink-0">
           <TipTapMenuBar editor={editor} />
         </div>
@@ -131,6 +134,14 @@ export function Tiptap({ ref, onChange, initialValues }: Props) {
           </svg>
         </DragHandle>
         <EditorContent editor={editor} className="grow" />
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-xs rounded-md z-10">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <SpinnerLoader2 />
+              <span className="text-sm">{loadingMessage ?? 'Loading template...'}</span>
+            </div>
+          </div>
+        )}
       </div>
     </>
   )

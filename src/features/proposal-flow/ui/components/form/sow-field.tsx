@@ -34,6 +34,7 @@ export function SOWSection({
   const queryClient = useQueryClient()
   const form = useFormContext<ProposalFormSchema>()
   const [tradeId, setTradeId] = useState<string | undefined>(sowSnapshot.trade.id || undefined)
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   const tiptapRef = useRef<TiptapHandle | null>(null)
 
   const allTrades = useGetAllTrades()
@@ -198,10 +199,15 @@ export function SOWSection({
                         trade: allTrades.data?.find(trade => trade.id === tradeId),
                         scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as ScopeOrAddon[],
                         onSelect: async (sowId) => {
-                          const json = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
-
-                          tiptapRef.current?.insertContent(JSON.parse(json) || '')
                           closeModal()
+                          setIsLoadingTemplate(true)
+                          try {
+                            const json = await queryClient.fetchQuery(trpc.notionRouter.scopes.getSOWContent.queryOptions({ sowId }))
+                            tiptapRef.current?.insertContent(JSON.parse(json) || '')
+                          }
+                          finally {
+                            setIsLoadingTemplate(false)
+                          }
                         },
                       },
                     })
@@ -214,6 +220,8 @@ export function SOWSection({
               <FormControl>
                 <Tiptap
                   ref={tiptapRef}
+                  isLoading={isLoadingTemplate}
+                  loadingMessage="Loading template from Notion..."
                   onChange={({ html, json }) => {
                     field.onChange(JSON.stringify(json))
                     form.setValue(`project.data.sow.${index}.html`, html)
