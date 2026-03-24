@@ -12,10 +12,17 @@ export const proposalTableFilters: DataTableFilterConfig[] = [
     placeholder: 'Filter proposals...',
   },
   {
-    id: 'time',
+    id: 'created',
     label: 'Created at',
     type: 'time-preset',
     columnId: 'createdAt',
+    presets: DEFAULT_TIME_PRESETS,
+  },
+  {
+    id: 'sent',
+    label: 'Sent at',
+    type: 'time-preset',
+    columnId: 'sentAt',
     presets: DEFAULT_TIME_PRESETS,
   },
   {
