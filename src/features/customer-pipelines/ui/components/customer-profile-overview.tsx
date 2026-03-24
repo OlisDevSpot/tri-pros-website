@@ -4,6 +4,7 @@ import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 
 import { CalendarIcon, DollarSignIcon, EyeIcon, FileTextIcon } from 'lucide-react'
 
+import { useCustomerEditForm } from '@/features/customer-pipelines/hooks/use-customer-edit-form'
 import { CustomerProfileDetails } from '@/features/customer-pipelines/ui/components/customer-profile-details'
 import { CustomerRecordingPlayer } from '@/features/customer-pipelines/ui/components/customer-recording-player'
 import { StatCard } from '@/features/customer-pipelines/ui/components/stat-card'
@@ -15,6 +16,7 @@ interface Props {
 export function CustomerProfileOverview({ data }: Props) {
   const totalValue = data.allProposals.reduce((sum, p) => sum + (p.value ?? 0), 0)
   const totalViews = data.allProposals.reduce((sum, p) => sum + p.viewCount, 0)
+  const editForm = useCustomerEditForm(data.customer)
 
   return (
     <div className="space-y-4">
@@ -26,7 +28,12 @@ export function CustomerProfileOverview({ data }: Props) {
       </div>
 
       <CustomerRecordingPlayer customerId={data.customer.id} />
-      <CustomerProfileDetails customer={data.customer} />
+      <CustomerProfileDetails
+        editForm={editForm}
+        customerProfileJSON={data.customer.customerProfileJSON as Record<string, unknown> | null}
+        propertyProfileJSON={data.customer.propertyProfileJSON as Record<string, unknown> | null}
+        financialProfileJSON={data.customer.financialProfileJSON as Record<string, unknown> | null}
+      />
     </div>
   )
 }
