@@ -13,8 +13,10 @@ import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-
 import { calculateProposalDiscounts } from '@/features/proposal-flow/lib/calculate-proposal-discounts'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
+import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { CustomerInfoHeader } from '../components/customer-info-header'
@@ -110,19 +112,40 @@ export function EditProposalView() {
       transition={{ duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4"
     >
-      {customer && (
-        <div className="shrink-0">
-          <CustomerInfoHeader customer={customer} />
+      <div className="shrink-0 flex flex-col sm:flex-row sm:items-stretch gap-3">
+        {customer && (
+          <div className="flex-1 min-w-0">
+            <CustomerInfoHeader customer={customer} />
+          </div>
+        )}
+        <div className="flex flex-col gap-2 shrink-0">
+          <Button
+            type="submit"
+            form="proposal-form"
+            disabled={proposal.isLoading || updateProposal.isPending}
+            className="flex-1 w-full whitespace-nowrap"
+          >
+            Update & Preview
+          </Button>
+          {proposalId && (
+            <EntityViewButton
+              href={`${ROOTS.public.proposals()}/proposal/${proposalId}`}
+              external
+              showLabel
+              variant="outline"
+              size="default"
+              className="flex-1 w-full gap-1.5 whitespace-nowrap"
+            />
+          )}
         </div>
-      )}
-      <div
-        className="h-full w-full overflow-auto pr-4"
-      >
+      </div>
+      <div className="h-full w-full overflow-auto pr-4">
         <Form {...form}>
           <ProposalForm
             isLoading={proposal.isLoading || updateProposal.isPending}
             initialValues={initProposalValues}
             onSubmit={onSubmit}
+            hideSubmitButton
           />
         </Form>
       </div>
