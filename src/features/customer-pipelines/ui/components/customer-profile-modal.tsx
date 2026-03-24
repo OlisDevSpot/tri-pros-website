@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { CustomerMeetingsList } from '@/features/customer-pipelines/ui/components/customer-meetings-list'
 import { CustomerProfileHeader } from '@/features/customer-pipelines/ui/components/customer-profile-header'
@@ -21,10 +21,17 @@ interface Props {
 export function CustomerProfileModal({ customerId }: Props) {
   const { isOpen, close } = useModalStore()
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
 
   const profileQuery = useQuery(
     trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }),
   )
+
+  function handleMutationSuccess() {
+    void queryClient.invalidateQueries(
+      trpc.customerPipelinesRouter.getCustomerProfile.queryFilter(),
+    )
+  }
 
   const customerName = profileQuery.data?.customer.name
   const title = customerName ? `${customerName}'s Profile` : 'Loading Profile...'
@@ -82,7 +89,12 @@ export function CustomerProfileModal({ customerId }: Props) {
                 <CustomerProfileOverview data={profileQuery.data} />
               </TabsContent>
               <TabsContent value="meetings" className="mt-0">
-                <CustomerMeetingsList meetings={profileQuery.data.meetings} />
+                <CustomerMeetingsList
+                  meetings={profileQuery.data.meetings}
+                  customerId={customerId}
+                  customerName={profileQuery.data.customer.name}
+                  onMutationSuccess={handleMutationSuccess}
+                />
               </TabsContent>
               <TabsContent value="proposals" className="mt-0">
                 <CustomerProposalsList data={profileQuery.data} />
