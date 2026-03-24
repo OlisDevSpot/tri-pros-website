@@ -5,6 +5,7 @@ import { useEffect } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { formValuesToProposal } from '@/features/proposal-flow/lib/converters'
 import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
+import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
@@ -253,6 +254,23 @@ export function FundingFields({
 
                           </FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name={`funding.data.incentives.${index}.expiresAt`}
+                      control={form.control}
+                      render={({ field }) => (
+                        <FormItem className="self-end">
+                          <FormControl>
+                            <DateTimePicker
+                              placeholder="Set expiration"
+                              value={field.value ? new Date(field.value) : undefined}
+                              onChange={(date) => {
+                                field.onChange(date ? date.toISOString() : undefined)
+                              }}
+                            />
+                          </FormControl>
                         </FormItem>
                       )}
                     />
