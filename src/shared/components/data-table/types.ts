@@ -62,4 +62,5 @@ export interface DataTableProps<TData, TMeta = unknown> {
   rowDataAttribute?: string
   onRowClick?: (row: TData) => void
   onFilteredCountChange?: (count: number) => void
+  onFilteredDataChange?: (data: TData[]) => void
 }

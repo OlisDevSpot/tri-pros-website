@@ -35,6 +35,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   onActiveRowChange,
   onRowClick,
   onFilteredCountChange,
+  onFilteredDataChange,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
@@ -131,11 +132,16 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     } as TMeta & { activeRowId: string | null },
   })
 
-  // Notify parent of filtered row count changes
-  const filteredCount = table.getFilteredRowModel().rows.length
+  // Notify parent of filtered row changes
+  const filteredRows = table.getFilteredRowModel().rows
+  const filteredCount = filteredRows.length
   useEffect(() => {
     onFilteredCountChange?.(filteredCount)
   }, [filteredCount, onFilteredCountChange])
+
+  useEffect(() => {
+    onFilteredDataChange?.(filteredRows.map(r => r.original))
+  }, [filteredRows, onFilteredDataChange])
 
   return (
     <div className="flex flex-col h-full gap-4">

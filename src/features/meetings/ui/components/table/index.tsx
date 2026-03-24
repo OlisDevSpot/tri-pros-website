@@ -22,9 +22,10 @@ type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][numb
 interface Props {
   data: MeetingRow[]
   onFilteredCountChange?: (count: number) => void
+  onFilteredDataChange?: (data: MeetingRow[]) => void
 }
 
-export function PastMeetingsTable({ data, onFilteredCountChange }: Props) {
+export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataChange }: Props) {
   const router = useRouter()
   const { data: session } = useSession()
   const { deleteMeeting, duplicateMeeting, updateStatus, updateScheduledFor } = useMeetingActions()
@@ -56,6 +57,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange }: Props) {
       entityName="meeting"
       rowDataAttribute="data-meeting-row"
       onFilteredCountChange={onFilteredCountChange}
+      onFilteredDataChange={onFilteredDataChange}
     />
   )
 }
