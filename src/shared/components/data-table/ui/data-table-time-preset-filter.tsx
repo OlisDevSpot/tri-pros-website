@@ -23,13 +23,12 @@ export function DataTableTimePresetFilter<TData>({ filter, table }: Props<TData>
   function handleSelect(value: string) {
     const next = value === currentValue ? '' : value
     table.getColumn(filter.columnId)?.setFilterValue(next || undefined)
-    if (next) {
-      setOpen(false)
-    }
+    setOpen(false)
   }
 
   function handleClear() {
     table.getColumn(filter.columnId)?.setFilterValue(undefined)
+    setOpen(false)
   }
 
   return (
@@ -44,7 +43,7 @@ export function DataTableTimePresetFilter<TData>({ filter, table }: Props<TData>
           )}
         >
           <CalendarDays className="size-3.5" />
-          <span>{activePreset ? activePreset.label : filter.label}</span>
+          <span>{activePreset ? `${filter.label}: ${activePreset.label}` : filter.label}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-44 p-1">

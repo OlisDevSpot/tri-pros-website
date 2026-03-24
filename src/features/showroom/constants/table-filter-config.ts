@@ -12,7 +12,7 @@ export const portfolioTableFilters: DataTableFilterConfig[] = [
   },
   {
     id: 'time',
-    label: 'Time',
+    label: 'Created at',
     type: 'time-preset',
     columnId: 'createdAt',
     presets: DEFAULT_TIME_PRESETS,
