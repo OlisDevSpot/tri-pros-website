@@ -112,18 +112,18 @@ export function EditProposalView() {
       transition={{ duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4"
     >
-      <div className="shrink-0 flex flex-col sm:flex-row sm:items-start gap-3">
+      <div className="shrink-0 flex flex-col sm:flex-row sm:items-stretch gap-3">
         {customer && (
           <div className="flex-1 min-w-0">
             <CustomerInfoHeader customer={customer} />
           </div>
         )}
-        <div className="flex flex-col gap-2 shrink-0 self-end sm:self-start">
+        <div className="flex flex-col gap-2 shrink-0">
           <Button
             type="submit"
             form="proposal-form"
             disabled={proposal.isLoading || updateProposal.isPending}
-            className="w-full whitespace-nowrap"
+            className="flex-1 w-full whitespace-nowrap"
           >
             Update & Preview
           </Button>
@@ -132,8 +132,9 @@ export function EditProposalView() {
               href={`${ROOTS.public.proposals()}/proposal/${proposalId}`}
               external
               showLabel
+              variant="outline"
               size="default"
-              className="w-full gap-1.5 whitespace-nowrap"
+              className="flex-1 w-full gap-1.5 whitespace-nowrap"
             />
           )}
         </div>
