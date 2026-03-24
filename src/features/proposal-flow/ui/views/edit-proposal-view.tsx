@@ -13,6 +13,7 @@ import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-
 import { calculateProposalDiscounts } from '@/features/proposal-flow/lib/calculate-proposal-discounts'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
+import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Form } from '@/shared/components/ui/form'
@@ -111,8 +112,17 @@ export function EditProposalView() {
       className="w-full h-full flex flex-col gap-4"
     >
       {customer && (
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <CustomerInfoHeader customer={customer} />
+          {proposalId && (
+            <EntityViewButton
+              href={`${ROOTS.public.proposals()}/proposal/${proposalId}`}
+              external
+              showLabel
+              size="sm"
+              className="h-8 w-auto gap-1.5 px-3 shrink-0 self-end sm:self-start"
+            />
+          )}
         </div>
       )}
       <div
