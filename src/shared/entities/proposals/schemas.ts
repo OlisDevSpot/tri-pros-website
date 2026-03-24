@@ -20,12 +20,14 @@ const discountIncentiveSchema = z.object({
   type: z.literal('discount'),
   amount: z.number(),
   notes: z.string().optional(),
+  expiresAt: z.iso.datetime().optional(),
 })
 
 const exclusiveOfferIncentiveSchema = z.object({
   type: z.literal('exclusive-offer'),
   offer: z.string(),
   notes: z.string().optional(),
+  expiresAt: z.iso.datetime().optional(),
 })
 
 const incentiveSchema = z.discriminatedUnion('type', [discountIncentiveSchema, exclusiveOfferIncentiveSchema])
