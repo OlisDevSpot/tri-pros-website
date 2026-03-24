@@ -97,7 +97,7 @@ export function CustomerProfileModal({ customerId }: Props) {
                 />
               </TabsContent>
               <TabsContent value="proposals" className="mt-0">
-                <CustomerProposalsList data={profileQuery.data} />
+                <CustomerProposalsList data={profileQuery.data} onMutationSuccess={handleMutationSuccess} />
               </TabsContent>
             </div>
           </Tabs>
