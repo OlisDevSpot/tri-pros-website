@@ -65,18 +65,27 @@ export function MeetingsView() {
     deleteMeeting.mutate({ id: meetingId })
   }, [deleteMeeting])
 
+  const [tableFilteredData, setTableFilteredData] = useState<MeetingRow[] | null>(null)
+  const handleFilteredDataChange = useCallback((data: MeetingRow[]) => setTableFilteredData(data), [])
+
   const statsData = useMemo((): MeetingRow[] => {
-    if (layout !== 'calendar' || !dateRange || !meetings.data) {
-      return meetings.data ?? []
+    if (!meetings.data) {
+      return []
     }
-    return meetings.data.filter((m) => {
-      if (!m.scheduledFor) {
-        return false
-      }
-      const d = new Date(m.scheduledFor)
-      return d >= dateRange.from && d <= dateRange.to
-    })
-  }, [layout, dateRange, meetings.data])
+    if (layout === 'table' && tableFilteredData) {
+      return tableFilteredData
+    }
+    if (layout === 'calendar' && dateRange) {
+      return meetings.data.filter((m) => {
+        if (!m.scheduledFor) {
+          return false
+        }
+        const d = new Date(m.scheduledFor)
+        return d >= dateRange.from && d <= dateRange.to
+      })
+    }
+    return meetings.data
+  }, [layout, dateRange, meetings.data, tableFilteredData])
 
   if (meetings.isLoading) {
     return (
@@ -195,6 +204,7 @@ export function MeetingsView() {
           : (
               <PastMeetingsTable
                 data={meetings.data}
+                onFilteredDataChange={handleFilteredDataChange}
               />
             )}
       </div>
