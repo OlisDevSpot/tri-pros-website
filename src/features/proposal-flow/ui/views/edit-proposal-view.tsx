@@ -118,12 +118,12 @@ export function EditProposalView() {
             <CustomerInfoHeader customer={customer} />
           </div>
         )}
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
+        <div className="flex flex-col gap-2 shrink-0 self-end sm:self-start">
           <Button
             type="submit"
             form="proposal-form"
             disabled={proposal.isLoading || updateProposal.isPending}
-            className="whitespace-nowrap"
+            className="w-full whitespace-nowrap"
           >
             Update & Preview
           </Button>
@@ -132,8 +132,8 @@ export function EditProposalView() {
               href={`${ROOTS.public.proposals()}/proposal/${proposalId}`}
               external
               showLabel
-              size="sm"
-              className="h-9 w-auto gap-1.5 px-3 whitespace-nowrap"
+              size="default"
+              className="w-full gap-1.5 whitespace-nowrap"
             />
           )}
         </div>
