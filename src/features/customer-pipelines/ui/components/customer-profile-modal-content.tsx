@@ -25,6 +25,8 @@ export function CustomerProfileModalContent({ data, onMutationSuccess }: Props) 
     <div className="flex min-h-0 w-full flex-1 flex-col">
       <CustomerProfileHeader
         customer={data.customer}
+        isEditing={editForm.isEditing}
+        register={editForm.canEditContact ? editForm.form.register : undefined}
         onEditField={editForm.startEditing}
       />
       {profile && (
