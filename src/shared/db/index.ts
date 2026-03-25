@@ -4,8 +4,10 @@ import { Pool } from 'pg'
 import env from '@/shared/config/server-env'
 import * as schema from '@/shared/db/schema'
 
+const dbUrl = env.NODE_ENV === 'production' ? env.DATABASE_URL : (env.DATABASE_DEV_URL ?? env.DATABASE_URL)
+
 const pool = new Pool({
-  connectionString: env.DATABASE_URL!,
+  connectionString: dbUrl,
 })
 
 const db = drizzle(pool, {

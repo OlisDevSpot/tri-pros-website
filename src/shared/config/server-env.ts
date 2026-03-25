@@ -9,13 +9,14 @@ expand(config({ path: '.env' }))
 
 const envSchema = z.object({
   // General
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'preview', 'production']).default('development'),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   PORT: z.coerce.number().default(3000),
   NEXT_PUBLIC_BASE_URL: z.string(),
 
   // Database
   DATABASE_URL: z.string(),
+  DATABASE_DEV_URL: z.string().optional(),
 
   // Better Auth
   BETTER_AUTH_URL: z.string().optional(),

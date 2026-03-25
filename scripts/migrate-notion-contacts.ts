@@ -15,7 +15,11 @@ import type { LeadMeta } from '../src/shared/entities/customers/schemas'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { and, eq } from 'drizzle-orm'
-import { db } from '../src/shared/db'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
+import env from '../src/shared/config/server-env'
+import * as schema from '../src/shared/db/schema'
+import { user } from '../src/shared/db/schema/auth'
 import { customers } from '../src/shared/db/schema/customers'
 import { meetings } from '../src/shared/db/schema/meetings'
 import { notionClient } from '../src/shared/services/notion/client'
@@ -25,6 +29,9 @@ import { R2_BUCKETS } from '../src/shared/services/r2/buckets'
 import { putObject } from '../src/shared/services/r2/put-object'
 
 // ── Constants ──────────────────────────────────────────────
+
+const dbUrl = process.env.DRIZZLE_TARGET === 'dev' ? env.DATABASE_DEV_URL! : env.DATABASE_URL
+const db = drizzle(new Pool({ connectionString: dbUrl }), { schema })
 
 const AGENT_NAMES = ['austin', 'rico', 'mei ann', 'angelica']
 
@@ -36,6 +43,13 @@ const NOTION_USER_MAP: Record<string, string> = {
 }
 
 const DEFAULT_OWNER_ID = 'SZhmXgNvsbr7lTn82faQwsuCQDAIRMww' // Oliver Porat fallback
+
+// Seed users for dev DB (prod already has them via Google OAuth)
+const SEED_USERS: { id: string, name: string, email: string }[] = [
+  { id: 'SZhmXgNvsbr7lTn82faQwsuCQDAIRMww', name: 'Oliver Porat', email: 'oliver@triprosremodeling.com' },
+  { id: '4swwllSTcgO56HpJwNLVKXXLtYA0oUyZ', name: 'Sean Phil', email: 'sean@triprosremodeling.com' },
+  { id: 'GxerJx2mXicVBaYfippxwmeYbSGdEDTr', name: 'Tri Pros Remodeling', email: 'info@triprosremodeling.com' },
+]
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -336,6 +350,11 @@ async function main() {
 
   // Phase 1: contacts first (meetings depend on customer IDs existing)
   await migrateContacts(contactPages)
+
+  // Ensure mapped users exist (dev DB has no OAuth users yet)
+  for (const u of SEED_USERS) {
+    await db.insert(user).values({ id: u.id, name: u.name, email: u.email, emailVerified: false }).onConflictDoNothing()
+  }
 
   // Phase 2: meetings (looks up customers by notionContactId)
   await migrateMeetings(meetingPages)

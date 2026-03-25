@@ -1,9 +1,14 @@
 import type { Table } from 'drizzle-orm'
 
 import { getTableName, sql } from 'drizzle-orm'
-
-import { db } from '@/shared/db'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
+import env from '@/shared/config/server-env'
 import * as schema from '@/shared/db/schema'
+
+// eslint-disable-next-line node/prefer-global/process
+const dbUrl = process.env.DRIZZLE_TARGET === 'dev' ? env.DATABASE_DEV_URL! : env.DATABASE_URL
+const db = drizzle(new Pool({ connectionString: dbUrl }), { schema })
 
 async function _truncateTable(table: Table) {
   return db.execute(sql.raw(`TRUNCATE TABLE "${getTableName(table)}" RESTART IDENTITY CASCADE;`))
