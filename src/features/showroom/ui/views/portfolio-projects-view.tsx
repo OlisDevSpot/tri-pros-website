@@ -16,6 +16,7 @@ import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useTRPC } from '@/trpc/helpers'
 
 export function PortfolioProjectsView() {
@@ -28,6 +29,10 @@ export function PortfolioProjectsView() {
   const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const { deleteProject } = useProjectActions()
+  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
+    title: 'Delete project',
+    message: 'This will permanently delete this project and all its media. This cannot be undone.',
+  })
   const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [])
   const handleRowClick = useCallback((project: ProjectRow) => {
     setSelectedProject(project)
@@ -143,12 +148,18 @@ export function PortfolioProjectsView() {
           />
         </CardContent>
       </Card>
+      <DeleteConfirmDialog />
       <ProjectDetailSheet
         project={selectedProject}
         isOpen={isSheetOpen}
         close={() => setIsSheetOpen(false)}
         onDelete={selectedProject
-          ? () => deleteProject.mutate({ id: selectedProject.id })
+          ? async () => {
+            const ok = await confirmDelete()
+            if (ok) {
+              deleteProject.mutate({ id: selectedProject.id })
+            }
+          }
           : undefined}
       />
     </motion.div>

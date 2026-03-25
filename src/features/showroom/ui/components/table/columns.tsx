@@ -65,12 +65,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
               />
               <EntityDeleteButton
                 disabled={meta?.isDeleting}
-                onClick={() => {
-                  // eslint-disable-next-line no-alert
-                  if (window.confirm('Are you sure you want to delete this project?')) {
-                    meta?.onDelete(row.original.id)
-                  }
-                }}
+                onClick={() => meta?.onDelete(row.original.id)}
               />
             </div>
           </div>

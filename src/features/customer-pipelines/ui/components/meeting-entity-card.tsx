@@ -15,6 +15,7 @@ import { EntityStartButton } from '@/shared/components/entity-actions/entity-sta
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
+import { useConfirm } from '@/shared/hooks/use-confirm'
 import { cn } from '@/shared/lib/utils'
 import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
@@ -29,6 +30,10 @@ interface Props {
 export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, onNavigate }: Props) {
   const trpc = useTRPC()
   const ability = useAbility()
+  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
+    title: 'Delete meeting',
+    message: 'This will permanently delete this meeting and cannot be undone.',
+  })
 
   const meetingHref = `${ROOTS.dashboard.meetings()}/${meeting.id}`
 
@@ -50,6 +55,7 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
 
   return (
     <Card className={cn(isHighlighted && 'ring-2 ring-primary shadow-sm')}>
+      <DeleteConfirmDialog />
       <CardContent className="p-0">
         {/* Meeting Header */}
         <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -105,7 +111,12 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
             />
             {ability.can('delete', 'Meeting') && (
               <EntityDeleteButton
-                onClick={() => deleteMutation.mutate({ id: meeting.id })}
+                onClick={async () => {
+                  const ok = await confirmDelete()
+                  if (ok) {
+                    deleteMutation.mutate({ id: meeting.id })
+                  }
+                }}
                 disabled={deleteMutation.isPending}
               />
             )}

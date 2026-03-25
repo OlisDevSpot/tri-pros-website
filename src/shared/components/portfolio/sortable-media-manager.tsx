@@ -25,6 +25,7 @@ import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { mediaPhases } from '@/shared/constants/enums/media'
+import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useMediaUpload } from '@/shared/hooks/use-media-upload'
 import { useGooglePicker } from '@/shared/services/google-drive/hooks/use-google-picker'
 import { useTRPC } from '@/trpc/helpers'
@@ -51,6 +52,14 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   const { upload, isUploading } = useMediaUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentAccessTokenRef = useRef<string | null>(null)
+  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
+    title: 'Delete file',
+    message: 'This cannot be undone.',
+  })
+  const [BulkDeleteConfirmDialog, confirmBulkDelete] = useConfirm({
+    title: 'Delete files',
+    message: 'This will permanently delete all selected files.',
+  })
   const [activePhase, setActivePhase] = useState<MediaPhase>('uncategorized')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
   const [draggingId, setDraggingId] = useState<number | null>(null)
@@ -236,11 +245,12 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     e.target.value = ''
   }
 
-  function handleDelete(fileId: number) {
-    // eslint-disable-next-line no-alert
-    if (window.confirm('Delete this file? This cannot be undone.')) {
-      deleteMutation.mutate({ id: fileId })
+  async function handleDelete(fileId: number) {
+    const ok = await confirmDelete()
+    if (!ok) {
+      return
     }
+    deleteMutation.mutate({ id: fileId })
   }
 
   function handleToggleHero(fileId: number, currentIsHero: boolean) {
@@ -258,14 +268,15 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     movePhaseMutation.mutate({ ids: [...selectedIds], phase })
   }
 
-  function handleBulkDelete() {
+  async function handleBulkDelete() {
     if (selectedIds.size === 0) {
       return
     }
-    // eslint-disable-next-line no-alert
-    if (window.confirm(`Delete ${selectedIds.size} file(s)? This cannot be undone.`)) {
-      bulkDeleteMutation.mutate({ ids: [...selectedIds] })
+    const ok = await confirmBulkDelete()
+    if (!ok) {
+      return
     }
+    bulkDeleteMutation.mutate({ ids: [...selectedIds] })
   }
 
   const handleSelectToggle = useCallback((id: number) => {
@@ -360,6 +371,8 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
 
   return (
     <div className="space-y-4">
+      <DeleteConfirmDialog />
+      <BulkDeleteConfirmDialog />
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {mediaFiles.length}

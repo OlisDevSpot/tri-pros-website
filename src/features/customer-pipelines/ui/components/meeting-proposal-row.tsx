@@ -12,6 +12,7 @@ import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit
 import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -24,6 +25,10 @@ interface Props {
 export function MeetingProposalRow({ proposal, onMutationSuccess, onNavigate }: Props) {
   const trpc = useTRPC()
   const ability = useAbility()
+  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
+    title: 'Delete proposal',
+    message: 'This will permanently delete this proposal and cannot be undone.',
+  })
 
   const duplicateMutation = useMutation(
     trpc.proposalsRouter.duplicateProposal.mutationOptions({
@@ -43,6 +48,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess, onNavigate }: 
 
   return (
     <div className="flex flex-col gap-1.5 rounded-md border border-border/50 bg-muted/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <DeleteConfirmDialog />
       {/* Info */}
       <div className="flex flex-wrap items-center gap-2 min-w-0">
         <Badge variant="outline" className={PROPOSAL_STATUS_COLORS[proposal.status] ?? ''}>
@@ -88,7 +94,12 @@ export function MeetingProposalRow({ proposal, onMutationSuccess, onNavigate }: 
           />
           {ability.can('delete', 'Proposal') && (
             <EntityDeleteButton
-              onClick={() => deleteMutation.mutate({ proposalId: proposal.id })}
+              onClick={async () => {
+                const ok = await confirmDelete()
+                if (ok) {
+                  deleteMutation.mutate({ proposalId: proposal.id })
+                }
+              }}
               disabled={deleteMutation.isPending}
             />
           )}
