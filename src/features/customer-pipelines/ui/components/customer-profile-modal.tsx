@@ -1,7 +1,6 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCallback, useState } from 'react'
 
 import { CustomerProfileModalContent } from '@/features/customer-pipelines/ui/components/customer-profile-modal-content'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
@@ -17,8 +16,6 @@ export function CustomerProfileModal({ customerId }: Props) {
   const { isOpen, close } = useModalStore()
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const [headerActions, setHeaderActions] = useState<React.ReactNode>(null)
-  const handleHeaderActions = useCallback((actions: React.ReactNode) => setHeaderActions(actions), [])
 
   const profileQuery = useQuery(
     trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }),
@@ -37,7 +34,6 @@ export function CustomerProfileModal({ customerId }: Props) {
     <Modal
       className="sm:max-w-4xl sm:h-[80vh] overflow-hidden flex flex-col"
       close={close}
-      headerActions={headerActions}
       isOpen={isOpen}
       title={title}
     >
@@ -67,7 +63,6 @@ export function CustomerProfileModal({ customerId }: Props) {
       {profileQuery.data && (
         <CustomerProfileModalContent
           data={profileQuery.data}
-          onHeaderActions={handleHeaderActions}
           onMutationSuccess={handleMutationSuccess}
         />
       )}
