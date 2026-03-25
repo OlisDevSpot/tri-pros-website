@@ -23,6 +23,7 @@ interface MeetingCalendarProps {
   onStartMeeting: (meetingId: string) => void
   onDuplicateMeeting: (meetingId: string) => void
   onDeleteMeeting: (meetingId: string) => void
+  onUpdateScheduledFor: (meetingId: string, date: Date) => void
   onDateRangeChange?: (range: { from: Date, to: Date }) => void
   activeView?: CalendarViewType
   onViewChange?: (view: CalendarViewType) => void
@@ -37,6 +38,7 @@ export function MeetingCalendar({
   onStartMeeting,
   onDuplicateMeeting,
   onDeleteMeeting,
+  onUpdateScheduledFor,
   onDateRangeChange,
   activeView,
   onViewChange,
@@ -54,9 +56,10 @@ export function MeetingCalendar({
         onStart={onStartMeeting}
         onDuplicate={onDuplicateMeeting}
         onDelete={onDeleteMeeting}
+        onUpdateScheduledFor={onUpdateScheduledFor}
       />
     ),
-    [onNavigateToMeeting, onEditMeeting, onStartMeeting, onDuplicateMeeting, onDeleteMeeting],
+    [onNavigateToMeeting, onEditMeeting, onStartMeeting, onDuplicateMeeting, onDeleteMeeting, onUpdateScheduledFor],
   )
 
   const renderCompact = useCallback(
@@ -68,9 +71,10 @@ export function MeetingCalendar({
         onStart={onStartMeeting}
         onDuplicate={onDuplicateMeeting}
         onDelete={onDeleteMeeting}
+        onUpdateScheduledFor={onUpdateScheduledFor}
       />
     ),
-    [onNavigateToMeeting, onEditMeeting, onStartMeeting, onDuplicateMeeting, onDeleteMeeting],
+    [onNavigateToMeeting, onEditMeeting, onStartMeeting, onDuplicateMeeting, onDeleteMeeting, onUpdateScheduledFor],
   )
 
   return (

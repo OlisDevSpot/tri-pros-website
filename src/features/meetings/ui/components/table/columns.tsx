@@ -8,7 +8,6 @@ import { MoreHorizontal } from 'lucide-react'
 import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
 import { MEETING_STATUS_COLORS } from '@/features/meetings/constants/status-colors'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
-import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -184,12 +183,6 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
           </div>
         )
       },
-      sortingFn: 'datetime',
-    },
-    {
-      accessorKey: 'createdAt',
-      header: ({ column }) => <SortableHeader column={column} label="Created" />,
-      cell: ({ row }) => <DateCell dateString={row.original.createdAt} />,
       sortingFn: 'datetime',
     },
   ]

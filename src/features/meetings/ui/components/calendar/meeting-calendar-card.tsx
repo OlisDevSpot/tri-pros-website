@@ -3,13 +3,15 @@
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { MeetingStatus } from '@/shared/types/enums'
 
-import { CopyIcon, MoreHorizontalIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
+import { format } from 'date-fns'
+import { CalendarIcon, CopyIcon, MoreHorizontalIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
 
 import { programAccentMap } from '@/features/meetings/constants/program-accent-map'
 import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
 import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
+import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -40,6 +42,7 @@ interface MeetingCalendarCardProps {
   onStart: (meetingId: string) => void
   onDuplicate: (meetingId: string) => void
   onDelete: (meetingId: string) => void
+  onUpdateScheduledFor: (meetingId: string, date: Date) => void
 }
 
 export function MeetingCalendarCard({
@@ -49,6 +52,7 @@ export function MeetingCalendarCard({
   onStart,
   onDuplicate,
   onDelete,
+  onUpdateScheduledFor,
 }: MeetingCalendarCardProps) {
   const { data: session } = useSession()
   const userRole = session?.user?.role
@@ -123,7 +127,23 @@ export function MeetingCalendarCard({
         </div>
       </div>
 
-      {/* Row 2: Program badge */}
+      {/* Row 2: Scheduled time (editable) */}
+      <div className="min-w-0" onClick={e => e.stopPropagation()}>
+        <DateTimePicker
+          value={new Date(event.startAt)}
+          onChange={(date) => {
+            if (date) {
+              onUpdateScheduledFor(event.meetingId, date)
+            }
+          }}
+          className="h-auto px-1 py-0 text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          <CalendarIcon className="h-3 w-3 shrink-0" />
+          <span>{format(new Date(event.startAt), 'h:mm a')}</span>
+        </DateTimePicker>
+      </div>
+
+      {/* Row 3: Program badge */}
       {program && (
         <Badge
           className={cn(

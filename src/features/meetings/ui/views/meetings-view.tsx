@@ -43,7 +43,7 @@ export function MeetingsView() {
   const trpc = useTRPC()
   const router = useRouter()
   const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
-  const { deleteMeeting, duplicateMeeting } = useMeetingActions()
+  const { deleteMeeting, duplicateMeeting, updateScheduledFor } = useMeetingActions()
 
   const handleNavigateToMeeting = useCallback((meetingId: string) => {
     router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`)
@@ -64,6 +64,10 @@ export function MeetingsView() {
   const handleDeleteMeeting = useCallback((meetingId: string) => {
     deleteMeeting.mutate({ id: meetingId })
   }, [deleteMeeting])
+
+  const handleUpdateScheduledFor = useCallback((meetingId: string, date: Date) => {
+    updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() })
+  }, [updateScheduledFor])
 
   const [tableFilteredData, setTableFilteredData] = useState<MeetingRow[] | null>(null)
   const handleFilteredDataChange = useCallback((data: MeetingRow[]) => setTableFilteredData(data), [])
@@ -195,6 +199,7 @@ export function MeetingsView() {
                 onStartMeeting={handleStartMeeting}
                 onDuplicateMeeting={handleDuplicateMeeting}
                 onDeleteMeeting={handleDeleteMeeting}
+                onUpdateScheduledFor={handleUpdateScheduledFor}
                 activeView={calendarView}
                 onViewChange={setCalendarView}
                 showSaturday={showSaturday}
