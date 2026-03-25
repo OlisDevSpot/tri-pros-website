@@ -1,16 +1,28 @@
 'use client'
 
 import type { MeetingFlowContext } from '@/features/meetings/types'
-import type { MeetingFlowState } from '@/shared/entities/meetings/schemas'
+import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
+import type { MeetingOutcome } from '@/shared/types/enums'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { CONTEXT_TOTAL_FIELDS } from '@/features/meetings/constants/context-panel'
 import { stepParser } from '@/features/meetings/constants/query-parsers'
 import { MEETING_STEPS, TOTAL_STEPS } from '@/features/meetings/constants/step-config'
+import { computeContextFilledCount } from '@/features/meetings/lib/context-fill-count'
+import { ContextPanel } from '@/features/meetings/ui/components/context-panel'
+import { ContextPanelTrigger } from '@/features/meetings/ui/components/context-panel-trigger'
 import { StepNav } from '@/features/meetings/ui/components/step-nav'
+import { ClosingStep } from '@/features/meetings/ui/components/steps/closing-step'
+import { CreateProposalStep } from '@/features/meetings/ui/components/steps/create-proposal-step'
+import { DealStructureStep } from '@/features/meetings/ui/components/steps/deal-structure-step'
+import { PortfolioStep } from '@/features/meetings/ui/components/steps/portfolio-step'
+import { ProgramStep } from '@/features/meetings/ui/components/steps/program-step'
+import { SpecialtiesStep } from '@/features/meetings/ui/components/steps/specialties-step'
+import { WhoWeAreStep } from '@/features/meetings/ui/components/steps/who-we-are-step'
 import { Logo } from '@/shared/components/logo'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -27,6 +39,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
+  const [contextOpen, setContextOpen] = useState(false)
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.getById.queryOptions({ id: meetingId }),
@@ -76,6 +89,28 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
     })
   }, [customer, updateCustomerProfile])
 
+  const handleContextChange = useCallback((patch: Record<string, unknown>) => {
+    const current = (meeting?.contextJSON ?? {}) as MeetingContext
+    updateMeeting.mutate({
+      id: meetingId,
+      contextJSON: { ...current, ...patch } as MeetingContext,
+    })
+  }, [meeting?.contextJSON, meetingId, updateMeeting])
+
+  const handleOutcomeChange = useCallback((outcome: string) => {
+    updateMeeting.mutate({
+      id: meetingId,
+      meetingOutcome: outcome as MeetingOutcome,
+    })
+  }, [meetingId, updateMeeting])
+
+  const handleAgentNotesChange = useCallback((notes: string) => {
+    updateMeeting.mutate({
+      id: meetingId,
+      agentNotes: notes,
+    })
+  }, [meetingId, updateMeeting])
+
   const flowContext = useMemo<MeetingFlowContext | null>(() => {
     if (!meeting) {
       return null
@@ -89,6 +124,11 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
       onCustomerProfileChange: handleCustomerProfileChange,
     }
   }, [meeting, meetingId, customer, handleFlowStateChange, handleCustomerProfileChange])
+
+  const contextFilledCount = useMemo(
+    () => (meeting ? computeContextFilledCount(meeting, customer) : 0),
+    [meeting, customer],
+  )
 
   if (meetingQuery.isLoading) {
     return <LoadingState title="Loading meeting" description="Fetching meeting details..." />
@@ -142,11 +182,25 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
         <h1 className="text-lg font-bold tracking-tight md:text-xl">{stepConfig.title}</h1>
       </div>
 
-      {/* Step content — placeholder until step components are built */}
+      {/* Step content */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 md:px-6">
-        <div className="flex items-center justify-center p-12 text-muted-foreground">
-          {`Step ${currentStep}: ${stepConfig.title} — component pending`}
-        </div>
+        {stepConfig.id === 'who-we-are' && <WhoWeAreStep />}
+        {stepConfig.id === 'specialties' && <SpecialtiesStep flowContext={flowContext} />}
+        {stepConfig.id === 'portfolio' && <PortfolioStep flowContext={flowContext} />}
+        {stepConfig.id === 'program' && (
+          <ProgramStep flowContext={flowContext} meetingType={meeting.meetingType} />
+        )}
+        {stepConfig.id === 'deal-structure' && <DealStructureStep flowContext={flowContext} />}
+        {stepConfig.id === 'closing' && (
+          <ClosingStep
+            flowContext={flowContext}
+            meetingOutcome={meeting.meetingOutcome}
+            onOutcomeChange={handleOutcomeChange}
+          />
+        )}
+        {stepConfig.id === 'create-proposal' && (
+          <CreateProposalStep flowContext={flowContext} meetingId={meetingId} />
+        )}
       </div>
 
       {/* Footer navigation */}
@@ -179,6 +233,24 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
           </Button>
         </div>
       </footer>
+
+      {/* Context panel trigger + sheet */}
+      <ContextPanelTrigger
+        filledCount={contextFilledCount}
+        totalCount={CONTEXT_TOTAL_FIELDS}
+        onClick={() => setContextOpen(true)}
+      />
+
+      <ContextPanel
+        customer={customer}
+        isOpen={contextOpen}
+        meeting={meeting}
+        onAgentNotesChange={handleAgentNotesChange}
+        onContextChange={handleContextChange}
+        onCustomerProfileChange={handleCustomerProfileChange}
+        onOpenChange={setContextOpen}
+        onOutcomeChange={handleOutcomeChange}
+      />
     </div>
   )
 }
