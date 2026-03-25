@@ -1,90 +1,87 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { Customer } from '@/shared/db/schema'
-import type { MeetingOutcome } from '@/shared/types/enums'
-import type { JsonbSection } from '@/shared/types/jsonb'
+import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
+import type { MeetingOutcome, MeetingType } from '@/shared/types/enums'
 
-export type ProgramAccessor = 'tpr-monthly-special' | 'energy-savings-plus' | 'senior-citizen-program'
+// ── Program Types ───────────────────────────────────────────────────────────
 
-export type BuyTriggerType = 'urgency' | 'scarcity' | 'authority' | 'risk-reduction' | 'social-proof'
-
-export interface BuyTrigger {
-  type: BuyTriggerType
-  message: string
-}
-
-export interface CaseStudy {
-  afterImg?: string
-  beforeImg?: string
-  context: string
-  location: string
-  name: string
-  quote?: string
-  results: string[]
-}
-
-export type CollectionFieldType = 'select' | 'text' | 'number' | 'rating' | 'boolean'
-
-export type { JsonbSection } from '@/shared/types/jsonb'
-
-export interface CollectionField {
-  entity: 'customer' | 'meeting'
+export interface ProgramIncentive {
   id: string
-  jsonbKey: JsonbSection
   label: string
-  max?: number
-  min?: number
-  options?: readonly string[]
-  placeholder?: string
-  required?: boolean
-  type: CollectionFieldType
-}
-
-export interface IntakeStep {
   description: string
-  fields: CollectionField[]
-  id: string
-  title: string
+  valueDisplay: string
+  valueType: 'fixed' | 'percentage' | 'credit'
+  calculateDeduction: (tcp: number) => number
 }
 
-export interface MeetingContext {
-  collectedData: {
-    bill: string
-    dmsPresent: string
-    scope: string
-    timeline: string
-    triggerEvent: string
-    yrs: string
-  }
-  customer: Pick<Customer, 'id' | 'name' | 'address' | 'city' | 'email' | 'phone' | 'state'> | null
+export interface ProgramPresentation {
+  story: string
+  history: string
+  timeline: string
+  faqs: { question: string, answer: string }[]
+  keyStats: { label: string, value: string }[]
 }
 
-export interface MeetingStep {
-  body: string
-  bodyFn?: (ctx: MeetingContext) => string
-  buyTrigger: BuyTrigger
-  caseStudy: CaseStudy
-  collectsData?: CollectionField[]
-  headline: string
-  headlineFn?: (ctx: MeetingContext) => string
-  accessor: string
-  shortLabel?: string
-  title: string
+export interface QualificationContext {
+  tradeSelections: TradeSelection[]
+  customer: Customer | null
+  meetingType: MeetingType
+}
+
+export interface QualificationResult {
+  qualified: boolean
+  reason: string
+  matchedCriteria: string[]
+  missedCriteria: string[]
 }
 
 export interface MeetingProgram {
-  accentColor: 'amber' | 'sky' | 'violet'
-  forWho: string
   accessor: string
   name: string
-  signals: string[]
-  steps: MeetingStep[]
   tagline: string
+  accentColor: 'amber' | 'sky' | 'violet'
+  qualify: (ctx: QualificationContext) => QualificationResult
+  incentives: ProgramIncentive[]
+  expiresLabel: string
+  presentation: ProgramPresentation
 }
+
+// ── Step Types ──────────────────────────────────────────────────────────────
+
+export type MeetingStepId
+  = | 'who-we-are'
+    | 'specialties'
+    | 'portfolio'
+    | 'program'
+    | 'deal-structure'
+    | 'closing'
+    | 'create-proposal'
+
+export interface MeetingStepConfig {
+  id: MeetingStepId
+  stepNumber: number
+  title: string
+  shortLabel: string
+  isCustomerFacing: boolean
+}
+
+// ── Flow Context (passed to step components) ────────────────────────────────
+
+export interface MeetingFlowContext {
+  meetingId: string
+  customerId: string | null
+  customer: Customer | null
+  flowState: MeetingFlowState | null
+  onFlowStateChange: (patch: Partial<MeetingFlowState>) => void
+  onCustomerProfileChange: (jsonbKey: string, patch: Record<string, unknown>) => void
+}
+
+// ── Calendar Event ──────────────────────────────────────────────────────────
 
 export interface MeetingCalendarEvent extends CalendarEvent {
   meetingId: string
   meetingOutcome: MeetingOutcome
-  selectedProgram: string | null
+  meetingType: MeetingType
   customerName: string | null
   customerPhone: string | null
   customerAddress: string | null
