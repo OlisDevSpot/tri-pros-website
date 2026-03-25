@@ -190,7 +190,9 @@
       "Bash(for i:*)",
       "Bash(python3 -c \"import json,sys; items=json.load\\(sys.stdin\\)[''''items'''']; [print\\(f''''#{i[\"\"content\"\"][\"\"number\"\"]} {i[\"\"title\"\"]}: {i[\"\"status\"\"]}''''\\) for i in items if i[''''content''''][''''number''''] == 12]\")",
       "Bash(timeout 240 cat)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -maxdepth 2 -type f \\\\\\(-name *.env* -o -name .github -o -name vercel.json -o -name next.config.* \\\\\\))",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(p.packageManager || ''NOT SET''\\)\")"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
