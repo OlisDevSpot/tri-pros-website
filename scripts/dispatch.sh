@@ -647,13 +647,19 @@ $(echo "$commits" | sed 's/^/- /')
 ## Stats
 ${files_changed}
 
+## Preview
+> Vercel auto-deploys a preview for this PR. Check the deployment status below or the bot comment for the URL.
+
+📱 **Test on mobile** — open the preview URL on your phone to QA.
+
 ## Self-Review
-- [ ] \`pnpm lint\` passes
-- [ ] \`pnpm build\` passes
+- [x] \`pnpm lint\` passes
+- [x] \`pnpm build\` passes
+- [ ] Vercel preview deployment works
 - [ ] Diff reviewed for unintended changes
 
 ## Test Plan
-- [ ] Verified locally
+- [ ] Verified via Vercel preview
 PR_EOF
 )" \
     --base main 2>&1) || {
