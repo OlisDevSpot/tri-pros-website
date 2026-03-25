@@ -1,9 +1,9 @@
 import { TRPCError } from '@trpc/server'
-import { and, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import z from 'zod'
 import { meetingTypes } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
-import { customers, insertMeetingSchema, meetings, proposals, user } from '@/shared/db/schema'
+import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
@@ -204,5 +204,90 @@ export const meetingsRouter = createTRPCRouter({
       }
 
       return updated
+    }),
+
+  // Fetch showroom projects relevant to the trades/scopes selected in the meeting flow.
+  // Returns up to 4 projects ordered by scope match count, with media files attached.
+  getPortfolioForMeeting: agentProcedure
+    .input(z.object({
+      scopeIds: z.array(z.string()),
+    }))
+    .query(async ({ input }) => {
+      const { scopeIds } = input
+
+      type MediaRow = typeof mediaFiles.$inferSelect
+
+      if (scopeIds.length === 0) {
+        // No scopes — return recent public projects as fallback
+        const fallbackRows = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.isPublic, true))
+          .orderBy(desc(projects.completedAt))
+          .limit(4)
+
+        return fallbackRows.map(r => ({ ...r, matchedScopeCount: 0, mediaFiles: [] as MediaRow[] }))
+      }
+
+      // Query projects that share scopes with the selected scopes
+      const matchedProjects = await db
+        .select({
+          project: projects,
+          matchedScopeCount: count(x_projectScopes.scopeId).as('matched_scope_count'),
+        })
+        .from(projects)
+        .innerJoin(x_projectScopes, eq(x_projectScopes.projectId, projects.id))
+        .where(and(
+          eq(projects.isPublic, true),
+          inArray(x_projectScopes.scopeId, scopeIds),
+        ))
+        .groupBy(projects.id)
+        .orderBy(desc(count(x_projectScopes.scopeId)), desc(projects.completedAt))
+        .limit(4)
+
+      // Backfill if fewer than 2 matches
+      const matchedIds = matchedProjects.map(r => r.project.id)
+      let backfill: Array<{ project: typeof projects.$inferSelect, matchedScopeCount: number }> = []
+
+      if (matchedProjects.length < 2) {
+        const backfillRows = await db
+          .select()
+          .from(projects)
+          .where(and(
+            eq(projects.isPublic, true),
+            matchedIds.length > 0
+              ? sql`${projects.id} NOT IN (${sql.join(matchedIds.map(id => sql`${id}`), sql`, `)})`
+              : undefined,
+          ))
+          .orderBy(desc(projects.completedAt))
+          .limit(4 - matchedProjects.length)
+
+        backfill = backfillRows.map(r => ({ project: r, matchedScopeCount: 0 }))
+      }
+
+      const allProjects = [...matchedProjects, ...backfill]
+      const projectIds = allProjects.map(r => r.project.id)
+
+      // Fetch media for all returned projects
+      const media: MediaRow[] = projectIds.length > 0
+        ? await db
+            .select()
+            .from(mediaFiles)
+            .where(inArray(mediaFiles.projectId, projectIds))
+            .orderBy(mediaFiles.sortOrder)
+        : []
+
+      const mediaByProject = new Map<string, MediaRow[]>()
+      for (const m of media) {
+        const existing = mediaByProject.get(m.projectId) ?? []
+        existing.push(m)
+        mediaByProject.set(m.projectId, existing)
+      }
+
+      return allProjects.map(r => ({
+        ...r.project,
+        matchedScopeCount: r.matchedScopeCount,
+        mediaFiles: mediaByProject.get(r.project.id) ?? [],
+      }))
     }),
 })
