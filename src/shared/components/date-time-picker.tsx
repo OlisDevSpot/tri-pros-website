@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Calendar } from '@/shared/components/ui/calendar'
@@ -20,17 +20,37 @@ interface Props {
 
 export function DateTimePicker({ value, onChange, className, placeholder = 'Pick date & time', children }: Props) {
   const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState<Date | undefined>(value)
+  const openRef = useRef(false)
+
+  // Sync draft from external value when popover is closed
+  useEffect(() => {
+    if (!openRef.current) {
+      setDraft(value)
+    }
+  }, [value])
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && openRef.current) {
+      // Popover closing — commit draft if it changed
+      if (draft?.getTime() !== value?.getTime()) {
+        onChange(draft)
+      }
+    }
+    openRef.current = nextOpen
+    setOpen(nextOpen)
+  }
 
   function handleDateSelect(date: Date | undefined) {
     if (!date) {
-      onChange(undefined)
+      setDraft(undefined)
       return
     }
     const merged = new Date(date)
-    if (value) {
-      merged.setHours(value.getHours(), value.getMinutes(), 0, 0)
+    if (draft) {
+      merged.setHours(draft.getHours(), draft.getMinutes(), 0, 0)
     }
-    onChange(merged)
+    setDraft(merged)
   }
 
   function handleTimeChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -38,17 +58,17 @@ export function DateTimePicker({ value, onChange, className, placeholder = 'Pick
     if (Number.isNaN(h) || Number.isNaN(m)) {
       return
     }
-    const next = value ? new Date(value) : new Date()
+    const next = draft ? new Date(draft) : new Date()
     next.setHours(h, m, 0, 0)
-    onChange(next)
+    setDraft(next)
   }
 
-  const timeValue = value
-    ? `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`
+  const timeValue = draft
+    ? `${String(draft.getHours()).padStart(2, '0')}:${String(draft.getMinutes()).padStart(2, '0')}`
     : ''
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -76,7 +96,7 @@ export function DateTimePicker({ value, onChange, className, placeholder = 'Pick
       <PopoverContent className="w-auto p-0" align="start">
         <Calendar
           mode="single"
-          selected={value}
+          selected={draft}
           onSelect={handleDateSelect}
           initialFocus
         />
