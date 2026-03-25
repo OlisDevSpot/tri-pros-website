@@ -29,8 +29,8 @@ export interface CustomerPipelineRawData {
   customerCity: string
   meetingCount: number
   proposalCount: number
-  hasCompletedMeeting: boolean
-  hasInProgressMeeting: boolean
+  hasPastMeeting: boolean
+  hasActiveMeeting: boolean
   hasScheduledFutureMeeting: boolean
   proposalStatuses: string[]
   hasSentContract: boolean

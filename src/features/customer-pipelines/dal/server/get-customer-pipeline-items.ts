@@ -51,9 +51,9 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       customerAddress: customers.address,
       customerCity: customers.city,
       meetingCount: count(meetings.id).as('meeting_count'),
-      hasCompletedMeeting: sql<boolean>`bool_or(${meetings.status} = 'completed')`.as('has_completed'),
-      hasInProgressMeeting: sql<boolean>`bool_or(${meetings.status} = 'in_progress')`.as('has_in_progress'),
-      hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.status} = 'in_progress' AND ${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
+      hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
+      hasActiveMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() AND ${meetings.scheduledFor} > now() - interval '2 hours')`.as('has_active'),
+      hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.status} IN ('completed', 'converted')))`.as('has_past'),
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
     })
     .from(customers)
@@ -109,8 +109,8 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       customerCity: row.customerCity,
       meetingCount: row.meetingCount,
       proposalCount: pData?.proposalCount ?? 0,
-      hasCompletedMeeting: row.hasCompletedMeeting ?? false,
-      hasInProgressMeeting: row.hasInProgressMeeting ?? false,
+      hasPastMeeting: row.hasPastMeeting ?? false,
+      hasActiveMeeting: row.hasActiveMeeting ?? false,
       hasScheduledFutureMeeting: row.hasScheduledFutureMeeting ?? false,
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
@@ -119,8 +119,8 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     }
 
     const stage = computeCustomerStage({
-      hasCompletedMeeting: rawData.hasCompletedMeeting,
-      hasInProgressMeeting: rawData.hasInProgressMeeting,
+      hasPastMeeting: rawData.hasPastMeeting,
+      hasActiveMeeting: rawData.hasActiveMeeting,
       hasScheduledFutureMeeting: rawData.hasScheduledFutureMeeting,
       proposalStatuses: rawData.proposalStatuses,
       hasSentContract: rawData.hasSentContract,

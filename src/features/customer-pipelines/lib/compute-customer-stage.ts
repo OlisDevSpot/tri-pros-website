@@ -1,8 +1,8 @@
 import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
 
 interface StageInput {
-  hasCompletedMeeting: boolean
-  hasInProgressMeeting: boolean
+  hasPastMeeting: boolean
+  hasActiveMeeting: boolean
   hasScheduledFutureMeeting: boolean
   proposalStatuses: string[]
   hasSentContract: boolean
@@ -27,18 +27,22 @@ export function computeCustomerStage(data: StageInput): CustomerPipelineStage {
     return 'declined'
   }
 
-  if (data.hasCompletedMeeting && data.hasInProgressMeeting) {
+  // Past meeting + future meeting = follow-up scheduled
+  if (data.hasPastMeeting && data.hasScheduledFutureMeeting) {
     return 'follow_up_scheduled'
   }
 
-  if (data.hasCompletedMeeting && !data.hasInProgressMeeting) {
-    return 'meeting_completed'
-  }
-
-  if (data.hasInProgressMeeting && !data.hasScheduledFutureMeeting) {
+  // Active meeting (within 2h window of scheduledFor) = in progress
+  if (data.hasActiveMeeting) {
     return 'meeting_in_progress'
   }
 
+  // Only past meetings, nothing upcoming = done
+  if (data.hasPastMeeting) {
+    return 'meeting_completed'
+  }
+
+  // Future meeting only = scheduled
   if (data.hasScheduledFutureMeeting) {
     return 'meeting_scheduled'
   }
