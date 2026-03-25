@@ -6,7 +6,8 @@ import {
   leadSources,
   leadTypes,
   mediaPhases,
-  meetingStatuses,
+  meetingOutcomes,
+  meetingTypes,
   projectTypes,
   proposalStatuses,
   tradeLocations,
@@ -25,7 +26,8 @@ export const projectTypeEnum = pgEnum('project_type', projectTypes)
 export const viewSourceEnum = pgEnum('view_source', viewSources)
 
 // MEETINGS
-export const meetingStatusEnum = pgEnum('meeting_status', meetingStatuses)
+export const meetingOutcomeEnum = pgEnum('meeting_outcome', meetingOutcomes)
+export const meetingTypeEnum = pgEnum('meeting_type', meetingTypes)
 
 // PROPOSALS
 export const proposalStatusEnum = pgEnum('proposal_status', proposalStatuses)
