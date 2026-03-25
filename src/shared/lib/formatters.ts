@@ -11,8 +11,7 @@ export function formatAsPhoneNumber(phone: string) {
 }
 
 export function formatAddress(address: string, city: string, state: string, zipCode: string) {
-  return `${address}, 
-  ${city}, ${state}, ${zipCode}`
+  return `${address},\n${city}, ${state}, ${zipCode}`
 }
 
 export function formatStringAsDate(stringDate: string, options: Intl.DateTimeFormatOptions = {}) {

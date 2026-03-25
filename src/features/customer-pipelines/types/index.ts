@@ -5,6 +5,13 @@ import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
 
+export interface PipelineItemRep {
+  id: string
+  name: string
+  email: string
+  image: string | null
+}
+
 export interface CustomerPipelineItem {
   id: string
   type: 'customer'
@@ -14,10 +21,15 @@ export interface CustomerPipelineItem {
   email: string | null
   address: string | null
   city: string
+  state: string | null
+  zip: string
   totalPipelineValue: number
   meetingCount: number
   proposalCount: number
   latestActivityAt: string | null
+  nextMeetingId: string | null
+  nextMeetingAt: string | null
+  assignedRep: PipelineItemRep | null
 }
 
 export interface CustomerPipelineRawData {
