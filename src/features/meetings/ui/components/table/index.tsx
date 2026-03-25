@@ -15,7 +15,7 @@ import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { getColumns } from './columns'
 
 const columns = getColumns()
-const defaultSort = [{ id: 'createdAt', desc: true }]
+const defaultSort = [{ id: 'scheduledFor', desc: true }]
 
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
 

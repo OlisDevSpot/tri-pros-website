@@ -83,6 +83,7 @@ export interface MeetingProgram {
 
 export interface MeetingCalendarEvent extends CalendarEvent {
   meetingId: string
+  customerId: string | null
   status: MeetingStatus
   program: string | null
   contactName: string | null

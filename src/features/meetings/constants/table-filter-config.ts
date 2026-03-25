@@ -12,13 +12,6 @@ export const meetingTableFilters: DataTableFilterConfig[] = [
     placeholder: 'Filter meetings...',
   },
   {
-    id: 'created',
-    label: 'Created at',
-    type: 'time-preset',
-    columnId: 'createdAt',
-    presets: DEFAULT_TIME_PRESETS,
-  },
-  {
     id: 'scheduled',
     label: 'Scheduled for',
     type: 'time-preset',

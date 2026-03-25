@@ -12,6 +12,7 @@ import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
+import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { meetingsStatConfig } from '@/features/meetings/constants/meetings-stat-config'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
 import { MeetingCalendar } from '@/features/meetings/ui/components/calendar/meeting-calendar'
@@ -26,6 +27,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { ROOTS } from '@/shared/config/roots'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
@@ -42,12 +44,18 @@ export function MeetingsView() {
 
   const trpc = useTRPC()
   const router = useRouter()
+  const { open: openModal, setModal } = useModalStore()
   const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
-  const { deleteMeeting, duplicateMeeting } = useMeetingActions()
+  const { deleteMeeting, duplicateMeeting, updateScheduledFor } = useMeetingActions()
 
-  const handleNavigateToMeeting = useCallback((meetingId: string) => {
-    router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`)
-  }, [router])
+  const handleViewCustomerProfile = useCallback((customerId: string, meetingId: string) => {
+    setModal({
+      accessor: 'CustomerProfile',
+      Component: CustomerProfileModal,
+      props: { customerId, defaultTab: 'meetings', highlightMeetingId: meetingId },
+    })
+    openModal()
+  }, [setModal, openModal])
 
   const handleEditMeeting = useCallback((meetingId: string) => {
     router.push(`${ROOTS.dashboard.root}?step=edit-meeting&editMeetingId=${meetingId}`)
@@ -64,6 +72,10 @@ export function MeetingsView() {
   const handleDeleteMeeting = useCallback((meetingId: string) => {
     deleteMeeting.mutate({ id: meetingId })
   }, [deleteMeeting])
+
+  const handleUpdateScheduledFor = useCallback((meetingId: string, date: Date) => {
+    updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() })
+  }, [updateScheduledFor])
 
   const [tableFilteredData, setTableFilteredData] = useState<MeetingRow[] | null>(null)
   const handleFilteredDataChange = useCallback((data: MeetingRow[]) => setTableFilteredData(data), [])
@@ -195,6 +207,7 @@ export function MeetingsView() {
                 onStartMeeting={handleStartMeeting}
                 onDuplicateMeeting={handleDuplicateMeeting}
                 onDeleteMeeting={handleDeleteMeeting}
+                onUpdateScheduledFor={handleUpdateScheduledFor}
                 activeView={calendarView}
                 onViewChange={setCalendarView}
                 showSaturday={showSaturday}
