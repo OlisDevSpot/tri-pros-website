@@ -11,6 +11,7 @@
     "tsc": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "db:push:dev": "DRIZZLE_TARGET=dev drizzle-kit push",
     "db:reset": "tsx ./src/shared/db/lib/db-reset.ts",
     "db:seed": "tsx ./src/shared/db/lib/db-seed.ts",
     "email": "npx react-email -dir ./src/shared/services/resend/emails",
