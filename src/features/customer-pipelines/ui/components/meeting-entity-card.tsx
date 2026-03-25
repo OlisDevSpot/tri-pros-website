@@ -15,16 +15,18 @@ import { EntityStartButton } from '@/shared/components/entity-actions/entity-sta
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
+import { cn } from '@/shared/lib/utils'
 import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   meeting: CustomerProfileMeeting
+  isHighlighted?: boolean
   onMutationSuccess: () => void
   onNavigate?: () => void
 }
 
-export function MeetingEntityCard({ meeting, onMutationSuccess, onNavigate }: Props) {
+export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, onNavigate }: Props) {
   const trpc = useTRPC()
   const ability = useAbility()
 
@@ -47,7 +49,7 @@ export function MeetingEntityCard({ meeting, onMutationSuccess, onNavigate }: Pr
   )
 
   return (
-    <Card>
+    <Card className={cn(isHighlighted && 'ring-2 ring-primary shadow-sm')}>
       <CardContent className="p-0">
         {/* Meeting Header */}
         <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">

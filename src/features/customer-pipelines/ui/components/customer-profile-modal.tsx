@@ -10,9 +10,11 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   customerId: string
+  defaultTab?: 'overview' | 'meetings' | 'proposals'
+  highlightMeetingId?: string
 }
 
-export function CustomerProfileModal({ customerId }: Props) {
+export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingId }: Props) {
   const { isOpen, close } = useModalStore()
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -63,6 +65,8 @@ export function CustomerProfileModal({ customerId }: Props) {
       {profileQuery.data && (
         <CustomerProfileModalContent
           data={profileQuery.data}
+          defaultTab={defaultTab}
+          highlightMeetingId={highlightMeetingId}
           onMutationSuccess={handleMutationSuccess}
         />
       )}
