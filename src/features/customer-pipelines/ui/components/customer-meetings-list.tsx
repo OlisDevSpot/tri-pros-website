@@ -10,6 +10,7 @@ import { CreateMeetingForm } from '@/features/meetings/ui/components/create-meet
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useAbility } from '@/shared/permissions/hooks'
 
 interface Props {
@@ -26,6 +27,7 @@ export function CustomerMeetingsList({
   onMutationSuccess,
 }: Props) {
   const ability = useAbility()
+  const { close: closeModal } = useModalStore()
   const [popoverOpen, setPopoverOpen] = useState(false)
 
   function handleCreateSuccess() {
@@ -73,6 +75,7 @@ export function CustomerMeetingsList({
                 key={meeting.id}
                 meeting={meeting}
                 onMutationSuccess={onMutationSuccess}
+                onNavigate={closeModal}
               />
             ))
           )}

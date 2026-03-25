@@ -18,9 +18,10 @@ import { useTRPC } from '@/trpc/helpers'
 interface Props {
   proposal: CustomerProfileProposal
   onMutationSuccess: () => void
+  onNavigate?: () => void
 }
 
-export function MeetingProposalRow({ proposal, onMutationSuccess }: Props) {
+export function MeetingProposalRow({ proposal, onMutationSuccess, onNavigate }: Props) {
   const trpc = useTRPC()
   const ability = useAbility()
 
@@ -41,7 +42,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess }: Props) {
   )
 
   return (
-    <div className="flex flex-col gap-1.5 rounded-md bg-background px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-1.5 rounded-md border border-border/50 bg-muted/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
       {/* Info */}
       <div className="flex flex-wrap items-center gap-2 min-w-0">
         <Badge variant="outline" className={PROPOSAL_STATUS_COLORS[proposal.status] ?? ''}>
@@ -79,6 +80,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess }: Props) {
           />
           <EntityEditButton
             href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`}
+            onClick={onNavigate}
           />
           <EntityDuplicateButton
             onClick={() => duplicateMutation.mutate({ proposalId: proposal.id })}
