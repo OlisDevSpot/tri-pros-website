@@ -1,4 +1,4 @@
-import type { CustomerPipelineItem, CustomerPipelineRawData } from '@/features/customer-pipelines/types'
+import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemRep } from '@/features/customer-pipelines/types'
 
 import type { CustomerPipeline } from '@/shared/types/enums'
 
@@ -6,6 +6,7 @@ import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
 
 import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
 import { db } from '@/shared/db'
+import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
@@ -20,6 +21,8 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
         email: customers.email,
         address: customers.address,
         city: customers.city,
+        state: customers.state,
+        zip: customers.zip,
         pipelineStage: customers.pipelineStage,
       })
       .from(customers)
@@ -35,10 +38,15 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       email: row.email,
       address: row.address,
       city: row.city,
+      state: row.state,
+      zip: row.zip,
       totalPipelineValue: 0,
       meetingCount: 0,
       proposalCount: 0,
       latestActivityAt: '',
+      nextMeetingId: null,
+      nextMeetingAt: null,
+      assignedRep: null,
     }))
   }
 
@@ -50,11 +58,14 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       customerEmail: customers.email,
       customerAddress: customers.address,
       customerCity: customers.city,
+      customerState: customers.state,
+      customerZip: customers.zip,
       meetingCount: count(meetings.id).as('meeting_count'),
       hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
       hasActiveMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() AND ${meetings.scheduledFor} > now() - interval '2 hours')`.as('has_active'),
       hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.status} IN ('completed', 'converted')))`.as('has_past'),
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
+      nextMeetingAt: sql<string | null>`min(CASE WHEN ${meetings.scheduledFor} > now() - interval '2 hours' THEN ${meetings.scheduledFor} END)`.as('next_meeting_at'),
     })
     .from(customers)
     .leftJoin(meetings, and(
@@ -90,6 +101,33 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     .groupBy(customers.id)
 
   const proposalMap = new Map(proposalRows.map(r => [r.customerId, r]))
+
+  // Fetch assigned rep + meeting ID: owner of the most relevant meeting (latest by scheduledFor) per customer
+  const repRows = await db
+    .selectDistinctOn([meetings.customerId], {
+      customerId: meetings.customerId,
+      meetingId: meetings.id,
+      repId: user.id,
+      repName: user.name,
+      repEmail: user.email,
+      repImage: user.image,
+    })
+    .from(meetings)
+    .innerJoin(user, eq(user.id, meetings.ownerId))
+    .where(and(
+      inArray(meetings.customerId, customerIds),
+      isOmni ? undefined : eq(meetings.ownerId, userId),
+    ))
+    .orderBy(meetings.customerId, desc(meetings.scheduledFor))
+
+  const repMap = new Map(
+    repRows
+      .filter(r => r.customerId !== null)
+      .map(r => [r.customerId!, {
+        meetingId: r.meetingId,
+        rep: { id: r.repId, name: r.repName, email: r.repEmail, image: r.repImage } as PipelineItemRep,
+      }]),
+  )
 
   return rows.map((row): CustomerPipelineItem => {
     const pData = proposalMap.get(row.customerId)
@@ -135,10 +173,15 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       email: rawData.customerEmail,
       address: rawData.customerAddress,
       city: rawData.customerCity,
+      state: row.customerState,
+      zip: row.customerZip,
       totalPipelineValue: rawData.totalPipelineValue,
       meetingCount: rawData.meetingCount,
       proposalCount: rawData.proposalCount,
       latestActivityAt: rawData.latestActivityAt,
+      nextMeetingId: repMap.get(row.customerId)?.meetingId ?? null,
+      nextMeetingAt: row.nextMeetingAt ?? null,
+      assignedRep: repMap.get(row.customerId)?.rep ?? null,
     }
   })
 }

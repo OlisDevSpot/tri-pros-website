@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { pipelineConfigs } from '@/features/customer-pipelines/constants/pipeline-config'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
+import { AssignRepDialog } from '@/features/customer-pipelines/ui/components/assign-rep-dialog'
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
 import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar'
 import { CustomerPipelineTable } from '@/features/customer-pipelines/ui/components/customer-pipeline-table'
@@ -36,6 +37,7 @@ export function CustomerPipelineView() {
   const [layout, setLayout] = useState<DataViewType>('kanban')
   const [pipeline, setPipeline] = useState<CustomerPipeline>('active')
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
+  const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[], currentRepId: string | null } | null>(null)
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
   const ability = useAbility()
@@ -122,6 +124,13 @@ export function CustomerPipelineView() {
     return item.totalPipelineValue > 0 ? item.totalPipelineValue : null
   }
 
+  const handleAssignRep = useCallback((meetingId: string, currentRepId: string | null) => {
+    setAssignRepTarget({ meetingIds: [meetingId], currentRepId })
+  }, [])
+
+  // TODO: Wire up when deleteCustomer tRPC procedure is implemented
+  // const handleDeleteCustomer = useCallback((customerId: string) => { ... }, [])
+
   const renderCard = useCallback(
     (item: CustomerPipelineItem, _href: string, isDragOverlay?: boolean) => (
       <CustomerKanbanCard
@@ -132,9 +141,10 @@ export function CustomerPipelineView() {
         onViewProfile={handleViewProfile}
         onMoveToPipeline={handleMoveToPipeline}
         onCreateMeeting={handleCreateMeeting}
+        onAssignRep={handleAssignRep}
       />
     ),
-    [handleViewProfile, handleMoveToPipeline, handleCreateMeeting, pipeline, canManagePipeline],
+    [handleViewProfile, handleMoveToPipeline, handleCreateMeeting, handleAssignRep, pipeline, canManagePipeline],
   )
 
   const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
@@ -232,6 +242,15 @@ export function CustomerPipelineView() {
           onSuccess={() => pipelineQuery.refetch()}
           customerId={createMeetingForCustomer.id}
           customerName={createMeetingForCustomer.name}
+        />
+      )}
+      {assignRepTarget && (
+        <AssignRepDialog
+          meetingIds={assignRepTarget.meetingIds}
+          currentRepId={assignRepTarget.currentRepId}
+          open={!!assignRepTarget}
+          onOpenChange={open => !open && setAssignRepTarget(null)}
+          onSuccess={() => pipelineQuery.refetch()}
         />
       )}
       <ActionCenterSheet
