@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/
 import { cn } from '@/shared/lib/utils'
 
 const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
-  in_progress: 'bg-blue-500',
+  not_set: 'bg-blue-500',
   proposal_created: 'bg-emerald-500',
   follow_up_needed: 'bg-amber-500',
   not_interested: 'bg-red-500',
@@ -25,7 +25,7 @@ const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
 }
 
 const STATUS_LABELS: Record<MeetingOutcome, string> = {
-  in_progress: 'In Progress',
+  not_set: 'In Progress',
   proposal_created: 'Proposal Created',
   follow_up_needed: 'Follow-up Needed',
   not_interested: 'Not Interested',

@@ -20,7 +20,7 @@ export const meetings = pgTable('meetings', {
   ownerId: text('owner_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   meetingType: meetingTypeEnum('meeting_type').notNull().default('Fresh'),
-  meetingOutcome: meetingOutcomeEnum('meeting_outcome').notNull().default('in_progress'),
+  meetingOutcome: meetingOutcomeEnum('meeting_outcome').notNull().default('not_set'),
   scheduledFor: timestamp('scheduled_for', { mode: 'string', withTimezone: true }),
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),

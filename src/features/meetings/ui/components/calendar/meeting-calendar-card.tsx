@@ -21,7 +21,7 @@ import {
 import { cn } from '@/shared/lib/utils'
 
 const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
-  in_progress: 'bg-blue-500',
+  not_set: 'bg-blue-500',
   proposal_created: 'bg-emerald-500',
   follow_up_needed: 'bg-amber-500',
   not_interested: 'bg-red-500',
@@ -29,7 +29,7 @@ const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
 }
 
 const STATUS_BG_TINTS: Record<MeetingOutcome, string> = {
-  in_progress: 'bg-blue-500/5 border-blue-500/20',
+  not_set: 'bg-blue-500/5 border-blue-500/20',
   proposal_created: 'bg-emerald-500/5 border-emerald-500/20',
   follow_up_needed: 'bg-amber-500/5 border-amber-500/20',
   not_interested: 'bg-red-500/5 border-red-500/20',

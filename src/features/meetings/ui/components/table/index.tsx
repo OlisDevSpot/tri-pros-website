@@ -37,7 +37,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
     onDuplicate: (meetingId: string) => duplicateMeeting.mutate({ id: meetingId }),
     onStart: (meetingId: string) => router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`),
     onDelete: (meetingId: string) => deleteMeeting.mutate({ id: meetingId }),
-    onUpdateOutcome: (meetingId: string, outcome: string) => updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome as 'in_progress' | 'proposal_created' | 'follow_up_needed' | 'not_interested' | 'no_show' }),
+    onUpdateOutcome: (meetingId: string, outcome: string) => updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome as 'not_set' | 'proposal_created' | 'follow_up_needed' | 'not_interested' | 'no_show' }),
     onUpdateScheduledFor: (meetingId: string, date: Date) => updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
     onViewProfile: (customerId: string) => {
       setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })

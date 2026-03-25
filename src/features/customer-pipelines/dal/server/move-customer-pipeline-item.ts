@@ -45,7 +45,7 @@ export async function moveCustomerPipelineItem({ customerId, fromStage, toStage,
     || (fromStage === 'meeting_in_progress' && toStage === 'meeting_completed')
     || (fromStage === 'follow_up_scheduled' && toStage === 'meeting_completed')
   ) {
-    const targetOutcome = toStage === 'meeting_completed' ? 'follow_up_needed' : 'in_progress'
+    const targetOutcome = toStage === 'meeting_completed' ? 'follow_up_needed' : 'not_set'
 
     const customerMeetings = await db
       .select({ id: meetings.id })
@@ -53,7 +53,7 @@ export async function moveCustomerPipelineItem({ customerId, fromStage, toStage,
       .where(and(
         eq(meetings.customerId, customerId),
         isOmni ? undefined : eq(meetings.ownerId, userId),
-        eq(meetings.meetingOutcome, 'in_progress'),
+        eq(meetings.meetingOutcome, 'not_set'),
       ))
       .orderBy(meetings.createdAt)
       .limit(1)
@@ -67,7 +67,7 @@ export async function moveCustomerPipelineItem({ customerId, fromStage, toStage,
 
     await db
       .update(meetings)
-      .set({ meetingOutcome: targetOutcome as 'in_progress' | 'follow_up_needed' })
+      .set({ meetingOutcome: targetOutcome as 'not_set' | 'follow_up_needed' })
       .where(eq(meetings.id, customerMeetings[0].id))
 
     return

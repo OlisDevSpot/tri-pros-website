@@ -53,7 +53,7 @@ export const meetingPipelineStages = [
 
 // Meeting outcomes (replaces meetingStatuses for the meeting flow)
 export const meetingOutcomes = [
-  'in_progress',
+  'not_set',
   'proposal_created',
   'follow_up_needed',
   'not_interested',

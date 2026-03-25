@@ -15,11 +15,11 @@ export const meetingsStatConfig: StatBarItemConfig<MeetingRow>[] = [
     getValue: data => data.length,
   },
   {
-    key: 'in_progress',
-    label: 'In Progress',
+    key: 'not_set',
+    label: 'Not Set',
     icon: PlayCircleIcon,
-    color: 'text-blue-500',
-    getValue: data => data.filter(m => m.meetingOutcome === 'in_progress').length,
+    color: 'text-zinc-500',
+    getValue: data => data.filter(m => m.meetingOutcome === 'not_set').length,
   },
   {
     key: 'proposal_created',

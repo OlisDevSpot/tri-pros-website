@@ -28,7 +28,7 @@ export function buildTimelineEvents(data: CustomerProfileData): TimelineEvent[] 
       entityType: 'meeting',
     })
 
-    if (meeting.meetingOutcome !== 'in_progress') {
+    if (meeting.meetingOutcome !== 'not_set') {
       events.push({
         id: `meeting-completed-${meeting.id}`,
         type: 'meeting_completed',

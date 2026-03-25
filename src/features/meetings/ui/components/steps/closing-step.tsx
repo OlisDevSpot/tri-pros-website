@@ -21,7 +21,7 @@ interface ClosingStepProps {
 
 const OUTCOME_LABELS: Record<string, string> = {
   follow_up_needed: 'Follow-up Needed',
-  in_progress: 'In Progress',
+  not_set: 'Not Set',
   no_show: 'No Show',
   not_interested: 'Not Interested',
   proposal_created: 'Proposal Created',
