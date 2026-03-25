@@ -2,8 +2,6 @@
 
 import type { useCustomerEditForm } from '@/features/customer-pipelines/hooks/use-customer-edit-form'
 
-import { PencilIcon } from 'lucide-react'
-
 import {
   CUSTOMER_PROFILE_ENUM_OPTIONS,
   FINANCIAL_PROFILE_ENUM_OPTIONS,
@@ -15,7 +13,6 @@ import {
   propertyProfileLabels,
 } from '@/features/customer-pipelines/constants/profile-field-labels'
 import { ProfileCard } from '@/features/customer-pipelines/ui/components/profile-card'
-import { Button } from '@/shared/components/ui/button'
 
 interface Props {
   editForm: ReturnType<typeof useCustomerEditForm>
@@ -30,41 +27,10 @@ export function CustomerProfileDetails({
   propertyProfileJSON,
   financialProfileJSON,
 }: Props) {
-  const {
-    form,
-    isEditing,
-    canEdit,
-    canEditProfiles,
-    isPending,
-    startEditing,
-    handleCancel,
-    handleSave,
-  } = editForm
+  const { form, isEditing, canEditProfiles } = editForm
 
   return (
     <div className="space-y-4">
-      {canEdit && (
-        <div className="flex items-center justify-between">
-          {!isEditing
-            ? (
-                <Button variant="ghost" size="sm" onClick={() => startEditing()}>
-                  <PencilIcon className="mr-1.5 h-3.5 w-3.5" />
-                  Edit Profile
-                </Button>
-              )
-            : (
-                <div className="flex items-center gap-2">
-                  <Button size="sm" onClick={handleSave} disabled={isPending}>
-                    {isPending ? 'Saving...' : 'Save'}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleCancel} disabled={isPending}>
-                    Cancel
-                  </Button>
-                </div>
-              )}
-        </div>
-      )}
-
       <ProfileCard
         title="Customer Profile"
         data={customerProfileJSON}
