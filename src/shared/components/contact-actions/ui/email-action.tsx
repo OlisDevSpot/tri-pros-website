@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDownIcon, CopyIcon, PencilIcon, PhoneIcon } from 'lucide-react'
+import { ChevronDownIcon, CopyIcon, MailIcon, PencilIcon } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -10,27 +10,26 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { copyToClipboard } from '@/shared/lib/clipboard'
-import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
-interface PhoneActionProps {
+interface EmailActionProps {
   canEdit?: boolean
   className?: string
   compact?: boolean
+  email: string
   onEdit?: () => void
-  phone: string
 }
 
-export function PhoneAction({ canEdit, className, compact = false, onEdit, phone }: PhoneActionProps) {
+export function EmailAction({ canEdit, className, compact = false, email, onEdit }: EmailActionProps) {
   return (
     <span className={cn('flex items-center gap-1', className)}>
       <a
-        href={`tel:${phone}`}
+        href={`mailto:${email}`}
         className="flex items-center gap-1.5 hover:text-foreground transition-colors"
         onClick={e => e.stopPropagation()}
       >
-        <PhoneIcon size={14} className="shrink-0" />
-        {!compact && <span className="truncate">{formatAsPhoneNumber(phone)}</span>}
+        <MailIcon size={14} className="shrink-0" />
+        {!compact && <span className="truncate">{email}</span>}
       </a>
 
       <DropdownMenu>
@@ -45,12 +44,12 @@ export function PhoneAction({ canEdit, className, compact = false, onEdit, phone
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem asChild>
-            <a href={`tel:${phone}`}>
-              <PhoneIcon size={14} />
-              Call
+            <a href={`mailto:${email}`}>
+              <MailIcon size={14} />
+              Send Email
             </a>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => copyToClipboard(phone, 'Phone')}>
+          <DropdownMenuItem onClick={() => copyToClipboard(email, 'Email')}>
             <CopyIcon size={14} />
             Copy
           </DropdownMenuItem>

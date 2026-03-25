@@ -12,6 +12,7 @@ interface Props {
   description?: React.ReactNode
   children: React.ReactNode
   className?: string
+  headerActions?: React.ReactNode
 }
 
 export function Modal({
@@ -21,6 +22,7 @@ export function Modal({
   description,
   children,
   className,
+  headerActions,
 }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={close}>
@@ -44,15 +46,17 @@ export function Modal({
               </DialogDescription>
             )}
           </DialogHeader>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 -mt-1 -mr-2"
-            onClick={close}
-          >
-            <XIcon className="size-4" />
-            <span className="sr-only">Close</span>
-          </Button>
+          <div className="flex shrink-0 items-center gap-1 -mt-1 -mr-2">
+            {headerActions}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={close}
+            >
+              <XIcon className="size-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
         </div>
         {children}
       </DialogContent>

@@ -1,7 +1,12 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/customer-pipelines/types'
+import type { useCustomerEditForm } from '@/features/customer-pipelines/hooks/use-customer-edit-form'
 
+import {
+  CUSTOMER_PROFILE_ENUM_OPTIONS,
+  FINANCIAL_PROFILE_ENUM_OPTIONS,
+  PROPERTY_PROFILE_ENUM_OPTIONS,
+} from '@/features/customer-pipelines/constants/profile-field-enums'
 import {
   customerProfileLabels,
   financialProfileLabels,
@@ -10,26 +15,51 @@ import {
 import { ProfileCard } from '@/features/customer-pipelines/ui/components/profile-card'
 
 interface Props {
-  customer: CustomerProfileData['customer']
+  editForm: ReturnType<typeof useCustomerEditForm>
+  customerProfileJSON: Record<string, unknown> | null
+  propertyProfileJSON: Record<string, unknown> | null
+  financialProfileJSON: Record<string, unknown> | null
 }
 
-export function CustomerProfileDetails({ customer }: Props) {
+export function CustomerProfileDetails({
+  editForm,
+  customerProfileJSON,
+  propertyProfileJSON,
+  financialProfileJSON,
+}: Props) {
+  const { form, isEditing, canEditProfiles } = editForm
+
   return (
     <div className="space-y-4">
       <ProfileCard
         title="Customer Profile"
-        data={customer.customerProfileJSON as Record<string, unknown> | null}
+        data={customerProfileJSON}
         labels={customerProfileLabels}
+        editMode={isEditing}
+        canEditField={() => canEditProfiles}
+        formPrefix="customerProfileJSON"
+        control={form.control}
+        enumOptions={CUSTOMER_PROFILE_ENUM_OPTIONS}
       />
       <ProfileCard
         title="Property Profile"
-        data={customer.propertyProfileJSON as Record<string, unknown> | null}
+        data={propertyProfileJSON}
         labels={propertyProfileLabels}
+        editMode={isEditing}
+        canEditField={() => canEditProfiles}
+        formPrefix="propertyProfileJSON"
+        control={form.control}
+        enumOptions={PROPERTY_PROFILE_ENUM_OPTIONS}
       />
       <ProfileCard
         title="Financial Profile"
-        data={customer.financialProfileJSON as Record<string, unknown> | null}
+        data={financialProfileJSON}
         labels={financialProfileLabels}
+        editMode={isEditing}
+        canEditField={() => canEditProfiles}
+        formPrefix="financialProfileJSON"
+        control={form.control}
+        enumOptions={FINANCIAL_PROFILE_ENUM_OPTIONS}
       />
     </div>
   )

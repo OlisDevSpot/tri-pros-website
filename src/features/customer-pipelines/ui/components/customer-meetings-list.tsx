@@ -2,79 +2,83 @@
 
 import type { CustomerProfileMeeting } from '@/features/customer-pipelines/types'
 
-import { formatDistanceToNow } from 'date-fns'
-import { ExternalLinkIcon, FileTextIcon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
+import { useState } from 'react'
 
-import { MEETING_LIST_STATUS_COLORS } from '@/features/customer-pipelines/constants/meeting-status-colors'
-import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
+import { MeetingEntityCard } from '@/features/customer-pipelines/ui/components/meeting-entity-card'
+import { CreateMeetingForm } from '@/features/meetings/ui/components/create-meeting-form'
 import { EmptyState } from '@/shared/components/states/empty-state'
-import { Badge } from '@/shared/components/ui/badge'
-import { Card, CardContent } from '@/shared/components/ui/card'
-import { ROOTS } from '@/shared/config/roots'
+import { Button } from '@/shared/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { useAbility } from '@/shared/permissions/hooks'
 
 interface Props {
   meetings: CustomerProfileMeeting[]
+  customerId: string
+  customerName: string
+  onMutationSuccess: () => void
 }
 
-export function CustomerMeetingsList({ meetings }: Props) {
-  if (meetings.length === 0) {
-    return <EmptyState title="No meetings" description="No meetings scheduled for this customer" />
+export function CustomerMeetingsList({
+  meetings,
+  customerId,
+  customerName,
+  onMutationSuccess,
+}: Props) {
+  const ability = useAbility()
+  const { close: closeModal } = useModalStore()
+  const [popoverOpen, setPopoverOpen] = useState(false)
+
+  function handleCreateSuccess() {
+    setPopoverOpen(false)
+    onMutationSuccess()
   }
 
   return (
     <div className="space-y-3">
-      {meetings.map(meeting => (
-        <Card key={meeting.id}>
-          <CardContent className="py-3 px-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className={MEETING_LIST_STATUS_COLORS[meeting.status] ?? ''}>
-                  {meeting.status.replace('_', ' ')}
-                </Badge>
-                {meeting.program && (
-                  <span className="text-sm text-muted-foreground">{meeting.program}</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
-                </span>
-                <EntityViewButton
-                  icon={ExternalLinkIcon}
-                  href={`${ROOTS.dashboard.meetings()}/${meeting.id}`}
-                />
-              </div>
-            </div>
+      {/* Header with Add Meeting */}
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium text-muted-foreground">
+          Meetings (
+          {meetings.length}
+          )
+        </h4>
+        {ability.can('create', 'Meeting') && (
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <PlusIcon className="h-3.5 w-3.5 mr-1" />
+                Add Meeting
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96" align="end">
+              <CreateMeetingForm
+                customerId={customerId}
+                customerName={customerName}
+                onSuccess={handleCreateSuccess}
+                onCancel={() => setPopoverOpen(false)}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
 
-            {meeting.proposals.length > 0 && (
-              <div className="pl-3 border-l-2 border-muted space-y-1">
-                {meeting.proposals.map(proposal => (
-                  <div key={proposal.id} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <FileTextIcon size={12} className="text-muted-foreground" />
-                      <span className="truncate max-w-48">{proposal.label || 'Untitled'}</span>
-                      <Badge variant="outline" className="text-[10px]">{proposal.status}</Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      {proposal.value != null && proposal.value > 0 && (
-                        <span className="text-green-600 font-medium text-xs">
-                          $
-                          {proposal.value.toLocaleString()}
-                        </span>
-                      )}
-                      <EntityViewButton
-                        className="h-6 w-6"
-                        icon={ExternalLinkIcon}
-                        href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+      {/* Meeting cards */}
+      {meetings.length === 0
+        ? (
+            <EmptyState title="No meetings" description="No meetings scheduled for this customer" />
+          )
+        : (
+            meetings.map(meeting => (
+              <MeetingEntityCard
+                key={meeting.id}
+                meeting={meeting}
+                onMutationSuccess={onMutationSuccess}
+                onNavigate={closeModal}
+              />
+            ))
+          )}
     </div>
   )
 }

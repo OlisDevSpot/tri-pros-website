@@ -52,7 +52,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('access', 'Dashboard')
 
       can('read', 'Customer')
-      can('update', 'Customer')
+      can('update', 'Customer', ['customerProfileJSON', 'propertyProfileJSON', 'financialProfileJSON'])
       // Note: no can('create', 'Customer') — intentional
 
       can('read', 'Meeting')

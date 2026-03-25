@@ -1,6 +1,6 @@
 'use client'
 
-import { CopyIcon, ExternalLinkIcon, GlobeIcon, MapPinIcon } from 'lucide-react'
+import { CopyIcon, ExternalLinkIcon, GlobeIcon, MapPinIcon, PencilIcon } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -14,12 +14,14 @@ import { cn } from '@/shared/lib/utils'
 
 interface AddressActionProps {
   address: string
+  canEdit?: boolean
+  children?: React.ReactNode
   className?: string
   compact?: boolean
-  children?: React.ReactNode
+  onEdit?: () => void
 }
 
-export function AddressAction({ address, className, compact = false, children }: AddressActionProps) {
+export function AddressAction({ address, canEdit, children, className, compact = false, onEdit }: AddressActionProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -65,6 +67,15 @@ export function AddressAction({ address, className, compact = false, children }:
           <CopyIcon size={14} />
           Copy Address
         </DropdownMenuItem>
+        {canEdit && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onEdit}>
+              <PencilIcon size={14} />
+              Edit
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

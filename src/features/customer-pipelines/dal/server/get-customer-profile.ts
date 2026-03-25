@@ -1,9 +1,10 @@
-import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProposal } from '@/features/customer-pipelines/types'
+import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
 
 import { TRPCError } from '@trpc/server'
 import { count, desc, eq, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
+import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
@@ -22,10 +23,12 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
   const meetingRows = await db
     .select({
       id: meetings.id,
+      type: meetings.type,
       program: meetings.program,
       status: meetings.status,
       scheduledFor: meetings.scheduledFor,
       createdAt: meetings.createdAt,
+      updatedAt: meetings.updatedAt,
     })
     .from(meetings)
     .where(eq(meetings.customerId, customerId))
@@ -81,16 +84,44 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
 
   const meetingsWithProposals: CustomerProfileMeeting[] = meetingRows.map(m => ({
     id: m.id,
+    type: m.type,
     program: m.program,
     status: m.status,
     scheduledFor: m.scheduledFor,
     createdAt: m.createdAt,
+    updatedAt: m.updatedAt,
     proposals: proposalsByMeeting.get(m.id) ?? [],
   }))
+
+  const noteRows = await db
+    .select()
+    .from(customerNotes)
+    .where(eq(customerNotes.customerId, customerId))
+    .orderBy(desc(customerNotes.createdAt))
+
+  const proposalViewRows: CustomerProfileProposalView[] = allProposals.length > 0
+    ? await db
+        .select({
+          id: proposalViews.id,
+          proposalId: proposalViews.proposalId,
+          viewedAt: proposalViews.viewedAt,
+          source: proposalViews.source,
+        })
+        .from(proposalViews)
+        .where(
+          sql`${proposalViews.proposalId} IN (${sql.join(
+            allProposals.map(p => sql`${p.id}`),
+            sql`, `,
+          )})`,
+        )
+        .orderBy(desc(proposalViews.viewedAt))
+    : []
 
   return {
     customer,
     meetings: meetingsWithProposals,
     allProposals,
+    notes: noteRows,
+    proposalViews: proposalViewRows,
   }
 }

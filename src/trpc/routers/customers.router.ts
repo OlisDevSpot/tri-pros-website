@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
-import { eq, ilike, or } from 'drizzle-orm'
+import { desc, eq, ilike, or } from 'drizzle-orm'
 import z from 'zod'
 import env from '@/shared/config/server-env'
 import { leadSources, leadTypes } from '@/shared/constants/enums'
@@ -83,6 +83,78 @@ export const customersRouter = createTRPCRouter({
       }
 
       return updated
+    }),
+
+  // Update top-level contact fields — super-admin only
+  updateCustomerContact: agentProcedure
+    .input(z.object({
+      customerId: z.string().uuid(),
+      name: z.string().min(1).optional(),
+      phone: z.string().optional(),
+      email: z.string().email().optional(),
+      address: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().length(2).optional(),
+      zip: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.session.user.role !== 'super-admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can edit contact fields' })
+      }
+
+      const { customerId, ...fields } = input
+      const updateData: Partial<typeof fields> = {}
+      for (const [key, value] of Object.entries(fields)) {
+        if (value !== undefined) {
+          (updateData as Record<string, unknown>)[key] = value
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'No fields to update' })
+      }
+
+      const [updated] = await db
+        .update(customers)
+        .set(updateData)
+        .where(eq(customers.id, customerId))
+        .returning()
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+
+      return updated
+    }),
+
+  // Add a note to a customer — any agent
+  addNote: agentProcedure
+    .input(z.object({
+      customerId: z.string().uuid(),
+      content: z.string().min(1).max(2000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const [note] = await db
+        .insert(customerNotes)
+        .values({
+          customerId: input.customerId,
+          content: input.content,
+          authorId: ctx.session.user.id,
+        })
+        .returning()
+
+      return note
+    }),
+
+  // Fetch notes for a customer — any agent
+  getNotes: agentProcedure
+    .input(z.object({ customerId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      return db
+        .select()
+        .from(customerNotes)
+        .where(eq(customerNotes.customerId, input.customerId))
+        .orderBy(desc(customerNotes.createdAt))
     }),
 
   // Pull all Notion contacts and upsert into the customers table
