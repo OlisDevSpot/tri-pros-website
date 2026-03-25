@@ -1,32 +1,82 @@
 import z from 'zod'
 import {
+  customerDemeanors,
   meetingDecisionMakersPresentOptions,
-  meetingDecisionTimelines,
-  meetingTypes,
-  meetingYearsInHome,
+  observedBudgetComforts,
+  spouseDynamics,
 } from '@/shared/constants/enums'
 
-export const situationProfileSchema = z.object({
+// ── Context Panel Schema (replaces situationProfileSchema) ──────────────────
+
+export const meetingContextSchema = z.object({
+  // Pre-meeting fields
   decisionMakersPresent: z.enum(meetingDecisionMakersPresentOptions),
-  meetingType: z.enum(meetingTypes).catch(undefined as unknown as 'Fresh'),
+  preKnownPainPoints: z.array(z.string()),
+  preKnownTrades: z.array(z.string()),
+  preMeetingNotes: z.string(),
+  // During-meeting observations
+  observedUrgency: z.number().int().min(1).max(10),
+  observedBudgetComfort: z.enum(observedBudgetComforts),
+  spouseDynamic: z.enum(spouseDynamics),
+  customerDemeanor: z.enum(customerDemeanors),
 }).partial()
 
-export const programDataSchema = z.object({
-  scope: z.string(),
-  bill: z.string(),
-  timeline: z.enum(meetingDecisionTimelines),
-  yrs: z.enum(meetingYearsInHome),
-}).partial()
+export type MeetingContext = z.infer<typeof meetingContextSchema>
 
-export type SituationProfile = z.infer<typeof situationProfileSchema>
-export type ProgramData = z.infer<typeof programDataSchema>
+// ── Flow State Schema (replaces programDataSchema + meetingScopesSchema) ─────
 
-// Meeting scopes — JSONB on meetings table
-export const meetingScopeEntrySchema = z.object({
-  trade: z.object({ id: z.string(), label: z.string() }),
-  scopes: z.array(z.object({ id: z.string(), label: z.string() })),
+export const tradeSelectionSchema = z.object({
+  tradeId: z.string(),
+  tradeName: z.string(),
+  selectedScopes: z.array(z.object({ id: z.string(), label: z.string() })),
+  painPoints: z.array(z.string()),
+  notes: z.string().optional(),
 })
-export type MeetingScopeEntry = z.infer<typeof meetingScopeEntrySchema>
 
-export const meetingScopesSchema = z.array(meetingScopeEntrySchema)
-export type MeetingScopes = z.infer<typeof meetingScopesSchema>
+export type TradeSelection = z.infer<typeof tradeSelectionSchema>
+
+export const dealStructureIncentiveSchema = z.object({
+  label: z.string(),
+  amount: z.number(),
+  source: z.string(),
+})
+
+export type DealStructureIncentive = z.infer<typeof dealStructureIncentiveSchema>
+
+export const dealStructureSchema = z.object({
+  mode: z.enum(['finance', 'cash']),
+  startingTcp: z.number(),
+  incentives: z.array(dealStructureIncentiveSchema),
+  finalTcp: z.number(),
+  // Finance-specific
+  financeTermMonths: z.number().optional(),
+  apr: z.number().optional(),
+  monthlyPayment: z.number().optional(),
+  // Cash-specific
+  depositAmount: z.number().optional(),
+  depositPercent: z.number().optional(),
+}).partial()
+
+export type DealStructure = z.infer<typeof dealStructureSchema>
+
+export const closingAdjustmentsSchema = z.object({
+  scopeChanges: z.array(z.string()),
+  finalNotes: z.string(),
+}).partial()
+
+export type ClosingAdjustments = z.infer<typeof closingAdjustmentsSchema>
+
+export const meetingFlowStateSchema = z.object({
+  currentStep: z.number().int().min(1).max(7),
+  // Step 2: Trade & Pain selections
+  tradeSelections: z.array(tradeSelectionSchema),
+  // Step 4: Program
+  selectedProgram: z.string().nullable(),
+  programQualified: z.boolean(),
+  // Step 5: Deal Structure
+  dealStructure: dealStructureSchema,
+  // Step 6: Closing adjustments
+  closingAdjustments: closingAdjustmentsSchema,
+}).partial()
+
+export type MeetingFlowState = z.infer<typeof meetingFlowStateSchema>

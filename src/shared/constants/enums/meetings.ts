@@ -50,3 +50,20 @@ export const meetingPipelineStages = [
   'meeting_completed',
   'follow_up_scheduled',
 ] as const
+
+// Meeting outcomes (replaces meetingStatuses for the meeting flow)
+export const meetingOutcomes = [
+  'in_progress',
+  'proposal_created',
+  'follow_up_needed',
+  'not_interested',
+  'no_show',
+] as const
+
+// Agent observation enums (context panel)
+export const observedBudgetComforts = ['comfortable', 'hesitant', 'resistant'] as const
+export const spouseDynamics = ['aligned', 'one-skeptical', 'not-present', 'n-a'] as const
+export const customerDemeanors = ['engaged', 'guarded', 'enthusiastic', 'anxious'] as const
+
+// Energy-efficient trade classification (for program qualification)
+export const energyEfficientTradeAccessors = ['insulation', 'hvac', 'windows', 'solar'] as const
