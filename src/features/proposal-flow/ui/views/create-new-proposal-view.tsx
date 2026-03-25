@@ -151,7 +151,7 @@ export function CreateNewProposalView() {
           </Button>
         </div>
       </div>
-      <div className="flex-1 min-h-0 w-full overflow-auto pr-4">
+      <div className="flex-1 min-h-0 w-full overflow-auto md:pr-4">
         <Form {...form}>
           <ProposalForm
             isLoading={meetingQuery.isLoading || createProposal.isPending}

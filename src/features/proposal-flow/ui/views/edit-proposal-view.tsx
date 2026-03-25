@@ -139,7 +139,7 @@ export function EditProposalView() {
           )}
         </div>
       </div>
-      <div className="h-full w-full overflow-auto pr-4">
+      <div className="h-full w-full overflow-auto md:pr-4">
         <Form {...form}>
           <ProposalForm
             isLoading={proposal.isLoading || updateProposal.isPending}
