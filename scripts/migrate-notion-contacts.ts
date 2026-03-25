@@ -311,15 +311,11 @@ async function migrateMeetings(meetingPages: PageObjectResponse[]) {
         }
       }
 
-      // Extract contact name from meeting title (strip " - fresh lead" etc.)
-      const contactName = data.title.replace(/\s*-\s*(fresh lead|rehash|follow.?up|new lead).*$/i, '').trim() || customer.name
-
       await db.insert(meetings).values({
         ownerId,
         customerId: customer.id,
-        contactName,
         scheduledFor,
-        status: 'completed',
+        meetingOutcome: 'proposal_created',
       })
 
       console.log(`Inserted: "${data.title}" → ${customer.name} (owner: ${ownerId === DEFAULT_OWNER_ID ? 'Oliver (default)' : 'mapped'})`)

@@ -1,4 +1,3 @@
-import type { IntakeStep } from '@/features/meetings/types'
 import {
   meetingAgeGroups,
   meetingCreditScoreRanges,
@@ -18,7 +17,7 @@ import {
 // Field IDs map 1:1 to keys inside the JSONB section specified by jsonbKey.
 // `entity` determines whether the field is saved to the meeting or the customer.
 
-export const INTAKE_STEPS: IntakeStep[] = [
+export const INTAKE_STEPS = [
   {
     description: 'Understand what is driving them to act and what pain they are trying to solve.',
     fields: [

@@ -6,8 +6,6 @@ import type { MeetingOutcome } from '@/shared/types/enums'
 import { format } from 'date-fns'
 import { CopyIcon, EyeIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
 
-import { programAccentMap } from '@/features/meetings/constants/program-accent-map'
-import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
 import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
 import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
@@ -56,7 +54,6 @@ export function MeetingCalendarDot({
   const { data: session } = useSession()
   const userRole = session?.user?.role
 
-  const program = MEETING_PROGRAMS.find(p => p.accessor === event.selectedProgram)
   const formattedTime = format(new Date(event.startAt), 'h:mm a')
   const formattedDateTime = format(new Date(event.startAt), 'MMM d, h:mm a')
 
@@ -102,21 +99,11 @@ export function MeetingCalendarDot({
           </DateTimePicker>
         </div>
 
-        {/* Status + program badges */}
+        {/* Status badge */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge className={cn('text-[10px] px-1.5 py-0 leading-4', MEETING_OUTCOME_COLORS[event.meetingOutcome])}>
             {STATUS_LABELS[event.meetingOutcome]}
           </Badge>
-          {program && (
-            <Badge
-              className={cn(
-                'text-[10px] px-1.5 py-0 leading-4',
-                programAccentMap[program.accentColor].badge,
-              )}
-            >
-              {program.name}
-            </Badge>
-          )}
         </div>
 
         {/* Contact actions */}

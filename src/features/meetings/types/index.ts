@@ -2,6 +2,22 @@ import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { Customer } from '@/shared/db/schema'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { MeetingOutcome, MeetingType } from '@/shared/types/enums'
+import type { JsonbSection } from '@/shared/types/jsonb'
+
+// ── Intake Collection Field (used by intake step components) ────────────────
+
+export interface CollectionField {
+  entity: 'customer' | 'meeting'
+  id: string
+  jsonbKey: JsonbSection
+  label: string
+  type: 'text' | 'select' | 'number' | 'boolean' | 'rating'
+  options?: readonly string[]
+  placeholder?: string
+  required?: boolean
+  min?: number
+  max?: number
+}
 
 // ── Program Types ───────────────────────────────────────────────────────────
 

@@ -6,13 +6,10 @@ import type { MeetingOutcome } from '@/shared/types/enums'
 import { format } from 'date-fns'
 import { CalendarIcon, CopyIcon, MoreHorizontalIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
 
-import { programAccentMap } from '@/features/meetings/constants/program-accent-map'
-import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
 import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
   DropdownMenu,
@@ -60,8 +57,6 @@ export function MeetingCalendarCard({
 }: MeetingCalendarCardProps) {
   const { data: session } = useSession()
   const userRole = session?.user?.role
-
-  const program = MEETING_PROGRAMS.find(p => p.accessor === event.selectedProgram)
 
   const addressLine1 = event.customerAddress ?? ''
   const addressLine2 = [event.customerCity, event.customerState, event.customerZip]
@@ -146,18 +141,6 @@ export function MeetingCalendarCard({
           <span>{format(new Date(event.startAt), 'h:mm a')}</span>
         </DateTimePicker>
       </div>
-
-      {/* Row 3: Program badge */}
-      {program && (
-        <Badge
-          className={cn(
-            'w-fit text-[10px] px-1.5 py-0 leading-4 truncate',
-            programAccentMap[program.accentColor].badge,
-          )}
-        >
-          {program.name}
-        </Badge>
-      )}
 
       {/* Row 3: Phone */}
       {event.customerPhone && (

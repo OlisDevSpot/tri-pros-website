@@ -6,12 +6,12 @@ import { useQueryState } from 'nuqs'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { DashboardSidebar } from '@/features/agent-dashboard/ui/components/dashboard-sidebar'
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
-import { EditMeetingSetupView, MeetingsView } from '@/features/meetings/ui/views'
+import { MeetingsView } from '@/features/meetings/ui/views'
 import { CreateNewProposalView, EditProposalView, PastProposalsView } from '@/features/proposal-flow/ui/views'
 import { CreateProjectView, EditProjectView, PortfolioProjectsView } from '@/features/showroom/ui/views'
 import { SignInGoogleButton } from '@/shared/components/buttons/auth/sign-in-google-button'
 import { ErrorState } from '@/shared/components/states/error-state'
-import { editMeetingIdParser, editProjectIdParser } from '@/shared/lib/url-parsers'
+import { editProjectIdParser } from '@/shared/lib/url-parsers'
 
 interface DashboardHubProps {
   authState: { status: 'unauthenticated' } | { status: 'authenticated' }
@@ -19,7 +19,6 @@ interface DashboardHubProps {
 
 export function DashboardHub({ authState }: DashboardHubProps) {
   const [step] = useQueryState('step', dashboardStepParser)
-  const [editMeetingId] = useQueryState('editMeetingId', editMeetingIdParser)
   const [editProjectId] = useQueryState('editProjectId', editProjectIdParser)
 
   if (authState.status === 'unauthenticated') {
@@ -51,11 +50,6 @@ export function DashboardHub({ authState }: DashboardHubProps) {
         <AnimatePresence>
           {step === 'meetings' && (
             <MeetingsView key="meetings" />
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'edit-meeting' && editMeetingId && (
-            <EditMeetingSetupView key={`edit-meeting-${editMeetingId}`} meetingId={editMeetingId} />
           )}
         </AnimatePresence>
         <AnimatePresence>

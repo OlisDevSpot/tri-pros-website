@@ -34,37 +34,37 @@ interface ScopeRowProps {
 
 function ScopeRow({ entry, index, allTrades, usedTradeIds, onUpdate, onRemove }: ScopeRowProps) {
   const scopesQuery = useGetScopes(
-    { query: entry.trade.id, filterProperty: 'relatedTrade' },
-    { enabled: !!entry.trade.id },
+    { query: entry.tradeId, filterProperty: 'relatedTrade' },
+    { enabled: !!entry.tradeId },
   )
 
   const availableScopes = scopesQuery.data ?? []
-  const selectedScopeIds = entry.scopes.map(s => s.id)
+  const selectedScopeIds = entry.selectedScopes.map(s => s.id)
 
   function handleTradeChange(tradeId: string) {
     const trade = allTrades.find(t => t.id === tradeId)
     if (!trade) {
       return
     }
-    onUpdate(index, { trade: { id: trade.id, label: trade.name }, scopes: [] })
+    onUpdate(index, { tradeId: trade.id, tradeName: trade.name, selectedScopes: [], painPoints: [] })
   }
 
   function handleScopesChange(scopeIds: string[]) {
-    const scopes = scopeIds.map((id) => {
+    const selectedScopes = scopeIds.map((id) => {
       const found = availableScopes.find(s => s.id === id)
       return { id, label: found?.name ?? id }
     })
-    onUpdate(index, { ...entry, scopes })
+    onUpdate(index, { ...entry, selectedScopes })
   }
 
   const availableTradesForRow = allTrades.filter(
-    t => t.id === entry.trade.id || !usedTradeIds.has(t.id),
+    t => t.id === entry.tradeId || !usedTradeIds.has(t.id),
   )
 
   return (
     <div className="flex items-start gap-2">
       <div className="flex-1 min-w-0">
-        <Select value={entry.trade.id} onValueChange={handleTradeChange}>
+        <Select value={entry.tradeId} onValueChange={handleTradeChange}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select trade" />
           </SelectTrigger>
@@ -83,7 +83,7 @@ function ScopeRow({ entry, index, allTrades, usedTradeIds, onUpdate, onRemove }:
           values={selectedScopeIds}
           onValuesChange={handleScopesChange}
         >
-          <MultiSelectTrigger className="w-full" disabled={!entry.trade.id}>
+          <MultiSelectTrigger className="w-full" disabled={!entry.tradeId}>
             <MultiSelectValue placeholder="Select scopes" />
           </MultiSelectTrigger>
           <MultiSelectContent search={{ placeholder: 'Search scopes...' }}>
@@ -113,17 +113,17 @@ function ScopeRow({ entry, index, allTrades, usedTradeIds, onUpdate, onRemove }:
 }
 
 interface MeetingScopePickerProps {
-  value: MeetingScopes
-  onChange: (scopes: MeetingScopes) => void
+  value: TradeSelection[]
+  onChange: (scopes: TradeSelection[]) => void
 }
 
 export function MeetingScopesPicker({ value, onChange }: MeetingScopePickerProps) {
   const tradesQuery = useGetAllTrades()
   const allTrades = tradesQuery.data ?? []
 
-  const usedTradeIds = new Set(value.map(e => e.trade.id).filter(Boolean))
+  const usedTradeIds = new Set(value.map(e => e.tradeId).filter(Boolean))
 
-  function handleUpdate(index: number, updated: MeetingScopeEntry) {
+  function handleUpdate(index: number, updated: TradeSelection) {
     const next = [...value]
     next[index] = updated
     onChange(next)
@@ -134,7 +134,7 @@ export function MeetingScopesPicker({ value, onChange }: MeetingScopePickerProps
   }
 
   function handleAdd() {
-    onChange([...value, { trade: { id: '', label: '' }, scopes: [] }])
+    onChange([...value, { tradeId: '', tradeName: '', selectedScopes: [], painPoints: [] }])
   }
 
   return (
@@ -151,7 +151,7 @@ export function MeetingScopesPicker({ value, onChange }: MeetingScopePickerProps
         {value.map((entry, index) => (
           <ScopeRow
             // eslint-disable-next-line react/no-array-index-key
-            key={`${entry.trade.id || 'empty'}-${index}`}
+            key={`${entry.tradeId || 'empty'}-${index}`}
             entry={entry}
             index={index}
             allTrades={allTrades}

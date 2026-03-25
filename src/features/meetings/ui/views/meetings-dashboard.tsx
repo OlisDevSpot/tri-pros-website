@@ -4,9 +4,8 @@ import { AnimatePresence } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
 import { useEffect } from 'react'
-import { editMeetingIdParser, meetingsDashboardStepParser } from '@/features/meetings/lib/url-parsers'
+import { meetingsDashboardStepParser } from '@/features/meetings/lib/url-parsers'
 import { MeetingsSidebar } from '@/features/meetings/ui/components/meetings-sidebar'
-import { EditMeetingSetupView } from '@/features/meetings/ui/views/edit-meeting-setup-view'
 import { PastMeetingsView } from '@/features/meetings/ui/views/past-meetings-view'
 import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -16,7 +15,6 @@ export function MeetingsDashboard() {
   const router = useRouter()
   const session = useSession()
   const [step] = useQueryState('step', meetingsDashboardStepParser)
-  const [editMeetingId] = useQueryState('editMeetingId', editMeetingIdParser)
 
   useEffect(() => {
     if (!session.isPending && !session.data?.user) {
@@ -51,11 +49,6 @@ export function MeetingsDashboard() {
         <AnimatePresence>
           {step === 'past-meetings' && (
             <PastMeetingsView key="past-meetings" />
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'edit-meeting' && editMeetingId && (
-            <EditMeetingSetupView key={`edit-meeting-${editMeetingId}`} meetingId={editMeetingId} />
           )}
         </AnimatePresence>
       </div>
