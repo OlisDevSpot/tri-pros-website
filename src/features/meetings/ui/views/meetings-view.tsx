@@ -202,7 +202,7 @@ export function MeetingsView() {
               <MeetingCalendar
                 data={meetings.data}
                 onDateRangeChange={setDateRange}
-                onNavigateToMeeting={handleNavigateToMeeting}
+                onNavigateToMeeting={handleViewCustomerProfile}
                 onEditMeeting={handleEditMeeting}
                 onStartMeeting={handleStartMeeting}
                 onDuplicateMeeting={handleDuplicateMeeting}
