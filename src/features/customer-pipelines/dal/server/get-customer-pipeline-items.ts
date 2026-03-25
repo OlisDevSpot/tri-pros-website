@@ -53,7 +53,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       meetingCount: count(meetings.id).as('meeting_count'),
       hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
       hasActiveMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() AND ${meetings.scheduledFor} > now() - interval '2 hours')`.as('has_active'),
-      hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.status} IN ('completed', 'converted')))`.as('has_past'),
+      hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.meetingOutcome} IN ('proposal_created', 'follow_up_needed', 'not_interested')))`.as('has_past'),
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
     })
     .from(customers)

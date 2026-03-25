@@ -39,7 +39,7 @@ export interface CustomerPipelineRawData {
 }
 
 export type CustomerProfileMeeting
-  = Pick<Meeting, 'id' | 'type' | 'program' | 'status' | 'scheduledFor' | 'createdAt' | 'updatedAt'>
+  = Pick<Meeting, 'id' | 'meetingType' | 'meetingOutcome' | 'scheduledFor' | 'createdAt' | 'updatedAt'>
     & { proposals: CustomerProfileProposal[] }
 
 export type CustomerProfileProposal
