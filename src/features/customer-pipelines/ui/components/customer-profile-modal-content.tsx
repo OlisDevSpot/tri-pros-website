@@ -14,10 +14,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui
 
 interface Props {
   data: CustomerProfileData
+  defaultTab?: 'overview' | 'meetings' | 'proposals'
+  highlightMeetingId?: string
   onMutationSuccess: () => void
 }
 
-export function CustomerProfileModalContent({ data, onMutationSuccess }: Props) {
+export function CustomerProfileModalContent({ data, defaultTab, highlightMeetingId, onMutationSuccess }: Props) {
   const editForm = useCustomerEditForm(data.customer)
 
   const profile = data.customer.customerProfileJSON ?? null
@@ -41,7 +43,7 @@ export function CustomerProfileModalContent({ data, onMutationSuccess }: Props) 
       )}
       <Separator className="my-3" />
 
-      <Tabs className="flex min-h-0 flex-1 flex-col" defaultValue="overview">
+      <Tabs className="flex min-h-0 flex-1 flex-col" defaultValue={defaultTab ?? 'overview'}>
         <TabsList className="w-full shrink-0 justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="meetings">
@@ -64,6 +66,7 @@ export function CustomerProfileModalContent({ data, onMutationSuccess }: Props) 
             <CustomerMeetingsList
               customerId={data.customer.id}
               customerName={data.customer.name}
+              highlightMeetingId={highlightMeetingId}
               meetings={data.meetings}
               onMutationSuccess={onMutationSuccess}
             />

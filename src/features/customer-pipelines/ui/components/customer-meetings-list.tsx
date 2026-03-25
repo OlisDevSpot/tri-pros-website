@@ -17,6 +17,7 @@ interface Props {
   meetings: CustomerProfileMeeting[]
   customerId: string
   customerName: string
+  highlightMeetingId?: string
   onMutationSuccess: () => void
 }
 
@@ -24,6 +25,7 @@ export function CustomerMeetingsList({
   meetings,
   customerId,
   customerName,
+  highlightMeetingId,
   onMutationSuccess,
 }: Props) {
   const ability = useAbility()
@@ -73,6 +75,7 @@ export function CustomerMeetingsList({
             meetings.map(meeting => (
               <MeetingEntityCard
                 key={meeting.id}
+                isHighlighted={meeting.id === highlightMeetingId}
                 meeting={meeting}
                 onMutationSuccess={onMutationSuccess}
                 onNavigate={closeModal}
