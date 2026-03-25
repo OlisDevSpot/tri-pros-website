@@ -17,7 +17,8 @@
     "scrape-project": "tsx scripts/portfolio-scraper/index.ts",
     "import-project": "tsx scripts/portfolio-scraper/import-project.ts",
     "portfolio": "tsx scripts/portfolio-manager.ts",
-    "meta": "tsx scripts/meta/index.ts"
+    "meta": "tsx scripts/meta/index.ts",
+    "dispatch": "bash scripts/dispatch.sh"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
