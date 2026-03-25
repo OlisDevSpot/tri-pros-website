@@ -4,6 +4,7 @@ import type { CustomerProfileMeeting } from '@/features/customer-pipelines/types
 
 import { useMutation } from '@tanstack/react-query'
 import { format, formatDistanceToNow } from 'date-fns'
+import { FileTextIcon } from 'lucide-react'
 
 import { MEETING_LIST_STATUS_COLORS } from '@/features/customer-pipelines/constants/meeting-status-colors'
 import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
@@ -13,6 +14,7 @@ import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit
 import { EntityStartButton } from '@/shared/components/entity-actions/entity-start-button'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
@@ -45,29 +47,50 @@ export function MeetingEntityCard({ meeting, onMutationSuccess }: Props) {
   )
 
   return (
-    <Card>
-      <CardContent className="py-3 px-4 space-y-2">
-        {/* Header row */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
+    <Card className="overflow-hidden">
+      <CardContent className="p-0">
+        {/* Meeting Header Section */}
+        <div className="space-y-2 px-4 py-3">
+          {/* Row 1: Badges + Date */}
+          <div className="flex flex-wrap items-center gap-2">
             {meeting.type && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs font-medium">
                 {meeting.type}
               </Badge>
-            )}
-            {meeting.scheduledFor && (
-              <span className="text-sm text-muted-foreground">
-                {format(new Date(meeting.scheduledFor), 'MMM d, yyyy h:mm a')}
-              </span>
             )}
             <Badge variant="outline" className={MEETING_LIST_STATUS_COLORS[meeting.status] ?? ''}>
               {meeting.status.replace('_', ' ')}
             </Badge>
+            {meeting.scheduledFor && (
+              <span className="text-xs text-muted-foreground">
+                {format(new Date(meeting.scheduledFor), 'MMM d, yyyy · h:mm a')}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-0.5 shrink-0">
+          {/* Row 2: Program + Created */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            {meeting.program && (
+              <>
+                <span className="font-medium text-foreground/70">{meeting.program}</span>
+                <span>·</span>
+              </>
+            )}
+            <span>
+              Created
+              {' '}
+              {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
+            </span>
+          </div>
+
+          {/* Row 3: Actions */}
+          <div className="flex items-center gap-1">
             <EntityStartButton
-              onClick={() => { window.location.href = meetingHref }}
+              href={meetingHref}
+              showLabel
+              label="Open"
+              size="sm"
+              className="h-7 w-auto gap-1 px-2 text-xs"
             />
             <EntityEditButton href={meetingHref} />
             <EntityDuplicateButton
@@ -83,29 +106,30 @@ export function MeetingEntityCard({ meeting, onMutationSuccess }: Props) {
           </div>
         </div>
 
-        {/* Metadata row */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {meeting.program && (
-            <span>{meeting.program}</span>
-          )}
-          <span>
-            Created
-            {' '}
-            {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
-          </span>
-        </div>
-
-        {/* Nested proposals */}
+        {/* Proposals Section */}
         {meeting.proposals.length > 0 && (
-          <div className="pl-3 border-l-2 border-muted space-y-0.5 mt-1">
-            {meeting.proposals.map(proposal => (
-              <MeetingProposalRow
-                key={proposal.id}
-                proposal={proposal}
-                onMutationSuccess={onMutationSuccess}
-              />
-            ))}
-          </div>
+          <>
+            <Separator />
+            <div className="bg-muted/30 px-4 py-3 space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <FileTextIcon className="h-3.5 w-3.5" />
+                <span>
+                  Proposals (
+                  {meeting.proposals.length}
+                  )
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {meeting.proposals.map(proposal => (
+                  <MeetingProposalRow
+                    key={proposal.id}
+                    proposal={proposal}
+                    onMutationSuccess={onMutationSuccess}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
