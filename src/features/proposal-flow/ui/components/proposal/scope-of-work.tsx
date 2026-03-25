@@ -2,6 +2,7 @@
 import { motion } from 'motion/react'
 
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { CopySowButton } from '@/features/proposal-flow/ui/components/proposal/copy-sow-button'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/components/ui/accordion'
@@ -82,25 +83,28 @@ export function ScopeOfWork() {
                       </div>
                     </div>
                     {pricingMode === 'breakdown' && (section.price ?? 0) > 0 && (
-                      <span className="text-sm font-semibold tabular-nums text-foreground/80">
+                      <span className="text-sm font-semibold tabular-nums text-foreground/80 shrink-0">
                         {fmt(section.price!)}
                       </span>
                     )}
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-6 pb-6 pt-1">
-                  {section.scopes.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-5">
-                      {section.scopes.map(scope => (
-                        <span
-                          key={scope.id}
-                          className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary/8 text-primary border border-primary/15"
-                        >
-                          {scope.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                <AccordionContent className="px-6 pb-6 pt-4">
+                  <div className="flex items-start justify-between gap-3 mb-5">
+                    {section.scopes.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {section.scopes.map(scope => (
+                          <span
+                            key={scope.id}
+                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary/8 text-primary border border-primary/15"
+                          >
+                            {scope.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <CopySowButton section={section} />
+                  </div>
                   <div
                     className="proposal-sow"
                     dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(section.html) }}
