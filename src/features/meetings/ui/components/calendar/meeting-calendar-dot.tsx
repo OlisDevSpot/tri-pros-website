@@ -12,7 +12,6 @@ import { MEETING_STATUS_COLORS } from '@/features/meetings/constants/status-colo
 import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
-import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
@@ -32,12 +31,11 @@ const STATUS_LABELS: Record<MeetingStatus, string> = {
 
 interface MeetingCalendarDotProps {
   event: MeetingCalendarEvent
-  onNavigate: (customerId: string, meetingId: string) => void
+  onNavigate: (meetingId: string) => void
   onEdit: (meetingId: string) => void
   onStart: (meetingId: string) => void
   onDuplicate: (meetingId: string) => void
   onDelete: (meetingId: string) => void
-  onUpdateScheduledFor: (meetingId: string, date: Date) => void
 }
 
 export function MeetingCalendarDot({
@@ -47,7 +45,6 @@ export function MeetingCalendarDot({
   onStart,
   onDuplicate,
   onDelete,
-  onUpdateScheduledFor,
 }: MeetingCalendarDotProps) {
   const { data: session } = useSession()
   const userRole = session?.user?.role
@@ -83,20 +80,8 @@ export function MeetingCalendarDot({
           {event.customerName ?? 'No customer'}
         </p>
 
-        {/* Time + date (editable) */}
-        <div onClick={e => e.stopPropagation()}>
-          <DateTimePicker
-            value={new Date(event.startAt)}
-            onChange={(date) => {
-              if (date) {
-                onUpdateScheduledFor(event.meetingId, date)
-              }
-            }}
-            className="h-auto px-1 py-0 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <span>{formattedDateTime}</span>
-          </DateTimePicker>
-        </div>
+        {/* Time + date */}
+        <p className="text-xs text-muted-foreground">{formattedDateTime}</p>
 
         {/* Status + program badges */}
         <div className="flex flex-wrap items-center gap-1.5">
@@ -133,11 +118,7 @@ export function MeetingCalendarDot({
             variant="ghost"
             size="sm"
             className="justify-start h-7 text-xs"
-            onClick={() => {
-              if (event.customerId) {
-                onNavigate(event.customerId, event.meetingId)
-              }
-            }}
+            onClick={() => onNavigate(event.meetingId)}
           >
             <EyeIcon className="h-3.5 w-3.5" />
             View Meeting
