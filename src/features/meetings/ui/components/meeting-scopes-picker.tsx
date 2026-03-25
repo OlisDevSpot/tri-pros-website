@@ -1,6 +1,6 @@
 'use client'
 
-import type { MeetingScopeEntry, MeetingScopes } from '@/shared/entities/meetings/schemas'
+import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
@@ -24,11 +24,11 @@ import { useGetScopes } from '@/shared/services/notion/dal/scopes/hooks/queries/
 import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queries/use-get-trades'
 
 interface ScopeRowProps {
-  entry: MeetingScopeEntry
+  entry: TradeSelection
   index: number
   allTrades: Trade[]
   usedTradeIds: Set<string>
-  onUpdate: (index: number, updated: MeetingScopeEntry) => void
+  onUpdate: (index: number, updated: TradeSelection) => void
   onRemove: (index: number) => void
 }
 

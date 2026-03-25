@@ -33,13 +33,13 @@ export function useMeetingActions() {
     }),
   )
 
-  const updateStatus = useMutation(
+  const updateOutcome = useMutation(
     trpc.meetingsRouter.update.mutationOptions({
       onSuccess: () => {
         invalidate()
-        toast.success('Status updated')
+        toast.success('Outcome updated')
       },
-      onError: () => toast.error('Failed to update status'),
+      onError: () => toast.error('Failed to update outcome'),
     }),
   )
 
@@ -53,5 +53,5 @@ export function useMeetingActions() {
     }),
   )
 
-  return { deleteMeeting, duplicateMeeting, updateStatus, updateScheduledFor }
+  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor }
 }

@@ -1,6 +1,5 @@
 'use client'
 
-import type { MeetingScopes } from '@/shared/entities/meetings/schemas'
 import type { MeetingType } from '@/shared/types/enums/meetings'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -10,7 +9,6 @@ import { Label } from '@/shared/components/ui/label'
 import { meetingTypes } from '@/shared/constants/enums'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
-import { MeetingScopesPicker } from './meeting-scopes-picker'
 
 interface CreateMeetingFormProps {
   customerId: string
@@ -26,31 +24,28 @@ export function CreateMeetingForm({
 }: CreateMeetingFormProps) {
   const trpc = useTRPC()
 
-  const [type, setType] = useState<MeetingType>('Fresh')
+  const [meetingType, setMeetingType] = useState<MeetingType>('Fresh')
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(undefined)
-  const [scopes, setScopes] = useState<MeetingScopes>([])
 
   const createMutation = useMutation(
     trpc.meetingsRouter.create.mutationOptions({
       onSuccess: () => {
-        setType('Fresh')
+        setMeetingType('Fresh')
         setScheduledFor(undefined)
-        setScopes([])
         onSuccess?.()
       },
     }),
   )
 
   function handleSubmit() {
-    if (!type) {
+    if (!meetingType) {
       return
     }
 
     createMutation.mutate({
       customerId,
-      type,
+      meetingType,
       scheduledFor: scheduledFor?.toISOString(),
-      meetingScopesJSON: scopes.length > 0 ? scopes : undefined,
     })
   }
 
@@ -68,10 +63,10 @@ export function CreateMeetingForm({
             <button
               key={t}
               type="button"
-              onClick={() => setType(t)}
+              onClick={() => setMeetingType(t)}
               className={cn(
                 'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
-                type === t
+                meetingType === t
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-background text-muted-foreground border-input hover:bg-accent',
               )}
@@ -96,16 +91,6 @@ export function CreateMeetingForm({
         />
       </div>
 
-      {/* Trades & Scopes */}
-      <div className="space-y-2">
-        <Label>
-          Trades & scopes
-          {' '}
-          <span className="text-muted-foreground text-xs font-normal">(optional)</span>
-        </Label>
-        <MeetingScopesPicker value={scopes} onChange={setScopes} />
-      </div>
-
       {/* Actions */}
       <div className="flex gap-2">
         {onCancel && (
@@ -120,7 +105,7 @@ export function CreateMeetingForm({
         )}
         <Button
           className="flex-1"
-          disabled={!type || createMutation.isPending}
+          disabled={!meetingType || createMutation.isPending}
           onClick={handleSubmit}
         >
           {createMutation.isPending ? 'Creating...' : 'Create meeting'}

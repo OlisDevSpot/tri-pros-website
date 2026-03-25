@@ -64,7 +64,7 @@ export const INTAKE_STEPS: IntakeStep[] = [
       {
         entity: 'meeting',
         id: 'decisionMakersPresent',
-        jsonbKey: 'situationProfileJSON',
+        jsonbKey: 'contextJSON',
         label: 'Who is present today',
         options: meetingDecisionMakersPresentOptions,
         type: 'select',

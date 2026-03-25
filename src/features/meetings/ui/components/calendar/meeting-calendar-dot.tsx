@@ -1,14 +1,14 @@
 'use client'
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
-import type { MeetingStatus } from '@/shared/types/enums'
+import type { MeetingOutcome } from '@/shared/types/enums'
 
 import { format } from 'date-fns'
 import { CopyIcon, EyeIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
 
 import { programAccentMap } from '@/features/meetings/constants/program-accent-map'
 import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
-import { MEETING_STATUS_COLORS } from '@/features/meetings/constants/status-colors'
+import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
 import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
@@ -18,16 +18,20 @@ import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { cn } from '@/shared/lib/utils'
 
-const STATUS_DOT_COLORS: Record<MeetingStatus, string> = {
-  in_progress: 'bg-sky-500',
-  completed: 'bg-emerald-500',
-  converted: 'bg-violet-500',
+const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
+  in_progress: 'bg-blue-500',
+  proposal_created: 'bg-emerald-500',
+  follow_up_needed: 'bg-amber-500',
+  not_interested: 'bg-red-500',
+  no_show: 'bg-zinc-500',
 }
 
-const STATUS_LABELS: Record<MeetingStatus, string> = {
+const STATUS_LABELS: Record<MeetingOutcome, string> = {
   in_progress: 'In Progress',
-  completed: 'Completed',
-  converted: 'Converted',
+  proposal_created: 'Proposal Created',
+  follow_up_needed: 'Follow-up Needed',
+  not_interested: 'Not Interested',
+  no_show: 'No Show',
 }
 
 interface MeetingCalendarDotProps {
@@ -52,7 +56,7 @@ export function MeetingCalendarDot({
   const { data: session } = useSession()
   const userRole = session?.user?.role
 
-  const program = MEETING_PROGRAMS.find(p => p.accessor === event.program)
+  const program = MEETING_PROGRAMS.find(p => p.accessor === event.selectedProgram)
   const formattedTime = format(new Date(event.startAt), 'h:mm a')
   const formattedDateTime = format(new Date(event.startAt), 'MMM d, h:mm a')
 
@@ -70,7 +74,7 @@ export function MeetingCalendarDot({
           <span
             className={cn(
               'h-1.5 w-1.5 shrink-0 rounded-full',
-              STATUS_DOT_COLORS[event.status],
+              STATUS_DOT_COLORS[event.meetingOutcome],
             )}
           />
           <span className="text-muted-foreground shrink-0">{formattedTime}</span>
@@ -100,8 +104,8 @@ export function MeetingCalendarDot({
 
         {/* Status + program badges */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge className={cn('text-[10px] px-1.5 py-0 leading-4', MEETING_STATUS_COLORS[event.status])}>
-            {STATUS_LABELS[event.status]}
+          <Badge className={cn('text-[10px] px-1.5 py-0 leading-4', MEETING_OUTCOME_COLORS[event.meetingOutcome])}>
+            {STATUS_LABELS[event.meetingOutcome]}
           </Badge>
           {program && (
             <Badge

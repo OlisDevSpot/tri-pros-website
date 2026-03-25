@@ -45,7 +45,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           {
             entity: 'meeting',
             id: 'scope',
-            jsonbKey: 'programDataJSON',
+            jsonbKey: 'flowStateJSON',
             label: 'Scope they\'re interested in',
             placeholder: 'e.g. Roof replacement + attic insulation',
             required: true,
@@ -54,7 +54,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           {
             entity: 'meeting',
             id: 'yrs',
-            jsonbKey: 'programDataJSON',
+            jsonbKey: 'flowStateJSON',
             label: 'Years in this home',
             options: meetingYearsInHome,
             type: 'select',
@@ -88,7 +88,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           {
             entity: 'meeting',
             id: 'timeline',
-            jsonbKey: 'programDataJSON',
+            jsonbKey: 'flowStateJSON',
             label: 'When they want to move forward',
             options: meetingDecisionTimelines,
             type: 'select',
@@ -96,7 +96,7 @@ export const MEETING_PROGRAMS: MeetingProgram[] = [
           {
             entity: 'meeting',
             id: 'bill',
-            jsonbKey: 'programDataJSON',
+            jsonbKey: 'flowStateJSON',
             label: 'Current monthly energy bill (optional)',
             placeholder: 'e.g. $220',
             type: 'text',

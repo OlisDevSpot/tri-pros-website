@@ -1,12 +1,11 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { inferRouterOutputs } from '@trpc/server'
-import type { MeetingStatus } from '@/shared/types/enums'
+import type { MeetingOutcome } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { MoreHorizontal } from 'lucide-react'
 
-import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
-import { MEETING_STATUS_COLORS } from '@/features/meetings/constants/status-colors'
+import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
@@ -22,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
-import { meetingStatuses } from '@/shared/constants/enums'
+import { meetingOutcomes } from '@/shared/constants/enums'
 import { formatDateCell } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
@@ -33,7 +32,7 @@ export interface MeetingTableMeta {
   onDuplicate: (meetingId: string) => void
   onStart: (meetingId: string) => void
   onDelete: (meetingId: string) => void
-  onUpdateStatus: (meetingId: string, status: MeetingStatus) => void
+  onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
   onViewProfile: (customerId: string) => void
   isDuplicating: boolean
@@ -45,30 +44,29 @@ type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][numb
 export function getColumns(): ColumnDef<MeetingRow>[] {
   return [
     {
-      accessorKey: 'contactName',
+      accessorKey: 'meetingType',
       header: ({ column }) => <SortableHeader column={column} label="Meeting" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
         const isActive = meta?.activeRowId === row.original.id
-        const programName = row.original.program
-          ? MEETING_PROGRAMS.find(p => p.accessor === row.original.program)?.name ?? row.original.program
-          : 'No program selected'
+        const selectedProgram = row.original.flowStateJSON?.selectedProgram ?? null
+        const meetingLabel = selectedProgram ?? row.original.meetingType
 
         return (
           <div className="flex items-center justify-between gap-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="min-w-0 space-y-0.5 max-w-55">
-                  <p className="font-medium leading-none truncate">{programName}</p>
+                  <p className="font-medium leading-none truncate">{meetingLabel}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {row.original.contactName ?? '—'}
+                    {row.original.customerName ?? '—'}
                   </p>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" align="start">
-                {programName}
+                {meetingLabel}
                 {' — '}
-                {row.original.contactName ?? 'No contact'}
+                {row.original.customerName ?? 'No customer'}
               </TooltipContent>
             </Tooltip>
             <div
@@ -128,16 +126,16 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
       },
     },
     {
-      accessorKey: 'status',
-      header: 'Status',
+      accessorKey: 'meetingOutcome',
+      header: 'Outcome',
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
         return (
           <StatusDropdownCell
-            currentStatus={row.original.status}
-            statuses={meetingStatuses}
-            colorMap={MEETING_STATUS_COLORS}
-            onChange={status => meta?.onUpdateStatus(row.original.id, status)}
+            currentStatus={row.original.meetingOutcome}
+            statuses={meetingOutcomes}
+            colorMap={MEETING_OUTCOME_COLORS}
+            onChange={outcome => meta?.onUpdateOutcome(row.original.id, outcome)}
           />
         )
       },

@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { Customer } from '@/shared/db/schema'
-import type { MeetingStatus } from '@/shared/types/enums'
+import type { MeetingOutcome } from '@/shared/types/enums'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
 export type ProgramAccessor = 'tpr-monthly-special' | 'energy-savings-plus' | 'senior-citizen-program'
@@ -83,9 +83,8 @@ export interface MeetingProgram {
 
 export interface MeetingCalendarEvent extends CalendarEvent {
   meetingId: string
-  status: MeetingStatus
-  program: string | null
-  contactName: string | null
+  meetingOutcome: MeetingOutcome
+  selectedProgram: string | null
   customerName: string | null
   customerPhone: string | null
   customerAddress: string | null

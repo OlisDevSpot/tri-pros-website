@@ -28,7 +28,7 @@ interface Props {
 export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataChange }: Props) {
   const router = useRouter()
   const { data: session } = useSession()
-  const { deleteMeeting, duplicateMeeting, updateStatus, updateScheduledFor } = useMeetingActions()
+  const { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
 
   const meta = {
@@ -37,7 +37,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
     onDuplicate: (meetingId: string) => duplicateMeeting.mutate({ id: meetingId }),
     onStart: (meetingId: string) => router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`),
     onDelete: (meetingId: string) => deleteMeeting.mutate({ id: meetingId }),
-    onUpdateStatus: (meetingId: string, status: string) => updateStatus.mutate({ id: meetingId, status: status as 'in_progress' | 'completed' | 'converted' }),
+    onUpdateOutcome: (meetingId: string, outcome: string) => updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome as 'in_progress' | 'proposal_created' | 'follow_up_needed' | 'not_interested' | 'no_show' }),
     onUpdateScheduledFor: (meetingId: string, date: Date) => updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
     onViewProfile: (customerId: string) => {
       setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })

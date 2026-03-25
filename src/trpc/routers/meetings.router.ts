@@ -4,7 +4,6 @@ import z from 'zod'
 import { meetingTypes } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, meetings, proposals, user } from '@/shared/db/schema'
-import { meetingScopesSchema } from '@/shared/entities/meetings/schemas'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
@@ -32,9 +31,8 @@ export const meetingsRouter = createTRPCRouter({
   create: agentProcedure
     .input(z.object({
       customerId: z.string().uuid('A customer is required'),
-      type: z.enum(meetingTypes),
+      meetingType: z.enum(meetingTypes),
       scheduledFor: z.string().optional(),
-      meetingScopesJSON: meetingScopesSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { customerId, ...meetingData } = input
@@ -114,7 +112,7 @@ export const meetingsRouter = createTRPCRouter({
 
       await db
         .update(meetings)
-        .set({ status: 'converted' })
+        .set({ meetingOutcome: 'proposal_created' })
         .where(eq(meetings.id, input.meetingId))
 
       return proposal
@@ -139,9 +137,9 @@ export const meetingsRouter = createTRPCRouter({
         .values({
           ownerId: ctx.session.user.id,
           customerId: original.customerId,
-          contactName: original.contactName,
+          meetingType: original.meetingType,
           scheduledFor: original.scheduledFor ?? undefined,
-          situationProfileJSON: original.situationProfileJSON,
+          contextJSON: original.contextJSON,
         })
         .returning()
 
