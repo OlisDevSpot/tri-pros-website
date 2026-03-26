@@ -124,14 +124,15 @@ export function TradeDetail({ selection, index, onChange }: TradeDetailProps) {
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Specific Work Needed
               </p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:overflow-x-visible">
                 {availableScopes.map(scope => (
-                  <ScopeCard
-                    key={scope.id}
-                    scope={scope}
-                    isSelected={selectedScopeIds.has(scope.id)}
-                    onToggle={handleScopeToggle}
-                  />
+                  <div key={scope.id} className="w-44 shrink-0 sm:w-auto">
+                    <ScopeCard
+                      scope={scope}
+                      isSelected={selectedScopeIds.has(scope.id)}
+                      onToggle={handleScopeToggle}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
