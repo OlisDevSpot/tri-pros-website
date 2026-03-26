@@ -3,8 +3,8 @@
 import LogoDarkBottom from '@public/company/logo/logo-dark-bottom.svg'
 import Image from 'next/image'
 import { CREDENTIAL_ITEMS, DUE_DILIGENCE_ITEMS } from '@/features/meetings/constants/due-diligence'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { cn } from '@/shared/lib/utils'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 
 const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs] ?? ''
 
@@ -59,8 +59,10 @@ export function WhoWeAreStep({ className }: WhoWeAreStepProps) {
           </h2>
 
           <p className="text-lg leading-relaxed text-white/70 md:text-xl">
-            It starts when you do your{' '}
-            <span className="font-semibold text-white">due diligence</span>.
+            It starts when you do your
+            {' '}
+            <span className="font-semibold text-white">due diligence</span>
+            .
           </p>
 
           <div className="pt-2">

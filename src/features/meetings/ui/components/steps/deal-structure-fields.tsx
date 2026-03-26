@@ -1,5 +1,6 @@
 'use client'
 
+import type { DealFormValues } from '@/features/meetings/ui/components/steps/deal-structure-step'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { formatCurrency } from '@/features/meetings/lib/loan-calc'
 import { Badge } from '@/shared/components/ui/badge'
@@ -15,7 +16,6 @@ import {
 import { Input } from '@/shared/components/ui/input'
 import { Separator } from '@/shared/components/ui/separator'
 import { cn } from '@/shared/lib/utils'
-import type { DealFormValues } from '@/features/meetings/ui/components/steps/deal-structure-step'
 
 interface ProgramIncentiveDisplay {
   label: string
@@ -120,7 +120,8 @@ export function DealStructureFields({
                 <span className={cn(
                   'font-medium tabular-nums',
                   inc.amount > 0 ? 'text-emerald-600' : 'text-muted-foreground',
-                )}>
+                )}
+                >
                   {inc.amount > 0 ? `−${formatCurrency(inc.amount)}` : inc.valueDisplay}
                 </span>
               </div>

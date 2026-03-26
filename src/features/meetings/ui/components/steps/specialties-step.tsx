@@ -10,8 +10,8 @@ import {
 } from '@/features/meetings/constants/trade-categories'
 import { TradeCard } from '@/features/meetings/ui/components/steps/trade-card'
 import { TradeDetail } from '@/features/meetings/ui/components/steps/trade-detail'
-import { Accordion } from '@/shared/components/ui/accordion'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Accordion } from '@/shared/components/ui/accordion'
 import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queries/use-get-trades'
 
 interface SpecialtiesStepProps {
