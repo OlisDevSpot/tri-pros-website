@@ -1,5 +1,6 @@
 'use client'
 
+import LogoDarkBottom from '@public/company/logo/logo-dark-bottom.svg'
 import Image from 'next/image'
 import { CREDENTIAL_ITEMS, DUE_DILIGENCE_ITEMS } from '@/features/meetings/constants/due-diligence'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
@@ -44,9 +45,14 @@ export function WhoWeAreStep({ className }: WhoWeAreStepProps) {
         <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-primary/20 blur-[100px]" />
 
         <div className="relative z-10 mx-auto max-w-2xl space-y-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Tri Pros Remodeling
-          </p>
+          {/* Company logo */}
+          <div className="mx-auto h-16 w-48 md:h-20 md:w-56">
+            <Image
+              src={LogoDarkBottom}
+              alt="Tri Pros Remodeling"
+              className="h-full w-full object-contain"
+            />
+          </div>
 
           <h2 className="text-3xl font-bold leading-tight tracking-tight text-white md:text-4xl">
             A successful project doesn&apos;t start on demolition day.
