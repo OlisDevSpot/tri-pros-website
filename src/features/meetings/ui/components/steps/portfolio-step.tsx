@@ -4,7 +4,6 @@ import type { MeetingFlowContext } from '@/features/meetings/types'
 import type { ShowroomProject } from '@/shared/entities/projects/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { PortfolioCard } from '@/features/meetings/ui/components/steps/portfolio-card'
 import { useShowroomFilters } from '@/features/showroom/hooks/use-showroom-filters'
 import { ShowroomGrid } from '@/features/showroom/ui/components/showroom-grid'
 import { ShowroomPagination } from '@/features/showroom/ui/components/showroom-pagination'
@@ -59,7 +58,7 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
 
   return (
     <div className="space-y-12">
-      {/* ── Per-Trade Portfolio Grids ───────────────────────────────────── */}
+      {/* ── Per-Trade Portfolio Grids (filtered views of the same ShowroomGrid) */}
       {tradeProjectGroups.length > 0 && (
         <div className="space-y-10">
           <div className="space-y-1">
@@ -79,18 +78,11 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
                   {group.projects.length === 1 ? 'project' : 'projects'}
                 </span>
               </div>
-              <div className="space-y-4">
-                {group.projects.slice(0, 3).map(sp => (
-                  <PortfolioCard
-                    key={sp.project.id}
-                    project={{
-                      ...sp.project,
-                      matchedScopeCount: sp.scopeIds.length,
-                      mediaFiles: sp.heroImage ? [sp.heroImage] : [],
-                    }}
-                  />
-                ))}
-              </div>
+              <ShowroomGrid
+                projects={group.projects}
+                allScopes={allScopes}
+                allTrades={allTrades}
+              />
             </div>
           ))}
         </div>

@@ -12,7 +12,7 @@ interface ContextPanelTriggerProps {
 
 export function ContextPanelTrigger({ filledCount, onClick, totalCount }: ContextPanelTriggerProps) {
   return (
-    <div className="fixed bottom-6 left-4 z-40">
+    <div className="fixed bottom-[calc(var(--prevNextHeight,3.5rem)+1rem)] left-4 z-40 md:bottom-6">
       <Button
         aria-label="Open context panel"
         className="relative h-10 gap-2 rounded-full pl-3 pr-4 shadow-lg"

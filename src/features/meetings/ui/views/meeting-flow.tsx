@@ -156,7 +156,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col [--prevNextHeight:3.5rem]">
       {/* Header */}
       <header className="relative flex shrink-0 items-center border-b border-border/40 px-4 py-2.5 md:px-6">
         <Link
@@ -210,7 +210,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
       {/* Footer navigation */}
       <footer className="shrink-0">
         <Separator />
-        <div className="flex items-center justify-between px-4 py-3 md:px-6">
+        <div className="flex h-(--prevNextHeight) items-center justify-between px-4 md:px-6">
           <Button
             className="gap-2"
             disabled={currentStep === 1}
