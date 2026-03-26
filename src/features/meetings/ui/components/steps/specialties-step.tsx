@@ -28,9 +28,6 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
   const serverSelections = flowContext.flowState?.tradeSelections ?? []
   const [localSelections, setLocalSelections] = useState<TradeSelection[]>(serverSelections)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Ref to always have latest local selections without re-creating callbacks
-  const localSelectionsRef = useRef(localSelections)
-  localSelectionsRef.current = localSelections
 
   const serverJson = JSON.stringify(serverSelections)
   useEffect(() => {
@@ -38,18 +35,14 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverJson])
 
-  // Stable ref to onFlowStateChange so saveToServer doesn't change identity
-  const onFlowStateChangeRef = useRef(flowContext.onFlowStateChange)
-  onFlowStateChangeRef.current = flowContext.onFlowStateChange
-
   const saveToServer = useCallback((next: TradeSelection[]) => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
     }
     debounceRef.current = setTimeout(() => {
-      onFlowStateChangeRef.current({ tradeSelections: next })
+      flowContext.onFlowStateChange({ tradeSelections: next })
     }, SAVE_DEBOUNCE_MS)
-  }, [])
+  }, [flowContext])
 
   useEffect(() => {
     return () => {
@@ -65,6 +58,7 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
     for (const category of TRADE_CATEGORY_ORDER) {
       groups.set(category, [])
     }
+    // Bucket for trades with no type
     groups.set('Other', [])
 
     for (const trade of allTrades) {
@@ -78,48 +72,42 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
       }
     }
 
+    // Sort each bucket alphabetically
     for (const bucket of groups.values()) {
       bucket.sort((a, b) => a.name.localeCompare(b.name))
     }
 
+    // Remove empty buckets
     return Array.from(groups.entries()).filter(([, trades]) => trades.length > 0)
   }, [allTrades])
 
-  const selectedTradeIds = useMemo(
-    () => new Set(localSelections.map(s => s.tradeId)),
-    [localSelections],
-  )
+  const selectedTradeIds = new Set(localSelections.map(s => s.tradeId))
 
-  // Stable callback — uses ref to avoid re-creating on every selection change
-  const handleTradeToggle = useCallback((trade: Trade) => {
-    const current = localSelectionsRef.current
-    const isSelected = current.some(s => s.tradeId === trade.id)
+  function handleTradeToggle(trade: Trade) {
     let next: TradeSelection[]
-
-    if (isSelected) {
-      next = current.filter(s => s.tradeId !== trade.id)
+    if (selectedTradeIds.has(trade.id)) {
+      next = localSelections.filter(s => s.tradeId !== trade.id)
     }
     else {
-      next = [...current, {
+      const newEntry: TradeSelection = {
         tradeId: trade.id,
         tradeName: trade.name,
         selectedScopes: [],
         painPoints: [],
-      }]
+      }
+      next = [...localSelections, newEntry]
     }
-
     setLocalSelections(next)
     saveToServer(next)
-  }, [saveToServer])
+  }
 
-  const handleSelectionChange = useCallback((updated: TradeSelection) => {
-    const current = localSelectionsRef.current
-    const next = current.map(s =>
+  function handleSelectionChange(updated: TradeSelection) {
+    const next = localSelections.map(s =>
       s.tradeId === updated.tradeId ? updated : s,
     )
     setLocalSelections(next)
     saveToServer(next)
-  }, [saveToServer])
+  }
 
   if (tradesQuery.isLoading) {
     return <LoadingState title="Loading trades" description="Fetching available specialties..." />
