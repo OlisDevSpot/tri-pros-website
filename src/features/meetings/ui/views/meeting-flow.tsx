@@ -158,7 +158,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <header className="flex shrink-0 items-center gap-3 border-b border-border/40 px-4 py-2.5 md:px-6">
+      <header className="relative flex shrink-0 items-center border-b border-border/40 px-4 py-2.5 md:px-6">
         <Link
           className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           href={`${ROOTS.dashboard.root}?step=meetings`}
@@ -167,7 +167,11 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
           <span className="hidden sm:inline">Meetings</span>
         </Link>
 
-        <StepNav currentStep={currentStep} onStepClick={s => void setCurrentStep(s)} />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto">
+            <StepNav currentStep={currentStep} onStepClick={s => void setCurrentStep(s)} />
+          </div>
+        </div>
 
         <div className="ml-auto hidden h-6 w-20 sm:block">
           <Logo variant="right" />
