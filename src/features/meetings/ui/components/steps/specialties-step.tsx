@@ -10,6 +10,7 @@ import {
 } from '@/features/meetings/constants/trade-categories'
 import { TradeCard } from '@/features/meetings/ui/components/steps/trade-card'
 import { TradeDetail } from '@/features/meetings/ui/components/steps/trade-detail'
+import { Accordion } from '@/shared/components/ui/accordion'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queries/use-get-trades'
 
@@ -142,7 +143,7 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
         </div>
       ))}
 
-      {/* Selected trade details — scopes fetched lazily per trade */}
+      {/* Selected trade details — collapsible accordion, defaults closed */}
       {localSelections.length > 0 && (
         <div className="space-y-4">
           <div className="space-y-1">
@@ -152,15 +153,16 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
             </p>
           </div>
 
-          <div className="space-y-3">
-            {localSelections.map(selection => (
+          <Accordion type="multiple" className="space-y-3">
+            {localSelections.map((selection, index) => (
               <TradeDetail
                 key={selection.tradeId}
                 selection={selection}
+                index={index}
                 onChange={handleSelectionChange}
               />
             ))}
-          </div>
+          </Accordion>
         </div>
       )}
     </div>
