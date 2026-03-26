@@ -131,7 +131,7 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
           </h3>
           <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
             {trades.map(trade => (
-              <div key={trade.id} className="w-52 shrink-0">
+              <div key={trade.id} className="w-56 shrink-0">
                 <TradeCard
                   trade={trade}
                   isSelected={selectedTradeIds.has(trade.id)}
