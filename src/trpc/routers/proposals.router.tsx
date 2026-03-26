@@ -144,7 +144,8 @@ export const proposalsRouter = createTRPCRouter({
       const canUpdate = ability.can('update', 'Proposal')
 
       if (canUpdate) {
-        const proposal = await updateProposal(ctx.session!.user.id, input.proposalId, input.data)
+        const isOmni = ability.can('manage', 'all')
+        const proposal = await updateProposal(isOmni ? null : ctx.session!.user.id, input.proposalId, input.data)
         if (!proposal) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
         }

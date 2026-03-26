@@ -92,17 +92,19 @@ export async function getProposals(userId: string, isOmni = false) {
     .orderBy(desc(proposals.createdAt))
 }
 
-export async function updateProposal(userIdOrToken: string, proposalId: string, data: Partial<InsertProposalSchema>) {
-  const isToken = userIdOrToken.startsWith('tpr-')
-  const authFilter = isToken ? eq(proposals.token, userIdOrToken) : eq(proposals.ownerId, userIdOrToken)
+export async function updateProposal(userIdOrToken: string | null, proposalId: string, data: Partial<InsertProposalSchema>) {
+  const conditions = [eq(proposals.id, proposalId)]
+
+  // null = privileged caller (e.g. super-admin) — skip ownership check
+  if (userIdOrToken !== null) {
+    const isToken = userIdOrToken.startsWith('tpr-')
+    conditions.push(isToken ? eq(proposals.token, userIdOrToken) : eq(proposals.ownerId, userIdOrToken))
+  }
 
   const [proposal] = await db
     .update(proposals)
     .set(data)
-    .where(and(
-      eq(proposals.id, proposalId),
-      authFilter,
-    ))
+    .where(and(...conditions))
     .returning()
 
   return proposal
