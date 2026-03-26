@@ -28,7 +28,7 @@ type RawDatbaseMap = {
       | RawPropertyMap<Meeting>
       | RawPropertyMap<Project>
       | RawPropertyMap<Omit<Trade, 'slug' | 'coverImageUrl'>>
-      | RawPropertyMap<ScopeOrAddon>
+      | RawPropertyMap<Omit<ScopeOrAddon, 'coverImageUrl'>>
       | RawPropertyMap<SOW>
     properties: ZodRawShape
   }
@@ -63,7 +63,7 @@ export const notionDatabasesMeta = {
     id: 'ef70ca1b-548b-8226-b680-07fe8f00a91f',
     name: 'scopes',
     propertiesMap: SCOPE_OR_ADDON_PROPERTIES_MAP,
-    properties: scopeOrAddonSchema.shape,
+    properties: scopeOrAddonSchema.omit({ coverImageUrl: true }).shape,
   },
   sows: {
     id: '53e0ca1b-548b-83e3-8cd9-87067f43457a',

@@ -24,9 +24,9 @@ export const scopesRouter = createTRPCRouter({
   getScopesByQuery: baseProcedure
     .input(z.object({
       query: z.string().optional(),
-      filterProperty: z.enum(getTypedKeys(scopeOrAddonSchema.omit({ id: true }).shape)).optional(),
+      filterProperty: z.enum(getTypedKeys(scopeOrAddonSchema.omit({ id: true, coverImageUrl: true }).shape)).optional(),
       sortBy: z.object({
-        property: z.enum(getTypedKeys(scopeOrAddonSchema.omit({ id: true }).shape)),
+        property: z.enum(getTypedKeys(scopeOrAddonSchema.omit({ id: true, coverImageUrl: true }).shape)),
         direction: z.enum(['ascending', 'descending']).optional().default('ascending'),
       }).optional(),
     }))

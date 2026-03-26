@@ -2,6 +2,7 @@
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import { useState } from 'react'
+import { ScopeCard } from '@/features/meetings/ui/components/steps/scope-card'
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/components/ui/accordion'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Label } from '@/shared/components/ui/label'
@@ -117,6 +118,29 @@ export function TradeDetail({ selection, index, onChange }: TradeDetailProps) {
 
       <AccordionContent className="px-5 pb-5 pt-3">
         <div className="space-y-5">
+          {/* Scopes — visual cards */}
+          {availableScopes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Specific Work Needed
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {availableScopes.map(scope => (
+                  <ScopeCard
+                    key={scope.id}
+                    scope={scope}
+                    isSelected={selectedScopeIds.has(scope.id)}
+                    onToggle={handleScopeToggle}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {scopesQuery.isLoading && (
+            <p className="text-xs text-muted-foreground">Loading scopes...</p>
+          )}
+
           {/* Pain Points */}
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -138,34 +162,6 @@ export function TradeDetail({ selection, index, onChange }: TradeDetailProps) {
               ))}
             </div>
           </div>
-
-          {/* Scopes */}
-          {availableScopes.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Specific Work Needed
-              </p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {availableScopes.map(scope => (
-                  <label
-                    key={scope.id}
-                    className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border/50 bg-card p-2.5 transition-colors hover:bg-muted/40"
-                  >
-                    <Checkbox
-                      checked={selectedScopeIds.has(scope.id)}
-                      onCheckedChange={() => handleScopeToggle(scope.id)}
-                      className="mt-0.5 shrink-0"
-                    />
-                    <span className="text-xs leading-snug">{scope.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {scopesQuery.isLoading && (
-            <p className="text-xs text-muted-foreground">Loading scopes...</p>
-          )}
 
           {/* Notes */}
           <div className="space-y-1.5">

@@ -5,6 +5,7 @@ export const scopeOrAddonSchema = z.object({
   name: z.string(),
   entryType: z.string(),
   unitOfPricing: z.string().default('unit'),
+  coverImageUrl: z.string().nullable().default(null),
   relatedTrade: z.string(),
   relatedScopesOfWork: z.array(z.string()).default([]).optional(),
 })
