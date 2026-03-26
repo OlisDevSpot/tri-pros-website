@@ -22,4 +22,4 @@ export const SCOPE_OR_ADDON_PROPERTIES_MAP = {
     label: 'Scopes of Work',
     type: 'relation',
   },
-} as const satisfies RawPropertyMap<ScopeOrAddon>
+} as const satisfies RawPropertyMap<Omit<ScopeOrAddon, 'coverImageUrl'>>

@@ -23,7 +23,6 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
   const queryClient = useQueryClient()
 
   const [customerId, setCustomerId] = useState('')
-  const [contactName, setContactName] = useState(meeting.contactName ?? '')
 
   const updateMeeting = useMutation(
     trpc.meetingsRouter.update.mutationOptions({
@@ -39,7 +38,6 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
   function handleSave() {
     updateMeeting.mutate({
       id: meeting.id,
-      contactName: contactName || undefined,
       ...(customerId ? { customerId } : {}),
     })
   }
@@ -67,16 +65,10 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
       <div className="rounded-xl border border-border/40 bg-card/40 p-5">
         <p className="mb-3 text-sm font-semibold text-foreground">
           Customer Contact
-          {contactName && (
-            <span className="ml-2 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
-              {contactName}
-            </span>
-          )}
         </p>
         <CustomerSearch
-          onSelect={(id, name) => {
+          onSelect={(id, _name) => {
             setCustomerId(id)
-            setContactName(name)
           }}
           onClear={() => {
             setCustomerId('')

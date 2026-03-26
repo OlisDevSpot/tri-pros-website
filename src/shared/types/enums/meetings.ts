@@ -1,4 +1,6 @@
 import type {
+  customerDemeanors,
+  energyEfficientTradeAccessors,
   meetingAgeGroups,
   meetingCreditScoreRanges,
   meetingDecisionMakersPresentOptions,
@@ -8,6 +10,7 @@ import type {
   meetingFamilyStatuses,
   meetingHouseholdTypes,
   meetingOutcomePriorities,
+  meetingOutcomes,
   meetingPainTypes,
   meetingPipelineStages,
   meetingPriorContractorExperience,
@@ -17,6 +20,8 @@ import type {
   meetingTypes,
   meetingYearBuiltRanges,
   meetingYearsInHome,
+  observedBudgetComforts,
+  spouseDynamics,
 } from '@/shared/constants/enums/meetings'
 
 export type MeetingStatus = (typeof meetingStatuses)[number]
@@ -37,3 +42,8 @@ export type MeetingDecisionUrgency = (typeof meetingDecisionUrgencies)[number]
 export type MeetingCreditScoreRange = (typeof meetingCreditScoreRanges)[number]
 export type MeetingPipelineStage = (typeof meetingPipelineStages)[number]
 export type MeetingType = (typeof meetingTypes)[number]
+export type MeetingOutcome = (typeof meetingOutcomes)[number]
+export type ObservedBudgetComfort = (typeof observedBudgetComforts)[number]
+export type SpouseDynamic = (typeof spouseDynamics)[number]
+export type CustomerDemeanor = (typeof customerDemeanors)[number]
+export type EnergyEfficientTrade = (typeof energyEfficientTradeAccessors)[number]

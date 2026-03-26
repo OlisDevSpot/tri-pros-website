@@ -22,18 +22,17 @@ export function buildTimelineEvents(data: CustomerProfileData): TimelineEvent[] 
     events.push({
       id: `meeting-created-${meeting.id}`,
       type: 'meeting_created',
-      title: `Meeting created — ${meeting.type ?? 'Meeting'}`,
-      description: meeting.program ?? undefined,
+      title: `Meeting created — ${meeting.meetingType ?? 'Meeting'}`,
       timestamp: meeting.createdAt,
       entityId: meeting.id,
       entityType: 'meeting',
     })
 
-    if (meeting.status === 'completed' || meeting.status === 'converted') {
+    if (meeting.meetingOutcome !== 'not_set') {
       events.push({
         id: `meeting-completed-${meeting.id}`,
         type: 'meeting_completed',
-        title: `Meeting completed — ${meeting.program ?? 'Meeting'}`,
+        title: `Meeting completed — ${meeting.meetingOutcome.replace(/_/g, ' ')}`,
         timestamp: meeting.updatedAt,
         entityId: meeting.id,
         entityType: 'meeting',

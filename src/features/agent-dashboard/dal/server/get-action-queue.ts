@@ -1,4 +1,4 @@
-import { and, count, desc, eq, max, sql } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
@@ -15,7 +15,7 @@ export interface ActionItem {
   customerName: string
   customerPhone: string | null
   customerEmail: string | null
-  program: string | null
+  program: null
   trade: string | null
   viewCount: number
   lastViewedAt: string | null
@@ -140,15 +140,14 @@ export async function getActionQueue(userId: string, isOmni = false): Promise<Ac
   const orphanMeetings = await db
     .select({
       id: meetings.id,
-      customerName: sql<string>`COALESCE(${customers.name}, ${meetings.contactName}, 'Unknown')`.as('customer_name'),
-      program: meetings.program,
+      customerName: sql<string>`COALESCE(${customers.name}, 'Unknown')`.as('customer_name'),
       createdAt: meetings.createdAt,
     })
     .from(meetings)
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
       isOmni ? undefined : eq(meetings.ownerId, userId),
-      eq(meetings.status, 'completed'),
+      inArray(meetings.meetingOutcome, ['follow_up_needed', 'not_interested']),
     ))
     .orderBy(desc(meetings.createdAt))
 
@@ -191,7 +190,7 @@ export async function getActionQueue(userId: string, isOmni = false): Promise<Ac
     customerName: m.customerName,
     customerPhone: null,
     customerEmail: null,
-    program: m.program,
+    program: null,
     trade: null,
     viewCount: 0,
     lastViewedAt: null,

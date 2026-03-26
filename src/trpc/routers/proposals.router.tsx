@@ -73,21 +73,22 @@ export const proposalsRouter = createTRPCRouter({
           })
         }
 
-        // Snapshot meeting scopes into proposal SOW
+        // Snapshot meeting trade selections into proposal SOW
         let input = rawInput
         const [meetingRow] = await db
-          .select({ meetingScopesJSON: meetings.meetingScopesJSON })
+          .select({ flowStateJSON: meetings.flowStateJSON })
           .from(meetings)
           .where(eq(meetings.id, rawInput.meetingId))
 
-        if (meetingRow?.meetingScopesJSON && meetingRow.meetingScopesJSON.length > 0) {
+        const tradeSelections = meetingRow?.flowStateJSON?.tradeSelections
+        if (tradeSelections && tradeSelections.length > 0) {
           const projectJSON = (rawInput.projectJSON ?? {}) as Record<string, unknown>
           const data = (projectJSON.data ?? {}) as Record<string, unknown>
 
           if (!data.sow) {
-            const sowFromScopes = meetingRow.meetingScopesJSON.map(entry => ({
-              trade: entry.trade,
-              scopes: entry.scopes,
+            const sowFromSelections = tradeSelections.map(entry => ({
+              trade: { id: entry.tradeId, label: entry.tradeName },
+              scopes: entry.selectedScopes,
               title: '',
               contentJSON: '',
               html: '',
@@ -99,7 +100,7 @@ export const proposalsRouter = createTRPCRouter({
                 ...projectJSON,
                 data: {
                   ...data,
-                  sow: sowFromScopes,
+                  sow: sowFromSelections,
                 },
               },
             } as typeof rawInput

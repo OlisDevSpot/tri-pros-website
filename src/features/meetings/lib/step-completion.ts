@@ -1,8 +1,12 @@
-import type { IntakeStep } from '@/features/meetings/types'
 import type { Customer, Meeting } from '@/shared/db/schema'
+import type { JsonbSection } from '@/shared/types/jsonb'
 import { getJsonbSection } from '@/features/meetings/lib/get-jsonb-section'
 
-export function stepCompletionCount(step: IntakeStep, meeting: Meeting, customer: Customer | null): number {
+interface IntakeStepShape {
+  fields: { entity: string, id: string, jsonbKey: JsonbSection }[]
+}
+
+export function stepCompletionCount(step: IntakeStepShape, meeting: Meeting, customer: Customer | null): number {
   return step.fields.filter((f) => {
     const source = f.entity === 'customer' ? customer : meeting
     const section = getJsonbSection(source, f.jsonbKey)

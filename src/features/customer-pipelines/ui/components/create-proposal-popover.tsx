@@ -79,13 +79,12 @@ export function CreateProposalPopover({ meetings }: Props) {
   }
 
   function formatMeetingOption(meeting: CustomerProfileMeeting) {
-    const type = meeting.type ?? 'Meeting'
-    const program = meeting.program ?? 'No program'
+    const type = meeting.meetingType ?? 'Meeting'
     const date = meeting.scheduledFor
       ? format(new Date(meeting.scheduledFor), 'MMM d, yyyy')
       : 'No date'
 
-    return `${type} — ${program} — ${date} (${meeting.status})`
+    return `${type} — ${date} (${meeting.meetingOutcome.replace(/_/g, ' ')})`
   }
 
   if (!ability.can('create', 'Proposal')) {

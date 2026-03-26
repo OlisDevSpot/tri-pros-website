@@ -1,18 +1,15 @@
 'use client'
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
-import type { MeetingStatus } from '@/shared/types/enums'
+import type { MeetingOutcome } from '@/shared/types/enums'
 
 import { format } from 'date-fns'
 import { CalendarIcon, CopyIcon, MoreHorizontalIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
 
-import { programAccentMap } from '@/features/meetings/constants/program-accent-map'
-import { MEETING_PROGRAMS } from '@/features/meetings/constants/programs'
 import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
   DropdownMenu,
@@ -23,16 +20,20 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
 
-const STATUS_DOT_COLORS: Record<MeetingStatus, string> = {
-  in_progress: 'bg-sky-500',
-  completed: 'bg-emerald-500',
-  converted: 'bg-violet-500',
+const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
+  not_set: 'bg-blue-500',
+  proposal_created: 'bg-emerald-500',
+  follow_up_needed: 'bg-amber-500',
+  not_interested: 'bg-red-500',
+  no_show: 'bg-zinc-500',
 }
 
-const STATUS_BG_TINTS: Record<MeetingStatus, string> = {
-  in_progress: 'bg-sky-500/5 border-sky-500/20',
-  completed: 'bg-emerald-500/5 border-emerald-500/20',
-  converted: 'bg-violet-500/5 border-violet-500/20',
+const STATUS_BG_TINTS: Record<MeetingOutcome, string> = {
+  not_set: 'bg-blue-500/5 border-blue-500/20',
+  proposal_created: 'bg-emerald-500/5 border-emerald-500/20',
+  follow_up_needed: 'bg-amber-500/5 border-amber-500/20',
+  not_interested: 'bg-red-500/5 border-red-500/20',
+  no_show: 'bg-zinc-500/5 border-zinc-500/20',
 }
 
 interface MeetingCalendarCardProps {
@@ -57,8 +58,6 @@ export function MeetingCalendarCard({
   const { data: session } = useSession()
   const userRole = session?.user?.role
 
-  const program = MEETING_PROGRAMS.find(p => p.accessor === event.program)
-
   const addressLine1 = event.customerAddress ?? ''
   const addressLine2 = [event.customerCity, event.customerState, event.customerZip]
     .filter(Boolean)
@@ -69,7 +68,7 @@ export function MeetingCalendarCard({
     <div
       className={cn(
         'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
-        STATUS_BG_TINTS[event.status],
+        STATUS_BG_TINTS[event.meetingOutcome],
       )}
       onClick={() => onNavigate(event.meetingId)}
     >
@@ -78,11 +77,11 @@ export function MeetingCalendarCard({
         <span
           className={cn(
             'h-2 w-2 shrink-0 rounded-full',
-            STATUS_DOT_COLORS[event.status],
+            STATUS_DOT_COLORS[event.meetingOutcome],
           )}
         />
         <span className="font-medium truncate flex-1 leading-tight">
-          {event.customerName ?? event.contactName ?? 'Unknown'}
+          {event.customerName ?? 'Unknown'}
         </span>
         <div
           className={cn(
@@ -142,18 +141,6 @@ export function MeetingCalendarCard({
           <span>{format(new Date(event.startAt), 'h:mm a')}</span>
         </DateTimePicker>
       </div>
-
-      {/* Row 3: Program badge */}
-      {program && (
-        <Badge
-          className={cn(
-            'w-fit text-[10px] px-1.5 py-0 leading-4 truncate',
-            programAccentMap[program.accentColor].badge,
-          )}
-        >
-          {program.name}
-        </Badge>
-      )}
 
       {/* Row 3: Phone */}
       {event.customerPhone && (

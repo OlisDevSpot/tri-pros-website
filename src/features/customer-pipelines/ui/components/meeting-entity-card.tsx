@@ -63,13 +63,13 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
           <div className="space-y-1.5 min-w-0">
             {/* Badges + Date */}
             <div className="flex flex-wrap items-center gap-2">
-              {meeting.type && (
+              {meeting.meetingType && (
                 <Badge variant="secondary" className="text-xs font-medium">
-                  {meeting.type}
+                  {meeting.meetingType}
                 </Badge>
               )}
-              <Badge variant="outline" className={MEETING_LIST_STATUS_COLORS[meeting.status] ?? ''}>
-                {meeting.status.replace('_', ' ')}
+              <Badge variant="outline" className={MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome] ?? ''}>
+                {meeting.meetingOutcome.replace(/_/g, ' ')}
               </Badge>
               {meeting.scheduledFor && (
                 <span className="text-xs text-muted-foreground">
@@ -78,14 +78,8 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
               )}
             </div>
 
-            {/* Program + Created */}
+            {/* Created */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-              {meeting.program && (
-                <>
-                  <span className="font-medium text-foreground/70">{meeting.program}</span>
-                  <span>·</span>
-                </>
-              )}
               <span>
                 Created
                 {' '}

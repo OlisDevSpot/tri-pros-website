@@ -1,14 +1,14 @@
 import type { DataTableFilterConfig } from '@/shared/components/data-table/types'
 
 import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
-import { meetingStatuses } from '@/shared/constants/enums'
+import { meetingOutcomes } from '@/shared/constants/enums'
 
 export const meetingTableFilters: DataTableFilterConfig[] = [
   {
     id: 'search',
     label: 'Search',
     type: 'search',
-    columnId: 'contactName',
+    columnId: 'customerName',
     placeholder: 'Filter meetings...',
   },
   {
@@ -19,14 +19,14 @@ export const meetingTableFilters: DataTableFilterConfig[] = [
     presets: DEFAULT_TIME_PRESETS,
   },
   {
-    id: 'status',
-    label: 'Status',
+    id: 'outcome',
+    label: 'Outcome',
     type: 'select',
-    columnId: 'status',
-    placeholder: 'All statuses',
-    options: meetingStatuses.map(s => ({
-      label: s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()),
-      value: s,
+    columnId: 'meetingOutcome',
+    placeholder: 'All outcomes',
+    options: meetingOutcomes.map(o => ({
+      label: o.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      value: o,
     })),
   },
 ]

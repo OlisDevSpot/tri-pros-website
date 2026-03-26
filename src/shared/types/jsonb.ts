@@ -1,17 +1,17 @@
 import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
-import type { ProgramData, SituationProfile } from '@/shared/entities/meetings/schemas'
+import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 
 export type JsonbSection
   = | 'customerProfileJSON'
     | 'financialProfileJSON'
-    | 'programDataJSON'
     | 'propertyProfileJSON'
-    | 'situationProfileJSON'
+    | 'contextJSON'
+    | 'flowStateJSON'
 
 export interface JsonbSectionMap {
   customerProfileJSON: CustomerProfile
   financialProfileJSON: FinancialProfile
   propertyProfileJSON: PropertyProfile
-  situationProfileJSON: SituationProfile
-  programDataJSON: ProgramData
+  contextJSON: MeetingContext
+  flowStateJSON: MeetingFlowState
 }
