@@ -192,7 +192,19 @@
       "Bash(timeout 240 cat)",
       "Bash(gh pr:*)",
       "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -maxdepth 2 -type f \\\\\\(-name *.env* -o -name .github -o -name vercel.json -o -name next.config.* \\\\\\))",
-      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(p.packageManager || ''NOT SET''\\)\")"
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(p.packageManager || ''NOT SET''\\)\")",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components -name *avatar* -o -name *user*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(tty)",
+      "Read(//proc/**)",
+      "Read(//dev/pts/**)",
+      "Bash(lsof -ti:3001)",
+      "Bash(xargs kill:*)",
+      "Bash(fuser -k 3001/tcp)",
+      "Bash(find ~/.claude -type f \\\\\\(-name *.json -o -name *.yaml -o -name *.yml -o -name *.md \\\\\\))",
+      "Bash(find ~/.claude/skills/ui-ux-pro-max* -type f -o -type d)",
+      "Bash(head -5 /home/olis-solutions/.claude/skills/ui-ux-pro-max-data/data/*.csv)",
+      "Bash(find ~/.claude/skills/ui-ux-pro-max* -type f -exec wc -l {} +)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

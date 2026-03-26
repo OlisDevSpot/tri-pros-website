@@ -50,9 +50,11 @@ $1
 "
 }
 
-# Set the terminal tab title (works in VSCode integrated terminal + most emulators)
+# Set the terminal tab title (works in VSCode integrated terminal + most emulators).
+# Accepts an optional second arg: the TTY device to write to (for background loops).
 set_terminal_title() {
-  printf '\033]0;%s\007' "$1"
+  local tty_dev="${2:-/dev/tty}"
+  printf '\033]0;%s\007' "$1" > "$tty_dev" 2>/dev/null || true
 }
 
 ensure_dispatch_dir() {
@@ -885,10 +887,15 @@ cmd_run() {
   echo -e "  ${DIM}Claude will auto-load CLAUDE.local.md with your assignment.${NC}"
   echo ""
 
+  # Capture the real TTY device before backgrounding — background subshells lose /dev/tty.
+  local my_tty
+  my_tty=$(tty)
+
   # Keep the shell alive to re-assert the terminal title every 2s via background loop.
   # Claude Code overrides the title on launch, so we fight back.
   cd "${wt_path}"
-  (while true; do set_terminal_title "${tab_title}"; sleep 2; done) &
+  set_terminal_title "${tab_title}" "${my_tty}"
+  (while true; do set_terminal_title "${tab_title}" "${my_tty}"; sleep 2; done) &
   local title_pid=$!
   trap "kill ${title_pid} 2>/dev/null" EXIT
   npx claude
@@ -918,7 +925,12 @@ cmd_dev() {
   title=$(dispatch_field "$issue_num" "title")
 
   local tab_title="🌐 #${issue_num} :${port}"
-  set_terminal_title "${tab_title}"
+
+  # Capture the real TTY device before backgrounding — background subshells lose /dev/tty.
+  local my_tty
+  my_tty=$(tty)
+
+  set_terminal_title "${tab_title}" "${my_tty}"
 
   log "Starting dev server for #${issue_num}: ${BOLD}${title}${NC}"
   echo -e "  ${DIM}Port: ${port}  |  URL: http://localhost:${port}${NC}"
@@ -926,7 +938,7 @@ cmd_dev() {
 
   # Use PORT env var — pnpm's '--' passthrough mangles --port into a path
   cd "${wt_path}"
-  (while true; do set_terminal_title "${tab_title}"; sleep 2; done) &
+  (while true; do set_terminal_title "${tab_title}" "${my_tty}"; sleep 2; done) &
   local title_pid=$!
   trap "kill ${title_pid} 2>/dev/null" EXIT
   PORT="${port}" pnpm dev
