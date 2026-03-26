@@ -211,6 +211,8 @@ export const proposalsRouter = createTRPCRouter({
     }))
     .mutation(async ({ input, ctx }) => {
       const { user } = ctx.session
+      const isOmni = ctx.ability.can('manage', 'all')
+      const ownerKey = isOmni ? null : user.id
 
       const { data, error } = await resendClient.emails.send({
         from: 'Tri Pros <info@triprosremodeling.com>',
@@ -233,7 +235,7 @@ export const proposalsRouter = createTRPCRouter({
         })
       }
 
-      const proposal = await updateProposal(user.id, input.proposalId, {
+      const proposal = await updateProposal(ownerKey, input.proposalId, {
         status: 'sent',
         sentAt: new Date().toISOString(),
       })
@@ -272,7 +274,7 @@ export const proposalsRouter = createTRPCRouter({
           const envelopeData = await res.json() as { envelopeId?: string }
 
           if (envelopeData.envelopeId) {
-            await updateProposal(user.id, input.proposalId, {
+            await updateProposal(ownerKey, input.proposalId, {
               docusignEnvelopeId: envelopeData.envelopeId,
             })
           }
