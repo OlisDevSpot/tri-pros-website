@@ -49,6 +49,7 @@ Trade (discipline)
 | **Pain Point** | Customer's problem/frustration. Has `accessor` + `urgencyRating` (1-10). | `customers.customerProfileJSON` |
 | **Trigger Event** | Recent catalyst that prompted contact (leak, high bill, neighbor's project). | `customers.customerProfileJSON` |
 | **Outcome Priority** | What matters most: Price, Quality, or Speed. | `customers.customerProfileJSON` |
+| **Customer Persona Profile** | Synthesized sales intelligence object. Joins customer/meeting JSONB data with Notion pain points to produce fears, benefits, decision drivers, emotional levers, household resonance, and risk factors — all contextualized to selected trades. | Generated at runtime (not stored) |
 | **Decision Timeline** | When they want to act: ASAP, 1-3mo, 3-6mo, 6+mo, Not sure. | `customers.customerProfileJSON` |
 | **Decision Urgency** | How urgent the need feels (1-10 scale). Distinct from timeline. | `customers.customerProfileJSON` |
 | **Credit Score Range** | Self-reported bracket. Predicts financing approval. | `customers.financialProfileJSON` |

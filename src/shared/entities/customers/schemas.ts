@@ -1,10 +1,7 @@
 import z from 'zod'
 import {
-  meetingAgeGroups,
   meetingCreditScoreRanges,
   meetingDecisionTimelines,
-  meetingDecisionUrgencies,
-  meetingFamilyStatuses,
   meetingHouseholdTypes,
   meetingOutcomePriorities,
   meetingPriorContractorExperience,
@@ -21,20 +18,16 @@ export const painSchema = z.object({
 })
 
 export const customerProfileSchema = z.object({
-  age: z.number().int().nonnegative(),
   triggerEvent: z.enum(meetingTriggerEvents),
   mainPainPoint: painSchema,
   additionalPainPoints: z.array(painSchema),
   outcomePriority: z.enum(meetingOutcomePriorities),
   timeInHome: z.enum(meetingYearsInHome),
-  ageGroup: z.enum(meetingAgeGroups),
-  householdType: z.enum(meetingHouseholdTypes).optional(),
-  familyStatus: z.enum(meetingFamilyStatuses),
+  householdType: z.enum(meetingHouseholdTypes),
   priorContractorExperience: z.enum(meetingPriorContractorExperience),
   constructionOutlookFavorabilityRating: z.number().int().min(1).max(10),
   sellPlan: z.enum(meetingSellPlans),
   decisionTimeline: z.enum(meetingDecisionTimelines),
-  decisionUrgencyRating: z.enum(meetingDecisionUrgencies),
   projectNecessityRating: z.number().int().min(1).max(10),
 }).partial()
 

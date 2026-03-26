@@ -9,9 +9,7 @@ export const meetingDecisionMakersPresentOptions = [
   'Partially present (missing family member)',
   'None present',
 ] as const
-export const meetingAgeGroups = ['Young (18-25)', 'Young Adult (25-40)', 'Adult (40-62)', 'Senior (62-78)', 'Elder (78+)'] as const
-export const meetingFamilyStatuses = ['Single man', 'Single woman', 'Couple', 'Family', 'Multi-family'] as const
-export const meetingHouseholdTypes = ['Senior(s)', 'Empty nester(s)', 'Family', 'Non-senior(s)', 'Multi-gen home', 'Other'] as const
+export const meetingHouseholdTypes = ['Single man', 'Single woman', 'Couple', 'Family', 'Senior(s)', 'Empty nester(s)', 'Multi-gen home'] as const
 export const meetingOutcomePriorities = ['Price', 'Quality', 'Speed'] as const
 export const meetingTriggerEvents = ['Neighbor\'s project', 'Damage or leak', 'Scheduled maintenance', 'High bill', 'Selling soon', 'Other'] as const
 export const meetingPainPoints = [] as const
@@ -39,7 +37,6 @@ export const meetingPainTypes = [
   'Social (competition / status / family)',
   'Home is not place of rest / comfort',
 ] as const
-export const meetingDecisionUrgencies = ['ASAP', '1–2 weeks', '1 month', '3+ months'] as const
 export const meetingCreditScoreRanges = ['< 600', '600–630', '630–650', '650–700', '700–749', '750–800', '> 800'] as const
 
 // Pipeline stages (customer journey — meeting phase)

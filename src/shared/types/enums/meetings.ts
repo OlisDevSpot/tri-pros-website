@@ -1,13 +1,10 @@
 import type {
   customerDemeanors,
   energyEfficientTradeAccessors,
-  meetingAgeGroups,
   meetingCreditScoreRanges,
   meetingDecisionMakersPresentOptions,
   meetingDecisionTimelines,
-  meetingDecisionUrgencies,
   meetingDmsPresentStatuses,
-  meetingFamilyStatuses,
   meetingHouseholdTypes,
   meetingOutcomePriorities,
   meetingOutcomes,
@@ -35,10 +32,7 @@ export type MeetingYearBuiltRange = (typeof meetingYearBuiltRanges)[number]
 export type MeetingTimeline = (typeof meetingDecisionTimelines)[number]
 export type MeetingYearsInHome = (typeof meetingYearsInHome)[number]
 export type MeetingDmsPresentStatus = (typeof meetingDmsPresentStatuses)[number]
-export type MeetingFamilyStatus = (typeof meetingFamilyStatuses)[number]
-export type MeetingAgeGroup = (typeof meetingAgeGroups)[number]
 export type MeetingPainType = (typeof meetingPainTypes)[number]
-export type MeetingDecisionUrgency = (typeof meetingDecisionUrgencies)[number]
 export type MeetingCreditScoreRange = (typeof meetingCreditScoreRanges)[number]
 export type MeetingPipelineStage = (typeof meetingPipelineStages)[number]
 export type MeetingType = (typeof meetingTypes)[number]
