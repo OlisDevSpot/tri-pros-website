@@ -12,6 +12,11 @@ export interface PipelineItemRep {
   image: string | null
 }
 
+export interface PipelineItemProposal {
+  id: string
+  value: number | null
+}
+
 export interface CustomerPipelineItem {
   id: string
   type: 'customer'
@@ -29,7 +34,9 @@ export interface CustomerPipelineItem {
   latestActivityAt: string | null
   nextMeetingId: string | null
   nextMeetingAt: string | null
+  meetingScheduledFor: string | null
   assignedRep: PipelineItemRep | null
+  proposals: PipelineItemProposal[]
 }
 
 export interface CustomerPipelineRawData {

@@ -1,4 +1,4 @@
-import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemRep } from '@/features/customer-pipelines/types'
+import type { CustomerPipelineItem, CustomerPipelineRawData, PipelineItemProposal, PipelineItemRep } from '@/features/customer-pipelines/types'
 
 import type { CustomerPipeline } from '@/shared/types/enums'
 
@@ -46,7 +46,9 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       latestActivityAt: '',
       nextMeetingId: null,
       nextMeetingAt: null,
+      meetingScheduledFor: null,
       assignedRep: null,
+      proposals: [],
     }))
   }
 
@@ -107,6 +109,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     .selectDistinctOn([meetings.customerId], {
       customerId: meetings.customerId,
       meetingId: meetings.id,
+      meetingScheduledFor: meetings.scheduledFor,
       repId: user.id,
       repName: user.name,
       repEmail: user.email,
@@ -125,9 +128,35 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       .filter(r => r.customerId !== null)
       .map(r => [r.customerId!, {
         meetingId: r.meetingId,
+        meetingScheduledFor: r.meetingScheduledFor,
         rep: { id: r.repId, name: r.repName, email: r.repEmail, image: r.repImage } as PipelineItemRep,
       }]),
   )
+
+  // Fetch individual proposals per customer for card display
+  const proposalDetailRows = await db
+    .select({
+      customerId: meetings.customerId,
+      proposalId: proposals.id,
+      value: sql<number | null>`NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric`.as('proposal_value'),
+    })
+    .from(proposals)
+    .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
+    .where(and(
+      isOmni ? undefined : eq(proposals.ownerId, userId),
+      inArray(meetings.customerId, customerIds),
+    ))
+    .orderBy(desc(proposals.createdAt))
+
+  const proposalDetailMap = new Map<string, PipelineItemProposal[]>()
+  for (const r of proposalDetailRows) {
+    if (!r.customerId) {
+      continue
+    }
+    const arr = proposalDetailMap.get(r.customerId) ?? []
+    arr.push({ id: r.proposalId, value: r.value ? Number(r.value) : null })
+    proposalDetailMap.set(r.customerId, arr)
+  }
 
   return rows.map((row): CustomerPipelineItem => {
     const pData = proposalMap.get(row.customerId)
@@ -181,7 +210,9 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       latestActivityAt: rawData.latestActivityAt,
       nextMeetingId: repMap.get(row.customerId)?.meetingId ?? null,
       nextMeetingAt: row.nextMeetingAt ?? null,
+      meetingScheduledFor: repMap.get(row.customerId)?.meetingScheduledFor ?? null,
       assignedRep: repMap.get(row.customerId)?.rep ?? null,
+      proposals: proposalDetailMap.get(row.customerId) ?? [],
     }
   })
 }

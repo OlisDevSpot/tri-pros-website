@@ -16,8 +16,8 @@ export function CustomerProfileKeyInsights({ profile }: Props) {
   const insights = [
     profile.triggerEvent != null && String(profile.triggerEvent),
     profile.decisionTimeline != null && String(profile.decisionTimeline),
-    profile.decisionUrgencyRating != null && `Urgency: ${String(profile.decisionUrgencyRating)}`,
     profile.outcomePriority != null && `Priority: ${String(profile.outcomePriority)}`,
+    profile.householdType != null && String(profile.householdType),
   ].filter(Boolean) as string[]
 
   if (insights.length === 0) {

@@ -95,7 +95,8 @@ export function CustomerKanbanCard({
 
   const otherPipelines = customerPipelines.filter(p => p !== currentPipeline)
   const meetingLabel = getMeetingTimeLabel(item.nextMeetingAt)
-  const hasMeetingContext = item.meetingCount > 0 && (item.assignedRep || meetingLabel)
+  const isScheduledOrInProgress = item.stage === 'meeting_scheduled' || item.stage === 'meeting_in_progress'
+  const hasMeetingContext = item.meetingCount > 0
   const fullAddress = item.address
     ? formatAddress(item.address, item.city, item.state ?? 'CA', item.zip)
     : null
@@ -195,41 +196,52 @@ export function CustomerKanbanCard({
               )}
             </div>
 
-            {/* Proposal count */}
-            {item.proposalCount > 0 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <FileTextIcon size={11} />
-                <span>
-                  {item.proposalCount}
-                  {' '}
-                  {item.proposalCount === 1 ? 'proposal' : 'proposals'}
-                </span>
+            {/* Meeting time badge — always shown when meeting exists */}
+            {isScheduledOrInProgress && meetingLabel
+              ? (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'gap-1 text-[11px] font-normal w-fit',
+                      meetingLabel.variant === 'active' && 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-500/10 dark:text-yellow-300',
+                      meetingLabel.variant === 'upcoming' && 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
+                      meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon size={10} />
+                    {meetingLabel.text}
+                  </Badge>
+                )
+              : item.meetingScheduledFor
+                ? (
+                    <Badge
+                      variant="outline"
+                      className="gap-1 text-[11px] font-normal w-fit border-muted-foreground/20 text-muted-foreground"
+                    >
+                      <CalendarIcon size={10} />
+                      {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}
+                    </Badge>
+                  )
+                : null}
+
+            {/* Individual proposal rows */}
+            {item.proposals.length > 0 && (
+              <div className="flex flex-col gap-0.5">
+                {item.proposals.map(p => (
+                  <div key={p.id} className="flex items-center justify-between gap-2">
+                    <FileTextIcon size={11} className="shrink-0 text-muted-foreground" />
+                    {p.value != null && p.value > 0
+                      ? (
+                          <span className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-0.5">
+                            <DollarSignIcon size={12} />
+                            {formatAsDollars(p.value)}
+                          </span>
+                        )
+                      : <span className="text-[11px] text-muted-foreground italic">No price</span>}
+                  </div>
+                ))}
               </div>
             )}
-
-            {/* Scheduled for badge (bottom of meeting group) */}
-            {meetingLabel && (
-              <Badge
-                variant="outline"
-                className={cn(
-                  'gap-1 text-[11px] font-normal w-fit',
-                  meetingLabel.variant === 'active' && 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-500/10 dark:text-yellow-300',
-                  meetingLabel.variant === 'upcoming' && 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
-                  meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
-                )}
-              >
-                <CalendarIcon size={10} />
-                {meetingLabel.text}
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* ── Pipeline value (if any) ── */}
-        {item.totalPipelineValue > 0 && (
-          <div className="flex items-center gap-0.5 text-xs font-semibold text-green-700 dark:text-green-400 px-0.5">
-            <DollarSignIcon size={12} />
-            {formatAsDollars(item.totalPipelineValue)}
           </div>
         )}
 
