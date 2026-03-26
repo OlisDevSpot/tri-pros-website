@@ -7,8 +7,10 @@ import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useQueryState } from 'nuqs'
+import { useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { buildProposalDefaults } from '@/features/meetings/lib/build-proposal-defaults'
 import { useCreateProposal } from '@/features/proposal-flow/dal/client/mutations/use-create-proposal'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
@@ -27,6 +29,7 @@ export function CreateNewProposalView() {
   const { data: session } = useSession()
   const router = useRouter()
   const createProposal = useCreateProposal()
+  const hasAppliedSnapshot = useRef(false)
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.getById.queryOptions(
@@ -35,23 +38,26 @@ export function CreateNewProposalView() {
     ),
   )
 
-  const customer = meetingQuery.data?.customer ?? null
+  const meeting = meetingQuery.data ?? null
+  const customer = meeting?.customer ?? null
 
   const form = useForm<ProposalFormSchema>({
     resolver: zodResolver(proposalFormSchema),
     mode: 'onSubmit',
-    defaultValues: {
-      ...baseDefaultValues,
-      project: {
-        ...baseDefaultValues.project,
-        data: {
-          ...baseDefaultValues.project.data,
-          label: customer?.name ?? '',
-        },
-      },
-    },
+    defaultValues: baseDefaultValues,
     disabled: meetingQuery.isLoading,
   })
+
+  // Apply meeting snapshot once when meeting data loads
+  useEffect(() => {
+    if (!meeting || hasAppliedSnapshot.current) {
+      return
+    }
+    hasAppliedSnapshot.current = true
+
+    const defaults = buildProposalDefaults(meeting, customer)
+    form.reset(defaults)
+  }, [meeting, customer, form])
 
   function onSubmit(data: ProposalFormSchema) {
     const sow = data.project.data.sow.map((singleSOW) => {
