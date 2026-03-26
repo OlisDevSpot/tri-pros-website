@@ -1,7 +1,26 @@
 'use client'
 
+import Image from 'next/image'
 import { CREDENTIAL_ITEMS, DUE_DILIGENCE_ITEMS } from '@/features/meetings/constants/due-diligence'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { cn } from '@/shared/lib/utils'
+
+const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs] ?? ''
+
+const CREDENTIAL_DOCS = [
+  {
+    title: 'Contractor License',
+    subtitle: 'Verified and current',
+    src: `${DOCS_BASE}/tpr-license.jpg`,
+    alt: 'Tri Pros Remodeling contractor license',
+  },
+  {
+    title: 'Certificate of Insurance',
+    subtitle: 'Liability coverage on file',
+    src: `${DOCS_BASE}/tpr-coi-2026.jpg`,
+    alt: 'Tri Pros Remodeling certificate of insurance',
+  },
+] as const
 
 interface WhoWeAreStepProps {
   className?: string
@@ -61,6 +80,36 @@ export function WhoWeAreStep({ className }: WhoWeAreStepProps) {
             </span>
           </div>
         ))}
+      </div>
+
+      {/* ── License & Insurance Documents ──────────────────────────────── */}
+      <div className="space-y-4">
+        <div className="space-y-1 text-center">
+          <h3 className="text-base font-bold tracking-tight">Our Credentials</h3>
+          <p className="text-sm text-muted-foreground">
+            Licensed, insured, and verifiable — before we discuss anything else.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {CREDENTIAL_DOCS.map(doc => (
+            <div key={doc.title} className="space-y-2.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h4 className="text-sm font-semibold">{doc.title}</h4>
+                <span className="text-[11px] text-muted-foreground">{doc.subtitle}</span>
+              </div>
+              <div className="overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm ring-1 ring-black/5">
+                <Image
+                  src={doc.src}
+                  alt={doc.alt}
+                  width={1200}
+                  height={1600}
+                  className="h-auto w-full"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Section Intro ────────────────────────────────────────────────── */}
