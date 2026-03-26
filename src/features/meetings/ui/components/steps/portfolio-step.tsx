@@ -1,10 +1,15 @@
 'use client'
 
 import type { MeetingFlowContext } from '@/features/meetings/types'
+import type { ShowroomProject } from '@/shared/entities/projects/types'
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { PortfolioCard } from '@/features/meetings/ui/components/steps/portfolio-card'
-import { EmptyState } from '@/shared/components/states/empty-state'
+import { useShowroomFilters } from '@/features/showroom/hooks/use-showroom-filters'
+import { ShowroomGrid } from '@/features/showroom/ui/components/showroom-grid'
+import { ShowroomPagination } from '@/features/showroom/ui/components/showroom-pagination'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Separator } from '@/shared/components/ui/separator'
 import { useTRPC } from '@/trpc/helpers'
 
 interface PortfolioStepProps {
@@ -13,45 +18,122 @@ interface PortfolioStepProps {
 
 export function PortfolioStep({ flowContext }: PortfolioStepProps) {
   const trpc = useTRPC()
+  const tradeSelections = flowContext.flowState?.tradeSelections ?? []
 
-  const scopeIds = flowContext.flowState?.tradeSelections?.flatMap(
-    t => t.selectedScopes.map(s => s.id),
-  ) ?? []
-
-  const portfolioQuery = useQuery(
-    trpc.meetingsRouter.getPortfolioForMeeting.queryOptions({ scopeIds }),
+  // Fetch all portfolio data (same queries as the public portfolio page)
+  const { data: allProjects = [], isLoading: projectsLoading } = useQuery(
+    trpc.showroomRouter.getProjects.queryOptions(),
   )
+  const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
+  const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
 
-  if (portfolioQuery.isLoading) {
-    return <LoadingState description="Finding projects that match your selections..." title="Loading portfolio" />
-  }
+  // Group projects by selected trade — only trades with matching projects
+  const tradeProjectGroups = useMemo(() => {
+    if (tradeSelections.length === 0 || allProjects.length === 0) {
+      return []
+    }
 
-  const projects = portfolioQuery.data ?? []
+    return tradeSelections
+      .map((ts) => {
+        const selectedScopeIds = new Set(ts.selectedScopes.map(s => s.id))
 
-  if (projects.length === 0) {
-    return (
-      <EmptyState
-        description="Portfolio projects will appear here once they are added."
-        title="No portfolio projects available yet"
-      />
-    )
+        const matchingProjects = allProjects.filter((sp: ShowroomProject) =>
+          sp.scopeIds.some(scopeId => selectedScopeIds.has(scopeId)),
+        )
+
+        return {
+          tradeId: ts.tradeId,
+          tradeName: ts.tradeName,
+          projects: matchingProjects,
+        }
+      })
+      .filter(group => group.projects.length > 0)
+  }, [tradeSelections, allProjects])
+
+  // Full portfolio with pagination (reuses showroom filter hook)
+  const showroomFilters = useShowroomFilters({ projects: allProjects, allScopes, allTrades })
+
+  if (projectsLoading) {
+    return <LoadingState description="Loading portfolio projects..." title="Loading portfolio" />
   }
 
   return (
-    <div className="space-y-8">
-      {/* Intro */}
-      <div className="space-y-1">
-        <h2 className="text-base font-semibold">Our past work</h2>
-        <p className="text-sm text-muted-foreground">
-          Real projects we&apos;ve completed — similar to what you have in mind.
-        </p>
-      </div>
+    <div className="space-y-12">
+      {/* ── Per-Trade Portfolio Grids ───────────────────────────────────── */}
+      {tradeProjectGroups.length > 0 && (
+        <div className="space-y-10">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold">Projects matching your selections</h2>
+            <p className="text-sm text-muted-foreground">
+              Real projects we&apos;ve completed — relevant to the specialties you chose.
+            </p>
+          </div>
 
-      {/* Project list */}
+          {tradeProjectGroups.map(group => (
+            <div key={group.tradeId} className="space-y-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold tracking-tight">{group.tradeName}</h3>
+                <span className="text-xs text-muted-foreground">
+                  {group.projects.length}
+                  {' '}
+                  {group.projects.length === 1 ? 'project' : 'projects'}
+                </span>
+              </div>
+              <div className="space-y-4">
+                {group.projects.slice(0, 3).map(sp => (
+                  <PortfolioCard
+                    key={sp.project.id}
+                    project={{
+                      ...sp.project,
+                      matchedScopeCount: sp.scopeIds.length,
+                      mediaFiles: sp.heroImage ? [sp.heroImage] : [],
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Divider ────────────────────────────────────────────────────── */}
+      {tradeProjectGroups.length > 0 && <Separator />}
+
+      {/* ── Full Portfolio Grid (reused from portfolio page) ───────────── */}
       <div className="space-y-6">
-        {projects.map(project => (
-          <PortfolioCard key={project.id} project={project} />
-        ))}
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold">Full Portfolio</h2>
+          <p className="text-sm text-muted-foreground">
+            Browse all of our completed projects.
+          </p>
+        </div>
+
+        {/* Top pagination */}
+        <ShowroomPagination
+          page={showroomFilters.page}
+          totalPages={showroomFilters.totalPages}
+          totalFiltered={showroomFilters.totalFiltered}
+          perPage={showroomFilters.perPage}
+          onPageChange={showroomFilters.setPage}
+          onPerPageChange={showroomFilters.setPerPage}
+        />
+
+        {/* Grid */}
+        <ShowroomGrid
+          projects={showroomFilters.filteredProjects}
+          allScopes={allScopes}
+          allTrades={allTrades}
+        />
+
+        {/* Bottom pagination */}
+        <ShowroomPagination
+          page={showroomFilters.page}
+          totalPages={showroomFilters.totalPages}
+          totalFiltered={showroomFilters.totalFiltered}
+          perPage={showroomFilters.perPage}
+          onPageChange={showroomFilters.setPage}
+          onPerPageChange={showroomFilters.setPerPage}
+        />
       </div>
     </div>
   )
