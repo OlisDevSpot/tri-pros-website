@@ -68,7 +68,7 @@ export function TradeDetail({ selection, index, onChange }: TradeDetailProps) {
     summaryParts.push(`${selectedScopes.length} scope${selectedScopes.length !== 1 ? 's' : ''}`)
   }
   if (selectedPainPoints.length > 0) {
-    summaryParts.push(`${selectedPainPoints.length} pain point${selectedPainPoints.length !== 1 ? 's' : ''}`)
+    summaryParts.push(`${selectedPainPoints.length} reason${selectedPainPoints.length !== 1 ? 's' : ''}`)
   }
   if (localNotes.trim()) {
     summaryParts.push('has notes')
@@ -142,10 +142,10 @@ export function TradeDetail({ selection, index, onChange }: TradeDetailProps) {
             <p className="text-xs text-muted-foreground">Loading scopes...</p>
           )}
 
-          {/* Pain Points */}
+          {/* Reasons for contracting work */}
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pain Points
+              Reasons for Contracting Work
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {meetingPainTypes.map(pain => (

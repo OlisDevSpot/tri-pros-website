@@ -164,7 +164,7 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold">Tell us more about each specialty</h3>
                 <p className="text-xs text-muted-foreground">
-                  For each selected trade, check off pain points and specific work you&apos;re interested in.
+                  For each selected trade, check off the reasons for contracting work and specific scopes you&apos;re interested in.
                 </p>
               </div>
 
