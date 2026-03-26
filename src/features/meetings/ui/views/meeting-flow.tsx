@@ -173,7 +173,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
           </div>
         </div>
 
-        <div className="ml-auto hidden h-8 w-28 sm:block">
+        <div className="ml-auto hidden h-10 w-32 sm:block">
           <Logo variant="right" />
         </div>
       </header>
