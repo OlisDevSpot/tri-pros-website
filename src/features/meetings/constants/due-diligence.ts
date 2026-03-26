@@ -6,6 +6,11 @@ import {
   ShieldCheckIcon,
   UsersIcon,
 } from 'lucide-react'
+import { companyInfo } from '@/shared/constants/company'
+
+const primaryLicense = companyInfo.licenses[0]
+const generalLiability = companyInfo.insurances.find(i => i.label.includes('General Liability'))
+const numProjects = companyInfo.numProjects
 
 export const DUE_DILIGENCE_ITEMS = [
   {
@@ -14,7 +19,7 @@ export const DUE_DILIGENCE_ITEMS = [
     short: 'Licensed & insured is the bare minimum.',
     description:
       'Your contractor should own and hold the proper license for your project, and pull the right permit with the right trade. Licensed and insured is the bare minimum.',
-    stat: '#1024988',
+    stat: `#${primaryLicense?.licenseNumber ?? '—'}`,
     statLabel: 'CA License',
   },
   {
@@ -50,7 +55,7 @@ export const DUE_DILIGENCE_ITEMS = [
     short: 'A full team behind every project.',
     description:
       'Make sure you have enough office support. Know what your contractor is offering you and at what quality.',
-    stat: '5+',
+    stat: `${companyInfo.teamInfo.numEmployees}+`,
     statLabel: 'Support Staff',
   },
   {
@@ -59,14 +64,14 @@ export const DUE_DILIGENCE_ITEMS = [
     short: 'References, testimonials, real results.',
     description:
       'Make sure you check for solid proof of performance. Ask to see reference projects, testimonials, past clients, and relevant customer successes.',
-    stat: '500+',
+    stat: `${numProjects}+`,
     statLabel: 'Projects Completed',
   },
 ] as const
 
 export const CREDENTIAL_ITEMS = [
-  { label: 'Licensed CA Contractor', value: '#1024988' },
-  { label: 'General Liability', value: '$2M Insured' },
+  { label: 'Licensed CA Contractor', value: `#${primaryLicense?.licenseNumber ?? '—'}` },
+  { label: 'General Liability', value: generalLiability?.coverage ?? '$1M Coverage' },
   { label: 'Workmanship Warranty', value: '5 Years' },
-  { label: 'SoCal Projects', value: '500+' },
+  { label: 'SoCal Projects', value: `${numProjects}+` },
 ] as const
