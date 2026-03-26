@@ -124,24 +124,38 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
       </div>
 
       {/* Trade categories — horizontal scrollable per category */}
-      {groupedTrades.map(([category, trades]) => (
-        <div key={category} className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground">
-            {TRADE_CATEGORY_LABELS[category as keyof typeof TRADE_CATEGORY_LABELS] ?? category}
-          </h3>
-          <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
-            {trades.map(trade => (
-              <div key={trade.id} className="w-56 shrink-0">
-                <TradeCard
-                  trade={trade}
-                  isSelected={selectedTradeIds.has(trade.id)}
-                  onToggle={handleTradeToggle}
-                />
-              </div>
-            ))}
+      {groupedTrades.map(([category, trades]) => {
+        const selectedInCategory = trades.filter(t => selectedTradeIds.has(t.id))
+        const selectedCount = selectedInCategory.length
+
+        return (
+          <div key={category} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">
+                {TRADE_CATEGORY_LABELS[category as keyof typeof TRADE_CATEGORY_LABELS] ?? category}
+              </h3>
+              {selectedCount > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                  {selectedCount}
+                  {' '}
+                  selected
+                </span>
+              )}
+            </div>
+            <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
+              {trades.map(trade => (
+                <div key={trade.id} className="w-56 shrink-0">
+                  <TradeCard
+                    trade={trade}
+                    isSelected={selectedTradeIds.has(trade.id)}
+                    onToggle={handleTradeToggle}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
 
       {/* Selected trade details — collapsible accordion, defaults closed */}
       {localSelections.length > 0
