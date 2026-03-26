@@ -44,7 +44,7 @@ export function ScopeCard({ scope, isSelected, onToggle }: ScopeCardProps) {
       type="button"
       onClick={() => onToggle(scope.id)}
       className={cn(
-        'group relative flex h-36 w-full flex-col justify-end overflow-hidden rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'group relative flex h-56 w-full flex-col justify-end overflow-hidden rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         isSelected
           ? 'border-primary/60 shadow-md ring-2 ring-primary/30'
           : 'border-border/60 shadow-sm hover:border-primary/30 hover:shadow-md',
