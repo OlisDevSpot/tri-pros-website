@@ -1,8 +1,10 @@
 'use client'
 
+import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { MeetingType } from '@/shared/types/enums/meetings'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
+import { MeetingScopesPicker } from '@/features/meetings/ui/components/meeting-scopes-picker'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
@@ -26,12 +28,14 @@ export function CreateMeetingForm({
 
   const [meetingType, setMeetingType] = useState<MeetingType>('Fresh')
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(undefined)
+  const [tradeSelections, setTradeSelections] = useState<TradeSelection[]>([])
 
   const createMutation = useMutation(
     trpc.meetingsRouter.create.mutationOptions({
       onSuccess: () => {
         setMeetingType('Fresh')
         setScheduledFor(undefined)
+        setTradeSelections([])
         onSuccess?.()
       },
     }),
@@ -46,6 +50,9 @@ export function CreateMeetingForm({
       customerId,
       meetingType,
       scheduledFor: scheduledFor?.toISOString(),
+      flowStateJSON: tradeSelections.length > 0
+        ? { tradeSelections }
+        : undefined,
     })
   }
 
@@ -88,6 +95,19 @@ export function CreateMeetingForm({
           value={scheduledFor}
           onChange={setScheduledFor}
           placeholder="Pick date & time"
+        />
+      </div>
+
+      {/* Trade & Scope Selection */}
+      <div className="space-y-2">
+        <Label>
+          Trades & scopes
+          {' '}
+          <span className="text-muted-foreground text-xs font-normal">(optional — can be added during meeting)</span>
+        </Label>
+        <MeetingScopesPicker
+          value={tradeSelections}
+          onChange={setTradeSelections}
         />
       </div>
 

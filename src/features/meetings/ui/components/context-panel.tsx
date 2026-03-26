@@ -15,7 +15,6 @@ import {
   meetingHouseholdTypes,
   meetingOutcomePriorities,
   meetingOutcomes,
-  meetingPainTypes,
   meetingPriorContractorExperience,
   meetingSellPlans,
   meetingTriggerEvents,
@@ -111,11 +110,8 @@ export function ContextPanel({
     [onAgentNotesChange],
   )
 
-  const preMeetingValues: Record<string, unknown> = {
+  const situationalValues: Record<string, unknown> = {
     decisionMakersPresent: ctx.decisionMakersPresent,
-    preKnownPainPoints: ctx.preKnownPainPoints,
-    preKnownTrades: ctx.preKnownTrades,
-    preMeetingNotes: ctx.preMeetingNotes,
     agentNotes: meeting.agentNotes ?? '',
   }
 
@@ -138,7 +134,7 @@ export function ContextPanel({
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
-          {/* Section 1 — Pre-Meeting */}
+          {/* Section 1 — Situational */}
           <ContextPanelSection
             fields={[
               {
@@ -148,32 +144,14 @@ export function ContextPanel({
                 type: 'select',
               },
               {
-                id: 'preKnownPainPoints',
-                label: 'Pre-Known Pain Points',
-                options: meetingPainTypes,
-                type: 'multi-select',
-              },
-              {
-                id: 'preKnownTrades',
-                label: 'Pre-Known Trades',
-                placeholder: 'e.g. roofing, windows',
-                type: 'text',
-              },
-              {
-                id: 'preMeetingNotes',
-                label: 'Pre-Meeting Notes',
-                placeholder: 'Notes before the meeting…',
-                type: 'textarea',
-              },
-              {
                 id: 'agentNotes',
                 label: 'Agent Notes',
                 placeholder: 'Internal notes…',
                 type: 'textarea',
               },
             ]}
-            title="Pre-Meeting"
-            values={preMeetingValues}
+            title="Situational"
+            values={situationalValues}
             onFieldChange={(id, value) => {
               if (id === 'agentNotes') {
                 handleAgentNotesChange(id, value)

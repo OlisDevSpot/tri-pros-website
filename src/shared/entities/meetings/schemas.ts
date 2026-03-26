@@ -9,11 +9,8 @@ import {
 // ── Context Panel Schema (replaces situationProfileSchema) ──────────────────
 
 export const meetingContextSchema = z.object({
-  // Pre-meeting fields
+  // Situational
   decisionMakersPresent: z.enum(meetingDecisionMakersPresentOptions),
-  preKnownPainPoints: z.array(z.string()),
-  preKnownTrades: z.array(z.string()),
-  preMeetingNotes: z.string(),
   // During-meeting observations
   observedUrgency: z.number().int().min(1).max(10),
   observedBudgetComfort: z.enum(observedBudgetComforts),

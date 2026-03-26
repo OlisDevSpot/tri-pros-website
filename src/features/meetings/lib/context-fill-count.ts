@@ -10,11 +10,8 @@ export function computeContextFilledCount(meeting: Meeting, customer: Customer |
   const propertyProfile = (customer?.propertyProfileJSON ?? {}) as Record<string, unknown>
   const financialProfile = (customer?.financialProfileJSON ?? {}) as Record<string, unknown>
 
-  const preMeetingFields = [
+  const situationalFields = [
     ctx.decisionMakersPresent,
-    ctx.preKnownPainPoints,
-    ctx.preKnownTrades,
-    ctx.preMeetingNotes,
     meeting.agentNotes,
   ]
 
@@ -53,7 +50,7 @@ export function computeContextFilledCount(meeting: Meeting, customer: Customer |
   const outcomeFields = [meeting.meetingOutcome]
 
   const allFields = [
-    ...preMeetingFields,
+    ...situationalFields,
     ...customerProfileFields,
     ...propertyFields,
     ...financialFields,

@@ -4,6 +4,7 @@ import z from 'zod'
 import { meetingTypes } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
+import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
@@ -33,6 +34,7 @@ export const meetingsRouter = createTRPCRouter({
       customerId: z.string().uuid('A customer is required'),
       meetingType: z.enum(meetingTypes),
       scheduledFor: z.string().optional(),
+      flowStateJSON: meetingFlowStateSchema.optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { customerId, ...meetingData } = input
