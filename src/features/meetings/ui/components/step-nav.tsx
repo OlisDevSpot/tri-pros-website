@@ -22,7 +22,7 @@ export function StepNav({ currentStep, onStepClick }: StepNavProps) {
             onClick={() => onStepClick(step.stepNumber)}
             className={cn(
               'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-all',
-              isActive && 'bg-primary/10 text-primary',
+              isActive && 'text-primary',
               isCompleted && 'text-muted-foreground hover:text-foreground',
               !isActive && !isCompleted && 'text-muted-foreground/50 hover:text-muted-foreground',
             )}
