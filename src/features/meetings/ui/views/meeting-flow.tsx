@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { CONTEXT_TOTAL_FIELDS } from '@/features/meetings/constants/context-panel'
 import { stepParser } from '@/features/meetings/constants/query-parsers'
@@ -70,32 +70,39 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   const meeting = meetingQuery.data
   const customer = meeting?.customer?.id ? meeting.customer : null
 
+  // Refs for latest data — keeps callbacks stable across re-renders
+  const meetingRef = useRef(meeting)
+  meetingRef.current = meeting
+  const customerRef = useRef(customer)
+  customerRef.current = customer
+
   const handleFlowStateChange = useCallback((patch: Partial<MeetingFlowState>) => {
-    const current = meeting?.flowStateJSON ?? {}
+    const current = meetingRef.current?.flowStateJSON ?? {}
     updateMeeting.mutate({
       id: meetingId,
       flowStateJSON: { ...current, ...patch },
     })
-  }, [meeting?.flowStateJSON, meetingId, updateMeeting])
+  }, [meetingId, updateMeeting])
 
   const handleCustomerProfileChange = useCallback((jsonbKey: string, patch: Record<string, unknown>) => {
-    if (!customer?.id) {
+    const c = customerRef.current
+    if (!c?.id) {
       return
     }
-    const currentSection = (customer as Record<string, unknown>)[jsonbKey] ?? {}
+    const currentSection = (c as Record<string, unknown>)[jsonbKey] ?? {}
     updateCustomerProfile.mutate({
-      customerId: customer.id,
+      customerId: c.id,
       [jsonbKey]: { ...(currentSection as Record<string, unknown>), ...patch },
     })
-  }, [customer, updateCustomerProfile])
+  }, [updateCustomerProfile])
 
   const handleContextChange = useCallback((patch: Record<string, unknown>) => {
-    const current = (meeting?.contextJSON ?? {}) as MeetingContext
+    const current = (meetingRef.current?.contextJSON ?? {}) as MeetingContext
     updateMeeting.mutate({
       id: meetingId,
       contextJSON: { ...current, ...patch } as MeetingContext,
     })
-  }, [meeting?.contextJSON, meetingId, updateMeeting])
+  }, [meetingId, updateMeeting])
 
   const handleOutcomeChange = useCallback((outcome: string) => {
     updateMeeting.mutate({
