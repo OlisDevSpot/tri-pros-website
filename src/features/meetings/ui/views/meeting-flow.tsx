@@ -175,7 +175,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
       </header>
 
       {/* Step title bar */}
-      <div className="shrink-0 border-b border-border/20 px-4 py-2 md:px-6">
+      <div className="shrink-0 border-b border-border/20 px-4 py-2 text-center md:px-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {`Step ${currentStep} of ${TOTAL_STEPS}`}
         </p>
