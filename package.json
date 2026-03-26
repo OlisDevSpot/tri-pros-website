@@ -81,6 +81,7 @@
     "@trpc/tanstack-react-query": "^11.4.1",
     "@upstash/qstash": "^2.9.0",
     "@upstash/ratelimit": "^2.0.8",
+    "@upstash/realtime": "^1.0.3",
     "@upstash/redis": "^1.37.0",
     "@vis.gl/react-google-maps": "^1.7.1",
     "@zxcvbn-ts/core": "^3.0.4",

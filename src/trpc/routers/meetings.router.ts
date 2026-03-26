@@ -1,10 +1,14 @@
 import { TRPCError } from '@trpc/server'
 import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import z from 'zod'
+import { buildPersonaProfile } from '@/features/meetings/lib/build-persona-profile'
+import { getCachedPainPoints } from '@/features/meetings/lib/get-cached-pain-points'
 import { meetingTypes } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
+import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
+import { realtime } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
@@ -65,6 +69,52 @@ export const meetingsRouter = createTRPCRouter({
       if (!updated) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
       }
+
+      // Emit realtime events for cross-device sync
+      const channel = realtime.channel(`meeting:${id}`)
+      if (rest.flowStateJSON) {
+        void channel.emit('meeting.flowStateUpdated', rest.flowStateJSON)
+      }
+      if (rest.contextJSON) {
+        void channel.emit('meeting.contextUpdated', rest.contextJSON)
+      }
+      if (rest.meetingOutcome) {
+        void channel.emit('meeting.outcomeUpdated', { meetingOutcome: rest.meetingOutcome })
+      }
+      if (rest.agentNotes !== undefined) {
+        void channel.emit('meeting.agentNotesUpdated', { agentNotes: rest.agentNotes ?? '' })
+      }
+
+      return updated
+    }),
+
+  // Update customer profile from within the meeting flow (emits realtime sync event)
+  updateCustomerProfileForMeeting: agentProcedure
+    .input(z.object({
+      meetingId: z.string().uuid(),
+      customerId: z.string().uuid(),
+      customerProfileJSON: customerProfileSchema.optional(),
+      propertyProfileJSON: propertyProfileSchema.optional(),
+      financialProfileJSON: financialProfileSchema.optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { meetingId, customerId, ...profiles } = input
+
+      const [updated] = await db
+        .update(customers)
+        .set(profiles)
+        .where(eq(customers.id, customerId))
+        .returning()
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+
+      // Emit realtime event to the meeting channel for cross-device sync
+      void realtime.channel(`meeting:${meetingId}`).emit(
+        'meeting.customerProfileUpdated',
+        profiles,
+      )
 
       return updated
     }),
@@ -291,5 +341,35 @@ export const meetingsRouter = createTRPCRouter({
         matchedScopeCount: r.matchedScopeCount,
         mediaFiles: mediaByProject.get(r.project.id) ?? [],
       }))
+    }),
+
+  // Build a customer persona profile by joining customer/meeting JSONB with Notion pain points
+  getPersonaProfile: agentProcedure
+    .input(z.object({ meetingId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const [row] = await db
+        .select({
+          ...getTableColumns(meetings),
+          customer: getTableColumns(customers),
+        })
+        .from(meetings)
+        .leftJoin(customers, eq(customers.id, meetings.customerId))
+        .where(eq(meetings.id, input.meetingId))
+
+      if (!row) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      }
+
+      const customer = row.customer?.id ? row.customer : null
+      const painPointsDb = await getCachedPainPoints()
+
+      return buildPersonaProfile({
+        customerProfile: customer?.customerProfileJSON ?? null,
+        propertyProfile: customer?.propertyProfileJSON ?? null,
+        financialProfile: customer?.financialProfileJSON ?? null,
+        meetingContext: row.contextJSON ?? null,
+        flowState: row.flowStateJSON ?? null,
+        painPointsDb,
+      })
     }),
 })

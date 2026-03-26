@@ -12,10 +12,14 @@ import { toast } from 'sonner'
 import { CONTEXT_TOTAL_FIELDS } from '@/features/meetings/constants/context-panel'
 import { stepParser } from '@/features/meetings/constants/query-parsers'
 import { MEETING_STEPS, TOTAL_STEPS } from '@/features/meetings/constants/step-config'
+import { useMeetingSync } from '@/features/meetings/hooks/use-meeting-sync'
 import { computeContextFilledCount } from '@/features/meetings/lib/context-fill-count'
 import { ContextPanel } from '@/features/meetings/ui/components/context-panel'
 import { ContextPanelTrigger } from '@/features/meetings/ui/components/context-panel-trigger'
+import { PersonaProfilePanel } from '@/features/meetings/ui/components/persona-profile-panel'
+import { PersonaProfileTrigger } from '@/features/meetings/ui/components/persona-profile-trigger'
 import { StepNav } from '@/features/meetings/ui/components/step-nav'
+import { SyncStatusIndicator } from '@/features/meetings/ui/components/sync-status-indicator'
 import { ClosingStep } from '@/features/meetings/ui/components/steps/closing-step'
 import { CreateProposalStep } from '@/features/meetings/ui/components/steps/create-proposal-step'
 import { DealStructureStep } from '@/features/meetings/ui/components/steps/deal-structure-step'
@@ -40,29 +44,32 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
   const queryClient = useQueryClient()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
   const [contextOpen, setContextOpen] = useState(false)
+  const [personaOpen, setPersonaOpen] = useState(false)
+  const { status: syncStatus } = useMeetingSync(meetingId)
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.getById.queryOptions({ id: meetingId }),
   )
 
+  const invalidateMeetingQueries = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
+    })
+    void queryClient.invalidateQueries({
+      queryKey: trpc.meetingsRouter.getPersonaProfile.queryKey({ meetingId }),
+    })
+  }, [meetingId, queryClient, trpc])
+
   const updateMeeting = useMutation(
     trpc.meetingsRouter.update.mutationOptions({
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
-        })
-      },
+      onSuccess: invalidateMeetingQueries,
       onError: () => toast.error('Failed to save'),
     }),
   )
 
   const updateCustomerProfile = useMutation(
-    trpc.customersRouter.updateProfile.mutationOptions({
-      onSuccess: () => {
-        void queryClient.invalidateQueries({
-          queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
-        })
-      },
+    trpc.meetingsRouter.updateCustomerProfileForMeeting.mutationOptions({
+      onSuccess: invalidateMeetingQueries,
       onError: () => toast.error('Failed to save customer data'),
     }),
   )
@@ -84,10 +91,11 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
     }
     const currentSection = (customer as Record<string, unknown>)[jsonbKey] ?? {}
     updateCustomerProfile.mutate({
+      meetingId,
       customerId: customer.id,
       [jsonbKey]: { ...(currentSection as Record<string, unknown>), ...patch },
     })
-  }, [customer, updateCustomerProfile])
+  }, [customer, meetingId, updateCustomerProfile])
 
   const handleContextChange = useCallback((patch: Record<string, unknown>) => {
     const current = (meeting?.contextJSON ?? {}) as MeetingContext
@@ -173,8 +181,11 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
           </div>
         </div>
 
-        <div className="ml-auto hidden h-10 w-32 sm:block">
-          <Logo variant="right" />
+        <div className="ml-auto flex items-center gap-3">
+          <SyncStatusIndicator status={syncStatus} />
+          <div className="hidden h-10 w-32 sm:block">
+            <Logo variant="right" />
+          </div>
         </div>
       </header>
 
@@ -254,6 +265,18 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
         onCustomerProfileChange={handleCustomerProfileChange}
         onOpenChange={setContextOpen}
         onOutcomeChange={handleOutcomeChange}
+      />
+
+      {/* Persona profile trigger + sheet */}
+      <PersonaProfileTrigger
+        hasData={!!customer?.customerProfileJSON}
+        onClick={() => setPersonaOpen(true)}
+      />
+
+      <PersonaProfilePanel
+        isOpen={personaOpen}
+        meetingId={meetingId}
+        onOpenChange={setPersonaOpen}
       />
     </div>
   )
