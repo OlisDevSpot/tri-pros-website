@@ -3,7 +3,11 @@
 import type { MeetingFlowContext } from '@/features/meetings/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  TRADE_CATEGORY_LABELS,
+  TRADE_CATEGORY_ORDER,
+} from '@/features/meetings/constants/trade-categories'
 import { TradeCard } from '@/features/meetings/ui/components/steps/trade-card'
 import { TradeDetail } from '@/features/meetings/ui/components/steps/trade-detail'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -24,7 +28,6 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
   const [localSelections, setLocalSelections] = useState<TradeSelection[]>(serverSelections)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Sync from server → local only when server data actually changes (e.g. on initial load)
   const serverJson = JSON.stringify(serverSelections)
   useEffect(() => {
     setLocalSelections(serverSelections)
@@ -40,7 +43,6 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
     }, SAVE_DEBOUNCE_MS)
   }, [flowContext])
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) {
@@ -48,6 +50,35 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
       }
     }
   }, [])
+
+  // ── Group trades by category, sorted alphabetically within each ──
+  const groupedTrades = useMemo(() => {
+    const groups = new Map<string, Trade[]>()
+    for (const category of TRADE_CATEGORY_ORDER) {
+      groups.set(category, [])
+    }
+    // Bucket for trades with no type
+    groups.set('Other', [])
+
+    for (const trade of allTrades) {
+      const category = trade.type ?? 'Other'
+      const bucket = groups.get(category)
+      if (bucket) {
+        bucket.push(trade)
+      }
+      else {
+        groups.get('Other')!.push(trade)
+      }
+    }
+
+    // Sort each bucket alphabetically
+    for (const bucket of groups.values()) {
+      bucket.sort((a, b) => a.name.localeCompare(b.name))
+    }
+
+    // Remove empty buckets
+    return Array.from(groups.entries()).filter(([, trades]) => trades.length > 0)
+  }, [allTrades])
 
   const selectedTradeIds = new Set(localSelections.map(s => s.tradeId))
 
@@ -91,19 +122,27 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
         </p>
       </div>
 
-      {/* Trade selection grid */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-        {allTrades.map(trade => (
-          <TradeCard
-            key={trade.id}
-            trade={trade}
-            isSelected={selectedTradeIds.has(trade.id)}
-            onToggle={handleTradeToggle}
-          />
-        ))}
-      </div>
+      {/* Trade categories — horizontal scrollable per category */}
+      {groupedTrades.map(([category, trades]) => (
+        <div key={category} className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground">
+            {TRADE_CATEGORY_LABELS[category as keyof typeof TRADE_CATEGORY_LABELS] ?? category}
+          </h3>
+          <div className="scrollbar-thin flex gap-3 overflow-x-auto pb-2">
+            {trades.map(trade => (
+              <div key={trade.id} className="w-40 shrink-0">
+                <TradeCard
+                  trade={trade}
+                  isSelected={selectedTradeIds.has(trade.id)}
+                  onToggle={handleTradeToggle}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
 
-      {/* Selected trade details */}
+      {/* Selected trade details — scopes fetched lazily per trade */}
       {localSelections.length > 0 && (
         <div className="space-y-4">
           <div className="space-y-1">
