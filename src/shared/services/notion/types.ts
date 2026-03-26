@@ -3,7 +3,7 @@ import type { NotionDatabaseMap } from './constants/databases'
 import type { queryNotionDatabase } from './dal/query-notion-database'
 import { notionDatabasesMeta } from './constants/databases'
 
-export type NotionDatabaseName = 'contacts' | 'meetings' | 'projects' | 'trades' | 'scopes' | 'sows'
+export type NotionDatabaseName = 'contacts' | 'meetings' | 'painPoints' | 'projects' | 'trades' | 'scopes' | 'sows'
 export interface NotionPropDef {
   label: string
   type: NotionColumnType
@@ -11,7 +11,7 @@ export interface NotionPropDef {
 
 export type RawPropertyMap<T extends Record<string, any>> = Omit<Record<keyof T, NotionPropDef>, 'id'>
 
-export type NotionColumnType = 'title' | 'rich_text' | 'select' | 'date' | 'phone_number' | 'relation' | 'people' | 'timestamp'
+export type NotionColumnType = 'title' | 'rich_text' | 'select' | 'multi_select' | 'date' | 'phone_number' | 'relation' | 'people' | 'timestamp'
 
 export type NotionDatabaseProperties<T extends NotionDatabaseName> = NotionDatabaseMap[T]['propertiesMap']
 

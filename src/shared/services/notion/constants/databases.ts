@@ -1,6 +1,7 @@
 import type { ZodRawShape } from 'zod'
 import type { Contact } from '../lib/contacts/schema'
 import type { Meeting } from '../lib/meetings/schema'
+import type { NotionPainPoint } from '../lib/pain-points/schema'
 import type { Project } from '../lib/projects/schema'
 import type { ScopeOrAddon } from '../lib/scopes/schema'
 import type { SOW } from '../lib/sows/schema'
@@ -10,6 +11,8 @@ import { CONTACT_PROPERTIES_MAP } from '../lib/contacts/properties-map'
 import { contactSchema } from '../lib/contacts/schema'
 import { MEETING_PROPERTIES_MAP } from '../lib/meetings/properties-map'
 import { meetingSchema } from '../lib/meetings/schema'
+import { PAIN_POINT_PROPERTIES_MAP } from '../lib/pain-points/properties-map'
+import { notionPainPointSchema } from '../lib/pain-points/schema'
 import { PROJECT_PROPERTIES_MAP } from '../lib/projects/properties-map'
 import { projectSchema } from '../lib/projects/schema'
 import { SCOPE_OR_ADDON_PROPERTIES_MAP } from '../lib/scopes/properties-map'
@@ -27,6 +30,7 @@ type RawDatbaseMap = {
       | RawPropertyMap<Contact>
       | RawPropertyMap<Meeting>
       | RawPropertyMap<Project>
+      | RawPropertyMap<Omit<NotionPainPoint, 'id'>>
       | RawPropertyMap<Omit<Trade, 'slug' | 'coverImageUrl'>>
       | RawPropertyMap<Omit<ScopeOrAddon, 'coverImageUrl'>>
       | RawPropertyMap<SOW>
@@ -46,6 +50,12 @@ export const notionDatabasesMeta = {
     name: 'meetings',
     propertiesMap: MEETING_PROPERTIES_MAP,
     properties: meetingSchema.shape,
+  },
+  painPoints: {
+    id: '31f0ca1b-548b-8014-8a18-000b60a42c1e',
+    name: 'painPoints',
+    propertiesMap: PAIN_POINT_PROPERTIES_MAP,
+    properties: notionPainPointSchema.omit({ id: true }).shape,
   },
   projects: {
     id: '3460ca1b-548b-832c-b92b-071c95af0757',

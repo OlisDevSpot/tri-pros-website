@@ -10,6 +10,7 @@ export const notionRouter = createTRPCRouter({
   revalidateNotionCache: agentProcedure.mutation(async () => {
     revalidateTag('notion-trades')
     revalidateTag('notion-scopes')
+    revalidateTag('notion-pain-points')
     return { success: true, revalidatedAt: new Date().toISOString() }
   }),
 })

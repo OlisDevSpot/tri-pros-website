@@ -66,3 +66,10 @@ export function relationIds(props: Props, key: string) {
 
   return p.relation.map(r => r.id)
 }
+
+export function multiSelectNames(props: Props, key: string): string[] {
+  const p = must(props, key)
+  if (p.type !== 'multi_select')
+    throw new Error(`"${key}" is not multi_select`)
+  return p.multi_select.map(s => s.name)
+}

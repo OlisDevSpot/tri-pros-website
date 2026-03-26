@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const scopeOrAddonSchema = z.object({
   id: z.string(),
   name: z.string(),
-  entryType: z.string(),
+  entryType: z.string().default('Scope'),
   unitOfPricing: z.string().default('unit'),
   coverImageUrl: z.string().nullable().default(null),
   relatedTrade: z.string(),
