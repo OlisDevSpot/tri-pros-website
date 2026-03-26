@@ -144,27 +144,36 @@ export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
       ))}
 
       {/* Selected trade details — collapsible accordion, defaults closed */}
-      {localSelections.length > 0 && (
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Tell us more about each specialty</h3>
-            <p className="text-xs text-muted-foreground">
-              For each selected trade, check off pain points and specific work you&apos;re interested in.
-            </p>
-          </div>
+      {localSelections.length > 0
+        ? (
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold">Tell us more about each specialty</h3>
+                <p className="text-xs text-muted-foreground">
+                  For each selected trade, check off pain points and specific work you&apos;re interested in.
+                </p>
+              </div>
 
-          <Accordion type="multiple" className="space-y-3">
-            {localSelections.map((selection, index) => (
-              <TradeDetail
-                key={selection.tradeId}
-                selection={selection}
-                index={index}
-                onChange={handleSelectionChange}
-              />
-            ))}
-          </Accordion>
-        </div>
-      )}
+              <Accordion type="multiple" className="space-y-3">
+                {localSelections.map((selection, index) => (
+                  <TradeDetail
+                    key={selection.tradeId}
+                    selection={selection}
+                    index={index}
+                    onChange={handleSelectionChange}
+                  />
+                ))}
+              </Accordion>
+            </div>
+          )
+        : (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 px-6 py-10 text-center">
+              <p className="text-sm font-medium text-muted-foreground">No specialties selected yet</p>
+              <p className="text-xs text-muted-foreground/70">
+                Select a trade above to start building your project scope.
+              </p>
+            </div>
+          )}
     </div>
   )
 }
