@@ -1,6 +1,7 @@
 'use client'
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
+import { useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Label } from '@/shared/components/ui/label'
@@ -20,6 +21,7 @@ export function TradeDetail({ selection, onChange }: TradeDetailProps) {
   )
 
   const availableScopes = scopesQuery.data ?? []
+  const [localNotes, setLocalNotes] = useState(selection.notes ?? '')
 
   function handlePainPointToggle(pain: string) {
     const current = selection.painPoints ?? []
@@ -48,8 +50,10 @@ export function TradeDetail({ selection, onChange }: TradeDetailProps) {
     }
   }
 
-  function handleNotesChange(notes: string) {
-    onChange({ ...selection, notes })
+  function handleNotesBlur() {
+    if (localNotes !== (selection.notes ?? '')) {
+      onChange({ ...selection, notes: localNotes })
+    }
   }
 
   const selectedPainPoints = selection.painPoints ?? []
@@ -128,8 +132,9 @@ export function TradeDetail({ selection, onChange }: TradeDetailProps) {
         </Label>
         <Textarea
           id={`notes-${selection.tradeId}`}
-          value={selection.notes ?? ''}
-          onChange={e => handleNotesChange(e.target.value)}
+          value={localNotes}
+          onChange={e => setLocalNotes(e.target.value)}
+          onBlur={handleNotesBlur}
           placeholder={`Additional context for ${selection.tradeName}...`}
           rows={2}
           className="resize-none text-sm"
