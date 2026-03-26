@@ -6,12 +6,9 @@ import { ContextPanelSection } from '@/features/meetings/ui/components/context-p
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet'
 import {
   customerDemeanors,
-  meetingAgeGroups,
   meetingCreditScoreRanges,
   meetingDecisionMakersPresentOptions,
   meetingDecisionTimelines,
-  meetingDecisionUrgencies,
-  meetingFamilyStatuses,
   meetingHouseholdTypes,
   meetingOutcomePriorities,
   meetingOutcomes,
@@ -167,12 +164,6 @@ export function ContextPanel({
             defaultOpen={false}
             fields={[
               {
-                id: 'ageGroup',
-                label: 'Age Group',
-                options: meetingAgeGroups,
-                type: 'select',
-              },
-              {
                 id: 'triggerEvent',
                 label: 'Trigger Event',
                 options: meetingTriggerEvents,
@@ -182,12 +173,6 @@ export function ContextPanel({
                 id: 'outcomePriority',
                 label: 'Outcome Priority',
                 options: meetingOutcomePriorities,
-                type: 'select',
-              },
-              {
-                id: 'familyStatus',
-                label: 'Family Status',
-                options: meetingFamilyStatuses,
                 type: 'select',
               },
               {
@@ -218,12 +203,6 @@ export function ContextPanel({
                 id: 'decisionTimeline',
                 label: 'Decision Timeline',
                 options: meetingDecisionTimelines,
-                type: 'select',
-              },
-              {
-                id: 'decisionUrgencyRating',
-                label: 'Decision Urgency',
-                options: meetingDecisionUrgencies,
                 type: 'select',
               },
               {

@@ -16,16 +16,13 @@ export function computeContextFilledCount(meeting: Meeting, customer: Customer |
   ]
 
   const customerProfileFields = [
-    customerProfile.ageGroup,
     customerProfile.triggerEvent,
     customerProfile.outcomePriority,
-    customerProfile.familyStatus,
     customerProfile.householdType,
     customerProfile.timeInHome,
     customerProfile.sellPlan,
     customerProfile.priorContractorExperience,
     customerProfile.decisionTimeline,
-    customerProfile.decisionUrgencyRating,
     customerProfile.projectNecessityRating,
     customerProfile.constructionOutlookFavorabilityRating,
   ]

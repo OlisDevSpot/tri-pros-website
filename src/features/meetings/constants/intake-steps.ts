@@ -1,9 +1,6 @@
 import {
-  meetingAgeGroups,
   meetingCreditScoreRanges,
   meetingDecisionMakersPresentOptions,
-  meetingDecisionUrgencies,
-  meetingFamilyStatuses,
   meetingHouseholdTypes,
   meetingOutcomePriorities,
   meetingPainTypes,
@@ -70,22 +67,6 @@ export const INTAKE_STEPS = [
       },
       {
         entity: 'customer',
-        id: 'familyStatus',
-        jsonbKey: 'customerProfileJSON',
-        label: 'Relationship status',
-        options: meetingFamilyStatuses,
-        type: 'select',
-      },
-      {
-        entity: 'customer',
-        id: 'ageGroup',
-        jsonbKey: 'customerProfileJSON',
-        label: 'Homeowner age group',
-        options: meetingAgeGroups,
-        type: 'select',
-      },
-      {
-        entity: 'customer',
         id: 'householdType',
         jsonbKey: 'customerProfileJSON',
         label: 'Household type',
@@ -145,14 +126,6 @@ export const INTAKE_STEPS = [
         min: 0,
         placeholder: '0',
         type: 'number',
-      },
-      {
-        entity: 'customer',
-        id: 'decisionUrgencyRating',
-        jsonbKey: 'customerProfileJSON',
-        label: 'Decision urgency',
-        options: meetingDecisionUrgencies,
-        type: 'select',
       },
       {
         entity: 'customer',

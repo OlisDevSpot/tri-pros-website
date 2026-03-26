@@ -17,8 +17,6 @@ export function getProfileBenefits(
 ): ProfileBenefit[] {
   const benefits: ProfileBenefit[] = []
   const profile = customer?.customerProfileJSON
-  const ageGroup = profile?.ageGroup
-  const familyStatus = profile?.familyStatus
   const householdType = profile?.householdType
   const triggerEvent = profile?.triggerEvent
   const outcomePriority = profile?.outcomePriority
@@ -35,7 +33,7 @@ export function getProfileBenefits(
   )
 
   // ── Senior-focused benefits ───────────────────────────────────────────
-  if (ageGroup === 'Senior (62-78)' || ageGroup === 'Elder (78+)' || householdType === 'Senior(s)') {
+  if (householdType === 'Senior(s)') {
     benefits.push({
       headline: 'Protect what you\'ve built',
       body: 'After decades in your home, the last thing you need is a surprise repair bill. This program locks in pricing today — no cost increases, no hidden fees — so you know exactly what you\'re investing.',
@@ -51,7 +49,7 @@ export function getProfileBenefits(
   }
 
   // ── Single woman benefits ─────────────────────────────────────────────
-  if (familyStatus === 'Single woman') {
+  if (householdType === 'Single woman') {
     benefits.push({
       headline: 'A home you\'re proud to come back to',
       body: 'Your home should be your sanctuary — a place you feel proud showing to friends and family. This project transforms it from something you tolerate into something you love.',
@@ -65,7 +63,7 @@ export function getProfileBenefits(
   }
 
   // ── Single man benefits ───────────────────────────────────────────────
-  if (familyStatus === 'Single man') {
+  if (householdType === 'Single man') {
     benefits.push({
       headline: 'Get it done right the first time',
       body: 'No second trips, no call-backs, no "we\'ll fix that later." Everything scoped, scheduled, and completed — so you can move on with your life.',
@@ -74,7 +72,7 @@ export function getProfileBenefits(
   }
 
   // ── Family-focused benefits ───────────────────────────────────────────
-  if (familyStatus === 'Family' || householdType === 'Family' || householdType === 'Multi-gen home') {
+  if (householdType === 'Family' || householdType === 'Multi-gen home') {
     benefits.push({
       headline: 'A safer, healthier home for your family',
       body: 'Outdated insulation, leaky windows, and aging systems don\'t just cost money — they affect air quality, comfort, and safety. This project makes your home work for everyone who lives in it.',
@@ -83,7 +81,7 @@ export function getProfileBenefits(
   }
 
   // ── Couple benefits ───────────────────────────────────────────────────
-  if (familyStatus === 'Couple') {
+  if (householdType === 'Couple') {
     benefits.push({
       headline: 'An investment you both feel good about',
       body: 'Big home decisions work best when both people have the same information. That\'s why we walk through everything together — scope, timeline, cost, and exactly what you\'re getting.',

@@ -23,18 +23,18 @@ export const MEETING_STEPS: MeetingStepConfig[] = [
     isCustomerFacing: true,
   },
   {
-    id: 'program',
-    stepNumber: 4,
-    title: 'Picking the Right Path',
-    shortLabel: 'Program',
-    isCustomerFacing: true,
-  },
-  {
     id: 'deal-structure',
-    stepNumber: 5,
+    stepNumber: 4,
     title: 'Deal Structure',
     shortLabel: 'Deal',
     isCustomerFacing: false,
+  },
+  {
+    id: 'program',
+    stepNumber: 5,
+    title: 'Picking the Right Path',
+    shortLabel: 'Program',
+    isCustomerFacing: true,
   },
   {
     id: 'closing',
