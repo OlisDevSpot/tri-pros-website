@@ -24,6 +24,7 @@ interface Props {
   perPage: '10' | '20'
   onPageChange: (page: number) => void
   onPerPageChange: (value: '10' | '20') => void
+  hidePerPageSelector?: boolean
 }
 
 export function ShowroomPagination({
@@ -33,6 +34,7 @@ export function ShowroomPagination({
   perPage,
   onPageChange,
   onPerPageChange,
+  hidePerPageSelector = false,
 }: Props) {
   if (totalFiltered === 0) {
     return null
@@ -75,15 +77,17 @@ export function ShowroomPagination({
           {totalFiltered}
           {' projects'}
         </span>
-        <Select value={perPage} onValueChange={v => onPerPageChange(v as '10' | '20')}>
-          <SelectTrigger className="h-8 w-[70px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10</SelectItem>
-            <SelectItem value="20">20</SelectItem>
-          </SelectContent>
-        </Select>
+        {!hidePerPageSelector && (
+          <Select value={perPage} onValueChange={v => onPerPageChange(v as '10' | '20')}>
+            <SelectTrigger className="h-8 w-17.5">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Page navigation */}

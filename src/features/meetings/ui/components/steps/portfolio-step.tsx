@@ -4,6 +4,7 @@ import type { MeetingFlowContext } from '@/features/meetings/types'
 import type { ShowroomProject } from '@/shared/entities/projects/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { TradeProjectGrid } from '@/features/meetings/ui/components/steps/trade-project-grid'
 import { useShowroomFilters } from '@/features/showroom/hooks/use-showroom-filters'
 import { ShowroomGrid } from '@/features/showroom/ui/components/showroom-grid'
 import { ShowroomPagination } from '@/features/showroom/ui/components/showroom-pagination'
@@ -69,21 +70,13 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
           </div>
 
           {tradeProjectGroups.map(group => (
-            <div key={group.tradeId} className="space-y-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold tracking-tight">{group.tradeName}</h3>
-                <span className="text-xs text-muted-foreground">
-                  {group.projects.length}
-                  {' '}
-                  {group.projects.length === 1 ? 'project' : 'projects'}
-                </span>
-              </div>
-              <ShowroomGrid
-                projects={group.projects}
-                allScopes={allScopes}
-                allTrades={allTrades}
-              />
-            </div>
+            <TradeProjectGrid
+              key={group.tradeId}
+              tradeName={group.tradeName}
+              projects={group.projects}
+              allScopes={allScopes}
+              allTrades={allTrades}
+            />
           ))}
         </div>
       )}
