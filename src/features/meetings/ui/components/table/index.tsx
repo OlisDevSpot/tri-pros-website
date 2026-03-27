@@ -39,8 +39,15 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
     onDelete: (meetingId: string) => deleteMeeting.mutate({ id: meetingId }),
     onUpdateOutcome: (meetingId: string, outcome: string) => updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome as 'not_set' | 'proposal_created' | 'follow_up_needed' | 'not_interested' | 'no_show' }),
     onUpdateScheduledFor: (meetingId: string, date: Date) => updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
-    onViewProfile: (customerId: string) => {
-      setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
+    onViewProfile: (customerId: string, meetingId?: string) => {
+      setModal({
+        accessor: 'CustomerProfile',
+        Component: CustomerProfileModal,
+        props: {
+          customerId,
+          ...(meetingId && { defaultTab: 'meetings' as const, highlightMeetingId: meetingId }),
+        },
+      })
       openModal()
     },
     isDuplicating: duplicateMeeting.isPending,
@@ -56,6 +63,11 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
       defaultSort={defaultSort}
       entityName="meeting"
       rowDataAttribute="data-meeting-row"
+      onRowClick={(row) => {
+        if (row.customerId) {
+          meta.onViewProfile(row.customerId, row.id)
+        }
+      }}
       onFilteredCountChange={onFilteredCountChange}
       onFilteredDataChange={onFilteredDataChange}
     />

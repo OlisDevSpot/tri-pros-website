@@ -2,6 +2,7 @@
 
 import type { inferRouterOutputs } from '@trpc/server'
 
+import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 import type { AppRouter } from '@/trpc/routers/app'
@@ -9,13 +10,14 @@ import type { AppRouter } from '@/trpc/routers/app'
 import { useQuery } from '@tanstack/react-query'
 import { FilterIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { meetingsStatConfig } from '@/features/meetings/constants/meetings-stat-config'
+import { useMeetingActionConfigs } from '@/features/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
 import { MeetingCalendar } from '@/features/meetings/ui/components/calendar/meeting-calendar'
+import { CreateMeetingModal } from '@/features/meetings/ui/components/create-meeting-modal'
 import { PastMeetingsTable } from '@/features/meetings/ui/components/table'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { StatBar } from '@/shared/components/stat-bar/ui/stat-bar'
@@ -26,7 +28,6 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -43,35 +44,50 @@ export function MeetingsView() {
   }, [])
 
   const trpc = useTRPC()
-  const router = useRouter()
   const { open: openModal, setModal } = useModalStore()
   const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
-  const { deleteMeeting, duplicateMeeting, updateScheduledFor } = useMeetingActions()
+  const { updateScheduledFor } = useMeetingActions()
 
-  const handleNavigateToMeeting = useCallback((customerId: string, meetingId: string) => {
-    setModal({
-      accessor: 'CustomerProfile',
-      Component: CustomerProfileModal,
-      props: { customerId, defaultTab: 'meetings' as const, highlightMeetingId: meetingId },
-    })
-    openModal()
+  // Edit-meeting dialog state
+  const [editMeetingDialog, setEditMeetingDialog] = useState<{
+    meetingId: string
+    customerId: string
+    customerName: string
+    meetingType: string
+    scheduledFor: string | null
+    tradeSelections: NonNullable<NonNullable<MeetingRow['flowStateJSON']>['tradeSelections']>
+  } | null>(null)
+
+  const handleViewMeeting = useCallback((entity: MeetingCalendarEvent) => {
+    if (entity.customerId) {
+      setModal({
+        accessor: 'CustomerProfile',
+        Component: CustomerProfileModal,
+        props: { customerId: entity.customerId, defaultTab: 'meetings' as const, highlightMeetingId: entity.meetingId },
+      })
+      openModal()
+    }
   }, [setModal, openModal])
 
-  const handleEditMeeting = useCallback((meetingId: string) => {
-    router.push(`${ROOTS.dashboard.root}?step=edit-meeting&editMeetingId=${meetingId}`)
-  }, [router])
+  const handleEditMeeting = useCallback((entity: MeetingCalendarEvent) => {
+    const raw = meetings.data?.find(m => m.id === entity.meetingId)
+    if (!raw) {
+      return
+    }
+    setEditMeetingDialog({
+      meetingId: raw.id,
+      customerId: raw.customerId ?? '',
+      customerName: raw.customerName ?? 'Unknown',
+      meetingType: raw.meetingType,
+      scheduledFor: raw.scheduledFor,
+      tradeSelections: raw.flowStateJSON?.tradeSelections ?? [],
+    })
+  }, [meetings.data])
 
-  const handleStartMeeting = useCallback((meetingId: string) => {
-    router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`)
-  }, [router])
-
-  const handleDuplicateMeeting = useCallback((meetingId: string) => {
-    duplicateMeeting.mutate({ id: meetingId })
-  }, [duplicateMeeting])
-
-  const handleDeleteMeeting = useCallback((meetingId: string) => {
-    deleteMeeting.mutate({ id: meetingId })
-  }, [deleteMeeting])
+  const meetingActions = useMeetingActionConfigs<MeetingCalendarEvent>({
+    onView: handleViewMeeting,
+    onEdit: handleEditMeeting,
+  })
 
   const handleUpdateScheduledFor = useCallback((meetingId: string, date: Date) => {
     updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() })
@@ -200,7 +216,7 @@ export function MeetingsView() {
             value={layout}
             onChange={setLayout}
             availableViews={['calendar', 'table']}
-            className="ml-auto lg:ml-0"
+            className="ml-auto lg:order-2 lg:ml-0"
           />
         </div>
       </div>
@@ -210,12 +226,8 @@ export function MeetingsView() {
           ? (
               <MeetingCalendar
                 data={meetings.data}
+                actions={meetingActions}
                 onDateRangeChange={setDateRange}
-                onNavigateToMeeting={handleNavigateToMeeting}
-                onEditMeeting={handleEditMeeting}
-                onStartMeeting={handleStartMeeting}
-                onDuplicateMeeting={handleDuplicateMeeting}
-                onDeleteMeeting={handleDeleteMeeting}
                 onUpdateScheduledFor={handleUpdateScheduledFor}
                 activeView={calendarView}
                 onViewChange={setCalendarView}
@@ -230,6 +242,22 @@ export function MeetingsView() {
               />
             )}
       </div>
+
+      {/* Edit meeting dialog */}
+      {editMeetingDialog && (
+        <CreateMeetingModal
+          isOpen
+          customerId={editMeetingDialog.customerId}
+          customerName={editMeetingDialog.customerName}
+          editMeetingId={editMeetingDialog.meetingId}
+          initialValues={{
+            meetingType: editMeetingDialog.meetingType as 'Fresh' | 'Follow-up' | 'Rehash',
+            scheduledFor: editMeetingDialog.scheduledFor ? new Date(editMeetingDialog.scheduledFor) : undefined,
+            tradeSelections: editMeetingDialog.tradeSelections,
+          }}
+          onClose={() => setEditMeetingDialog(null)}
+        />
+      )}
     </motion.div>
   )
 }

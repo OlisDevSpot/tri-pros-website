@@ -17,7 +17,7 @@ const BUCKET_COUNT = TODAY_VIEW_BUCKETS.length
 const LABEL_COL_EXPANDED = 140
 const LABEL_COL_COLLAPSED = 48
 const SCROLL_COLLAPSE_THRESHOLD = 40
-const BUCKET_COL_MIN_WIDTH = 320
+const BUCKET_COL_MIN_WIDTH = 380
 const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
 function makeGridCols(labelWidth: number): string {

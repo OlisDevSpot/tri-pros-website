@@ -34,12 +34,8 @@ export function CalendarHeader({
   }
 
   return (
-    <div className="flex items-center border-b px-4 py-2">
+    <div className="flex items-center justify-between border-b px-4 py-2">
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={handleToday}>
-          Today
-        </Button>
-
         <div className="flex items-center">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevious}>
             <ChevronLeftIcon className="h-4 w-4" />
@@ -49,16 +45,20 @@ export function CalendarHeader({
           </Button>
         </div>
 
-        {/* Desktop: single line */}
+        {/* Desktop: date info + Today button inline */}
         <span className="hidden text-sm font-semibold sm:inline">{monthYear}</span>
         <span className="ml-1 hidden text-xs text-muted-foreground sm:inline">{getRangeText(activeView, currentDate)}</span>
 
-        {/* Mobile: stacked */}
+        {/* Mobile: stacked date info */}
         <div className="flex flex-col gap-0.5 sm:hidden">
           <span className="text-sm font-semibold leading-tight">{monthYear}</span>
           <span className="text-[10px] leading-tight text-muted-foreground">{getRangeText(activeView, currentDate)}</span>
         </div>
       </div>
+
+      <Button variant="outline" size="sm" onClick={handleToday}>
+        Today
+      </Button>
     </div>
   )
 }

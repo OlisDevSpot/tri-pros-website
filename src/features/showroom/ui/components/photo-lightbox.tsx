@@ -159,7 +159,7 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
                   className={cn(
                     'relative h-14 w-20 shrink-0 overflow-hidden rounded-md transition-all',
                     i === currentIndex
-                      ? 'ring-2 ring-primary ring-offset-1 ring-offset-black'
+                      ? 'outline-2 outline-primary -outline-offset-2'
                       : 'opacity-50 hover:opacity-80',
                   )}
                   aria-label={`View photo ${i + 1}`}

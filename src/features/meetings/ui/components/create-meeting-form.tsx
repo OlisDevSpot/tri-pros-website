@@ -2,8 +2,10 @@
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { MeetingType } from '@/shared/types/enums/meetings'
+
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
+
 import { MeetingScopesPicker } from '@/features/meetings/ui/components/meeting-scopes-picker'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
@@ -15,20 +17,30 @@ import { useTRPC } from '@/trpc/helpers'
 interface CreateMeetingFormProps {
   customerId: string
   customerName: string
+  /** Pass to enable edit mode — pre-fills form and uses update mutation */
+  editMeetingId?: string
+  initialValues?: {
+    meetingType?: MeetingType
+    scheduledFor?: Date
+    tradeSelections?: TradeSelection[]
+  }
   onSuccess?: () => void
   onCancel?: () => void
 }
 
 export function CreateMeetingForm({
   customerId,
+  editMeetingId,
+  initialValues,
   onCancel,
   onSuccess,
 }: CreateMeetingFormProps) {
   const trpc = useTRPC()
+  const isEditMode = !!editMeetingId
 
-  const [meetingType, setMeetingType] = useState<MeetingType>('Fresh')
-  const [scheduledFor, setScheduledFor] = useState<Date | undefined>(undefined)
-  const [tradeSelections, setTradeSelections] = useState<TradeSelection[]>([])
+  const [meetingType, setMeetingType] = useState<MeetingType>(initialValues?.meetingType ?? 'Fresh')
+  const [scheduledFor, setScheduledFor] = useState<Date | undefined>(initialValues?.scheduledFor)
+  const [tradeSelections, setTradeSelections] = useState<TradeSelection[]>(initialValues?.tradeSelections ?? [])
 
   const createMutation = useMutation(
     trpc.meetingsRouter.create.mutationOptions({
@@ -41,19 +53,41 @@ export function CreateMeetingForm({
     }),
   )
 
+  const updateMutation = useMutation(
+    trpc.meetingsRouter.update.mutationOptions({
+      onSuccess: () => {
+        onSuccess?.()
+      },
+    }),
+  )
+
+  const isPending = createMutation.isPending || updateMutation.isPending
+
   function handleSubmit() {
     if (!meetingType) {
       return
     }
 
-    createMutation.mutate({
-      customerId,
-      meetingType,
-      scheduledFor: scheduledFor?.toISOString(),
-      flowStateJSON: tradeSelections.length > 0
-        ? { tradeSelections }
-        : undefined,
-    })
+    if (isEditMode) {
+      updateMutation.mutate({
+        id: editMeetingId,
+        meetingType,
+        scheduledFor: scheduledFor?.toISOString(),
+        flowStateJSON: tradeSelections.length > 0
+          ? { tradeSelections }
+          : undefined,
+      })
+    }
+    else {
+      createMutation.mutate({
+        customerId,
+        meetingType,
+        scheduledFor: scheduledFor?.toISOString(),
+        flowStateJSON: tradeSelections.length > 0
+          ? { tradeSelections }
+          : undefined,
+      })
+    }
   }
 
   return (
@@ -125,10 +159,12 @@ export function CreateMeetingForm({
         )}
         <Button
           className="flex-1"
-          disabled={!meetingType || createMutation.isPending}
+          disabled={!meetingType || isPending}
           onClick={handleSubmit}
         >
-          {createMutation.isPending ? 'Creating...' : 'Create meeting'}
+          {isPending
+            ? (isEditMode ? 'Saving...' : 'Creating...')
+            : (isEditMode ? 'Save changes' : 'Create meeting')}
         </Button>
       </div>
     </div>

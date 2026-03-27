@@ -1,6 +1,10 @@
 'use client'
 
+import type { TradeSelection } from '@/shared/entities/meetings/schemas'
+import type { MeetingType } from '@/shared/types/enums/meetings'
+
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
+
 import { CreateMeetingForm } from './create-meeting-form'
 
 interface CreateMeetingModalProps {
@@ -9,15 +13,29 @@ interface CreateMeetingModalProps {
   onSuccess?: () => void
   customerId: string
   customerName: string
+  /** Pass to enable edit mode */
+  editMeetingId?: string
+  initialValues?: {
+    meetingType?: MeetingType
+    scheduledFor?: Date
+    tradeSelections?: TradeSelection[]
+  }
 }
 
 export function CreateMeetingModal({
   customerId,
   customerName,
+  editMeetingId,
+  initialValues,
   isOpen,
   onClose,
   onSuccess,
 }: CreateMeetingModalProps) {
+  const isEditMode = !!editMeetingId
+  const title = isEditMode
+    ? `Edit meeting — ${customerName}`
+    : `New meeting — ${customerName}`
+
   function handleSuccess() {
     onSuccess?.()
     onClose()
@@ -27,11 +45,13 @@ export function CreateMeetingModal({
     <Modal
       isOpen={isOpen}
       close={onClose}
-      title={`New meeting — ${customerName}`}
+      title={title}
     >
       <CreateMeetingForm
         customerId={customerId}
         customerName={customerName}
+        editMeetingId={editMeetingId}
+        initialValues={initialValues}
         onSuccess={handleSuccess}
         onCancel={onClose}
       />

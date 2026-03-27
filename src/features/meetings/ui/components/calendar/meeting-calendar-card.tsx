@@ -2,23 +2,16 @@
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { MeetingOutcome } from '@/shared/types/enums'
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 
 import { format } from 'date-fns'
-import { CalendarIcon, ChevronDownIcon, CopyIcon, MapPinIcon, MoreHorizontalIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
+import { CalendarIcon, ChevronDownIcon, MapPinIcon } from 'lucide-react'
 
-import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
 
 const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
@@ -39,25 +32,16 @@ const STATUS_BG_TINTS: Record<MeetingOutcome, string> = {
 
 interface MeetingCalendarCardProps {
   event: MeetingCalendarEvent
-  onNavigate: (customerId: string, meetingId: string) => void
-  onEdit: (meetingId: string) => void
-  onStart: (meetingId: string) => void
-  onDuplicate: (meetingId: string) => void
-  onDelete: (meetingId: string) => void
+  actions: EntityActionConfig<MeetingCalendarEvent>[]
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
 }
 
 export function MeetingCalendarCard({
   event,
-  onNavigate,
-  onEdit,
-  onStart,
-  onDuplicate,
-  onDelete,
+  actions,
   onUpdateScheduledFor,
 }: MeetingCalendarCardProps) {
-  const { data: session } = useSession()
-  const userRole = session?.user?.role
+  const viewAction = actions.find(a => a.action.primary)
 
   const addressLine1 = event.customerAddress ?? ''
   const addressLine2 = [event.customerCity, event.customerState, event.customerZip]
@@ -71,7 +55,7 @@ export function MeetingCalendarCard({
         'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
         STATUS_BG_TINTS[event.meetingOutcome],
       )}
-      onClick={() => event.customerId && onNavigate(event.customerId, event.meetingId)}
+      onClick={() => viewAction?.onAction(event)}
     >
       {/* Row 1: Status dot + customer name + actions */}
       <div className="flex items-center gap-1.5 min-w-0">
@@ -84,47 +68,12 @@ export function MeetingCalendarCard({
         <span className="font-medium truncate flex-1 leading-tight">
           {event.customerName ?? 'Unknown'}
         </span>
-        <div
-          className={cn(
-            'shrink-0 opacity-0 transition-opacity',
-            'group-hover:opacity-100',
-          )}
-          onClick={e => e.stopPropagation()}
-        >
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-5 w-5">
-                <MoreHorizontalIcon className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(event.meetingId)}>
-                <PencilIcon className="h-3.5 w-3.5" />
-                Edit Setup
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onStart(event.meetingId)}>
-                <PlayIcon className="h-3.5 w-3.5" />
-                Start Meeting
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onDuplicate(event.meetingId)}>
-                <CopyIcon className="h-3.5 w-3.5" />
-                Duplicate
-              </DropdownMenuItem>
-              {userRole === 'super-admin' && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => onDelete(event.meetingId)}
-                  >
-                    <TrashIcon className="h-3.5 w-3.5" />
-                    Delete
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <EntityActionMenu
+          entity={event}
+          actions={actions}
+          mode="compact"
+          className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+        />
       </div>
 
       {/* Row 2: Scheduled time (editable badge) */}

@@ -54,7 +54,7 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
   )
 
   return (
-    <Card className={cn(isHighlighted && 'ring-2 ring-primary shadow-sm')}>
+    <Card className={cn(isHighlighted && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
       <DeleteConfirmDialog />
       <CardContent className="p-0">
         {/* Meeting Header */}

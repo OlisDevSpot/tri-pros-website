@@ -2,12 +2,11 @@
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { MeetingOutcome } from '@/shared/types/enums'
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 
 import { format } from 'date-fns'
-import { CopyIcon, EyeIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
 
 import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
-import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -15,6 +14,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { cn } from '@/shared/lib/utils'
+import { useAbility } from '@/shared/permissions/hooks'
 
 const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
   not_set: 'bg-blue-500',
@@ -34,25 +34,16 @@ const STATUS_LABELS: Record<MeetingOutcome, string> = {
 
 interface MeetingCalendarDotProps {
   event: MeetingCalendarEvent
-  onNavigate: (customerId: string, meetingId: string) => void
-  onEdit: (meetingId: string) => void
-  onStart: (meetingId: string) => void
-  onDuplicate: (meetingId: string) => void
-  onDelete: (meetingId: string) => void
+  actions: EntityActionConfig<MeetingCalendarEvent>[]
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
 }
 
 export function MeetingCalendarDot({
   event,
-  onNavigate,
-  onEdit,
-  onStart,
-  onDuplicate,
-  onDelete,
+  actions,
   onUpdateScheduledFor,
 }: MeetingCalendarDotProps) {
-  const { data: session } = useSession()
-  const userRole = session?.user?.role
+  const ability = useAbility()
 
   const formattedTime = format(new Date(event.startAt), 'h:mm a')
   const formattedDateTime = format(new Date(event.startAt), 'MMM d, h:mm a')
@@ -60,6 +51,13 @@ export function MeetingCalendarDot({
   const formattedAddress = [event.customerAddress, event.customerCity]
     .filter(Boolean)
     .join(', ')
+
+  const permittedActions = actions.filter(({ action }) => {
+    if (!action.permission) {
+      return true
+    }
+    return ability.can(action.permission[0], action.permission[1])
+  })
 
   return (
     <Popover>
@@ -118,56 +116,30 @@ export function MeetingCalendarDot({
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex flex-col gap-1 border-t pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="justify-start h-7 text-xs"
-            onClick={() => event.customerId && onNavigate(event.customerId, event.meetingId)}
-          >
-            <EyeIcon className="h-3.5 w-3.5" />
-            View Meeting
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="justify-start h-7 text-xs"
-            onClick={() => onEdit(event.meetingId)}
-          >
-            <PencilIcon className="h-3.5 w-3.5" />
-            Edit Setup
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="justify-start h-7 text-xs"
-            onClick={() => onStart(event.meetingId)}
-          >
-            <PlayIcon className="h-3.5 w-3.5" />
-            Start Flow
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="justify-start h-7 text-xs"
-            onClick={() => onDuplicate(event.meetingId)}
-          >
-            <CopyIcon className="h-3.5 w-3.5" />
-            Duplicate
-          </Button>
-          {userRole === 'super-admin' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="justify-start h-7 text-xs text-destructive hover:text-destructive"
-              onClick={() => onDelete(event.meetingId)}
-            >
-              <TrashIcon className="h-3.5 w-3.5" />
-              Delete
-            </Button>
-          )}
-        </div>
+        {/* Action buttons — CASL-gated */}
+        {permittedActions.length > 0 && (
+          <div className="flex flex-col gap-1 border-t pt-2">
+            {permittedActions.map(({ action, onAction, isLoading, isDisabled }) => {
+              const Icon = action.icon
+              return (
+                <Button
+                  key={action.id}
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    'justify-start h-7 text-xs',
+                    action.destructive && 'text-destructive hover:text-destructive',
+                  )}
+                  disabled={isLoading || isDisabled}
+                  onClick={() => onAction(event)}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {action.label}
+                </Button>
+              )
+            })}
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   )

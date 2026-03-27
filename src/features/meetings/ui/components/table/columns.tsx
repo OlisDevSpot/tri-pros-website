@@ -34,7 +34,7 @@ export interface MeetingTableMeta {
   onDelete: (meetingId: string) => void
   onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
-  onViewProfile: (customerId: string) => void
+  onViewProfile: (customerId: string, meetingId?: string) => void
   isDuplicating: boolean
   isDeleting: boolean
 }

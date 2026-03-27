@@ -3,6 +3,7 @@
 import type { inferRouterOutputs } from '@trpc/server'
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { AppRouter } from '@/trpc/routers/app'
 
@@ -24,11 +25,7 @@ const DEFAULT_HIDDEN_DAYS = [6] // Saturday
 
 interface MeetingCalendarProps {
   data: MeetingRow[]
-  onNavigateToMeeting: (customerId: string, meetingId: string) => void
-  onEditMeeting: (meetingId: string) => void
-  onStartMeeting: (meetingId: string) => void
-  onDuplicateMeeting: (meetingId: string) => void
-  onDeleteMeeting: (meetingId: string) => void
+  actions: EntityActionConfig<MeetingCalendarEvent>[]
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
   onDateRangeChange?: (range: { from: Date, to: Date }) => void
   activeView?: CalendarViewType
@@ -39,11 +36,7 @@ interface MeetingCalendarProps {
 
 export function MeetingCalendar({
   data,
-  onNavigateToMeeting,
-  onEditMeeting,
-  onStartMeeting,
-  onDuplicateMeeting,
-  onDeleteMeeting,
+  actions,
   onUpdateScheduledFor,
   onDateRangeChange,
   activeView = 'week',
@@ -70,30 +63,22 @@ export function MeetingCalendar({
     (event: MeetingCalendarEvent) => (
       <MeetingCalendarCard
         event={event}
-        onNavigate={onNavigateToMeeting}
-        onEdit={onEditMeeting}
-        onStart={onStartMeeting}
-        onDuplicate={onDuplicateMeeting}
-        onDelete={onDeleteMeeting}
+        actions={actions}
         onUpdateScheduledFor={onUpdateScheduledFor}
       />
     ),
-    [onNavigateToMeeting, onEditMeeting, onStartMeeting, onDuplicateMeeting, onDeleteMeeting, onUpdateScheduledFor],
+    [actions, onUpdateScheduledFor],
   )
 
   const renderCompact = useCallback(
     (event: MeetingCalendarEvent) => (
       <MeetingCalendarDot
         event={event}
-        onNavigate={onNavigateToMeeting}
-        onEdit={onEditMeeting}
-        onStart={onStartMeeting}
-        onDuplicate={onDuplicateMeeting}
-        onDelete={onDeleteMeeting}
+        actions={actions}
         onUpdateScheduledFor={onUpdateScheduledFor}
       />
     ),
-    [onNavigateToMeeting, onEditMeeting, onStartMeeting, onDuplicateMeeting, onDeleteMeeting, onUpdateScheduledFor],
+    [actions, onUpdateScheduledFor],
   )
 
   return (
