@@ -18,7 +18,10 @@ interface PortfolioStepProps {
 
 export function PortfolioStep({ flowContext }: PortfolioStepProps) {
   const trpc = useTRPC()
-  const tradeSelections = flowContext.flowState?.tradeSelections ?? []
+  const tradeSelections = useMemo(
+    () => flowContext.flowState?.tradeSelections ?? [],
+    [flowContext.flowState?.tradeSelections],
+  )
 
   // Fetch all portfolio data (same queries as the public portfolio page)
   const { data: allProjects = [], isLoading: projectsLoading } = useQuery(

@@ -22,10 +22,13 @@ const SAVE_DEBOUNCE_MS = 800
 
 export function SpecialtiesStep({ flowContext }: SpecialtiesStepProps) {
   const tradesQuery = useGetAllTrades()
-  const allTrades = tradesQuery.data ?? []
+  const allTrades = useMemo(() => tradesQuery.data ?? [], [tradesQuery.data])
 
   // ── Local state — edits happen here instantly, server sync is debounced ──
-  const serverSelections = flowContext.flowState?.tradeSelections ?? []
+  const serverSelections = useMemo(
+    () => flowContext.flowState?.tradeSelections ?? [],
+    [flowContext.flowState?.tradeSelections],
+  )
   const [localSelections, setLocalSelections] = useState<TradeSelection[]>(serverSelections)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 

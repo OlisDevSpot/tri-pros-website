@@ -27,7 +27,10 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
     !!flowContext.flowState?.selectedProgram,
   )
 
-  const tradeSelections = flowContext.flowState?.tradeSelections ?? []
+  const tradeSelections = useMemo(
+    () => flowContext.flowState?.tradeSelections ?? [],
+    [flowContext.flowState?.tradeSelections],
+  )
   const customer = flowContext.customer
 
   const qualCtx: QualificationContext = useMemo(() => ({
@@ -105,7 +108,7 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
   return (
     <div className="space-y-10">
       {/* ── Personalized Story Hero ────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-12 shadow-xl md:px-12 md:py-16">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-12 shadow-xl md:px-12 md:py-16">
         <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-80 -translate-x-1/2 rounded-full bg-primary/20 blur-[100px]" />
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
@@ -120,13 +123,13 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
             Your Path Forward
           </p>
 
-          <h2 className="text-2xl font-bold leading-tight tracking-tight text-white md:text-3xl">
+          <h2 className="text-2xl font-bold leading-tight tracking-tight text-foreground md:text-3xl">
             {customerName
               ? `${customerName}, here's what we've built for your situation.`
               : 'Here\'s what we\'ve built for your situation.'}
           </h2>
 
-          <p className="text-base leading-relaxed text-white/60 md:text-lg">
+          <p className="text-base leading-relaxed text-foreground/60 md:text-lg">
             {painSummary.length > 0
               ? `You told us about ${painSummary.map(p => p.toLowerCase()).join(' and ')}. Every recommendation below is designed to address exactly that — with the right scope, the right timeline, and the right financial structure.`
               : 'Based on what we\'ve discussed today, we\'ve identified the programs and benefits that match your home, your priorities, and your timeline.'}
@@ -155,7 +158,7 @@ export function ProgramStep({ flowContext, meetingType }: ProgramStepProps) {
                   className={cn(
                     'rounded-2xl border p-5 transition-all hover:shadow-md',
                     config.border,
-                    `bg-gradient-to-br ${config.gradient}`,
+                    `bg-linear-to-br ${config.gradient}`,
                   )}
                 >
                   <div className="flex items-start gap-3.5">
