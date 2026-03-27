@@ -15,6 +15,8 @@ export interface PipelineItemRep {
 export interface PipelineItemProposal {
   id: string
   value: number | null
+  status: string
+  createdAt: string
 }
 
 export interface CustomerPipelineItem {

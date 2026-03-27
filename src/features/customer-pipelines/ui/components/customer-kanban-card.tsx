@@ -1,10 +1,10 @@
 'use client'
 
-import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
+import type { CustomerPipelineItem, PipelineItemProposal } from '@/features/customer-pipelines/types'
 import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { useDraggable } from '@dnd-kit/core'
-import { formatDistanceToNow } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import {
   CalendarIcon,
   DollarSignIcon,
@@ -18,9 +18,12 @@ import {
   UserIcon,
   UserRoundPenIcon,
 } from 'lucide-react'
+import { useCallback } from 'react'
 import { toast } from 'sonner'
 
 import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
+import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
+import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { getMeetingTimeLabel } from '@/features/customer-pipelines/lib/get-meeting-time-label'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
@@ -226,19 +229,9 @@ export function CustomerKanbanCard({
 
             {/* Individual proposal rows */}
             {item.proposals.length > 0 && (
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1">
                 {item.proposals.map(p => (
-                  <div key={p.id} className="flex items-center justify-between gap-2">
-                    <FileTextIcon size={11} className="shrink-0 text-muted-foreground" />
-                    {p.value != null && p.value > 0
-                      ? (
-                          <span className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-0.5">
-                            <DollarSignIcon size={12} />
-                            {formatAsDollars(p.value)}
-                          </span>
-                        )
-                      : <span className="text-[11px] text-muted-foreground italic">No price</span>}
-                  </div>
+                  <KanbanProposalRow key={p.id} proposal={p} />
                 ))}
               </div>
             )}
@@ -357,6 +350,49 @@ function CustomerMoreMenu({ item, ability, canManagePipeline, otherPipelines, on
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
+  const handleView = useCallback(() => {
+    window.open(`${ROOTS.public.proposals()}/proposal/${proposal.id}`, '_blank')
+  }, [proposal.id])
+
+  const handleEdit = useCallback(() => {
+    window.location.href = `${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`
+  }, [proposal.id])
+
+  const proposalActions = useProposalActionConfigs<PipelineItemProposal>({
+    onView: handleView,
+    onEdit: handleEdit,
+  })
+
+  return (
+    <div
+      className="group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 hover:bg-background/50 transition-colors min-h-8"
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <FileTextIcon size={11} className="shrink-0 text-muted-foreground" />
+        <span className="text-[11px] text-muted-foreground truncate">
+          {format(new Date(proposal.createdAt), 'MMM d')}
+        </span>
+        {proposal.value != null && proposal.value > 0
+          ? (
+              <span className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-0.5 ml-auto shrink-0">
+                <DollarSignIcon size={12} />
+                {formatAsDollars(proposal.value)}
+              </span>
+            )
+          : <span className="text-[11px] text-muted-foreground italic ml-auto shrink-0">No price</span>}
+      </div>
+      <EntityActionMenu
+        entity={proposal}
+        actions={proposalActions}
+        mode="compact"
+        className="opacity-100 sm:opacity-0 sm:group-hover/proposal:opacity-100 transition-opacity"
+      />
+    </div>
   )
 }
 

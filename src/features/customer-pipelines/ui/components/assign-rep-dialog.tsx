@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckIcon, SearchIcon } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -29,6 +29,7 @@ interface AssignRepDialogProps {
 
 export function AssignRepDialog({ meetingIds, currentRepId, open, onOpenChange, onSuccess }: AssignRepDialogProps) {
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
@@ -40,6 +41,8 @@ export function AssignRepDialog({ meetingIds, currentRepId, open, onOpenChange, 
   const assignMutation = useMutation(
     trpc.meetingsRouter.assignOwner.mutationOptions({
       onSuccess: () => {
+        void queryClient.invalidateQueries(trpc.meetingsRouter.getAll.queryFilter())
+        void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerPipelineItems.queryFilter())
         toast.success(meetingIds.length > 1 ? 'Reps assigned successfully' : 'Rep assigned successfully')
         onOpenChange(false)
         setSelectedUserId(null)
