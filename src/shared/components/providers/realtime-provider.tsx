@@ -1,17 +1,12 @@
 'use client'
 
-import { RealtimeProvider as UpstashRealtimeProvider } from '@upstash/realtime/client'
+import { AblyProvider } from 'ably/react'
+import { ablyClient } from '@/shared/services/upstash/realtime-client'
 
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <UpstashRealtimeProvider
-      api={{
-        url: '/api/realtime',
-        withCredentials: true,
-      }}
-      maxReconnectAttempts={10}
-    >
+    <AblyProvider client={ablyClient}>
       {children}
-    </UpstashRealtimeProvider>
+    </AblyProvider>
   )
 }

@@ -1,23 +1,19 @@
-import type { InferRealtimeEvents } from '@upstash/realtime'
-import { Realtime } from '@upstash/realtime'
-import z from 'zod'
-import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
-import { meetingContextSchema, meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
-import { redis } from './redis-client'
+import * as Ably from 'ably'
+import env from '@/shared/config/server-env'
 
-const schema = {
-  meeting: {
-    flowStateUpdated: meetingFlowStateSchema,
-    contextUpdated: meetingContextSchema,
-    customerProfileUpdated: z.object({
-      customerProfileJSON: customerProfileSchema.optional(),
-      propertyProfileJSON: propertyProfileSchema.optional(),
-      financialProfileJSON: financialProfileSchema.optional(),
-    }),
-    outcomeUpdated: z.object({ meetingOutcome: z.string() }),
-    agentNotesUpdated: z.object({ agentNotes: z.string() }),
-  },
-}
+// HOW REALTIME SYNC WORKS:
+// 1. A tRPC mutation writes to Postgres
+// 2. After the write, the server publishes an event to an Ably channel (meeting:{id})
+// 3. The receiving client's useChannel hook picks up the event via WebSocket
+// 4. The hook calls invalidate() → React Query refetches from DB
+//
+// The client IGNORES the event payload — it only uses the event as a trigger to refetch.
+// We still send the changed data for forward-compatibility: if we ever want to skip the
+// refetch and apply changes directly to the React Query cache (lower latency, offline
+// support), the data is already there.
+//
+// Ably REST client is used server-side (short-lived HTTP POST to publish, no persistent
+// connection). The client-side uses Ably Realtime (WebSocket, managed by Ably's infra —
+// no Vercel function time consumed for the connection).
 
-export const realtime = new Realtime({ schema, redis })
-export type RealtimeEvents = InferRealtimeEvents<typeof realtime>
+export const ably = new Ably.Rest({ key: env.ABLY_API_KEY })

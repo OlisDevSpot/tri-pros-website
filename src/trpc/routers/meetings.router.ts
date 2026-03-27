@@ -8,7 +8,7 @@ import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
-import { realtime } from '@/shared/services/upstash/realtime'
+import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
@@ -70,20 +70,9 @@ export const meetingsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
       }
 
-      // Emit realtime events for cross-device sync
-      const channel = realtime.channel(`meeting:${id}`)
-      if (rest.flowStateJSON) {
-        void channel.emit('meeting.flowStateUpdated', rest.flowStateJSON)
-      }
-      if (rest.contextJSON) {
-        void channel.emit('meeting.contextUpdated', rest.contextJSON)
-      }
-      if (rest.meetingOutcome) {
-        void channel.emit('meeting.outcomeUpdated', { meetingOutcome: rest.meetingOutcome })
-      }
-      if (rest.agentNotes !== undefined) {
-        void channel.emit('meeting.agentNotesUpdated', { agentNotes: rest.agentNotes ?? '' })
-      }
+      // Publish realtime event for cross-device sync
+      const channel = ably.channels.get(`meeting:${id}`)
+      void channel.publish('meeting.updated', { fields: Object.keys(rest) })
 
       return updated
     }),
@@ -110,11 +99,10 @@ export const meetingsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
       }
 
-      // Emit realtime event to the meeting channel for cross-device sync
-      void realtime.channel(`meeting:${meetingId}`).emit(
-        'meeting.customerProfileUpdated',
-        profiles,
-      )
+      // Publish realtime event to the meeting channel for cross-device sync
+      void ably.channels.get(`meeting:${meetingId}`).publish('meeting.updated', {
+        fields: Object.keys(profiles),
+      })
 
       return updated
     }),

@@ -8,7 +8,7 @@ interface SyncStatusIndicatorProps {
 
 export function SyncStatusIndicator({ status }: SyncStatusIndicatorProps) {
   const isConnected = status === 'connected'
-  const isReconnecting = status === 'reconnecting'
+  const isReconnecting = status === 'connecting' || status === 'disconnected'
 
   return (
     <div className="flex items-center gap-1.5" title={`Sync: ${status}`}>

@@ -1,8 +1,8 @@
 'use client'
 
+import { useChannel, useConnectionStateListener } from 'ably/react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
-import { useRealtime } from '@/shared/services/upstash/realtime-client'
+import { useCallback, useState } from 'react'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingSyncStatus {
@@ -12,6 +12,11 @@ interface MeetingSyncStatus {
 export function useMeetingSync(meetingId: string): MeetingSyncStatus {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const [connectionStatus, setConnectionStatus] = useState('connecting')
+
+  useConnectionStateListener((stateChange) => {
+    setConnectionStatus(stateChange.current)
+  })
 
   const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({
@@ -22,17 +27,7 @@ export function useMeetingSync(meetingId: string): MeetingSyncStatus {
     })
   }, [meetingId, queryClient, trpc])
 
-  const { status } = useRealtime({
-    channels: [`meeting:${meetingId}`],
-    events: [
-      'meeting.flowStateUpdated',
-      'meeting.contextUpdated',
-      'meeting.customerProfileUpdated',
-      'meeting.outcomeUpdated',
-      'meeting.agentNotesUpdated',
-    ],
-    onData: invalidate,
-  })
+  useChannel(`meeting:${meetingId}`, invalidate)
 
-  return { status }
+  return { status: connectionStatus }
 }
