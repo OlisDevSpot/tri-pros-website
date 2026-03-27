@@ -12,7 +12,6 @@ import type {
   meetingPipelineStages,
   meetingPriorContractorExperience,
   meetingSellPlans,
-  meetingStatuses,
   meetingTriggerEvents,
   meetingTypes,
   meetingYearBuiltRanges,
@@ -21,7 +20,6 @@ import type {
   spouseDynamics,
 } from '@/shared/constants/enums/meetings'
 
-export type MeetingStatus = (typeof meetingStatuses)[number]
 export type MeetingDecisionMakersPresentOption = (typeof meetingDecisionMakersPresentOptions)[number]
 export type MeetingHouseholdType = (typeof meetingHouseholdTypes)[number]
 export type MeetingOutcomePriority = (typeof meetingOutcomePriorities)[number]

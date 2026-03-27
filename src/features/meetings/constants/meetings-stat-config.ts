@@ -1,5 +1,4 @@
 import type { inferRouterOutputs } from '@trpc/server'
-
 import type { StatBarItemConfig } from '@/shared/components/stat-bar/types'
 import type { AppRouter } from '@/trpc/routers/app'
 

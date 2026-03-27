@@ -1,5 +1,3 @@
-export const meetingStatuses = ['in_progress', 'completed', 'converted'] as const
-
 // Setup fields (DB-backed)
 export const meetingTypes = ['Fresh', 'Follow-up', 'Rehash'] as const
 export const meetingDecisionMakersPresentOptions = [
@@ -9,13 +7,39 @@ export const meetingDecisionMakersPresentOptions = [
   'Partially present (missing family member)',
   'None present',
 ] as const
-export const meetingHouseholdTypes = ['Single man', 'Single woman', 'Couple', 'Family', 'Senior(s)', 'Empty nester(s)', 'Multi-gen home'] as const
+export const meetingHouseholdTypes = [
+  'Single man',
+  'Single woman',
+  'Couple',
+  'Family',
+  'Senior(s)',
+  'Empty nester(s)',
+  'Multi-gen home',
+] as const
 export const meetingOutcomePriorities = ['Price', 'Quality', 'Speed'] as const
-export const meetingTriggerEvents = ['Neighbor\'s project', 'Damage or leak', 'Scheduled maintenance', 'High bill', 'Selling soon', 'Other'] as const
-export const meetingPainPoints = [] as const
-export const meetingPriorContractorExperience = ['No', 'Yes - good experience', 'Yes - poor quality', 'Yes - incomplete job', 'Yes - no license'] as const
+export const meetingTriggerEvents = [
+  'Neighbor\'s project',
+  'Damage or leak',
+  'Scheduled maintenance',
+  'High bill',
+  'Selling soon',
+  'Other',
+] as const
+export const meetingPriorContractorExperience = [
+  'No',
+  'Yes - good experience',
+  'Yes - poor quality',
+  'Yes - incomplete job',
+  'Yes - no license',
+] as const
 export const meetingSellPlans = ['No', 'Yes', 'Soon', 'Not sure'] as const
-export const meetingYearBuiltRanges = ['Pre-1950', '1950-1978', '1978-2014', 'Post-2014'] as const
+export const meetingYearBuiltRanges = [
+  'Pre-1950',
+  '1950-1978',
+  '1978-1998',
+  '1998-2014',
+  'Post-2014',
+] as const
 
 // Program step collected fields (DB-backed)
 export const meetingDecisionTimelines = ['ASAP', '1–3 months', '3–6 months', '6+ months', 'Not sure'] as const
@@ -37,7 +61,7 @@ export const meetingPainTypes = [
   'Social (competition / status / family)',
   'Home is not place of rest / comfort',
 ] as const
-export const meetingCreditScoreRanges = ['< 600', '600–630', '630–650', '650–700', '700–749', '750–800', '> 800'] as const
+export const meetingCreditScoreRanges = ['600 or less', '600 – 700', '700+'] as const
 
 // Pipeline stages (customer journey — meeting phase)
 export const meetingPipelineStages = [

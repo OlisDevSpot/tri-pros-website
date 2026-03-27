@@ -1,5 +1,5 @@
-import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { TimeBucket } from '@/features/meetings/constants/today-view-buckets'
+import type { MeetingCalendarEvent } from '@/features/meetings/types'
 
 import { parseISO } from 'date-fns'
 
