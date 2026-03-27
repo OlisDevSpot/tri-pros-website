@@ -215,7 +215,11 @@
       "Bash(source ~/.nvm/nvm.sh)",
       "Bash(nvm ls:*)",
       "Bash(nvm install:*)",
-      "Bash(nvm alias:*)"
+      "Bash(nvm alias:*)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/projects/)",
+      "Bash(cat /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/portfolio/projects/page.tsx)",
+      "Bash(npx next:*)",
+      "Bash(pnpm remove:*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
