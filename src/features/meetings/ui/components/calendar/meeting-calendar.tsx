@@ -24,7 +24,7 @@ const DEFAULT_HIDDEN_DAYS = [6] // Saturday
 
 interface MeetingCalendarProps {
   data: MeetingRow[]
-  onNavigateToMeeting: (meetingId: string) => void
+  onNavigateToMeeting: (customerId: string, meetingId: string) => void
   onEditMeeting: (meetingId: string) => void
   onStartMeeting: (meetingId: string) => void
   onDuplicateMeeting: (meetingId: string) => void

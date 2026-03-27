@@ -34,7 +34,7 @@ const STATUS_LABELS: Record<MeetingOutcome, string> = {
 
 interface MeetingCalendarDotProps {
   event: MeetingCalendarEvent
-  onNavigate: (meetingId: string) => void
+  onNavigate: (customerId: string, meetingId: string) => void
   onEdit: (meetingId: string) => void
   onStart: (meetingId: string) => void
   onDuplicate: (meetingId: string) => void
@@ -124,7 +124,7 @@ export function MeetingCalendarDot({
             variant="ghost"
             size="sm"
             className="justify-start h-7 text-xs"
-            onClick={() => onNavigate(event.meetingId)}
+            onClick={() => event.customerId && onNavigate(event.customerId, event.meetingId)}
           >
             <EyeIcon className="h-3.5 w-3.5" />
             View Meeting

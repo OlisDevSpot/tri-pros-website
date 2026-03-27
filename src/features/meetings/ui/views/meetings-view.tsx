@@ -12,6 +12,7 @@ import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
+import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { meetingsStatConfig } from '@/features/meetings/constants/meetings-stat-config'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
 import { MeetingCalendar } from '@/features/meetings/ui/components/calendar/meeting-calendar'
@@ -26,6 +27,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { ROOTS } from '@/shared/config/roots'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
@@ -42,12 +44,18 @@ export function MeetingsView() {
 
   const trpc = useTRPC()
   const router = useRouter()
+  const { open: openModal, setModal } = useModalStore()
   const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
   const { deleteMeeting, duplicateMeeting, updateScheduledFor } = useMeetingActions()
 
-  const handleNavigateToMeeting = useCallback((meetingId: string) => {
-    router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`)
-  }, [router])
+  const handleNavigateToMeeting = useCallback((customerId: string, meetingId: string) => {
+    setModal({
+      accessor: 'CustomerProfile',
+      Component: CustomerProfileModal,
+      props: { customerId, defaultTab: 'meetings' as const, highlightMeetingId: meetingId },
+    })
+    openModal()
+  }, [setModal, openModal])
 
   const handleEditMeeting = useCallback((meetingId: string) => {
     router.push(`${ROOTS.dashboard.root}?step=edit-meeting&editMeetingId=${meetingId}`)
@@ -132,66 +140,67 @@ export function MeetingsView() {
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <StatBar items={meetingsStatConfig} data={statsData} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
-          {/* Calendar-specific controls — only visible in calendar layout */}
-          <div className="flex items-center gap-2">
-            {layout === 'calendar' && (
-              <>
-                {calendarView === 'week' && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5">
-                        <FilterIcon size={14} />
-                        <span className="hidden sm:inline">Days</span>
-                        <Badge variant="secondary" className="px-1.5 text-[10px]">
-                          {showSaturday ? '7' : '6'}
-                        </Badge>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="end" className="w-48 p-3">
-                      <p className="mb-3 text-sm font-medium">Visible Days</p>
-                      <label className="flex cursor-pointer items-center gap-2">
-                        <Checkbox
-                          checked={showSaturday}
-                          onCheckedChange={handleToggleSaturday}
-                        />
-                        <span className="text-sm">Show Saturday</span>
-                      </label>
-                    </PopoverContent>
-                  </Popover>
-                )}
-                <div className="flex rounded-md border">
-                  <Button
-                    variant={calendarView === 'today' ? 'default' : 'ghost'}
-                    size="sm"
-                    className="rounded-r-none"
-                    onClick={() => setCalendarView('today')}
-                  >
-                    Today
-                  </Button>
-                  <Button
-                    variant={calendarView === 'week' ? 'default' : 'ghost'}
-                    size="sm"
-                    className="rounded-none border-x"
-                    onClick={() => setCalendarView('week')}
-                  >
-                    Week
-                  </Button>
-                  <Button
-                    variant={calendarView === 'month' ? 'default' : 'ghost'}
-                    size="sm"
-                    className="rounded-l-none"
-                    onClick={() => setCalendarView('month')}
-                  >
-                    Month
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
+          {layout === 'calendar' && (
+            <>
+              {/* Today/Week/Month tabs — stable on left (mobile), same position (desktop) */}
+              <div className="flex rounded-md border lg:order-1">
+                <Button
+                  variant={calendarView === 'today' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="rounded-r-none"
+                  onClick={() => setCalendarView('today')}
+                >
+                  Today
+                </Button>
+                <Button
+                  variant={calendarView === 'week' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="rounded-none border-x"
+                  onClick={() => setCalendarView('week')}
+                >
+                  Week
+                </Button>
+                <Button
+                  variant={calendarView === 'month' ? 'default' : 'ghost'}
+                  size="sm"
+                  className="rounded-l-none"
+                  onClick={() => setCalendarView('month')}
+                >
+                  Month
+                </Button>
+              </div>
+
+              {/* Days filter — right side on mobile (next to calendar/table), left of tabs on desktop */}
+              {calendarView === 'week' && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5 lg:order-0">
+                      <FilterIcon size={14} />
+                      <span className="hidden sm:inline">Days</span>
+                      <Badge variant="secondary" className="px-1.5 text-[10px]">
+                        {showSaturday ? '7' : '6'}
+                      </Badge>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-48 p-3">
+                    <p className="mb-3 text-sm font-medium">Visible Days</p>
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <Checkbox
+                        checked={showSaturday}
+                        onCheckedChange={handleToggleSaturday}
+                      />
+                      <span className="text-sm">Show Saturday</span>
+                    </label>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </>
+          )}
           <DataViewTypeToggle
             value={layout}
             onChange={setLayout}
             availableViews={['calendar', 'table']}
+            className="ml-auto lg:ml-0"
           />
         </div>
       </div>

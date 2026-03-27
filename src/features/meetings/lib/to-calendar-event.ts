@@ -13,6 +13,7 @@ export function toCalendarEvent(meeting: MeetingRow): MeetingCalendarEvent {
     title: meeting.customerName ?? 'Unknown',
     meetingType: meeting.meetingType,
     meetingOutcome: meeting.meetingOutcome,
+    customerId: meeting.customerId,
     ownerId: meeting.ownerId,
     ownerName: meeting.ownerName,
     ownerImage: meeting.ownerImage,

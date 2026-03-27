@@ -98,6 +98,7 @@ export interface MeetingCalendarEvent extends CalendarEvent {
   meetingId: string
   meetingOutcome: MeetingOutcome
   meetingType: MeetingType
+  customerId: string | null
   ownerId: string
   ownerName: string | null
   ownerImage: string | null
