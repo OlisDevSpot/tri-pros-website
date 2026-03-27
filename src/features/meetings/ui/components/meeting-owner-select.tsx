@@ -70,7 +70,7 @@ export function MeetingOwnerSelect({
         onValueChange={handleOwnerChange}
         disabled={assignOwnerMutation.isPending || internalUsersQuery.isLoading}
       >
-        <SelectTrigger className="h-7 w-auto min-w-[120px] gap-1.5 border-border/40 bg-transparent px-2 text-xs">
+        <SelectTrigger className="h-7 w-auto min-w-30 gap-1.5 border-border/40 bg-transparent px-2 text-xs">
           <UserIcon className="size-3 shrink-0 text-muted-foreground" />
           <SelectValue placeholder="Assign owner" />
         </SelectTrigger>

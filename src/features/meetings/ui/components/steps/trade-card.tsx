@@ -68,14 +68,14 @@ export function TradeCard({ trade, isSelected, onToggle }: TradeCardProps) {
                 />
               )
             : (
-                <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted-foreground/10" />
+                <div className="absolute inset-0 bg-linear-to-br from-muted to-muted-foreground/10" />
               )}
 
           {/* Gradient overlay */}
           <div className={cn(
             'absolute inset-0 transition-opacity duration-200',
-            'bg-gradient-to-t from-black/85 via-black/40 to-transparent',
-            'group-hover:from-black/90',
+            'bg-linear-to-t from-background/85 via-background/40 to-transparent',
+            'group-hover:from-background/90',
           )}
           />
 
@@ -85,7 +85,7 @@ export function TradeCard({ trade, isSelected, onToggle }: TradeCardProps) {
               'absolute right-3 top-3 z-10 flex size-6 items-center justify-center rounded-full border-2 transition-all duration-200',
               isSelected
                 ? 'border-primary bg-primary text-primary-foreground scale-110'
-                : 'border-white/40 bg-black/20 group-hover:border-white/60',
+                : 'border-foreground/40 bg-background/20 group-hover:border-foreground/60',
             )}
           >
             {isSelected && <CheckIcon className="size-3.5" strokeWidth={3} />}
@@ -93,11 +93,11 @@ export function TradeCard({ trade, isSelected, onToggle }: TradeCardProps) {
 
           {/* Text content */}
           <div className="relative z-10 space-y-1 px-3.5 pb-3.5">
-            <span className="text-[15px] font-semibold leading-tight tracking-tight text-white drop-shadow-md">
+            <span className="text-[15px] font-semibold leading-tight tracking-tight text-foreground drop-shadow-md">
               {trade.name}
             </span>
             {totalRelated > 0 && (
-              <p className="text-[11px] leading-tight text-white/60">
+              <p className="text-[11px] leading-tight text-foreground/60">
                 {hasData
                   ? [
                       scopeCount > 0 && `${scopeCount} scope${scopeCount !== 1 ? 's' : ''}`,

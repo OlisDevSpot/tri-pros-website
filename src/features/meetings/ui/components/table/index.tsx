@@ -1,23 +1,23 @@
 'use client'
 
 import type { inferRouterOutputs } from '@trpc/server'
+import type { MeetingTableMeta } from './columns'
 import type { MeetingOutcome } from '@/shared/types/enums'
-import type { AppRouter } from '@/trpc/routers/app'
 
-import { useState } from 'react'
+import type { AppRouter } from '@/trpc/routers/app'
 import { useRouter } from 'next/navigation'
 
-import { AssignRepDialog } from '@/features/customer-pipelines/ui/components/assign-rep-dialog'
+import { useState } from 'react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
+import { AssignRepDialog } from '@/features/customer-pipelines/ui/components/assign-rep-dialog'
 import { meetingTableFilters } from '@/features/meetings/constants/table-filter-config'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
 import { CreateMeetingModal } from '@/features/meetings/ui/components/create-meeting-modal'
 import { useSession } from '@/shared/auth/client'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { ROOTS } from '@/shared/config/roots'
-import { useModalStore } from '@/shared/hooks/use-modal-store'
 
-import type { MeetingTableMeta } from './columns'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 
 import { getColumns } from './columns'
 

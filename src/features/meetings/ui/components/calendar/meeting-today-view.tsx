@@ -51,6 +51,7 @@ export function MeetingTodayView({
     if (!el) {
       return
     }
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
     setCollapsed(el.scrollLeft > SCROLL_COLLAPSE_THRESHOLD)
   }, [])
 
@@ -194,7 +195,7 @@ function SwimlaneRow({ owner, ownerEvents, renderCard, collapsed, gridCols }: Sw
           <div
             key={bucket.id}
             className={cn(
-              'border-r p-1.5 last:border-r-0 min-h-[6rem]',
+              'border-r p-1.5 last:border-r-0 min-h-24',
               bucketEvents.length === 0 && 'bg-muted/20',
             )}
           >
@@ -207,7 +208,7 @@ function SwimlaneRow({ owner, ownerEvents, renderCard, collapsed, gridCols }: Sw
                 <div
                   key={event.id}
                   className={cn(
-                    'min-w-[10rem]',
+                    'min-w-40',
                     bucketEvents.length <= 1 ? 'w-full' : 'flex-1',
                   )}
                 >

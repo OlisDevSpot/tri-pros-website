@@ -1,6 +1,6 @@
-import { CopyIcon, EyeIcon, FilePlusIcon, PencilIcon, PlayIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
-
 import type { EntityAction } from '@/shared/components/entity-actions/types'
+
+import { CopyIcon, EyeIcon, FilePlusIcon, PencilIcon, PlayIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
 
 export const MEETING_ACTIONS = {
   view: {

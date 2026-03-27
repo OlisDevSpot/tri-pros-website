@@ -1,6 +1,6 @@
-import { ArrowRightLeftIcon, CalendarPlusIcon, EyeIcon, PencilIcon, TrashIcon } from 'lucide-react'
-
 import type { EntityAction } from '@/shared/components/entity-actions/types'
+
+import { ArrowRightLeftIcon, CalendarPlusIcon, EyeIcon, PencilIcon, TrashIcon } from 'lucide-react'
 
 export const CUSTOMER_ACTIONS = {
   view: {

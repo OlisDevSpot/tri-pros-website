@@ -1,8 +1,8 @@
 'use client'
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
-import type { MeetingOutcome } from '@/shared/types/enums'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { MeetingOutcome } from '@/shared/types/enums'
 
 import { format } from 'date-fns'
 

@@ -67,14 +67,14 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-60 flex flex-col bg-black/95"
+        className="fixed inset-0 z-60 flex flex-col bg-background/95"
       >
         {/* Top bar — pushed below navbar on mobile */}
         <div
           className="flex shrink-0 items-center justify-between px-4 py-3"
           style={{ paddingTop: 'calc(var(--navbar-height, 80px) + 12px)' }}
         >
-          <span className="text-sm text-white/60">
+          <span className="text-sm text-foreground/60">
             {currentIndex + 1}
             {' '}
             /
@@ -84,7 +84,7 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-full p-2 text-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground"
             aria-label="Close lightbox"
           >
             <X className="h-6 w-6" />
@@ -98,7 +98,7 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
             <button
               type="button"
               onClick={goPrev}
-              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 sm:p-3 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/50 p-2 sm:p-3 text-foreground/80 backdrop-blur-sm transition-colors hover:bg-background/70 hover:text-foreground"
               aria-label="Previous photo"
             >
               <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -128,7 +128,7 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
             <button
               type="button"
               onClick={goNext}
-              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 sm:p-3 text-white/80 backdrop-blur-sm transition-colors hover:bg-black/70 hover:text-white"
+              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/50 p-2 sm:p-3 text-foreground/80 backdrop-blur-sm transition-colors hover:bg-background/70 hover:text-foreground"
               aria-label="Next photo"
             >
               <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -138,7 +138,7 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
 
         {/* Thumbnail strip */}
         {photos.length > 1 && (
-          <div className="shrink-0 border-t border-white/10 bg-black/80 px-4 py-3">
+          <div className="shrink-0 border-t border-foreground/10 bg-background/80 px-4 py-3">
             <div
               ref={thumbnailContainerRef}
               className="mx-auto flex max-w-4xl gap-2 overflow-x-auto pb-1"

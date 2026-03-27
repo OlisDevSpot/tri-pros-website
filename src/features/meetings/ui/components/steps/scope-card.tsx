@@ -64,15 +64,15 @@ export function ScopeCard({ scope, isSelected, onToggle }: ScopeCardProps) {
             />
           )
         : (
-            <div className={cn('absolute inset-0 bg-gradient-to-br', fallbackGradient)} />
+            <div className={cn('absolute inset-0 bg-linear-to-br', fallbackGradient)} />
           )}
 
       {/* Gradient overlay — ensures text readability on both images and gradient fallbacks */}
       <div className={cn(
         'absolute inset-0 transition-opacity duration-200',
         scope.coverImageUrl
-          ? 'bg-gradient-to-t from-black/85 via-black/40 to-transparent group-hover:from-black/90'
-          : 'bg-gradient-to-t from-black/50 to-transparent',
+          ? 'bg-linear-to-t from-background/85 via-background/40 to-transparent group-hover:from-background/90'
+          : 'bg-linear-to-t from-background/50 to-transparent',
       )}
       />
 
@@ -82,7 +82,7 @@ export function ScopeCard({ scope, isSelected, onToggle }: ScopeCardProps) {
           'absolute right-2.5 top-2.5 z-10 flex size-5 items-center justify-center rounded-full border-2 transition-all duration-200',
           isSelected
             ? 'border-primary bg-primary text-primary-foreground scale-110'
-            : 'border-white/40 bg-black/20 group-hover:border-white/60',
+            : 'border-foreground/40 bg-background/20 group-hover:border-foreground/60',
         )}
       >
         {isSelected && <CheckIcon className="size-3" strokeWidth={3} />}
@@ -90,7 +90,7 @@ export function ScopeCard({ scope, isSelected, onToggle }: ScopeCardProps) {
 
       {/* Text content */}
       <div className="relative z-10 px-3 pb-3">
-        <span className="text-[13px] font-semibold leading-tight text-white drop-shadow-md">
+        <span className="text-[13px] font-semibold leading-tight text-foreground drop-shadow-md">
           {scope.name}
         </span>
       </div>

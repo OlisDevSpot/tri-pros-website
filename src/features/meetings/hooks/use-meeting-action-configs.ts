@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
-
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+
+import { useMemo } from 'react'
 
 import { MEETING_ACTIONS } from '@/shared/components/entity-actions/constants/meeting-actions'
 

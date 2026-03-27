@@ -1,8 +1,8 @@
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { toast } from 'sonner'
 
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import { toast } from 'sonner'
 
 import { PROPOSAL_ACTIONS } from '@/shared/components/entity-actions/constants/proposal-actions'
 import { useTRPC } from '@/trpc/helpers'
