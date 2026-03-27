@@ -6,15 +6,21 @@ import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { toCalendarEvent } from '@/features/meetings/lib/to-calendar-event'
-import { CalendarBoard } from '@/shared/components/calendar/ui/calendar-board'
+import { getDateRange } from '@/shared/components/calendar/lib/calendar-helpers'
+import { CalendarHeader } from '@/shared/components/calendar/ui/calendar-header'
+import { CalendarMonthView } from '@/shared/components/calendar/ui/calendar-month-view'
 
 import { MeetingCalendarCard } from './meeting-calendar-card'
 import { MeetingCalendarDot } from './meeting-calendar-dot'
+import { MeetingTodayView } from './meeting-today-view'
+import { MeetingWeekView } from './meeting-week-view'
 
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+
+const DEFAULT_HIDDEN_DAYS = [6] // Saturday
 
 interface MeetingCalendarProps {
   data: MeetingRow[]
@@ -40,12 +46,25 @@ export function MeetingCalendar({
   onDeleteMeeting,
   onUpdateScheduledFor,
   onDateRangeChange,
-  activeView,
-  onViewChange,
-  showSaturday,
-  onToggleSaturday,
+  activeView = 'week',
+  showSaturday = false,
 }: MeetingCalendarProps) {
+  const [currentDate, setCurrentDate] = useState(() => new Date())
   const events = useMemo(() => data.map(toCalendarEvent), [data])
+
+  const hiddenDays = showSaturday
+    ? DEFAULT_HIDDEN_DAYS.filter(d => d !== 6)
+    : [...new Set([...DEFAULT_HIDDEN_DAYS, 6])]
+
+  // Fire onDateRangeChange when currentDate or activeView changes
+  const range = useMemo(
+    () => getDateRange(currentDate, activeView),
+    [currentDate, activeView],
+  )
+
+  useEffect(() => {
+    onDateRangeChange?.(range)
+  }, [range, onDateRangeChange])
 
   const renderCard = useCallback(
     (event: MeetingCalendarEvent) => (
@@ -78,16 +97,39 @@ export function MeetingCalendar({
   )
 
   return (
-    <CalendarBoard
-      events={events}
-      config={{ defaultView: 'week', hiddenDays: [6], weekStartsOn: 0 }}
-      renderCard={renderCard}
-      renderCompact={renderCompact}
-      onDateRangeChange={onDateRangeChange}
-      activeView={activeView}
-      onViewChange={onViewChange}
-      showSaturday={showSaturday}
-      onToggleSaturday={onToggleSaturday}
-    />
+    <div className="flex h-full w-full flex-col rounded-xl border">
+      <CalendarHeader
+        currentDate={currentDate}
+        activeView={activeView}
+        onDateChange={setCurrentDate}
+      />
+
+      <div className="w-full flex-1 min-h-0 overflow-hidden">
+        {activeView === 'today' && (
+          <MeetingTodayView
+            events={events}
+            currentDate={currentDate}
+            renderCard={renderCard}
+          />
+        )}
+
+        {activeView === 'week' && (
+          <MeetingWeekView
+            events={events}
+            currentDate={currentDate}
+            hiddenDays={hiddenDays}
+            renderCard={renderCard}
+          />
+        )}
+
+        {activeView === 'month' && (
+          <CalendarMonthView
+            events={events}
+            currentDate={currentDate}
+            renderCompact={renderCompact}
+          />
+        )}
+      </div>
+    </div>
   )
 }

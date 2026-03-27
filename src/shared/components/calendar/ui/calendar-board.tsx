@@ -17,6 +17,7 @@ export function CalendarBoard<T extends CalendarEvent>({
   config,
   renderCard,
   renderCompact,
+  renderTodayView,
   onEventClick: _onEventClick,
   onDateRangeChange,
   activeView: controlledView,
@@ -66,6 +67,8 @@ export function CalendarBoard<T extends CalendarEvent>({
       />
 
       <div className="w-full flex-1 min-h-0 overflow-hidden">
+        {activeView === 'today' && renderTodayView?.(events, currentDate)}
+
         {activeView === 'week' && (
           <CalendarWeekView
             events={events}

@@ -4,6 +4,7 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
@@ -12,6 +13,7 @@ import {
   startOfDay,
   startOfMonth,
   startOfWeek,
+  subDays,
   subMonths,
   subWeeks,
 } from 'date-fns'
@@ -25,23 +27,20 @@ export interface CalendarCell {
 }
 
 export function getRangeText(view: CalendarViewType, date: Date): string {
-  let start: Date
-  let end: Date
-
   switch (view) {
-    case 'month':
-      start = startOfMonth(date)
-      end = endOfMonth(date)
-      break
-    case 'week':
-      start = startOfWeek(date)
-      end = endOfWeek(date)
-      break
-    default:
-      return 'Error while formatting'
+    case 'today':
+      return format(date, 'EEEE, MMM d, yyyy')
+    case 'month': {
+      const start = startOfMonth(date)
+      const end = endOfMonth(date)
+      return `${format(start, FORMAT_STRING)} - ${format(end, FORMAT_STRING)}`
+    }
+    case 'week': {
+      const start = startOfWeek(date)
+      const end = endOfWeek(date)
+      return `${format(start, FORMAT_STRING)} - ${format(end, FORMAT_STRING)}`
+    }
   }
-
-  return `${format(start, FORMAT_STRING)} - ${format(end, FORMAT_STRING)}`
 }
 
 export function navigateDate(
@@ -50,6 +49,7 @@ export function navigateDate(
   direction: 'previous' | 'next',
 ): Date {
   const operations: Record<CalendarViewType, (d: Date, n: number) => Date> = {
+    today: direction === 'next' ? addDays : subDays,
     month: direction === 'next' ? addMonths : subMonths,
     week: direction === 'next' ? addWeeks : subWeeks,
   }
@@ -62,6 +62,8 @@ export function getDateRange(
   view: CalendarViewType,
 ): { from: Date, to: Date } {
   switch (view) {
+    case 'today':
+      return { from: startOfDay(date), to: endOfDay(date) }
     case 'month':
       return { from: startOfMonth(date), to: endOfMonth(date) }
     case 'week':

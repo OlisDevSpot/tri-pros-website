@@ -1,3 +1,4 @@
+import type { MediaFile } from '@/shared/db/schema'
 import { TRPCError } from '@trpc/server'
 import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
 import z from 'zod'
@@ -25,9 +26,12 @@ export const meetingsRouter = createTRPCRouter({
           customerCity: customers.city,
           customerState: customers.state,
           customerZip: customers.zip,
+          ownerName: user.name,
+          ownerImage: user.image,
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
+        .leftJoin(user, eq(user.id, meetings.ownerId))
         .where(isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id))
         .orderBy(desc(meetings.createdAt))
     }),
@@ -54,8 +58,8 @@ export const meetingsRouter = createTRPCRouter({
   // Patch a meeting with updated fields (called as data is collected)
   update: agentProcedure
     .input(insertMeetingSchema.partial().extend({
-      id: z.string().uuid(),
-      customerId: z.string().uuid().optional(),
+      id: z.string(),
+      customerId: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const { id, ...rest } = input
@@ -136,8 +140,8 @@ export const meetingsRouter = createTRPCRouter({
   // Link a proposal to a meeting (called when a proposal is created from a meeting)
   linkProposal: agentProcedure
     .input(z.object({
-      meetingId: z.string().uuid(),
-      proposalId: z.string().uuid(),
+      meetingId: z.string(),
+      proposalId: z.string(),
     }))
     .mutation(async ({ input }) => {
       const [proposal] = await db
@@ -255,8 +259,6 @@ export const meetingsRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const { scopeIds } = input
 
-      type MediaRow = typeof mediaFiles.$inferSelect
-
       if (scopeIds.length === 0) {
         // No scopes — return recent public projects as fallback
         const fallbackRows = await db
@@ -266,7 +268,7 @@ export const meetingsRouter = createTRPCRouter({
           .orderBy(desc(projects.completedAt))
           .limit(4)
 
-        return fallbackRows.map(r => ({ ...r, matchedScopeCount: 0, mediaFiles: [] as MediaRow[] }))
+        return fallbackRows.map(r => ({ ...r, matchedScopeCount: 0, mediaFiles: [] as MediaFile[] }))
       }
 
       // Query projects that share scopes with the selected scopes
@@ -309,7 +311,7 @@ export const meetingsRouter = createTRPCRouter({
       const projectIds = allProjects.map(r => r.project.id)
 
       // Fetch media for all returned projects
-      const media: MediaRow[] = projectIds.length > 0
+      const media: MediaFile[] = projectIds.length > 0
         ? await db
             .select()
             .from(mediaFiles)
@@ -317,7 +319,7 @@ export const meetingsRouter = createTRPCRouter({
             .orderBy(mediaFiles.sortOrder)
         : []
 
-      const mediaByProject = new Map<string, MediaRow[]>()
+      const mediaByProject = new Map<string, MediaFile[]>()
       for (const m of media) {
         const existing = mediaByProject.get(m.projectId) ?? []
         existing.push(m)
@@ -333,7 +335,7 @@ export const meetingsRouter = createTRPCRouter({
 
   // Build a customer persona profile by joining customer/meeting JSONB with Notion pain points
   getPersonaProfile: agentProcedure
-    .input(z.object({ meetingId: z.string().uuid() }))
+    .input(z.object({ meetingId: z.string() }))
     .query(async ({ input }) => {
       const [row] = await db
         .select({

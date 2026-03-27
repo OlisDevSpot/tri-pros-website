@@ -5,7 +5,7 @@ export interface CalendarEvent {
   title: string
 }
 
-export type CalendarViewType = 'week' | 'month'
+export type CalendarViewType = 'today' | 'week' | 'month'
 
 export interface CalendarConfig {
   defaultView?: CalendarViewType
@@ -19,6 +19,7 @@ export interface CalendarBoardProps<T extends CalendarEvent> {
   renderCard: (event: T) => React.ReactNode
   renderCompact: (event: T) => React.ReactNode
   onEventClick?: (event: T) => void
+  renderTodayView?: (events: T[], currentDate: Date) => React.ReactNode
   onDateRangeChange?: (range: { from: Date, to: Date }) => void
   activeView?: CalendarViewType
   onViewChange?: (view: CalendarViewType) => void

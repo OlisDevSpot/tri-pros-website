@@ -161,9 +161,17 @@ export function MeetingsView() {
                 )}
                 <div className="flex rounded-md border">
                   <Button
-                    variant={calendarView === 'week' ? 'default' : 'ghost'}
+                    variant={calendarView === 'today' ? 'default' : 'ghost'}
                     size="sm"
                     className="rounded-r-none"
+                    onClick={() => setCalendarView('today')}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant={calendarView === 'week' ? 'default' : 'ghost'}
+                    size="sm"
+                    className="rounded-none border-x"
                     onClick={() => setCalendarView('week')}
                   >
                     Week
