@@ -4,6 +4,7 @@ import type { MeetingFlowContext } from '@/features/meetings/types'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import type { MeetingOutcome } from '@/shared/types/enums'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ChannelProvider } from 'ably/react'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
@@ -40,6 +41,14 @@ interface MeetingFlowViewProps {
 }
 
 export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
+  return (
+    <ChannelProvider channelName={`meeting:${meetingId}`}>
+      <MeetingFlowViewInner meetingId={meetingId} />
+    </ChannelProvider>
+  )
+}
+
+function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
