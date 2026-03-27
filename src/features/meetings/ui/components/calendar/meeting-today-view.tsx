@@ -4,8 +4,8 @@ import type { MeetingCalendarEvent } from '@/features/meetings/types'
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
 import { isSameDay, parseISO } from 'date-fns'
-import { motion, useMotionValueEvent, useScroll } from 'motion/react'
-import { useMemo, useRef, useState } from 'react'
+import { motion } from 'motion/react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import { TODAY_VIEW_BUCKETS } from '@/features/meetings/constants/today-view-buckets'
 import { getEventsForBucket, getUniqueOwners, groupEventsByOwner } from '@/features/meetings/lib/today-view-helpers'
@@ -44,15 +44,28 @@ export function MeetingTodayView({
   const eventsByOwner = useMemo(() => groupEventsByOwner(todayEvents), [todayEvents])
 
   const viewportRef = useRef<HTMLDivElement>(null)
-  const { scrollX } = useScroll({ container: viewportRef })
   const [collapsed, setCollapsed] = useState(false)
 
-  useMotionValueEvent(scrollX, 'change', (x) => {
-    const shouldCollapse = x > SCROLL_COLLAPSE_THRESHOLD
-    if (shouldCollapse !== collapsed) {
-      setCollapsed(shouldCollapse)
+  const handleScroll = useCallback(() => {
+    const el = viewportRef.current
+    if (!el) {
+      return
     }
-  })
+    setCollapsed(el.scrollLeft > SCROLL_COLLAPSE_THRESHOLD)
+  }, [])
+
+  // Attach scroll listener + reset scroll position when date changes
+  useLayoutEffect(() => {
+    const el = viewportRef.current
+    if (!el) {
+      return
+    }
+    // Reset scroll position on date navigation — handleScroll reads scrollLeft=0 → collapsed=false
+    el.scrollLeft = 0
+    handleScroll()
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [currentDate, handleScroll])
 
   const gridCols = makeGridCols(collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED)
   const gridMinWidth = (collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED) + BUCKET_COUNT * BUCKET_COL_MIN_WIDTH

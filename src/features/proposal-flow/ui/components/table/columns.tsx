@@ -3,23 +3,16 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { ProposalStatus } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { CopyIcon, EyeIcon, MoreHorizontal, TrashIcon } from 'lucide-react'
+import { EyeIcon } from 'lucide-react'
+
 import { PROPOSAL_STATUS_COLORS } from '@/features/proposal-flow/constants/status-colors'
+import { PROPOSAL_ACTIONS } from '@/shared/components/entity-actions/constants/proposal-actions'
+import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
-import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
-import { Button } from '@/shared/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
 import { proposalStatuses } from '@/shared/constants/enums'
@@ -29,7 +22,6 @@ import { cn } from '@/shared/lib/utils'
 type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['getProposals'][number]
 
 export interface ProposalTableMeta {
-  activeRowId: string | null
   userRole: string | undefined
   onDuplicate: (proposalId: string) => void
   onDelete: (proposalId: string) => void
@@ -40,6 +32,29 @@ export interface ProposalTableMeta {
   onViewProfile: (customerId: string) => void
 }
 
+function buildProposalActions(row: ProposalRow, meta: ProposalTableMeta) {
+  return [
+    {
+      action: PROPOSAL_ACTIONS.view,
+      onAction: () => window.open(`${ROOTS.public.proposals()}/proposal/${row.id}`, '_blank'),
+    },
+    {
+      action: PROPOSAL_ACTIONS.edit,
+      onAction: () => { window.location.href = `${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${row.id}` },
+    },
+    {
+      action: PROPOSAL_ACTIONS.duplicate,
+      onAction: () => meta.onDuplicate(row.id),
+      isLoading: meta.isDuplicating,
+    },
+    {
+      action: PROPOSAL_ACTIONS.delete,
+      onAction: () => meta.onDelete(row.id),
+      isLoading: meta.isDeleting,
+    },
+  ]
+}
+
 export function getColumns(): ColumnDef<ProposalRow>[] {
   return [
     {
@@ -47,7 +62,6 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
       header: ({ column }) => <SortableHeader column={column} label="Proposal" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
-        const isActive = meta?.activeRowId === row.original.id
 
         return (
           <div className="flex items-center justify-between gap-4">
@@ -64,51 +78,14 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
                 {row.original.label}
               </TooltipContent>
             </Tooltip>
-            <div
-              className={cn(
-                'flex items-center gap-1 shrink-0 opacity-0 pointer-events-none transition-opacity duration-150',
-                'group-hover:opacity-100 group-hover:pointer-events-auto',
-                isActive && 'opacity-100 pointer-events-auto',
-              )}
-              onClick={e => e.stopPropagation()}
-            >
-              <EntityViewButton
-                href={`${ROOTS.public.proposals()}/proposal/${row.original.id}`}
-                external
+            {meta && (
+              <EntityActionMenu
+                entity={row.original}
+                actions={buildProposalActions(row.original, meta)}
+                mode="compact"
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               />
-              <EntityEditButton
-                href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${row.original.id}`}
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    disabled={meta?.isDuplicating}
-                    onClick={() => meta?.onDuplicate(row.original.id)}
-                  >
-                    <CopyIcon className="h-3.5 w-3.5" />
-                    Duplicate
-                  </DropdownMenuItem>
-                  {meta?.userRole === 'super-admin' && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        disabled={meta?.isDeleting}
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => meta?.onDelete(row.original.id)}
-                      >
-                        <TrashIcon className="h-3.5 w-3.5" />
-                        Delete
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            )}
           </div>
         )
       },

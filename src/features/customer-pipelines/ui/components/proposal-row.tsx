@@ -2,10 +2,12 @@
 
 import type { CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
-import { ExternalLinkIcon, EyeIcon, FlameIcon } from 'lucide-react'
+import { EyeIcon, FlameIcon } from 'lucide-react'
+import { useCallback } from 'react'
 
 import { PROPOSAL_STATUS_COLORS } from '@/features/customer-pipelines/constants/proposal-status-colors'
-import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
+import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
+import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 
@@ -14,8 +16,21 @@ interface Props {
 }
 
 export function ProposalRow({ proposal }: Props) {
+  const handleView = useCallback(() => {
+    window.open(`${ROOTS.public.proposals()}/proposal/${proposal.id}`, '_blank')
+  }, [proposal.id])
+
+  const handleEdit = useCallback(() => {
+    window.location.href = `${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`
+  }, [proposal.id])
+
+  const proposalActions = useProposalActionConfigs<CustomerProfileProposal>({
+    onView: handleView,
+    onEdit: handleEdit,
+  })
+
   return (
-    <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50">
+    <div className="group flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50">
       <div className="flex items-center gap-2 min-w-0">
         <Badge variant="secondary" className={`text-[10px] ${PROPOSAL_STATUS_COLORS[proposal.status] ?? ''}`}>
           {proposal.status}
@@ -39,10 +54,10 @@ export function ProposalRow({ proposal }: Props) {
             {proposal.viewCount}
           </span>
         )}
-        <EntityViewButton
-          className="h-6 w-6"
-          icon={ExternalLinkIcon}
-          href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`}
+        <EntityActionMenu
+          entity={proposal}
+          actions={proposalActions}
+          mode="compact"
         />
       </div>
     </div>

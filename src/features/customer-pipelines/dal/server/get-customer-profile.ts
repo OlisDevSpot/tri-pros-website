@@ -23,6 +23,7 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
   const meetingRows = await db
     .select({
       id: meetings.id,
+      ownerId: meetings.ownerId,
       meetingType: meetings.meetingType,
       meetingOutcome: meetings.meetingOutcome,
       scheduledFor: meetings.scheduledFor,
@@ -83,6 +84,7 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
 
   const meetingsWithProposals: CustomerProfileMeeting[] = meetingRows.map(m => ({
     id: m.id,
+    ownerId: m.ownerId,
     meetingType: m.meetingType,
     meetingOutcome: m.meetingOutcome,
     scheduledFor: m.scheduledFor,

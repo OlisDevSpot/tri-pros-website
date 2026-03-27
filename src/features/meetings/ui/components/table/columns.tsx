@@ -3,35 +3,25 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { MeetingOutcome } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { MoreHorizontal } from 'lucide-react'
-
 import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
+import { MEETING_ACTIONS } from '@/shared/components/entity-actions/constants/meeting-actions'
+import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
-import { EntityStartButton } from '@/shared/components/entity-actions/entity-start-button'
-import { Button } from '@/shared/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { formatDateCell } from '@/shared/lib/formatters'
-import { cn } from '@/shared/lib/utils'
 
 export interface MeetingTableMeta {
-  activeRowId: string | null
   userRole: string | undefined
+  onView: (meetingId: string, customerId: string | null) => void
   onEdit: (meetingId: string) => void
-  onDuplicate: (meetingId: string) => void
   onStart: (meetingId: string) => void
+  onDuplicate: (meetingId: string) => void
   onDelete: (meetingId: string) => void
+  onAssignOwner: (meetingId: string, currentOwnerId: string) => void
   onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
   onViewProfile: (customerId: string, meetingId?: string) => void
@@ -41,6 +31,17 @@ export interface MeetingTableMeta {
 
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
 
+function buildMeetingActions(row: MeetingRow, meta: MeetingTableMeta) {
+  return [
+    { action: MEETING_ACTIONS.view, onAction: () => meta.onView(row.id, row.customerId) },
+    { action: MEETING_ACTIONS.start, onAction: () => meta.onStart(row.id) },
+    { action: MEETING_ACTIONS.edit, onAction: () => meta.onEdit(row.id) },
+    { action: MEETING_ACTIONS.duplicate, onAction: () => meta.onDuplicate(row.id), isLoading: meta.isDuplicating },
+    { action: MEETING_ACTIONS.assignOwner, onAction: () => meta.onAssignOwner(row.id, row.ownerId) },
+    { action: MEETING_ACTIONS.delete, onAction: () => meta.onDelete(row.id), isLoading: meta.isDeleting },
+  ]
+}
+
 export function getColumns(): ColumnDef<MeetingRow>[] {
   return [
     {
@@ -48,7 +49,6 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
       header: ({ column }) => <SortableHeader column={column} label="Meeting" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
-        const isActive = meta?.activeRowId === row.original.id
         const selectedProgram = row.original.flowStateJSON?.selectedProgram ?? null
         const meetingLabel = selectedProgram ?? row.original.meetingType
 
@@ -69,44 +69,14 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
                 {row.original.customerName ?? 'No customer'}
               </TooltipContent>
             </Tooltip>
-            <div
-              className={cn(
-                'flex items-center gap-1 shrink-0 opacity-0 pointer-events-none transition-opacity duration-150',
-                'group-hover:opacity-100 group-hover:pointer-events-auto',
-                isActive && 'opacity-100 pointer-events-auto',
-              )}
-              onClick={e => e.stopPropagation()}
-            >
-              <EntityEditButton onClick={() => meta?.onEdit(row.original.id)} />
-              <EntityStartButton onClick={() => meta?.onStart(row.original.id)} />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    disabled={meta?.isDuplicating}
-                    onClick={() => meta?.onDuplicate(row.original.id)}
-                  >
-                    Duplicate
-                  </DropdownMenuItem>
-                  {meta?.userRole === 'super-admin' && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        disabled={meta?.isDeleting}
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => meta?.onDelete(row.original.id)}
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {meta && (
+              <EntityActionMenu
+                entity={row.original}
+                actions={buildMeetingActions(row.original, meta)}
+                mode="compact"
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+              />
+            )}
           </div>
         )
       },

@@ -12,6 +12,7 @@ import { FilterIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useCallback, useMemo, useState } from 'react'
 
+import { AssignRepDialog } from '@/features/customer-pipelines/ui/components/assign-rep-dialog'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components/customer-profile-modal'
 import { meetingsStatConfig } from '@/features/meetings/constants/meetings-stat-config'
 import { useMeetingActionConfigs } from '@/features/meetings/hooks/use-meeting-action-configs'
@@ -84,9 +85,20 @@ export function MeetingsView() {
     })
   }, [meetings.data])
 
+  // Assign rep dialog state
+  const [assignRepDialog, setAssignRepDialog] = useState<{
+    meetingId: string
+    currentRepId: string | null
+  } | null>(null)
+
+  const handleAssignOwner = useCallback((entity: MeetingCalendarEvent) => {
+    setAssignRepDialog({ meetingId: entity.meetingId, currentRepId: entity.ownerId })
+  }, [])
+
   const meetingActions = useMeetingActionConfigs<MeetingCalendarEvent>({
     onView: handleViewMeeting,
     onEdit: handleEditMeeting,
+    onAssignOwner: handleAssignOwner,
   })
 
   const handleUpdateScheduledFor = useCallback((meetingId: string, date: Date) => {
@@ -258,6 +270,14 @@ export function MeetingsView() {
           onClose={() => setEditMeetingDialog(null)}
         />
       )}
+
+      {/* Assign rep dialog */}
+      <AssignRepDialog
+        meetingIds={assignRepDialog ? [assignRepDialog.meetingId] : []}
+        currentRepId={assignRepDialog?.currentRepId}
+        open={!!assignRepDialog}
+        onOpenChange={open => !open && setAssignRepDialog(null)}
+      />
     </motion.div>
   )
 }

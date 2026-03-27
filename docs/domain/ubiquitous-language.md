@@ -85,6 +85,12 @@ Trade (discipline)
 | Showroom | `showroom` | Public portfolio + agent project editor |
 | Landing | `landing` | Marketing pages: home, about, services, blog, contact |
 
+## UI Concepts
+
+| Term | Definition |
+|------|-----------|
+| **Entity View Context** | Any UI surface that renders one or more entities — regardless of presentation format (calendar, kanban, data table, card list, modal). Within a view context, entities appear inside containers and cards that show a snapshot of their data. View contexts can be nested: a customer kanban card is a customer view context that also contains meeting view contexts (each meeting card), and those meeting cards may contain proposal view contexts (proposal rows). Every entity rendered in a view context gets the standardized entity action menu (base actions gated by CASL + optional context-specific actions). |
+
 ## JSONB Field Map
 
 | Entity | Column | Zod Schema | Contains |
@@ -110,3 +116,4 @@ Trade (discipline)
 - **Incentive** not "promo" or "deal"
 - **Pipeline** refers to customer buckets (active/rehash/dead), not CI/CD
 - **Pipeline Stage** is the computed journey position, not the pipeline type
+- **Entity View Context** not "entity card" or "entity display" — refers to the full UI surface + its nested entity containers, not a single component

@@ -2,19 +2,14 @@
 
 import type { CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
-import { useMutation } from '@tanstack/react-query'
 import { EyeIcon } from 'lucide-react'
+import { useCallback } from 'react'
 
 import { PROPOSAL_STATUS_COLORS } from '@/features/customer-pipelines/constants/proposal-status-colors'
-import { EntityDeleteButton } from '@/shared/components/entity-actions/entity-delete-button'
-import { EntityDuplicateButton } from '@/shared/components/entity-actions/entity-duplicate-button'
-import { EntityEditButton } from '@/shared/components/entity-actions/entity-edit-button'
-import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
+import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
+import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
-import { useConfirm } from '@/shared/hooks/use-confirm'
-import { useAbility } from '@/shared/permissions/hooks'
-import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   proposal: CustomerProfileProposal
@@ -22,33 +17,23 @@ interface Props {
   onNavigate?: () => void
 }
 
-export function MeetingProposalRow({ proposal, onMutationSuccess, onNavigate }: Props) {
-  const trpc = useTRPC()
-  const ability = useAbility()
-  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
-    title: 'Delete proposal',
-    message: 'This will permanently delete this proposal and cannot be undone.',
+export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuccess, onNavigate }: Props) {
+  const handleView = useCallback(() => {
+    window.open(`${ROOTS.public.proposals()}/proposal/${proposal.id}`, '_blank')
+  }, [proposal.id])
+
+  const handleEdit = useCallback(() => {
+    onNavigate?.()
+    window.location.href = `${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`
+  }, [proposal.id, onNavigate])
+
+  const proposalActions = useProposalActionConfigs<CustomerProfileProposal>({
+    onView: handleView,
+    onEdit: handleEdit,
   })
 
-  const duplicateMutation = useMutation(
-    trpc.proposalsRouter.duplicateProposal.mutationOptions({
-      onSuccess: () => {
-        onMutationSuccess()
-      },
-    }),
-  )
-
-  const deleteMutation = useMutation(
-    trpc.proposalsRouter.deleteProposal.mutationOptions({
-      onSuccess: () => {
-        onMutationSuccess()
-      },
-    }),
-  )
-
   return (
-    <div className="flex flex-col gap-1.5 rounded-md border border-border/50 bg-muted/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-      <DeleteConfirmDialog />
+    <div className="group flex flex-col gap-1.5 rounded-md border border-border/50 bg-muted/40 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
       {/* Info */}
       <div className="flex flex-wrap items-center gap-2 min-w-0">
         <Badge variant="outline" className={PROPOSAL_STATUS_COLORS[proposal.status] ?? ''}>
@@ -79,31 +64,11 @@ export function MeetingProposalRow({ proposal, onMutationSuccess, onNavigate }: 
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1">
-          <EntityViewButton
-            href={`${ROOTS.public.proposals()}/proposal/${proposal.id}`}
-            external
-          />
-          <EntityEditButton
-            href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`}
-            onClick={onNavigate}
-          />
-          <EntityDuplicateButton
-            onClick={() => duplicateMutation.mutate({ proposalId: proposal.id })}
-            disabled={duplicateMutation.isPending}
-          />
-          {ability.can('delete', 'Proposal') && (
-            <EntityDeleteButton
-              onClick={async () => {
-                const ok = await confirmDelete()
-                if (ok) {
-                  deleteMutation.mutate({ proposalId: proposal.id })
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            />
-          )}
-        </div>
+        <EntityActionMenu
+          entity={proposal}
+          actions={proposalActions}
+          mode="compact"
+        />
       </div>
     </div>
   )
