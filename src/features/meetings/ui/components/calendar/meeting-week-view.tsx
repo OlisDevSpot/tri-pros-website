@@ -3,12 +3,12 @@
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
 
 import { format, isToday, parseISO } from 'date-fns'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { getEventsForDay, getWeekDays } from '@/shared/components/calendar/lib/calendar-helpers'
 import { cn } from '@/shared/lib/utils'
 
-const DAY_MIN_WIDTH_PX = 180
+const DAY_MIN_WIDTH_PX = 210
 
 interface MeetingWeekViewProps {
   events: MeetingCalendarEvent[]
@@ -30,9 +30,18 @@ export function MeetingWeekView({
 
   const colCount = weekDays.length
   const gridMinWidth = colCount * DAY_MIN_WIDTH_PX
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const todayColRef = useRef<HTMLDivElement>(null)
+
+  // Scroll today's column into view when currentDate lands on today
+  useEffect(() => {
+    if (todayColRef.current && scrollRef.current) {
+      todayColRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    }
+  }, [currentDate])
 
   return (
-    <div className="h-full overflow-x-auto">
+    <div ref={scrollRef} className="h-full overflow-x-auto">
       <div className="flex h-full flex-col" style={{ minWidth: `${gridMinWidth}px` }}>
         {/* Day headers */}
         <div
@@ -78,6 +87,7 @@ export function MeetingWeekView({
             return (
               <div
                 key={day.toISOString()}
+                ref={isToday(day) ? todayColRef : undefined}
                 className={cn(
                   'flex flex-col gap-1.5 overflow-y-auto border-r p-1.5 last:border-r-0',
                   isToday(day) && 'bg-primary/5',

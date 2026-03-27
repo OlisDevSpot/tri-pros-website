@@ -72,6 +72,7 @@ export function MeetingTodayView({
           {/* Bucket header row */}
           <motion.div
             className="sticky top-0 z-10 grid border-b bg-background"
+            initial={false}
             animate={{ gridTemplateColumns: gridCols }}
             transition={TRANSITION}
           >
@@ -116,6 +117,7 @@ export function MeetingTodayView({
           {/* Filler row — extends vertical column borders to the bottom */}
           <motion.div
             className="grid flex-1"
+            initial={false}
             animate={{ gridTemplateColumns: gridCols }}
             transition={TRANSITION}
           >
@@ -152,6 +154,7 @@ function SwimlaneRow({ owner, ownerEvents, renderCard, collapsed, gridCols }: Sw
   return (
     <motion.div
       className="grid border-b border-dashed"
+      initial={false}
       animate={{ gridTemplateColumns: gridCols }}
       transition={TRANSITION}
     >

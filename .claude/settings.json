@@ -232,7 +232,9 @@
       "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/components/calendar/meeting-today-view.tsx src/features/meetings/ui/components/calendar/meeting-week-view.tsx)",
       "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/components/calendar/meeting-week-view.tsx)",
       "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/components/calendar/meeting-today-view.tsx)",
-      "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ src/shared/components/calendar/ src/trpc/routers/meetings.router.ts)"
+      "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ src/shared/components/calendar/ src/trpc/routers/meetings.router.ts)",
+      "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/components/calendar/meeting-today-view.tsx src/features/meetings/ui/components/calendar/meeting-week-view.tsx src/features/meetings/ui/components/calendar/meeting-calendar-card.tsx)",
+      "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/views/meetings-view.tsx src/features/meetings/ui/components/calendar/meeting-calendar-card.tsx src/features/meetings/ui/components/calendar/meeting-calendar-dot.tsx src/features/meetings/ui/components/calendar/meeting-calendar.tsx src/features/meetings/lib/to-calendar-event.ts src/features/meetings/types/index.ts)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

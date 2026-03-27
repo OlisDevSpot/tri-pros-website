@@ -4,12 +4,13 @@ import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { MeetingOutcome } from '@/shared/types/enums'
 
 import { format } from 'date-fns'
-import { CalendarIcon, CopyIcon, MoreHorizontalIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
+import { CalendarIcon, ChevronDownIcon, CopyIcon, MapPinIcon, MoreHorizontalIcon, PencilIcon, PlayIcon, TrashIcon } from 'lucide-react'
 
 import { useSession } from '@/shared/auth/client'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
   DropdownMenu,
@@ -38,7 +39,7 @@ const STATUS_BG_TINTS: Record<MeetingOutcome, string> = {
 
 interface MeetingCalendarCardProps {
   event: MeetingCalendarEvent
-  onNavigate: (meetingId: string) => void
+  onNavigate: (customerId: string, meetingId: string) => void
   onEdit: (meetingId: string) => void
   onStart: (meetingId: string) => void
   onDuplicate: (meetingId: string) => void
@@ -70,7 +71,7 @@ export function MeetingCalendarCard({
         'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
         STATUS_BG_TINTS[event.meetingOutcome],
       )}
-      onClick={() => onNavigate(event.meetingId)}
+      onClick={() => event.customerId && onNavigate(event.customerId, event.meetingId)}
     >
       {/* Row 1: Status dot + customer name + actions */}
       <div className="flex items-center gap-1.5 min-w-0">
@@ -126,7 +127,7 @@ export function MeetingCalendarCard({
         </div>
       </div>
 
-      {/* Row 2: Scheduled time (editable) */}
+      {/* Row 2: Scheduled time (editable badge) */}
       <div className="min-w-0" onClick={e => e.stopPropagation()}>
         <DateTimePicker
           value={new Date(event.startAt)}
@@ -135,10 +136,12 @@ export function MeetingCalendarCard({
               onUpdateScheduledFor(event.meetingId, date)
             }
           }}
-          className="h-auto px-1 py-0 text-[11px] text-muted-foreground hover:text-foreground"
+          className="h-auto p-0 text-[11px]"
         >
-          <CalendarIcon className="h-3 w-3 shrink-0" />
-          <span>{format(new Date(event.startAt), 'h:mm a')}</span>
+          <Badge variant="secondary" className="gap-1 px-1.5 py-0.5 text-[11px] font-normal hover:bg-secondary/80">
+            <CalendarIcon className="h-3 w-3 shrink-0" />
+            <span>{format(new Date(event.startAt), 'h:mm a')}</span>
+          </Badge>
         </DateTimePicker>
       </div>
 
@@ -152,19 +155,25 @@ export function MeetingCalendarCard({
         </div>
       )}
 
-      {/* Row 4: Address (2 lines) */}
+      {/* Row 4: Address */}
       {fullAddress && (
         <div
           className="min-w-0 text-muted-foreground"
           onClick={e => e.stopPropagation()}
         >
           <AddressAction address={fullAddress} className="text-[11px]">
-            <div className="flex items-center gap-1.5 hover:text-foreground transition-colors cursor-pointer min-w-0">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer min-w-0"
+              onClick={e => e.stopPropagation()}
+            >
+              <MapPinIcon size={14} className="shrink-0" />
               <span className="min-w-0">
-                {addressLine1 && <span className="block truncate">{addressLine1}</span>}
-                {addressLine2 && <span className="block truncate text-[10px] opacity-70">{addressLine2}</span>}
+                {addressLine1 && <span className="block truncate text-left">{addressLine1}</span>}
+                {addressLine2 && <span className="block truncate text-left text-[10px] opacity-70">{addressLine2}</span>}
               </span>
-            </div>
+              <ChevronDownIcon size={12} className="shrink-0" />
+            </button>
           </AddressAction>
         </div>
       )}
