@@ -24,7 +24,7 @@ export function PhotoCard({ photo }: { photo: string }) {
             exit={{ opacity: 0 }}
             className="absolute flex items-center justify-center h-full w-full cursor-pointer"
           >
-            <div className="absolute inset-0 bg-black/30 z-10" />
+            <div className="absolute inset-0 bg-background/30 z-10" />
             <motion.div
               initial={{ y: 20 }}
               animate={{ y: 0 }}

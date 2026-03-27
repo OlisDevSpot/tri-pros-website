@@ -17,7 +17,7 @@ export function TradeSymptomsBand({ symptoms }: TradeSymptomsBandProps) {
           {symptoms.map(symptom => (
             <span
               key={symptom}
-              className="px-3 py-1.5 rounded-full bg-white border border-amber-200 text-xs font-semibold text-amber-900"
+              className="px-3 py-1.5 rounded-full bg-foreground border border-amber-200 text-xs font-semibold text-amber-900"
             >
               {symptom}
             </span>

@@ -40,7 +40,7 @@ export function ShowroomHero({ projects }: Props) {
   return (
     <section
       ref={containerRef}
-      className="relative h-[85vh] min-h-150 overflow-hidden bg-black"
+      className="relative h-[85vh] min-h-150 overflow-hidden bg-background"
     >
       {/* Parallax image mosaic — fades in when data arrives */}
       {heroProjects.length >= 3 && (
@@ -56,7 +56,7 @@ export function ShowroomHero({ projects }: Props) {
       )}
 
       {/* Cinematic overlays */}
-      <div className="absolute inset-0 bg-black/45" />
+      <div className="absolute inset-0 bg-background/45" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.5)_100%)]" />
 
       {/* Center text — always visible */}
@@ -70,10 +70,10 @@ export function ShowroomHero({ projects }: Props) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 backdrop-blur-md"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-5 py-2 backdrop-blur-md"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/80">
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-foreground/80">
               Portfolio
             </span>
           </motion.div>
@@ -82,7 +82,7 @@ export function ShowroomHero({ projects }: Props) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.35 }}
-            className="text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-8xl"
+            className="text-5xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-8xl"
           >
             {'Our '}
             <span className="bg-linear-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
@@ -94,7 +94,7 @@ export function ShowroomHero({ projects }: Props) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.55 }}
-            className="mx-auto mt-6 max-w-lg text-lg font-light text-white/70 sm:text-xl"
+            className="mx-auto mt-6 max-w-lg text-lg font-light text-foreground/70 sm:text-xl"
           >
             Real transformations. Real families. See how we bring dream homes to life.
           </motion.p>
@@ -104,7 +104,7 @@ export function ShowroomHero({ projects }: Props) {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 1, delay: 0.8 }}
-            className="mx-auto mt-10 h-px w-32 bg-linear-to-r from-transparent via-white/30 to-transparent"
+            className="mx-auto mt-10 h-px w-32 bg-linear-to-r from-transparent via-foreground/30 to-transparent"
           />
         </div>
       </div>
@@ -159,7 +159,7 @@ function GalleryMosaic({ projects }: MosaicProps) {
               sizes="(max-width: 768px) 50vw, 33vw"
               priority={i < 3}
             />
-            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10" />
+            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-foreground/10" />
           </motion.div>
         )
       })}

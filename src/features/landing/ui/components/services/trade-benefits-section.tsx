@@ -50,7 +50,7 @@ export function TradeBenefitsSection({ tradeName, benefits }: TradeBenefitsSecti
               <CardHeader className="items-center pb-0">
                 {benefit.stat != null
                   ? (
-                      <span className="text-2xl font-black text-primary mb-2">
+                      <span className="text-2xl font-background text-primary mb-2">
                         {benefit.stat}
                       </span>
                     )

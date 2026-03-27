@@ -31,7 +31,7 @@ export function WhoWeAreStep({ className }: WhoWeAreStepProps) {
   return (
     <div className={cn('space-y-12', className)}>
       {/* ── Hero Section ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-14 text-center shadow-xl md:px-12 md:py-20">
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 px-8 py-14 text-center shadow-xl md:px-12 md:py-20">
         {/* Subtle grid pattern overlay */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -106,7 +106,7 @@ export function WhoWeAreStep({ className }: WhoWeAreStepProps) {
                 <h4 className="text-sm font-semibold">{doc.title}</h4>
                 <span className="text-[11px] text-muted-foreground">{doc.subtitle}</span>
               </div>
-              <div className="overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm ring-1 ring-black/5">
+              <div className="overflow-hidden rounded-xl border border-border/40 bg-muted shadow-sm ring-1 ring-background/5">
                 <Image
                   src={doc.src}
                   alt={doc.alt}
@@ -181,7 +181,7 @@ export function WhoWeAreStep({ className }: WhoWeAreStepProps) {
       </div>
 
       {/* ── Closing Truth ────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent px-8 py-10 text-center md:px-12">
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-linear-to-br from-primary/5 via-primary/3 to-transparent px-8 py-10 text-center md:px-12">
         <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-primary/10 blur-[60px]" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-24 w-24 rounded-full bg-primary/10 blur-[60px]" />
 

@@ -189,7 +189,7 @@ export function StoryBeforeAfter({ project, media }: Props) {
                 )}
               >
                 {/* Side-by-side thumbnail preview */}
-                <div className="flex aspect-[2/1]">
+                <div className="flex aspect-2/1">
                   <div className="relative w-1/2">
                     <Image
                       src={pair.before.url}
@@ -209,7 +209,7 @@ export function StoryBeforeAfter({ project, media }: Props) {
                     />
                   </div>
                   {/* Divider line */}
-                  <div className="absolute inset-y-0 left-1/2 w-px bg-white/60" />
+                  <div className="absolute inset-y-0 left-1/2 w-px bg-foreground/60" />
                 </div>
                 {/* Label */}
                 <div className="bg-muted/80 px-2 py-1.5">

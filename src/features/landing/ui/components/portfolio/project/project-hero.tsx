@@ -35,7 +35,7 @@ export function ProjectHero({ project, heroUrl }: Props) {
           )}
 
       {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-background/80 via-background/30 to-transparent" />
 
       {/* Content */}
       <motion.div
@@ -44,8 +44,8 @@ export function ProjectHero({ project, heroUrl }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.3 }}
       >
-        <h1 className="text-4xl lg:text-6xl font-bold text-white">{project.title}</h1>
-        <p className="text-white/70 text-lg">
+        <h1 className="text-4xl lg:text-6xl font-bold text-foreground">{project.title}</h1>
+        <p className="text-foreground/70 text-lg">
           {project.city}
           {project.state ? `, ${project.state}` : ''}
         </p>

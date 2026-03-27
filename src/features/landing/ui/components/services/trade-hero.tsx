@@ -37,7 +37,7 @@ export function TradeHero({
   const imageUrl = images[0] ?? defaultHeroImage
 
   return (
-    <section className="relative flex min-h-[70vh] w-full items-center justify-center overflow-hidden bg-black">
+    <section className="relative flex min-h-[70vh] w-full items-center justify-center overflow-hidden bg-background">
       {/* Background image with cinematic entrance */}
       <motion.div
         initial={{ opacity: 0, scale: 1.05 }}
@@ -56,10 +56,10 @@ export function TradeHero({
       </motion.div>
 
       {/* Cinematic overlays */}
-      <div className="absolute inset-0 bg-black/45" />
+      <div className="absolute inset-0 bg-background/45" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.5)_100%)]" />
 
-      <div className="relative z-10 container pb-16 pt-[calc(var(--navbar-height)+32px)] text-center text-white">
+      <div className="relative z-10 container pb-16 pt-[calc(var(--navbar-height)+32px)] text-center text-foreground">
         {/* Breadcrumb */}
         <motion.nav
           aria-label="Breadcrumb"
@@ -68,9 +68,9 @@ export function TradeHero({
           transition={{ duration: 0.5, delay: 0.15 }}
           className="mb-8"
         >
-          <ol className="flex items-center justify-center gap-2 text-sm text-white/50">
+          <ol className="flex items-center justify-center gap-2 text-sm text-foreground/50">
             <li>
-              <Link href={ROOTS.landing.services()} className="transition-colors hover:text-white/80">
+              <Link href={ROOTS.landing.services()} className="transition-colors hover:text-foreground/80">
                 Services
               </Link>
             </li>
@@ -78,13 +78,13 @@ export function TradeHero({
             <li>
               <Link
                 href={ROOTS.landing.servicesPillar(pillarSlug)}
-                className="transition-colors hover:text-white/80"
+                className="transition-colors hover:text-foreground/80"
               >
                 {pillarTitle}
               </Link>
             </li>
             <li aria-hidden="true">/</li>
-            <li className="font-medium text-white/80" aria-current="page">
+            <li className="font-medium text-foreground/80" aria-current="page">
               {tradeName}
             </li>
           </ol>
@@ -95,10 +95,10 @@ export function TradeHero({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.25 }}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 backdrop-blur-md"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-5 py-2 backdrop-blur-md"
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/80">
+          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-foreground/80">
             {pillarTitle}
           </span>
         </motion.div>
@@ -118,7 +118,7 @@ export function TradeHero({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="mx-auto mb-8 max-w-2xl text-lg font-light text-white/70 sm:text-xl"
+          className="mx-auto mb-8 max-w-2xl text-lg font-light text-foreground/70 sm:text-xl"
         >
           {painHeadline}
         </motion.p>
@@ -142,11 +142,11 @@ export function TradeHero({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.9 }}
-          className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-2 rounded-full border border-white/10 bg-white/5 px-6 py-2.5 backdrop-blur-md"
+          className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-2 rounded-full border border-foreground/10 bg-foreground/5 px-6 py-2.5 backdrop-blur-md"
         >
           {trustItems.map((item, i) => (
-            <span key={item} className="flex items-center gap-1.5 text-sm text-white/60">
-              {i > 0 && <span className="text-white/20" aria-hidden="true">·</span>}
+            <span key={item} className="flex items-center gap-1.5 text-sm text-foreground/60">
+              {i > 0 && <span className="text-foreground/20" aria-hidden="true">·</span>}
               {item}
             </span>
           ))}

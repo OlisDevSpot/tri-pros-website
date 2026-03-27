@@ -72,24 +72,24 @@ export function ShowroomProjectCard({ project: item, index, allScopes, allTrades
               )}
 
           {/* Bottom gradient */}
-          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-background/70 via-background/10 to-transparent" />
 
           {/* Always-visible info */}
           <div className="absolute bottom-0 left-0 right-0 space-y-1.5 p-4">
-            <h3 className="text-lg font-semibold leading-tight text-white">{project.title}</h3>
-            <p className="text-sm text-white/70">
+            <h3 className="text-lg font-semibold leading-tight text-foreground">{project.title}</h3>
+            <p className="text-sm text-foreground/70">
               {project.city}
               {project.state ? `, ${project.state}` : ''}
             </p>
             {trades.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {trades.slice(0, 3).map(trade => (
-                  <Badge key={trade.id} variant="secondary" className="text-xs bg-white/20 text-white border-0">
+                  <Badge key={trade.id} variant="secondary" className="text-xs bg-foreground/20 text-foreground border-0">
                     {trade.name}
                   </Badge>
                 ))}
                 {trades.length > 3 && (
-                  <Badge variant="secondary" className="text-xs bg-white/20 text-white border-0">
+                  <Badge variant="secondary" className="text-xs bg-foreground/20 text-foreground border-0">
                     +
                     {trades.length - 3}
                     {' '}
@@ -109,14 +109,14 @@ export function ShowroomProjectCard({ project: item, index, allScopes, allTrades
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 flex flex-col items-start justify-center gap-3 bg-black/60 p-5"
+                className="absolute inset-0 flex flex-col items-start justify-center gap-3 bg-background/60 p-5"
               >
                 {project.description && (
-                  <p className="line-clamp-4 text-sm leading-relaxed text-white/90">
+                  <p className="line-clamp-4 text-sm leading-relaxed text-foreground/90">
                     {project.description}
                   </p>
                 )}
-                <span className="mt-1 text-sm font-medium text-white underline underline-offset-2">
+                <span className="mt-1 text-sm font-medium text-foreground underline underline-offset-2">
                   View Project →
                 </span>
               </motion.div>

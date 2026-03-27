@@ -52,7 +52,7 @@ export function StoryHero({ project, heroUrl, tradesWithScopes }: Props) {
 
       {/* Gradient overlays — top for navbar visibility, bottom for content */}
       <div className="absolute inset-0 bg-linear-to-b from-background/70 via-transparent to-transparent" />
-      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-t from-background/80 via-background/30 to-transparent" />
 
       {/* Content */}
       <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 lg:p-16">
@@ -63,16 +63,16 @@ export function StoryHero({ project, heroUrl, tradesWithScopes }: Props) {
             transition={{ duration: 0.6, delay: 0.3 }}
           >
             {formattedDate && (
-              <p className="mb-2 text-sm font-medium uppercase tracking-wider text-white/60">
+              <p className="mb-2 text-sm font-medium uppercase tracking-wider text-foreground/60">
                 Completed
                 {' '}
                 {formattedDate}
               </p>
             )}
-            <h1 className="mb-3 text-4xl font-bold text-white sm:text-5xl lg:text-6xl">
+            <h1 className="mb-3 text-4xl font-bold text-foreground sm:text-5xl lg:text-6xl">
               {project.title}
             </h1>
-            <p className="mb-5 text-lg text-white/80">
+            <p className="mb-5 text-lg text-foreground/80">
               {project.city}
               {project.state ? `, ${project.state}` : ''}
             </p>
@@ -91,7 +91,7 @@ export function StoryHero({ project, heroUrl, tradesWithScopes }: Props) {
                           <Badge
                             key={scope.id}
                             variant="outline"
-                            className="border-white/20 bg-white/10 text-white/90 backdrop-blur-sm"
+                            className="border-foreground/20 bg-foreground/10 text-foreground/90 backdrop-blur-sm"
                           >
                             {scope.name}
                           </Badge>

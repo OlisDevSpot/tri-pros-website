@@ -19,7 +19,7 @@ const HERO_STATS = [
 
 export function ServicesOverviewHero() {
   return (
-    <ViewportHero className="bg-black">
+    <ViewportHero className="bg-background">
       {/* Background image with cinematic overlay */}
       <motion.div
         initial={{ opacity: 0, scale: 1.05 }}
@@ -37,7 +37,7 @@ export function ServicesOverviewHero() {
       </motion.div>
 
       {/* Cinematic overlays */}
-      <div className="absolute inset-0 z-1 bg-black/45" />
+      <div className="absolute inset-0 z-1 bg-background/45" />
       <div className="absolute inset-0 z-1 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.5)_100%)]" />
 
       <TopSpacer>
@@ -47,10 +47,10 @@ export function ServicesOverviewHero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-2 backdrop-blur-md"
+            className="inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-5 py-2 backdrop-blur-md"
           >
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/80">
+            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-foreground/80">
               Our Services
             </span>
           </motion.div>
@@ -60,7 +60,7 @@ export function ServicesOverviewHero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.35 }}
-            className="max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-8xl"
+            className="max-w-4xl text-5xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-8xl"
           >
             Your Home. Done Right.
             {' '}
@@ -74,7 +74,7 @@ export function ServicesOverviewHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.55 }}
-            className="max-w-2xl text-lg font-light text-white/70 sm:text-xl"
+            className="max-w-2xl text-lg font-light text-foreground/70 sm:text-xl"
           >
             Licensed. Insured. Warranted.
             {' '}
@@ -95,10 +95,10 @@ export function ServicesOverviewHero() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4, delay: 0.8 + i * 0.08 }}
-                className="rounded-full border border-white/15 bg-white/5 px-5 py-2.5 backdrop-blur-md"
+                className="rounded-full border border-foreground/15 bg-foreground/5 px-5 py-2.5 backdrop-blur-md"
               >
-                <span className="text-lg font-bold text-white">{stat.value}</span>
-                <span className="ml-1.5 text-sm text-white/60">{stat.label}</span>
+                <span className="text-lg font-bold text-foreground">{stat.value}</span>
+                <span className="ml-1.5 text-sm text-foreground/60">{stat.label}</span>
               </motion.div>
             ))}
           </motion.div>
@@ -108,7 +108,7 @@ export function ServicesOverviewHero() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 1, delay: 1 }}
-            className="h-px w-32 bg-linear-to-r from-transparent via-white/30 to-transparent"
+            className="h-px w-32 bg-linear-to-r from-transparent via-foreground/30 to-transparent"
           />
 
           {/* CTAs */}
@@ -125,7 +125,7 @@ export function ServicesOverviewHero() {
               asChild
               size="lg"
               variant="outline"
-              className="h-14 border-white/20 bg-white/5 text-lg text-white backdrop-blur-md hover:bg-white/10 hover:text-white"
+              className="h-14 border-foreground/20 bg-foreground/5 text-lg text-foreground backdrop-blur-md hover:bg-foreground/10 hover:text-foreground"
             >
               <Link href={ROOTS.landing.portfolioProjects()}>See Our Work</Link>
             </Button>

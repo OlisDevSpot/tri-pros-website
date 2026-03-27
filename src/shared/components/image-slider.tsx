@@ -49,7 +49,7 @@ export function CustomImageSlider({
           fill
           className="object-cover w-full h-full opacity-100 group-hover:opacity-0 group-active:opacity-0 transition duration-300 pointer-events-none z-20"
         />
-        <div className="absolute inset-0 bg-black/60 opacity-80 group-hover:opacity-30 group-active:opacity-30 transition duration-300 pointer-events-none z-50" />
+        <div className="absolute inset-0 bg-background/60 opacity-80 group-hover:opacity-30 group-active:opacity-30 transition duration-300 pointer-events-none z-50" />
         <ImageSliderControls />
       </ImageSlider.Provider>
     </div>

@@ -27,7 +27,7 @@ export function PortfolioHero() {
             alt="Portfolio Hero"
             className="h-full w-full object-cover"
           />
-          <div className="absolute h-full w-full bg-black/30 z-10" />
+          <div className="absolute h-full w-full bg-background/30 z-10" />
         </motion.div>
       </motion.div>
     </div>

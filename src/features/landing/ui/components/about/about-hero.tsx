@@ -128,7 +128,7 @@ export function AboutHero() {
                   className="object-cover h-full"
                   priority
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-background/20 to-transparent" />
               </div>
 
               {/* Floating Award Card */}
@@ -138,7 +138,7 @@ export function AboutHero() {
                 transition={{ duration: 0.8, delay: 0.8 }}
                 className={
                   cn(
-                    'absolute -top-6 -right-6 bg-linear-to-br from-[color-mix(in_oklch,var(--secondary)_60%,black_20%,transparent_20%)] to-secondary text-white rounded-xl px-10 py-4 shadow-xl backdrop-blur-sm',
+                    'absolute -top-6 -right-6 bg-linear-to-br from-[color-mix(in_oklch,var(--secondary)_60%,var(--background)_20%,transparent_20%)] to-secondary text-foreground rounded-xl px-10 py-4 shadow-xl backdrop-blur-sm',
                     isMobile ? '-top-2 -right-2' : '',
                   )
                 }
@@ -155,7 +155,7 @@ export function AboutHero() {
                 transition={{ duration: 0.8, delay: 1.2 }}
                 className={
                   cn(
-                    'absolute -top-6 -left-6 bg-linear-to-tl from-[color-mix(in_oklch,var(--primary)_60%,black_20%,transparent_20%)] to-primary text-white rounded-xl px-4 py-4 pt-4 shadow-xl backdrop-blur-sm',
+                    'absolute -top-6 -left-6 bg-linear-to-tl from-[color-mix(in_oklch,var(--primary)_60%,var(--background)_20%,transparent_20%)] to-primary text-foreground rounded-xl px-4 py-4 pt-4 shadow-xl backdrop-blur-sm',
                     isMobile ? '-top-2 -left-2' : '',
                   )
                 }
@@ -174,7 +174,7 @@ export function AboutHero() {
                 transition={{ duration: 0.8, delay: 1.4 }}
                 className={
                   cn(
-                    'absolute -bottom-6 -left-6 bg-linear-to-br from-neutral-300/70 to-white/70 text-neutral-900 rounded-xl px-10 py-4 shadow-xl backdrop-blur-sm',
+                    'absolute -bottom-6 -left-6 bg-linear-to-br from-neutral-300/70 to-foreground/70 text-neutral-900 rounded-xl px-10 py-4 shadow-xl backdrop-blur-sm',
                     isMobile ? '-bottom-2 -left-2' : '',
                   )
                 }
@@ -196,7 +196,7 @@ export function AboutHero() {
                 transition={{ duration: 0.8, delay: 1.4 }}
                 className={
                   cn(
-                    'absolute -bottom-6 -right-6 bg-linear-to-br from-neutral-800/80 to-black/80 text-neutral-100 rounded-xl px-4 py-10 shadow-xl backdrop-blur-sm',
+                    'absolute -bottom-6 -right-6 bg-linear-to-br from-neutral-800/80 to-background/80 text-foreground rounded-xl px-4 py-10 shadow-xl backdrop-blur-sm',
                     isMobile ? '-bottom-2 -right-2' : '',
                   )
                 }

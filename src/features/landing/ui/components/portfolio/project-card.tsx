@@ -47,12 +47,12 @@ export function ProjectCard({ row, index }: { row: PublicProject, index: number 
               )}
 
           {/* Always-visible bottom gradient */}
-          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-background/70 via-background/10 to-transparent" />
 
           {/* Bottom info */}
           <div className="absolute bottom-0 left-0 right-0 p-4 space-y-1">
-            <h3 className="text-white font-semibold text-lg leading-tight">{project.title}</h3>
-            <p className="text-white/70 text-sm">
+            <h3 className="text-foreground font-semibold text-lg leading-tight">{project.title}</h3>
+            <p className="text-foreground/70 text-sm">
               {project.city}
               {project.state ? `, ${project.state}` : ''}
             </p>
@@ -67,10 +67,10 @@ export function ProjectCard({ row, index }: { row: PublicProject, index: number 
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-black/60 flex flex-col justify-center items-start p-5 gap-3"
+                className="absolute inset-0 bg-background/60 flex flex-col justify-center items-start p-5 gap-3"
               >
                 {project.description && (
-                  <p className="text-white/90 text-sm leading-relaxed line-clamp-4">
+                  <p className="text-foreground/90 text-sm leading-relaxed line-clamp-4">
                     {project.description}
                   </p>
                 )}
@@ -83,7 +83,7 @@ export function ProjectCard({ row, index }: { row: PublicProject, index: number 
                     ))}
                   </div>
                 )}
-                <span className="text-white text-sm font-medium underline underline-offset-2 mt-1">
+                <span className="text-foreground text-sm font-medium underline underline-offset-2 mt-1">
                   View Project →
                 </span>
               </motion.div>

@@ -62,10 +62,10 @@ export function ProgressGallery({ media }: Props) {
 
       {/* Lightbox */}
       <Dialog open={lightboxSrc !== null} onOpenChange={() => setLightboxSrc(null)}>
-        <DialogContent className="max-w-4xl p-2 bg-black/90 border-0">
+        <DialogContent className="max-w-4xl p-2 bg-background/90 border-0">
           <button
             onClick={() => setLightboxSrc(null)}
-            className="absolute top-3 right-3 z-10 text-white/80 hover:text-white"
+            className="absolute top-3 right-3 z-10 text-foreground/80 hover:text-foreground"
           >
             <X size={24} />
           </button>

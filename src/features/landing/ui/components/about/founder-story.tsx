@@ -25,14 +25,14 @@ export function FounderStory({
 
   return (
     <div
-      className="min-h-[400px] flex flex-col lg:flex-row gap-4 lg:gap-16 w-full rounded-lg overflow-hidden"
+      className="min-h-100 flex flex-col lg:flex-row gap-4 lg:gap-16 w-full rounded-lg overflow-hidden"
     >
       <div className={cn('relative rounded-lg grow min-h-0 h-auto overflow-hidden flex-1', !isMobile && flipOrder && 'order-2')}>
         <img
           src={founderImgSrc}
           className="absolute w-full grayscale-50 z-[-1] object-cover"
         />
-        <h3 className="absolute bottom-16 text-2xl lg:text-3xl font-bold text-white whitespace-pre-line text-center w-full bg-primary/40">
+        <h3 className="absolute bottom-16 text-2xl lg:text-3xl font-bold text-foreground whitespace-pre-line text-center w-full bg-primary/40">
           {founderName}
         </h3>
       </div>

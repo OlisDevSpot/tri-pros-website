@@ -119,20 +119,20 @@ export function SortablePhotoCard({
             className="object-cover"
             sizes="(max-width: 640px) 50vw, 25vw"
           />
-          <div className={cn('absolute inset-0 transition-colors group-hover:bg-black/40', (menuOpen || isSelected) && 'bg-black/40')} />
+          <div className={cn('absolute inset-0 transition-colors group-hover:bg-background/40', (menuOpen || isSelected) && 'bg-background/40')} />
 
           {/* Top-left: checkbox + drag handle */}
           <div className="absolute left-1 top-1 flex items-center gap-1">
             <div
               className={cn(
-                'flex h-6 w-6 items-center justify-center rounded bg-black/60 transition-opacity',
+                'flex h-6 w-6 items-center justify-center rounded bg-background/60 transition-opacity',
                 selectionActive || isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
               )}
             >
               <Checkbox
                 checked={isSelected}
                 onCheckedChange={() => onSelectToggle(file.id)}
-                className="border-white/70 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                className="border-foreground/70 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
               />
             </div>
             <div
@@ -140,8 +140,8 @@ export function SortablePhotoCard({
               {...listeners}
               className="cursor-grab opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-black/60">
-                <GripVertical className="h-3.5 w-3.5 text-white" />
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-background/60">
+                <GripVertical className="h-3.5 w-3.5 text-foreground" />
               </div>
             </div>
           </div>
@@ -217,11 +217,11 @@ export function SortablePhotoCard({
         </div>
 
         {/* Editable name */}
-        <div className="bg-black/60 px-2 py-1">
+        <div className="bg-background/60 px-2 py-1">
           <input
             value={name}
             onChange={e => handleNameChange(e.target.value)}
-            className="h-5 w-full bg-transparent text-[10px] text-white outline-none placeholder:text-white/50"
+            className="h-5 w-full bg-transparent text-[10px] text-foreground outline-none placeholder:text-foreground/50"
             placeholder="File name"
           />
         </div>

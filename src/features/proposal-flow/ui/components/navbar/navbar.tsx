@@ -57,7 +57,7 @@ export function ProposalPageNavbar() {
                 className="flex-1 last-of-type:bg-primary h-full"
               >
                 <Link
-                  className="h-full w-full flex items-center justify-center hover:bg-foreground/40 transition data-[active=true]:bg-white/40"
+                  className="h-full w-full flex items-center justify-center hover:bg-foreground/40 transition data-[active=true]:bg-foreground/40"
                   href={`#${step.accessor}`}
                   data-active={activeSectionId === step.accessor}
                 >

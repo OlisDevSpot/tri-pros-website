@@ -37,7 +37,7 @@ export function ProjectVideosGallery({ media }: Props) {
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="rounded-xl overflow-hidden bg-black aspect-video"
+              className="rounded-xl overflow-hidden bg-background aspect-video"
             >
               <video
                 src={file.url}

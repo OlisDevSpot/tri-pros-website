@@ -174,7 +174,7 @@ export function HomeHero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1.2 }}
-        className="absolute bottom-6 lg:bottom-16 left-1/2 transform -translate-x-1/2 text-white z-10"
+        className="absolute bottom-6 lg:bottom-16 left-1/2 transform -translate-x-1/2 text-foreground z-10"
       >
         <motion.div
           animate={{ y: [0, 10, 0] }}
@@ -182,11 +182,11 @@ export function HomeHero() {
           className="flex flex-col items-center space-y-2"
         >
           <span className="text-sm font-medium">Scroll to explore</span>
-          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center">
+          <div className="w-6 h-10 border-2 border-foreground/50 rounded-full flex justify-center">
             <motion.div
               animate={{ y: [0, 12, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-1 h-3 bg-white/70 rounded-full mt-2"
+              className="w-1 h-3 bg-foreground/70 rounded-full mt-2"
             />
           </div>
         </motion.div>

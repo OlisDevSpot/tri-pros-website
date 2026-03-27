@@ -92,28 +92,28 @@ export function PwaInstallPrompt() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed right-4 bottom-6 left-4 z-50 mx-auto max-w-sm rounded-xl border border-white/10 bg-zinc-900/95 p-4 shadow-2xl backdrop-blur-sm"
+          className="fixed right-4 bottom-6 left-4 z-50 mx-auto max-w-sm rounded-xl border border-foreground/10 bg-zinc-900/95 p-4 shadow-2xl backdrop-blur-sm"
         >
           <button
             type="button"
             onClick={dismiss}
-            className="absolute top-3 right-3 rounded-md p-1 text-white/40 transition-colors hover:text-white/70"
+            className="absolute top-3 right-3 rounded-md p-1 text-foreground/40 transition-colors hover:text-foreground/70"
             aria-label="Dismiss"
           >
             <X size={16} />
           </button>
 
-          <p className="pr-6 text-sm font-medium text-white">
+          <p className="pr-6 text-sm font-medium text-foreground">
             Install Tri Pros
           </p>
-          <p className="mt-1.5 text-xs leading-relaxed text-white/60">
+          <p className="mt-1.5 text-xs leading-relaxed text-foreground/60">
             Tap
             {' '}
             <ShareIcon />
             {' '}
             in the toolbar below, then
             {' '}
-            <span className="font-medium text-white/80">
+            <span className="font-medium text-foreground/80">
               &quot;Add to Home Screen&quot;
             </span>
           </p>

@@ -34,7 +34,7 @@ export function PdfViewer({
       <div
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
-        className="group relative flex-1 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/10 h-full border-5"
+        className="group relative flex-1 overflow-hidden rounded-2xl bg-foreground shadow-sm ring-1 ring-background/10 h-full border-5"
         style={{ height }}
       >
         <iframe
@@ -72,7 +72,7 @@ export function PdfViewer({
               transition={{ duration: 0.12 }}
             >
               <motion.div
-                className="pointer-events-auto flex items-center gap-2 rounded-full bg-background/90 px-3 py-2 shadow-lg ring-1 ring-black/10 backdrop-blur"
+                className="pointer-events-auto flex items-center gap-2 rounded-full bg-background/90 px-3 py-2 shadow-lg ring-1 ring-background/10 backdrop-blur"
                 initial={{ y: 10, scale: 0.98, opacity: 0 }}
                 animate={{ y: 0, scale: 1, opacity: 1 }}
                 exit={{ y: 10, scale: 0.98, opacity: 0 }}

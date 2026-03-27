@@ -204,7 +204,7 @@ export function ProcessOverview({ className }: Props) {
                       animate={isInView ? { height: '200px' } : { height: 0 }}
                       transition={{ duration: 0.8, delay: index * 0.2 + 0.5 }}
                       className={cn(
-                        'absolute top-full w-1 left-1/2 -translate-x-1/2 bg-linear-to-b from-white to-neutral-500 rounded-full transform z-[-1]',
+                        'absolute top-full w-1 left-1/2 -translate-x-1/2 bg-linear-to-b from-foreground to-neutral-500 rounded-full transform z-[-1]',
                       )}
                     />
                   )}
