@@ -1,10 +1,13 @@
+/* eslint-disable dot-notation */
 /**
  * One-time migration: Notion Contacts + Meetings → Postgres
  *
  * Run: pnpm tsx scripts/migrate-notion-contacts.ts
  *
  * Phase 1 — Contacts: Inserts new customers, skips existing (PG is source of truth).
- * Phase 2 — Meetings: Creates meetings linked to customers, skips existing.
+ * Phase 2 — Meetings: Creates meetings linked to customers.
+ *           New meetings get trades populated in flowStateJSON.
+ *           Existing meetings get trades backfilled if flowStateJSON is empty.
  *
  * Notion access: READ-ONLY. No Notion rows are modified.
  * MP3s: Downloaded from Notion signed URLs and re-uploaded to R2.
@@ -12,6 +15,7 @@
  */
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { LeadMeta } from '../src/shared/entities/customers/schemas'
+import type { MeetingFlowState, TradeSelection } from '../src/shared/entities/meetings/schemas'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { and, eq } from 'drizzle-orm'
@@ -20,11 +24,13 @@ import { Pool } from 'pg'
 import env from '../src/shared/config/server-env'
 import * as schema from '../src/shared/db/schema'
 import { user } from '../src/shared/db/schema/auth'
+import { customerNotes } from '../src/shared/db/schema/customer-notes'
 import { customers } from '../src/shared/db/schema/customers'
 import { meetings } from '../src/shared/db/schema/meetings'
 import { notionClient } from '../src/shared/services/notion/client'
 import { notionDatabasesMeta } from '../src/shared/services/notion/constants/databases'
 import { pageToContact } from '../src/shared/services/notion/lib/contacts/adapter'
+import { titleText } from '../src/shared/services/notion/lib/extractors'
 import { R2_BUCKETS } from '../src/shared/services/r2/buckets'
 import { putObject } from '../src/shared/services/r2/put-object'
 
@@ -127,9 +133,13 @@ function extractMeetingData(page: PageObjectResponse) {
     ? p['Salesreps Assigned'].people.map(u => u.id)
     : []
 
-  const notes = p['Notes']?.type === 'rich_text'
-    ? p['Notes'].rich_text.map(t => t.plain_text).join('')
+  const notes = p['Quick Notes']?.type === 'rich_text'
+    ? p['Quick Notes'].rich_text.map(t => t.plain_text).join('')
     : ''
+
+  const tradeRelationIds = p['Trades Interested']?.type === 'relation'
+    ? p['Trades Interested'].relation.map(r => r.id)
+    : []
 
   return {
     notionMeetingId: page.id,
@@ -138,8 +148,46 @@ function extractMeetingData(page: PageObjectResponse) {
     notionContactId: contactRelation[0] ?? null,
     salesrepNotionIds: salesreps,
     notes,
+    tradeRelationIds,
     createdTime: page.created_time,
   }
+}
+
+async function insertQuickNoteIfMissing(
+  customerId: string,
+  content: string,
+  authorId: string,
+): Promise<boolean> {
+  // Check if a note with this exact content already exists for this customer
+  const [existing] = await db
+    .select({ id: customerNotes.id })
+    .from(customerNotes)
+    .where(and(
+      eq(customerNotes.customerId, customerId),
+      eq(customerNotes.content, content),
+    ))
+    .limit(1)
+
+  if (existing) {
+    return false
+  }
+
+  await db.insert(customerNotes).values({ customerId, content, authorId })
+  return true
+}
+
+function buildTradeSelections(
+  tradeRelationIds: string[],
+  tradeNameMap: Map<string, string>,
+): TradeSelection[] {
+  return tradeRelationIds
+    .filter(id => tradeNameMap.has(id))
+    .map(id => ({
+      tradeId: id,
+      tradeName: tradeNameMap.get(id)!,
+      selectedScopes: [],
+      painPoints: [],
+    }))
 }
 
 // ── Phase 1: Contacts ──────────────────────────────────────
@@ -252,11 +300,13 @@ async function migrateContacts(contactPages: PageObjectResponse[]) {
 
 // ── Phase 2: Meetings ──────────────────────────────────────
 
-async function migrateMeetings(meetingPages: PageObjectResponse[]) {
+async function migrateMeetings(meetingPages: PageObjectResponse[], tradeNameMap: Map<string, string>) {
   console.log(`\n══ Phase 2: Meetings (${meetingPages.length} found) ══\n`)
 
   let inserted = 0
   let skipped = 0
+  let backfilled = 0
+  let notesCreated = 0
   let errors = 0
 
   for (const page of meetingPages) {
@@ -286,21 +336,11 @@ async function migrateMeetings(meetingPages: PageObjectResponse[]) {
       // Resolve the scheduledFor timestamp
       const scheduledFor = data.datetime ?? data.createdTime
 
-      // Check for existing meeting (idempotent: same customer + same scheduledFor)
-      const [existing] = await db
-        .select({ id: meetings.id })
-        .from(meetings)
-        .where(and(
-          eq(meetings.customerId, customer.id),
-          eq(meetings.scheduledFor, scheduledFor),
-        ))
-        .limit(1)
-
-      if (existing) {
-        console.log(`Already exists: "${data.title}" — skipping`)
-        skipped++
-        continue
-      }
+      // Build trade selections from Notion relation
+      const tradeSelections = buildTradeSelections(data.tradeRelationIds, tradeNameMap)
+      const flowStateJSON: MeetingFlowState | undefined = tradeSelections.length > 0
+        ? { tradeSelections }
+        : undefined
 
       // Resolve ownerId: first salesrep mapped to app user, or fallback
       let ownerId = DEFAULT_OWNER_ID
@@ -311,14 +351,61 @@ async function migrateMeetings(meetingPages: PageObjectResponse[]) {
         }
       }
 
+      // Check for existing meeting (idempotent: same customer + same scheduledFor)
+      const [existing] = await db
+        .select({ id: meetings.id, flowStateJSON: meetings.flowStateJSON })
+        .from(meetings)
+        .where(and(
+          eq(meetings.customerId, customer.id),
+          eq(meetings.scheduledFor, scheduledFor),
+        ))
+        .limit(1)
+
+      if (existing) {
+        // Backfill trades into existing meeting if flowStateJSON is empty and we have trades
+        if (!existing.flowStateJSON && flowStateJSON) {
+          await db
+            .update(meetings)
+            .set({ flowStateJSON })
+            .where(eq(meetings.id, existing.id))
+          const tradeNames = tradeSelections.map(t => t.tradeName).join(', ')
+          console.log(`Backfilled trades: "${data.title}" → [${tradeNames}]`)
+          backfilled++
+        }
+        else {
+          console.log(`Already exists: "${data.title}" — skipping`)
+          skipped++
+        }
+
+        // Backfill quick note (idempotent — skip if note already exists for this customer)
+        if (data.notes) {
+          const created = await insertQuickNoteIfMissing(customer.id, data.notes, ownerId)
+          if (created) {
+            notesCreated++
+          }
+        }
+
+        continue
+      }
+
       await db.insert(meetings).values({
         ownerId,
         customerId: customer.id,
         scheduledFor,
-        meetingOutcome: 'proposal_created',
+        meetingOutcome: 'not_set',
+        flowStateJSON,
       })
 
-      console.log(`Inserted: "${data.title}" → ${customer.name} (owner: ${ownerId === DEFAULT_OWNER_ID ? 'Oliver (default)' : 'mapped'})`)
+      // Insert quick note for new meeting
+      if (data.notes) {
+        const created = await insertQuickNoteIfMissing(customer.id, data.notes, ownerId)
+        if (created) {
+          notesCreated++
+        }
+      }
+
+      const tradeNames = tradeSelections.map(t => t.tradeName).join(', ')
+      console.log(`Inserted: "${data.title}" → ${customer.name}${tradeNames ? ` [${tradeNames}]` : ''} (owner: ${ownerId === DEFAULT_OWNER_ID ? 'Oliver (default)' : 'mapped'})`)
       inserted++
     }
     catch (e) {
@@ -328,21 +415,33 @@ async function migrateMeetings(meetingPages: PageObjectResponse[]) {
     }
   }
 
-  console.log(`\nMeetings — Inserted: ${inserted} | Skipped: ${skipped} | Errors: ${errors}`)
+  console.log(`\nMeetings — Inserted: ${inserted} | Backfilled: ${backfilled} | Notes: ${notesCreated} | Skipped: ${skipped} | Errors: ${errors}`)
 }
 
 // ── Main ───────────────────────────────────────────────────
 
 async function main() {
-  console.log('Fetching Notion contacts and meetings…')
+  console.log('Fetching Notion contacts, meetings, and trades…')
 
-  const [contactsRes, meetingsRes] = await Promise.all([
+  const [contactsRes, meetingsRes, tradesRes] = await Promise.all([
     notionClient.dataSources.query({ data_source_id: notionDatabasesMeta.contacts.id }),
     notionClient.dataSources.query({ data_source_id: notionDatabasesMeta.meetings.id }),
+    notionClient.dataSources.query({ data_source_id: notionDatabasesMeta.trades.id }),
   ])
 
   const contactPages = contactsRes.results as PageObjectResponse[]
   const meetingPages = meetingsRes.results as PageObjectResponse[]
+  const tradePages = tradesRes.results as PageObjectResponse[]
+
+  // Build trade ID → name lookup from Notion trades database
+  const tradeNameMap = new Map<string, string>()
+  for (const page of tradePages) {
+    const name = titleText(page.properties, 'Trade')
+    if (name) {
+      tradeNameMap.set(page.id, name)
+    }
+  }
+  console.log(`Loaded ${tradeNameMap.size} trades from Notion`)
 
   // Phase 1: contacts first (meetings depend on customer IDs existing)
   await migrateContacts(contactPages)
@@ -352,8 +451,8 @@ async function main() {
     await db.insert(user).values({ id: u.id, name: u.name, email: u.email, emailVerified: false }).onConflictDoNothing()
   }
 
-  // Phase 2: meetings (looks up customers by notionContactId)
-  await migrateMeetings(meetingPages)
+  // Phase 2: meetings (looks up customers by notionContactId, backfills trades)
+  await migrateMeetings(meetingPages, tradeNameMap)
 
   console.log('\n══ Migration complete ══')
   process.exit(0)
