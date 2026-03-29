@@ -10,6 +10,7 @@ import { EmailAction } from '@/shared/components/contact-actions/ui/email-action
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useAbility } from '@/shared/permissions/hooks'
 
 interface Props {
@@ -21,15 +22,19 @@ interface Props {
 
 export function CustomerProfileHeader({ customer, isEditing = false, register, onEditField }: Props) {
   const ability = useAbility()
+  const isMobile = useIsMobile()
   const canEditContact = ability.can('update', 'Customer', 'name')
   const showInputs = isEditing && canEditContact && register
 
+  const addressLine1 = customer.address ?? ''
+  const addressLine2 = [customer.city, customer.zip].filter(Boolean).join(', ')
+  const addressLine2WithState = [addressLine2, customer.state].filter(Boolean).join(' ')
   const address = [customer.address, customer.city, customer.state, customer.zip]
     .filter(Boolean)
     .join(', ')
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+    <div className="flex flex-col items-start gap-2 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
       {/* Phone */}
       {showInputs
         ? (
@@ -119,7 +124,23 @@ export function CustomerProfileHeader({ customer, isEditing = false, register, o
                 address={address}
                 canEdit={canEditContact}
                 onEdit={() => onEditField?.('address')}
-              />
+              >
+                {isMobile
+                  ? (
+                      <button
+                        type="button"
+                        className="flex items-start gap-1.5 text-left hover:text-foreground transition-colors cursor-pointer"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <MapPinIcon size={14} className="mt-0.5 shrink-0" />
+                        <span className="flex flex-col leading-tight">
+                          <span>{addressLine1}</span>
+                          <span>{addressLine2WithState}</span>
+                        </span>
+                      </button>
+                    )
+                  : undefined}
+              </AddressAction>
             )
           : (
               canEditContact && (
