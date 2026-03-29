@@ -12,6 +12,7 @@ import { CustomerProfileModal } from '@/features/customer-pipelines/ui/component
 import { AssignRepDialog } from '@/features/customer-pipelines/ui/components/assign-rep-dialog'
 import { meetingTableFilters } from '@/features/meetings/constants/table-filter-config'
 import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
+import { getMeetingRowClassName } from '@/features/meetings/lib/meeting-row-class'
 import { CreateMeetingModal } from '@/features/meetings/ui/components/create-meeting-modal'
 import { useSession } from '@/shared/auth/client'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
@@ -92,6 +93,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
         meta={meta}
         filterConfig={meetingTableFilters}
         defaultSort={defaultSort}
+        getRowClassName={getMeetingRowClassName}
         entityName="meeting"
         rowDataAttribute="data-meeting-row"
         onRowClick={(row) => {

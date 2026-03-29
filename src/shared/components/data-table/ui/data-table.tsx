@@ -32,6 +32,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   pageSize = 15,
   entityName = 'row',
   rowDataAttribute = 'data-table-row',
+  getRowClassName,
   onActiveRowChange,
   onRowClick,
   onFilteredCountChange,
@@ -171,11 +172,12 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
               {table.getRowModel().rows.length > 0
                 ? table.getRowModel().rows.map((row) => {
                     const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
+                    const customRowClass = getRowClassName?.(row.original)
 
                     return (
                       <TableRow
                         key={row.id}
-                        className="group cursor-pointer border-border/50"
+                        className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
                         onClick={() => {
                           if (onRowClick) {
                             onRowClick(row.original)
