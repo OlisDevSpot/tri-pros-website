@@ -247,7 +247,21 @@
       "Bash(npx eslint@9 --config eslint.config.mjs src/features/customer-pipelines/ui/components/customer-kanban-card.tsx)",
       "Bash(npx eslint@9 --config eslint.config.mjs src/)",
       "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/components/steps/program-step.tsx src/features/meetings/ui/components/steps/specialties-step.tsx src/features/meetings/ui/components/steps/portfolio-step.tsx)",
-      "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/components/steps/specialties-step.tsx)"
+      "Bash(npx eslint@9 --config eslint.config.mjs src/features/meetings/ui/components/steps/specialties-step.tsx)",
+      "WebFetch(domain:whatboxdigital.com)",
+      "WebFetch(domain:peaklifebrandon.com)",
+      "WebFetch(domain:www.jointhefollowup.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:www.shortform.com)",
+      "WebFetch(domain:thepowermoves.com)",
+      "WebFetch(domain:www.solidgrowth.com)",
+      "WebFetch(domain:www.mxmoritz.com)",
+      "WebFetch(domain:www.uplify.ai)",
+      "WebFetch(domain:macksbooknotes.com)",
+      "WebFetch(domain:theprocesshacker.com)",
+      "WebFetch(domain:www.deciphr.ai)",
+      "WebFetch(domain:www.alexansorge.com)",
+      "Bash(/home/olis-solutions/.nvm/versions/node/v24.14.1/bin/claude --version)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
@@ -257,7 +271,8 @@
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app",
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders",
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/services/[pillar]",
-      "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/portfolio"
+      "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/portfolio",
+      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/assets/meta-creatives/equity-reset"
     ]
   },
   "enabledMcpjsonServers": [
