@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 
+import { SIDEBAR_NAV_ACTIVE_STYLE } from '@/features/agent-dashboard/constants/sidebar-styles'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
@@ -74,7 +75,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
                       alt="Tri Pros"
                       width={24}
                       height={24}
-                      className="dark:invert"
+                      className="dark:hidden"
+                    />
+                    <Image
+                      src="/company/logo/logo-dark.svg"
+                      alt="Tri Pros"
+                      width={24}
+                      height={24}
+                      className="hidden dark:block"
                     />
                   </motion.div>
                 )
@@ -116,20 +124,24 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navConfig.baseItems.map(item => (
-                <SidebarMenuItem key={item.step}>
-                  <SidebarMenuButton
-                    tooltip={item.label}
-                    isActive={step === item.step}
-                    disabled={!item.enabled}
-                    onClick={() => handleNavClick(item)}
-                    className="gap-4"
-                  >
-                    <item.icon className="size-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {navConfig.baseItems.map((item) => {
+                const isActive = step === item.step
+                return (
+                  <SidebarMenuItem key={item.step}>
+                    <SidebarMenuButton
+                      tooltip={item.label}
+                      isActive={isActive}
+                      disabled={!item.enabled}
+                      onClick={() => handleNavClick(item)}
+                      className="gap-4 transition-all duration-200 data-[active=true]:bg-transparent"
+                      style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
+                    >
+                      <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -139,20 +151,24 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarGroupLabel>Admin</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navConfig.adminItems.map(item => (
-                  <SidebarMenuItem key={item.step}>
-                    <SidebarMenuButton
-                      tooltip={item.label}
-                      isActive={step === item.step}
-                      disabled={!item.enabled}
-                      onClick={() => handleNavClick(item)}
-                      className="gap-4"
-                    >
-                      <item.icon className="size-4 shrink-0" />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {navConfig.adminItems.map((item) => {
+                  const isActive = step === item.step
+                  return (
+                    <SidebarMenuItem key={item.step}>
+                      <SidebarMenuButton
+                        tooltip={item.label}
+                        isActive={isActive}
+                        disabled={!item.enabled}
+                        onClick={() => handleNavClick(item)}
+                        className="gap-4 transition-all duration-200 data-[active=true]:bg-transparent"
+                        style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
+                      >
+                        <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -161,20 +177,24 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
       <SidebarFooter>
         <SidebarMenu>
-          {navConfig.footerItems.map(item => (
-            <SidebarMenuItem key={item.step}>
-              <SidebarMenuButton
-                tooltip={item.label}
-                isActive={step === item.step}
-                disabled={!item.enabled}
-                onClick={() => handleNavClick(item)}
-                className="gap-4"
-              >
-                <item.icon className="size-4 shrink-0" />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {navConfig.footerItems.map((item) => {
+            const isActive = step === item.step
+            return (
+              <SidebarMenuItem key={item.step}>
+                <SidebarMenuButton
+                  tooltip={item.label}
+                  isActive={isActive}
+                  disabled={!item.enabled}
+                  onClick={() => handleNavClick(item)}
+                  className="gap-4 transition-all duration-200 data-[active=true]:bg-transparent"
+                  style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
+                >
+                  <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+                  <span>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
         </SidebarMenu>
 
         <SidebarUserButton
