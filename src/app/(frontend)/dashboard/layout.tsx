@@ -1,29 +1,26 @@
 import { Suspense } from 'react'
+
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
 import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
+import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <GlobalDialogs />
       <PwaInstallPrompt />
-      <div
-        className="h-dvh flex flex-col"
-        data-no-gutter-stable
-        style={{
-          '--sidebar-width': '148px',
-          '--sidebar-height': '68px',
-          'background': `radial-gradient(150% 150% at 50% 0%, var(--background), var(--background), color-mix(in oklab, var(--primary) 60%, transparent))`,
-        } as React.CSSProperties}
-      >
-        <div className="container grow min-h-0">
-          <div className="h-full">
-            <Suspense>
-              {children}
-            </Suspense>
-          </div>
-        </div>
-      </div>
+      <SidebarProvider defaultOpen>
+        <SidebarInset
+          className="min-h-dvh"
+          style={{
+            background: `radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in oklch, var(--primary) 35%, transparent), var(--background) 70%), var(--background)`,
+          }}
+        >
+          <Suspense>
+            {children}
+          </Suspense>
+        </SidebarInset>
+      </SidebarProvider>
     </>
   )
 }
