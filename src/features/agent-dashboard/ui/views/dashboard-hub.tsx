@@ -7,6 +7,7 @@ import { useQueryState } from 'nuqs'
 
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { AppSidebar } from '@/features/agent-dashboard/ui/components/app-sidebar'
+import { SettingsView } from '@/features/agent-settings/ui/views/settings-view'
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
 import { MeetingsView } from '@/features/meetings/ui/views'
 import { CreateNewProposalView, EditProposalView, PastProposalsView } from '@/features/proposal-flow/ui/views'
@@ -74,12 +75,7 @@ export function DashboardHub({ authState }: DashboardHubProps) {
             )}
           </AnimatePresence>
           {step === 'settings' && authState.status === 'authenticated' && (
-            <div key="settings" className="h-full overflow-y-auto">
-              <EmptyState
-                title="Settings"
-                description="Agent profile & settings coming soon."
-              />
-            </div>
+            <SettingsView key="settings" />
           )}
           {(step === 'dashboard' || step === 'intake' || step === 'team' || step === 'analytics') && (
             <EmptyState
