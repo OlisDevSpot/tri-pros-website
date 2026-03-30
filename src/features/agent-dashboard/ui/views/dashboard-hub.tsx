@@ -5,6 +5,7 @@ import { useQueryState } from 'nuqs'
 
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { MobileBottomNav } from '@/features/agent-dashboard/ui/components/mobile-bottom-nav'
+import { StepTransition } from '@/features/agent-dashboard/ui/components/step-transition'
 import { SettingsView } from '@/features/agent-settings/ui/views/settings-view'
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
 import { MeetingsView } from '@/features/meetings/ui/views'
@@ -19,6 +20,39 @@ interface DashboardHubProps {
   authState:
     | { status: 'unauthenticated' }
     | { status: 'authenticated' }
+}
+
+function StepContent({ step, editProjectId }: { step: string, editProjectId: string | null }) {
+  switch (step) {
+    case 'customer-pipelines':
+      return <CustomerPipelineView />
+    case 'meetings':
+      return <MeetingsView />
+    case 'proposals':
+      return <PastProposalsView />
+    case 'create-proposal':
+      return <CreateNewProposalView />
+    case 'edit-proposal':
+      return <EditProposalView />
+    case 'showroom':
+      return <PortfolioProjectsView />
+    case 'create-project':
+      return <CreateProjectView />
+    case 'edit-project':
+      if (editProjectId) {
+        return <EditProjectView projectId={editProjectId} />
+      }
+      return <EmptyState title="No project selected" description="Select a project to edit." />
+    case 'settings':
+      return <SettingsView />
+    case 'dashboard':
+    case 'intake':
+    case 'team':
+    case 'analytics':
+      return <EmptyState title="Coming Soon" description="This section is under construction." />
+    default:
+      return null
+  }
 }
 
 export function DashboardHub({ authState }: DashboardHubProps) {
@@ -39,44 +73,16 @@ export function DashboardHub({ authState }: DashboardHubProps) {
     )
   }
 
+  const stepKey = step === 'edit-project' ? `edit-project-${editProjectId}` : step
+
   return (
     <div className="flex h-full flex-col">
       <main className="relative flex-1 overflow-hidden px-4 pb-20 pt-4 md:px-6 md:py-6 md:pb-6">
-        <AnimatePresence>
-          {step === 'customer-pipelines' && <CustomerPipelineView key="customer-pipelines" />}
+        <AnimatePresence mode="wait">
+          <StepTransition key={stepKey}>
+            <StepContent step={step} editProjectId={editProjectId} />
+          </StepTransition>
         </AnimatePresence>
-        <AnimatePresence>
-          {step === 'meetings' && <MeetingsView key="meetings" />}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'proposals' && <PastProposalsView key="proposals" />}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'create-proposal' && <CreateNewProposalView key="create-proposal" />}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'edit-proposal' && <EditProposalView key="edit-proposal" />}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'showroom' && <PortfolioProjectsView key="showroom" />}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'create-project' && <CreateProjectView key="create-project" />}
-        </AnimatePresence>
-        <AnimatePresence>
-          {step === 'edit-project' && editProjectId && (
-            <EditProjectView key={`edit-project-${editProjectId}`} projectId={editProjectId} />
-          )}
-        </AnimatePresence>
-        {step === 'settings' && (
-          <SettingsView key="settings" />
-        )}
-        {(step === 'dashboard' || step === 'intake' || step === 'team' || step === 'analytics') && (
-          <EmptyState
-            title="Coming Soon"
-            description="This section is under construction."
-          />
-        )}
       </main>
       <MobileBottomNav />
     </div>
