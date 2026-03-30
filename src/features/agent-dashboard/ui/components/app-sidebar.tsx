@@ -133,7 +133,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
                       isActive={isActive}
                       disabled={!item.enabled}
                       onClick={() => handleNavClick(item)}
-                      className="gap-4 transition-all duration-200 data-[active=true]:bg-transparent"
+                      data-nav-item
+                      className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
                       style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
                     >
                       <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
@@ -160,7 +161,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
                         isActive={isActive}
                         disabled={!item.enabled}
                         onClick={() => handleNavClick(item)}
-                        className="gap-4 transition-all duration-200 data-[active=true]:bg-transparent"
+                        data-nav-item
+                        className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
                         style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
                       >
                         <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
@@ -182,11 +184,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
             return (
               <SidebarMenuItem key={item.step}>
                 <SidebarMenuButton
+                  data-nav-item
                   tooltip={item.label}
                   isActive={isActive}
                   disabled={!item.enabled}
                   onClick={() => handleNavClick(item)}
-                  className="gap-4 transition-all duration-200 data-[active=true]:bg-transparent"
+                  className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
                   style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
                 >
                   <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />

@@ -322,3 +322,21 @@
     }
   }
 }
+
+/* ── Dashboard sidebar nav hover ───────────────────────────────── */
+/* Gradient hover that matches the active state design language    */
+/* but at lower intensity. Uses color-mix for light/dark compat.  */
+[data-nav-item]:not([data-active='true']):hover {
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklch, var(--primary) 8%, transparent),
+    color-mix(in oklch, var(--primary) 3%, transparent)
+  ) !important;
+  box-shadow: inset 0 1px 0 0 color-mix(in oklch, var(--primary) 6%, transparent);
+  outline: 1px solid color-mix(in oklch, var(--primary) 8%, transparent);
+  outline-offset: -1px;
+}
+
+[data-nav-item]:not([data-active='true']):hover svg {
+  color: color-mix(in oklch, var(--primary) 60%, var(--sidebar-foreground));
+}
