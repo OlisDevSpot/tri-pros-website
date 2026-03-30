@@ -30,6 +30,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from '@/shared/components/ui/sidebar'
+import { useAbility } from '@/shared/permissions/hooks'
 
 interface AppSidebarProps {
   user: BetterAuthUser
@@ -38,9 +39,10 @@ interface AppSidebarProps {
 export function AppSidebar({ user }: AppSidebarProps) {
   const [step, setStep] = useQueryState('step', dashboardStepParser)
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
+  const ability = useAbility()
   const isCollapsed = state === 'collapsed'
 
-  const navConfig = useMemo(() => getSidebarNav(user.role), [user.role])
+  const navConfig = useMemo(() => getSidebarNav(ability), [ability])
 
   function handleNavClick(item: SidebarNavItem) {
     if (!item.enabled) {

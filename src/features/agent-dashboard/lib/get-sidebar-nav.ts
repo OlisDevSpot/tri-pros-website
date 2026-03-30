@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 
 import type { DashboardStep } from '@/features/agent-dashboard/types'
-import type { UserRole } from '@/shared/types/enums'
+import type { AppAbility } from '@/shared/permissions/types'
 
 import {
   BarChart3Icon,
@@ -28,16 +28,16 @@ export interface SidebarNavConfig {
   footerItems: readonly SidebarNavItem[]
 }
 
-export function getSidebarNav(userRole: UserRole): SidebarNavConfig {
+export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
   const baseItems: SidebarNavItem[] = [
     { step: 'dashboard', icon: LayoutDashboardIcon, label: 'Dashboard', enabled: false },
-    { step: 'customer-pipelines', icon: GitBranchIcon, label: 'Pipelines', enabled: true },
-    { step: 'meetings', icon: CalendarIcon, label: 'Meetings', enabled: true },
-    { step: 'proposals', icon: FileTextIcon, label: 'Proposals', enabled: true },
-    { step: 'showroom', icon: ImageIcon, label: 'Showroom', enabled: true },
+    { step: 'customer-pipelines', icon: GitBranchIcon, label: 'Pipelines', enabled: ability.can('read', 'Customer') },
+    { step: 'meetings', icon: CalendarIcon, label: 'Meetings', enabled: ability.can('read', 'Meeting') },
+    { step: 'proposals', icon: FileTextIcon, label: 'Proposals', enabled: ability.can('read', 'Proposal') },
+    { step: 'showroom', icon: ImageIcon, label: 'Showroom', enabled: ability.can('read', 'Project') },
   ]
 
-  const adminItems: SidebarNavItem[] = userRole === 'super-admin'
+  const adminItems: SidebarNavItem[] = ability.can('manage', 'all')
     ? [
         { step: 'intake', icon: ClipboardListIcon, label: 'Intake Form', enabled: false },
         { step: 'team', icon: UsersIcon, label: 'Team', enabled: false },
