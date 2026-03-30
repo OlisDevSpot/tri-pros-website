@@ -178,20 +178,17 @@ export function CustomerPipelineView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-2 shrink-0 flex-wrap">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsActionCenterOpen(true)}
-            >
-              <ZapIcon size={16} />
-            </Button>
-            {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-          </div>
-          <DataViewTypeToggle value={layout} onChange={setLayout} />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsActionCenterOpen(true)}
+          >
+            <ZapIcon size={16} />
+          </Button>
+          {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
         </div>
       </div>
 
@@ -208,12 +205,17 @@ export function CustomerPipelineView() {
             )
           : layout === 'table'
             ? (
-                <div className="h-full overflow-y-auto">
-                  <CustomerPipelineTable
-                    data={pipelineQuery.data}
-                    onRowClick={item => handleViewProfile(item.id)}
-                    onViewProfile={handleViewProfile}
-                  />
+                <div className="h-full flex flex-col">
+                  <div className="flex justify-end mb-2 shrink-0">
+                    <DataViewTypeToggle value={layout} onChange={setLayout} />
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-y-auto">
+                    <CustomerPipelineTable
+                      data={pipelineQuery.data}
+                      onRowClick={item => handleViewProfile(item.id)}
+                      onViewProfile={handleViewProfile}
+                    />
+                  </div>
                 </div>
               )
             : (
@@ -228,6 +230,7 @@ export function CustomerPipelineView() {
                   columnFilter={pipeline === 'active'
                     ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
                     : { defaultVisible: [...config.stages] }}
+                  headerSlot={<DataViewTypeToggle value={layout} onChange={setLayout} />}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}

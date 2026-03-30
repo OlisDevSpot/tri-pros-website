@@ -27,6 +27,7 @@ interface Props<T extends KanbanItem = KanbanItem> {
   onBlockedTransition: (message: string) => void
   collapsedStages?: string[]
   columnFilter?: KanbanColumnFilterConfig
+  headerSlot?: React.ReactNode
   getItemHref: (item: T) => string
   showColumnValues?: boolean
   getItemValue?: (item: T) => number | null
@@ -42,6 +43,7 @@ export function KanbanBoard<T extends KanbanItem>({
   onBlockedTransition,
   collapsedStages = [],
   columnFilter,
+  headerSlot,
   getItemHref,
   showColumnValues,
   getItemValue,
@@ -157,16 +159,21 @@ export function KanbanBoard<T extends KanbanItem>({
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col h-full">
-        {columnFilter && (
-          <div className="flex justify-end mb-2 shrink-0">
-            <KanbanColumnFilter
-              stages={stageConfig}
-              visibleStages={visibleStages}
-              alwaysVisible={alwaysVisible}
-              onToggleStage={handleToggleStage}
-              onShowAll={handleShowAll}
-              onHideAll={handleHideAll}
-            />
+        {(columnFilter || headerSlot) && (
+          <div className="flex items-center justify-between mb-2 shrink-0">
+            <div className="flex items-center gap-2">
+              {headerSlot}
+            </div>
+            {columnFilter && (
+              <KanbanColumnFilter
+                stages={stageConfig}
+                visibleStages={visibleStages}
+                alwaysVisible={alwaysVisible}
+                onToggleStage={handleToggleStage}
+                onShowAll={handleShowAll}
+                onHideAll={handleHideAll}
+              />
+            )}
           </div>
         )}
         <div className="flex gap-3 overflow-x-auto pb-2 flex-1 min-h-0">
