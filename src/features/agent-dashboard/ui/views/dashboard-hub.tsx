@@ -46,10 +46,10 @@ export function DashboardHub({ authState }: DashboardHubProps) {
     <>
       <AppSidebar user={authState.user} />
       <div className="flex flex-1 flex-col">
-        <header className="flex h-14 items-center gap-2 px-4 md:hidden">
-          <SidebarTrigger />
-        </header>
-        <main className="relative flex-1 overflow-hidden px-4 pb-4 md:px-6 md:py-6">
+        <main className="relative flex-1 overflow-hidden px-4 pb-4 pt-4 md:px-6 md:py-6">
+          <div className="mb-4 md:hidden">
+            <SidebarTrigger />
+          </div>
           <AnimatePresence>
             {step === 'customer-pipelines' && <CustomerPipelineView key="customer-pipelines" />}
           </AnimatePresence>

@@ -3,6 +3,7 @@
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import type { BetterAuthUser } from '@/shared/auth/server'
 
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
@@ -12,6 +13,7 @@ import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
 import { signOut } from '@/shared/auth/client'
+import { Button } from '@/shared/components/ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +25,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarSeparator,
   useSidebar,
 } from '@/shared/components/ui/sidebar'
@@ -34,20 +35,24 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const [step, setStep] = useQueryState('step', dashboardStepParser)
-  const { state } = useSidebar()
+  const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
   const isCollapsed = state === 'collapsed'
 
   const navConfig = useMemo(() => getSidebarNav(user.role), [user.role])
 
   function handleNavClick(item: SidebarNavItem) {
-    if (item.enabled) {
-      setStep(item.step)
+    if (!item.enabled) {
+      return
+    }
+    setStep(item.step)
+    if (isMobile) {
+      setOpenMobile(false)
     }
   }
 
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
-      <SidebarHeader>
+      <SidebarHeader className="relative">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip="Home">
@@ -84,6 +89,15 @@ export function AppSidebar({ user }: AppSidebarProps) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <Button
+          variant="outline"
+          className="absolute -right-2.5 top-1/2 -translate-y-1/2 z-20 hidden size-5 rounded-full border bg-background p-0 shadow-sm md:flex items-center justify-center"
+          onClick={toggleSidebar}
+        >
+          {isCollapsed
+            ? <ChevronRightIcon className="size-3" />
+            : <ChevronLeftIcon className="size-3" />}
+        </Button>
       </SidebarHeader>
 
       <SidebarSeparator />
@@ -165,7 +179,6 @@ export function AppSidebar({ user }: AppSidebarProps) {
         />
       </SidebarFooter>
 
-      <SidebarRail />
     </Sidebar>
   )
 }
