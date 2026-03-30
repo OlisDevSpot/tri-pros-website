@@ -1,6 +1,6 @@
 'use client'
 
-import type { DashboardAuthState } from '@/shared/permissions/lib/protect-dashboard-page'
+import type { BetterAuthUser } from '@/shared/auth/server'
 
 import { AnimatePresence } from 'motion/react'
 import { useQueryState } from 'nuqs'
@@ -19,7 +19,9 @@ import { SidebarTrigger } from '@/shared/components/ui/sidebar'
 import { editProjectIdParser } from '@/shared/lib/url-parsers'
 
 interface DashboardHubProps {
-  authState: DashboardAuthState
+  authState:
+    | { status: 'unauthenticated' }
+    | { status: 'authenticated', user: BetterAuthUser }
 }
 
 export function DashboardHub({ authState }: DashboardHubProps) {
@@ -42,7 +44,7 @@ export function DashboardHub({ authState }: DashboardHubProps) {
 
   return (
     <>
-      <AppSidebar user={authState.session.user} />
+      <AppSidebar user={authState.user} />
       <div className="flex flex-1 flex-col">
         <header className="flex h-14 items-center gap-2 px-4 md:hidden">
           <SidebarTrigger />
