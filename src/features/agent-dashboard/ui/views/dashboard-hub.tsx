@@ -1,12 +1,10 @@
 'use client'
 
-import type { BetterAuthUser } from '@/shared/auth/server'
-
 import { AnimatePresence } from 'motion/react'
 import { useQueryState } from 'nuqs'
 
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
-import { AppSidebar } from '@/features/agent-dashboard/ui/components/app-sidebar'
+import { MobileBottomNav } from '@/features/agent-dashboard/ui/components/mobile-bottom-nav'
 import { SettingsView } from '@/features/agent-settings/ui/views/settings-view'
 import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
 import { MeetingsView } from '@/features/meetings/ui/views'
@@ -15,13 +13,12 @@ import { CreateProjectView, EditProjectView, PortfolioProjectsView } from '@/fea
 import { SignInGoogleButton } from '@/shared/components/buttons/auth/sign-in-google-button'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
-import { SidebarTrigger } from '@/shared/components/ui/sidebar'
 import { editProjectIdParser } from '@/shared/lib/url-parsers'
 
 interface DashboardHubProps {
   authState:
     | { status: 'unauthenticated' }
-    | { status: 'authenticated', user: BetterAuthUser }
+    | { status: 'authenticated' }
 }
 
 export function DashboardHub({ authState }: DashboardHubProps) {
@@ -43,50 +40,45 @@ export function DashboardHub({ authState }: DashboardHubProps) {
   }
 
   return (
-    <>
-      <AppSidebar user={authState.user} />
-      <div className="flex flex-1 flex-col">
-        <main className="relative flex-1 overflow-hidden px-4 pb-4 pt-4 md:px-6 md:py-6">
-          <div className="mb-4 md:hidden">
-            <SidebarTrigger />
-          </div>
-          <AnimatePresence>
-            {step === 'customer-pipelines' && <CustomerPipelineView key="customer-pipelines" />}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 'meetings' && <MeetingsView key="meetings" />}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 'proposals' && <PastProposalsView key="proposals" />}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 'create-proposal' && <CreateNewProposalView key="create-proposal" />}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 'edit-proposal' && <EditProposalView key="edit-proposal" />}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 'showroom' && <PortfolioProjectsView key="showroom" />}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 'create-project' && <CreateProjectView key="create-project" />}
-          </AnimatePresence>
-          <AnimatePresence>
-            {step === 'edit-project' && editProjectId && (
-              <EditProjectView key={`edit-project-${editProjectId}`} projectId={editProjectId} />
-            )}
-          </AnimatePresence>
-          {step === 'settings' && authState.status === 'authenticated' && (
-            <SettingsView key="settings" />
+    <div className="flex h-full flex-col">
+      <main className="relative flex-1 overflow-hidden px-4 pb-20 pt-4 md:px-6 md:py-6 md:pb-6">
+        <AnimatePresence>
+          {step === 'customer-pipelines' && <CustomerPipelineView key="customer-pipelines" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'meetings' && <MeetingsView key="meetings" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'proposals' && <PastProposalsView key="proposals" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'create-proposal' && <CreateNewProposalView key="create-proposal" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'edit-proposal' && <EditProposalView key="edit-proposal" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'showroom' && <PortfolioProjectsView key="showroom" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'create-project' && <CreateProjectView key="create-project" />}
+        </AnimatePresence>
+        <AnimatePresence>
+          {step === 'edit-project' && editProjectId && (
+            <EditProjectView key={`edit-project-${editProjectId}`} projectId={editProjectId} />
           )}
-          {(step === 'dashboard' || step === 'intake' || step === 'team' || step === 'analytics') && (
-            <EmptyState
-              title="Coming Soon"
-              description="This section is under construction."
-            />
-          )}
-        </main>
-      </div>
-    </>
+        </AnimatePresence>
+        {step === 'settings' && (
+          <SettingsView key="settings" />
+        )}
+        {(step === 'dashboard' || step === 'intake' || step === 'team' || step === 'analytics') && (
+          <EmptyState
+            title="Coming Soon"
+            description="This section is under construction."
+          />
+        )}
+      </main>
+      <MobileBottomNav />
+    </div>
   )
 }

@@ -5,17 +5,5 @@ export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   const authState = await protectDashboardPage()
-
-  if (authState.status === 'unauthenticated') {
-    return <DashboardHub authState={{ status: 'unauthenticated' }} />
-  }
-
-  return (
-    <DashboardHub
-      authState={{
-        status: 'authenticated',
-        user: authState.session.user,
-      }}
-    />
-  )
+  return <DashboardHub authState={{ status: authState.status }} />
 }
