@@ -76,8 +76,8 @@ export function DashboardHub({ authState }: DashboardHubProps) {
   const stepKey = step === 'edit-project' ? `edit-project-${editProjectId}` : step
 
   return (
-    <div className="flex h-full flex-col">
-      <main className="relative flex-1 overflow-hidden px-4 pb-20 pt-4 md:px-6 md:py-6 md:pb-6">
+    <div className="flex h-full min-w-0 flex-col">
+      <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden px-4 pb-20 pt-4 md:px-6 md:py-6 md:pb-6">
         <AnimatePresence mode="wait">
           <StepTransition key={stepKey}>
             <StepContent step={step} editProjectId={editProjectId} />

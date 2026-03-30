@@ -38,7 +38,7 @@ interface StepTransitionProps {
 export function StepTransition({ children }: StepTransitionProps) {
   return (
     <motion.div
-      className="h-full"
+      className="h-full min-w-0 overflow-hidden"
       variants={variants}
       initial="initial"
       animate="animate"
