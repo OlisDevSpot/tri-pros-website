@@ -1,0 +1,17 @@
+export const languageOptions = [
+  'English',
+  'Spanish',
+  'Mandarin',
+  'Cantonese',
+  'Tagalog',
+  'Vietnamese',
+  'Korean',
+  'Japanese',
+  'Armenian',
+  'Farsi',
+  'Arabic',
+  'Hindi',
+  'French',
+  'Portuguese',
+  'Russian',
+] as const
