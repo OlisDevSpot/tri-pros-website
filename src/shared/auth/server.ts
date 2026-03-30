@@ -63,6 +63,22 @@ export const auth = betterAuth({
         type: [...userRoles] as const,
         defaultValue: 'user',
       },
+      phone: {
+        type: 'string',
+        input: false,
+      },
+      birthdate: {
+        type: 'string',
+        input: false,
+      },
+      startDate: {
+        type: 'string',
+        input: false,
+      },
+      funFact: {
+        type: 'string',
+        input: false,
+      },
     },
   },
   session: {
