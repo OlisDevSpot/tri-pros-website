@@ -4,6 +4,7 @@ import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-
 import type { BetterAuthUser } from '@/shared/auth/server'
 
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useQueryState } from 'nuqs'
@@ -53,42 +54,50 @@ export function AppSidebar({ user }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" side="left" variant="sidebar">
       <SidebarHeader className="relative">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild tooltip="Home">
-              <Link href="/">
-                {isCollapsed
-                  ? (
-                      <Image
-                        src="/company/logo/logo-light.svg"
-                        alt="Tri Pros"
-                        width={24}
-                        height={24}
-                        className="dark:invert"
-                      />
-                    )
-                  : (
-                      <>
-                        <Image
-                          src="/company/logo/logo-light-right.svg"
-                          alt="Tri Pros Remodeling"
-                          width={140}
-                          height={40}
-                          className="dark:hidden"
-                        />
-                        <Image
-                          src="/company/logo/logo-dark-right.svg"
-                          alt="Tri Pros Remodeling"
-                          width={140}
-                          height={40}
-                          className="hidden dark:block"
-                        />
-                      </>
-                    )}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <motion.div
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        >
+          <Link
+            href="/"
+            className="flex h-12 items-center rounded-md px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+          >
+            {isCollapsed
+              ? (
+                  <motion.div
+                    whileHover={{ rotate: [0, -6, 6, -3, 0] }}
+                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+                  >
+                    <Image
+                      src="/company/logo/logo-light.svg"
+                      alt="Tri Pros"
+                      width={24}
+                      height={24}
+                      className="dark:invert"
+                    />
+                  </motion.div>
+                )
+              : (
+                  <>
+                    <Image
+                      src="/company/logo/logo-light-right.svg"
+                      alt="Tri Pros Remodeling"
+                      width={140}
+                      height={40}
+                      className="dark:hidden"
+                    />
+                    <Image
+                      src="/company/logo/logo-dark-right.svg"
+                      alt="Tri Pros Remodeling"
+                      width={140}
+                      height={40}
+                      className="hidden dark:block"
+                    />
+                  </>
+                )}
+          </Link>
+        </motion.div>
         <Button
           variant="outline"
           className="absolute -right-2.5 top-1/2 -translate-y-1/2 z-20 hidden size-5 rounded-full border bg-background p-0 shadow-sm md:flex items-center justify-center"
