@@ -1,4 +1,4 @@
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { Suspense } from 'react'
 
 import { AppSidebar } from '@/features/agent-dashboard/ui/components/app-sidebar'
@@ -8,14 +8,17 @@ import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const reqHeaders = await headers()
+  const [reqHeaders, cookieStore] = await Promise.all([headers(), cookies()])
   const session = await auth.api.getSession({ headers: reqHeaders })
+
+  const sidebarCookie = cookieStore.get('sidebar_state')
+  const defaultOpen = sidebarCookie ? sidebarCookie.value === 'true' : true
 
   return (
     <>
       <GlobalDialogs />
       <PwaInstallPrompt />
-      <SidebarProvider defaultOpen>
+      <SidebarProvider defaultOpen={defaultOpen}>
         {session && <AppSidebar user={session.user} />}
         <SidebarInset
           className="min-h-dvh"
