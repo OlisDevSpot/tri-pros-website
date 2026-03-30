@@ -5,8 +5,8 @@ import type { BetterAuthUser } from '@/shared/auth/server'
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useMemo } from 'react'
 import { useQueryState } from 'nuqs'
+import { useMemo } from 'react'
 
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
