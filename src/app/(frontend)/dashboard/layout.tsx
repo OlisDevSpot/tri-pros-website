@@ -21,7 +21,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <SidebarProvider defaultOpen={defaultOpen}>
         {session && <AppSidebar user={session.user} />}
         <SidebarInset
-          className="min-h-dvh min-w-0 overflow-x-hidden"
+          className="h-dvh min-w-0 overflow-hidden"
           style={{
             background: `radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in oklch, var(--primary) 35%, transparent), var(--background) 70%), var(--background)`,
           }}
