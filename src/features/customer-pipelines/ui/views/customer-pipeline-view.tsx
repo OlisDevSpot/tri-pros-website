@@ -178,9 +178,9 @@ export function CustomerPipelineView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
-      <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
+      <div className="flex flex-col gap-4">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
-        <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
