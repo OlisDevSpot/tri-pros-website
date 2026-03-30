@@ -161,9 +161,6 @@ export function KanbanBoard<T extends KanbanItem>({
       <div className="flex flex-col h-full">
         {(columnFilter || headerSlot) && (
           <div className="flex items-center justify-between mb-2 shrink-0">
-            <div className="flex items-center gap-2">
-              {headerSlot}
-            </div>
             {columnFilter && (
               <KanbanColumnFilter
                 stages={stageConfig}
@@ -174,6 +171,9 @@ export function KanbanBoard<T extends KanbanItem>({
                 onHideAll={handleHideAll}
               />
             )}
+            <div className="flex items-center gap-2 ml-auto">
+              {headerSlot}
+            </div>
           </div>
         )}
         <div className="flex gap-3 overflow-x-auto pb-2 flex-1 min-h-0">

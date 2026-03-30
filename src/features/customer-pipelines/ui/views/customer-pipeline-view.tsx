@@ -178,18 +178,20 @@ export function CustomerPipelineView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
-      <div className="flex items-center justify-between gap-2 shrink-0 flex-wrap">
-        <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsActionCenterOpen(true)}
-          >
-            <ZapIcon size={16} />
-          </Button>
-          {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+      <div className="shrink-0 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsActionCenterOpen(true)}
+            >
+              <ZapIcon size={16} />
+            </Button>
+            {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+          </div>
         </div>
+        <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
       </div>
 
       <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
