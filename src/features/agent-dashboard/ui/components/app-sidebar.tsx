@@ -100,7 +100,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         </motion.div>
         <Button
           variant="outline"
-          className="absolute -right-2.5 top-1/2 -translate-y-1/2 z-20 hidden size-5 rounded-full border bg-background p-0 shadow-sm md:flex items-center justify-center"
+          className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 hidden size-5 rounded-full border bg-background p-0 shadow-sm md:flex items-center justify-center"
           onClick={toggleSidebar}
         >
           {isCollapsed
