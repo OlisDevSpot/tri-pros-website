@@ -1,4 +1,5 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import { format } from 'date-fns'
 import { ChevronDownIcon, TrashIcon } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -20,6 +21,7 @@ export function IncentiveCollapsibleHeader({
   const typeLabel = incentive.type === 'discount' ? 'Discount' : 'Exclusive Offer'
   const hasAmount = incentive.type === 'discount' && incentive.amount > 0
   const hasOffer = incentive.type === 'exclusive-offer' && incentive.offer?.trim()
+  const hasExpiry = incentive.expiresAt != null
   const hasNotes = incentive.notes?.trim()
 
   return (
@@ -38,6 +40,13 @@ export function IncentiveCollapsibleHeader({
           {hasOffer && (
             <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
               {incentive.offer}
+            </Badge>
+          )}
+          {hasExpiry && (
+            <Badge variant="secondary" className="bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400">
+              Expires
+              {' '}
+              {format(new Date(incentive.expiresAt!), 'MMM d')}
             </Badge>
           )}
         </div>
