@@ -1,3 +1,5 @@
+'use client'
+
 import type { OverrideProposalValues } from '../../types'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
