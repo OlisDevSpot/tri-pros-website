@@ -1,9 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useQueryState } from 'nuqs'
+import { useRouter } from 'next/navigation'
 
-import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { AdminSection } from '@/features/agent-settings/ui/components/admin-section'
 import { AppSettingsSection } from '@/features/agent-settings/ui/components/app-settings-section'
 import { CompanyInfoSection } from '@/features/agent-settings/ui/components/company-info-section'
@@ -12,11 +11,12 @@ import { HeadshotUpload } from '@/features/agent-settings/ui/components/headshot
 import { IdentityContactSection } from '@/features/agent-settings/ui/components/identity-contact-section'
 import { ProfileHeaderCard } from '@/features/agent-settings/ui/components/profile-header-card'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 
 export function SettingsView() {
   const trpc = useTRPC()
-  const [, setStep] = useQueryState('step', dashboardStepParser)
+  const router = useRouter()
   const { data: profile, isLoading } = useQuery(trpc.agentSettingsRouter.getProfile.queryOptions())
 
   if (isLoading) {
@@ -29,8 +29,8 @@ export function SettingsView() {
 
   const isSuperAdmin = profile.role === 'super-admin'
 
-  function handleNavigate(step: string) {
-    void setStep(step as Parameters<typeof setStep>[0])
+  function handleNavigate(path: string) {
+    router.push(path)
   }
 
   return (
