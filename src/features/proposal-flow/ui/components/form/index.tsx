@@ -203,10 +203,10 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
               <button
                 type="button"
                 disabled={isLoading}
-                className="hidden items-center gap-1.5 px-2 lg:inline-flex"
+                className="hidden items-center gap-1.5 px-2 leading-none lg:inline-flex"
                 onClick={handleSaveOnly}
               >
-                <SaveIcon className="size-3.5" />
+                <SaveIcon className="size-3.5 shrink-0" />
                 <span className="text-sm font-medium">Save</span>
               </button>
               <PopoverTrigger asChild>
@@ -224,7 +224,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                 <button
                   type="button"
                   disabled={isLoading}
-                  className="hidden border-l border-current/10 px-1 lg:inline-flex"
+                  className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
                 >
                   <ChevronDownIcon className="size-3" />
                 </button>
