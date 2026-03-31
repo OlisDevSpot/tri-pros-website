@@ -2,7 +2,7 @@
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
-import { SettingsIcon } from 'lucide-react'
+import { ChevronDownIcon, EyeIcon, SaveIcon, SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useEffect, useState } from 'react'
@@ -30,11 +30,16 @@ const TAB_LABELS: Record<FormTab, string> = {
   sow: 'Scope of Work',
 }
 
+const TOOLBAR_BUTTON_BASE = 'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]'
+const TOOLBAR_BUTTON_INACTIVE = 'text-muted-foreground hover:text-foreground'
+const TOOLBAR_BUTTON_ACTIVE = 'bg-background shadow-sm dark:border-input dark:bg-input/30'
+
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
+  onSave?: (data: ProposalFormSchema) => void
   isLoading: boolean
   initialValues?: OverrideProposalValues
-  hideSubmitButton?: boolean
+  viewHref?: string
 }
 
 function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialValues'] = {}): ProposalFormSchema {
@@ -50,15 +55,15 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
   }
 }
 
-export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitButton }: Props) {
+export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewHref }: Props) {
   const form = useFormContext<ProposalFormSchema>()
-  const [proposalId] = useQueryState('proposalId')
   const [nuqsTab, setNuqsTab] = useQueryState(
     'formTab',
     parseAsStringLiteral(FORM_TABS).withDefault('general'),
   )
   const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false)
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
   const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
 
@@ -87,18 +92,32 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
     toast.error('Form is invalid (check console)')
   }
 
+  function handleSaveAndPreview() {
+    setSaveOpen(false)
+    form.handleSubmit(onSubmit, onInvalid)()
+  }
+
+  function handleSaveOnly() {
+    setSaveOpen(false)
+    if (onSave) {
+      form.handleSubmit(onSave, onInvalid)()
+    }
+    else {
+      form.handleSubmit(onSubmit, onInvalid)()
+    }
+  }
+
   return (
     <form
       id="proposal-form"
       onSubmit={form.handleSubmit(onSubmit, onInvalid)}
       className="flex h-full w-full flex-col gap-3"
     >
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="w-full shrink-0"
-      >
-        <div className="flex items-center justify-center gap-2">
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
+        >
           <TabsList>
             {FORM_TABS.map(tab => (
               <TabsTrigger key={tab} value={tab}>
@@ -106,58 +125,112 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="inline-flex size-9 items-center justify-center rounded-lg bg-muted p-0.75">
-            <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]',
-                    settingsOpen
-                      ? 'bg-background shadow-sm dark:border-input dark:bg-input/30'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  <SettingsIcon className="size-3.5" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72" align="end">
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="pricing-mode" className="text-sm font-normal">
-                        Breakdown Pricing
-                      </Label>
-                      <Switch
-                        id="pricing-mode"
-                        checked={pricingMode === 'breakdown'}
-                        onCheckedChange={checked =>
-                          form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
-                      />
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
-                        Show Pricing Breakdown
-                      </Label>
-                      <Switch
-                        id="show-pricing-breakdown"
-                        checked={showPricingBreakdown}
-                        onCheckedChange={checked =>
-                          form.setValue('funding.meta.showPricingBreakdown', checked)}
-                      />
-                    </div>
+        </Tabs>
+
+        <div className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-muted p-0.75">
+          {/* Settings */}
+          <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  TOOLBAR_BUTTON_BASE,
+                  'aspect-square',
+                  settingsOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+                )}
+              >
+                <SettingsIcon className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72" align="end">
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="pricing-mode" className="text-sm font-normal">
+                      Breakdown Pricing
+                    </Label>
+                    <Switch
+                      id="pricing-mode"
+                      checked={pricingMode === 'breakdown'}
+                      onCheckedChange={checked =>
+                        form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
+                    />
                   </div>
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+                <Separator />
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
+                      Show Pricing Breakdown
+                    </Label>
+                    <Switch
+                      id="show-pricing-breakdown"
+                      checked={showPricingBreakdown}
+                      onCheckedChange={checked =>
+                        form.setValue('funding.meta.showPricingBreakdown', checked)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* View */}
+          {viewHref && (
+            <a
+              href={viewHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
+            >
+              <EyeIcon className="size-3.5" />
+            </a>
+          )}
+
+          {/* Save */}
+          <Popover open={saveOpen} onOpenChange={setSaveOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                disabled={isLoading}
+                className={cn(
+                  TOOLBAR_BUTTON_BASE,
+                  'gap-0.5 px-1.5',
+                  saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+                  isLoading && 'pointer-events-none opacity-50',
+                )}
+              >
+                <SaveIcon className="size-3.5" />
+                <ChevronDownIcon className="size-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-1" align="end">
+              <div className="flex flex-col">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start"
+                  onClick={handleSaveOnly}
+                >
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start"
+                  onClick={handleSaveAndPreview}
+                >
+                  Save & Preview
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
-      </Tabs>
+      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         <Card className="w-full p-3 lg:p-5">
@@ -181,13 +254,6 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
         {form.formState.errors.root && (
           <div className="mt-3 text-red-500">
             {JSON.stringify(form.formState.errors, null, 2)}
-          </div>
-        )}
-        {!hideSubmitButton && (
-          <div className="mt-3 flex items-center gap-2">
-            <Button type="submit" disabled={isLoading}>
-              {proposalId ? 'Update & Preview' : 'Save & Preview'}
-            </Button>
           </div>
         )}
       </div>

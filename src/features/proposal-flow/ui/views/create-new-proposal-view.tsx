@@ -17,7 +17,7 @@ import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { Button } from '@/shared/components/ui/button'
+
 import { Form } from '@/shared/components/ui/form'
 import { useTRPC } from '@/trpc/helpers'
 import { getProposalAggregates } from '../../lib/get-proposal-aggregates'
@@ -140,29 +140,16 @@ export function CreateNewProposalView() {
       transition={{ duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 min-h-0"
     >
-      <div className="shrink-0 flex flex-col sm:flex-row sm:items-start gap-3">
-        {customer && (
-          <div className="flex-1 min-w-0">
-            <CustomerInfoHeader customer={customer} />
-          </div>
-        )}
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
-          <Button
-            type="submit"
-            form="proposal-form"
-            disabled={meetingQuery.isLoading || createProposal.isPending}
-            className="whitespace-nowrap"
-          >
-            Save & Preview
-          </Button>
+      {customer && (
+        <div className="shrink-0">
+          <CustomerInfoHeader customer={customer} />
         </div>
-      </div>
+      )}
       <div className="flex-1 min-h-0 w-full overflow-auto md:pr-4">
         <Form {...form}>
           <ProposalForm
             isLoading={meetingQuery.isLoading || createProposal.isPending}
             onSubmit={onSubmit}
-            hideSubmitButton
           />
         </Form>
       </div>
