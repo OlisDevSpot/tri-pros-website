@@ -48,7 +48,7 @@ src/
     hooks/           # Shared React hooks
     lib/             # Utilities (formatters, loan-calculations, etc.)
     permissions/     # Role-based access control helpers
-    services/        # External service clients (ai, docusign, monday, notion, pipedrive, r2, resend, upstash)
+    services/        # External service clients (ai, docusign, notion, r2, resend, upstash) + domain services. monday/ and pipedrive/ are LEGACY — do not use.
     types/           # Shared TypeScript types
   trpc/              # tRPC setup and routers
     init.ts          # Procedure types: baseProcedure, agentProcedure (auth-required)
@@ -78,7 +78,7 @@ Validated at startup with Zod — the app will exit with a clear error if requir
 - `src/shared/config/server-env.ts` — All server-side env vars (DATABASE_URL, BETTER_AUTH_SECRET, third-party API keys, etc.)
 - `src/shared/config/client-env.ts` — Only `NEXT_PUBLIC_*` vars
 
-Env file: `.env` at project root. See `server-env.ts` for the full list of required variables (Resend, Monday, Pipedrive, DocuSign, Notion, Cloudflare R2, Upstash QStash).
+Env file: `.env` at project root. See `server-env.ts` for the full list of required variables (Resend, DocuSign, Notion, Cloudflare R2, Upstash QStash).
 
 ### Key Integrations
 
@@ -86,7 +86,9 @@ Env file: `.env` at project root. See `server-env.ts` for the full list of requi
 - **Cloudflare R2** — File storage (S3-compatible)
 - **Upstash QStash** — Background job queue (handlers at `/api/qstash-jobs`)
 - **Resend + React Email** — Transactional email
-- **Notion** — Blog content source
+- **Notion** — Trades/scopes/SOW data source + temporary CRM (contacts). Contacts will migrate to in-house CRM.
+- ~~**Monday.com**~~ — LEGACY, do not use
+- ~~**Pipedrive**~~ — LEGACY, do not use
 - **Google Maps** — via `@vis.gl/react-google-maps`
 - **AI (Vercel AI SDK + OpenAI)** — Project summary generation
 

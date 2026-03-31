@@ -21,6 +21,11 @@ This map traces the full lifecycle of a Tri Pros customer — from first exposur
 
 **Key outcome needed**: Appointment booked with at least one decision-maker (ideally both).
 
+**Framework touchpoints**:
+- **Lead magnets** (`sales/lead-magnets.md`): Energy audit, contractor checklist, or savings calculator as top-of-funnel conversion tools
+- **Core Four channels**: Telemarketing (cold outreach), Meta Ads (paid ads), social media (content marketing), past customers (warm outreach / referrals)
+- **M.A.G.I.C. naming**: Program names and ad creative should use the Magnetic reason + Avatar + Goal + Interval + Container formula
+
 **Gaps / risks**:
 - Homeowner hangs up or ignores before the offer is made
 - Only one decision-maker agrees to the meeting
@@ -42,6 +47,10 @@ This map traces the full lifecycle of a Tri Pros customer — from first exposur
 - Any online presence they encounter (website, Google reviews, social profiles)
 
 **Key outcome needed**: Both decision-makers present at the meeting; homeowner arrives with an open mind.
+
+**Framework touchpoints**:
+- **Conviction prep**: Rep reviews CRM notes, prepares mentally, runs the conviction check ("If they don't hire us, what happens to them?")
+- **Lead magnet follow-up**: If the customer came through a lead magnet, reference their audit/calculator results in the meeting
 
 **Gaps / risks**:
 - No-show or last-minute cancellation
@@ -66,6 +75,14 @@ This map traces the full lifecycle of a Tri Pros customer — from first exposur
 - Portfolio / past results
 
 **Key outcome needed**: Signed contract, or a clear commitment to review the proposal with a specific follow-up time.
+
+**Framework touchpoints**:
+- **CLOSER sequence**: Clarify → Label → Circle of Pain → Due Diligence → Sell the Vacation → Pricing → Close → Reinforce
+- **Circle of Pain**: Explore past contractor failures before presenting credentials (amplifies due diligence story)
+- **Label**: Name the customer's situation back to them — builds trust faster than any credential
+- **Sell the Vacation**: Outcome language throughout scope presentation — never technical specs
+- **Value Equation**: Score every aspect of the presentation against Dream Outcome, Perceived Likelihood, Time Delay, Effort & Sacrifice
+- **A.R.A.C.**: Diagnose objection category (external/other-person/internal) before responding
 
 **Gaps / risks**:
 - Only one decision-maker present → "I need to talk to my spouse"
@@ -93,6 +110,11 @@ This map traces the full lifecycle of a Tri Pros customer — from first exposur
 
 **Key outcome needed**: Signed contract.
 
+**Framework touchpoints**:
+- **Value Equation scoring**: Does the proposal hit all four variables? (Dream Outcome vision, Perceived Likelihood proof, Timeline, Effort reduction)
+- **Grand Slam Offer**: Proposal structured as named, stacked components — not a line-item list
+- **Follow-up cadence**: Trigger-based follow-up on proposal views — highest-leverage moment
+
 **Gaps / risks**:
 - Proposal goes cold because no follow-up happens
 - Homeowner gets a competing quote and compares on price alone
@@ -119,6 +141,11 @@ This map traces the full lifecycle of a Tri Pros customer — from first exposur
 
 **Key outcome needed**: Customer feels confident in their decision and knows what to expect.
 
+**Framework touchpoints**:
+- **CLOSER R (Reinforce)**: Post-signing reinforcement sequence — 3-7 touchpoints in the first 48 hours
+- **Conviction transfer continues**: Every touchpoint reinforces "you made the right decision"
+- **Full protocol**: `sales/post-signing-sequence.md`
+
 **Gaps / risks**:
 - Buyer's remorse if there is no prompt, warm confirmation
 - Confusion about next steps
@@ -141,6 +168,10 @@ This map traces the full lifecycle of a Tri Pros customer — from first exposur
 - Agent or project manager as single point of contact
 
 **Key outcome needed**: Project completed on schedule, on scope, with no surprises.
+
+**Framework touchpoints**:
+- **Ongoing reinforcement**: Continue proactive touchpoints throughout production (the Reinforce principle doesn't end at signing)
+- **Value Equation — Time Delay**: Keep the customer aware of progress and timeline milestones
 
 **Gaps / risks**:
 - Communication gaps cause anxiety
@@ -170,16 +201,32 @@ This map traces the full lifecycle of a Tri Pros customer — from first exposur
 - 1+ referral
 - Cross-sell opportunity identified for a second project
 
+**Framework touchpoints**:
+- **Lead Getters — Customers**: Satisfied customers are the first of Hormozi's four Lead Getters. Systematize the referral ask — don't leave it to chance.
+- **Story bank collection**: Every completed project is a potential story for `sales/story-bank.md` — capture the 4-beat story (Situation, Concern, Decision, Outcome) before memory fades
+
 ---
 
 ## Journey Stage Summary
 
-| Stage | Emotional State | Key Risk | Key Action |
-|---|---|---|---|
-| Awareness | Skeptical | Hang-up before offer | Clear value hook in first 30 seconds |
-| Consideration | Curious / Anxious | No-show, one DM present | Confirm both decision-makers |
-| Evaluation | Hopeful → Anxious at price | Sticker shock, spouse objection | Nail discovery; present value before price |
-| Decision | Uncertain | Proposal goes cold | Trigger-based follow-up on view |
-| Commitment | Relieved → Buyer's remorse risk | Cancellation in first 48h | Prompt, warm confirmation |
-| Production | Anxious mid-project | Communication gaps | Proactive updates |
-| Completion | Proud and satisfied | No referral ask | Always ask before leaving |
+| Stage | Emotional State | Key Risk | Key Action | Framework |
+|---|---|---|---|---|
+| Awareness | Skeptical | Hang-up before offer | Clear value hook in first 30 seconds | Lead magnets, Core Four channels |
+| Consideration | Curious / Anxious | No-show, one DM present | Confirm both decision-makers | Conviction prep |
+| Evaluation | Hopeful → Anxious at price | Sticker shock, spouse objection | CLOSER sequence: Clarify → Label → Circle of Pain → Due Diligence → Sell the Vacation → Close | CLOSER, A.R.A.C., Value Equation |
+| Decision | Uncertain | Proposal goes cold | Trigger-based follow-up on view | Value Equation scoring, Grand Slam Offer |
+| Commitment | Relieved → Buyer's remorse risk | Cancellation in first 48h | Post-signing reinforcement (3-7 touchpoints) | CLOSER R (Reinforce) |
+| Production | Anxious mid-project | Communication gaps | Proactive updates | Ongoing reinforcement |
+| Completion | Proud and satisfied | No referral ask | Story collection + referral ask | Lead Getters (Customers) |
+
+---
+
+## Cross-References
+
+- `sales/sales-frameworks.md` — All frameworks referenced above
+- `sales/in-home-meeting-playbook.md` — Stage 3 (Evaluation) detailed playbook
+- `sales/follow-up-cadence.md` — Stage 4 (Decision) follow-up cadence
+- `sales/post-signing-sequence.md` — Stage 5 (Commitment) reinforcement protocol
+- `sales/lead-magnets.md` — Stage 1 (Awareness) lead magnet strategy
+- `sales/story-bank.md` — Stage 7 (Completion) story collection
+- `customer/decision-psychology.md` — Emotional drivers at each stage

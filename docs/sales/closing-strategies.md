@@ -6,6 +6,34 @@ A close is not a trick or a manipulation. It's the natural conclusion of a well-
 
 The goal is **same-day signature** whenever possible. Every day that passes after the meeting, momentum and urgency decay.
 
+**Framework reference**: See `sales/sales-frameworks.md` for the CLOSER framework, Value Equation, and Conviction Framework that power the close.
+
+---
+
+## Before You Close: The Conviction Check
+
+Before any close attempt, the rep must pass the conviction test:
+
+> "If this customer doesn't hire us, what happens to them?"
+
+If the answer is "they'll hire an unlicensed contractor," "they'll keep wasting $300/month on energy," or "their roof will fail in the next storm" — then closing is not pressure. It's protection. You are doing the customer a favor by asking for the business.
+
+**If you don't believe that, do not attempt to close.** Fix the belief problem first. Review the customer's situation, revisit the discovery, and reconnect with why this solution matters for this specific person.
+
+Tonality is 90% of selling. Words are 10%. If you don't believe it, they'll hear it.
+
+See `sales/sales-frameworks.md` — Conviction Framework.
+
+---
+
+## Before You Close: Sell the Vacation Recap
+
+Before transitioning to the close, briefly recap the outcome — not the scope, not the price, just what their life looks like after:
+
+> "So just to recap — once this is done, you're looking at [primary outcome: comfort, protection, savings, beauty]. No more [current pain point]. And it's all backed by [warranty/guarantee]."
+
+This primes the emotional brain right before you ask for the logical decision. See `sales/sales-frameworks.md` — CLOSER S step.
+
 ---
 
 ## Close Type 1: The Assumptive Close
@@ -21,7 +49,7 @@ Then open DocuSign or the proposal system and begin.
 
 **Why it works**: Many customers don't close themselves — they need permission to say yes. The assumptive close gives them that permission without putting them in a confrontational position.
 
-**If they push back**: "Oh — actually, I'm not quite ready yet." This is not a rejection. This is the real objection surfacing. Now you can address it. See `sales/objection-handlers.md`.
+**If they push back**: "Oh — actually, I'm not quite ready yet." This is not a rejection. This is the real objection surfacing. Diagnose the category (external, other-person, internal) and apply A.R.A.C. See `sales/objection-handlers.md`.
 
 ---
 
@@ -49,7 +77,7 @@ If you have multiple legitimate reasons to move now, stack them:
 
 **Use when**: The customer is hesitant and needs social proof to feel safe moving forward.
 
-**How it works**: You tell a brief, specific story about a past customer in a similar situation who made the same decision and had a good outcome.
+**How it works**: You tell a brief, specific story about a past customer in a similar situation who made the same decision and had a good outcome. This is the A.R.A.C. **Associate** step applied as a close technique.
 
 **Script**:
 > "I worked with a family in [nearby city] last [month/quarter] — same situation as you, honestly. They were on the fence about the investment. We did the [scope], and six months later they sent me a message saying their energy bill had dropped by $120 a month. At that rate, the project essentially pays for itself in a few years — and the comfort difference was immediate.
@@ -57,8 +85,8 @@ If you have multiple legitimate reasons to move now, stack them:
 > I think you'd have the same experience."
 
 **Rules**:
-- Use real customer stories (or composite stories that represent real outcomes)
-- Keep it short — 3–4 sentences
+- Use real customer stories from `sales/story-bank.md`
+- Keep it short — 3-4 sentences max
 - Match the story to the customer's specific situation and concern
 - Be specific: dollar amounts, timeframes, and outcomes land better than generalities
 
@@ -68,7 +96,7 @@ If you have multiple legitimate reasons to move now, stack them:
 
 **Use when**: The meeting has been long or covered a lot of ground, and the customer may be feeling decision fatigue.
 
-**How it works**: You briefly summarize what they told you they need and what you're offering, then ask for a decision.
+**How it works**: You briefly summarize what they told you they need and what you're offering, then ask for a decision. This naturally incorporates the "Sell the Vacation" recap.
 
 **Script**:
 > "Let me just summarize what we've talked about so we're on the same page.
@@ -78,6 +106,20 @@ If you have multiple legitimate reasons to move now, stack them:
 > What we're offering is [scope], backed by a [warranty] warranty, installed by a licensed and insured team. The investment is $[total] — or $[monthly]/month. And if we move forward today, [incentive].
 >
 > Does this feel like the right direction for you?"
+
+---
+
+## When the Close Doesn't Land
+
+If the customer says no or stalls, do not repeat the same close louder. Instead:
+
+1. **Diagnose the objection category**: External blame? Other-person dependency? Internal conflict?
+2. **Apply A.R.A.C.**: Acknowledge → Reframe → Associate → Close
+3. **If still no**: Get a specific next step before you leave
+
+Every "no" is information. It tells you what hasn't been addressed yet. The close fails when the customer doesn't yet believe (Conviction transfer incomplete), doesn't see the value (Value Equation denominator too high), or hasn't resolved a specific concern (undiagnosed objection).
+
+For scripted objection responses, see `sales/objection-handlers.md`.
 
 ---
 
@@ -110,15 +152,17 @@ If you have multiple legitimate reasons to move now, stack them:
 
 ---
 
-## Post-Close Confirmation
+## Post-Close: Begin the Reinforcement Sequence
 
 After any signature (in-person or remote):
 
-1. Confirm DocuSign completed → both parties receive copies
-2. Update Pipedrive deal to "Won"
-3. Update Monday.com to project stage
-4. Send a brief congratulatory message: "Excited to get started — you'll hear from us within [X] business days to schedule the project kickoff."
-5. Note any specific commitments you made (timeline, incentive, materials) — make sure they're in the agreement
+1. Confirm DocuSign completed — both parties receive copies
+2. Update CRM deal stage to "Won"
+3. Send a brief congratulatory message: "Excited to get started — you'll hear from us within [X] business days to schedule the project kickoff."
+4. Note any specific commitments you made (timeline, incentive, materials) — make sure they're in the agreement
+5. **Begin the post-signing reinforcement sequence** — see `sales/post-signing-sequence.md`
+
+The first 48 hours after signing are where deals solidify or collapse. Overcommunication prevents buyer's remorse.
 
 ---
 

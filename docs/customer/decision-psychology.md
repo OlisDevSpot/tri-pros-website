@@ -105,24 +105,82 @@ Urgency works because it overcomes the natural human tendency to defer decisions
 
 ## The Three Objection Categories
 
-Almost every sales objection in home improvement falls into one of three underlying concerns:
+Almost every sales objection in home improvement falls into one of three underlying concerns. Hormozi's framework (adapted from Dr. Albert Ellis) provides the diagnostic categories:
 
-| Surface objection | Underlying concern |
-|---|---|
-| "It's too expensive" | I'm not sure the value justifies the cost |
-| "I need to think about it" | I'm not fully convinced, or I'm afraid to commit |
-| "I need to talk to my spouse" | I don't have full confidence / I don't want to own this decision alone |
+| Category | Surface objection | Underlying concern | Strategy |
+|---|---|---|---|
+| **External blame** | "It's too expensive," "Bad timing," "The economy" | I don't see enough value to justify the cost; responsibility placed externally | Reframe timing/money as the reason TO act — "every month you wait costs you $[X]" |
+| **Internal conflict** | "I need to think about it," "Not sure it's right for me" | I'm not fully convinced, fear of commitment, self-doubt | Build confidence through guarantees, stories, process clarity |
+| **Other-person dependency** | "I need to talk to my spouse," "My partner decides" | I don't want to own this decision alone; the other person genuinely needs to be involved | Involve the other person; schedule a follow-up with both |
 
-The surface objection is not the thing to address. Address the underlying concern.
+**Diagnostic principle**: The surface objection is never the thing to address. Diagnose the category first, then address the underlying concern. A price reframe won't help someone with self-doubt. A confidence builder won't help someone who genuinely needs their spouse's input.
 
-For scripted responses: see `sales/objection-handlers.md`.
+For scripted responses using the A.R.A.C. framework: see `sales/objection-handlers.md`.
+
+---
+
+## The Conviction Transfer Principle
+
+**"Selling is a transference of belief over a bridge of trust."**
+
+This is the most important concept in TPR's sales psychology. The customer will not buy unless they believe three things:
+1. The solution will work for their specific situation
+2. TPR is the right company to deliver it
+3. Acting now is better than waiting
+
+These beliefs are not transferred through arguments or data — they are transferred through the rep's genuine conviction. Tonality is 90% of selling. If the rep doesn't believe it, the customer hears the doubt.
+
+**Practical implication**: Before every meeting, the rep must genuinely believe that NOT buying would be a disservice to the customer. This is not a trick — it's a prerequisite. See `sales/sales-frameworks.md` — Conviction Framework.
+
+---
+
+## The Value Equation (Why Customers Say Yes or No)
+
+```
+Value = (Dream Outcome x Perceived Likelihood) / (Time Delay x Effort & Sacrifice)
+```
+
+This is the unconscious equation every customer runs when deciding. It explains why some $30,000 proposals close same-day and some $5,000 proposals go cold:
+
+| Variable | High-value proposal | Low-value proposal |
+|---|---|---|
+| **Dream Outcome** | "Your home comfortable year-round, $200/month in savings" | "R-38 insulation installed in attic" |
+| **Perceived Likelihood** | Portfolio, testimonials, license, warranty, due diligence | "Trust us, we do good work" |
+| **Time Delay** | "Start next week, results within 30 days" | "We'll get to it when we can" |
+| **Effort & Sacrifice** | "We handle everything — permits, materials, cleanup" | "You'll need to clear the attic and be home all week" |
+
+**The strategic insight**: Most companies optimize the numerator (Dream Outcome + Perceived Likelihood). The denominator is where the real leverage is. Reducing perceived time delay and effort often has a bigger impact than increasing the dream outcome.
+
+See `sales/sales-frameworks.md` — Value Equation for the full breakdown.
+
+---
+
+## The Circle of Pain (Loss Aversion Amplifier)
+
+Loss aversion (Driver #2 above) becomes dramatically more powerful when the customer has just relived their past losses. The Circle of Pain — a dedicated discovery technique where the rep explores every past failed contractor experience — amplifies loss aversion naturally.
+
+After reliving past failures, the customer's emotional state shifts from "should I spend this money?" to "I can't afford to go through that again." This is not manipulation — it's genuine reflection on real experiences that informs a better decision.
+
+See `sales/sales-frameworks.md` — Circle of Pain for the technique.
 
 ---
 
 ## Practical Implications for Proposal Design and Follow-Up
 
-1. **Design proposals to evoke pride, not anxiety**: Use aspirational language and beautiful project photos
-2. **Show the emotional outcome, not just the technical spec**: "A bathroom you'll love using every day" not "full bath renovation with tile surround"
-3. **Include social proof in the proposal**: Testimonials and past project stories serve as validation for the spouse who wasn't in the meeting
-4. **Follow up at the moment of peak engagement**: Proposal view notification triggers follow-up when the customer is already thinking about it — this is the highest-leverage moment
-5. **Never argue with the skeptic**: Validate, then reframe. People commit to things they feel respected for considering.
+1. **Open with the Dream Outcome Vision** — not scope, not price: "Imagine [outcome]. No more [pain]. That's what this delivers." (Value Equation)
+2. **Show the emotional outcome, not just the technical spec**: "A bathroom you'll love using every day" not "full bath renovation with tile surround" (Sell the Vacation)
+3. **Include social proof in the proposal**: Testimonials and past project stories serve as validation for the spouse who wasn't in the meeting (Perceived Likelihood)
+4. **Show speed and minimize effort**: Include start date, timeline, and "we handle everything" language (Value Equation denominator)
+5. **Follow up at the moment of peak engagement**: Proposal view notification triggers follow-up when the customer is already thinking about it — this is the highest-leverage moment
+6. **Never argue with the skeptic**: Acknowledge, Reframe, Associate, Close — stories are more persuasive than arguments (A.R.A.C.)
+7. **Reinforce immediately after signing**: The first 48 hours are where buyer's remorse peaks — overcommunicate (CLOSER R step)
+
+---
+
+## Cross-References
+
+- `sales/sales-frameworks.md` — All frameworks (CLOSER, A.R.A.C., Value Equation, Conviction, Circle of Pain)
+- `sales/objection-handlers.md` — A.R.A.C. scripted responses
+- `sales/story-bank.md` — Customer success stories for the Associate step
+- `sales/closing-strategies.md` — Close types with conviction check
+- `sales/due-diligence-story.md` — Psychological mechanics of the trust narrative

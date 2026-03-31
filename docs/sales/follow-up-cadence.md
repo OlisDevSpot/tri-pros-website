@@ -6,9 +6,15 @@ Most contracts are not signed on the first attempt. Research across home improve
 
 **The system advantage**: TPR's proposal platform notifies the agent the moment the customer opens the proposal. This precision enables follow-up at the exact moment of peak engagement — when the customer is actively reading and thinking about the project.
 
+**Two tracks**: This document covers two separate sequences:
+1. **Pre-signing cadence** — getting the unsigned proposal to a signature
+2. **Post-signing reinforcement** — keeping the signed contract from becoming a cancellation
+
+**Framework reference**: The post-signing track is CLOSER R (Reinforce). See `sales/sales-frameworks.md`.
+
 ---
 
-## The Cadence
+## Track 1: Pre-Signing Cadence
 
 ### Day 0 — Proposal Sent
 
@@ -133,3 +139,35 @@ Agent notification is sent via email when a proposal is viewed (see `src/shared/
 | 14+ | Monthly nurture | Pipedrive: tag "Nurture"; set recurring reminder |
 | Close | Signed | Pipedrive: "Won"; Monday: project kickoff |
 | No | Not interested | Pipedrive: "Lost" with reason; tag for future reactivation |
+
+---
+
+## Track 2: Post-Signing Reinforcement
+
+The moment the contract is signed, a different sequence begins. The goal shifts from "get the signature" to "keep the signature."
+
+**Why**: Buyer's remorse peaks in the first 24-48 hours. Without reinforcement, signed contracts become cancellations. Overcommunication during this window prevents doubt from taking hold.
+
+### The Sequence
+
+| Timing | Action | Channel | Purpose |
+|---|---|---|---|
+| **Hour 0** | Thank you message from agent | Text or call | Immediate warmth — they gained a relationship |
+| **Hours 1-2** | Welcome email: "What Happens Next" | Email | Eliminate uncertainty — the #1 remorse driver |
+| **Day 1** | Project manager introduction | Phone call | Named person managing their project — trust anchor |
+| **Day 2** | Progress update (even if nothing changed) | Text or email | Silence breeds doubt — proactive updates prevent it |
+| **Day 3-5** | Personalized touch (photo, card, or tip) | Text, email, or mail | Rekindle confidence during the "doubt window" |
+| **Pre-production** | Scheduling confirmation | Call + email | Excitement language — they should look forward to it |
+
+**Principle**: Create 3-7 touchpoints before the next major milestone. Each one reinforces "you made the right decision."
+
+**Full protocol with scripts**: See `sales/post-signing-sequence.md`.
+
+### CRM Actions (Post-Signing)
+
+| Timing | CRM Action |
+|---|---|
+| Signing | Move deal to "Won"; trigger post-signing sequence |
+| Day 1 | Log PM introduction call; update project status |
+| Day 3-5 | Log personalized touch; flag if customer raised concerns |
+| Pre-production | Confirm schedule in system; send automated confirmation |

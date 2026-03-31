@@ -261,7 +261,18 @@
       "WebFetch(domain:theprocesshacker.com)",
       "WebFetch(domain:www.deciphr.ai)",
       "WebFetch(domain:www.alexansorge.com)",
-      "Bash(/home/olis-solutions/.nvm/versions/node/v24.14.1/bin/claude --version)"
+      "Bash(/home/olis-solutions/.nvm/versions/node/v24.14.1/bin/claude --version)",
+      "WebFetch(domain:refactoring.guru)",
+      "Bash(python3 -c \":*)",
+      "Bash(python3 -c \"import json,sys; print\\(json.dumps\\(json.load\\(sys.stdin\\), indent=2\\)\\)\")",
+      "Bash(source scripts/dispatch.sh)",
+      "Bash(get_project_item_id 56)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d[''''projectItems''''][0][''''status''''][''''name'''']\\)\")",
+      "mcp__notion__API-get-block-children",
+      "Edit(~/.claude/skills/sow-formatter/**)",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -type f -path *trades* -name *hook* -o -path *trades* -name *query*)",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -type f -path *trpc*notion* -name *.ts)",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -type f -path *notion* -name *databases*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
@@ -272,7 +283,8 @@
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders",
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/services/[pillar]",
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/portfolio",
-      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/assets/meta-creatives/equity-reset"
+      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/assets/meta-creatives/equity-reset",
+      "/home/olis-solutions/.claude/skills"
     ]
   },
   "enabledMcpjsonServers": [
