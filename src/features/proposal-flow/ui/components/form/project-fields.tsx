@@ -20,7 +20,7 @@ interface Props {
 export function ProjectFields({ pricingMode }: Props) {
   const form = useFormContext<ProposalFormSchema>()
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, insert, remove } = useFieldArray({
     control: form.control,
     name: `project.data.sow`,
   })
@@ -48,6 +48,26 @@ export function ProjectFields({ pricingMode }: Props) {
         else if (i > index)
           next.add(i - 1)
       }
+      return next
+    })
+  }
+
+  function handleDuplicateSection(index: number) {
+    const source = form.getValues(`project.data.sow.${index}`)
+    const duplicate = {
+      ...source,
+      title: source.title ? `${source.title} (copy)` : '',
+    }
+    insert(index + 1, duplicate)
+    setOpenSections((prev) => {
+      const next = new Set<number>()
+      for (const i of prev) {
+        if (i <= index)
+          next.add(i)
+        else
+          next.add(i + 1)
+      }
+      next.add(index + 1)
       return next
     })
   }
@@ -88,6 +108,10 @@ export function ProjectFields({ pricingMode }: Props) {
                           onDelete={(e) => {
                             e.stopPropagation()
                             handleDeleteSection(index)
+                          }}
+                          onDuplicate={(e) => {
+                            e.stopPropagation()
+                            handleDuplicateSection(index)
                           }}
                           onTitleChange={(title) => {
                             form.setValue(`project.data.sow.${index}.title`, title)

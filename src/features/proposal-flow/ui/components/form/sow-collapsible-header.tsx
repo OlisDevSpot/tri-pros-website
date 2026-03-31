@@ -1,14 +1,16 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import { ChevronDownIcon, TrashIcon } from 'lucide-react'
+import { ChevronDownIcon, CopyIcon, MoreHorizontalIcon, TrashIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
   isOpen: boolean
   onDelete: (e: React.MouseEvent) => void
+  onDuplicate: (e: React.MouseEvent) => void
   onTitleChange: (title: string) => void
   pricingMode: 'total' | 'breakdown'
   sow: ProposalFormSchema['project']['data']['sow'][0]
@@ -17,6 +19,7 @@ interface Props {
 export function SOWCollapsibleHeader({
   isOpen,
   onDelete,
+  onDuplicate,
   onTitleChange,
   pricingMode,
   sow,
@@ -81,15 +84,29 @@ export function SOWCollapsibleHeader({
               </span>
             )}
         <div className="flex shrink-0 items-center gap-1">
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="size-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={onDelete}
-          >
-            <TrashIcon className="size-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="size-8"
+                onClick={e => e.stopPropagation()}
+              >
+                <MoreHorizontalIcon className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
+              <DropdownMenuItem onClick={onDuplicate}>
+                <CopyIcon className="size-4" />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                <TrashIcon className="size-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <ChevronDownIcon
             className={cn(
               'size-5 text-muted-foreground transition-transform duration-200',
