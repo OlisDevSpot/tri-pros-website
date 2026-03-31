@@ -69,12 +69,12 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
     >
       <Card className="w-full">
         <CardHeader>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
             <FormField
               name="project.data.label"
               control={form.control}
               render={({ field }) => (
-                <FormItem className="flex items-center">
+                <FormItem className="flex flex-col gap-1 lg:flex-row lg:items-center">
                   <FormLabel className="shrink-0">
                     <h2>Project Name:</h2>
                   </FormLabel>
@@ -82,7 +82,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
                     <Input
                       placeholder="John Doe"
                       {...field}
-                      className="bg-transparent dark:bg-transparent border-none min-w-112.5"
+                      className="bg-transparent dark:bg-transparent border-none lg:min-w-112.5"
                     />
                   </FormControl>
                   <FormMessage />
@@ -105,7 +105,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
           <CardTitle>Project Information</CardTitle>
           <CardDescription>Information relevant to the project success</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-6 px-3 lg:space-y-8 lg:px-6">
           <ProjectFields pricingMode={pricingMode} />
         </CardContent>
         <CardHeader>
@@ -141,7 +141,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
           </div>
           <CardDescription>Information relevant to increased financial responsibility</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-6 px-3 lg:space-y-8 lg:px-6">
           <FundingFields
             pricingMode={pricingMode}
             showPricingBreakdown={showPricingBreakdown}

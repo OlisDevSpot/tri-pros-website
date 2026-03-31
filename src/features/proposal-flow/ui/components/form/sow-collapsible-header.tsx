@@ -21,18 +21,19 @@ export function SOWCollapsibleHeader({
   const hasTrade = sow.trade.label.trim().length > 0
   const scopeCount = sow.scopes.length
   const showPrice = pricingMode === 'breakdown' && sow.price != null && sow.price > 0
+  const hasBadges = hasTrade || scopeCount > 0 || showPrice
 
   return (
-    <div className="flex w-full cursor-pointer items-start justify-between gap-4 rounded-lg px-4 py-3 transition-colors hover:bg-muted/50">
+    <div className="flex w-full cursor-pointer items-start justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50 lg:px-4 lg:py-3">
       <div className="flex min-w-0 flex-col gap-1.5">
         <span className={cn(
-          'text-base font-medium truncate',
+          'text-sm font-medium lg:text-base',
           !hasTitle && 'text-muted-foreground italic',
         )}
         >
           {hasTitle ? sow.title : 'Untitled Section'}
         </span>
-        {(hasTrade || scopeCount > 0) && (
+        {hasBadges && (
           <div className="flex flex-wrap items-center gap-2">
             {hasTrade && (
               <Badge variant="secondary" className="bg-primary/10 text-xs text-primary">
@@ -46,10 +47,16 @@ export function SOWCollapsibleHeader({
                 {scopeCount === 1 ? 'scope' : 'scopes'}
               </Badge>
             )}
+            {showPrice && (
+              <Badge variant="secondary" className="bg-emerald-500/10 text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+                $
+                {sow.price!.toLocaleString()}
+              </Badge>
+            )}
           </div>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-2 pt-0.5">
+      <div className="flex shrink-0 items-center gap-1 pt-0.5">
         <Button
           type="button"
           size="icon"
@@ -59,12 +66,6 @@ export function SOWCollapsibleHeader({
         >
           <TrashIcon className="size-4" />
         </Button>
-        {showPrice && (
-          <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-            $
-            {sow.price!.toLocaleString()}
-          </span>
-        )}
         <ChevronDownIcon
           className={cn(
             'size-5 text-muted-foreground transition-transform duration-200',

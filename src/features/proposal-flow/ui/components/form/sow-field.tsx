@@ -47,13 +47,13 @@ export function SOWSection({
   const { open: openModal, close: closeModal, setModal } = useModalStore()
 
   return (
-    <div className="flex flex-col gap-4 items-center w-full max-h-187.5 overflow-auto">
-      <div className="flex items-end rounded-lg h-full w-full">
+    <div className="flex flex-col gap-3 items-center w-full max-h-187.5 overflow-auto lg:gap-4">
+      <div className="flex flex-col gap-2 rounded-lg w-full px-3 pt-2 lg:flex-row lg:items-end lg:px-0 lg:pt-0">
         <FormField
           control={form.control}
           name={`project.data.sow.${index}.trade.id`}
           render={({ field }) => (
-            <FormItem className="max-w-62.5">
+            <FormItem className="w-full lg:max-w-62.5">
               <FormControl className="w-full">
                 <Select
                   value={field.value}
@@ -129,8 +129,8 @@ export function SOWSection({
         />
 
       </div>
-      <div className="w-full p-4 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
-        <div className="flex gap-4">
+      <div className="w-full px-3 py-2 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:p-4">
+        <div className="flex gap-3 lg:gap-4">
           <FormField
             name={`project.data.sow.${index}.title`}
             control={form.control}
@@ -167,7 +167,7 @@ export function SOWSection({
           )}
         </div>
       </div>
-      <div className="w-full p-4 pt-0">
+      <div className="w-full px-3 pb-3 lg:px-4 lg:pb-4">
         <FormField
           name={`project.data.sow.${index}.contentJSON`}
           control={form.control}

@@ -52,8 +52,8 @@ export function FundingFields({
   }, [sow, miscPrice, pricingMode, incentives, form, startingTcp])
 
   return (
-    <section className="space-y-8">
-      <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
+    <section className="space-y-6 lg:space-y-8">
+      <div className="flex flex-col gap-4 border border-border/30 shadow p-3 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:gap-6 lg:p-6">
         {/* Funding heading + fields */}
         <div className="space-y-4">
           <h3 className="text-2xl font-semibold">Funding</h3>
@@ -149,16 +149,16 @@ export function FundingFields({
 
             {fields.length === 0
               ? (
-                  <div className="rounded-xl border border-dashed border-border/50 bg-muted/10 px-4 py-8 text-center text-sm text-muted-foreground">
+                  <div className="rounded-xl border border-dashed border-border/50 bg-muted/10 px-3 py-6 text-center text-sm text-muted-foreground lg:px-4 lg:py-8">
                     No incentives added
                   </div>
                 )
               : (
-                  <div className="space-y-4 rounded-xl border border-dashed border-border/50 bg-muted/10 p-4">
+                  <div className="space-y-3 rounded-xl border border-dashed border-border/50 bg-muted/10 p-2 lg:space-y-4 lg:p-4">
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="space-y-4 rounded-lg border border-border/40 bg-muted/30 p-4"
+                        className="space-y-3 rounded-lg border border-border/40 bg-muted/30 p-3 lg:space-y-4 lg:p-4"
                       >
                         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                           <FormField

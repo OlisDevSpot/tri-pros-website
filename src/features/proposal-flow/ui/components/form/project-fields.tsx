@@ -1,10 +1,11 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { ProjectType } from '@/shared/types/enums'
 import { PlusIcon } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
+import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
@@ -12,6 +13,8 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
+
+const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
 interface Props {
   pricingMode: 'total' | 'breakdown'
@@ -43,10 +46,10 @@ export function ProjectFields({ pricingMode }: Props) {
   }
 
   return (
-    <section className="space-y-8">
-      <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
+    <section className="space-y-6 lg:space-y-8">
+      <div className="flex flex-col gap-4 border border-border/30 shadow p-3 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:gap-6 lg:p-6">
         <div className="flex flex-col gap-4">
-          <div className="grid lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <FormField
               name="project.data.type"
               control={form.control}
@@ -152,13 +155,23 @@ export function ProjectFields({ pricingMode }: Props) {
                           />
                         </div>
                       </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SOWSection
-                          index={index}
-                          pricingMode={pricingMode}
-                          sowSnapshot={fieldOfArray}
-                        />
-                      </CollapsibleContent>
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={TRANSITION}
+                            className="overflow-hidden"
+                          >
+                            <SOWSection
+                              index={index}
+                              pricingMode={pricingMode}
+                              sowSnapshot={fieldOfArray}
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </Collapsible>
                 )
