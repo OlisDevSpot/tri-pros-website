@@ -177,7 +177,7 @@ export function CustomerPipelineView() {
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-          <DataViewTypeToggle value={layout} onChange={setLayout} />
+          {layout === 'table' && <DataViewTypeToggle value={layout} onChange={setLayout} />}
         </div>
       </div>
 
@@ -214,6 +214,7 @@ export function CustomerPipelineView() {
                   columnFilter={pipeline === 'active'
                     ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
                     : { defaultVisible: [...config.stages] }}
+                  headerSlot={<DataViewTypeToggle value={layout} onChange={setLayout} />}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
