@@ -227,8 +227,25 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
         )}
       </div>
 
-      {/* Footer navigation */}
-      <footer className="shrink-0">
+      {/* Footer navigation + overlay triggers */}
+      <footer className="relative shrink-0">
+        {/* Context & Persona triggers — positioned above the nav bar */}
+        <div className="absolute bottom-full left-0 right-0 flex items-end justify-between px-6 pb-3 pointer-events-none md:px-8">
+          <div className="pointer-events-auto">
+            <ContextPanelTrigger
+              filledCount={contextFilledCount}
+              totalCount={CONTEXT_TOTAL_FIELDS}
+              onClick={() => setContextOpen(true)}
+            />
+          </div>
+          <div className="pointer-events-auto">
+            <PersonaProfileTrigger
+              hasData={!!customer?.customerProfileJSON}
+              onClick={() => setPersonaOpen(true)}
+            />
+          </div>
+        </div>
+
         <Separator />
         <div className="flex h-(--prevNextHeight) items-center justify-between px-4 md:px-6">
           <Button
@@ -258,13 +275,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
         </div>
       </footer>
 
-      {/* Context panel trigger + sheet */}
-      <ContextPanelTrigger
-        filledCount={contextFilledCount}
-        totalCount={CONTEXT_TOTAL_FIELDS}
-        onClick={() => setContextOpen(true)}
-      />
-
+      {/* Overlay sheets */}
       <ContextPanel
         customer={customer}
         isOpen={contextOpen}
@@ -274,12 +285,6 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
         onCustomerProfileChange={handleCustomerProfileChange}
         onOpenChange={setContextOpen}
         onOutcomeChange={handleOutcomeChange}
-      />
-
-      {/* Persona profile trigger + sheet */}
-      <PersonaProfileTrigger
-        hasData={!!customer?.customerProfileJSON}
-        onClick={() => setPersonaOpen(true)}
       />
 
       <PersonaProfilePanel
