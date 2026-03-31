@@ -52,12 +52,12 @@ export function FundingFields({
   }, [sow, miscPrice, pricingMode, incentives, form, startingTcp])
 
   return (
-    <section className="space-y-6 lg:space-y-8">
-      <div className="flex flex-col gap-4 border border-border/30 shadow p-3 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:gap-6 lg:p-6">
-        {/* Funding heading + fields */}
-        <div className="space-y-4">
-          <h3 className="text-2xl font-semibold">Funding</h3>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <section className="space-y-6">
+      <div className="flex flex-col gap-4 lg:gap-6">
+        {/* Funding fields */}
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold lg:text-2xl">Funding</h3>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
             {pricingMode === 'breakdown' && (
               <FormField
                 name="funding.data.miscPrice"
@@ -126,9 +126,9 @@ export function FundingFields({
 
         {/* Incentives section */}
         {showSettings && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-t border-border/30 pt-4">
-              <h4 className="text-lg font-semibold">Incentives</h4>
+          <div className="space-y-3 lg:space-y-4">
+            <div className="flex items-center justify-between border-t border-border/30 pt-3 lg:pt-4">
+              <h4 className="text-base font-semibold lg:text-lg">Incentives</h4>
               <Button
                 type="button"
                 size="sm"
@@ -149,18 +149,18 @@ export function FundingFields({
 
             {fields.length === 0
               ? (
-                  <div className="rounded-xl border border-dashed border-border/50 bg-muted/10 px-3 py-6 text-center text-sm text-muted-foreground lg:px-4 lg:py-8">
+                  <p className="py-4 text-center text-sm text-muted-foreground">
                     No incentives added
-                  </div>
+                  </p>
                 )
               : (
-                  <div className="space-y-3 rounded-xl border border-dashed border-border/50 bg-muted/10 p-2 lg:space-y-4 lg:p-4">
+                  <div className="space-y-3 lg:space-y-4 lg:rounded-xl lg:border lg:border-dashed lg:border-border/50 lg:bg-muted/10 lg:p-4">
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="space-y-3 rounded-lg border border-border/40 bg-muted/30 p-3 lg:space-y-4 lg:p-4"
+                        className="space-y-3 border-t border-border/30 pt-3 first:border-t-0 first:pt-0 lg:space-y-4 lg:rounded-lg lg:border lg:border-border/40 lg:bg-muted/30 lg:p-4 lg:pt-4 lg:first:pt-4"
                       >
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
                           <FormField
                             name={`funding.data.incentives.${index}.type`}
                             control={form.control}
@@ -230,7 +230,7 @@ export function FundingFields({
                             />
                           )}
                         </div>
-                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
                           <FormField
                             name={`funding.data.incentives.${index}.notes`}
                             control={form.control}
@@ -270,6 +270,7 @@ export function FundingFields({
                                 <FormLabel>Expiration</FormLabel>
                                 <FormControl>
                                   <DateTimePicker
+                                    className="h-9 w-full justify-start rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
                                     placeholder="Set expiration"
                                     value={field.value ? new Date(field.value) : undefined}
                                     onChange={(date) => {
