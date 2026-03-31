@@ -141,8 +141,8 @@ export const proposalFields = [
           return (
             <div className="flex flex-col gap-2">
               <span className="flex flex-col gap-2">
-                {scopes.map(scope => (
-                  <span key={scope}>{scope}</span>
+                {scopes.map((scope, i) => (
+                  <span key={`scope-${i}`}>{scope}</span>
                 ))}
               </span>
             </div>
