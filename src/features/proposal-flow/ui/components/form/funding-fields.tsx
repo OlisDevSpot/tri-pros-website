@@ -1,6 +1,6 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { IncentiveType } from '@/shared/types/enums'
-import { PlusIcon, SettingsIcon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
@@ -11,10 +11,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { Label } from '@/shared/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { Switch } from '@/shared/components/ui/switch'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { incentiveTypes } from '@/shared/constants/enums'
 import { useConfirm } from '@/shared/hooks/use-confirm'
@@ -99,32 +96,6 @@ export function FundingFields({ pricingMode }: Props) {
       <div className="flex flex-col gap-4 lg:gap-6">
         {/* Base Pricing */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold lg:text-2xl">Base Pricing</h3>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button type="button" size="icon" variant="outline">
-                  <SettingsIcon className="size-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64" align="start">
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Funding Settings</p>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
-                      Show Pricing Breakdown
-                    </Label>
-                    <Switch
-                      id="show-pricing-breakdown"
-                      checked={showPricingBreakdown}
-                      onCheckedChange={checked =>
-                        form.setValue('funding.meta.showPricingBreakdown', checked)}
-                    />
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
             {pricingMode === 'breakdown' && (
               <FormField
