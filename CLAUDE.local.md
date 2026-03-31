@@ -1,11 +1,11 @@
-# Dispatched Session — Issue #40
+# Dispatched Session — Issue #56
 
 **You are a dispatched Claude Code session working on a specific issue.**
 
 ## Your Assignment
-- **Issue**: #40 — feat(meetings): complete overhaul — schema & logic improvements
-- **Branch**: `feat/40-feat-meetings-complete-overhaul-schema-l`
-- **Labels**: area:sales-flow, P1, type:feature, claude
+- **Issue**: #56 — refactor(dashboard): migrate from query-param hub to nested route architecture
+- **Branch**: `refactor/56-refactor-dashboard-migrate-from-query-pa`
+- **Labels**: area:frontend, P2, type:refactor
 - **Port**: 3001 (use `pnpm dev -- --port 3001` if you need a dev server)
 
 ## Approach — Complex Issue
@@ -24,8 +24,8 @@ BEFORE writing any code:
 
 ## Workflow Rules
 1. **Stay on your branch.** Do not switch branches or touch other worktrees.
-2. **Follow conventional commits**: `feat(scope): description`
-3. **Do NOT create a PR.** The user will do that via `dispatch pr 40`.
+2. **Follow conventional commits**: `refactor(scope): description`
+3. **Do NOT create a PR.** The user will do that via `dispatch pr 56`.
 4. **Do NOT push to remote.** The user controls when to push.
 5. **When blocked**: stop and explain what you need. Do not guess or work around it.
 
@@ -45,33 +45,64 @@ pnpm dev -- --port 3001
 ## Issue Body
 ## Summary
 
-Full overhaul of the meeting flow — schema, logic, and UX. This is a brainstorm-first issue; implementation follows after design is aligned.
+Migrate the dashboard from a single `DashboardHub` component with `?step=` query-param routing to proper Next.js nested routes under `/dashboard/`.
 
-## Context
+## Problem
 
-The meeting flow is the core sales event in TPR's funnel (see `docs/sales/in-home-meeting-playbook.md`). The "Due Diligence Story" (`docs/sales/due-diligence-story.md`) defines the narrative framework and psychological levers that must be front-and-center in the meeting flow implementation.
+The current dashboard architecture routes ALL views through a single `DashboardHub` component (`src/features/agent-dashboard/ui/views/dashboard-hub.tsx`). Navigation between sections (Pipelines, Meetings, Proposals, Showroom, Settings) is controlled by a `?step=` nuqs query parameter, and every view is conditionally rendered inside the same page via `AnimatePresence` blocks.
 
-Key concept: the meeting flow is a **customer journey**, not just a data entry form. Every step should map to the due diligence story (licensing, scope, supervision, communication, office support, proof of performance) and leverage the 6 psychological levers (authority transfer, fear inoculation, contrast effect, commitment & consistency, identity alignment, the reframe).
+This doesn't scale:
+- **DashboardHub grows proportionally** — every new section/sub-view adds another `AnimatePresence` block to the hub
+- **No code-splitting** — all views are imported and bundled together regardless of which one the user visits
+- **Sub-navigation is awkward** — e.g., Meetings has `meetings`, `create-meeting`, `edit-meeting` all as top-level step values instead of scoped under `/dashboard/meetings?step=edit`
+- **URLs aren't semantic** — `/dashboard?step=customer-pipelines` vs `/dashboard/pipelines`
 
-## Scope
+## Proposed Architecture
 
-- [ ] Brainstorm session required before any implementation
-- [ ] Review current schema (`src/shared/db/schema/meetings.ts`) and entity model
-- [ ] Review current meeting flow steps and identify gaps
-- [ ] Align flow steps with the due diligence story narrative
-- [ ] Schema improvements (fields, JSONB structure, relationships)
-- [ ] Logic improvements (step progression, validation, data capture)
-- [ ] Ensure customer profiling data lands on the right entity (customer vs meeting vs proposal)
+```
+src/app/(frontend)/dashboard/
+├── layout.tsx              ← SidebarProvider + AppSidebar + SidebarInset (shared)
+├── page.tsx                ← Dashboard home/overview
+├── pipelines/
+│   └── page.tsx            ← CustomerPipelineView
+├── meetings/
+│   ├── page.tsx            ← MeetingsView (list + create, uses ?step= internally)
+│   └── [meetingId]/
+│       └── page.tsx        ← MeetingFlowView (already exists as a route)
+├── proposals/
+│   ├── page.tsx            ← PastProposalsView (list, uses ?step= for create/edit internally)
+│   └── [proposalId]/
+│       └── page.tsx        ← Edit proposal
+├── showroom/
+│   ├── page.tsx            ← PortfolioProjectsView
+│   └── [projectId]/
+│       └── page.tsx        ← Edit project
+├── settings/
+│   └── page.tsx            ← Agent profile & settings
+├── intake/
+│   └── page.tsx            ← Intake form (super-admin)
+└── team/
+    └── page.tsx            ← Team overview (super-admin)
+```
+
+**Key principle**: The `?step=` param moves DOWN into individual pages for their internal sub-navigation (e.g., `/dashboard/meetings?step=edit`), rather than living at the top-level hub.
+
+## Migration Steps
+
+1. Move `SidebarProvider` + `AppSidebar` into `dashboard/layout.tsx` (will already be done in #9)
+2. Create route directories for each section
+3. Move each view into its own `page.tsx` with a server component wrapper
+4. Update sidebar nav items to use `pathname`-based active state instead of `?step=`
+5. Migrate internal sub-navigation to per-page `?step=` params where needed
+6. Remove `DashboardHub` and the monolithic step-switch pattern
+7. Add `AnimatePresence` at the layout level for route transitions (optional)
+
+## Dependencies
+
+- #9 (Agent Profile & Settings) — establishes the new sidebar + layout foundation
 
 ## References
 
-- `docs/sales/due-diligence-story.md` — narrative framework + psychological mechanics
-- `docs/sales/in-home-meeting-playbook.md` — current meeting phases
-- `docs/customer/decision-psychology.md` — emotional drivers
-- `docs/customer/journey-map.md` — Stage 3 (Evaluation)
-- `src/features/meetings/` — current implementation
-- `src/shared/entities/meetings/schemas.ts` — current JSONB schemas
-
-## Labels
-
-area:sales-flow, type:feature, P1
+- Current hub: `src/features/agent-dashboard/ui/views/dashboard-hub.tsx`
+- Current step parser: `src/features/agent-dashboard/lib/url-parsers.ts`
+- Current sidebar items: `src/features/agent-dashboard/constants/sidebar-items.ts`

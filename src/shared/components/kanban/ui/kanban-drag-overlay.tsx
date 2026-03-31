@@ -6,11 +6,11 @@ import { DragOverlay } from '@dnd-kit/core'
 
 interface Props<T extends KanbanItem = KanbanItem> {
   activeItem: T | null
-  getItemHref: (item: T) => string
+  getItemHref?: (item: T) => string
   renderCard: (item: T, href: string, isDragOverlay?: boolean) => React.ReactNode
 }
 
-export function KanbanDragOverlay<T extends KanbanItem>({ activeItem, getItemHref, renderCard }: Props<T>) {
+export function KanbanDragOverlay<T extends KanbanItem>({ activeItem, getItemHref = () => '#', renderCard }: Props<T>) {
   return (
     <DragOverlay>
       {activeItem

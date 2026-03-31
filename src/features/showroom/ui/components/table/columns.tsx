@@ -61,7 +61,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
                 external
               />
               <EntityEditButton
-                href={`${ROOTS.dashboard.root}?step=edit-project&editProjectId=${row.original.id}`}
+                href={ROOTS.dashboard.showroom.byId(row.original.id)}
               />
               <EntityDeleteButton
                 disabled={meta?.isDeleting}

@@ -25,7 +25,7 @@ interface Props<T extends KanbanItem = KanbanItem> {
   onMoveItem?: (itemId: string, fromStage: string, toStage: string) => void
   onBlockedTransition: (message: string) => void
   collapsedStages?: string[]
-  getItemHref: (item: T) => string
+  getItemHref?: (item: T) => string
   showColumnValues?: boolean
   getItemValue?: (item: T) => number | null
   renderCard: (item: T, href: string, isDragOverlay?: boolean) => React.ReactNode
@@ -39,7 +39,7 @@ export function KanbanBoard<T extends KanbanItem>({
   onMoveItem,
   onBlockedTransition,
   collapsedStages = [],
-  getItemHref,
+  getItemHref = () => '#',
   showColumnValues,
   getItemValue,
   renderCard,

@@ -81,7 +81,7 @@ export function ProjectDetailSheet({ project, isOpen, close, onDelete }: Project
               className="w-full"
               onClick={() => {
                 close()
-                router.push(`${ROOTS.dashboard.root}?step=edit-project&editProjectId=${project.id}`)
+                router.push(ROOTS.dashboard.showroom.byId(project.id))
               }}
             >
               Edit Project

@@ -6,19 +6,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowLeftIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useQueryState } from 'nuqs'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { dashboardStepParser } from '@/features/agent-dashboard/lib'
 import { ProjectForm } from '@/features/showroom/ui/components/form'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
+import { ROOTS } from '@/shared/config/roots'
 import { projectFormDefaults, projectFormSchema } from '@/shared/entities/projects/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CreateProjectView() {
   const trpc = useTRPC()
-  const [, setStep] = useQueryState('step', dashboardStepParser)
+  const router = useRouter()
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
@@ -31,7 +31,7 @@ export function CreateProjectView() {
     createProject.mutate(data, {
       onSuccess: () => {
         toast.success('Project created')
-        setStep('showroom')
+        router.push(ROOTS.dashboard.showroom.root())
       },
       onError: (error) => {
         toast.error(error.message)
@@ -51,7 +51,7 @@ export function CreateProjectView() {
         variant="ghost"
         size="sm"
         className="self-start"
-        onClick={() => setStep('showroom')}
+        onClick={() => router.push(ROOTS.dashboard.showroom.root())}
       >
         <ArrowLeftIcon className="mr-2 h-4 w-4" />
         Back to Portfolio
