@@ -11,7 +11,6 @@ import { HeadshotUpload } from '@/features/agent-settings/ui/components/headshot
 import { IdentityContactSection } from '@/features/agent-settings/ui/components/identity-contact-section'
 import { ProfileHeaderCard } from '@/features/agent-settings/ui/components/profile-header-card'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 
 export function SettingsView() {

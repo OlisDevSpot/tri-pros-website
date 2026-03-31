@@ -15,7 +15,6 @@ import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
 import { signOut } from '@/shared/auth/client'
-import { ROOTS } from '@/shared/config/roots'
 import { Button } from '@/shared/components/ui/button'
 import {
   Sidebar,
@@ -31,6 +30,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from '@/shared/components/ui/sidebar'
+import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/permissions/hooks'
 
 interface AppSidebarProps {
