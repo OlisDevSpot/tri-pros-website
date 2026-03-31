@@ -2,9 +2,9 @@
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
@@ -22,23 +22,6 @@ const TAB_LABELS: Record<FormTab, string> = {
   funding: 'Funding',
   general: 'General',
   sow: 'Scope of Work',
-}
-
-const TRANSITION = { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] } as const
-
-const slideVariants = {
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  enter: (direction: number) => ({
-    x: direction > 0 ? 100 : -100,
-    opacity: 0,
-  }),
-  exit: (direction: number) => ({
-    x: direction > 0 ? -100 : 100,
-    opacity: 0,
-  }),
 }
 
 interface Props {
@@ -70,14 +53,6 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
   )
   const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
-
-  const prevTabRef = useRef(FORM_TABS.indexOf(activeTab))
-  const currentIndex = FORM_TABS.indexOf(activeTab)
-  const direction = currentIndex - prevTabRef.current
-
-  useEffect(() => {
-    prevTabRef.current = currentIndex
-  }, [currentIndex])
 
   useEffect(() => {
     setActiveTab(nuqsTab)
@@ -127,23 +102,23 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
       </Tabs>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <Card className="w-full overflow-hidden">
+        <Card className="w-full">
           <CardContent className="p-3 lg:p-6">
-            <AnimatePresence mode="wait" custom={direction} initial={false}>
-              <motion.div
-                key={activeTab}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={TRANSITION}
-              >
-                {activeTab === 'general' && <GeneralFields />}
-                {activeTab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
-                {activeTab === 'funding' && <FundingFields pricingMode={pricingMode} />}
-              </motion.div>
-            </AnimatePresence>
+            {FORM_TABS.map((tab) => {
+              const isActive = activeTab === tab
+              return (
+                <motion.div
+                  key={tab}
+                  animate={{ opacity: isActive ? 1 : 0 }}
+                  transition={{ duration: 0.15 }}
+                  className={isActive ? '' : 'hidden'}
+                >
+                  {tab === 'general' && <GeneralFields />}
+                  {tab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
+                  {tab === 'funding' && <FundingFields pricingMode={pricingMode} />}
+                </motion.div>
+              )
+            })}
           </CardContent>
         </Card>
 
