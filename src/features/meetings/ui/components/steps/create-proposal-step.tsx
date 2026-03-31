@@ -35,7 +35,7 @@ export function CreateProposalStep({ flowContext, meetingId }: CreateProposalSte
   const apr = deal.apr
   const monthlyPayment = deal.monthlyPayment
 
-  const proposalHref = `${ROOTS.dashboard.root}?step=create-proposal&meetingId=${meetingId}`
+  const proposalHref = `${ROOTS.dashboard.proposals.new()}?meetingId=${meetingId}`
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">

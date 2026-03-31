@@ -38,7 +38,7 @@ export function ActionDetailSheet({ item, onClose }: Props) {
   const colorClass = tierColorMap[config.color] ?? tierColorMap.muted
 
   function handleCreateProposal() {
-    router.push(`${ROOTS.dashboard.root}?step=create-proposal`)
+    router.push(ROOTS.dashboard.proposals.new())
     onClose()
   }
 
@@ -132,7 +132,7 @@ export function ActionDetailSheet({ item, onClose }: Props) {
                 )}
               </div>
               <Button variant="outline" size="sm" className="mt-2 gap-2" asChild>
-                <a href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${item.proposalId}`}>
+                <a href={ROOTS.dashboard.proposals.byId(item.proposalId!)}>
                   <ExternalLinkIcon size={14} />
                   View Proposal
                 </a>

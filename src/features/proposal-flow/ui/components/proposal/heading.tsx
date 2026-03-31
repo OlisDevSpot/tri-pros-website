@@ -106,7 +106,7 @@ export function Heading() {
               size="sm"
               asChild
             >
-              <a href={`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.data.id}`}>
+              <a href={ROOTS.dashboard.proposals.byId(proposal.data.id)}>
                 <PencilIcon className="size-4" />
                 Edit Proposal
               </a>

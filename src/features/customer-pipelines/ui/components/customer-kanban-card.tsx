@@ -359,7 +359,7 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
   }, [proposal.id])
 
   const handleEdit = useCallback(() => {
-    window.location.href = `${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`
+    window.location.href = ROOTS.dashboard.proposals.byId(proposal.id)
   }, [proposal.id])
 
   const proposalActions = useProposalActionConfigs<PipelineItemProposal>({
