@@ -113,6 +113,14 @@ export function ScopeOfWork() {
               </AccordionItem>
             ))}
           </Accordion>
+          {proposal.data.projectJSON.data.agreementNotes && (
+            <div className="mt-6 border-t border-border/30 pt-6">
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Agreement Notes</h3>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">
+                {proposal.data.projectJSON.data.agreementNotes}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
