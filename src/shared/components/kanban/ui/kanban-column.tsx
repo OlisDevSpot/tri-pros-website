@@ -16,7 +16,7 @@ interface Props<T extends KanbanItem = KanbanItem> {
   stage: KanbanStageConfig
   items: T[]
   collapsed?: boolean
-  getItemHref: (item: T) => string
+  getItemHref?: (item: T) => string
   showValueTotal?: boolean
   getItemValue?: (item: T) => number | null
   renderCard: (item: T, href: string, isDragOverlay?: boolean) => React.ReactNode
@@ -26,7 +26,7 @@ export function KanbanColumn<T extends KanbanItem>({
   stage,
   items,
   collapsed: initialCollapsed,
-  getItemHref,
+  getItemHref = () => '#',
   showValueTotal,
   getItemValue,
   renderCard,

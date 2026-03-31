@@ -24,7 +24,6 @@ import { KanbanColumnFilter } from '@/shared/components/kanban/ui/kanban-column-
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
 import { useAbility } from '@/shared/permissions/hooks'
@@ -118,10 +117,6 @@ export function CustomerPipelineView() {
     })
     openModal()
   }, [setModal, openModal])
-
-  function getItemHref(item: CustomerPipelineItem): string {
-    return `${ROOTS.dashboard.root}?customer=${item.id}`
-  }
 
   function getItemValue(item: CustomerPipelineItem): number | null {
     return item.totalPipelineValue > 0 ? item.totalPipelineValue : null
@@ -229,7 +224,6 @@ export function CustomerPipelineView() {
                   onMoveItem={handleMoveItem}
                   onBlockedTransition={handleBlockedTransition}
                   collapsedStages={pipeline === 'active' ? ['declined'] : []}
-                  getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
                   renderCard={renderCard}
