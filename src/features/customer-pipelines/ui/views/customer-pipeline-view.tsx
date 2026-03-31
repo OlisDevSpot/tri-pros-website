@@ -173,9 +173,12 @@ export function CustomerPipelineView() {
       transition={{ delay: 0.25, duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
-      <div className="flex items-center justify-between gap-2 shrink-0">
+      <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between shrink-0">
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
-        {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+        <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+          {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+          <DataViewTypeToggle value={layout} onChange={setLayout} />
+        </div>
       </div>
 
       <div className={cn('flex-1 min-h-0 transition-opacity duration-200', isSwitching && 'opacity-50 pointer-events-none')}>
@@ -191,17 +194,12 @@ export function CustomerPipelineView() {
             )
           : layout === 'table'
             ? (
-                <div className="h-full flex flex-col">
-                  <div className="flex justify-end mb-2 shrink-0">
-                    <DataViewTypeToggle value={layout} onChange={setLayout} />
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto">
-                    <CustomerPipelineTable
-                      data={pipelineQuery.data}
-                      onRowClick={item => handleViewProfile(item.id)}
-                      onViewProfile={handleViewProfile}
-                    />
-                  </div>
+                <div className="h-full overflow-y-auto">
+                  <CustomerPipelineTable
+                    data={pipelineQuery.data}
+                    onRowClick={item => handleViewProfile(item.id)}
+                    onViewProfile={handleViewProfile}
+                  />
                 </div>
               )
             : (
@@ -216,7 +214,6 @@ export function CustomerPipelineView() {
                   columnFilter={pipeline === 'active'
                     ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
                     : { defaultVisible: [...config.stages] }}
-                  headerSlot={<DataViewTypeToggle value={layout} onChange={setLayout} />}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
