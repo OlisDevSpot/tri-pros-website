@@ -2,21 +2,44 @@
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
-import { SettingsIcon } from 'lucide-react'
-import { useQueryState } from 'nuqs'
-import { useEffect } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useEffect, useRef } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Input } from '@/shared/components/ui/input'
-import { Label } from '@/shared/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { Switch } from '@/shared/components/ui/switch'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { FundingFields } from './funding-fields'
+import { GeneralFields } from './general-fields'
 import { ProjectFields } from './project-fields'
+
+const FORM_TABS = ['general', 'sow', 'funding'] as const
+type FormTab = (typeof FORM_TABS)[number]
+
+const TAB_LABELS: Record<FormTab, string> = {
+  funding: 'Funding',
+  general: 'General',
+  sow: 'Scope of Work',
+}
+
+const TRANSITION = { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] } as const
+
+const slideVariants = {
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  enter: (direction: number) => ({
+    x: direction > 0 ? 100 : -100,
+    opacity: 0,
+  }),
+  exit: (direction: number) => ({
+    x: direction > 0 ? -100 : 100,
+    opacity: 0,
+  }),
+}
 
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
@@ -30,21 +53,30 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
     return base
   }
 
-  const defaultWithOverrides = {
+  return {
     ...base,
     meta: { ...base.meta, ...(override.meta ?? {}) },
     project: { ...base.project, ...(override.project ?? {}) },
     funding: { ...base.funding, ...(override.funding ?? {}) },
   }
-
-  return defaultWithOverrides
 }
 
 export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitButton }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const [proposalId] = useQueryState('proposalId')
+  const [activeTab, setActiveTab] = useQueryState(
+    'formTab',
+    parseAsStringLiteral(FORM_TABS).withDefault('general'),
+  )
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
-  const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
+
+  const prevTabRef = useRef(FORM_TABS.indexOf(activeTab))
+  const currentIndex = FORM_TABS.indexOf(activeTab)
+  const direction = currentIndex - prevTabRef.current
+
+  useEffect(() => {
+    prevTabRef.current = currentIndex
+  }, [currentIndex])
 
   useEffect(() => {
     if (initialValues) {
@@ -65,102 +97,52 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
     <form
       id="proposal-form"
       onSubmit={form.handleSubmit(onSubmit, onInvalid)}
-      className="space-y-8 w-full h-auto"
+      className="flex w-full flex-col gap-6"
     >
-      <Card className="w-full">
-        <CardHeader>
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
-            <FormField
-              name="project.data.label"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex flex-col gap-1 lg:flex-row lg:items-center">
-                  <FormLabel className="shrink-0">
-                    <h2>Project Name:</h2>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="John Doe"
-                      {...field}
-                      className="bg-transparent dark:bg-transparent border-none lg:min-w-112.5"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="flex items-center gap-3 pt-2">
-            <Switch
-              checked={pricingMode === 'breakdown'}
-              onCheckedChange={checked =>
-                form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
-            />
-            <span className="text-sm font-medium">
-              {pricingMode === 'breakdown' ? 'Breakdown Pricing' : 'Total Pricing'}
-            </span>
-          </div>
-        </CardHeader>
-        <CardHeader>
-          <CardTitle>Project Information</CardTitle>
-          <CardDescription>Information relevant to the project success</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 px-3 lg:space-y-8 lg:px-6">
-          <ProjectFields pricingMode={pricingMode} />
-        </CardContent>
-        <CardHeader>
-          <div className="flex gap-2 items-center">
-            <CardTitle>Funding Information</CardTitle>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64" align="start">
-                <div className="space-y-3">
-                  <p className="text-sm font-medium">Funding Settings</p>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
-                      Show Pricing Breakdown
-                    </Label>
-                    <Switch
-                      id="show-pricing-breakdown"
-                      checked={showPricingBreakdown}
-                      onCheckedChange={checked =>
-                        form.setValue('funding.meta.showPricingBreakdown', checked)}
-                    />
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <CardDescription>Information relevant to increased financial responsibility</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 px-3 lg:space-y-8 lg:px-6">
-          <FundingFields
-            pricingMode={pricingMode}
-            showPricingBreakdown={showPricingBreakdown}
-            showSettings
-          />
+      <Tabs
+        value={activeTab}
+        onValueChange={val => setActiveTab(val as FormTab)}
+        className="w-full"
+      >
+        <div className="flex justify-center">
+          <TabsList>
+            {FORM_TABS.map(tab => (
+              <TabsTrigger key={tab} value={tab}>
+                {TAB_LABELS[tab]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
+
+      <Card className="w-full overflow-hidden">
+        <CardContent className="p-3 lg:p-6">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={activeTab}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={TRANSITION}
+            >
+              {activeTab === 'general' && <GeneralFields />}
+              {activeTab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
+              {activeTab === 'funding' && <FundingFields pricingMode={pricingMode} />}
+            </motion.div>
+          </AnimatePresence>
         </CardContent>
       </Card>
 
       {form.formState.errors.root && (
-        <div>
-          <div className="text-red-500">{JSON.stringify(form.formState.errors, null, 2)}</div>
+        <div className="text-red-500">
+          {JSON.stringify(form.formState.errors, null, 2)}
         </div>
       )}
       {!hideSubmitButton && (
         <div className="flex items-center gap-2">
-          <Button
-            type="submit"
-            disabled={isLoading}
-          >
+          <Button type="submit" disabled={isLoading}>
             {proposalId ? 'Update & Preview' : 'Save & Preview'}
           </Button>
         </div>
