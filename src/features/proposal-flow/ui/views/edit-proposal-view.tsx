@@ -118,7 +118,7 @@ export function EditProposalView() {
             <CustomerInfoHeader customer={customer} />
           </div>
         )}
-        <div className="flex flex-col gap-2 shrink-0">
+        <div className="flex flex-row gap-2 shrink-0">
           <Button
             type="submit"
             form="proposal-form"
