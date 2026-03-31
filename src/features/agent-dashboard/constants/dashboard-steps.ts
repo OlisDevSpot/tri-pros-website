@@ -8,4 +8,9 @@ export const dashboardSteps = [
   'showroom',
   'create-project',
   'edit-project',
+  'dashboard',
+  'settings',
+  'intake',
+  'team',
+  'analytics',
 ] as const

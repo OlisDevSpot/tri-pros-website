@@ -1,7 +1,10 @@
 import type z from 'zod'
+
+import type { AgentProfile } from '@/shared/entities/agents/schemas'
 import { relations } from 'drizzle-orm'
-import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
+
 import { userRoleEnum } from './meta'
 
 export const user = pgTable('user', {
@@ -19,6 +22,11 @@ export const user = pgTable('user', {
   role: userRoleEnum('role').default(
     'user',
   ),
+  phone: text('phone'),
+  birthdate: text('birthdate'),
+  startDate: text('start_date'),
+  funFact: text('fun_fact'),
+  agentProfileJSON: jsonb('agent_profile_json').$type<AgentProfile>(),
 })
 
 export const session = pgTable(

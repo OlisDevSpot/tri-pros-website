@@ -322,3 +322,21 @@
     }
   }
 }
+
+/* ── Dashboard sidebar nav hover ───────────────────────────────── */
+/* Soft tint on hover — no border, no shadow, just a gentle wash  */
+/* that hints at interactivity without mimicking the active state. */
+[data-nav-item] {
+  transition:
+    background 200ms ease,
+    color 200ms ease;
+}
+
+[data-nav-item]:not([data-active='true']):hover {
+  background: color-mix(in oklch, var(--primary) 6%, transparent) !important;
+}
+
+[data-nav-item]:not([data-active='true']):hover svg {
+  color: var(--primary);
+  transition: color 200ms ease;
+}

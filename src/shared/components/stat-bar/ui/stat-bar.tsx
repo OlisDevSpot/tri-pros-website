@@ -82,8 +82,8 @@ export function StatBar<T>({ items, data, isLoading, className }: StatBarProps<T
         </AnimatePresence>
       </div>
 
-      {/* Desktop — always visible grid */}
-      <div className="hidden lg:grid lg:grid-cols-4 lg:gap-3">
+      {/* Desktop — always visible, single row */}
+      <div className="hidden lg:flex lg:gap-3 lg:w-fit">
         {computedItems.map(item => (
           <StatBarItem
             key={item.key}
