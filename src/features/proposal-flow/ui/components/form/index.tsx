@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/
 import { Separator } from '@/shared/components/ui/separator'
 import { Switch } from '@/shared/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { cn } from '@/shared/lib/utils'
 import { FundingFields } from './funding-fields'
 import { GeneralFields } from './general-fields'
 import { ProjectFields } from './project-fields'
@@ -57,6 +58,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
     parseAsStringLiteral(FORM_TABS).withDefault('general'),
   )
   const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
   const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
 
@@ -104,46 +106,56 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
               </TabsTrigger>
             ))}
           </TabsList>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button type="button" size="icon" variant="outline">
-                <SettingsIcon className="size-3.5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72" align="end">
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="pricing-mode" className="text-sm font-normal">
-                      Breakdown Pricing
-                    </Label>
-                    <Switch
-                      id="pricing-mode"
-                      checked={pricingMode === 'breakdown'}
-                      onCheckedChange={checked =>
-                        form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
-                    />
+          <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-0.75">
+            <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]',
+                    settingsOpen
+                      ? 'bg-background shadow-sm dark:border-input dark:bg-input/30'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <SettingsIcon className="size-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72" align="end">
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="pricing-mode" className="text-sm font-normal">
+                        Breakdown Pricing
+                      </Label>
+                      <Switch
+                        id="pricing-mode"
+                        checked={pricingMode === 'breakdown'}
+                        onCheckedChange={checked =>
+                          form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
+                      />
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
+                        Show Pricing Breakdown
+                      </Label>
+                      <Switch
+                        id="show-pricing-breakdown"
+                        checked={showPricingBreakdown}
+                        onCheckedChange={checked =>
+                          form.setValue('funding.meta.showPricingBreakdown', checked)}
+                      />
+                    </div>
                   </div>
                 </div>
-                <Separator />
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
-                      Show Pricing Breakdown
-                    </Label>
-                    <Switch
-                      id="show-pricing-breakdown"
-                      checked={showPricingBreakdown}
-                      onCheckedChange={checked =>
-                        form.setValue('funding.meta.showPricingBreakdown', checked)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </Tabs>
 
