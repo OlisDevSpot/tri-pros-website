@@ -106,8 +106,8 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
           </TabsList>
           <Popover>
             <PopoverTrigger asChild>
-              <Button type="button" size="icon" variant="outline" className="size-9">
-                <SettingsIcon className="size-4" />
+              <Button type="button" size="icon" variant="outline">
+                <SettingsIcon className="size-3.5" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-72" align="end">
