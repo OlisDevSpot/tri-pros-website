@@ -106,7 +106,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-0.75">
+          <div className="inline-flex size-9 items-center justify-center rounded-lg bg-muted p-0.75">
             <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
               <PopoverTrigger asChild>
                 <button

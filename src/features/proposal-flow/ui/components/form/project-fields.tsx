@@ -89,6 +89,9 @@ export function ProjectFields({ pricingMode }: Props) {
                             e.stopPropagation()
                             handleDeleteSection(index)
                           }}
+                          onTitleChange={(title) => {
+                            form.setValue(`project.data.sow.${index}.title`, title)
+                          }}
                           pricingMode={pricingMode}
                           sow={sowValues[index] ?? fieldOfArray}
                         />

@@ -129,44 +129,29 @@ export function SOWSection({
         />
 
       </div>
-      <div className="w-full px-3 py-2 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:p-4">
-        <div className="flex gap-3 lg:gap-4">
+      {pricingMode === 'breakdown' && (
+        <div className="w-full px-3 py-2 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:px-4">
           <FormField
-            name={`project.data.sow.${index}.title`}
+            name={`project.data.sow.${index}.price`}
             control={form.control}
             render={({ field }) => (
-              <FormItem className="grow">
-                <FormLabel>Section Title</FormLabel>
+              <FormItem className="w-40">
+                <FormLabel>Section Price</FormLabel>
                 <FormControl>
-                  <Input placeholder="Title" {...field} />
+                  <Input
+                    {...field}
+                    placeholder="$10,000"
+                    type="text"
+                    value={String(field.value || '')}
+                    onChange={e => field.onChange(Number(e.target.value || ''))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          {pricingMode === 'breakdown' && (
-            <FormField
-              name={`project.data.sow.${index}.price`}
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="w-40">
-                  <FormLabel>Section Price</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="$10,000"
-                      type="text"
-                      value={String(field.value || '')}
-                      onChange={e => field.onChange(Number(e.target.value || ''))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
         </div>
-      </div>
+      )}
       <div className="w-full px-3 pb-3 lg:px-4 lg:pb-4">
         <FormField
           name={`project.data.sow.${index}.contentJSON`}
