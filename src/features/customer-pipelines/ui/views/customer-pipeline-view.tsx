@@ -18,7 +18,9 @@ import { CustomerProfileModal } from '@/features/customer-pipelines/ui/component
 import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipeline-select'
 import { CreateMeetingModal } from '@/features/meetings/ui/components/create-meeting-modal'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
+import { useKanbanColumnFilter } from '@/shared/components/kanban/hooks/use-kanban-column-filter'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
+import { KanbanColumnFilter } from '@/shared/components/kanban/ui/kanban-column-filter'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -39,6 +41,12 @@ export function CustomerPipelineView() {
   const canManagePipeline = ability.can('manage', 'CustomerPipeline')
 
   const config = pipelineConfigs[pipeline]
+
+  const columnFilterConfig = pipeline === 'active'
+    ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
+    : { defaultVisible: [...config.stages] }
+
+  const columnFilter = useKanbanColumnFilter(config.stageConfig, columnFilterConfig)
 
   const pipelineQuery = useQuery({
     ...trpc.customerPipelinesRouter.getCustomerPipelineItems.queryOptions({ pipeline }),
@@ -177,7 +185,17 @@ export function CustomerPipelineView() {
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-          {layout === 'table' && <DataViewTypeToggle value={layout} onChange={setLayout} />}
+          {layout === 'kanban' && (
+            <KanbanColumnFilter
+              stages={config.stageConfig}
+              visibleStages={columnFilter.visibleStages}
+              alwaysVisible={columnFilter.alwaysVisible}
+              onToggleStage={columnFilter.handleToggleStage}
+              onShowAll={columnFilter.handleShowAll}
+              onHideAll={columnFilter.handleHideAll}
+            />
+          )}
+          <DataViewTypeToggle value={layout} onChange={setLayout} />
         </div>
       </div>
 
@@ -204,17 +222,13 @@ export function CustomerPipelineView() {
               )
             : (
                 <KanbanBoard<CustomerPipelineItem>
-                  stageConfig={config.stageConfig}
+                  stageConfig={columnFilter.filteredStageConfig}
                   groupedItems={groupCustomersByStage(pipelineQuery.data, config.stages)}
                   allowedTransitions={config.allowedTransitions}
                   blockedMessages={config.blockedMessages}
                   onMoveItem={handleMoveItem}
                   onBlockedTransition={handleBlockedTransition}
                   collapsedStages={pipeline === 'active' ? ['declined'] : []}
-                  columnFilter={pipeline === 'active'
-                    ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
-                    : { defaultVisible: [...config.stages] }}
-                  headerSlot={<DataViewTypeToggle value={layout} onChange={setLayout} />}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
