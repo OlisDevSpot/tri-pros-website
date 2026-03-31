@@ -189,23 +189,47 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
             </a>
           )}
 
-          {/* Save */}
+          {/* Save — split button: main area saves (desktop), chevron opens popover */}
           <Popover open={saveOpen} onOpenChange={setSaveOpen}>
-            <PopoverTrigger asChild>
+            <div
+              className={cn(
+                TOOLBAR_BUTTON_BASE,
+                'gap-0 px-0',
+                saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+                isLoading && 'pointer-events-none opacity-50',
+              )}
+            >
+              {/* Main save area — desktop: triggers save, mobile: opens popover */}
               <button
                 type="button"
                 disabled={isLoading}
-                className={cn(
-                  TOOLBAR_BUTTON_BASE,
-                  'gap-0.5 px-1.5',
-                  saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
-                  isLoading && 'pointer-events-none opacity-50',
-                )}
+                className="hidden items-center gap-1.5 px-2 lg:inline-flex"
+                onClick={handleSaveOnly}
               >
                 <SaveIcon className="size-3.5" />
-                <ChevronDownIcon className="size-3" />
+                <span className="text-sm font-medium">Save</span>
               </button>
-            </PopoverTrigger>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-0.5 px-1.5 lg:hidden"
+                >
+                  <SaveIcon className="size-3.5" />
+                  <ChevronDownIcon className="size-3" />
+                </button>
+              </PopoverTrigger>
+              {/* Chevron dropdown — desktop only */}
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className="hidden border-l border-current/10 px-1 lg:inline-flex"
+                >
+                  <ChevronDownIcon className="size-3" />
+                </button>
+              </PopoverTrigger>
+            </div>
             <PopoverContent className="w-44 p-1" align="end">
               <div className="flex flex-col">
                 <Button
