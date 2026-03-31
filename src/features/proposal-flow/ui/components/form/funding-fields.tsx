@@ -36,7 +36,6 @@ export function FundingFields({
   const incentives = useWatch({ control: form.control, name: 'funding.data.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
   const miscPrice = useWatch({ control: form.control, name: 'funding.data.miscPrice' })
-  const _finalTcp = useWatch({ control: form.control, name: 'funding.data.finalTcp' })
 
   useEffect(() => {
     const { totalProjectDiscounts, totalSOWPriceBreakdown } = getProposalAggregates(form.getValues())
@@ -55,244 +54,256 @@ export function FundingFields({
   return (
     <section className="space-y-8">
       <div className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
-        <div className="flex gap-12 justify-between items-start">
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-2xl font-semibold">Funding</h3>
-            </div>
-            <div className="space-y-6">
-              {pricingMode === 'breakdown' && (
-                <FormField
-                  name="funding.data.miscPrice"
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem className="max-w-62.5">
-                      <FormLabel>Misc Pricing</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="$0"
-                          onChange={(value) => {
-                            const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                            field.onChange(numericValue)
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        {/* Funding heading + fields */}
+        <div className="space-y-4">
+          <h3 className="text-2xl font-semibold">Funding</h3>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {pricingMode === 'breakdown' && (
+              <FormField
+                name="funding.data.miscPrice"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Misc Pricing</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="$0"
+                        onChange={(value) => {
+                          const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                          field.onChange(numericValue)
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <FormField
+              name="funding.data.startingTcp"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Total Contract Price</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      disabled={pricingMode === 'breakdown'}
+                      placeholder="$50,000"
+                      onChange={(value) => {
+                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                        field.onChange(numericValue)
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-              <FormField
-                name="funding.data.startingTcp"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="max-w-62.5">
-                    <FormLabel>Total Contract Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        disabled={pricingMode === 'breakdown'}
-                        placeholder="$50,000"
-                        onChange={(value) => {
-                          const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                          field.onChange(numericValue)
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                name="funding.data.depositAmount"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem className="max-w-62.5">
-                    <FormLabel>Deposit</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="$1,000"
-                        onChange={(value) => {
-                          const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                          field.onChange(numericValue)
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            />
+            <FormField
+              name="funding.data.depositAmount"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Deposit</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="$1,000"
+                      onChange={(value) => {
+                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                        field.onChange(numericValue)
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-          { showSettings && (
-
-            <div className="space-y-4 w-full">
-              <div className="flex gap-3 items-center">
-                <div>
-                  <h3 className="text-2xl font-semibold">Incentives</h3>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                  className="size-8"
-                  onClick={() => {
-                    append({
-                      type: 'discount',
-                      amount: 0,
-                      notes: '',
-                    })
-                  }}
-                >
-                  <PlusIcon size={20} />
-                </Button>
-              </div>
-              <div className="flex flex-col gap-6 w-full">
-                {fields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="w-full flex items-start gap-4"
-                  >
-                    <FormField
-                      name={`funding.data.incentives.${index}.type`}
-                      control={form.control}
-                      render={({ field }) => (
-                        <FormItem className="w-50">
-                          <FormLabel>Incentive Type</FormLabel>
-                          <FormControl>
-                            <Select
-                              defaultValue="discount"
-                              onValueChange={(val: IncentiveType) => {
-                                field.onChange(val)
-                              }}
-                            >
-                              <SelectTrigger {...field} className="w-full">
-                                <SelectValue placeholder="Select an incentive type" />
-                              </SelectTrigger>
-                              <SelectContent {...field}>
-                                {incentiveTypes.filter(t => t === 'discount' || t === 'exclusive-offer').map(t => (
-                                  <SelectItem key={t} value={t}>
-                                    {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {
-                      incentives[index]?.type === 'exclusive-offer' && (
-                        <FormField
-                          name={`funding.data.incentives.${index}.offer`}
-                          control={form.control}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Offer</FormLabel>
-                              <FormControl>
-                                <Input {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )
-                    }
-                    { incentives[index]?.type === 'discount' && (
-                      <FormField
-                        name={`funding.data.incentives.${index}.amount`}
-                        control={form.control}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Amount</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder="$1,000"
-                                onChange={(value) => {
-                                  const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                                  field.onChange(numericValue)
-                                  const { totalProjectDiscounts } = getProposalAggregates(form.getValues())
-                                  form.setValue('funding.data.finalTcp', form.getValues('funding.data.startingTcp') - totalProjectDiscounts)
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-                    <FormField
-                      name={`funding.data.incentives.${index}.notes`}
-                      control={form.control}
-                      render={({ field }) => (
-                        <FormItem className="grow">
-                          <FormLabel>Notes</FormLabel>
-                          <FormControl>
-                            {incentives[index]?.type === 'discount'
-                              ? (
-                                  <Input
-                                    {...field}
-                                    placeholder="Friends & Family Discount"
-                                    onChange={(e) => {
-                                      field.onChange(e.target.value || '')
-                                    }}
-                                  />
-                                )
-                              : (
-                                  <Textarea
-                                    {...field}
-                                    placeholder="Complementary 10 ft gutters"
-                                    onChange={(e) => {
-                                      field.onChange(e.target.value || '')
-                                    }}
-                                  />
-                                )}
-
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      name={`funding.data.incentives.${index}.expiresAt`}
-                      control={form.control}
-                      render={({ field }) => (
-                        <FormItem className="self-end">
-                          <FormControl>
-                            <DateTimePicker
-                              placeholder="Set expiration"
-                              value={field.value ? new Date(field.value) : undefined}
-                              onChange={(date) => {
-                                field.onChange(date ? date.toISOString() : undefined)
-                              }}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <div className="self-end">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        className="size-9"
-                        onClick={() => {
-                          remove(index)
-                        }}
-                      >
-                        <TrashIcon size={20} />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* Incentives section */}
+        {showSettings && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-t border-border/30 pt-4">
+              <h4 className="text-lg font-semibold">Incentives</h4>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  append({
+                    type: 'discount',
+                    amount: 0,
+                    notes: '',
+                  })
+                }}
+              >
+                <PlusIcon className="size-4" />
+                Add
+              </Button>
+            </div>
+
+            {fields.length === 0
+              ? (
+                  <div className="rounded-xl border border-dashed border-border/50 bg-muted/10 px-4 py-8 text-center text-sm text-muted-foreground">
+                    No incentives added
+                  </div>
+                )
+              : (
+                  <div className="space-y-4 rounded-xl border border-dashed border-border/50 bg-muted/10 p-4">
+                    {fields.map((field, index) => (
+                      <div
+                        key={field.id}
+                        className="space-y-4 rounded-lg border border-border/40 bg-muted/30 p-4"
+                      >
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                          <FormField
+                            name={`funding.data.incentives.${index}.type`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Incentive Type</FormLabel>
+                                <FormControl>
+                                  <Select
+                                    defaultValue="discount"
+                                    onValueChange={(val: IncentiveType) => {
+                                      field.onChange(val)
+                                    }}
+                                  >
+                                    <SelectTrigger {...field} className="w-full">
+                                      <SelectValue placeholder="Select an incentive type" />
+                                    </SelectTrigger>
+                                    <SelectContent {...field}>
+                                      {incentiveTypes.filter(t => t === 'discount' || t === 'exclusive-offer').map(t => (
+                                        <SelectItem key={t} value={t}>
+                                          {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          {incentives[index]?.type === 'discount' && (
+                            <FormField
+                              name={`funding.data.incentives.${index}.amount`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Amount</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      {...field}
+                                      placeholder="$1,000"
+                                      onChange={(value) => {
+                                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                                        field.onChange(numericValue)
+                                        const { totalProjectDiscounts } = getProposalAggregates(form.getValues())
+                                        form.setValue('funding.data.finalTcp', form.getValues('funding.data.startingTcp') - totalProjectDiscounts)
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                          {incentives[index]?.type === 'exclusive-offer' && (
+                            <FormField
+                              name={`funding.data.incentives.${index}.offer`}
+                              control={form.control}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Offer</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                          <FormField
+                            name={`funding.data.incentives.${index}.notes`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Notes</FormLabel>
+                                <FormControl>
+                                  {incentives[index]?.type === 'discount'
+                                    ? (
+                                        <Input
+                                          {...field}
+                                          placeholder="Friends & Family Discount"
+                                          onChange={(e) => {
+                                            field.onChange(e.target.value || '')
+                                          }}
+                                        />
+                                      )
+                                    : (
+                                        <Textarea
+                                          {...field}
+                                          placeholder="Complementary 10 ft gutters"
+                                          onChange={(e) => {
+                                            field.onChange(e.target.value || '')
+                                          }}
+                                        />
+                                      )}
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            name={`funding.data.incentives.${index}.expiresAt`}
+                            control={form.control}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Expiration</FormLabel>
+                                <FormControl>
+                                  <DateTimePicker
+                                    placeholder="Set expiration"
+                                    value={field.value ? new Date(field.value) : undefined}
+                                    onChange={(date) => {
+                                      field.onChange(date ? date.toISOString() : undefined)
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            className="gap-1.5"
+                            onClick={() => {
+                              remove(index)
+                            }}
+                          >
+                            <TrashIcon className="size-4" />
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+          </div>
+        )}
+
+        {/* Pricing breakdown helper */}
         {showPricingBreakdown && (
           <div className="w-full">
             <PricingBreakdown proposalData={formValuesToProposal(form.getValues())} />
