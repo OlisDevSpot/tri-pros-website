@@ -108,12 +108,12 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
     <form
       id="proposal-form"
       onSubmit={form.handleSubmit(onSubmit, onInvalid)}
-      className="flex w-full flex-col gap-6"
+      className="flex h-full w-full flex-col gap-4"
     >
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
-        className="w-full"
+        className="w-full shrink-0"
       >
         <div className="flex justify-center">
           <TabsList>
@@ -126,38 +126,40 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
         </div>
       </Tabs>
 
-      <Card className="w-full overflow-hidden">
-        <CardContent className="p-3 lg:p-6">
-          <AnimatePresence mode="wait" custom={direction} initial={false}>
-            <motion.div
-              key={activeTab}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={TRANSITION}
-            >
-              {activeTab === 'general' && <GeneralFields />}
-              {activeTab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
-              {activeTab === 'funding' && <FundingFields pricingMode={pricingMode} />}
-            </motion.div>
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <Card className="w-full overflow-hidden">
+          <CardContent className="p-3 lg:p-6">
+            <AnimatePresence mode="wait" custom={direction} initial={false}>
+              <motion.div
+                key={activeTab}
+                custom={direction}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={TRANSITION}
+              >
+                {activeTab === 'general' && <GeneralFields />}
+                {activeTab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
+                {activeTab === 'funding' && <FundingFields pricingMode={pricingMode} />}
+              </motion.div>
+            </AnimatePresence>
+          </CardContent>
+        </Card>
 
-      {form.formState.errors.root && (
-        <div className="text-red-500">
-          {JSON.stringify(form.formState.errors, null, 2)}
-        </div>
-      )}
-      {!hideSubmitButton && (
-        <div className="flex items-center gap-2">
-          <Button type="submit" disabled={isLoading}>
-            {proposalId ? 'Update & Preview' : 'Save & Preview'}
-          </Button>
-        </div>
-      )}
+        {form.formState.errors.root && (
+          <div className="mt-4 text-red-500">
+            {JSON.stringify(form.formState.errors, null, 2)}
+          </div>
+        )}
+        {!hideSubmitButton && (
+          <div className="mt-4 flex items-center gap-2">
+            <Button type="submit" disabled={isLoading}>
+              {proposalId ? 'Update & Preview' : 'Save & Preview'}
+            </Button>
+          </div>
+        )}
+      </div>
     </form>
   )
 }
