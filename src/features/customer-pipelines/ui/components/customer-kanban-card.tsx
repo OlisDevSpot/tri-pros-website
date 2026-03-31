@@ -415,7 +415,7 @@ function MeetingMoreMenu({ item, ability, onAssignRep }: {
       <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
         {ability.can('read', 'Meeting') && (
           <DropdownMenuItem asChild>
-            <a href={`${ROOTS.dashboard.meetings()}/${item.nextMeetingId}`}>
+            <a href={ROOTS.dashboard.meetings.byId(item.nextMeetingId!)}>
               <ExternalLinkIcon size={14} />
               Open Meeting
             </a>

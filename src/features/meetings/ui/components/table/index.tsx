@@ -62,7 +62,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
         setEditDialog(row)
       }
     },
-    onStart: (meetingId: string) => router.push(`${ROOTS.dashboard.meetings()}/${meetingId}`),
+    onStart: (meetingId: string) => router.push(ROOTS.dashboard.meetings.byId(meetingId)),
     onDuplicate: (meetingId: string) => duplicateMeeting.mutate({ id: meetingId }),
     onDelete: (meetingId: string) => deleteMeeting.mutate({ id: meetingId }),
     onAssignOwner: (meetingId: string, currentOwnerId: string) => {

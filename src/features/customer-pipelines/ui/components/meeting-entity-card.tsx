@@ -26,12 +26,12 @@ interface Props {
 export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, onNavigate, onAssignRep }: Props) {
   const handleView = useCallback(() => {
     onNavigate?.()
-    window.location.href = `${ROOTS.dashboard.meetings()}/${meeting.id}`
+    window.location.href = ROOTS.dashboard.meetings.byId(meeting.id)
   }, [meeting.id, onNavigate])
 
   const handleEdit = useCallback(() => {
     onNavigate?.()
-    window.location.href = `${ROOTS.dashboard.meetings()}/${meeting.id}`
+    window.location.href = ROOTS.dashboard.meetings.byId(meeting.id)
   }, [meeting.id, onNavigate])
 
   const handleAssignOwner = useCallback(() => {
