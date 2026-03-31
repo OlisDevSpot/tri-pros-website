@@ -4,7 +4,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
 import { AnimatePresence, motion } from 'motion/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
@@ -64,10 +64,11 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
 export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitButton }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const [proposalId] = useQueryState('proposalId')
-  const [activeTab, setActiveTab] = useQueryState(
+  const [nuqsTab, setNuqsTab] = useQueryState(
     'formTab',
     parseAsStringLiteral(FORM_TABS).withDefault('general'),
   )
+  const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
 
   const prevTabRef = useRef(FORM_TABS.indexOf(activeTab))
@@ -77,6 +78,16 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
   useEffect(() => {
     prevTabRef.current = currentIndex
   }, [currentIndex])
+
+  useEffect(() => {
+    setActiveTab(nuqsTab)
+  }, [nuqsTab])
+
+  function handleTabChange(val: string) {
+    const tab = val as FormTab
+    setActiveTab(tab)
+    setNuqsTab(tab)
+  }
 
   useEffect(() => {
     if (initialValues) {
@@ -101,7 +112,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
     >
       <Tabs
         value={activeTab}
-        onValueChange={val => setActiveTab(val as FormTab)}
+        onValueChange={handleTabChange}
         className="w-full"
       >
         <div className="flex justify-center">
@@ -117,7 +128,7 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
 
       <Card className="w-full overflow-hidden">
         <CardContent className="p-3 lg:p-6">
-          <AnimatePresence mode="wait" custom={direction}>
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
               key={activeTab}
               custom={direction}
