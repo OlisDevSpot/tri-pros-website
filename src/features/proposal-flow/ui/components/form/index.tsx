@@ -63,7 +63,9 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
   )
   const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [saveOpen, setSaveOpen] = useState(false)
+  const [saveOpenMobile, setSaveOpenMobile] = useState(false)
+  const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
+  const saveOpen = saveOpenMobile || saveOpenDesktop
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
   const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
 
@@ -92,13 +94,18 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
     toast.error('Form is invalid (check console)')
   }
 
+  function closeSavePopovers() {
+    setSaveOpenMobile(false)
+    setSaveOpenDesktop(false)
+  }
+
   function handleSaveAndPreview() {
-    setSaveOpen(false)
+    closeSavePopovers()
     form.handleSubmit(onSubmit, onInvalid)()
   }
 
   function handleSaveOnly() {
-    setSaveOpen(false)
+    closeSavePopovers()
     if (onSave) {
       form.handleSubmit(onSave, onInvalid)()
     }
@@ -189,26 +196,44 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
             </a>
           )}
 
-          {/* Save — split button: main area saves (desktop), chevron opens popover */}
-          <Popover open={saveOpen} onOpenChange={setSaveOpen}>
-            <div
-              className={cn(
-                TOOLBAR_BUTTON_BASE,
-                'gap-0 px-0',
-                saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
-                isLoading && 'pointer-events-none opacity-50',
-              )}
+          {/* Save — split button */}
+          <div
+            className={cn(
+              TOOLBAR_BUTTON_BASE,
+              'gap-0 px-0',
+              saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+              isLoading && 'pointer-events-none opacity-50',
+            )}
+          >
+            {/* Desktop: label triggers save, chevron opens popover */}
+            <button
+              type="button"
+              disabled={isLoading}
+              className="hidden items-center gap-1.5 px-2 leading-none lg:inline-flex"
+              onClick={handleSaveOnly}
             >
-              {/* Main save area — desktop: triggers save, mobile: opens popover */}
-              <button
-                type="button"
-                disabled={isLoading}
-                className="hidden items-center gap-1.5 px-2 leading-none lg:inline-flex"
-                onClick={handleSaveOnly}
-              >
-                <SaveIcon className="size-3.5 shrink-0" />
-                <span className="text-sm font-medium">Save</span>
-              </button>
+              <SaveIcon className="size-3.5 shrink-0" />
+              <span className="text-sm font-medium">Save</span>
+            </button>
+            <Popover open={saveOpenDesktop} onOpenChange={setSaveOpenDesktop}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
+                >
+                  <ChevronDownIcon className="size-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-44 p-1" align="end">
+                <div className="flex flex-col">
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            {/* Mobile: entire button opens popover */}
+            <Popover open={saveOpenMobile} onOpenChange={setSaveOpenMobile}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
@@ -219,40 +244,14 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                   <ChevronDownIcon className="size-3" />
                 </button>
               </PopoverTrigger>
-              {/* Chevron dropdown — desktop only */}
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
-                >
-                  <ChevronDownIcon className="size-3" />
-                </button>
-              </PopoverTrigger>
-            </div>
-            <PopoverContent className="w-44 p-1" align="end">
-              <div className="flex flex-col">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start"
-                  onClick={handleSaveOnly}
-                >
-                  Save
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="justify-start"
-                  onClick={handleSaveAndPreview}
-                >
-                  Save & Preview
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+              <PopoverContent className="w-44 p-1" align="end">
+                <div className="flex flex-col">
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </div>
 
