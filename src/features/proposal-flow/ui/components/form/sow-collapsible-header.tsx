@@ -28,7 +28,8 @@ export function SOWCollapsibleHeader({
         <span className={cn(
           'text-base font-medium truncate',
           !hasTitle && 'text-muted-foreground italic',
-        )}>
+        )}
+        >
           {hasTitle ? sow.title : 'Untitled Section'}
         </span>
         {(hasTrade || scopeCount > 0) && (
@@ -40,7 +41,9 @@ export function SOWCollapsibleHeader({
             )}
             {scopeCount > 0 && (
               <Badge variant="secondary" className="bg-muted text-xs text-muted-foreground">
-                {scopeCount} {scopeCount === 1 ? 'scope' : 'scopes'}
+                {scopeCount}
+                {' '}
+                {scopeCount === 1 ? 'scope' : 'scopes'}
               </Badge>
             )}
           </div>
@@ -58,7 +61,8 @@ export function SOWCollapsibleHeader({
         </Button>
         {showPrice && (
           <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-            ${sow.price!.toLocaleString()}
+            $
+            {sow.price!.toLocaleString()}
           </span>
         )}
         <ChevronDownIcon

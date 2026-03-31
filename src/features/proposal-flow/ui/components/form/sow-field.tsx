@@ -2,7 +2,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
 import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import { useQueryClient } from '@tanstack/react-query'
-import { TrashIcon } from 'lucide-react'
+
 import { useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
@@ -19,14 +19,12 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   index: number
-  onDelete: () => void
   pricingMode: 'total' | 'breakdown'
   sowSnapshot: ProposalFormSchema['project']['data']['sow'][0]
 }
 
 export function SOWSection({
   index,
-  onDelete,
   pricingMode,
   sowSnapshot,
 }: Props) {
@@ -49,7 +47,7 @@ export function SOWSection({
   const { open: openModal, close: closeModal, setModal } = useModalStore()
 
   return (
-    <div key={sowSnapshot.title} className="flex flex-col gap-4 items-center border w-full max-h-187.5 overflow-auto">
+    <div className="flex flex-col gap-4 items-center w-full max-h-187.5 overflow-auto">
       <div className="flex items-end rounded-lg h-full w-full">
         <FormField
           control={form.control}
@@ -130,15 +128,6 @@ export function SOWSection({
           )}
         />
 
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="h-9 w-9 rounded-none"
-          onClick={onDelete}
-        >
-          <TrashIcon />
-        </Button>
       </div>
       <div className="w-full p-4 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
         <div className="flex gap-4">

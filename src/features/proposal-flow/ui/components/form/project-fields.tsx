@@ -1,13 +1,16 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { ProjectType } from '@/shared/types/enums'
 import { PlusIcon } from 'lucide-react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useState } from 'react'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
+import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
 
 interface Props {
@@ -21,6 +24,23 @@ export function ProjectFields({ pricingMode }: Props) {
     control: form.control,
     name: `project.data.sow`,
   })
+
+  const [openSections, setOpenSections] = useState<Set<number>>(() => new Set([0]))
+
+  const sowValues = useWatch({ control: form.control, name: 'project.data.sow' })
+
+  function toggleSection(index: number) {
+    setOpenSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) {
+        next.delete(index)
+      }
+      else {
+        next.add(index)
+      }
+      return next
+    })
+  }
 
   return (
     <section className="space-y-8">
@@ -99,16 +119,50 @@ export function ProjectFields({ pricingMode }: Props) {
           </div>
           <div className="flex flex-col items-start gap-4 min-h-15 flex-wrap">
             <h3>Complete Scope of Work</h3>
-            <div className="flex flex-col gap-8 flex-wrap w-full">
-              {fields.map((fieldOfArray, index) => (
-                <SOWSection
-                  key={fieldOfArray.id}
-                  index={index}
-                  onDelete={() => remove(index)}
-                  pricingMode={pricingMode}
-                  sowSnapshot={fieldOfArray}
-                />
-              ))}
+            <div className="flex flex-col gap-4 w-full">
+              {fields.map((fieldOfArray, index) => {
+                const isOpen = openSections.has(index)
+                return (
+                  <Collapsible
+                    key={fieldOfArray.id}
+                    open={isOpen}
+                    onOpenChange={() => toggleSection(index)}
+                  >
+                    <div className="border border-border/30 rounded-xl overflow-hidden bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
+                      <CollapsibleTrigger asChild>
+                        <div>
+                          <SOWCollapsibleHeader
+                            isOpen={isOpen}
+                            onDelete={(e) => {
+                              e.stopPropagation()
+                              remove(index)
+                              setOpenSections((prev) => {
+                                const next = new Set<number>()
+                                for (const i of prev) {
+                                  if (i < index)
+                                    next.add(i)
+                                  else if (i > index)
+                                    next.add(i - 1)
+                                }
+                                return next
+                              })
+                            }}
+                            pricingMode={pricingMode}
+                            sow={sowValues[index] ?? fieldOfArray}
+                          />
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SOWSection
+                          index={index}
+                          pricingMode={pricingMode}
+                          sowSnapshot={fieldOfArray}
+                        />
+                      </CollapsibleContent>
+                    </div>
+                  </Collapsible>
+                )
+              })}
               <Button
                 type="button"
                 size="icon"
@@ -125,6 +179,7 @@ export function ProjectFields({ pricingMode }: Props) {
                       label: '',
                     },
                   })
+                  setOpenSections(prev => new Set(prev).add(fields.length))
                 }}
               >
                 <PlusIcon />
