@@ -1,5 +1,4 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { ProjectType } from '@/shared/types/enums'
 import { PlusIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
@@ -7,10 +6,7 @@ import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { Button } from '@/shared/components/ui/button'
 import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Input } from '@/shared/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
@@ -73,79 +69,8 @@ export function ProjectFields({ pricingMode }: Props) {
     <>
       <DeleteConfirmDialog />
       <div className="flex flex-col gap-4 lg:gap-6">
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
-          <FormField
-            name="project.data.type"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Project Type</FormLabel>
-                <FormControl>
-                  <Select
-                    defaultValue="general-remodeling"
-                    onValueChange={(val: ProjectType) => {
-                      field.onChange(val)
-                    }}
-                  >
-                    <SelectTrigger {...field} className="w-full">
-                      <SelectValue placeholder="Select a project type" />
-                    </SelectTrigger>
-                    <SelectContent {...field}>
-                      {projectTypes.map(type => (
-                        <SelectItem key={type} value={type}>
-                          {type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="project.data.timeAllocated"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Time Allocated</FormLabel>
-                <FormControl>
-                  <Input placeholder="4-6 weeks" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="project.data.validThroughTimeframe"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valid Through Timeframe</FormLabel>
-                <FormControl>
-                  <Select
-                    defaultValue="60 days"
-                    onValueChange={(val: ProjectType) => {
-                      field.onChange(val)
-                    }}
-                  >
-                    <SelectTrigger {...field} className="w-full">
-                      <SelectValue placeholder="Select a project type" />
-                    </SelectTrigger>
-                    <SelectContent {...field}>
-                      {validThroughTimeframes.map(tf => (
-                        <SelectItem key={tf} value={tf}>{tf}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="flex flex-col items-start gap-4 min-h-15 flex-wrap">
-          <h3>Complete Scope of Work</h3>
+        <div className="flex flex-col items-start gap-3">
+          <h3 className="text-lg font-semibold">Complete Scope of Work</h3>
           <div className="flex flex-col gap-4 w-full">
             {fields.map((fieldOfArray, index) => {
               const isOpen = openSections.has(index)
