@@ -2,8 +2,10 @@
 
 import { AnimatePresence } from 'motion/react'
 import { useQueryState } from 'nuqs'
+import { useState } from 'react'
 
 import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
+import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { MobileBottomNav } from '@/features/agent-dashboard/ui/components/mobile-bottom-nav'
 import { StepTransition } from '@/features/agent-dashboard/ui/components/step-transition'
 import { SettingsView } from '@/features/agent-settings/ui/views/settings-view'
@@ -58,6 +60,7 @@ function StepContent({ step, editProjectId }: { step: string, editProjectId: str
 export function DashboardHub({ authState }: DashboardHubProps) {
   const [step] = useQueryState('step', dashboardStepParser)
   const [editProjectId] = useQueryState('editProjectId', editProjectIdParser)
+  const [isActionCenterOpen, setIsActionCenterOpen] = useState(false)
 
   if (authState.status === 'unauthenticated') {
     return (
@@ -84,7 +87,8 @@ export function DashboardHub({ authState }: DashboardHubProps) {
           </StepTransition>
         </AnimatePresence>
       </main>
-      <MobileBottomNav />
+      <MobileBottomNav onActionCenterClick={() => setIsActionCenterOpen(true)} />
+      <ActionCenterSheet isOpen={isActionCenterOpen} onClose={() => setIsActionCenterOpen(false)} />
     </div>
   )
 }

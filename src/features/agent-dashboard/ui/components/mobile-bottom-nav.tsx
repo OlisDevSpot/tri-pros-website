@@ -1,11 +1,15 @@
 'use client'
 
-import { MenuIcon } from 'lucide-react'
+import { MenuIcon, ZapIcon } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
 import { useSidebar } from '@/shared/components/ui/sidebar'
 
-export function MobileBottomNav() {
+interface MobileBottomNavProps {
+  onActionCenterClick?: () => void
+}
+
+export function MobileBottomNav({ onActionCenterClick }: MobileBottomNavProps) {
   const { setOpenMobile } = useSidebar()
 
   return (
@@ -21,6 +25,15 @@ export function MobileBottomNav() {
           <span className="sr-only">Open menu</span>
         </Button>
         <div className="flex-1" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-9 shrink-0"
+          onClick={onActionCenterClick}
+        >
+          <ZapIcon className="size-5" />
+          <span className="sr-only">Action Center</span>
+        </Button>
       </div>
     </div>
   )
