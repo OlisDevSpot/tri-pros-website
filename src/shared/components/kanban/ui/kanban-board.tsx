@@ -13,6 +13,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { KanbanColumn } from '@/shared/components/kanban/ui/kanban-column'
 import { KanbanColumnFilter } from '@/shared/components/kanban/ui/kanban-column-filter'
@@ -28,6 +29,7 @@ interface Props<T extends KanbanItem = KanbanItem> {
   collapsedStages?: string[]
   columnFilter?: KanbanColumnFilterConfig
   headerSlot?: React.ReactNode
+  filterPortalTarget?: HTMLElement | null
   getItemHref: (item: T) => string
   showColumnValues?: boolean
   getItemValue?: (item: T) => number | null
@@ -44,6 +46,7 @@ export function KanbanBoard<T extends KanbanItem>({
   collapsedStages = [],
   columnFilter,
   headerSlot,
+  filterPortalTarget,
   getItemHref,
   showColumnValues,
   getItemValue,
@@ -152,46 +155,56 @@ export function KanbanBoard<T extends KanbanItem>({
     setVisibleStages(new Set(columnFilter?.alwaysVisible ?? []))
   }
 
+  const filterNode = columnFilter
+    ? (
+        <KanbanColumnFilter
+          stages={stageConfig}
+          visibleStages={visibleStages}
+          alwaysVisible={alwaysVisible}
+          onToggleStage={handleToggleStage}
+          onShowAll={handleShowAll}
+          onHideAll={handleHideAll}
+        />
+      )
+    : null
+
+  const isFilterPortaled = !!filterPortalTarget && !!filterNode
+  const showInternalHeader = !isFilterPortaled && (filterNode || headerSlot)
+
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex flex-col h-full">
-        {(columnFilter || headerSlot) && (
-          <div className="flex items-center justify-between mb-2 shrink-0">
-            {columnFilter && (
-              <KanbanColumnFilter
-                stages={stageConfig}
-                visibleStages={visibleStages}
-                alwaysVisible={alwaysVisible}
-                onToggleStage={handleToggleStage}
-                onShowAll={handleShowAll}
-                onHideAll={handleHideAll}
-              />
-            )}
-            <div className="flex items-center gap-2 ml-auto">
-              {headerSlot}
+    <>
+      {isFilterPortaled && createPortal(filterNode, filterPortalTarget)}
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-col h-full">
+          {showInternalHeader && (
+            <div className="flex items-center justify-between mb-2 shrink-0">
+              {filterNode}
+              <div className="flex items-center gap-2 ml-auto">
+                {headerSlot}
+              </div>
             </div>
+          )}
+          <div className="flex gap-3 overflow-x-auto pb-2 flex-1 min-h-0">
+            {filteredStageConfig.map(stage => (
+              <KanbanColumn
+                key={stage.key}
+                stage={stage}
+                items={groupedItems[stage.key] ?? []}
+                collapsed={collapsedStages.includes(stage.key)}
+                getItemHref={getItemHref}
+                showValueTotal={showColumnValues}
+                getItemValue={getItemValue}
+                renderCard={renderCard}
+              />
+            ))}
           </div>
-        )}
-        <div className="flex gap-3 overflow-x-auto pb-2 flex-1 min-h-0">
-          {filteredStageConfig.map(stage => (
-            <KanbanColumn
-              key={stage.key}
-              stage={stage}
-              items={groupedItems[stage.key] ?? []}
-              collapsed={collapsedStages.includes(stage.key)}
-              getItemHref={getItemHref}
-              showValueTotal={showColumnValues}
-              getItemValue={getItemValue}
-              renderCard={renderCard}
-            />
-          ))}
         </div>
-      </div>
-      <KanbanDragOverlay activeItem={activeItem} getItemHref={getItemHref} renderCard={renderCard} />
-    </DndContext>
+        <KanbanDragOverlay activeItem={activeItem} getItemHref={getItemHref} renderCard={renderCard} />
+      </DndContext>
+    </>
   )
 }

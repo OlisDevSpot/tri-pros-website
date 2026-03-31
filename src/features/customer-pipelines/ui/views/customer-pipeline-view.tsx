@@ -6,7 +6,7 @@ import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { pipelineConfigs } from '@/features/customer-pipelines/constants/pipeline-config'
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
@@ -142,6 +142,14 @@ export function CustomerPipelineView() {
     [handleViewProfile, handleMoveToPipeline, handleCreateMeeting, handleAssignRep, pipeline, canManagePipeline],
   )
 
+  const filterPortalRef = useRef<HTMLDivElement>(null)
+  const [filterPortalTarget, setFilterPortalTarget] = useState<HTMLElement | null>(null)
+
+  const filterRefCallback = useCallback((node: HTMLDivElement | null) => {
+    filterPortalRef.current = node
+    setFilterPortalTarget(node)
+  }, [])
+
   const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
   const isSwitching = pipelineQuery.isFetching && !pipelineQuery.isLoading
 
@@ -177,6 +185,7 @@ export function CustomerPipelineView() {
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
+          <div ref={filterRefCallback} />
           <DataViewTypeToggle value={layout} onChange={setLayout} />
         </div>
       </div>
@@ -214,6 +223,7 @@ export function CustomerPipelineView() {
                   columnFilter={pipeline === 'active'
                     ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
                     : { defaultVisible: [...config.stages] }}
+                  filterPortalTarget={filterPortalTarget}
                   getItemHref={getItemHref}
                   showColumnValues
                   getItemValue={getItemValue}
