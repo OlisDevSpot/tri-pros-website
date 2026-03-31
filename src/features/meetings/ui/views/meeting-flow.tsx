@@ -230,7 +230,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
       {/* Footer navigation + overlay triggers */}
       <footer className="relative shrink-0">
         {/* Context & Persona triggers — positioned above the nav bar */}
-        <div className="absolute bottom-full left-0 right-0 flex items-end justify-between px-6 pb-3 pointer-events-none md:px-8">
+        <div className="absolute bottom-full left-0 right-0 flex items-end justify-between px-4 pb-3 pointer-events-none md:px-6">
           <div className="pointer-events-auto">
             <ContextPanelTrigger
               filledCount={contextFilledCount}
