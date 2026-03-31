@@ -24,7 +24,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
 
   const handleEdit = useCallback(() => {
     onNavigate?.()
-    window.location.href = `${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`
+    window.location.href = ROOTS.dashboard.proposals.byId(proposal.id)
   }, [proposal.id, onNavigate])
 
   const proposalActions = useProposalActionConfigs<CustomerProfileProposal>({

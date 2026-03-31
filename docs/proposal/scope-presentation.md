@@ -27,6 +27,8 @@ The solution is deliberate scope simplification — not because you're hiding an
 
 This keeps the customer focused, reduces cognitive load, and prevents scope confusion from killing the close.
 
+**Framework connection**: The 1-2-3 Scope Rule is TPR's version of Grand Slam Offer Stacking — the primary scope is the core offer, the complementary scope is the bonus, and everything else is optional. See `sales/sales-frameworks.md`.
+
 ---
 
 ## Outcome Statements vs. Technical Specs
@@ -65,6 +67,28 @@ These scope combinations tell a single, coherent story to the customer:
 | Bathroom | Flooring | "As long as we're updating the bathroom, the transition to new flooring in the hallway / bedroom is natural and seamless." |
 
 **Rule**: Only propose a pairing if the customer expressed interest in both or if the pairing is genuinely in their interest. Do not bundle to inflate the contract at the customer's expense.
+
+---
+
+## Grand Slam Offer Stacking
+
+Instead of presenting scope as a line-item list, name and stack each component to increase perceived value:
+
+| Instead of | Stack it as |
+|---|---|
+| "Roof replacement — $18,000" | "The Complete Protection Package: 30-year architectural shingle system + new underlayment + updated flashing + ridge vent upgrade + full permit and inspection + 10-year workmanship warranty + manufacturer warranty pass-through" |
+| "Insulation — $8,500" | "The Home Comfort Upgrade: R-38 blown-in insulation + full air sealing + attic access restoration + thermal barrier + immediate comfort improvement + 20-40% energy bill reduction" |
+
+Each named component increases perceived value without changing the deliverable. This is the same technique used in `sales/sales-frameworks.md` — Grand Slam Offer principles.
+
+### Scarcity Signals
+
+When presenting scope, you can add legitimate scarcity signals:
+- "Our roofing crew has one opening in [month] — if we lock in your project this week, we can get you on the calendar."
+- "We only take on [X] projects per month in your area to maintain quality."
+- "Material pricing is locked for [timeframe] — after that, costs go up with the supplier."
+
+Only use real scarcity. Fake scarcity destroys trust permanently.
 
 ---
 
@@ -123,3 +147,18 @@ For energy-efficient scopes, there is a powerful overlay that addresses both sco
 > The scope isn't 'things to do to your house.' It's the package of improvements that eliminates the inefficiency. Every item has a measurable monthly savings attached to it."
 
 This reframes the scope as a financial decision rather than a construction decision — which often resolves both confusion and price sensitivity in one move.
+
+**Value Equation connection**: This framing hits all four variables:
+- **Dream Outcome**: "An investment generating monthly returns"
+- **Perceived Likelihood**: "Measurable monthly savings attached to it" (quantifiable)
+- **Time Delay**: "20-25 year investment" (long-term framing reduces urgency anxiety)
+- **Effort & Sacrifice**: "Eliminates the inefficiency" (passive benefit — no ongoing work)
+
+---
+
+## Cross-References
+
+- `sales/sales-frameworks.md` — Grand Slam Offer Stacking, Value Equation, Sell the Vacation
+- `sales/in-home-meeting-playbook.md` — Phase 4 (Scope Presentation)
+- `proposal/creation-guide.md` — Proposal design with Value Equation checklist
+- `customer/decision-psychology.md` — Emotional drivers behind scope decisions

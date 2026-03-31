@@ -6,11 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useQueryState } from 'nuqs'
+import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { dashboardStepParser } from '@/features/agent-dashboard/lib'
 import { ProjectForm } from '@/features/showroom/ui/components/form'
 import { EntityViewButton } from '@/shared/components/entity-actions/entity-view-button'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -28,7 +27,7 @@ interface Props {
 export function EditProjectView({ projectId }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const [, setStep] = useQueryState('step', dashboardStepParser)
+  const router = useRouter()
 
   const project = useQuery(trpc.showroomRouter.getProjectForEdit.queryOptions({ id: projectId }))
 
@@ -121,7 +120,7 @@ export function EditProjectView({ projectId }: Props) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setStep('showroom')}
+          onClick={() => router.push(ROOTS.dashboard.showroom.root())}
         >
           <ArrowLeftIcon className="mr-2 h-4 w-4" />
           Back to Portfolio

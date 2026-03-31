@@ -1,9 +1,9 @@
-import { DashboardHub } from '@/features/agent-dashboard/ui/views/dashboard-hub'
+import { EmptyState } from '@/shared/components/states/empty-state'
 import { protectDashboardPage } from '@/shared/permissions/lib/protect-dashboard-page'
 
 export const dynamic = 'force-dynamic'
 
-export default async function DashboardPage() {
-  const authState = await protectDashboardPage()
-  return <DashboardHub authState={{ status: authState.status }} />
+export default async function DashboardOverviewPage() {
+  await protectDashboardPage()
+  return <EmptyState title="Coming Soon" description="The dashboard overview is under construction." />
 }

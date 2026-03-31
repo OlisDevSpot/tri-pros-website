@@ -107,9 +107,50 @@ The closing truth redefines what "success" means. Most homeowners walk in thinki
 
 ---
 
+## Optimal Positioning: After the Circle of Pain
+
+The due diligence story is most powerful when it follows the Circle of Pain — the CLOSER O step where the customer relives every failed past experience with contractors.
+
+**Why**: Credentials presented cold ("Let me tell you about our company") feel like a sales pitch. Credentials presented after pain exploration ("Here's why we're different from what you just described") feel like the answer.
+
+**The transition**:
+> "That's actually why we built our whole process around preventing exactly what you described. Can I walk you through what a legitimate project actually requires?"
+
+The customer has just spent 5-10 minutes reliving unlicensed work, vague scopes, no supervision, and no communication. Now each due diligence point hits with emotional weight:
+
+| Due Diligence Step | What the customer just relived | Why it lands differently |
+|---|---|---|
+| 1. Licensing & Permits | "The last guy wasn't even licensed" | Proof this won't happen again |
+| 2. Clear Scope of Work | "We never got anything in writing" | Protection from what burned them |
+| 3. Proper Supervision | "Nobody was watching the crew" | Direct contrast to their experience |
+| 4. Communication | "I couldn't reach anyone for weeks" | The opposite of what they suffered |
+| 5. Office Support | "There was no office — just a guy with a truck" | Legitimacy they've been craving |
+| 6. Proof of Performance | "I never saw any past work" | Evidence that eliminates the leap of faith |
+
+For the full Circle of Pain technique, see `sales/sales-frameworks.md`.
+
+---
+
+## How the Due Diligence Story Maps to Hormozi's Frameworks
+
+The DDS isn't just a trust play — it's a multi-framework integration:
+
+| Framework | How DDS uses it |
+|---|---|
+| **Conviction Framework** | The agent teaches rather than sells — authority transfer makes conviction feel earned, not asserted |
+| **Value Equation — Perceived Likelihood** | Every step answers "will this actually work?" — licensing, supervision, proof of performance all increase the customer's certainty |
+| **Circle of Pain (CLOSER O)** | DDS is the resolution to the pain explored in the O step — it answers "here's why this time will be different" |
+| **Grand Slam Offer — Contrast Effect** | The 6-point checklist IS the evaluation framework. Cheap contractors fail on 4/6. The customer doesn't need TPR to say "we're better" — the checklist does it |
+| **Commitment & Consistency** | Each nod ("yes, licensing matters") is a micro-commitment. By step 6, the customer has agreed to standards that only TPR meets |
+| **A.R.A.C. — Associate** | Each step can be reinforced with a story: "That's exactly what happened to a homeowner in Riverside who skipped this step..." |
+
+---
+
 ## Cross-References
 
+- `sales/sales-frameworks.md` — CLOSER framework, Circle of Pain, Conviction, Value Equation
 - `customer/decision-psychology.md` — Emotional drivers (fear, loss aversion, trust, social proof) that this story activates
 - `customer/journey-map.md` — Stage 3 (Evaluation) is where this story lives
-- `sales/in-home-meeting-playbook.md` — Phase 2 (Trusted Contractor Presentation) is the natural home for this narrative
+- `sales/in-home-meeting-playbook.md` — Phase 3 (Due Diligence / Trusted Contractor) is the home for this narrative
+- `sales/story-bank.md` — Stories that reinforce each due diligence point
 - `company/competitive-advantage.md` — The SWCE framework maps directly to steps 1, 2, 3, and 6

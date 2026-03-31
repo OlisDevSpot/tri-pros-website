@@ -2,9 +2,10 @@ import { ClipboardListIcon, UsersIcon } from 'lucide-react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { ROOTS } from '@/shared/config/roots'
 
 interface AdminSectionProps {
-  onNavigate: (step: string) => void
+  onNavigate: (path: string) => void
 }
 
 export function AdminSection({ onNavigate }: AdminSectionProps) {
@@ -16,11 +17,11 @@ export function AdminSection({ onNavigate }: AdminSectionProps) {
       </CardHeader>
       <CardContent>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" disabled onClick={() => onNavigate('intake')}>
+          <Button variant="outline" disabled onClick={() => onNavigate(ROOTS.dashboard.intake())}>
             <ClipboardListIcon className="size-4" />
             Intake Form
           </Button>
-          <Button variant="outline" disabled onClick={() => onNavigate('team')}>
+          <Button variant="outline" disabled onClick={() => onNavigate(ROOTS.dashboard.team())}>
             <UsersIcon className="size-4" />
             Team Overview
           </Button>

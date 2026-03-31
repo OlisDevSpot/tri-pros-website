@@ -40,7 +40,7 @@ function buildProposalActions(row: ProposalRow, meta: ProposalTableMeta) {
     },
     {
       action: PROPOSAL_ACTIONS.edit,
-      onAction: () => { window.location.href = `${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${row.id}` },
+      onAction: () => { window.location.href = ROOTS.dashboard.proposals.byId(row.id) },
     },
     {
       action: PROPOSAL_ACTIONS.duplicate,

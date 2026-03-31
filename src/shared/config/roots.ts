@@ -18,8 +18,25 @@ const APP_ROOTS = {
   },
   dashboard: {
     root: '/dashboard',
-    proposalFlow: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/proposals', options),
-    meetings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/meetings', options),
+    pipelines: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/pipelines', options),
+    meetings: {
+      root: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/meetings', options),
+      byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/meetings/${id}`, options),
+    },
+    proposals: {
+      root: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/proposals', options),
+      new: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/proposals/new', options),
+      byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/proposals/${id}`, options),
+    },
+    showroom: {
+      root: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/showroom', options),
+      new: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/showroom/new', options),
+      byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/showroom/${id}`, options),
+    },
+    settings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/settings', options),
+    intake: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/intake', options),
+    team: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/team', options),
+    analytics: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/analytics', options),
   },
   public: {
     proposals: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/proposal-flow', options),

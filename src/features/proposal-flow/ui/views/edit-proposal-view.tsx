@@ -1,10 +1,11 @@
+'use client'
+
 import type { OverrideProposalValues } from '../../types'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
-import { useQueryState } from 'nuqs'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -19,11 +20,14 @@ import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { CustomerInfoHeader } from '../components/customer-info-header'
 
-export function EditProposalView() {
-  const router = useRouter()
-  const [proposalId] = useQueryState('proposalId')
+interface EditProposalViewProps {
+  proposalId: string
+}
 
-  const proposal = useGetProposal(proposalId!, undefined, { enabled: !!proposalId })
+export function EditProposalView({ proposalId }: EditProposalViewProps) {
+  const router = useRouter()
+
+  const proposal = useGetProposal(proposalId)
   const updateProposal = useUpdateProposal()
 
   const form = useForm<ProposalFormSchema>({
@@ -72,7 +76,7 @@ export function EditProposalView() {
     const updatedFinalTcp = rawData.funding.data.startingTcp - totalDiscounts
 
     return {
-      proposalId: proposalId!,
+      proposalId,
       data: {
         label: rawData.project.data.label,
         formMetaJSON: rawData.meta,
@@ -90,9 +94,6 @@ export function EditProposalView() {
   }
 
   function onSubmit(rawData: ProposalFormSchema) {
-    if (!proposalId)
-      return
-
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => {
         toast.success('Proposal updated')
@@ -103,18 +104,13 @@ export function EditProposalView() {
   }
 
   function onSave(rawData: ProposalFormSchema) {
-    if (!proposalId)
-      return
-
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => toast.success('Proposal saved'),
       onError: error => toast.error(error.message),
     })
   }
 
-  const viewHref = proposalId
-    ? `${ROOTS.public.proposals()}/proposal/${proposalId}`
-    : undefined
+  const viewHref = `${ROOTS.public.proposals()}/proposal/${proposalId}`
 
   return (
     <motion.div

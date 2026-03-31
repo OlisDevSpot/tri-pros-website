@@ -7,12 +7,11 @@ import { ChevronLeftIcon, ChevronRightIcon, ZapIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useQueryState } from 'nuqs'
+import { usePathname, useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
 import { SIDEBAR_NAV_ACTIVE_STYLE } from '@/features/agent-dashboard/constants/sidebar-styles'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
-import { dashboardStepParser } from '@/features/agent-dashboard/lib/url-parsers'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
 import { signOut } from '@/shared/auth/client'
@@ -31,6 +30,7 @@ import {
   SidebarSeparator,
   useSidebar,
 } from '@/shared/components/ui/sidebar'
+import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/permissions/hooks'
 
 interface AppSidebarProps {
@@ -39,21 +39,66 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const [isActionCenterOpen, setIsActionCenterOpen] = useState(false)
-  const [step, setStep] = useQueryState('step', dashboardStepParser)
+  const pathname = usePathname()
+  const router = useRouter()
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
   const ability = useAbility()
   const isCollapsed = state === 'collapsed'
 
   const navConfig = useMemo(() => getSidebarNav(ability), [ability])
 
-  function handleNavClick(item: SidebarNavItem) {
-    if (!item.enabled) {
-      return
+  function getIsActive(item: SidebarNavItem): boolean {
+    if (item.href === ROOTS.dashboard.root) {
+      return pathname === item.href
     }
-    setStep(item.step)
-    if (isMobile) {
-      setOpenMobile(false)
+    return pathname.startsWith(item.href)
+  }
+
+  function renderNavItem(item: SidebarNavItem) {
+    const isActive = getIsActive(item)
+
+    if (item.enabled) {
+      return (
+        <SidebarMenuItem key={item.href}>
+          <SidebarMenuButton
+            asChild
+            data-nav-item
+            tooltip={item.label}
+            isActive={isActive}
+            className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
+            style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
+          >
+            <Link
+              href={item.href}
+              onClick={() => {
+                if (isMobile) {
+                  setOpenMobile(false)
+                }
+              }}
+            >
+              <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+              <span>{item.label}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      )
     }
+
+    return (
+      <SidebarMenuItem key={item.href}>
+        <SidebarMenuButton
+          data-nav-item
+          tooltip={item.label}
+          isActive={isActive}
+          disabled
+          className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
+          style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
+        >
+          <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+          <span>{item.label}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    )
   }
 
   return (
@@ -129,25 +174,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarGroupLabel>Main</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navConfig.baseItems.map((item) => {
-                  const isActive = step === item.step
-                  return (
-                    <SidebarMenuItem key={item.step}>
-                      <SidebarMenuButton
-                        data-nav-item
-                        tooltip={item.label}
-                        isActive={isActive}
-                        disabled={!item.enabled}
-                        onClick={() => handleNavClick(item)}
-                        className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
-                        style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
-                      >
-                        <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
+                {navConfig.baseItems.map(renderNavItem)}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -157,25 +184,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navConfig.adminItems.map((item) => {
-                    const isActive = step === item.step
-                    return (
-                      <SidebarMenuItem key={item.step}>
-                        <SidebarMenuButton
-                          data-nav-item
-                          tooltip={item.label}
-                          isActive={isActive}
-                          disabled={!item.enabled}
-                          onClick={() => handleNavClick(item)}
-                          className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
-                          style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
-                        >
-                          <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )
-                  })}
+                  {navConfig.adminItems.map(renderNavItem)}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -196,25 +205,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 <span>Action Center</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            {navConfig.footerItems.map((item) => {
-              const isActive = step === item.step
-              return (
-                <SidebarMenuItem key={item.step}>
-                  <SidebarMenuButton
-                    data-nav-item
-                    tooltip={item.label}
-                    isActive={isActive}
-                    disabled={!item.enabled}
-                    onClick={() => handleNavClick(item)}
-                    className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
-                    style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
-                  >
-                    <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )
-            })}
+            {navConfig.footerItems.map(renderNavItem)}
           </SidebarMenu>
 
           <SidebarUserButton
@@ -223,7 +214,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               email: user.email,
               image: user.image,
             }}
-            onSettingsClick={() => setStep('settings')}
+            onSettingsClick={() => router.push(ROOTS.dashboard.settings())}
             onLogoutClick={() => signOut()}
           />
         </SidebarFooter>

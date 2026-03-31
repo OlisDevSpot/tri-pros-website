@@ -178,7 +178,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
       <header className="relative flex shrink-0 items-center border-b border-border/40 px-4 py-2.5 md:px-6">
         <Link
           className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          href={`${ROOTS.dashboard.root}?step=meetings`}
+          href={ROOTS.dashboard.meetings.root()}
         >
           <ArrowLeftIcon className="size-4" />
           <span className="hidden sm:inline">Meetings</span>

@@ -10,6 +10,26 @@ A well-built proposal does two jobs:
 
 Build the proposal within 24 hours of the meeting. Memory fades fast.
 
+**Framework reference**: Proposals should be scored against the Value Equation and structured using Grand Slam Offer principles. See `sales/sales-frameworks.md`.
+
+---
+
+## Before Building: The Dream Outcome Vision
+
+Every proposal should open with a vivid picture of what the customer's life looks like after the project is complete — before any scope, before any materials, before any price.
+
+**Why**: The Value Equation says Dream Outcome is the #1 driver of perceived value. If the proposal opens with a scope list, you're selling the plane flight. If it opens with the destination, you're selling the vacation.
+
+**Formula**:
+> "Imagine [specific outcome for their situation]. No more [current pain point]. [Emotional benefit]. That's what this project delivers."
+
+**Examples by trade**:
+- **Roofing**: "Imagine never worrying about your roof again — no more checking the ceiling after every storm, no more wondering if the next big rain will find its way in. Full protection, full warranty, full peace of mind for the next 30 years."
+- **Energy**: "Imagine opening your energy bill and seeing it cut nearly in half. A home that's comfortable year-round without running your system into the ground. That's what a properly sealed, properly equipped home feels like."
+- **Bathroom**: "Imagine walking into your bathroom and feeling like you're in a brand-new house. Updated, modern, and built to last — without the hassle of moving."
+
+This vision statement should reference specific things the customer said during the meeting. Generic visions don't work — personalized ones do.
+
 ---
 
 ## The 7 Steps of the Proposal Flow
@@ -121,6 +141,45 @@ Only add scopes the customer expressed interest in. Don't assume.
 - [ ] Incentive (if applicable) is reflected in the total
 - [ ] Both decision-makers' emails are in the DocuSign recipient list
 - [ ] Your agent contact info is visible on the document
+
+---
+
+## Value Equation Checklist (Before Sending)
+
+Score every proposal against the four Value Equation variables before sending. If any variable scores weak, fix it.
+
+```
+Value = (Dream Outcome x Perceived Likelihood) / (Time Delay x Effort & Sacrifice)
+```
+
+- [ ] **Dream Outcome** — Does the proposal paint a vivid picture of the outcome? (Not just list scopes)
+- [ ] **Perceived Likelihood** — Does it prove the outcome will actually happen? (Portfolio, testimonials, warranties, credentials)
+- [ ] **Time Delay** — Does it show speed? Include projected start date, installation timeline, and when they'll see first results
+- [ ] **Effort & Sacrifice** — Does it minimize perceived customer effort? Use language like: "We handle everything — permits, scheduling, materials, crews, cleanup. You don't have to manage any of it."
+
+### Bonus Naming
+
+Reframe existing inclusions as named bonuses to increase perceived value:
+
+| What you're already including | Name it as a bonus |
+|---|---|
+| Permit pulling + city inspection | "Full Permit & Inspection Package" |
+| Workmanship warranty | "The Tri Pros Peace of Mind Guarantee" |
+| Post-installation walkthrough | "Complimentary Quality Walkthrough" |
+| Project manager assignment | "Dedicated Project Manager" |
+| Cleanup after installation | "Complete Jobsite Restoration" |
+
+Each named component increases perceived value — even though the deliverable is identical to what you'd include anyway.
+
+### Timeline Emphasis
+
+Every proposal should include:
+- **Projected start date** (reduces Time Delay anxiety)
+- **Estimated project duration** (sets expectations)
+- **Key milestones** (materials arrival, installation start, inspection, completion)
+- **First results timeline** ("You'll notice the comfort difference within the first month")
+
+See `sales/sales-frameworks.md` — Value Equation and Grand Slam Offer principles.
 
 ---
 

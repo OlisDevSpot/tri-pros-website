@@ -34,7 +34,7 @@ export function CreateProposalPopover({ meetings }: Props) {
       onSuccess: ({ proposal }) => {
         setPopoverOpen(false)
         setSelectedMeetingId('')
-        router.push(`${ROOTS.dashboard.root}?step=edit-proposal&proposalId=${proposal.id}`)
+        router.push(ROOTS.dashboard.proposals.byId(proposal.id))
       },
       onError: () => {
         toast.error('Failed to create proposal')

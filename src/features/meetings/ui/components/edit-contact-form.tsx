@@ -29,7 +29,7 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
       onSuccess: () => {
         void queryClient.invalidateQueries(trpc.meetingsRouter.getAll.queryFilter())
         toast.success('Meeting updated')
-        router.push(`${ROOTS.dashboard.root}?step=meetings`)
+        router.push(ROOTS.dashboard.meetings.root())
       },
       onError: () => toast.error('Failed to update meeting'),
     }),
@@ -54,7 +54,7 @@ export function EditContactForm({ meeting }: EditContactFormProps) {
         className="self-start gap-2 -ml-2"
         size="sm"
         variant="ghost"
-        onClick={() => router.push(`${ROOTS.dashboard.root}?step=meetings`)}
+        onClick={() => router.push(ROOTS.dashboard.meetings.root())}
       >
         <ArrowLeftIcon className="size-4" />
         Back to meetings

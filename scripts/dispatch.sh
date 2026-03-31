@@ -130,14 +130,22 @@ for i in data:
 # Get the GitHub Projects item ID for an issue
 get_project_item_id() {
   local issue_num="$1"
-  gh project item-list "${PROJECT_NUMBER}" --owner OlisDevSpot --format json 2>/dev/null \
-    | python3 -c "
+  gh api graphql -f query="
+    {
+      repository(owner: \"OlisDevSpot\", name: \"tri-pros-website\") {
+        issue(number: ${issue_num}) {
+          projectItems(first: 5) {
+            nodes { id }
+          }
+        }
+      }
+    }
+  " 2>/dev/null | python3 -c "
 import json, sys
-items = json.load(sys.stdin)['items']
-for i in items:
-    if i.get('content', {}).get('number') == ${issue_num}:
-        print(i['id'])
-        break
+data = json.load(sys.stdin)
+nodes = data.get('data',{}).get('repository',{}).get('issue',{}).get('projectItems',{}).get('nodes',[])
+if nodes:
+    print(nodes[0]['id'])
 " 2>/dev/null || echo ""
 }
 
@@ -146,6 +154,16 @@ move_issue() {
   local issue_num="$1" status_id="$2"
   local item_id
   item_id=$(get_project_item_id "$issue_num")
+  if [[ -z "$item_id" ]]; then
+    # Issue not on board yet — add it first
+    log "Adding #${issue_num} to project board..."
+    gh project item-add "${PROJECT_NUMBER}" --owner OlisDevSpot \
+      --url "https://github.com/${REPO}/issues/${issue_num}" 2>/dev/null || {
+      warn "Could not add issue #${issue_num} to board"
+      return 1
+    }
+    item_id=$(get_project_item_id "$issue_num")
+  fi
   if [[ -n "$item_id" ]]; then
     gh project item-edit --project-id "${PROJECT_ID}" \
       --id "$item_id" \
@@ -180,30 +198,8 @@ find_next_ready_issue() {
 import json, subprocess, sys
 
 REPO = "OlisDevSpot/tri-pros-website"
-PROJECT_NUMBER = 3
 
-# 1. Get all project board items with status
-try:
-    raw = subprocess.check_output(
-        ["gh", "project", "item-list", str(PROJECT_NUMBER),
-         "--owner", "OlisDevSpot", "--format", "json"],
-        stderr=subprocess.DEVNULL, text=True
-    )
-    board_items = json.loads(raw).get("items", [])
-except Exception:
-    board_items = []
-
-# Build set of issue numbers in "Ready" status
-ready_numbers = set()
-for item in board_items:
-    content = item.get("content", {})
-    if item.get("status") == "Ready" and content.get("type") == "Issue":
-        ready_numbers.add(content.get("number"))
-
-if not ready_numbers:
-    sys.exit(0)
-
-# 2. Get open issues with claude label
+# 1. Get open issues with claude label (small, bounded set)
 try:
     raw = subprocess.check_output(
         ["gh", "issue", "list", "--repo", REPO, "--state", "open",
@@ -215,8 +211,25 @@ try:
 except Exception:
     sys.exit(0)
 
-# 3. Filter to Ready issues only
-ready_issues = [i for i in issues if i["number"] in ready_numbers]
+if not issues:
+    sys.exit(0)
+
+# 2. Check each issue's board status via targeted GraphQL (no board-wide scan)
+def get_board_status(issue_num):
+    try:
+        raw = subprocess.check_output(
+            ["gh", "issue", "view", str(issue_num), "--repo", REPO,
+             "--json", "projectItems"],
+            stderr=subprocess.DEVNULL, text=True
+        )
+        items = json.loads(raw).get("projectItems", [])
+        if items:
+            return items[0].get("status", {}).get("name", "")
+    except Exception:
+        pass
+    return ""
+
+ready_issues = [i for i in issues if get_board_status(i["number"]) == "Ready"]
 
 if not ready_issues:
     sys.exit(0)

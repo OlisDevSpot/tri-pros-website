@@ -6,9 +6,8 @@ import type { DataTableMultiSelectFilter } from '@/shared/components/data-table/
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useQueryState } from 'nuqs'
+import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
-import { dashboardStepParser } from '@/features/agent-dashboard/lib'
 import { useProjectActions } from '@/features/showroom/hooks/use-project-actions'
 import { ProjectDetailSheet } from '@/features/showroom/ui/components/project-detail-sheet'
 import { PortfolioProjectsTable } from '@/features/showroom/ui/components/table'
@@ -16,12 +15,13 @@ import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { ROOTS } from '@/shared/config/roots'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useTRPC } from '@/trpc/helpers'
 
 export function PortfolioProjectsView() {
   const trpc = useTRPC()
-  const [, setStep] = useQueryState('step', dashboardStepParser)
+  const router = useRouter()
   const projects = useQuery(trpc.showroomRouter.getAllProjects.queryOptions())
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
@@ -134,7 +134,7 @@ export function PortfolioProjectsView() {
                 : `${projects.data.length} total project${projects.data.length !== 1 ? 's' : ''}`}
             </CardDescription>
           </div>
-          <Button size="sm" onClick={() => setStep('create-project')}>
+          <Button size="sm" onClick={() => router.push(ROOTS.dashboard.showroom.new())}>
             <PlusIcon className="mr-2 h-4 w-4" />
             New Project
           </Button>
