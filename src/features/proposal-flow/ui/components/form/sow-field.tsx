@@ -2,7 +2,7 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
 import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import { useQueryClient } from '@tanstack/react-query'
-import { TrashIcon } from 'lucide-react'
+
 import { useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
@@ -19,14 +19,12 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   index: number
-  onDelete: () => void
   pricingMode: 'total' | 'breakdown'
   sowSnapshot: ProposalFormSchema['project']['data']['sow'][0]
 }
 
 export function SOWSection({
   index,
-  onDelete,
   pricingMode,
   sowSnapshot,
 }: Props) {
@@ -49,13 +47,13 @@ export function SOWSection({
   const { open: openModal, close: closeModal, setModal } = useModalStore()
 
   return (
-    <div key={sowSnapshot.title} className="flex flex-col gap-4 items-center border w-full max-h-187.5 overflow-auto">
-      <div className="flex items-end rounded-lg h-full w-full">
+    <div className="flex flex-col gap-3 items-center w-full max-h-187.5 overflow-auto lg:gap-4">
+      <div className="flex flex-col gap-2 rounded-lg w-full px-3 pt-2 lg:flex-row lg:items-end lg:px-0 lg:pt-0">
         <FormField
           control={form.control}
           name={`project.data.sow.${index}.trade.id`}
           render={({ field }) => (
-            <FormItem className="max-w-62.5">
+            <FormItem className="w-full lg:max-w-62.5">
               <FormControl className="w-full">
                 <Select
                   value={field.value}
@@ -130,55 +128,31 @@ export function SOWSection({
           )}
         />
 
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          className="h-9 w-9 rounded-none"
-          onClick={onDelete}
-        >
-          <TrashIcon />
-        </Button>
       </div>
-      <div className="w-full p-4 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)]">
-        <div className="flex gap-4">
+      {pricingMode === 'breakdown' && (
+        <div className="w-full px-3 py-2 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:px-4">
           <FormField
-            name={`project.data.sow.${index}.title`}
+            name={`project.data.sow.${index}.price`}
             control={form.control}
             render={({ field }) => (
-              <FormItem className="grow">
-                <FormLabel>Section Title</FormLabel>
+              <FormItem className="w-40">
+                <FormLabel>Section Price</FormLabel>
                 <FormControl>
-                  <Input placeholder="Title" {...field} />
+                  <Input
+                    {...field}
+                    placeholder="$10,000"
+                    type="text"
+                    value={String(field.value || '')}
+                    onChange={e => field.onChange(Number(e.target.value || ''))}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          {pricingMode === 'breakdown' && (
-            <FormField
-              name={`project.data.sow.${index}.price`}
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="w-40">
-                  <FormLabel>Section Price</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="$10,000"
-                      type="text"
-                      value={String(field.value || '')}
-                      onChange={e => field.onChange(Number(e.target.value || ''))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
         </div>
-      </div>
-      <div className="w-full p-4 pt-0">
+      )}
+      <div className="w-full px-3 pb-3 lg:px-4 lg:pb-4">
         <FormField
           name={`project.data.sow.${index}.contentJSON`}
           control={form.control}

@@ -2,27 +2,44 @@
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
-import { SettingsIcon } from 'lucide-react'
-import { useQueryState } from 'nuqs'
-import { useEffect } from 'react'
+import { ChevronDownIcon, EyeIcon, SaveIcon, SettingsIcon } from 'lucide-react'
+import { motion } from 'motion/react'
+import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
 import { Button } from '@/shared/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Input } from '@/shared/components/ui/input'
+import { Card } from '@/shared/components/ui/card'
 import { Label } from '@/shared/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { Separator } from '@/shared/components/ui/separator'
 import { Switch } from '@/shared/components/ui/switch'
+import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { cn } from '@/shared/lib/utils'
 import { FundingFields } from './funding-fields'
+import { GeneralFields } from './general-fields'
 import { ProjectFields } from './project-fields'
+
+const FORM_TABS = ['general', 'sow', 'funding'] as const
+type FormTab = (typeof FORM_TABS)[number]
+
+const TAB_LABELS: Record<FormTab, string> = {
+  funding: 'Funding',
+  general: 'General',
+  sow: 'Scope of Work',
+}
+
+const TOOLBAR_BUTTON_BASE = 'inline-flex size-[calc(100%-1px)] items-center justify-center rounded-md border border-transparent transition-[color,box-shadow]'
+const TOOLBAR_BUTTON_INACTIVE = 'text-muted-foreground hover:text-foreground'
+const TOOLBAR_BUTTON_ACTIVE = 'bg-background shadow-sm dark:border-input dark:bg-input/30'
 
 interface Props {
   onSubmit: (data: ProposalFormSchema) => void
+  onSave?: (data: ProposalFormSchema) => void
   isLoading: boolean
   initialValues?: OverrideProposalValues
-  hideSubmitButton?: boolean
+  viewHref?: string
 }
 
 function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialValues'] = {}): ProposalFormSchema {
@@ -30,21 +47,37 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
     return base
   }
 
-  const defaultWithOverrides = {
+  return {
     ...base,
     meta: { ...base.meta, ...(override.meta ?? {}) },
     project: { ...base.project, ...(override.project ?? {}) },
     funding: { ...base.funding, ...(override.funding ?? {}) },
   }
-
-  return defaultWithOverrides
 }
 
-export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitButton }: Props) {
+export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewHref }: Props) {
   const form = useFormContext<ProposalFormSchema>()
-  const [proposalId] = useQueryState('proposalId')
+  const [nuqsTab, setNuqsTab] = useQueryState(
+    'formTab',
+    parseAsStringLiteral(FORM_TABS).withDefault('general'),
+  )
+  const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [saveOpenMobile, setSaveOpenMobile] = useState(false)
+  const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
+  const saveOpen = saveOpenMobile || saveOpenDesktop
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
   const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
+
+  useEffect(() => {
+    setActiveTab(nuqsTab)
+  }, [nuqsTab])
+
+  function handleTabChange(val: string) {
+    const tab = val as FormTab
+    setActiveTab(tab)
+    setNuqsTab(tab)
+  }
 
   useEffect(() => {
     if (initialValues) {
@@ -61,69 +94,80 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
     toast.error('Form is invalid (check console)')
   }
 
+  function closeSavePopovers() {
+    setSaveOpenMobile(false)
+    setSaveOpenDesktop(false)
+  }
+
+  function handleSaveAndPreview() {
+    closeSavePopovers()
+    form.handleSubmit(onSubmit, onInvalid)()
+  }
+
+  function handleSaveOnly() {
+    closeSavePopovers()
+    if (onSave) {
+      form.handleSubmit(onSave, onInvalid)()
+    }
+    else {
+      form.handleSubmit(onSubmit, onInvalid)()
+    }
+  }
+
   return (
     <form
       id="proposal-form"
       onSubmit={form.handleSubmit(onSubmit, onInvalid)}
-      className="space-y-8 w-full h-auto"
+      className="flex h-full w-full flex-col gap-3"
     >
-      <Card className="w-full">
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <FormField
-              name="project.data.label"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem className="flex items-center">
-                  <FormLabel className="shrink-0">
-                    <h2>Project Name:</h2>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="John Doe"
-                      {...field}
-                      className="bg-transparent dark:bg-transparent border-none min-w-112.5"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="flex items-center gap-3 pt-2">
-            <Switch
-              checked={pricingMode === 'breakdown'}
-              onCheckedChange={checked =>
-                form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
-            />
-            <span className="text-sm font-medium">
-              {pricingMode === 'breakdown' ? 'Breakdown Pricing' : 'Total Pricing'}
-            </span>
-          </div>
-        </CardHeader>
-        <CardHeader>
-          <CardTitle>Project Information</CardTitle>
-          <CardDescription>Information relevant to the project success</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <ProjectFields pricingMode={pricingMode} />
-        </CardContent>
-        <CardHeader>
-          <div className="flex gap-2 items-center">
-            <CardTitle>Funding Information</CardTitle>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="outline"
-                >
-                  <SettingsIcon className="w-4 h-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-64" align="start">
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
+        >
+          <TabsList>
+            {FORM_TABS.map(tab => (
+              <TabsTrigger key={tab} value={tab}>
+                {TAB_LABELS[tab]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+
+        <div className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-muted p-0.75">
+          {/* Settings */}
+          <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  TOOLBAR_BUTTON_BASE,
+                  'aspect-square',
+                  settingsOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+                )}
+              >
+                <SettingsIcon className="size-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72" align="end">
+              <div className="space-y-4">
                 <div className="space-y-3">
-                  <p className="text-sm font-medium">Funding Settings</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="pricing-mode" className="text-sm font-normal">
+                      Breakdown Pricing
+                    </Label>
+                    <Switch
+                      id="pricing-mode"
+                      checked={pricingMode === 'breakdown'}
+                      onCheckedChange={checked =>
+                        form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
+                    />
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
                       Show Pricing Breakdown
@@ -136,35 +180,106 @@ export function ProposalForm({ isLoading, onSubmit, initialValues, hideSubmitBut
                     />
                   </div>
                 </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* View */}
+          {viewHref && (
+            <a
+              href={viewHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
+            >
+              <EyeIcon className="size-3.5" />
+            </a>
+          )}
+
+          {/* Save — split button */}
+          <div
+            className={cn(
+              TOOLBAR_BUTTON_BASE,
+              'gap-0 px-0',
+              saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+              isLoading && 'pointer-events-none opacity-50',
+            )}
+          >
+            {/* Desktop: label triggers save, chevron opens popover */}
+            <button
+              type="button"
+              disabled={isLoading}
+              className="hidden items-center gap-1.5 px-2 leading-none lg:inline-flex"
+              onClick={handleSaveOnly}
+            >
+              <SaveIcon className="size-3.5 shrink-0" />
+              <span className="text-sm font-medium">Save</span>
+            </button>
+            <Popover open={saveOpenDesktop} onOpenChange={setSaveOpenDesktop}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
+                >
+                  <ChevronDownIcon className="size-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-44 p-1" align="end">
+                <div className="flex flex-col">
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            {/* Mobile: entire button opens popover */}
+            <Popover open={saveOpenMobile} onOpenChange={setSaveOpenMobile}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  className="inline-flex items-center gap-0.5 px-1.5 lg:hidden"
+                >
+                  <SaveIcon className="size-3.5" />
+                  <ChevronDownIcon className="size-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-44 p-1" align="end">
+                <div className="flex flex-col">
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
+                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
+                </div>
               </PopoverContent>
             </Popover>
           </div>
-          <CardDescription>Information relevant to increased financial responsibility</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <FundingFields
-            pricingMode={pricingMode}
-            showPricingBreakdown={showPricingBreakdown}
-            showSettings
-          />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {form.formState.errors.root && (
-        <div>
-          <div className="text-red-500">{JSON.stringify(form.formState.errors, null, 2)}</div>
-        </div>
-      )}
-      {!hideSubmitButton && (
-        <div className="flex items-center gap-2">
-          <Button
-            type="submit"
-            disabled={isLoading}
-          >
-            {proposalId ? 'Update & Preview' : 'Save & Preview'}
-          </Button>
-        </div>
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <Card className="w-full p-3 lg:p-5">
+          {FORM_TABS.map((tab) => {
+            const isActive = activeTab === tab
+            return (
+              <motion.div
+                key={tab}
+                animate={{ opacity: isActive ? 1 : 0 }}
+                transition={{ duration: 0.15 }}
+                className={isActive ? '' : 'hidden'}
+              >
+                {tab === 'general' && <GeneralFields />}
+                {tab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
+                {tab === 'funding' && <FundingFields pricingMode={pricingMode} />}
+              </motion.div>
+            )
+          })}
+        </Card>
+
+        {form.formState.errors.root && (
+          <div className="mt-3 text-red-500">
+            {JSON.stringify(form.formState.errors, null, 2)}
+          </div>
+        )}
+      </div>
     </form>
   )
 }

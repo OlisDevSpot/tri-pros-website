@@ -85,18 +85,18 @@ export function ProjectOverview() {
         </CardHeader>
         <CardContent className="space-y-8">
           <div className="space-y-8 rounded-lg ">
-            {generateProposalFields().map(section => (
+            {generateProposalFields().map((section, sectionIndex) => (
               <div
-                key={section.label}
+                key={`section-${sectionIndex}`}
                 className="flex flex-col md:flex-row gap-6 h-full items-center"
               >
                 <div className="flex-1 min-h-0 h-auto w-full grow flex items-center justify-center border rounded-lg py-8 self-stretch">
                   <h2>{section.label}</h2>
                 </div>
                 <div className="flex-2 flex flex-col gap-2 w-full">
-                  {section.fields.map(field => (
+                  {section.fields.map((field, fieldIndex) => (
                     <div
-                      key={field.label}
+                      key={`field-${fieldIndex}`}
                       className="flex items-start gap-2"
                     >
                       <div className="grow flex items-end gap-2">

@@ -17,7 +17,7 @@ import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { Button } from '@/shared/components/ui/button'
+
 import { Form } from '@/shared/components/ui/form'
 import { useTRPC } from '@/trpc/helpers'
 import { getProposalAggregates } from '../../lib/get-proposal-aggregates'
@@ -59,30 +59,17 @@ export function CreateNewProposalView() {
     form.reset(defaults)
   }, [meeting, customer, form])
 
-  function onSubmit(data: ProposalFormSchema) {
-    const sow = data.project.data.sow.map((singleSOW) => {
-      if (!singleSOW.trade.id) {
-        return undefined
-      }
-
-      return singleSOW
-    }).filter(
-      (item): item is SOW =>
-        item !== undefined,
-    )
-
+  function buildMutationData(data: ProposalFormSchema) {
+    const sow = data.project.data.sow.filter(s => !!s.trade.id) as SOW[]
     const { totalProjectDiscounts } = getProposalAggregates(data)
 
-    createProposal.mutate({
+    return {
       label: data.project.data.label,
       ownerId: session?.user.id || '',
       meetingId: meetingId || undefined,
       formMetaJSON: data.meta,
       projectJSON: {
-        data: {
-          ...data.project.data,
-          sow,
-        },
+        data: { ...data.project.data, sow },
         meta: data.project.meta,
       },
       fundingJSON: {
@@ -93,15 +80,24 @@ export function CreateNewProposalView() {
         },
         meta: data.funding.meta,
       },
-    }, {
-      onSuccess: (data) => {
-        const urlWithoutQueryStrings = data.proposalUrl.split('?')[0]
+    }
+  }
+
+  function onSubmit(data: ProposalFormSchema) {
+    createProposal.mutate(buildMutationData(data), {
+      onSuccess: (result) => {
+        const urlWithoutQueryStrings = result.proposalUrl.split('?')[0]
         toast.success('Proposal created!')
         router.push(urlWithoutQueryStrings)
       },
-      onError: (error) => {
-        toast.error(error.message)
-      },
+      onError: error => toast.error(error.message),
+    })
+  }
+
+  function onSave(data: ProposalFormSchema) {
+    createProposal.mutate(buildMutationData(data), {
+      onSuccess: () => toast.success('Proposal saved'),
+      onError: error => toast.error(error.message),
     })
   }
 
@@ -140,29 +136,17 @@ export function CreateNewProposalView() {
       transition={{ duration: 0.25 }}
       className="w-full h-full flex flex-col gap-4 min-h-0"
     >
-      <div className="shrink-0 flex flex-col sm:flex-row sm:items-start gap-3">
-        {customer && (
-          <div className="flex-1 min-w-0">
-            <CustomerInfoHeader customer={customer} />
-          </div>
-        )}
-        <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
-          <Button
-            type="submit"
-            form="proposal-form"
-            disabled={meetingQuery.isLoading || createProposal.isPending}
-            className="whitespace-nowrap"
-          >
-            Save & Preview
-          </Button>
+      {customer && (
+        <div className="shrink-0">
+          <CustomerInfoHeader customer={customer} />
         </div>
-      </div>
+      )}
       <div className="flex-1 min-h-0 w-full overflow-auto md:pr-4">
         <Form {...form}>
           <ProposalForm
             isLoading={meetingQuery.isLoading || createProposal.isPending}
             onSubmit={onSubmit}
-            hideSubmitButton
+            onSave={onSave}
           />
         </Form>
       </div>

@@ -44,13 +44,13 @@ export function ScopeOfWork() {
         <CardContent>
           <Accordion
             type="multiple"
-            defaultValue={sow.map(s => s.title)}
+            defaultValue={sow.map((_, i) => `sow-${i}`)}
             className="space-y-3"
           >
             {sow.map((section, index) => (
               <AccordionItem
-                key={section.title || index}
-                value={section.title || String(index)}
+                key={`sow-${index}`}
+                value={`sow-${index}`}
                 className="border border-border/50 rounded-xl overflow-hidden bg-card shadow-sm last:border-b"
               >
                 <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-muted/20 transition-colors">
@@ -113,6 +113,14 @@ export function ScopeOfWork() {
               </AccordionItem>
             ))}
           </Accordion>
+          {proposal.data.projectJSON.data.agreementNotes && (
+            <div className="mt-6 border-t border-border/30 pt-6">
+              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Agreement Notes</h3>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">
+                {proposal.data.projectJSON.data.agreementNotes}
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
