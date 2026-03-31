@@ -1,6 +1,6 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { IncentiveType } from '@/shared/types/enums'
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, SettingsIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
@@ -11,9 +11,13 @@ import { Button } from '@/shared/components/ui/button'
 import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { Switch } from '@/shared/components/ui/switch'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { incentiveTypes } from '@/shared/constants/enums'
+import { useConfirm } from '@/shared/hooks/use-confirm'
 import { PricingBreakdown } from '../pricing-breakdown'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
@@ -21,15 +25,9 @@ const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
 interface Props {
   pricingMode: 'total' | 'breakdown'
-  showPricingBreakdown?: boolean
-  showSettings?: boolean
 }
 
-export function FundingFields({
-  pricingMode,
-  showPricingBreakdown = false,
-  showSettings = false,
-}: Props) {
+export function FundingFields({ pricingMode }: Props) {
   const form = useFormContext<ProposalFormSchema>()
 
   const { fields, append, remove } = useFieldArray({
@@ -39,10 +37,16 @@ export function FundingFields({
 
   const [openIncentives, setOpenIncentives] = useState<Set<number>>(() => new Set())
 
+  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
+    title: 'Delete Incentive',
+    message: 'Are you sure you want to delete this incentive? This action cannot be undone.',
+  })
+
   const startingTcp = useWatch({ control: form.control, name: 'funding.data.startingTcp' })
   const incentives = useWatch({ control: form.control, name: 'funding.data.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
   const miscPrice = useWatch({ control: form.control, name: 'funding.data.miscPrice' })
+  const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
 
   function toggleIncentive(index: number) {
     setOpenIncentives((prev) => {
@@ -57,7 +61,11 @@ export function FundingFields({
     })
   }
 
-  function handleRemoveIncentive(index: number) {
+  async function handleRemoveIncentive(index: number) {
+    const confirmed = await confirmDelete()
+    if (!confirmed)
+      return
+
     remove(index)
     setOpenIncentives((prev) => {
       const next = new Set<number>()
@@ -86,22 +94,71 @@ export function FundingFields({
   }, [sow, miscPrice, pricingMode, incentives, form, startingTcp])
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
-      {/* Funding fields */}
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold lg:text-2xl">Funding</h3>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
-          {pricingMode === 'breakdown' && (
+    <>
+      <DeleteConfirmDialog />
+      <div className="flex flex-col gap-4 lg:gap-6">
+        {/* Base Pricing */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold lg:text-2xl">Base Pricing</h3>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" size="icon" variant="outline">
+                  <SettingsIcon className="size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="start">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Funding Settings</p>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
+                      Show Pricing Breakdown
+                    </Label>
+                    <Switch
+                      id="show-pricing-breakdown"
+                      checked={showPricingBreakdown}
+                      onCheckedChange={checked =>
+                        form.setValue('funding.meta.showPricingBreakdown', checked)}
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
+            {pricingMode === 'breakdown' && (
+              <FormField
+                name="funding.data.miscPrice"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Misc Pricing</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="$0"
+                        onChange={(value) => {
+                          const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                          field.onChange(numericValue)
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
-              name="funding.data.miscPrice"
+              name="funding.data.startingTcp"
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Misc Pricing</FormLabel>
+                  <FormLabel>Total Contract Price</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="$0"
+                      disabled={pricingMode === 'breakdown'}
+                      placeholder="$50,000"
                       onChange={(value) => {
                         const numericValue = Number(value.target.value.replace(/\D/g, ''))
                         field.onChange(numericValue)
@@ -112,53 +169,30 @@ export function FundingFields({
                 </FormItem>
               )}
             />
-          )}
-          <FormField
-            name="funding.data.startingTcp"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Total Contract Price</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    disabled={pricingMode === 'breakdown'}
-                    placeholder="$50,000"
-                    onChange={(value) => {
-                      const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                      field.onChange(numericValue)
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            name="funding.data.depositAmount"
-            control={form.control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Deposit</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    placeholder="$1,000"
-                    onChange={(value) => {
-                      const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                      field.onChange(numericValue)
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              name="funding.data.depositAmount"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Deposit</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="$1,000"
+                      onChange={(value) => {
+                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
+                        field.onChange(numericValue)
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Incentives section */}
-      {showSettings && (
+        {/* Incentives */}
         <div className="space-y-3 lg:space-y-4">
           <div className="flex items-center justify-between border-t border-border/30 pt-3 lg:pt-4">
             <h4 className="text-base font-semibold lg:text-lg">Incentives</h4>
@@ -354,14 +388,14 @@ export function FundingFields({
                 </div>
               )}
         </div>
-      )}
 
-      {/* Pricing breakdown helper */}
-      {showPricingBreakdown && (
-        <div className="w-full">
-          <PricingBreakdown proposalData={formValuesToProposal(form.getValues())} />
-        </div>
-      )}
-    </div>
+        {/* Pricing breakdown helper */}
+        {showPricingBreakdown && (
+          <div className="w-full">
+            <PricingBreakdown proposalData={formValuesToProposal(form.getValues())} />
+          </div>
+        )}
+      </div>
+    </>
   )
 }
