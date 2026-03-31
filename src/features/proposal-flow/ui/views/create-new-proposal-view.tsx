@@ -59,30 +59,17 @@ export function CreateNewProposalView() {
     form.reset(defaults)
   }, [meeting, customer, form])
 
-  function onSubmit(data: ProposalFormSchema) {
-    const sow = data.project.data.sow.map((singleSOW) => {
-      if (!singleSOW.trade.id) {
-        return undefined
-      }
-
-      return singleSOW
-    }).filter(
-      (item): item is SOW =>
-        item !== undefined,
-    )
-
+  function buildMutationData(data: ProposalFormSchema) {
+    const sow = data.project.data.sow.filter(s => !!s.trade.id) as SOW[]
     const { totalProjectDiscounts } = getProposalAggregates(data)
 
-    createProposal.mutate({
+    return {
       label: data.project.data.label,
       ownerId: session?.user.id || '',
       meetingId: meetingId || undefined,
       formMetaJSON: data.meta,
       projectJSON: {
-        data: {
-          ...data.project.data,
-          sow,
-        },
+        data: { ...data.project.data, sow },
         meta: data.project.meta,
       },
       fundingJSON: {
@@ -93,15 +80,24 @@ export function CreateNewProposalView() {
         },
         meta: data.funding.meta,
       },
-    }, {
-      onSuccess: (data) => {
-        const urlWithoutQueryStrings = data.proposalUrl.split('?')[0]
+    }
+  }
+
+  function onSubmit(data: ProposalFormSchema) {
+    createProposal.mutate(buildMutationData(data), {
+      onSuccess: (result) => {
+        const urlWithoutQueryStrings = result.proposalUrl.split('?')[0]
         toast.success('Proposal created!')
         router.push(urlWithoutQueryStrings)
       },
-      onError: (error) => {
-        toast.error(error.message)
-      },
+      onError: error => toast.error(error.message),
+    })
+  }
+
+  function onSave(data: ProposalFormSchema) {
+    createProposal.mutate(buildMutationData(data), {
+      onSuccess: () => toast.success('Proposal saved'),
+      onError: error => toast.error(error.message),
     })
   }
 
@@ -150,6 +146,7 @@ export function CreateNewProposalView() {
           <ProposalForm
             isLoading={meetingQuery.isLoading || createProposal.isPending}
             onSubmit={onSubmit}
+            onSave={onSave}
           />
         </Form>
       </div>
