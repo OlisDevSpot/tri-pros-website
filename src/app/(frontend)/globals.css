@@ -325,17 +325,17 @@
 
 /* ── PWA safe-area: dashboard sidebar & content ───────────────── */
 /* Desktop fixed sidebar: pad the top so logo clears the notch    */
-[data-slot="sidebar-container"] {
+[data-slot='sidebar-container'] {
   padding-top: env(safe-area-inset-top);
 }
 
 /* Mobile sheet sidebar: pad the inner column                     */
-[data-sidebar][data-mobile="true"] > div {
+[data-sidebar][data-mobile='true'] > div {
   padding-top: env(safe-area-inset-top);
 }
 
 /* Dashboard main content area                                    */
-[data-slot="sidebar-inset"] {
+[data-slot='sidebar-inset'] {
   padding-top: env(safe-area-inset-top);
 }
 
