@@ -28,7 +28,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           }}
         >
           <Suspense>
-            {children}
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {children}
+            </div>
           </Suspense>
           {session && <DashboardMobileNav />}
         </SidebarInset>

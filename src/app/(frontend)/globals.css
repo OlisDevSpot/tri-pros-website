@@ -350,12 +350,7 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Fullscreen dialogs & sheets (fixed overlays)                   */
-[data-slot='dialog-content'] {
-  padding-top: max(env(safe-area-inset-top), var(--spacing-4));
-  padding-bottom: max(env(safe-area-inset-bottom), var(--spacing-4));
-}
-
+/* Fullscreen sheets                                              */
 [data-slot='sheet-content'] {
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
