@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           }}
         >
           <Suspense>
-            <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto pt-[env(safe-area-inset-top)]">
               {children}
             </div>
           </Suspense>
