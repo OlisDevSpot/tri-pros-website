@@ -1,6 +1,6 @@
 import type { EntityAction } from '@/shared/components/entity-actions/types'
 
-import { CopyIcon, EyeIcon, PencilIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
+import { CopyIcon, EyeIcon, MailIcon, MessageSquareIcon, PencilIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
 
 export const PROPOSAL_ACTIONS = {
   view: {
@@ -16,18 +16,31 @@ export const PROPOSAL_ACTIONS = {
     icon: PencilIcon,
     permission: ['update', 'Proposal'],
   },
+  shareByEmail: {
+    id: 'shareByEmail',
+    label: 'Copy Link (Email)',
+    icon: MailIcon,
+    permission: ['read', 'Proposal'],
+    separatorBefore: true,
+  },
+  shareBySms: {
+    id: 'shareBySms',
+    label: 'Copy Link (SMS)',
+    icon: MessageSquareIcon,
+    permission: ['read', 'Proposal'],
+  },
   duplicate: {
     id: 'duplicate',
     label: 'Duplicate',
     icon: CopyIcon,
     permission: ['create', 'Proposal'],
+    separatorBefore: true,
   },
   assignOwner: {
     id: 'assignOwner',
     label: 'Assign Rep',
     icon: UserPlusIcon,
     permission: ['assign', 'Proposal'],
-    separatorBefore: true,
   },
   delete: {
     id: 'delete',

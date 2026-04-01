@@ -138,6 +138,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
     .select({
       customerId: meetings.customerId,
       proposalId: proposals.id,
+      token: proposals.token,
       status: proposals.status,
       createdAt: proposals.createdAt,
       value: sql<number | null>`NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric`.as('proposal_value'),
@@ -156,7 +157,7 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Custome
       continue
     }
     const arr = proposalDetailMap.get(r.customerId) ?? []
-    arr.push({ id: r.proposalId, value: r.value ? Number(r.value) : null, status: r.status, createdAt: r.createdAt })
+    arr.push({ id: r.proposalId, token: r.token, value: r.value ? Number(r.value) : null, status: r.status, createdAt: r.createdAt })
     proposalDetailMap.set(r.customerId, arr)
   }
 

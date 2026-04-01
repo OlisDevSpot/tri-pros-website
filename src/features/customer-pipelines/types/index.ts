@@ -14,6 +14,7 @@ export interface PipelineItemRep {
 
 export interface PipelineItemProposal {
   id: string
+  token: string | null
   value: number | null
   status: string
   createdAt: string
@@ -64,7 +65,7 @@ export type CustomerProfileMeeting
     & { proposals: CustomerProfileProposal[] }
 
 export type CustomerProfileProposal
-  = Pick<Proposal, 'id' | 'label' | 'status' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>
+  = Pick<Proposal, 'id' | 'label' | 'status' | 'token' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>
     & { trade: string | null, value: number | null, viewCount: number }
 
 export interface CustomerProfileProposalView {

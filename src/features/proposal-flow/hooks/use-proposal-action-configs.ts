@@ -5,16 +5,29 @@ import { useMemo } from 'react'
 import { toast } from 'sonner'
 
 import { PROPOSAL_ACTIONS } from '@/shared/components/entity-actions/constants/proposal-actions'
+import { ROOTS } from '@/shared/config/roots'
+import { copyToClipboard } from '@/shared/lib/clipboard'
 import { useTRPC } from '@/trpc/helpers'
 
 interface ProposalEntity {
   id: string
+  token: string | null
 }
 
 interface ProposalActionHandlers<T extends ProposalEntity> {
   onView: (entity: T) => void
   onEdit: (entity: T) => void
   onAssignOwner?: (entity: T) => void
+}
+
+function buildShareableUrl(proposalId: string, token: string | null, utmSource: 'email' | 'sms'): string {
+  const base = `${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${proposalId}`
+  const params = new URLSearchParams()
+  if (token) {
+    params.set('token', token)
+  }
+  params.set('utm_source', utmSource)
+  return `${base}?${params.toString()}`
 }
 
 export function useProposalActionConfigs<T extends ProposalEntity>(
@@ -57,6 +70,20 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
       {
         action: PROPOSAL_ACTIONS.edit,
         onAction: handlers.onEdit,
+      },
+      {
+        action: PROPOSAL_ACTIONS.shareByEmail,
+        onAction: (entity) => {
+          const url = buildShareableUrl(entity.id, entity.token, 'email')
+          copyToClipboard(url, 'Proposal link (email)')
+        },
+      },
+      {
+        action: PROPOSAL_ACTIONS.shareBySms,
+        onAction: (entity) => {
+          const url = buildShareableUrl(entity.id, entity.token, 'sms')
+          copyToClipboard(url, 'Proposal link (SMS)')
+        },
       },
       {
         action: PROPOSAL_ACTIONS.duplicate,

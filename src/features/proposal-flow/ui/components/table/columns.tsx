@@ -16,6 +16,7 @@ import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-a
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
 import { proposalStatuses } from '@/shared/constants/enums'
+import { copyToClipboard } from '@/shared/lib/clipboard'
 import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
@@ -32,6 +33,16 @@ export interface ProposalTableMeta {
   onViewProfile: (customerId: string) => void
 }
 
+function buildShareableUrl(proposalId: string, token: string | null, utmSource: 'email' | 'sms'): string {
+  const base = `${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${proposalId}`
+  const params = new URLSearchParams()
+  if (token) {
+    params.set('token', token)
+  }
+  params.set('utm_source', utmSource)
+  return `${base}?${params.toString()}`
+}
+
 function buildProposalActions(row: ProposalRow, meta: ProposalTableMeta) {
   return [
     {
@@ -41,6 +52,14 @@ function buildProposalActions(row: ProposalRow, meta: ProposalTableMeta) {
     {
       action: PROPOSAL_ACTIONS.edit,
       onAction: () => { window.location.href = ROOTS.dashboard.proposals.byId(row.id) },
+    },
+    {
+      action: PROPOSAL_ACTIONS.shareByEmail,
+      onAction: () => copyToClipboard(buildShareableUrl(row.id, row.token, 'email'), 'Proposal link (email)'),
+    },
+    {
+      action: PROPOSAL_ACTIONS.shareBySms,
+      onAction: () => copyToClipboard(buildShareableUrl(row.id, row.token, 'sms'), 'Proposal link (SMS)'),
     },
     {
       action: PROPOSAL_ACTIONS.duplicate,
