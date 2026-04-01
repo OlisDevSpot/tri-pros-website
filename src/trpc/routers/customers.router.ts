@@ -4,7 +4,7 @@ import { Redis } from '@upstash/redis'
 import { desc, eq, ilike, or } from 'drizzle-orm'
 import z from 'zod'
 import env from '@/shared/config/server-env'
-import { intakeModes, leadSources, leadTypes } from '@/shared/constants/enums'
+import { intakeModes, leadSources } from '@/shared/constants/enums'
 import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
@@ -174,11 +174,10 @@ export const customersRouter = createTRPCRouter({
       city: z.string().min(1),
       state: z.string().length(2).optional(),
       zip: z.string().min(1),
-      email: z.string().email().optional(),
+      email: z.string().optional(),
       notes: z.string().optional(),
       mode: z.enum(intakeModes),
       leadSource: z.enum(leadSources).default('other'),
-      leadType: z.enum(leadTypes),
       leadMetaJSON: leadMetaSchema.optional(),
     }))
     .mutation(async ({ input, ctx }) => {

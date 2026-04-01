@@ -7,7 +7,6 @@ import { IntakeShareLinks } from '@/features/intake/ui/components/intake-share-l
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
 
 const SUPER_ADMIN_FORM_CONFIG: LeadSourceFormConfig = {
-  leadType: 'manual',
   mode: 'customer_only',
   showEmail: true,
   requireEmail: false,

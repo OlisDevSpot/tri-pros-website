@@ -1,8 +1,7 @@
 import z from 'zod'
-import { intakeModes, leadTypes } from '@/shared/constants/enums'
+import { intakeModes } from '@/shared/constants/enums'
 
 export const leadSourceFormConfigSchema = z.object({
-  leadType: z.enum(leadTypes),
   mode: z.enum(intakeModes).optional().default('customer_only'),
 
   // Field visibility

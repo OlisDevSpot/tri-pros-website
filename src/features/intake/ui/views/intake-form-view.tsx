@@ -3,7 +3,7 @@
 
 import type { IntakeFormData } from '@/features/intake/schemas/intake-form-schema'
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
-import type { IntakeMode, LeadType } from '@/shared/types/enums'
+import type { IntakeMode } from '@/shared/types/enums'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { APIProvider } from '@vis.gl/react-google-maps'
@@ -83,7 +83,6 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug, onModeChange 
       notes: data.notes || undefined,
       mode: data.mode,
       leadSource: (leadSourceSlug ?? 'other') as Parameters<typeof submit.mutate>[0]['leadSource'],
-      leadType: formConfig.leadType as LeadType,
       leadMetaJSON,
     })
   }

@@ -1,15 +1,21 @@
 import process from 'node:process'
 import { eq } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/node-postgres'
 import { nanoid } from 'nanoid'
-import { db } from '../src/shared/db'
+import { Pool } from 'pg'
+import env from '../src/shared/config/server-env'
+import * as schema from '../src/shared/db/schema'
 import { leadSourcesTable } from '../src/shared/db/schema/lead-sources'
 
-const INITIAL_SOURCES = [
+// Default: prod DB. Pass DRIZZLE_TARGET=dev to use dev DB.
+const dbUrl = process.env.DRIZZLE_TARGET === 'dev' ? env.DATABASE_DEV_URL! : env.DATABASE_URL
+const db = drizzle(new Pool({ connectionString: dbUrl }), { schema })
+
+const LEAD_SOURCES = [
   {
     name: 'Telemarketing Leads - Philippines',
     slug: 'telemarketing_leads_philippines',
     formConfigJSON: {
-      leadType: 'appointment_set' as const,
       mode: 'customer_and_meeting' as const,
       showEmail: false,
       requireEmail: false,
@@ -17,13 +23,13 @@ const INITIAL_SOURCES = [
       showMeetingScheduler: true,
       requireMeetingScheduler: true,
       showMp3Upload: true,
+      closedByOptions: ['Austin', 'Rico', 'Mei Ann', 'Angelica'],
     },
   },
   {
     name: 'Noy',
     slug: 'noy',
     formConfigJSON: {
-      leadType: 'needs_confirmation' as const,
       mode: 'customer_only' as const,
       showEmail: true,
       requireEmail: false,
@@ -34,7 +40,6 @@ const INITIAL_SOURCES = [
     name: 'QuoteMe',
     slug: 'quoteme',
     formConfigJSON: {
-      leadType: 'needs_confirmation' as const,
       mode: 'customer_only' as const,
       showEmail: true,
       requireEmail: false,
@@ -45,7 +50,6 @@ const INITIAL_SOURCES = [
     name: 'Other',
     slug: 'other',
     formConfigJSON: {
-      leadType: 'manual' as const,
       mode: 'customer_and_meeting' as const,
       showEmail: true,
       requireEmail: false,
@@ -58,7 +62,7 @@ const INITIAL_SOURCES = [
 ]
 
 async function main() {
-  for (const source of INITIAL_SOURCES) {
+  for (const source of LEAD_SOURCES) {
     const existing = await db
       .select({ id: leadSourcesTable.id })
       .from(leadSourcesTable)
@@ -66,17 +70,22 @@ async function main() {
       .limit(1)
 
     if (existing.length > 0) {
-      console.log(`Skipping "${source.name}" — already exists`)
+      // Update formConfigJSON on existing rows to include new fields (e.g. mode)
+      await db
+        .update(leadSourcesTable)
+        .set({ formConfigJSON: source.formConfigJSON })
+        .where(eq(leadSourcesTable.slug, source.slug))
+      console.log(`Updated "${source.name}" — formConfigJSON synced`)
       continue
     }
 
     const token = nanoid(21)
     await db.insert(leadSourcesTable).values({ ...source, token })
-    console.log(`Seeded "${source.name}" with token: ${token}`)
+    console.log(`Created "${source.name}" with token: ${token}`)
     console.log(`   URL: /intake?source=${source.slug}`)
   }
 
-  console.log('\nDone. Store these tokens securely — they are permanent.')
+  console.log('\nDone.')
   process.exit(0)
 }
 
