@@ -101,6 +101,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#03AFED',
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({
@@ -116,7 +117,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body
-        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
+        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased pt-[env(safe-area-inset-top)]`}
       >
         <Providers>
           <PwaSplashScreen />
