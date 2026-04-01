@@ -3,6 +3,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* PWA standalone mode — use for h-dvh → h-full overrides */
+@custom-variant standalone (@media (display-mode: standalone));
+
 :root {
   --background: oklch(0.9846 0.0017 247.8389);
   --foreground: oklch(0.2781 0.0296 256.848);
@@ -193,7 +196,13 @@
 
   html {
     @apply overscroll-none;
-    height: 100%;
+  }
+
+  /* PWA standalone: percentage height chain (dvh unreliable on first paint) */
+  @media (display-mode: standalone) {
+    html {
+      height: 100%;
+    }
   }
 
   html:not(:has([data-no-gutter-stable])) {
@@ -202,9 +211,14 @@
 
   body {
     @apply bg-background text-foreground overscroll-none;
-    min-height: 100%;
     /* REMOVE RADIX DIALOG SCROLLBAR WIDTH AUTO-COMPENSATION */
     margin-right: 0px !important;
+  }
+
+  @media (display-mode: standalone) {
+    body {
+      min-height: 100%;
+    }
   }
 
   h1,
@@ -325,11 +339,11 @@
   }
 }
 
-/* ── PWA: reliable viewport height (no dvh/svh on initial load) ─ */
-/* The sidebar-wrapper (SidebarProvider) needs explicit height     */
-/* so children can use h-full instead of unreliable viewport units */
-[data-slot='sidebar-wrapper'] {
-  height: 100%;
+/* ── PWA standalone: percentage height chain for sidebar layout ── */
+@media (display-mode: standalone) {
+  [data-slot='sidebar-wrapper'] {
+    height: 100%;
+  }
 }
 
 /* ── PWA safe-area insets ──────────────────────────────────────── */
