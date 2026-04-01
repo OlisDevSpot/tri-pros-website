@@ -1,7 +1,7 @@
+import { metaFetch } from '../lib/client.js'
 // scripts/meta/setup/verify-credentials.ts
 import { metaEnv } from '../lib/env.js'
-import { metaFetch } from '../lib/client.js'
-import { printSuccess, printError, printInfo } from '../lib/formatters.js'
+import { printError, printInfo, printSuccess } from '../lib/formatters.js'
 
 interface MeResponse {
   id: string
@@ -9,7 +9,7 @@ interface MeResponse {
 }
 
 interface CampaignsResponse {
-  data: { id: string; name: string }[]
+  data: { id: string, name: string }[]
 }
 
 async function main() {

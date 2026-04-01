@@ -1,9 +1,9 @@
+import type { Ad, MetaPaginatedResponse } from '../lib/types.js'
 // scripts/meta/ads/manage-ad.ts
 import { select } from '@inquirer/prompts'
-import { metaEnv } from '../lib/env.js'
 import { metaFetch } from '../lib/client.js'
-import { printSuccess, printError, printInfo } from '../lib/formatters.js'
-import type { Ad, MetaPaginatedResponse } from '../lib/types.js'
+import { metaEnv } from '../lib/env.js'
+import { printError, printInfo, printSuccess } from '../lib/formatters.js'
 
 async function main() {
   printInfo('Fetching ads from your account...')

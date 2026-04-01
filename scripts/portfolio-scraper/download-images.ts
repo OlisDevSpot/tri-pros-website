@@ -1,7 +1,7 @@
+import type { ScrapedImage } from './types'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DOWNLOAD_CONCURRENCY } from './constants'
-import type { ScrapedImage } from './types'
 
 export interface DownloadOptions {
   /** Cookie header string from the browser session (e.g. "name=value; name2=value2") */
@@ -11,11 +11,15 @@ export interface DownloadOptions {
 }
 
 function detectImageType(buffer: Buffer): string | null {
-  if (buffer.length < 4) return null
+  if (buffer.length < 4)
+    return null
 
-  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return 'jpg'
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return 'png'
-  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46) return 'webp'
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF)
+    return 'jpg'
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47)
+    return 'png'
+  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46)
+    return 'webp'
 
   return null
 }
@@ -33,11 +37,11 @@ async function downloadSingle(
     }
 
     if (opts.referer) {
-      headers['Referer'] = opts.referer
+      headers.Referer = opts.referer
     }
 
     if (opts.cookies) {
-      headers['Cookie'] = opts.cookies
+      headers.Cookie = opts.cookies
     }
 
     const response = await fetch(image.url, {

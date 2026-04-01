@@ -1,11 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 /**
  * One-time script to generate PWA icons from the SVG logo.
  * Run: node scripts/generate-pwa-icons.mjs
  */
 import sharp from 'sharp'
-import { readFileSync } from 'fs'
-import { resolve, dirname } from 'path'
-import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')

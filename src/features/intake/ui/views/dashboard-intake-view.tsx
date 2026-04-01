@@ -1,7 +1,7 @@
 'use client'
 
-import type { IntakeMode } from '@/shared/types/enums'
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
+import type { IntakeMode } from '@/shared/types/enums'
 import { useState } from 'react'
 import { IntakeShareLinks } from '@/features/intake/ui/components/intake-share-links'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'

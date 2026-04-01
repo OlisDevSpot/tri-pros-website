@@ -1,6 +1,6 @@
+import type { MatchedScope, ProjectPromptAnswers } from './types'
 import { checkbox, confirm } from '@inquirer/prompts'
 import { generateHomeownerName, pickCity, pickProjectTitle } from './constants'
-import type { MatchedScope, ProjectPromptAnswers } from './types'
 
 function slugify(text: string): string {
   return text

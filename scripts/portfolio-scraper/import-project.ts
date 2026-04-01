@@ -1,3 +1,4 @@
+import type { MediaPhase } from '@/shared/types/enums/media'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -5,7 +6,6 @@ import process from 'node:process'
 import readline from 'node:readline'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { eq } from 'drizzle-orm'
-import type { MediaPhase } from '@/shared/types/enums/media'
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
@@ -31,16 +31,17 @@ interface AvailableProject {
 }
 
 function getAvailableProjects(): AvailableProject[] {
-  if (!fs.existsSync(OUTPUT_BASE_DIR)) return []
+  if (!fs.existsSync(OUTPUT_BASE_DIR))
+    return []
 
   return fs.readdirSync(OUTPUT_BASE_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && d.name !== 'imported')
+    .filter(d => d.isDirectory() && d.name !== 'imported')
     .map((d) => {
       const dir = path.join(OUTPUT_BASE_DIR, d.name)
       const hasJson = fs.existsSync(path.join(dir, 'project.json'))
       const imagesDir = path.join(dir, 'images')
       const imageCount = fs.existsSync(imagesDir)
-        ? fs.readdirSync(imagesDir).filter((f) => /\.(?:jpg|jpeg|png|webp)$/i.test(f)).length
+        ? fs.readdirSync(imagesDir).filter(f => /\.(?:jpg|jpeg|png|webp)$/i.test(f)).length
         : 0
       return { name: d.name, hasJson, imageCount }
     })
@@ -169,20 +170,25 @@ function detectPhase(filename: string, phasesMap: Record<string, string> | null)
   }
 
   const lower = filename.toLowerCase()
-  if (lower.startsWith('before')) return 'before'
-  if (lower.startsWith('during')) return 'during'
-  if (lower.startsWith('after')) return 'after'
+  if (lower.startsWith('before'))
+    return 'before'
+  if (lower.startsWith('during'))
+    return 'during'
+  if (lower.startsWith('after'))
+    return 'after'
 
   return 'uncategorized'
 }
 
 function isHeroFromPhases(filename: string, phasesMap: Record<string, string> | null): boolean {
-  if (!phasesMap) return false
+  if (!phasesMap)
+    return false
   return phasesMap[filename] === 'hero'
 }
 
 function getImageFiles(imagesDir: string): string[] {
-  if (!fs.existsSync(imagesDir)) return []
+  if (!fs.existsSync(imagesDir))
+    return []
 
   return fs.readdirSync(imagesDir)
     .filter((f) => {
@@ -311,7 +317,8 @@ async function importProject(folderPath: string): Promise<ImportResult> {
       const publicUrl = `${R2_PUBLIC_BASE}/${pathKey}`
 
       const isHero = !heroSet && (isHeroFromPhases(filename, phasesMap) || i === 0)
-      if (isHero) heroSet = true
+      if (isHero)
+        heroSet = true
 
       await uploadToR2(filePath, pathKey, mimeType)
 

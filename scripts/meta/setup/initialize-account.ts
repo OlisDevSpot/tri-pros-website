@@ -13,9 +13,9 @@
  * Activate ads only after reviewing in Ads Manager and adding creative images.
  */
 
+import { MetaApiError, metaFetch } from '../lib/client.js'
 import { metaEnv } from '../lib/env.js'
-import { metaFetch, MetaApiError } from '../lib/client.js'
-import { printSuccess, printError, printInfo } from '../lib/formatters.js'
+import { printError, printInfo, printSuccess } from '../lib/formatters.js'
 
 const TODAY_LABEL = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 
@@ -48,7 +48,7 @@ const AGE_MAX = 65
 // (free estimate removes the price objection before they even call).
 const HEADLINE = 'Transform Your SoCal Home'
 const PRIMARY_TEXT
-  = "Southern California's trusted remodeling experts. Kitchens · Bathrooms · Whole-Home renovations. Get your FREE in-home estimate — no obligation, no pressure."
+  = 'Southern California\'s trusted remodeling experts. Kitchens · Bathrooms · Whole-Home renovations. Get your FREE in-home estimate — no obligation, no pressure.'
 const CTA_TYPE = 'GET_QUOTE'
 const LANDING_URL = 'https://tripros.com/contact'
 // ────────────────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ async function main() {
   // visitors (for retargeting) and form completions (your leads/conversions).
   // Each ad account is limited to one pixel — re-use existing if present.
   printInfo('Checking for existing pixel...')
-  const existingPixels = await metaFetch<{ data: { id: string; name: string }[] }>(
+  const existingPixels = await metaFetch<{ data: { id: string, name: string }[] }>(
     `/${metaEnv.adAccountId}/adspixels`,
     { params: { fields: 'id,name' } },
   )
@@ -241,11 +241,16 @@ main().catch((err) => {
   }
   if (pixelId ?? campaignId ?? adSetId ?? creativeId ?? audienceId) {
     console.error('\n  ⚠️  Partial creation — resources that may need cleanup in Ads Manager:')
-    if (pixelId) console.error(`    Pixel:     ${pixelId}`)
-    if (campaignId) console.error(`    Campaign:  ${campaignId}`)
-    if (adSetId) console.error(`    Ad Set:    ${adSetId}`)
-    if (creativeId) console.error(`    Creative:  ${creativeId}`)
-    if (audienceId) console.error(`    Audience:  ${audienceId}`)
+    if (pixelId)
+      console.error(`    Pixel:     ${pixelId}`)
+    if (campaignId)
+      console.error(`    Campaign:  ${campaignId}`)
+    if (adSetId)
+      console.error(`    Ad Set:    ${adSetId}`)
+    if (creativeId)
+      console.error(`    Creative:  ${creativeId}`)
+    if (audienceId)
+      console.error(`    Audience:  ${audienceId}`)
   }
   process.exit(1)
 })

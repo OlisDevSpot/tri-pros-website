@@ -1,7 +1,7 @@
-import { ALLOWED_EXTENSIONS, SKIP_URL_PATTERNS } from '../constants'
-import { launchStealthBrowser } from '../scrape-images'
 import type { MultiProjectGroup, ScrapedImage } from '../types'
 import type { SiteScraper, SiteScraperMultiResult, SiteScraperOptions } from './types'
+import { ALLOWED_EXTENSIONS, SKIP_URL_PATTERNS } from '../constants'
+import { launchStealthBrowser } from '../scrape-images'
 
 /**
  * HomeAdvisor scraper.
@@ -27,7 +27,8 @@ function hasAllowedExtension(url: string): boolean {
   try {
     const pathname = new URL(url).pathname.toLowerCase()
     const lastSegment = pathname.split('/').pop() || ''
-    if (!lastSegment.includes('.')) return true
+    if (!lastSegment.includes('.'))
+      return true
     return ALLOWED_EXTENSIONS.some(ext => lastSegment.endsWith(`.${ext}`))
   }
   catch {
@@ -37,10 +38,14 @@ function hasAllowedExtension(url: string): boolean {
 
 function normalizeUrl(url: string, baseUrl: string): string | null {
   try {
-    if (!url || url.trim().length === 0) return null
-    if (url.startsWith('data:')) return null
-    if (url.startsWith('//')) return `https:${url}`
-    if (url.startsWith('http')) return url
+    if (!url || url.trim().length === 0)
+      return null
+    if (url.startsWith('data:'))
+      return null
+    if (url.startsWith('//'))
+      return `https:${url}`
+    if (url.startsWith('http'))
+      return url
     return new URL(url, baseUrl).href
   }
   catch {
@@ -137,8 +142,8 @@ async function scrapeHomeAdvisor(opts: SiteScraperOptions): Promise<SiteScraperM
     await page.waitForTimeout(1000)
 
     // Extract page metadata
-    const metadata: { title: string, description: string, bodyText: string } =
-      await page.evaluate(EXTRACT_METADATA_SCRIPT)
+    const metadata: { title: string, description: string, bodyText: string }
+      = await page.evaluate(EXTRACT_METADATA_SCRIPT)
 
     // Find all carousel buttons
     // HomeAdvisor uses: ul > li > div[role="button"]
@@ -146,7 +151,7 @@ async function scrapeHomeAdvisor(opts: SiteScraperOptions): Promise<SiteScraperM
     const buttonCount = await carouselButtons.count()
 
     const itemsToScrape = opts.limit > 0 ? Math.min(buttonCount, opts.limit) : buttonCount
-    console.log(`  [HomeAdvisor] Found ${buttonCount} carousel items` + (opts.limit > 0 ? ` (scraping first ${itemsToScrape})` : ''))
+    console.log(`  [HomeAdvisor] Found ${buttonCount} carousel items${opts.limit > 0 ? ` (scraping first ${itemsToScrape})` : ''}`)
 
     if (buttonCount === 0) {
       console.warn('  [HomeAdvisor] No carousel buttons found. Falling back to standard image extraction.')
@@ -338,12 +343,14 @@ async function scrapeDialogThumbnails(
 
   /** Helper: grab the largest visible image and add it if new */
   const collectLargestImage = async (): Promise<boolean> => {
-    const img: { url: string, alt: string, w: number, h: number } | null =
-      await page.evaluate(EXTRACT_LARGEST_IMAGE_SCRIPT)
-    if (!img) return false
+    const img: { url: string, alt: string, w: number, h: number } | null
+      = await page.evaluate(EXTRACT_LARGEST_IMAGE_SCRIPT)
+    if (!img)
+      return false
 
     const normalized = normalizeUrl(img.url, baseUrl)
-    if (!normalized) return false
+    if (!normalized)
+      return false
 
     const dedupeKey = getImageBaseKey(normalized)
     if (globalSeen.has(dedupeKey) || shouldSkipUrl(normalized) || !hasAllowedExtension(normalized)) {
@@ -364,8 +371,8 @@ async function scrapeDialogThumbnails(
   //    We do this via page.evaluate to get accurate bounding boxes from the browser,
   //    then use the absolute DOM index to click via page.locator('img').nth(N).
   //    This avoids the problem of Playwright's compound CSS selectors picking hidden containers.
-  const imgInfos: Array<{ pageIndex: number, width: number, height: number, area: number }> =
-    await page.evaluate(/* js */ `
+  const imgInfos: Array<{ pageIndex: number, width: number, height: number, area: number }>
+    = await page.evaluate(/* js */ `
       (function() {
         var results = [];
         var imgs = Array.from(document.querySelectorAll('img'));
@@ -429,7 +436,8 @@ async function scrapeDialogThumbnails(
       await page.waitForTimeout(600)
 
       const got = await collectLargestImage()
-      if (got) collected++
+      if (got)
+        collected++
     }
     catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -511,11 +519,15 @@ async function extractVisibleImages(
 
   for (const raw of rawUrls) {
     const normalized = normalizeUrl(raw.url, baseUrl)
-    if (!normalized) continue
+    if (!normalized)
+      continue
     const key = getImageBaseKey(normalized)
-    if (seen.has(key)) continue
-    if (shouldSkipUrl(normalized)) continue
-    if (!hasAllowedExtension(normalized)) continue
+    if (seen.has(key))
+      continue
+    if (shouldSkipUrl(normalized))
+      continue
+    if (!hasAllowedExtension(normalized))
+      continue
     seen.add(key)
     images.push({ url: normalized, alt: raw.alt })
     log(`KEEP [fallback]: ${normalized}`)

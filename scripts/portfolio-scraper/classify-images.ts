@@ -1,3 +1,4 @@
+import type { ImagePhase, PhaseClassification } from './types'
 import fs from 'node:fs'
 import path from 'node:path'
 import { openai } from '@ai-sdk/openai'
@@ -5,7 +6,6 @@ import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { CLASSIFY_SYSTEM_PROMPT } from './constants'
-import type { ImagePhase, PhaseClassification } from './types'
 
 const BATCH_SIZE = 4
 

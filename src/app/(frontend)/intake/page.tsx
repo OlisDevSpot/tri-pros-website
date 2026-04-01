@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { notFound, redirect } from 'next/navigation'
 import { headers } from 'next/headers'
+import { notFound, redirect } from 'next/navigation'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
 import { auth } from '@/shared/auth/server'
 import { db } from '@/shared/db'

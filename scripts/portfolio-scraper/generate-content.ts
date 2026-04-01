@@ -1,8 +1,8 @@
+import type { MatchedScope, PageMetadata, ProjectContentOutput } from './types'
 import { openai } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
 import { z } from 'zod'
 import { STORYTELLING_SYSTEM_PROMPT } from './constants'
-import type { MatchedScope, PageMetadata, ProjectContentOutput } from './types'
 
 const contentOutputSchema = z.object({
   description: z.string().max(255),

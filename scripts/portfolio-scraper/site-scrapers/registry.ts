@@ -1,5 +1,9 @@
 import type { SiteScraper } from './types'
 
+// ── Auto-register all scrapers on import ──────────────────────────
+// Add new scraper imports here:
+import { homeAdvisorScraper } from './homeadvisor'
+
 /**
  * Registry of site-specific scrapers.
  * Add new scrapers here — they'll be auto-matched by domain or --source flag.
@@ -39,9 +43,5 @@ export function findScraperByUrl(url: string): SiteScraper | null {
 export function listScrapers(): SiteScraper[] {
   return [...scrapers]
 }
-
-// ── Auto-register all scrapers on import ──────────────────────────
-// Add new scraper imports here:
-import { homeAdvisorScraper } from './homeadvisor'
 
 registerScraper(homeAdvisorScraper)

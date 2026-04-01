@@ -1,8 +1,8 @@
+import type { Insight, MetaPaginatedResponse } from '../lib/types.js'
+import { metaFetch } from '../lib/client.js'
 // scripts/meta/reports/pull-performance.ts
 import { metaEnv } from '../lib/env.js'
-import { metaFetch } from '../lib/client.js'
-import { printTable, printInfo, printError } from '../lib/formatters.js'
-import type { Insight, MetaPaginatedResponse } from '../lib/types.js'
+import { printError, printInfo, printTable } from '../lib/formatters.js'
 
 const VALID_PRESETS = ['today', 'yesterday', 'last_7d', 'last_14d', 'last_28d', 'last_30d', 'last_month', 'this_month'] as const
 type DatePreset = (typeof VALID_PRESETS)[number]

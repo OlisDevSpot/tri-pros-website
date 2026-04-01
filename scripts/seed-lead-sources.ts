@@ -1,6 +1,6 @@
+import process from 'node:process'
 import { eq } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
-import process from 'node:process'
 import { db } from '../src/shared/db'
 import { leadSourcesTable } from '../src/shared/db/schema/lead-sources'
 

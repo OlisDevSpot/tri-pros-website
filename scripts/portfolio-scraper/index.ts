@@ -1,9 +1,9 @@
+import type { CliFlags, ImagePhase, PagesConfig, ProjectContentOutput } from './types'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { config } from 'dotenv'
 import { OUTPUT_BASE_DIR } from './constants'
-import type { CliFlags, ImagePhase, PagesConfig, ProjectContentOutput } from './types'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -62,9 +62,15 @@ function parseArgs(): CliFlags {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
-    if (arg === '--classify') flags.classify = true
-    else if (arg === '--headful') flags.headful = true
-    else if (arg === '--verbose' || arg === '-v') flags.verbose = true
+    if (arg === '--classify') {
+      flags.classify = true
+    }
+    else if (arg === '--headful') {
+      flags.headful = true
+    }
+    else if (arg === '--verbose' || arg === '-v') {
+      flags.verbose = true
+    }
     else if (arg === '--help' || arg === '-h') {
       printUsage()
       process.exit(0)
@@ -493,7 +499,7 @@ async function main(): Promise<void> {
   // ---- SITE-SPECIFIC SCRAPER DETECTION ----
   const { findScraperByName, findScraperByUrl } = await import('./site-scrapers/registry')
 
-  let siteScraper = flags.source
+  const siteScraper = flags.source
     ? findScraperByName(flags.source)
     : findScraperByUrl(flags.url)
 

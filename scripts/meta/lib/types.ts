@@ -54,7 +54,7 @@ export interface Insight {
 export interface MetaPaginatedResponse<T> {
   data: T[]
   paging?: {
-    cursors?: { before: string; after: string }
+    cursors?: { before: string, after: string }
     next?: string
   }
 }

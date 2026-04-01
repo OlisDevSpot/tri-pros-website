@@ -1,3 +1,4 @@
+/* eslint-disable node/prefer-global/process */
 import { eq, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'

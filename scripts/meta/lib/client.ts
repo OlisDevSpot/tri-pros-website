@@ -54,7 +54,8 @@ export async function metaFetch<T>(endpoint: string, options: FetchOptions = {})
   let json: unknown
   try {
     json = await res.json()
-  } catch {
+  }
+  catch {
     throw new MetaApiError(
       res.status,
       'ParseError',

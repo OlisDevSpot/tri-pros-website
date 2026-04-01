@@ -5,9 +5,9 @@
  * menu-driven interface. Run with: pnpm portfolio
  */
 
+import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { checkbox, confirm, input, select } from '@inquirer/prompts'
 
@@ -96,7 +96,8 @@ function parseCliArgs(): CliArgs {
     scrapeFlags: [],
   }
 
-  if (rawArgs.length === 0) return result
+  if (rawArgs.length === 0)
+    return result
 
   // Check for top-level help
   if (rawArgs[0] === '-h' || rawArgs[0] === '--help') {
@@ -172,22 +173,23 @@ function runScript(command: string, args: string[]): Promise<number> {
       shell: true,
     })
 
-    child.on('close', (code) => resolve(code ?? 1))
+    child.on('close', code => resolve(code ?? 1))
     child.on('error', reject)
   })
 }
 
 function getScrapedProjects(): { name: string, hasJson: boolean, imageCount: number }[] {
-  if (!fs.existsSync(ASSETS_DIR)) return []
+  if (!fs.existsSync(ASSETS_DIR))
+    return []
 
   return fs.readdirSync(ASSETS_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && d.name !== 'imported')
+    .filter(d => d.isDirectory() && d.name !== 'imported')
     .map((d) => {
       const dir = path.join(ASSETS_DIR, d.name)
       const hasJson = fs.existsSync(path.join(dir, 'project.json'))
       const imagesDir = path.join(dir, 'images')
       const imageCount = fs.existsSync(imagesDir)
-        ? fs.readdirSync(imagesDir).filter((f) => /\.(?:jpg|jpeg|png|webp)$/i.test(f)).length
+        ? fs.readdirSync(imagesDir).filter(f => /\.(?:jpg|jpeg|png|webp)$/i.test(f)).length
         : 0
       return { name: d.name, hasJson, imageCount }
     })
@@ -243,19 +245,22 @@ async function actionScrape(): Promise<string | null> {
     message: 'Classify images by phase (before/during/after) with AI?',
     default: false,
   })
-  if (classify) flags.push('--classify')
+  if (classify)
+    flags.push('--classify')
 
   const headful = await confirm({
     message: 'Run browser in visible mode (headful)?',
     default: false,
   })
-  if (headful) flags.push('--headful')
+  if (headful)
+    flags.push('--headful')
 
   const verbose = await confirm({
     message: 'Verbose logging?',
     default: false,
   })
-  if (verbose) flags.push('--verbose')
+  if (verbose)
+    flags.push('--verbose')
 
   const mode = await select({
     message: 'Scraping mode:',
@@ -284,7 +289,8 @@ async function actionScrape(): Promise<string | null> {
     const pages = await input({
       message: 'Pages config (e.g. "page=1-5" or "1-5"):',
     })
-    if (pages.trim()) flags.push('--pages', pages.trim())
+    if (pages.trim())
+      flags.push('--pages', pages.trim())
   }
 
   if (mode === 'multi') {
@@ -318,7 +324,7 @@ async function actionScrape(): Promise<string | null> {
   const after = getScrapedProjects()
   if (after.length > 0) {
     // Return the most recently modified folder
-    const withMtime = after.map((p) => ({
+    const withMtime = after.map(p => ({
       ...p,
       mtime: fs.statSync(path.join(ASSETS_DIR, p.name)).mtimeMs,
     }))
@@ -364,19 +370,22 @@ async function actionSiteScrape(): Promise<string | null> {
     message: 'Classify images by phase (before/during/after) with AI?',
     default: false,
   })
-  if (classify) flags.push('--classify')
+  if (classify)
+    flags.push('--classify')
 
   const headful = await confirm({
     message: 'Run browser in visible mode (headful)?',
     default: false,
   })
-  if (headful) flags.push('--headful')
+  if (headful)
+    flags.push('--headful')
 
   const verbose = await confirm({
     message: 'Verbose logging?',
     default: false,
   })
-  if (verbose) flags.push('--verbose')
+  if (verbose)
+    flags.push('--verbose')
 
   const args = ['scrape-project', url.trim()]
   if (scopes.trim()) {
@@ -396,7 +405,7 @@ async function actionSiteScrape(): Promise<string | null> {
   // Try to find the newest folder (created just now)
   const after = getScrapedProjects()
   if (after.length > 0) {
-    const withMtime = after.map((p) => ({
+    const withMtime = after.map(p => ({
       ...p,
       mtime: fs.statSync(path.join(ASSETS_DIR, p.name)).mtimeMs,
     }))
@@ -410,7 +419,7 @@ async function actionSiteScrape(): Promise<string | null> {
 async function actionImport(): Promise<void> {
   console.log('\n── Import Project to R2 + Postgres ──\n')
 
-  const projects = getScrapedProjects().filter((p) => p.hasJson)
+  const projects = getScrapedProjects().filter(p => p.hasJson)
 
   if (projects.length === 0) {
     console.log('No importable projects found. Scrape one first.\n')
@@ -432,7 +441,8 @@ async function actionImport(): Promise<void> {
       message: `Import all ${projects.length} projects?`,
       default: true,
     })
-    if (!ok) return
+    if (!ok)
+      return
 
     console.log(`\nRunning: pnpm import-project --all\n`)
     await runScript('pnpm', ['import-project', '--all'])
@@ -440,7 +450,7 @@ async function actionImport(): Promise<void> {
   else {
     const selected = await checkbox({
       message: 'Select projects to import:',
-      choices: projects.map((p) => ({
+      choices: projects.map(p => ({
         name: `${p.name} (${p.imageCount} images)`,
         value: p.name,
       })),
@@ -458,7 +468,8 @@ async function actionImport(): Promise<void> {
       if (code !== 0) {
         console.log(`  Import of "${name}" failed (code ${code}).`)
         const cont = await confirm({ message: 'Continue with remaining?', default: true })
-        if (!cont) break
+        if (!cont)
+          break
       }
     }
   }
@@ -498,9 +509,10 @@ async function actionScrapeAndImport(): Promise<void> {
 
 function getImportedCount(): number {
   const importedDir = path.join(ASSETS_DIR, 'imported')
-  if (!fs.existsSync(importedDir)) return 0
+  if (!fs.existsSync(importedDir))
+    return 0
   return fs.readdirSync(importedDir, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
+    .filter(d => d.isDirectory())
     .length
 }
 
@@ -509,7 +521,7 @@ async function actionViewProjects(): Promise<void> {
   const projects = getScrapedProjects()
   printProjectTable(projects)
 
-  const importable = projects.filter((p) => p.hasJson).length
+  const importable = projects.filter(p => p.hasJson).length
   const total = projects.length
   const imported = getImportedCount()
   console.log(`  ${total} pending, ${importable} ready to import, ${imported} already imported\n`)
@@ -520,8 +532,10 @@ async function actionViewProjects(): Promise<void> {
 async function cliScrape(args: CliArgs): Promise<void> {
   const scriptArgs = ['scrape-project']
 
-  if (args.url) scriptArgs.push(args.url)
-  if (args.scopes) scriptArgs.push(args.scopes)
+  if (args.url)
+    scriptArgs.push(args.url)
+  if (args.scopes)
+    scriptArgs.push(args.scopes)
   scriptArgs.push(...args.scrapeFlags)
 
   console.log(`\nRunning: pnpm ${scriptArgs.join(' ')}\n`)
@@ -560,7 +574,7 @@ function cliView(): void {
   const projects = getScrapedProjects()
   printProjectTable(projects)
 
-  const importable = projects.filter((p) => p.hasJson).length
+  const importable = projects.filter(p => p.hasJson).length
   const total = projects.length
   console.log(`  ${total} total, ${importable} ready to import\n`)
   process.exit(0)

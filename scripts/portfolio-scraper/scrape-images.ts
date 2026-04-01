@@ -1,7 +1,7 @@
-import { chromium } from 'playwright'
 import type { Browser, BrowserContext, Page } from 'playwright'
+import type { MultiProjectGroup, MultiProjectResult, PagesConfig, ScrapedImage, ScrapeResult } from './types'
+import { chromium } from 'playwright'
 import { ALLOWED_EXTENSIONS, SKIP_URL_PATTERNS } from './constants'
-import type { MultiProjectGroup, MultiProjectResult, PagesConfig, ScrapeResult, ScrapedImage } from './types'
 
 /** Launch a stealth browser + context that avoids basic bot detection */
 export async function launchStealthBrowser(headful: boolean): Promise<{ browser: Browser, context: BrowserContext, page: Page }> {
@@ -29,7 +29,8 @@ function hasAllowedExtension(url: string): boolean {
   try {
     const pathname = new URL(url).pathname.toLowerCase()
     const lastSegment = pathname.split('/').pop() || ''
-    if (!lastSegment.includes('.')) return true
+    if (!lastSegment.includes('.'))
+      return true
     return ALLOWED_EXTENSIONS.some(ext => lastSegment.endsWith(`.${ext}`))
   }
   catch {
@@ -39,10 +40,14 @@ function hasAllowedExtension(url: string): boolean {
 
 function normalizeUrl(url: string, baseUrl: string): string | null {
   try {
-    if (!url || url.trim().length === 0) return null
-    if (url.startsWith('data:')) return null
-    if (url.startsWith('//')) return `https:${url}`
-    if (url.startsWith('http')) return url
+    if (!url || url.trim().length === 0)
+      return null
+    if (url.startsWith('data:'))
+      return null
+    if (url.startsWith('//'))
+      return `https:${url}`
+    if (url.startsWith('http'))
+      return url
     return new URL(url, baseUrl).href
   }
   catch {
@@ -228,8 +233,8 @@ export async function scrapeImages(
     await page.waitForTimeout(2000)
 
     // Collect images from the main frame
-    let rawUrls: Array<{ url: string, alt?: string, source: string }> =
-      await page.evaluate(EXTRACT_IMAGES_SCRIPT)
+    const rawUrls: Array<{ url: string, alt?: string, source: string }>
+      = await page.evaluate(EXTRACT_IMAGES_SCRIPT)
 
     log(`Raw URLs from main frame: ${rawUrls.length}`)
 
@@ -239,12 +244,13 @@ export async function scrapeImages(
       log(`Checking ${frames.length} frames (main + iframes)...`)
 
       for (const frame of frames) {
-        if (frame === page.mainFrame()) continue
+        if (frame === page.mainFrame())
+          continue
         try {
           const frameUrl = frame.url()
           log(`  Frame: ${frameUrl}`)
-          const frameUrls: Array<{ url: string, alt?: string, source: string }> =
-            await frame.evaluate(EXTRACT_IMAGES_SCRIPT)
+          const frameUrls: Array<{ url: string, alt?: string, source: string }>
+            = await frame.evaluate(EXTRACT_IMAGES_SCRIPT)
           if (frameUrls.length > 0) {
             log(`  Found ${frameUrls.length} URLs in iframe: ${frameUrl}`)
             rawUrls.push(...frameUrls)
@@ -261,8 +267,13 @@ export async function scrapeImages(
     // Debug: if still 0 URLs, dump page state to help diagnose
     if (rawUrls.length === 0) {
       const debugInfo: {
-        imgCount: number, anchorCount: number, bgCount: number, bodyLen: number
-        iframeCount: number, shadowHostCount: number, sampleHtml: string
+        imgCount: number
+        anchorCount: number
+        bgCount: number
+        bodyLen: number
+        iframeCount: number
+        shadowHostCount: number
+        sampleHtml: string
       } = await page.evaluate(/* js */ `
           (function() {
             var imgs = document.querySelectorAll('img').length;
@@ -292,8 +303,8 @@ export async function scrapeImages(
       console.log(`  [DEBUG] HTML sample: ${debugInfo.sampleHtml.slice(0, 300)}`)
     }
 
-    const metadata: { title: string, description: string, bodyText: string } =
-      await page.evaluate(EXTRACT_METADATA_SCRIPT)
+    const metadata: { title: string, description: string, bodyText: string }
+      = await page.evaluate(EXTRACT_METADATA_SCRIPT)
 
     // ---- FILTER AND DEDUPLICATE ----
 
@@ -391,7 +402,7 @@ function buildExtractGroupsScript(selector: string): string {
       }
     `
     : `
-      var sections = Array.from(document.querySelectorAll('${selector.replace(/'/g, "\\'")}'));
+      var sections = Array.from(document.querySelectorAll('${selector.replace(/'/g, '\\\'')}'));
       var containers = [];
       for (var i = 0; i < sections.length; i++) {
         var heading = sections[i].querySelector('h1, h2, h3, h4');
@@ -499,11 +510,11 @@ export async function scrapeMultiProjectPage(
     await page.evaluate(AUTO_SCROLL_SCRIPT)
     await page.waitForTimeout(2000)
 
-    const metadata: { title: string, description: string, bodyText: string } =
-      await page.evaluate(EXTRACT_METADATA_SCRIPT)
+    const metadata: { title: string, description: string, bodyText: string }
+      = await page.evaluate(EXTRACT_METADATA_SCRIPT)
 
-    const rawGroups: Array<{ heading: string, images: Array<{ url: string, alt?: string }> }> =
-      await page.evaluate(buildExtractGroupsScript(selector))
+    const rawGroups: Array<{ heading: string, images: Array<{ url: string, alt?: string }> }>
+      = await page.evaluate(buildExtractGroupsScript(selector))
 
     log(`Raw groups found: ${rawGroups.length}`)
 
@@ -515,15 +526,20 @@ export async function scrapeMultiProjectPage(
       const images: ScrapedImage[] = []
 
       for (const raw of rawGroup.images) {
-        if (!raw.url || raw.url.trim().length === 0) continue
+        if (!raw.url || raw.url.trim().length === 0)
+          continue
 
         const normalized = normalizeUrl(raw.url, url)
-        if (!normalized) continue
+        if (!normalized)
+          continue
 
         const dedupeKey = getImageBaseKey(normalized)
-        if (seen.has(dedupeKey)) continue
-        if (shouldSkipUrl(normalized)) continue
-        if (!hasAllowedExtension(normalized)) continue
+        if (seen.has(dedupeKey))
+          continue
+        if (shouldSkipUrl(normalized))
+          continue
+        if (!hasAllowedExtension(normalized))
+          continue
 
         seen.add(dedupeKey)
         images.push({ url: normalized, alt: raw.alt })

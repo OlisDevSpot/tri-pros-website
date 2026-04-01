@@ -1,3 +1,10 @@
+import { openai } from '@ai-sdk/openai'
+import { generateText, Output } from 'ai'
+import { and, count, eq, inArray, sql } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
+import { z } from 'zod'
+import { mediaFiles, projects } from '@/shared/db/schema'
 /**
  * Before/After Photo Matching Script
  *
@@ -16,13 +23,6 @@
  *   npx tsx scripts/match-before-after.ts --project <id> # single project
  */
 import 'dotenv/config'
-import { openai } from '@ai-sdk/openai'
-import { generateText, Output } from 'ai'
-import { and, count, eq, inArray, sql } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/node-postgres'
-import { Pool } from 'pg'
-import { z } from 'zod'
-import { mediaFiles, projects } from '@/shared/db/schema'
 
 // ---------------------------------------------------------------------------
 // Config
@@ -159,7 +159,8 @@ async function matchBatch(
     output: Output.object({ schema: matchResultSchema }),
   })
 
-  if (!output || output.pairs.length === 0) return []
+  if (!output || output.pairs.length === 0)
+    return []
 
   return output.pairs
     .filter(p =>
@@ -268,7 +269,8 @@ async function matchProject(
 
 async function main() {
   console.log('=== Before/After Photo Matcher ===')
-  if (DRY_RUN) console.log('(DRY RUN — results will NOT be saved to DB)')
+  if (DRY_RUN)
+    console.log('(DRY RUN — results will NOT be saved to DB)')
 
   // Step 1: Find qualifying projects
   const phaseRows = await db
@@ -291,8 +293,10 @@ async function main() {
   const projectMap = new Map<string, { title: string, before: number, after: number }>()
   for (const row of phaseRows) {
     const existing = projectMap.get(row.projectId) ?? { title: row.projectTitle, before: 0, after: 0 }
-    if (row.phase === 'before') existing.before = Number(row.photoCount)
-    if (row.phase === 'after') existing.after = Number(row.photoCount)
+    if (row.phase === 'before')
+      existing.before = Number(row.photoCount)
+    if (row.phase === 'after')
+      existing.after = Number(row.photoCount)
     projectMap.set(row.projectId, existing)
   }
 
