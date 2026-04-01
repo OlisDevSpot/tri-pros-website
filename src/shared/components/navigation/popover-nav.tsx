@@ -56,7 +56,7 @@ export function PopoverNav({
             isMobile ? 'right-0 w-[70%]' : 'right-0 w-80 border-l',
           )}
         >
-          <div className="px-4 py-4 space-y-4 flex flex-col items-center h-full justify-between">
+          <div className="px-4 py-4 pt-[calc(env(safe-area-inset-top)+1rem)] space-y-4 flex flex-col items-center h-full justify-between">
             <div className="flex flex-col gap-4 items-center w-full">
               {isInternalUser && navItems['tpr-internal']?.items.map((item, index) => (
                 <Fragment key={item.name}>

@@ -150,7 +150,7 @@ export function SiteNavbar() {
         }}
       >
         <div
-          className="px-4 sm:px-8 lg:px-14 w-full"
+          className="px-4 sm:px-8 lg:px-14 w-full pt-[env(safe-area-inset-top)]"
         >
           <motion.div
             variants={navContainerVariants}

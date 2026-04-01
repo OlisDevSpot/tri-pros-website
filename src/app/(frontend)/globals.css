@@ -323,6 +323,22 @@
   }
 }
 
+/* ── PWA safe-area: dashboard sidebar & content ───────────────── */
+/* Desktop fixed sidebar: pad the top so logo clears the notch    */
+[data-slot="sidebar-container"] {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Mobile sheet sidebar: pad the inner column                     */
+[data-sidebar][data-mobile="true"] > div {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Dashboard main content area                                    */
+[data-slot="sidebar-inset"] {
+  padding-top: env(safe-area-inset-top);
+}
+
 /* ── Dashboard sidebar nav hover ───────────────────────────────── */
 /* Soft tint on hover — no border, no shadow, just a gentle wash  */
 /* that hints at interactivity without mimicking the active state. */

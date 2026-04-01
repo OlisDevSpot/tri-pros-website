@@ -117,7 +117,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body
-        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased pt-[env(safe-area-inset-top)]`}
+        className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
         <Providers>
           <PwaSplashScreen />
