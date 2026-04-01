@@ -112,9 +112,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="dark bg-background"
+      className="dark"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
+      style={{ backgroundColor: '#09090b' }}
     >
       <body
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
