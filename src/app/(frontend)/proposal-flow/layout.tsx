@@ -23,8 +23,10 @@ export default async function ProposalFlowLayout({
         data-no-gutter-stable
       >
         <ScrollRootProvider>
-          <ProposalPageNavbar />
-          <div className="container grow min-h-0 py-4 lg:py-8">
+          <div className="pt-[env(safe-area-inset-top)]">
+            <ProposalPageNavbar />
+          </div>
+          <div className="container grow min-h-0 py-4 lg:py-8 pb-[max(env(safe-area-inset-bottom),1rem)]">
             <div className="h-full">
               <Suspense fallback={<ProposalFlowLoadingState />}>
                 {children}
