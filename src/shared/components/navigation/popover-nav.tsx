@@ -52,7 +52,7 @@ export function PopoverNav({
             type: 'tween',
           }}
           className={cn(
-            'fixed h-dvh top-0 bg-background/70 backdrop-blur-md w-full',
+            'fixed h-svh top-0 bg-background/70 backdrop-blur-md w-full',
             isMobile ? 'right-0 w-[70%]' : 'right-0 w-80 border-l',
           )}
         >

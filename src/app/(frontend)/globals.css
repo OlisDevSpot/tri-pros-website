@@ -323,20 +323,37 @@
   }
 }
 
-/* ── PWA safe-area: dashboard sidebar & content ───────────────── */
-/* Desktop fixed sidebar: pad the top so logo clears the notch    */
-[data-slot='sidebar-container'] {
+/* ── PWA safe-area insets ──────────────────────────────────────── */
+/* Sidebar: pad header/footer so border-r extends full height     */
+[data-slot='sidebar-container'] > [data-slot='sidebar-inner'] > [data-slot='sidebar-header'] {
   padding-top: env(safe-area-inset-top);
 }
 
-/* Mobile sheet sidebar: pad the inner column                     */
+[data-slot='sidebar-container'] > [data-slot='sidebar-inner'] > [data-slot='sidebar-footer'] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mobile sheet sidebar                                           */
 [data-sidebar][data-mobile='true'] > div {
   padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Dashboard main content area                                    */
 [data-slot='sidebar-inset'] {
   padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Fullscreen dialogs & sheets (fixed overlays)                   */
+[data-slot='dialog-content'] {
+  padding-top: max(env(safe-area-inset-top), var(--spacing-4));
+  padding-bottom: max(env(safe-area-inset-bottom), var(--spacing-4));
+}
+
+[data-slot='sheet-content'] {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* ── Dashboard sidebar nav hover ───────────────────────────────── */
