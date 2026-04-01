@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 
 import { AppSidebar } from '@/features/agent-dashboard/ui/components/app-sidebar'
 import { DashboardMobileNav } from '@/features/agent-dashboard/ui/components/dashboard-mobile-nav'
+import { DashboardSignIn } from '@/features/agent-dashboard/ui/components/dashboard-sign-in'
 import { auth } from '@/shared/auth/server'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
 import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
@@ -29,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         >
           <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
             <Suspense>
-              {children}
+              {session ? children : <DashboardSignIn />}
             </Suspense>
           </div>
           {session && <DashboardMobileNav />}

@@ -31,7 +31,7 @@ import {
   useSidebar,
 } from '@/shared/components/ui/sidebar'
 import { ROOTS } from '@/shared/config/roots'
-import { useAbility } from '@/shared/permissions/hooks'
+import { defineAbilitiesFor } from '@/shared/permissions/abilities'
 
 interface AppSidebarProps {
   user: BetterAuthUser
@@ -42,10 +42,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
-  const ability = useAbility()
   const isCollapsed = state === 'collapsed'
 
-  const navConfig = useMemo(() => getSidebarNav(ability), [ability])
+  const navConfig = useMemo(
+    () => getSidebarNav(defineAbilitiesFor({ id: user.id, role: user.role })),
+    [user.id, user.role],
+  )
 
   function getIsActive(item: SidebarNavItem): boolean {
     if (item.href === ROOTS.dashboard.root) {
@@ -57,45 +59,34 @@ export function AppSidebar({ user }: AppSidebarProps) {
   function renderNavItem(item: SidebarNavItem) {
     const isActive = getIsActive(item)
 
-    if (item.enabled) {
-      return (
-        <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton
-            asChild
-            data-nav-item
-            tooltip={item.label}
-            isActive={isActive}
-            className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
-            style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
-          >
-            <Link
-              href={item.href}
-              onClick={() => {
-                if (isMobile) {
-                  setOpenMobile(false)
-                }
-              }}
-            >
-              <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
-              <span>{item.label}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      )
-    }
-
     return (
       <SidebarMenuItem key={item.href}>
         <SidebarMenuButton
+          asChild
           data-nav-item
           tooltip={item.label}
           isActive={isActive}
-          disabled
           className="gap-4 transition-all duration-200 hover:bg-transparent data-[active=true]:bg-transparent"
           style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
         >
-          <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
-          <span>{item.label}</span>
+          <Link
+            href={item.href}
+            aria-disabled={!item.enabled}
+            tabIndex={item.enabled ? undefined : -1}
+            onClick={(e) => {
+              if (!item.enabled) {
+                e.preventDefault()
+                return
+              }
+              if (isMobile) {
+                setOpenMobile(false)
+              }
+            }}
+            className={item.enabled ? '' : 'pointer-events-none opacity-50'}
+          >
+            <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
+            <span>{item.label}</span>
+          </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
     )
@@ -215,7 +206,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
               image: user.image,
             }}
             onSettingsClick={() => router.push(ROOTS.dashboard.settings())}
-            onLogoutClick={() => signOut()}
+            onLogoutClick={() => signOut({
+              fetchOptions: {
+                onSuccess: () => router.refresh(),
+              },
+            })}
           />
         </SidebarFooter>
       </Sidebar>

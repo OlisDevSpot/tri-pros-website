@@ -19,8 +19,6 @@ import { AddressAutocomplete } from '@/shared/components/inputs/address-autocomp
 import { Button } from '@/shared/components/ui/button'
 import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { Label } from '@/shared/components/ui/label'
-import { Switch } from '@/shared/components/ui/switch'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -28,10 +26,9 @@ interface IntakeFormViewProps {
   mode: IntakeMode
   formConfig: LeadSourceFormConfig
   leadSourceSlug?: string
-  onModeChange?: (mode: IntakeMode) => void
 }
 
-export function IntakeFormView({ mode, formConfig, leadSourceSlug, onModeChange }: IntakeFormViewProps) {
+export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormViewProps) {
   const trpc = useTRPC()
 
   const form = useForm<IntakeFormData>({
@@ -105,7 +102,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug, onModeChange 
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-1 flex-col min-h-0">
           {/* Honeypot — hidden from real users */}
           <input
             tabIndex={-1}
@@ -114,21 +111,9 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug, onModeChange 
             {...form.register('_honeypot')}
           />
 
-          {/* Mode toggle — super-admin only */}
-          {onModeChange && (
-            <div className="flex items-center gap-3 rounded-lg border p-4">
-              <Switch
-                id="intake-mode-toggle"
-                checked={isMeetingMode}
-                onCheckedChange={(checked) => {
-                  onModeChange(checked ? 'customer_and_meeting' : 'customer_only')
-                }}
-              />
-              <Label htmlFor="intake-mode-toggle" className="text-sm font-medium">
-                {isMeetingMode ? 'Customer + Meeting' : 'Customer Only'}
-              </Label>
-            </div>
-          )}
+          {/* Scrollable fields */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <div className="flex flex-col gap-6">
 
           {/* Name */}
           <FormField
@@ -267,9 +252,15 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug, onModeChange 
             )}
           />
 
-          <Button type="submit" size="lg" disabled={submit.isPending} className="w-full py-6">
-            {submit.isPending ? 'Submitting…' : 'Submit Lead'}
-          </Button>
+            </div>
+          </div>
+
+          {/* Pinned submit */}
+          <div className="shrink-0 pt-6 pb-6">
+            <Button type="submit" size="lg" disabled={submit.isPending} className="w-full py-6">
+              {submit.isPending ? 'Submitting…' : 'Submit Lead'}
+            </Button>
+          </div>
         </form>
       </Form>
     </APIProvider>

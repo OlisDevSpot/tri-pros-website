@@ -9,10 +9,12 @@ import { Button } from '@/shared/components/ui/button'
 interface Props extends React.ComponentProps<'div'> {
   onSubmitCallback?: (data: LoginFormSchema) => Promise<void>
   isPending?: boolean
+  callbackURL?: string
 }
 
 export function SignInGoogleButton({
   isPending = false,
+  callbackURL = '/',
 }: Props) {
   return (
     <div className="w-full max-w-sm lg:max-w-3xl">
@@ -25,8 +27,8 @@ export function SignInGoogleButton({
           onClick={async () => {
             await signIn.social({
               provider: 'google',
-              callbackURL: `/`,
-              errorCallbackURL: `/`,
+              callbackURL,
+              errorCallbackURL: callbackURL,
             })
           }}
         >

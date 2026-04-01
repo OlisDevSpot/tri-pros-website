@@ -335,19 +335,20 @@
 }
 
 /* ── PWA safe-area insets ──────────────────────────────────────── */
-/* Sidebar: pad header/footer so border-r extends full height     */
+/* Sidebar: pad header/footer so border-r extends full height.    */
+/* max() ensures non-PWA views keep a 0.5rem minimum (matches p-2). */
 [data-slot='sidebar-container'] > [data-slot='sidebar-inner'] > [data-slot='sidebar-header'] {
-  padding-top: env(safe-area-inset-top);
+  padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
 [data-slot='sidebar-container'] > [data-slot='sidebar-inner'] > [data-slot='sidebar-footer'] {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 /* Mobile sheet sidebar                                           */
 [data-sidebar][data-mobile='true'] > div {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 
 /* Fullscreen sheets                                              */

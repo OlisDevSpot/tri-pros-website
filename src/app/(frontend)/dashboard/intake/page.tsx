@@ -7,12 +7,9 @@ export const dynamic = 'force-dynamic'
 export default async function IntakePage() {
   const authState = await protectDashboardPage()
 
-  if (authState.status === 'unauthenticated') {
-    redirect('/sign-in')
-  }
-
+  // Layout handles unauthenticated — if we reach here, we're authenticated
   // Super-admin only — agents and other roles cannot access this page
-  if (authState.ability.cannot('manage', 'all')) {
+  if (authState.status === 'authenticated' && authState.ability.cannot('manage', 'all')) {
     redirect('/dashboard')
   }
 

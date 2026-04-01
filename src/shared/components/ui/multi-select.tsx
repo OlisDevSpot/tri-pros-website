@@ -114,16 +114,19 @@ export function MultiSelect({
 export function MultiSelectTrigger({
   className,
   children,
+  ref,
   ...props
 }: {
   className?: string
   children?: ReactNode
+  ref?: React.Ref<HTMLButtonElement>
 } & ComponentPropsWithoutRef<typeof Button>) {
   const { open } = useMultiSelectContext()
 
   return (
     <PopoverTrigger asChild>
       <Button
+        ref={ref}
         {...props}
         variant={props.variant ?? 'outline'}
         role={props.role ?? 'combobox'}

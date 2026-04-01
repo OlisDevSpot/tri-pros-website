@@ -2,6 +2,7 @@
 
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { TrashIcon } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
@@ -26,58 +27,71 @@ export function TradeScopeRow({
   onScopesChange,
   onDelete,
 }: Props) {
+  const scopeTriggerRef = useRef<HTMLButtonElement>(null)
+  const shouldAutoOpenScopes = useRef(false)
+
   const scopesQuery = useGetScopes(
     { query: tradeId, filterProperty: 'relatedTrade' },
     { enabled: !!tradeId },
   )
+
+  useEffect(() => {
+    if (shouldAutoOpenScopes.current && scopesQuery.isSuccess && scopesQuery.data?.length) {
+      shouldAutoOpenScopes.current = false
+      scopeTriggerRef.current?.click()
+    }
+  }, [scopesQuery.isSuccess, scopesQuery.data])
 
   const availableTrades = allTrades.filter(
     t => t.id === tradeId || !usedTradeIds.has(t.id),
   )
 
   return (
-    <div className="flex items-center gap-2">
-      <Select
-        value={tradeId}
-        onValueChange={(val) => {
-          onTradeChange(val)
-          onScopesChange([])
-        }}
-      >
-        <SelectTrigger className="w-48 shrink-0">
-          <SelectValue placeholder="Select trade" />
-        </SelectTrigger>
-        <SelectContent>
-          {availableTrades.map(trade => (
-            <SelectItem key={trade.id} value={trade.id}>
-              {trade.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <MultiSelect
-        values={selectedScopeIds}
-        onValuesChange={onScopesChange}
-      >
-        <MultiSelectTrigger className="flex-1" disabled={!tradeId || scopesQuery.isLoading}>
-          <MultiSelectValue placeholder={scopesQuery.isLoading ? 'Loading...' : 'Select scopes'} overflowBehavior="cutoff" />
-        </MultiSelectTrigger>
-        <MultiSelectContent
-          search={{
-            emptyMessage: 'No scopes found',
-            placeholder: 'Search scopes...',
+    <div className="flex items-start gap-2">
+      <div className="flex flex-col gap-2 min-w-0 flex-1 sm:flex-row">
+        <Select
+          value={tradeId}
+          onValueChange={(val) => {
+            onTradeChange(val)
+            onScopesChange([])
+            shouldAutoOpenScopes.current = true
           }}
         >
-          <MultiSelectGroup>
-            {scopesQuery.data?.map(scope => (
-              <MultiSelectItem key={scope.id} value={scope.id}>
-                {scope.name}
-              </MultiSelectItem>
+          <SelectTrigger className="w-full sm:w-48 sm:shrink-0">
+            <SelectValue placeholder="Select trade" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableTrades.map(trade => (
+              <SelectItem key={trade.id} value={trade.id}>
+                {trade.name}
+              </SelectItem>
             ))}
-          </MultiSelectGroup>
-        </MultiSelectContent>
-      </MultiSelect>
+          </SelectContent>
+        </Select>
+
+        <MultiSelect
+          values={selectedScopeIds}
+          onValuesChange={onScopesChange}
+        >
+          <MultiSelectTrigger ref={scopeTriggerRef} className="w-full sm:flex-1" disabled={!tradeId || scopesQuery.isLoading}>
+            <MultiSelectValue placeholder={scopesQuery.isLoading ? 'Loading...' : 'Select scopes'} overflowBehavior="cutoff" />
+          </MultiSelectTrigger>
+          <MultiSelectContent
+            search={{
+              emptyMessage: 'No scopes found',
+              placeholder: 'Search scopes...',
+            }}
+          >
+            <MultiSelectGroup>
+              {scopesQuery.data?.map(scope => (
+                <MultiSelectItem key={scope.id} value={scope.id}>
+                  {scope.name}
+                </MultiSelectItem>
+              ))}
+            </MultiSelectGroup>
+          </MultiSelectContent>
+        </MultiSelect>
+      </div>
 
       <Button
         type="button"
