@@ -194,7 +194,10 @@
   html {
     @apply overscroll-none;
     height: 100%;
-    height: -webkit-fill-available;
+    /* viewport-fit=cover pushes the doc UP behind the status bar but
+       doesn't increase the document height → bottom gap (WebKit #191872).
+       Adding safe-area-inset-top compensates for that upward shift. */
+    min-height: calc(100% + env(safe-area-inset-top));
   }
 
   html:not(:has([data-no-gutter-stable])) {
@@ -204,7 +207,6 @@
   body {
     @apply bg-background text-foreground overscroll-none;
     min-height: 100%;
-    min-height: -webkit-fill-available;
     /* REMOVE RADIX DIALOG SCROLLBAR WIDTH AUTO-COMPENSATION */
     margin-right: 0px !important;
   }
