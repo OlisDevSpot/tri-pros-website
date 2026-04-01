@@ -1,9 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
 
-import { AdminSection } from '@/features/agent-settings/ui/components/admin-section'
 import { AppSettingsSection } from '@/features/agent-settings/ui/components/app-settings-section'
 import { CompanyInfoSection } from '@/features/agent-settings/ui/components/company-info-section'
 import { CustomerBrandSection } from '@/features/agent-settings/ui/components/customer-brand-section'
@@ -15,7 +13,6 @@ import { useTRPC } from '@/trpc/helpers'
 
 export function SettingsView() {
   const trpc = useTRPC()
-  const router = useRouter()
   const { data: profile, isLoading } = useQuery(trpc.agentSettingsRouter.getProfile.queryOptions())
 
   if (isLoading) {
@@ -24,12 +21,6 @@ export function SettingsView() {
 
   if (!profile) {
     return null
-  }
-
-  const isSuperAdmin = profile.role === 'super-admin'
-
-  function handleNavigate(path: string) {
-    router.push(path)
   }
 
   return (
@@ -47,7 +38,6 @@ export function SettingsView() {
           <CustomerBrandSection profile={profile} />
           <CompanyInfoSection />
         </div>
-        {isSuperAdmin && <AdminSection onNavigate={handleNavigate} />}
       </div>
     </div>
   )

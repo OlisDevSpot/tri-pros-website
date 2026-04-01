@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { IntakeShareLinks } from '@/features/intake/ui/components/intake-share-links'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
 import { Label } from '@/shared/components/ui/label'
+import { Separator } from '@/shared/components/ui/separator'
 import { Switch } from '@/shared/components/ui/switch'
 
 const SUPER_ADMIN_FORM_CONFIG: LeadSourceFormConfig = {
@@ -24,9 +25,9 @@ export function DashboardIntakeView() {
   const isMeetingMode = mode === 'customer_and_meeting'
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-2xl flex-col overflow-hidden px-6">
-      {/* Pinned header + mode toggle */}
-      <div className="shrink-0 space-y-4 pb-6 pt-6">
+    <div className="mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden">
+      {/* Header */}
+      <div className="shrink-0 pb-4">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Intake Form</h1>
@@ -34,7 +35,12 @@ export function DashboardIntakeView() {
           </div>
           <IntakeShareLinks />
         </div>
-        <div className="flex items-center gap-3 rounded-lg border p-4">
+      </div>
+
+      {/* Card: toggle + scrollable fields + pinned submit */}
+      <div className="flex flex-1 flex-col min-h-0 rounded-xl border border-border bg-card p-4 shadow-sm sm:p-6">
+        {/* Pinned toggle */}
+        <div className="shrink-0 flex items-center gap-3 pb-4">
           <Switch
             id="intake-mode-toggle"
             checked={isMeetingMode}
@@ -45,13 +51,13 @@ export function DashboardIntakeView() {
             {isMeetingMode ? 'Customer + Meeting' : 'Customer Only'}
           </Label>
         </div>
-      </div>
+        <Separator className="shrink-0" />
 
-      {/* Form: scrollable fields + pinned submit */}
-      <IntakeFormView
-        mode={mode}
-        formConfig={SUPER_ADMIN_FORM_CONFIG}
-      />
+        <IntakeFormView
+          mode={mode}
+          formConfig={SUPER_ADMIN_FORM_CONFIG}
+        />
+      </div>
     </div>
   )
 }

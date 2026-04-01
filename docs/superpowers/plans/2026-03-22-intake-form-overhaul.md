@@ -557,7 +557,7 @@ export function IntakeFormView({ leadSourceSlug, formConfig, leadSourceName }: I
           <input
             tabIndex={-1}
             aria-hidden="true"
-            className="absolute -top-[9999px] left-0 opacity-0"
+            className="absolute -top-2499.75 left-0 opacity-0"
             {...form.register('_honeypot')}
           />
 

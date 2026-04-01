@@ -107,156 +107,156 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
           <input
             tabIndex={-1}
             aria-hidden="true"
-            className="absolute -top-[9999px] left-0 opacity-0"
+            className="absolute -top-2499.75 left-0 opacity-0"
             {...form.register('_honeypot')}
           />
 
           {/* Scrollable fields */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto pt-4">
             <div className="flex flex-col gap-6">
 
-          {/* Name */}
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  {'Full Name '}
-                  <span className="text-destructive">*</span>
-                </FormLabel>
-                <Input {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              {/* Name */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {'Full Name '}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Input {...field} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Phone */}
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  {'Phone '}
-                  <span className="text-destructive">*</span>
-                </FormLabel>
-                <Input type="tel" {...field} />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              {/* Phone */}
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {'Phone '}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Input type="tel" {...field} />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Email (conditional) */}
-          {formConfig.showEmail && (
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Email
-                    {formConfig.requireEmail && <span className="ml-1 text-destructive">*</span>}
-                  </FormLabel>
-                  <Input type="email" {...field} />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {/* Address */}
-          <FormField
-            control={form.control}
-            name="address"
-            render={() => (
-              <FormItem>
-                <FormLabel>
-                  {'Address '}
-                  <span className="text-destructive">*</span>
-                </FormLabel>
-                <AddressAutocomplete
-                  showMap
-                  onSelect={(fields) => {
-                    form.setValue('address', fields.address)
-                    form.setValue('city', fields.city)
-                    form.setValue('state', fields.state)
-                    form.setValue('zip', fields.zip)
-                  }}
-                  onClear={() => {
-                    form.setValue('address', '')
-                    form.setValue('city', '')
-                    form.setValue('state', '')
-                    form.setValue('zip', '')
-                  }}
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Trade/Scope Picker */}
-          <IntakeTradeScopePicker />
-
-          {/* === Meeting-mode fields === */}
-          {isMeetingMode && (
-            <>
-              {/* MP3 upload (conditional) */}
-              {formConfig.showMp3Upload && (
+              {/* Email (conditional) */}
+              {formConfig.showEmail && (
                 <FormField
                   control={form.control}
-                  name="mp3Key"
-                  render={() => (
+                  name="email"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Call Recording (optional)</FormLabel>
-                      <Mp3UploadField
-                        customerName={form.watch('name')}
-                        onUploaded={key => form.setValue('mp3Key', key)}
-                        onClear={() => form.setValue('mp3Key', '')}
-                      />
+                      <FormLabel>
+                        Email
+                        {formConfig.requireEmail && <span className="ml-1 text-destructive">*</span>}
+                      </FormLabel>
+                      <Input type="email" {...field} />
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               )}
 
-              {/* Meeting date (conditional) */}
-              {formConfig.showMeetingScheduler && (
-                <MeetingDateField required={formConfig.requireMeetingScheduler ?? false} />
+              {/* Address */}
+              <FormField
+                control={form.control}
+                name="address"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>
+                      {'Address '}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <AddressAutocomplete
+                      showMap
+                      onSelect={(fields) => {
+                        form.setValue('address', fields.address)
+                        form.setValue('city', fields.city)
+                        form.setValue('state', fields.state)
+                        form.setValue('zip', fields.zip)
+                      }}
+                      onClear={() => {
+                        form.setValue('address', '')
+                        form.setValue('city', '')
+                        form.setValue('state', '')
+                        form.setValue('zip', '')
+                      }}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Trade/Scope Picker */}
+              <IntakeTradeScopePicker />
+
+              {/* === Meeting-mode fields === */}
+              {isMeetingMode && (
+                <>
+                  {/* MP3 upload (conditional) */}
+                  {formConfig.showMp3Upload && (
+                    <FormField
+                      control={form.control}
+                      name="mp3Key"
+                      render={() => (
+                        <FormItem>
+                          <FormLabel>Call Recording (optional)</FormLabel>
+                          <Mp3UploadField
+                            customerName={form.watch('name')}
+                            onUploaded={key => form.setValue('mp3Key', key)}
+                            onClear={() => form.setValue('mp3Key', '')}
+                          />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {/* Meeting date (conditional) */}
+                  {formConfig.showMeetingScheduler && (
+                    <MeetingDateField required={formConfig.requireMeetingScheduler ?? false} />
+                  )}
+
+                  {/* Closed By (conditional) */}
+                  {formConfig.closedByOptions && formConfig.closedByOptions.length > 0 && (
+                    <ClosedByField options={formConfig.closedByOptions} />
+                  )}
+                </>
               )}
 
-              {/* Closed By (conditional) */}
-              {formConfig.closedByOptions && formConfig.closedByOptions.length > 0 && (
-                <ClosedByField options={formConfig.closedByOptions} />
-              )}
-            </>
-          )}
-
-          {/* Notes (required) */}
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  {'Notes '}
-                  <span className="text-destructive">*</span>
-                </FormLabel>
-                <Textarea
-                  rows={3}
-                  placeholder="Any context about this lead…"
-                  {...field}
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              {/* Notes (required) */}
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {'Notes '}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Textarea
+                      rows={3}
+                      placeholder="Any context about this lead…"
+                      {...field}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
             </div>
           </div>
 
           {/* Pinned submit */}
-          <div className="shrink-0 pt-6 pb-6">
+          <div className="shrink-0 pt-4">
             <Button type="submit" size="lg" disabled={submit.isPending} className="w-full py-6">
               {submit.isPending ? 'Submitting…' : 'Submit Lead'}
             </Button>

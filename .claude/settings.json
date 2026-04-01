@@ -291,7 +291,22 @@
       "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/layout.tsx)",
       "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/intake/)",
       "Bash(rm /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/intake/[token]/page.tsx)",
-      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/intake/)"
+      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/\\\\\\(site\\\\\\)/intake/)",
+      "Bash(git checkout:*)",
+      "Bash(ls -la \"/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\(frontend\\)/\")",
+      "Bash(cat /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/api/auth/[...all]/route.ts)",
+      "Bash(grep -r \"safe-area\\\\|env\\(\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src --include=*.tsx --include=*.ts --include=*.css)",
+      "Bash(cat /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/\\\\\\(frontend\\\\\\)/globals.css)",
+      "Bash(nvm --version)",
+      "Read(//home/olis-solutions/**)",
+      "Bash(nvm current:*)",
+      "Bash(bash -c 'source ~/.bashrc && node --version && which node')",
+      "Bash(bash -c 'source ~/.bashrc && pnpm lint 2>&1 | tail -15')",
+      "Bash(bash -c 'source ~/.bashrc && npx eslint src/features/agent-dashboard/ui/components/dashboard-sign-in.tsx src/features/agent-dashboard/ui/components/app-sidebar.tsx \"\"src/app/\\(frontend\\)/dashboard/layout.tsx\"\" src/shared/components/buttons/auth/sign-in-google-button.tsx \"\"src/app/\\(frontend\\)/dashboard/intake/page.tsx\"\" 2>&1')",
+      "Bash(dpkg -S /usr/bin/node)",
+      "Bash(apt list:*)",
+      "Bash(sudo apt:*)",
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -name *agent*schema* -o -name *agent*schemas*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
@@ -303,7 +318,8 @@
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/services/[pillar]",
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/portfolio",
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/assets/meta-creatives/equity-reset",
-      "/home/olis-solutions/.claude/skills"
+      "/home/olis-solutions/.claude/skills",
+      "/home/olis-solutions"
     ]
   },
   "enabledMcpjsonServers": [
