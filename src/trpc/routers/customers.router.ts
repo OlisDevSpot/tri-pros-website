@@ -1,14 +1,16 @@
 import { TRPCError } from '@trpc/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
-import { desc, eq, ilike, or } from 'drizzle-orm'
+import { desc, eq, ilike, or, and } from 'drizzle-orm'
 import z from 'zod'
 import env from '@/shared/config/server-env'
-import { leadSources, leadTypes } from '@/shared/constants/enums'
+import { intakeModes, leadSources, leadTypes } from '@/shared/constants/enums'
 import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
+import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
+import { meetings } from '@/shared/db/schema/meetings'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
@@ -163,7 +165,7 @@ export const customersRouter = createTRPCRouter({
       return syncAllCustomers()
     }),
 
-  // Public intake form submission — creates customer + optional note + optional meeting
+  // Public intake form submission — creates customer + optional note
   createFromIntake: baseProcedure
     .input(z.object({
       name: z.string().min(1),
@@ -174,12 +176,13 @@ export const customersRouter = createTRPCRouter({
       zip: z.string().min(1),
       email: z.string().email().optional(),
       notes: z.string().optional(),
-      leadSource: z.enum(leadSources),
+      mode: z.enum(intakeModes),
+      leadSource: z.enum(leadSources).default('other'),
       leadType: z.enum(leadTypes),
       leadMetaJSON: leadMetaSchema.optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { notes, ...customerData } = input
+      const { notes, mode, ...customerData } = input
 
       // Rate limit by IP
       const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
@@ -188,25 +191,66 @@ export const customersRouter = createTRPCRouter({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
 
-      // 1. Insert customer
-      const [customer] = await db
-        .insert(customers)
-        .values({ ...customerData, zip: customerData.zip || '' })
-        .returning()
+      // Resolve session for meeting owner assignment (null for unauthenticated 3rd party)
+      const session = (ctx as { session?: { user: { id: string } } }).session ?? null
 
-      if (!customer) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create customer' })
-      }
+      return db.transaction(async (tx) => {
+        // 1. Insert customer
+        const [customer] = await tx
+          .insert(customers)
+          .values({ ...customerData, zip: customerData.zip || '' })
+          .returning()
 
-      // 2. Insert note (if provided) — failure is non-fatal
-      if (notes) {
-        await db.insert(customerNotes).values({
-          customerId: customer.id,
-          content: notes,
-          authorId: null,
-        }).catch(e => console.error('Note insert failed (non-fatal):', e))
-      }
+        if (!customer) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create customer' })
+        }
 
-      return { customerId: customer.id }
+        // 2. Insert note (if provided)
+        if (notes) {
+          await tx.insert(customerNotes).values({
+            customerId: customer.id,
+            content: notes,
+            authorId: session?.user.id ?? null,
+          })
+        }
+
+        // 3. Create meeting when mode is customer_and_meeting
+        let meetingId: string | null = null
+        if (mode === 'customer_and_meeting') {
+          let ownerId = session?.user.id
+
+          // Fallback: assign to info@triprosremodeling.com for unauthenticated submissions
+          if (!ownerId) {
+            const [fallbackUser] = await tx
+              .select({ id: user.id })
+              .from(user)
+              .where(eq(user.email, 'info@triprosremodeling.com'))
+              .limit(1)
+
+            if (!fallbackUser) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Fallback meeting owner not found. Contact an administrator.',
+              })
+            }
+
+            ownerId = fallbackUser.id
+          }
+
+          const [meeting] = await tx
+            .insert(meetings)
+            .values({
+              ownerId,
+              customerId: customer.id,
+              meetingType: 'Fresh',
+              scheduledFor: customerData.leadMetaJSON?.scheduledFor ?? undefined,
+            })
+            .returning()
+
+          meetingId = meeting?.id ?? null
+        }
+
+        return { customerId: customer.id, meetingId }
+      })
     }),
 })

@@ -39,6 +39,7 @@ const APP_ROOTS = {
     analytics: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/analytics', options),
   },
   public: {
+    intake: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/intake', options),
     proposals: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/proposal-flow', options),
   },
 } as const
