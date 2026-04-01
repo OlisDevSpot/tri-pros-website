@@ -18,13 +18,15 @@ import { AbilityContext } from '../../permissions/context'
 
 export function AbilityProvider({ children }: { children: React.ReactNode }) {
   const session = useSession()
-  const user = session.data?.user ?? null
+  const userId = session.data?.user?.id ?? null
+  const userRole = session.data?.user?.role ?? null
 
-  // Rebuild ability when user identity or role changes.
-  // useMemo prevents unnecessary rebuilds on every render.
+  // Rebuild ability only when user id or role actually changes (primitives).
+  // Using the user object directly would cause rebuilds on every session
+  // refetch since better-auth returns a new object reference each time.
   const ability = useMemo(
-    () => defineAbilitiesFor(user ? { id: user.id, role: user.role } : null),
-    [user],
+    () => defineAbilitiesFor(userId ? { id: userId, role: userRole! } : null),
+    [userId, userRole],
   )
 
   return (

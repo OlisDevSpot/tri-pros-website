@@ -53,6 +53,17 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
   const isSubmitted = form.watch('_honeypot') === 'submitted'
   const isMeetingMode = mode === 'customer_and_meeting'
 
+  function onInvalid(errors: Record<string, unknown>) {
+    const messages = Object.values(errors)
+      .map(e => (e as { message?: string }).message)
+      .filter(Boolean)
+    if (messages.length > 0) {
+      toast.error('Please fix the following:', {
+        description: messages.join(' • '),
+      })
+    }
+  }
+
   function onSubmit(data: IntakeFormData) {
     if (data._honeypot && data._honeypot !== 'submitted') {
       return
@@ -102,7 +113,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
   return (
     <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-1 flex-col min-h-0">
+        <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="flex flex-1 flex-col min-h-0">
           {/* Honeypot — hidden from real users */}
           <input
             tabIndex={-1}
@@ -208,7 +219,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
                       name="mp3Key"
                       render={() => (
                         <FormItem>
-                          <FormLabel>Call Recording (optional)</FormLabel>
+                          <FormLabel>Call Recording</FormLabel>
                           <Mp3UploadField
                             customerName={form.watch('name')}
                             onUploaded={key => form.setValue('mp3Key', key)}
@@ -222,7 +233,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
 
                   {/* Meeting date (conditional) */}
                   {formConfig.showMeetingScheduler && (
-                    <MeetingDateField required={formConfig.requireMeetingScheduler ?? false} />
+                    <MeetingDateField />
                   )}
 
                   {/* Closed By (conditional) */}

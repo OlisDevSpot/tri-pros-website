@@ -1,6 +1,5 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { nextCookies } from 'better-auth/next-js'
 import { openAPI } from 'better-auth/plugins'
 import env from '@/shared/config/server-env'
 import { db } from '@/shared/db'
@@ -84,11 +83,10 @@ export const auth = betterAuth({
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 60, // 1 minutes
+      maxAge: 300, // 5 minutes — reduces DB hits for repeated get-session calls
     },
   },
   plugins: [
-    nextCookies(),
     openAPI(),
   ],
   advanced: {

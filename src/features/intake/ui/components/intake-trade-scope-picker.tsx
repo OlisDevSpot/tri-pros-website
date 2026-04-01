@@ -6,8 +6,7 @@ import { PlusIcon } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { TradeScopeRow } from '@/shared/components/trade-scope-row'
 import { Button } from '@/shared/components/ui/button'
-import { FormField, FormItem, FormMessage } from '@/shared/components/ui/form'
-import { Label } from '@/shared/components/ui/label'
+import { FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { useTRPC } from '@/trpc/helpers'
 
 export function IntakeTradeScopePicker() {
@@ -31,10 +30,10 @@ export function IntakeTradeScopePicker() {
       name="tradeRows"
       render={() => (
         <FormItem>
-          <Label>
+          <FormLabel>
             {'Trades & Scopes '}
             <span className="text-destructive">*</span>
-          </Label>
+          </FormLabel>
           <div className="space-y-3">
             {fields.map((field, index) => (
               <TradeScopeRow

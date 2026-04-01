@@ -5,11 +5,7 @@ import { useFormContext } from 'react-hook-form'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 
-interface MeetingDateFieldProps {
-  required?: boolean
-}
-
-export function MeetingDateField({ required = false }: MeetingDateFieldProps) {
+export function MeetingDateField() {
   const form = useFormContext<IntakeFormData>()
 
   return (
@@ -19,8 +15,8 @@ export function MeetingDateField({ required = false }: MeetingDateFieldProps) {
       render={({ field }) => (
         <FormItem>
           <FormLabel>
-            Appointment Date & Time
-            {required && <span className="ml-1 text-destructive">*</span>}
+            {'Appointment Date & Time '}
+            <span className="text-destructive">*</span>
           </FormLabel>
           <DateTimePicker
             value={field.value ? new Date(field.value) : undefined}
