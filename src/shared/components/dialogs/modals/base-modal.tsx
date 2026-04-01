@@ -31,7 +31,7 @@ export function Modal({
         className={cn(
           'sm:max-w-106.25 space-y-2 flex flex-col items-start',
           // Mobile: fullscreen
-          'max-w-full h-svh rounded-none border-0 p-4',
+          'max-w-full h-dvh rounded-none border-0 p-4',
           // Desktop: normal dialog
           'sm:h-auto sm:max-h-[85vh] sm:rounded-lg sm:border sm:p-6',
           className,

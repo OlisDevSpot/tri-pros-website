@@ -339,12 +339,6 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Dashboard main content area                                    */
-[data-slot='sidebar-inset'] {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
 /* Fullscreen dialogs & sheets (fixed overlays)                   */
 [data-slot='dialog-content'] {
   padding-top: max(env(safe-area-inset-top), var(--spacing-4));
