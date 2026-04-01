@@ -193,6 +193,7 @@
 
   html {
     @apply overscroll-none;
+    height: 100%;
   }
 
   html:not(:has([data-no-gutter-stable])) {
@@ -201,6 +202,7 @@
 
   body {
     @apply bg-background text-foreground overscroll-none;
+    min-height: 100%;
     /* REMOVE RADIX DIALOG SCROLLBAR WIDTH AUTO-COMPENSATION */
     margin-right: 0px !important;
   }
@@ -321,6 +323,13 @@
       line-height: 1.5rem;
     }
   }
+}
+
+/* ── PWA: reliable viewport height (no dvh/svh on initial load) ─ */
+/* The sidebar-wrapper (SidebarProvider) needs explicit height     */
+/* so children can use h-full instead of unreliable viewport units */
+[data-slot='sidebar-wrapper'] {
+  height: 100%;
 }
 
 /* ── PWA safe-area insets ──────────────────────────────────────── */
