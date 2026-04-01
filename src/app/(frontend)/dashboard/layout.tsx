@@ -27,7 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             background: `radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in oklch, var(--primary) 35%, transparent), var(--background) 70%), var(--background)`,
           }}
         >
-          <div className="flex-1 min-h-0 overflow-y-auto pt-[env(safe-area-inset-top)]">
+          <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]">
             <Suspense>
               {children}
             </Suspense>
