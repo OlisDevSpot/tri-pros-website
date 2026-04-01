@@ -3,13 +3,14 @@
 
 import type { IntakeFormData } from '@/features/intake/schemas/intake-form-schema'
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
-import type { LeadSource, LeadType } from '@/shared/types/enums'
+import type { IntakeMode, LeadType } from '@/shared/types/enums'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { APIProvider } from '@vis.gl/react-google-maps'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
-import { intakeFormDefaultValues, intakeFormSchema } from '@/features/intake/schemas/intake-form-schema'
+import { getIntakeFormDefaults, intakeFormSchema } from '@/features/intake/schemas/intake-form-schema'
 import { ClosedByField } from '@/features/intake/ui/components/closed-by-field'
 import { IntakeTradeScopePicker } from '@/features/intake/ui/components/intake-trade-scope-picker'
 import { MeetingDateField } from '@/features/intake/ui/components/meeting-date-field'
@@ -18,35 +19,58 @@ import { AddressAutocomplete } from '@/shared/components/inputs/address-autocomp
 import { Button } from '@/shared/components/ui/button'
 import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { Label } from '@/shared/components/ui/label'
+import { Switch } from '@/shared/components/ui/switch'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useTRPC } from '@/trpc/helpers'
 
 interface IntakeFormViewProps {
-  leadSourceSlug: LeadSource
+  mode: IntakeMode
   formConfig: LeadSourceFormConfig
+  leadSourceSlug?: string
+  onModeChange?: (mode: IntakeMode) => void
 }
 
-export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewProps) {
+export function IntakeFormView({ mode, formConfig, leadSourceSlug, onModeChange }: IntakeFormViewProps) {
   const trpc = useTRPC()
 
   const form = useForm<IntakeFormData>({
     resolver: zodResolver(intakeFormSchema),
-    defaultValues: intakeFormDefaultValues,
+    defaultValues: getIntakeFormDefaults(mode),
   })
+
+  // Update mode field without clearing other values
+  useEffect(() => {
+    form.setValue('mode', mode)
+  }, [mode, form])
 
   const submit = useMutation(
     trpc.customersRouter.createFromIntake.mutationOptions({
-      onSuccess: () => form.reset({ ...intakeFormDefaultValues, _honeypot: 'submitted' }),
+      onSuccess: () => {
+        form.reset({ ...getIntakeFormDefaults(mode), _honeypot: 'submitted' })
+      },
       onError: err => toast.error(err.message),
     }),
   )
 
   const isSubmitted = form.watch('_honeypot') === 'submitted'
+  const isMeetingMode = mode === 'customer_and_meeting'
 
   function onSubmit(data: IntakeFormData) {
     if (data._honeypot && data._honeypot !== 'submitted') {
       return
     }
+
+    const leadMetaJSON = data.mode === 'customer_and_meeting'
+      ? {
+          mp3RecordingKey: data.mp3Key || undefined,
+          closedBy: data.closedBy || undefined,
+          scheduledFor: data.scheduledFor || undefined,
+          requestedTrades: data.tradeRows.filter(r => r.tradeId),
+        }
+      : {
+          requestedTrades: data.tradeRows.filter(r => r.tradeId),
+        }
 
     submit.mutate({
       name: data.name,
@@ -57,14 +81,10 @@ export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewPro
       address: data.address || undefined,
       state: data.state || undefined,
       notes: data.notes || undefined,
-      leadSource: leadSourceSlug,
+      mode: data.mode,
+      leadSource: (leadSourceSlug ?? 'other') as Parameters<typeof submit.mutate>[0]['leadSource'],
       leadType: formConfig.leadType as LeadType,
-      leadMetaJSON: {
-        mp3RecordingKey: data.mp3Key || undefined,
-        closedBy: data.closedBy || undefined,
-        scheduledFor: data.scheduledFor || undefined,
-        requestedTrades: data.tradeRows.filter(r => r.tradeId),
-      },
+      leadMetaJSON,
     })
   }
 
@@ -75,7 +95,7 @@ export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewPro
         <p className="text-muted-foreground">The lead has been successfully submitted.</p>
         <Button
           variant="outline"
-          onClick={() => form.reset(intakeFormDefaultValues)}
+          onClick={() => form.reset(getIntakeFormDefaults(mode))}
         >
           Submit Another
         </Button>
@@ -94,6 +114,22 @@ export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewPro
             className="absolute -top-[9999px] left-0 opacity-0"
             {...form.register('_honeypot')}
           />
+
+          {/* Mode toggle — super-admin only */}
+          {onModeChange && (
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <Switch
+                id="intake-mode-toggle"
+                checked={isMeetingMode}
+                onCheckedChange={(checked) => {
+                  onModeChange(checked ? 'customer_and_meeting' : 'customer_only')
+                }}
+              />
+              <Label htmlFor="intake-mode-toggle" className="text-sm font-medium">
+                {isMeetingMode ? 'Customer + Meeting' : 'Customer Only'}
+              </Label>
+            </div>
+          )}
 
           {/* Name */}
           <FormField
@@ -178,33 +214,38 @@ export function IntakeFormView({ leadSourceSlug, formConfig }: IntakeFormViewPro
           {/* Trade/Scope Picker */}
           <IntakeTradeScopePicker />
 
-          {/* MP3 upload (conditional) */}
-          {formConfig.showMp3Upload && (
-            <FormField
-              control={form.control}
-              name="mp3Key"
-              render={() => (
-                <FormItem>
-                  <FormLabel>Call Recording (optional)</FormLabel>
-                  <Mp3UploadField
-                    customerName={form.watch('name')}
-                    onUploaded={key => form.setValue('mp3Key', key)}
-                    onClear={() => form.setValue('mp3Key', '')}
-                  />
-                  <FormMessage />
-                </FormItem>
+          {/* === Meeting-mode fields === */}
+          {isMeetingMode && (
+            <>
+              {/* MP3 upload (conditional) */}
+              {formConfig.showMp3Upload && (
+                <FormField
+                  control={form.control}
+                  name="mp3Key"
+                  render={() => (
+                    <FormItem>
+                      <FormLabel>Call Recording (optional)</FormLabel>
+                      <Mp3UploadField
+                        customerName={form.watch('name')}
+                        onUploaded={key => form.setValue('mp3Key', key)}
+                        onClear={() => form.setValue('mp3Key', '')}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
-          )}
 
-          {/* Meeting date (conditional) */}
-          {formConfig.showMeetingScheduler && (
-            <MeetingDateField required={formConfig.requireMeetingScheduler} />
-          )}
+              {/* Meeting date (conditional) */}
+              {formConfig.showMeetingScheduler && (
+                <MeetingDateField required={formConfig.requireMeetingScheduler ?? false} />
+              )}
 
-          {/* Closed By (conditional — only when closedByOptions configured) */}
-          {formConfig.closedByOptions && formConfig.closedByOptions.length > 0 && (
-            <ClosedByField options={formConfig.closedByOptions} />
+              {/* Closed By (conditional) */}
+              {formConfig.closedByOptions && formConfig.closedByOptions.length > 0 && (
+                <ClosedByField options={formConfig.closedByOptions} />
+              )}
+            </>
           )}
 
           {/* Notes (required) */}

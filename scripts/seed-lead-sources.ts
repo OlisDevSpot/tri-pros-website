@@ -10,12 +10,13 @@ const INITIAL_SOURCES = [
     slug: 'telemarketing_leads_philippines',
     formConfigJSON: {
       leadType: 'appointment_set' as const,
+      mode: 'customer_and_meeting' as const,
       showEmail: false,
       requireEmail: false,
+      showNotes: false,
       showMeetingScheduler: true,
       requireMeetingScheduler: true,
       showMp3Upload: true,
-      showNotes: false,
     },
   },
   {
@@ -23,11 +24,9 @@ const INITIAL_SOURCES = [
     slug: 'noy',
     formConfigJSON: {
       leadType: 'needs_confirmation' as const,
+      mode: 'customer_only' as const,
       showEmail: true,
       requireEmail: false,
-      showMeetingScheduler: false,
-      requireMeetingScheduler: false,
-      showMp3Upload: false,
       showNotes: true,
     },
   },
@@ -36,11 +35,9 @@ const INITIAL_SOURCES = [
     slug: 'quoteme',
     formConfigJSON: {
       leadType: 'needs_confirmation' as const,
+      mode: 'customer_only' as const,
       showEmail: true,
       requireEmail: false,
-      showMeetingScheduler: false,
-      requireMeetingScheduler: false,
-      showMp3Upload: false,
       showNotes: true,
     },
   },
@@ -49,12 +46,13 @@ const INITIAL_SOURCES = [
     slug: 'other',
     formConfigJSON: {
       leadType: 'manual' as const,
+      mode: 'customer_and_meeting' as const,
       showEmail: true,
       requireEmail: false,
+      showNotes: true,
       showMeetingScheduler: true,
       requireMeetingScheduler: false,
       showMp3Upload: false,
-      showNotes: true,
     },
   },
 ]
@@ -75,7 +73,7 @@ async function main() {
     const token = nanoid(21)
     await db.insert(leadSourcesTable).values({ ...source, token })
     console.log(`Seeded "${source.name}" with token: ${token}`)
-    console.log(`   URL: /intake/${token}`)
+    console.log(`   URL: /intake?source=${source.slug}`)
   }
 
   console.log('\nDone. Store these tokens securely — they are permanent.')

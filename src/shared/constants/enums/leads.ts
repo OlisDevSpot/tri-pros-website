@@ -10,3 +10,8 @@ export const leadTypes = [
   'needs_confirmation', // lead captured, meeting not yet confirmed
   'manual', // manually added by an agent
 ] as const
+
+export const intakeModes = [
+  'customer_only', // create customer record only
+  'customer_and_meeting', // create customer + meeting scheduling fields
+] as const
