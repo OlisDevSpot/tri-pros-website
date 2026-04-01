@@ -306,7 +306,7 @@ export const proposalsRouter = createTRPCRouter({
     .input(z.object({
       proposalId: z.string(),
       token: z.string(),
-      source: z.enum(['email', 'direct', 'unknown']).default('unknown'),
+      source: z.enum(['email', 'sms', 'direct', 'unknown']).default('unknown'),
       referer: z.string().optional(),
       userAgent: z.string().optional(),
     }))
@@ -336,7 +336,13 @@ export const proposalsRouter = createTRPCRouter({
           }
 
           const customerName = proposal.customer?.name ?? 'Customer'
-          const sourceLabel = input.source === 'email' ? 'Opened from email link' : 'Opened directly'
+          const sourceLabels: Record<string, string> = {
+            email: 'Opened from email link',
+            sms: 'Opened from SMS link',
+            direct: 'Opened directly',
+            unknown: 'Opened directly',
+          }
+          const sourceLabel = sourceLabels[input.source] ?? 'Opened directly'
 
           await resendClient.emails.send({
             from: 'Tri Pros System <info@triprosremodeling.com>',

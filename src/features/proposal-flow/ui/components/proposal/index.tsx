@@ -35,7 +35,7 @@ export function Proposal() {
 
     const token = searchParams.get('token') ?? ''
     const utmSource = searchParams.get('utm_source')
-    const source = utmSource === 'email' ? 'email' : 'direct'
+    const source = utmSource === 'email' ? 'email' : utmSource === 'sms' ? 'sms' : 'direct'
 
     recordView.mutate({
       proposalId: params.proposalId,
