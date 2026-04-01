@@ -3,7 +3,7 @@ import { intakeModes, leadTypes } from '@/shared/constants/enums'
 
 export const leadSourceFormConfigSchema = z.object({
   leadType: z.enum(leadTypes),
-  mode: z.enum(intakeModes),
+  mode: z.enum(intakeModes).optional().default('customer_only'),
 
   // Field visibility
   showEmail: z.boolean(),
