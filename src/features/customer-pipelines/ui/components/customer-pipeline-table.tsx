@@ -23,6 +23,7 @@ export function CustomerPipelineTable({ data, onRowClick, onViewProfile }: Props
 
   return (
     <DataTable
+      tableId="customer-pipelines"
       columns={columns}
       data={data}
       meta={meta}

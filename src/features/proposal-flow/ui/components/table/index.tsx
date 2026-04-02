@@ -42,6 +42,7 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
 
   return (
     <DataTable
+      tableId="proposals"
       data={data}
       columns={columns}
       meta={meta}

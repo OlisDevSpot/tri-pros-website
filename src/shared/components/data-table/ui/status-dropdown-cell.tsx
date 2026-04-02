@@ -1,6 +1,7 @@
 'use client'
 
 import { CheckIcon } from 'lucide-react'
+import { useState } from 'react'
 
 import { Badge } from '@/shared/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
@@ -21,8 +22,10 @@ export function StatusDropdownCell<TStatus extends string>({
   onChange,
   formatLabel = status => status.replace(/_/g, ' '),
 }: Props<TStatus>) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild onClick={e => e.stopPropagation()}>
         <button type="button" className="cursor-pointer">
           <Badge className={cn('capitalize text-xs', colorMap[currentStatus])}>
@@ -40,7 +43,10 @@ export function StatusDropdownCell<TStatus extends string>({
               'hover:bg-accent hover:text-accent-foreground',
               status === currentStatus && 'font-medium',
             )}
-            onClick={() => onChange(status)}
+            onClick={() => {
+              onChange(status)
+              setOpen(false)
+            }}
           >
             <CheckIcon className={cn('h-3.5 w-3.5 shrink-0', status === currentStatus ? 'opacity-100' : 'opacity-0')} />
             <Badge className={cn('capitalize text-xs', colorMap[status])}>

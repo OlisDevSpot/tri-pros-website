@@ -88,6 +88,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
   return (
     <>
       <DataTable
+        tableId="meetings"
         data={data}
         columns={columns}
         meta={meta}

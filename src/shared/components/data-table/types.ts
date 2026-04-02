@@ -55,6 +55,8 @@ export interface DataTableProps<TData, TMeta = unknown> {
   data: TData[]
   columns: ColumnDef<TData>[]
   meta?: TMeta
+  /** Unique ID used to persist column widths to localStorage. Omit to disable persistence. */
+  tableId?: string
   filterConfig?: DataTableFilterConfig[]
   defaultSort?: SortingState
   pageSize?: number

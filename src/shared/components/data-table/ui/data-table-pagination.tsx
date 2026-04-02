@@ -14,7 +14,7 @@ export function DataTablePagination<TData>({ table }: Props<TData>) {
   }
 
   return (
-    <div className="flex items-center justify-between pt-1">
+    <div className="shrink-0 flex items-center justify-between border-t border-border/50 px-4 py-2">
       <p className="text-sm text-muted-foreground">
         Page
         {' '}

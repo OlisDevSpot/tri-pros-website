@@ -49,6 +49,7 @@ export function PortfolioProjectsTable({ data, tradeFilter, onFilteredCountChang
     <>
       <DeleteConfirmDialog />
       <DataTable
+        tableId="showroom"
         data={data}
         columns={columns}
         meta={meta}

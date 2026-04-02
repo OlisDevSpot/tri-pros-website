@@ -4,7 +4,6 @@ import type { MeetingOutcome } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
-import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -45,7 +44,7 @@ function buildMeetingActions(row: MeetingRow, meta: MeetingTableMeta) {
 export function getColumns(): ColumnDef<MeetingRow>[] {
   return [
     {
-      accessorKey: 'meetingType',
+      accessorKey: 'customerName',
       header: ({ column }) => <SortableHeader column={column} label="Meeting" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
@@ -57,16 +56,16 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="min-w-0 space-y-0.5 max-w-55">
-                  <p className="font-medium leading-none truncate">{meetingLabel}</p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="font-medium leading-none truncate">
                     {row.original.customerName ?? '—'}
                   </p>
+                  <p className="text-xs text-muted-foreground truncate">{meetingLabel}</p>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" align="start">
-                {meetingLabel}
-                {' — '}
                 {row.original.customerName ?? 'No customer'}
+                {' — '}
+                {meetingLabel}
               </TooltipContent>
             </Tooltip>
             {meta && (
@@ -78,20 +77,6 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
               />
             )}
           </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'customerName',
-      header: 'Customer',
-      cell: ({ row, table }) => {
-        const meta = table.options.meta as MeetingTableMeta | undefined
-        return (
-          <CustomerNameCell
-            customerId={row.original.customerId}
-            customerName={row.original.customerName}
-            onViewProfile={meta?.onViewProfile}
-          />
         )
       },
     },
