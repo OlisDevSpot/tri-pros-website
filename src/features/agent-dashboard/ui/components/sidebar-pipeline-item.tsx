@@ -3,7 +3,7 @@
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import type { Pipeline } from '@/shared/types/enums/pipelines'
 
-import { CheckIcon } from 'lucide-react'
+import { CheckIcon, LoaderIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -25,6 +25,7 @@ interface SidebarPipelineItemProps {
   item: SidebarNavItem
   isActive: boolean
   activePipeline: Pipeline
+  hydrated: boolean
   onPipelineChange: (pipeline: Pipeline) => void
   onNavigate: () => void
 }
@@ -33,6 +34,7 @@ export function SidebarPipelineItem({
   item,
   isActive,
   activePipeline,
+  hydrated,
   onPipelineChange,
   onNavigate,
 }: SidebarPipelineItemProps) {
@@ -49,7 +51,7 @@ export function SidebarPipelineItem({
         style={isActive ? SIDEBAR_NAV_ACTIVE_STYLE : undefined}
       >
         <Link
-          href={ROOTS.dashboard.pipeline(activePipeline)}
+          href={hydrated ? ROOTS.dashboard.pipeline(activePipeline) : item.href}
           onClick={(e) => {
             if (!item.enabled) {
               e.preventDefault()
@@ -64,15 +66,16 @@ export function SidebarPipelineItem({
         </Link>
       </SidebarMenuButton>
 
-      {/* Pipeline badge dropdown — hidden when sidebar is icon-only */}
-      <Popover open={badgeOpen} onOpenChange={setBadgeOpen}>
+      {/* Pipeline badge dropdown — when sidebar is icon-only, hidden */}
+      <Popover open={hydrated ? badgeOpen : false} onOpenChange={setBadgeOpen}>
         <PopoverTrigger asChild>
           <button
             type="button"
+            disabled={!hydrated}
             onClick={(e) => {
               e.stopPropagation()
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-all duration-200 select-none group-data-[collapsible=icon]:hidden"
+            className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-all duration-200 select-none group-data-[collapsible=icon]:hidden disabled:cursor-default"
             style={{
               background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, transparent), color-mix(in oklch, var(--primary) 8%, transparent))',
               color: 'color-mix(in oklch, var(--primary) 80%, var(--foreground))',
@@ -81,7 +84,9 @@ export function SidebarPipelineItem({
               boxShadow: '0 1px 3px color-mix(in oklch, var(--primary) 6%, transparent)',
             }}
           >
-            {PIPELINE_LABELS[activePipeline]}
+            {hydrated
+              ? PIPELINE_LABELS[activePipeline]
+              : <LoaderIcon size={10} className="animate-spin" />}
           </button>
         </PopoverTrigger>
         <PopoverContent

@@ -50,6 +50,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const isCollapsed = state === 'collapsed'
 
   const [activePipeline, setActivePipeline] = useState<Pipeline>('fresh')
+  const [hydrated, setHydrated] = useState(false)
   const changePipeline = usePipelineChange()
 
   // Sync sidebar badge from localStorage on mount + URL on pathname changes
@@ -61,6 +62,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     else {
       setActivePipeline(getStoredPipeline())
     }
+    setHydrated(true)
   }, [pathname])
 
   const navConfig = useMemo(
@@ -122,6 +124,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         item={item}
         isActive={getIsActive(item)}
         activePipeline={activePipeline}
+        hydrated={hydrated}
         onPipelineChange={(p: Pipeline) => {
           setActivePipeline(p)
           changePipeline(p)
