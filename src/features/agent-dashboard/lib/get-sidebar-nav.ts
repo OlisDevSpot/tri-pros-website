@@ -9,7 +9,6 @@ import {
   FileTextIcon,
   GitBranchIcon,
   ImageIcon,
-  LayoutDashboardIcon,
   SettingsIcon,
   UsersIcon,
 } from 'lucide-react'
