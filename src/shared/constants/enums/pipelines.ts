@@ -10,8 +10,14 @@ export const projectStatuses = ['active', 'completed', 'on_hold'] as const
 /** Project management pipeline stages */
 export const projectPipelineStages = [
   'signed',
-  'permits_pending',
-  'in_progress',
-  'punch_list',
-  'completed',
+  'opened',
+  'pending_inspection',
+  'install_complete',
+  'pending_final_inspection',
+  'passed_final',
+  'got_partial_payment',
+  'got_full_payment',
+  'closed',
+  'cancelled',
+  'on_hold',
 ] as const

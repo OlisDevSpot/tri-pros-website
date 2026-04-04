@@ -1,11 +1,17 @@
 import type { PipelineConfig, PipelineStageConfig } from '../types'
 
 import {
+  BanIcon,
   CheckCircle2Icon,
-  CheckSquareIcon,
+  CircleDollarSignIcon,
+  ClipboardCheckIcon,
   ClipboardListIcon,
   FileSignatureIcon,
+  FolderOpenIcon,
   HammerIcon,
+  PauseCircleIcon,
+  SearchCheckIcon,
+  WalletIcon,
 } from 'lucide-react'
 
 import { projectPipelineStages } from '@/shared/constants/enums/pipelines'
@@ -14,19 +20,23 @@ export type ProjectsPipelineStage = (typeof projectPipelineStages)[number]
 
 export const projectsStageConfig: readonly PipelineStageConfig<ProjectsPipelineStage>[] = [
   { key: 'signed', label: 'Signed', icon: FileSignatureIcon, color: 'green' },
-  { key: 'permits_pending', label: 'Permits Pending', icon: ClipboardListIcon, color: 'orange' },
-  { key: 'in_progress', label: 'In Progress', icon: HammerIcon, color: 'blue' },
-  { key: 'punch_list', label: 'Punch List', icon: CheckSquareIcon, color: 'yellow' },
-  { key: 'completed', label: 'Completed', icon: CheckCircle2Icon, color: 'green' },
+  { key: 'opened', label: 'Opened', icon: FolderOpenIcon, color: 'blue' },
+  { key: 'pending_inspection', label: 'Pending Inspection', icon: ClipboardListIcon, color: 'orange' },
+  { key: 'install_complete', label: 'Install Complete', icon: HammerIcon, color: 'blue' },
+  { key: 'pending_final_inspection', label: 'Pending Final Inspection', icon: SearchCheckIcon, color: 'orange' },
+  { key: 'passed_final', label: 'Passed Final', icon: ClipboardCheckIcon, color: 'green' },
+  { key: 'got_partial_payment', label: 'Got Partial Payment', icon: CircleDollarSignIcon, color: 'yellow' },
+  { key: 'got_full_payment', label: 'Got Full Payment', icon: WalletIcon, color: 'green' },
+  { key: 'closed', label: 'Closed', icon: CheckCircle2Icon, color: 'green' },
+  { key: 'cancelled', label: 'Cancelled', icon: BanIcon, color: 'red' },
+  { key: 'on_hold', label: 'On Hold', icon: PauseCircleIcon, color: 'yellow' },
 ]
 
-export const PROJECTS_ALLOWED_DRAG_TRANSITIONS: Record<ProjectsPipelineStage, readonly ProjectsPipelineStage[]> = {
-  signed: ['permits_pending'],
-  permits_pending: ['signed', 'in_progress'],
-  in_progress: ['permits_pending', 'punch_list'],
-  punch_list: ['in_progress', 'completed'],
-  completed: ['punch_list'],
-}
+// Allow free bidirectional drag between all stages
+const allStages = [...projectPipelineStages]
+export const PROJECTS_ALLOWED_DRAG_TRANSITIONS = Object.fromEntries(
+  allStages.map(stage => [stage, allStages.filter(s => s !== stage)]),
+) as unknown as Record<ProjectsPipelineStage, readonly ProjectsPipelineStage[]>
 
 export const PROJECTS_BLOCKED_MESSAGES: Record<string, string> = {
   default: 'This transition is not supported via drag',
