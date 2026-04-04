@@ -19,6 +19,7 @@ import { useCustomerActionConfigs } from '@/features/customer-pipelines/hooks/us
 import { getMeetingTimeLabel } from '@/features/customer-pipelines/lib/get-meeting-time-label'
 import { useMeetingActionConfigs } from '@/features/meetings/hooks/use-meeting-action-configs'
 import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
+import { useProjectActionConfigs } from '@/features/showroom/hooks/use-project-action-configs'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
@@ -95,10 +96,25 @@ export function CustomerKanbanCard({
     onAssignOwner: handleAssignOwner,
   })
 
+  // -- Project entity actions (for the project container in projects pipeline) --
+  const projectEntity = item.project ? { id: item.project.id } : null
+
+  const handleViewProject = useCallback(() => {
+    if (item.project) {
+      window.location.href = ROOTS.dashboard.showroom.byId(item.project.id)
+    }
+  }, [item.project])
+
+  const { actions: projectActions, DeleteConfirmDialog: ProjectDeleteDialog } = useProjectActionConfigs({
+    onView: handleViewProject,
+    onEdit: handleViewProject,
+  })
+
   return (
     <>
       <CustomerDeleteDialog />
       <MeetingDeleteDialog />
+      <ProjectDeleteDialog />
       <Card
         ref={!isDragOverlay ? setNodeRef : undefined}
         className={cn(
@@ -167,15 +183,18 @@ export function CustomerKanbanCard({
 
           {/* ── Project context container (projects pipeline) ── */}
           {item.project && (
-            <div className="rounded-md border border-border/50 bg-accent/50 p-2.5 space-y-1.5 shadow-sm dark:bg-accent/30">
-              {/* Project title + rep */}
+            <div className="rounded-md border border-green-500/20 bg-green-500/5 p-2.5 space-y-1.5 shadow-sm dark:border-green-500/15 dark:bg-green-500/8">
+              {/* Project title + status + project actions */}
               <div className="flex items-center gap-1.5 min-w-0">
-                <FolderOpenIcon size={14} className="shrink-0 text-primary/70" />
+                <FolderOpenIcon size={14} className="shrink-0 text-green-600 dark:text-green-400" />
                 <span className="text-xs font-semibold truncate flex-1">{item.project.title}</span>
-                {!isDragOverlay && meetingEntity && (
+                <Badge variant="outline" className="text-[9px] border-green-500/30 bg-green-500/10 text-green-700 dark:border-green-500/20 dark:text-green-300 shrink-0">
+                  {(item.project.pipelineStage ?? item.project.status).replace(/_/g, ' ')}
+                </Badge>
+                {!isDragOverlay && projectEntity && (
                   <EntityActionMenu
-                    entity={meetingEntity}
-                    actions={meetingActions}
+                    entity={projectEntity}
+                    actions={projectActions}
                     mode="compact"
                   />
                 )}
