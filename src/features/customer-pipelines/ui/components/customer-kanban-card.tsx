@@ -7,7 +7,6 @@ import { format, formatDistanceToNow } from 'date-fns'
 import {
   CalendarIcon,
   DollarSignIcon,
-  FileTextIcon,
   FolderOpenIcon,
   GripVerticalIcon,
   MapPinIcon,
