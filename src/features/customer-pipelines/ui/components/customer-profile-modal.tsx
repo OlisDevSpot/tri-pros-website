@@ -10,7 +10,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
   customerId: string
-  defaultTab?: 'overview' | 'meetings' | 'proposals'
+  defaultTab?: 'overview' | 'meetings' | 'projects'
   highlightMeetingId?: string
 }
 

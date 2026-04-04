@@ -7,14 +7,14 @@ import { CustomerMeetingsList } from '@/features/customer-pipelines/ui/component
 import { CustomerProfileHeader } from '@/features/customer-pipelines/ui/components/customer-profile-header'
 import { CustomerProfileKeyInsights } from '@/features/customer-pipelines/ui/components/customer-profile-key-insights'
 import { CustomerProfileOverview } from '@/features/customer-pipelines/ui/components/customer-profile-overview'
-import { CustomerProposalsList } from '@/features/customer-pipelines/ui/components/customer-proposals-list'
+import { CustomerProjectsList } from '@/features/customer-pipelines/ui/components/customer-projects-list'
 import { ProfileEditActions } from '@/features/customer-pipelines/ui/components/profile-edit-actions'
 import { Separator } from '@/shared/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
 interface Props {
   data: CustomerProfileData
-  defaultTab?: 'overview' | 'meetings' | 'proposals'
+  defaultTab?: 'overview' | 'meetings' | 'projects'
   highlightMeetingId?: string
   onMutationSuccess: () => void
 }
@@ -49,8 +49,8 @@ export function CustomerProfileModalContent({ data, defaultTab, highlightMeeting
           <TabsTrigger value="meetings">
             {`Meetings (${data.meetings.length})`}
           </TabsTrigger>
-          <TabsTrigger value="proposals">
-            {`Proposals (${data.allProposals.length})`}
+          <TabsTrigger value="projects">
+            {`Projects (${data.projects.length})`}
           </TabsTrigger>
         </TabsList>
 
@@ -71,8 +71,12 @@ export function CustomerProfileModalContent({ data, defaultTab, highlightMeeting
               onMutationSuccess={onMutationSuccess}
             />
           </TabsContent>
-          <TabsContent className="mt-0" value="proposals">
-            <CustomerProposalsList data={data} onMutationSuccess={onMutationSuccess} />
+          <TabsContent className="mt-0" value="projects">
+            <CustomerProjectsList
+              data={data}
+              highlightMeetingId={highlightMeetingId}
+              onMutationSuccess={onMutationSuccess}
+            />
           </TabsContent>
         </div>
       </Tabs>
