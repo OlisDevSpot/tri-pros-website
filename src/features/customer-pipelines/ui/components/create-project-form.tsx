@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerProfileMeeting } from '@/features/customer-pipelines/types'
+import type { CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
@@ -33,17 +33,18 @@ import { useTRPC } from '@/trpc/helpers'
 interface CreateProjectFormProps {
   customerId: string
   customerName: string
+  /** The proposal that triggered this modal (status changed to approved). */
+  proposalId: string
   meetingId?: string
-  onSuccess?: () => void
+  /** Called with the proposalId that was selected at submission time (may differ from initial). */
+  onSuccess?: (selectedProposalId: string) => void
   onCancel?: () => void
 }
 
-function buildDescriptionFromMeeting(meeting: CustomerProfileMeeting): string {
+function buildDescriptionFromProposal(proposal: CustomerProfileProposal): string {
   const scopes: string[] = []
-  for (const p of meeting.proposals) {
-    for (const ts of p.sowSummary) {
-      scopes.push(...ts.scopes)
-    }
+  for (const ts of proposal.sowSummary) {
+    scopes.push(...ts.scopes)
   }
   return [...new Set(scopes)].join(', ')
 }
@@ -51,6 +52,7 @@ function buildDescriptionFromMeeting(meeting: CustomerProfileMeeting): string {
 export function CreateProjectForm({
   customerId,
   customerName,
+  proposalId: initialProposalId,
   meetingId: preselectedMeetingId,
   onCancel,
   onSuccess,
@@ -63,32 +65,43 @@ export function CreateProjectForm({
   )
 
   const customer = profileQuery.data?.customer
-  const meetingsWithProposals = useMemo(() => {
+
+  // Flatten all proposals across all meetings
+  const allProposals = useMemo(() => {
     if (!profileQuery.data?.meetings) {
       return []
     }
-    return profileQuery.data.meetings.filter(m => m.proposals.length > 0)
+    return profileQuery.data.meetings.flatMap(m => m.proposals)
   }, [profileQuery.data?.meetings])
 
+  const [selectedProposalId, setSelectedProposalId] = useState(initialProposalId)
+  const selectedProposal = allProposals.find(p => p.id === selectedProposalId)
+
+  // Derive the meeting from the selected proposal
+  const selectedMeeting = useMemo(() => {
+    if (!profileQuery.data?.meetings || !selectedProposal?.meetingId) {
+      return null
+    }
+    return profileQuery.data.meetings.find(m => m.id === selectedProposal.meetingId) ?? null
+  }, [profileQuery.data?.meetings, selectedProposal?.meetingId])
+
+  const activeMeetingId = selectedMeeting?.id ?? preselectedMeetingId ?? ''
+
   const [title, setTitle] = useState(`${customerName} - ${customer?.city ?? ''}`.trim())
-  const [selectedMeetingId, setSelectedMeetingId] = useState(preselectedMeetingId ?? '')
   const [description, setDescription] = useState('')
   const [projectDuration, setProjectDuration] = useState('')
   const [descriptionAutoSet, setDescriptionAutoSet] = useState(false)
 
-  const activeMeetingId = preselectedMeetingId ?? selectedMeetingId
-  const selectedMeeting = meetingsWithProposals.find(m => m.id === activeMeetingId)
-
-  // Auto-generate description when meeting changes
+  // Auto-generate description when proposal changes
   useMemo(() => {
-    if (selectedMeeting && !descriptionAutoSet) {
-      const autoDesc = buildDescriptionFromMeeting(selectedMeeting)
+    if (selectedProposal && !descriptionAutoSet) {
+      const autoDesc = buildDescriptionFromProposal(selectedProposal)
       if (autoDesc) {
         setDescription(autoDesc)
         setDescriptionAutoSet(true)
       }
     }
-  }, [activeMeetingId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedProposalId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-update title when customer data loads
   useMemo(() => {
@@ -109,13 +122,14 @@ export function CreateProjectForm({
         await queryClient.invalidateQueries(
           trpc.meetingsRouter.getAll.queryFilter(),
         )
-        onSuccess?.()
+        onSuccess?.(selectedProposalId)
       },
     }),
   )
 
   const canSubmit = title.trim().length > 0
     && activeMeetingId.length > 0
+    && selectedProposalId.length > 0
     && !createMutation.isPending
 
   function handleSubmit() {
@@ -131,13 +145,9 @@ export function CreateProjectForm({
     })
   }
 
-  // Find the approved proposal (or most recent one as fallback for display)
-  const approvedProposal = selectedMeeting?.proposals.find(p => p.status === 'approved')
-    ?? selectedMeeting?.proposals[0]
-
   return (
     <div className="w-full space-y-4">
-      {/* ── Context: Customer + Meeting + Approved Proposal ── */}
+      {/* ── Context: Customer + Meeting + Proposal ── */}
       <div className="rounded-lg border bg-muted/30 p-3 space-y-3">
         {/* Customer */}
         <div className="space-y-1.5">
@@ -157,77 +167,72 @@ export function CreateProjectForm({
 
         <Separator />
 
-        {/* Meeting */}
-        {preselectedMeetingId && selectedMeeting
-          ? (
-              <div className="space-y-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Meeting</span>
-                <div className="flex items-center gap-2 text-sm">
-                  <CalendarIcon size={14} className="shrink-0 text-muted-foreground" />
-                  <span>
-                    {selectedMeeting.scheduledFor
-                      ? format(new Date(selectedMeeting.scheduledFor), 'EEE, MMM d, yyyy · h:mm a')
-                      : format(new Date(selectedMeeting.createdAt), 'EEE, MMM d, yyyy')}
-                  </span>
-                </div>
-              </div>
-            )
-          : (
-              <div className="space-y-1.5">
-                <Label className="text-xs">
-                  Meeting
-                  {' '}
-                  <span className="text-destructive">*</span>
-                </Label>
-                <Select value={selectedMeetingId} onValueChange={setSelectedMeetingId}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Select a meeting with proposals" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {meetingsWithProposals.map((m) => {
-                      const date = m.scheduledFor
-                        ? format(new Date(m.scheduledFor), 'MMM d, yyyy')
-                        : format(new Date(m.createdAt), 'MMM d, yyyy')
-                      return (
-                        <SelectItem key={m.id} value={m.id}>
-                          {`${date} — ${m.proposals.length} proposal${m.proposals.length !== 1 ? 's' : ''}`}
-                        </SelectItem>
-                      )
-                    })}
-                  </SelectContent>
-                </Select>
-                {meetingsWithProposals.length === 0 && !profileQuery.isLoading && (
-                  <p className="text-muted-foreground text-xs">
-                    No meetings with proposals found.
-                  </p>
-                )}
-              </div>
-            )}
-
-        {/* Approved Proposal */}
-        {approvedProposal && (
+        {/* Meeting (derived from selected proposal) */}
+        {selectedMeeting && (
           <>
+            <div className="space-y-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Meeting</span>
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarIcon size={14} className="shrink-0 text-muted-foreground" />
+                <span>
+                  {selectedMeeting.scheduledFor
+                    ? format(new Date(selectedMeeting.scheduledFor), 'EEE, MMM d, yyyy · h:mm a')
+                    : format(new Date(selectedMeeting.createdAt), 'EEE, MMM d, yyyy')}
+                </span>
+              </div>
+            </div>
             <Separator />
-            <div className="space-y-3">
-              <span className="text-xs font-medium text-muted-foreground">Approved Proposal</span>
+          </>
+        )}
 
-              {/* Proposal label + price (prominent) */}
+        {/* Proposal selector */}
+        <div className="space-y-2">
+          <Label className="text-xs font-medium text-muted-foreground">
+            Approved Proposal
+          </Label>
+          <Select
+            value={selectedProposalId}
+            onValueChange={(v) => {
+              setSelectedProposalId(v)
+              setDescriptionAutoSet(false)
+            }}
+          >
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select a proposal" />
+            </SelectTrigger>
+            <SelectContent>
+              {allProposals.map((p) => {
+                const label = p.label ?? format(new Date(p.createdAt), 'MMM d, yyyy')
+                const value = p.value != null && p.value > 0 ? ` — ${formatAsDollars(p.value)}` : ''
+                return (
+                  <SelectItem key={p.id} value={p.id}>
+                    {`${label}${value}`}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
+
+          {/* Selected proposal details */}
+          {selectedProposal && (
+            <div className="space-y-3 pt-1">
+              {/* Price */}
               <div className="flex items-center gap-2">
                 <FileTextIcon size={14} className="shrink-0 text-muted-foreground" />
                 <span className="text-sm flex-1 min-w-0 truncate">
-                  {approvedProposal.label ?? format(new Date(approvedProposal.createdAt), 'MMM d, yyyy')}
+                  {selectedProposal.label ?? format(new Date(selectedProposal.createdAt), 'MMM d, yyyy')}
                 </span>
-                {approvedProposal.value != null && approvedProposal.value > 0 && (
+                {selectedProposal.value != null && selectedProposal.value > 0 && (
                   <span className="text-base font-bold text-green-700 dark:text-green-400 shrink-0">
-                    {formatAsDollars(approvedProposal.value)}
+                    {formatAsDollars(selectedProposal.value)}
                   </span>
                 )}
               </div>
 
               {/* Trades & Scopes */}
-              {approvedProposal.sowSummary.length > 0 && (
+              {selectedProposal.sowSummary.length > 0 && (
                 <div className="space-y-2">
-                  {approvedProposal.sowSummary.map(ts => (
+                  {selectedProposal.sowSummary.map(ts => (
                     <div key={ts.trade} className="space-y-1">
                       <div className="flex items-center gap-1.5 text-xs font-medium">
                         <HammerIcon size={11} className="shrink-0 text-muted-foreground" />
@@ -247,8 +252,8 @@ export function CreateProjectForm({
                 </div>
               )}
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── Editable Fields ── */}

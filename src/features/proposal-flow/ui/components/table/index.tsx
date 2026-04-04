@@ -67,13 +67,11 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
     updateProposal.mutate({ proposalId: id, data: { status } })
   }, [data, updateProposal])
 
-  const handleProjectCreated = useCallback(() => {
-    if (projectPrompt) {
-      // Now that the project is created, update the proposal to approved
-      updateProposal.mutate({ proposalId: projectPrompt.proposalId, data: { status: 'approved' as ProposalStatus } })
-    }
+  const handleProjectCreated = useCallback((selectedProposalId: string) => {
+    // Update the proposal the user selected (may differ from the one that triggered the modal)
+    updateProposal.mutate({ proposalId: selectedProposalId, data: { status: 'approved' as ProposalStatus } })
     setProjectPrompt(null)
-  }, [projectPrompt, updateProposal])
+  }, [updateProposal])
 
   const meta: ProposalTableMeta = {
     proposalActions: () => sharedActions,
@@ -104,6 +102,7 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
           isOpen
           customerId={projectPrompt.customerId}
           customerName={projectPrompt.customerName}
+          proposalId={projectPrompt.proposalId}
           meetingId={projectPrompt.meetingId}
           onSuccess={handleProjectCreated}
           onClose={() => setProjectPrompt(null)}
