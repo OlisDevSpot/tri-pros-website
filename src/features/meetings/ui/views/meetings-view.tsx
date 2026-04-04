@@ -5,6 +5,7 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { DataViewType } from '@/shared/components/data-view-type-toggle'
+import type { PipelineScope } from '@/shared/pipelines/ui/pipeline-scope-toggle'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { useQuery } from '@tanstack/react-query'
@@ -30,15 +31,21 @@ import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { usePersistedState } from '@/shared/hooks/use-persisted-state'
+import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
+import { deriveMeetingPipeline } from '@/shared/pipelines/lib/derive-meeting-pipeline'
+import { PipelineScopeToggle } from '@/shared/pipelines/ui/pipeline-scope-toggle'
 import { useTRPC } from '@/trpc/helpers'
 
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
 
 export function MeetingsView() {
-  const [layout, setLayout] = useState<DataViewType>('calendar')
+  const [layout, setLayout] = usePersistedState<DataViewType>('tri-pros:meetings-layout', 'calendar')
   const [dateRange, setDateRange] = useState<{ from: Date, to: Date } | null>(null)
   const [calendarView, setCalendarView] = useState<CalendarViewType>('week')
   const [showSaturday, setShowSaturday] = useState(false)
+  const activePipeline = getStoredPipeline()
+  const [scope, setScope] = usePersistedState<PipelineScope>('tri-pros:meetings-scope', 'all')
 
   const handleToggleSaturday = useCallback(() => {
     setShowSaturday(prev => !prev)
@@ -48,6 +55,16 @@ export function MeetingsView() {
   const { open: openModal, setModal } = useModalStore()
   const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
   const { updateScheduledFor } = useMeetingActions()
+
+  const scopedData = useMemo(() => {
+    if (!meetings.data || scope === 'all') {
+      return meetings.data
+    }
+    return meetings.data.filter((m) => {
+      const derived = deriveMeetingPipeline({ projectId: m.projectId, pipeline: m.pipeline as 'fresh' | 'rehash' | 'dead' })
+      return derived === scope
+    })
+  }, [meetings.data, scope])
 
   // Edit-meeting dialog state
   const [editMeetingDialog, setEditMeetingDialog] = useState<{
@@ -70,21 +87,6 @@ export function MeetingsView() {
     }
   }, [setModal, openModal])
 
-  const handleEditMeeting = useCallback((entity: MeetingCalendarEvent) => {
-    const raw = meetings.data?.find(m => m.id === entity.meetingId)
-    if (!raw) {
-      return
-    }
-    setEditMeetingDialog({
-      meetingId: raw.id,
-      customerId: raw.customerId ?? '',
-      customerName: raw.customerName ?? 'Unknown',
-      meetingType: raw.meetingType,
-      scheduledFor: raw.scheduledFor,
-      tradeSelections: raw.flowStateJSON?.tradeSelections ?? [],
-    })
-  }, [meetings.data])
-
   // Assign rep dialog state
   const [assignRepDialog, setAssignRepDialog] = useState<{
     meetingId: string
@@ -95,9 +97,8 @@ export function MeetingsView() {
     setAssignRepDialog({ meetingId: entity.meetingId, currentRepId: entity.ownerId })
   }, [])
 
-  const meetingActions = useMeetingActionConfigs<MeetingCalendarEvent>({
+  const { actions: meetingActions, DeleteConfirmDialog: CalendarDeleteDialog } = useMeetingActionConfigs<MeetingCalendarEvent>({
     onView: handleViewMeeting,
-    onEdit: handleEditMeeting,
     onAssignOwner: handleAssignOwner,
   })
 
@@ -109,14 +110,14 @@ export function MeetingsView() {
   const handleFilteredDataChange = useCallback((data: MeetingRow[]) => setTableFilteredData(data), [])
 
   const statsData = useMemo((): MeetingRow[] => {
-    if (!meetings.data) {
+    if (!scopedData) {
       return []
     }
     if (layout === 'table' && tableFilteredData) {
       return tableFilteredData
     }
     if (layout === 'calendar' && dateRange) {
-      return meetings.data.filter((m) => {
+      return scopedData.filter((m) => {
         if (!m.scheduledFor) {
           return false
         }
@@ -124,8 +125,8 @@ export function MeetingsView() {
         return d >= dateRange.from && d <= dateRange.to
       })
     }
-    return meetings.data
-  }, [layout, dateRange, meetings.data, tableFilteredData])
+    return scopedData
+  }, [layout, dateRange, scopedData, tableFilteredData])
 
   if (meetings.isLoading) {
     return (
@@ -137,7 +138,7 @@ export function MeetingsView() {
     )
   }
 
-  if (!meetings.data) {
+  if (!scopedData) {
     return (
       <ErrorState
         title="Error: Could not load meetings"
@@ -147,11 +148,11 @@ export function MeetingsView() {
     )
   }
 
-  if (meetings.data.length === 0) {
+  if (scopedData.length === 0) {
     return (
       <EmptyState
         title="No Meetings Found"
-        description="Create a new meeting to get started"
+        description={scope !== 'all' ? 'No meetings in this pipeline. Switch to \'All\' to see everything.' : 'Create a new meeting to get started'}
         className="bg-card"
       />
     )
@@ -168,6 +169,7 @@ export function MeetingsView() {
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <StatBar items={meetingsStatConfig} data={statsData} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
+          <PipelineScopeToggle value={scope} onChange={setScope} activePipeline={activePipeline} />
           {layout === 'calendar' && (
             <>
               {/* Today/Week/Month tabs — stable on left (mobile), same position (desktop) */}
@@ -237,7 +239,7 @@ export function MeetingsView() {
         {layout === 'calendar'
           ? (
               <MeetingCalendar
-                data={meetings.data}
+                data={scopedData}
                 actions={meetingActions}
                 onDateRangeChange={setDateRange}
                 onUpdateScheduledFor={handleUpdateScheduledFor}
@@ -249,7 +251,7 @@ export function MeetingsView() {
             )
           : (
               <PastMeetingsTable
-                data={meetings.data}
+                data={scopedData}
                 onFilteredDataChange={handleFilteredDataChange}
               />
             )}
@@ -278,6 +280,7 @@ export function MeetingsView() {
         open={!!assignRepDialog}
         onOpenChange={open => !open && setAssignRepDialog(null)}
       />
+      <CalendarDeleteDialog />
     </motion.div>
   )
 }
