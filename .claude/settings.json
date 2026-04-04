@@ -306,7 +306,18 @@
       "Bash(dpkg -S /usr/bin/node)",
       "Bash(apt list:*)",
       "Bash(sudo apt:*)",
-      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -name *agent*schema* -o -name *agent*schemas*)"
+      "Bash(find /home/olis-solutions/olis-v3/nextjs/tri-pros-website -name *agent*schema* -o -name *agent*schemas*)",
+      "Bash(node -e \"const t = require\\('@tanstack/react-table'\\); console.log\\(Object.keys\\(t\\).filter\\(k => k.includes\\('olumnSiz'\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node -e ':*)",
+      "Bash(git -C /home/olis-solutions/olis-v3/nextjs/tri-pros-website diff --stat)",
+      "Bash(git -C /home/olis-solutions/olis-v3/nextjs/tri-pros-website commit -m ':*)",
+      "Bash(git -C /home/olis-solutions/olis-v3/nextjs/tri-pros-website push)",
+      "mcp__shadcn__view_items_in_registries",
+      "Bash(pkill -f \"drizzle-kit push\")",
+      "Bash(yes)",
+      "Bash(pnpm db:push:dev)",
+      "WebFetch(domain:x.com)",
+      "WebFetch(domain:publish.twitter.com)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
@@ -319,7 +330,8 @@
       "/home/olis-solutions/olis-v3/nextjs/california-patio-builders/src/app/(frontend)/(site)/portfolio",
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/assets/meta-creatives/equity-reset",
       "/home/olis-solutions/.claude/skills",
-      "/home/olis-solutions"
+      "/home/olis-solutions",
+      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/(frontend)/dashboard/pipeline"
     ]
   },
   "enabledMcpjsonServers": [
