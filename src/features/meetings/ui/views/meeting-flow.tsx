@@ -220,6 +220,11 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
             flowContext={flowContext}
             meetingOutcome={meeting.meetingOutcome}
             onOutcomeChange={handleOutcomeChange}
+            proposalState={{
+              proposalCount: meeting.proposalCount ?? 0,
+              hasSentProposal: meeting.hasSentProposal ?? false,
+              hasApprovedProposal: meeting.hasApprovedProposal ?? false,
+            }}
           />
         )}
         {stepConfig.id === 'create-proposal' && (

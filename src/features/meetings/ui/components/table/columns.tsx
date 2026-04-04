@@ -1,44 +1,28 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { inferRouterOutputs } from '@trpc/server'
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 import type { MeetingOutcome } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
+import { UserIcon } from 'lucide-react'
+
+import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/features/meetings/constants/status-colors'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { MEETING_ACTIONS } from '@/shared/components/entity-actions/constants/meeting-actions'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
-import { meetingOutcomes } from '@/shared/constants/enums'
+import { visibleMeetingOutcomes } from '@/shared/constants/enums'
 import { formatDateCell } from '@/shared/lib/formatters'
+import { getOutcomeDisabledChecker } from '@/shared/pipelines/lib/get-disabled-outcomes'
+
+export type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
 
 export interface MeetingTableMeta {
-  userRole: string | undefined
-  onView: (meetingId: string, customerId: string | null) => void
-  onEdit: (meetingId: string) => void
-  onStart: (meetingId: string) => void
-  onDuplicate: (meetingId: string) => void
-  onDelete: (meetingId: string) => void
-  onAssignOwner: (meetingId: string, currentOwnerId: string) => void
+  meetingActions: (row: MeetingRow) => EntityActionConfig<MeetingRow>[]
   onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
-  onViewProfile: (customerId: string, meetingId?: string) => void
-  isDuplicating: boolean
-  isDeleting: boolean
-}
-
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
-
-function buildMeetingActions(row: MeetingRow, meta: MeetingTableMeta) {
-  return [
-    { action: MEETING_ACTIONS.view, onAction: () => meta.onView(row.id, row.customerId) },
-    { action: MEETING_ACTIONS.start, onAction: () => meta.onStart(row.id) },
-    { action: MEETING_ACTIONS.edit, onAction: () => meta.onEdit(row.id) },
-    { action: MEETING_ACTIONS.duplicate, onAction: () => meta.onDuplicate(row.id), isLoading: meta.isDuplicating },
-    { action: MEETING_ACTIONS.assignOwner, onAction: () => meta.onAssignOwner(row.id, row.ownerId) },
-    { action: MEETING_ACTIONS.delete, onAction: () => meta.onDelete(row.id), isLoading: meta.isDeleting },
-  ]
+  onAssignRep: (meetingId: string, currentOwnerId: string) => void
 }
 
 export function getColumns(): ColumnDef<MeetingRow>[] {
@@ -71,7 +55,7 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
             {meta && (
               <EntityActionMenu
                 entity={row.original}
-                actions={buildMeetingActions(row.original, meta)}
+                actions={meta.meetingActions(row.original)}
                 mode="compact"
                 className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               />
@@ -88,10 +72,38 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
         return (
           <StatusDropdownCell
             currentStatus={row.original.meetingOutcome}
-            statuses={meetingOutcomes}
+            statuses={visibleMeetingOutcomes}
             colorMap={MEETING_OUTCOME_COLORS}
+            formatLabel={status => MEETING_OUTCOME_LABELS[status] ?? status.replace(/_/g, ' ')}
+            isStatusDisabled={getOutcomeDisabledChecker({
+              proposalCount: row.original.proposalCount ?? 0,
+              hasSentProposal: row.original.hasSentProposal ?? false,
+              hasApprovedProposal: row.original.hasApprovedProposal ?? false,
+            })}
             onChange={outcome => meta?.onUpdateOutcome(row.original.id, outcome)}
           />
+        )
+      },
+    },
+    {
+      accessorKey: 'ownerName',
+      header: 'Rep',
+      cell: ({ row, table }) => {
+        const meta = table.options.meta as MeetingTableMeta | undefined
+        const name = row.original.ownerName
+
+        return (
+          <button
+            type="button"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors duration-150 hover:bg-muted/50"
+            onClick={(e) => {
+              e.stopPropagation()
+              meta?.onAssignRep(row.original.id, row.original.ownerId)
+            }}
+          >
+            <UserIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate max-w-24">{name ?? 'Unassigned'}</span>
+          </button>
         )
       },
     },

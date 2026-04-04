@@ -13,6 +13,8 @@ interface Props<TStatus extends string> {
   colorMap: Partial<Record<TStatus, string>>
   onChange: (status: TStatus) => void
   formatLabel?: (status: TStatus) => string
+  /** Check if a status should be disabled. Current status is never disabled. */
+  isStatusDisabled?: (status: TStatus) => boolean
 }
 
 export function StatusDropdownCell<TStatus extends string>({
@@ -21,6 +23,7 @@ export function StatusDropdownCell<TStatus extends string>({
   colorMap,
   onChange,
   formatLabel = status => status.replace(/_/g, ' '),
+  isStatusDisabled,
 }: Props<TStatus>) {
   const [open, setOpen] = useState(false)
 
@@ -33,27 +36,37 @@ export function StatusDropdownCell<TStatus extends string>({
           </Badge>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-40 p-1" onClick={e => e.stopPropagation()}>
-        {statuses.map(status => (
-          <button
-            key={status}
-            type="button"
-            className={cn(
-              'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm capitalize cursor-pointer',
-              'hover:bg-accent hover:text-accent-foreground',
-              status === currentStatus && 'font-medium',
-            )}
-            onClick={() => {
-              onChange(status)
-              setOpen(false)
-            }}
-          >
-            <CheckIcon className={cn('h-3.5 w-3.5 shrink-0', status === currentStatus ? 'opacity-100' : 'opacity-0')} />
-            <Badge className={cn('capitalize text-xs', colorMap[status])}>
-              {formatLabel(status)}
-            </Badge>
-          </button>
-        ))}
+      <PopoverContent align="start" className="w-auto min-w-40 p-1" onClick={e => e.stopPropagation()}>
+        {statuses.map((status) => {
+          const isDisabled = status !== currentStatus && isStatusDisabled?.(status)
+
+          return (
+            <button
+              key={status}
+              type="button"
+              disabled={!!isDisabled}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm capitalize transition-colors duration-150',
+                isDisabled
+                  ? 'cursor-not-allowed opacity-40'
+                  : 'cursor-pointer hover:bg-muted/50 hover:text-accent-foreground',
+                status === currentStatus && 'font-medium',
+              )}
+              onClick={() => {
+                if (isDisabled) {
+                  return
+                }
+                onChange(status)
+                setOpen(false)
+              }}
+            >
+              <CheckIcon className={cn('h-3.5 w-3.5 shrink-0', status === currentStatus ? 'opacity-100' : 'opacity-0')} />
+              <Badge className={cn('capitalize text-xs', colorMap[status])}>
+                {formatLabel(status)}
+              </Badge>
+            </button>
+          )
+        })}
       </PopoverContent>
     </Popover>
   )

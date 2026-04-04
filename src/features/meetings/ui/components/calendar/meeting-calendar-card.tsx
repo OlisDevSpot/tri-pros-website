@@ -7,27 +7,28 @@ import type { MeetingOutcome } from '@/shared/types/enums'
 import { format } from 'date-fns'
 import { CalendarIcon, ChevronDownIcon, MapPinIcon } from 'lucide-react'
 
+import { MEETING_OUTCOME_DOT_COLORS } from '@/features/meetings/constants/status-colors'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { isSelectAction } from '@/shared/components/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
 
-const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
-  not_set: 'bg-blue-500',
-  proposal_created: 'bg-emerald-500',
-  follow_up_needed: 'bg-amber-500',
-  not_interested: 'bg-red-500',
-  no_show: 'bg-zinc-500',
-}
-
-const STATUS_BG_TINTS: Record<MeetingOutcome, string> = {
-  not_set: 'bg-blue-500/5 border-blue-500/20',
-  proposal_created: 'bg-emerald-500/5 border-emerald-500/20',
-  follow_up_needed: 'bg-amber-500/5 border-amber-500/20',
+const STATUS_BG_TINTS: Partial<Record<MeetingOutcome, string>> = {
+  not_set: 'bg-zinc-500/5 border-zinc-500/20',
+  converted_to_project: 'bg-emerald-500/5 border-emerald-500/20',
+  proposal_sent: 'bg-lime-500/5 border-lime-500/20',
+  proposal_created: 'bg-amber-500/5 border-amber-500/20',
+  follow_up_needed: 'bg-purple-500/5 border-purple-500/20',
+  not_good: 'bg-red-500/5 border-red-500/20',
+  pns: 'bg-red-500/5 border-red-500/20',
+  npns: 'bg-red-500/5 border-red-500/20',
+  ftd: 'bg-red-500/5 border-red-500/20',
+  no_show: 'bg-red-500/5 border-red-500/20',
+  lost_to_competitor: 'bg-red-500/5 border-red-500/20',
   not_interested: 'bg-red-500/5 border-red-500/20',
-  no_show: 'bg-zinc-500/5 border-zinc-500/20',
 }
 
 interface MeetingCalendarCardProps {
@@ -41,7 +42,7 @@ export function MeetingCalendarCard({
   actions,
   onUpdateScheduledFor,
 }: MeetingCalendarCardProps) {
-  const viewAction = actions.find(a => a.action.primary)
+  const viewAction = actions.find(a => a.action.primary && !isSelectAction(a))
 
   const addressLine1 = event.customerAddress ?? ''
   const addressLine2 = [event.customerCity, event.customerState, event.customerZip]
@@ -55,14 +56,14 @@ export function MeetingCalendarCard({
         'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
         STATUS_BG_TINTS[event.meetingOutcome],
       )}
-      onClick={() => viewAction?.onAction(event)}
+      onClick={() => viewAction && !isSelectAction(viewAction) && viewAction.onAction(event)}
     >
       {/* Row 1: Status dot + customer name + actions */}
       <div className="flex items-center gap-1.5 min-w-0">
         <span
           className={cn(
             'h-2 w-2 shrink-0 rounded-full',
-            STATUS_DOT_COLORS[event.meetingOutcome],
+            MEETING_OUTCOME_DOT_COLORS[event.meetingOutcome],
           )}
         />
         <span className="font-medium truncate flex-1 leading-tight">

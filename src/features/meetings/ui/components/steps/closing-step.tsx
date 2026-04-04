@@ -3,6 +3,7 @@
 import type { MeetingFlowContext } from '@/features/meetings/types'
 import { useMemo } from 'react'
 import { getProgramByAccessor } from '@/features/meetings/constants/programs'
+import { MEETING_OUTCOME_LABELS } from '@/features/meetings/constants/status-colors'
 import { formatCurrency } from '@/features/meetings/lib/loan-calc'
 import { ClosingScopeCard } from '@/features/meetings/ui/components/steps/closing-scope-card'
 import { Badge } from '@/shared/components/ui/badge'
@@ -10,24 +11,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Label } from '@/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Separator } from '@/shared/components/ui/separator'
-import { meetingOutcomes } from '@/shared/constants/enums'
+import { visibleMeetingOutcomes } from '@/shared/constants/enums'
 import { cn } from '@/shared/lib/utils'
+import { getOutcomeDisabledChecker } from '@/shared/pipelines/lib/get-disabled-outcomes'
 
 interface ClosingStepProps {
   flowContext: MeetingFlowContext
   meetingOutcome: string
   onOutcomeChange: (outcome: string) => void
+  proposalState: {
+    proposalCount: number
+    hasSentProposal: boolean
+    hasApprovedProposal: boolean
+  }
 }
 
-const OUTCOME_LABELS: Record<string, string> = {
-  follow_up_needed: 'Follow-up Needed',
-  not_set: 'Not Set',
-  no_show: 'No Show',
-  not_interested: 'Not Interested',
-  proposal_created: 'Proposal Created',
-}
-
-export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange }: ClosingStepProps) {
+export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange, proposalState }: ClosingStepProps) {
+  const isOutcomeDisabled = getOutcomeDisabledChecker(proposalState)
   const flowState = flowContext.flowState
   const tradeSelections = flowState?.tradeSelections ?? []
   const selectedProgram = flowState?.selectedProgram ?? null
@@ -209,11 +209,19 @@ export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange }: Cl
             <SelectValue placeholder="Select outcome…" />
           </SelectTrigger>
           <SelectContent>
-            {meetingOutcomes.map(outcome => (
-              <SelectItem key={outcome} value={outcome}>
-                {OUTCOME_LABELS[outcome] ?? outcome}
-              </SelectItem>
-            ))}
+            {visibleMeetingOutcomes.map((outcome) => {
+              const disabled = outcome !== meetingOutcome && isOutcomeDisabled(outcome)
+              return (
+                <SelectItem
+                  key={outcome}
+                  value={outcome}
+                  disabled={disabled}
+                  className={disabled ? 'opacity-40' : ''}
+                >
+                  {MEETING_OUTCOME_LABELS[outcome] ?? outcome}
+                </SelectItem>
+              )
+            })}
           </SelectContent>
         </Select>
       </section>
