@@ -391,7 +391,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
           token: proposals.token,
           status: proposals.status,
           createdAt: proposals.createdAt,
-          sentAt: proposals.sentAt,
+          approvedAt: proposals.approvedAt,
           value: sql<number | null>`NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric`.as('proposal_value'),
         })
         .from(proposals)
@@ -401,7 +401,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
 
   // Group proposals by meetingId
   const proposalsByMeeting = new Map<string, PipelineItemProposal[]>()
-  const earliestSentByCustomer = new Map<string, string>()
+  const earliestApprovedByCustomer = new Map<string, string>()
   for (const p of proposalRows) {
     if (!p.meetingId) {
       continue
@@ -410,13 +410,13 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
     arr.push({ id: p.proposalId, token: p.token, value: p.value ? Number(p.value) : null, status: p.status, createdAt: p.createdAt })
     proposalsByMeeting.set(p.meetingId, arr)
 
-    // Track earliest sentAt for startedAt fallback
-    if (p.sentAt && p.status === 'approved') {
+    // Track earliest approvedAt for project startedAt fallback
+    if (p.approvedAt && p.status === 'approved') {
       const meeting = meetingRows.find(m => m.meetingId === p.meetingId)
       if (meeting?.customerId) {
-        const existing = earliestSentByCustomer.get(meeting.customerId)
-        if (!existing || p.sentAt < existing) {
-          earliestSentByCustomer.set(meeting.customerId, p.sentAt)
+        const existing = earliestApprovedByCustomer.get(meeting.customerId)
+        if (!existing || p.approvedAt < existing) {
+          earliestApprovedByCustomer.set(meeting.customerId, p.approvedAt)
         }
       }
     }
@@ -474,7 +474,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
         address: row.projectAddress,
         status: row.projectStatus,
         pipelineStage: row.projectPipelineStage,
-        startedAt: row.projectStartedAt ?? earliestSentByCustomer.get(customerId) ?? null,
+        startedAt: row.projectStartedAt ?? earliestApprovedByCustomer.get(customerId) ?? null,
         totalValue,
         meetings: projectMeetings,
       },

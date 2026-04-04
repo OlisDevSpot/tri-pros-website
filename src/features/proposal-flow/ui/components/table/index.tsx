@@ -68,8 +68,11 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
   }, [data, updateProposal])
 
   const handleProjectCreated = useCallback((selectedProposalId: string) => {
-    // Update the proposal the user selected (may differ from the one that triggered the modal)
-    updateProposal.mutate({ proposalId: selectedProposalId, data: { status: 'approved' as ProposalStatus } })
+    // Update the proposal: set status to approved + record the approval timestamp
+    updateProposal.mutate({
+      proposalId: selectedProposalId,
+      data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() },
+    })
     setProjectPrompt(null)
   }, [updateProposal])
 
