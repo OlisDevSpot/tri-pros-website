@@ -1,4 +1,4 @@
-import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
+import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
 
 import { TRPCError } from '@trpc/server'
 import { count, desc, eq, sql } from 'drizzle-orm'
@@ -7,6 +7,7 @@ import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
+import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 
@@ -24,6 +25,7 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
     .select({
       id: meetings.id,
       ownerId: meetings.ownerId,
+      projectId: meetings.projectId,
       meetingType: meetings.meetingType,
       meetingOutcome: meetings.meetingOutcome,
       scheduledFor: meetings.scheduledFor,
@@ -46,6 +48,7 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
       createdAt: proposals.createdAt,
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
       value: sql<number | null>`(${proposals.fundingJSON}->'data'->>'finalTcp')::numeric`.as('value'),
+      sowRaw: sql<string | null>`${proposals.projectJSON}->'data'->'sow'`.as('sow_raw'),
       viewCount: count(proposalViews.id).as('view_count'),
     })
     .from(proposals)
@@ -61,19 +64,41 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
     .groupBy(proposals.id)
     .orderBy(desc(proposals.createdAt))
 
-  const allProposals: CustomerProfileProposal[] = proposalRows.map(p => ({
-    id: p.id,
-    label: p.label,
-    status: p.status,
-    token: p.token,
-    trade: p.trade,
-    value: p.value != null ? Number(p.value) : null,
-    sentAt: p.sentAt,
-    contractSentAt: p.contractSentAt,
-    viewCount: p.viewCount,
-    meetingId: p.meetingId,
-    createdAt: p.createdAt,
-  }))
+  const allProposals: CustomerProfileProposal[] = proposalRows.map((p) => {
+    // Parse SOW JSON into trade+scopes summary
+    let sowSummary: CustomerProfileProposal['sowSummary'] = []
+    try {
+      const rawSow = typeof p.sowRaw === 'string' ? JSON.parse(p.sowRaw) : p.sowRaw
+      if (Array.isArray(rawSow)) {
+        sowSummary = rawSow
+          .filter((entry: any) => entry?.trade?.label)
+          .map((entry: any) => ({
+            trade: entry.trade.label as string,
+            scopes: Array.isArray(entry.scopes)
+              ? entry.scopes.map((s: any) => s.label as string).filter(Boolean)
+              : [],
+          }))
+      }
+    }
+    catch {
+      // Invalid JSON — leave empty
+    }
+
+    return {
+      id: p.id,
+      label: p.label,
+      status: p.status,
+      token: p.token,
+      trade: p.trade,
+      value: p.value != null ? Number(p.value) : null,
+      sentAt: p.sentAt,
+      contractSentAt: p.contractSentAt,
+      viewCount: p.viewCount,
+      meetingId: p.meetingId,
+      createdAt: p.createdAt,
+      sowSummary,
+    }
+  })
 
   const proposalsByMeeting = new Map<string, CustomerProfileProposal[]>()
   for (const p of allProposals) {
@@ -87,6 +112,7 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
   const meetingsWithProposals: CustomerProfileMeeting[] = meetingRows.map(m => ({
     id: m.id,
     ownerId: m.ownerId,
+    projectId: m.projectId,
     meetingType: m.meetingType,
     meetingOutcome: m.meetingOutcome,
     scheduledFor: m.scheduledFor,
@@ -119,11 +145,46 @@ export async function getCustomerProfile(customerId: string): Promise<CustomerPr
         .orderBy(desc(proposalViews.viewedAt))
     : []
 
+  // Fetch projects for this customer
+  const projectRows = await db
+    .select({
+      id: projects.id,
+      title: projects.title,
+      address: projects.address,
+      status: projects.status,
+      pipelineStage: projects.pipelineStage,
+      createdAt: projects.createdAt,
+    })
+    .from(projects)
+    .where(eq(projects.customerId, customerId))
+    .orderBy(desc(projects.createdAt))
+
+  // Group meetings by projectId for project cards
+  const meetingsByProjectId = new Map<string, CustomerProfileMeeting[]>()
+  for (const m of meetingsWithProposals) {
+    if (m.projectId) {
+      const existing = meetingsByProjectId.get(m.projectId) ?? []
+      existing.push(m)
+      meetingsByProjectId.set(m.projectId, existing)
+    }
+  }
+
+  const customerProjects: CustomerProfileProject[] = projectRows.map(p => ({
+    id: p.id,
+    title: p.title,
+    address: p.address,
+    status: p.status,
+    pipelineStage: p.pipelineStage,
+    createdAt: p.createdAt,
+    meetings: meetingsByProjectId.get(p.id) ?? [],
+  }))
+
   return {
     customer,
     meetings: meetingsWithProposals,
     allProposals,
     notes: noteRows,
     proposalViews: proposalViewRows,
+    projects: customerProjects,
   }
 }

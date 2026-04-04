@@ -9,6 +9,7 @@ import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
+import { OUTCOME_PIPELINE_MAP } from '@/shared/pipelines/lib/outcome-pipeline-map'
 import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
@@ -28,6 +29,9 @@ export const meetingsRouter = createTRPCRouter({
           customerZip: customers.zip,
           ownerName: user.name,
           ownerImage: user.image,
+          proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
+          hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
+          hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
@@ -72,6 +76,19 @@ export const meetingsRouter = createTRPCRouter({
 
       if (!updated) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      }
+
+      // If meetingOutcome changed, auto-assign pipeline
+      if (rest.meetingOutcome) {
+        const newPipeline = OUTCOME_PIPELINE_MAP[rest.meetingOutcome]
+        if (newPipeline !== null && newPipeline !== undefined) {
+          await db.update(meetings).set({ pipeline: newPipeline }).where(eq(meetings.id, id))
+          // Re-fetch the updated meeting to return correct data
+          const [refetched] = await db.select().from(meetings).where(eq(meetings.id, id))
+          if (refetched) {
+            Object.assign(updated, refetched)
+          }
+        }
       }
 
       // Publish realtime event for cross-device sync
@@ -121,6 +138,9 @@ export const meetingsRouter = createTRPCRouter({
           customer: getTableColumns(customers),
           ownerName: user.name,
           ownerImage: user.image,
+          proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
+          hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
+          hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
@@ -361,5 +381,70 @@ export const meetingsRouter = createTRPCRouter({
         flowState: row.flowStateJSON ?? null,
         painPointsDb,
       })
+    }),
+
+  // Get projects belonging to a meeting's customer (for "assign to project" dialog)
+  getCustomerProjects: agentProcedure
+    .input(z.object({ meetingId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      // Find the customer for this meeting, then get their projects
+      const [meeting] = await db
+        .select({ customerId: meetings.customerId })
+        .from(meetings)
+        .where(eq(meetings.id, input.meetingId))
+
+      if (!meeting?.customerId) {
+        return { projects: [], proposals: [] }
+      }
+
+      const customerProjects = await db
+        .select({
+          id: projects.id,
+          title: projects.title,
+          status: projects.status,
+          pipelineStage: projects.pipelineStage,
+          createdAt: projects.createdAt,
+        })
+        .from(projects)
+        .where(eq(projects.customerId, meeting.customerId))
+        .orderBy(desc(projects.createdAt))
+
+      // Also get proposals linked to this meeting (for "approve → create project" flow)
+      const meetingProposals = await db
+        .select({
+          id: proposals.id,
+          label: proposals.label,
+          status: proposals.status,
+          createdAt: proposals.createdAt,
+        })
+        .from(proposals)
+        .where(eq(proposals.meetingId, input.meetingId))
+        .orderBy(desc(proposals.createdAt))
+
+      return { projects: customerProjects, proposals: meetingProposals }
+    }),
+
+  // Assign a meeting to an existing project
+  assignToProject: agentProcedure
+    .input(z.object({
+      meetingId: z.string().uuid(),
+      projectId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.ability.cannot('update', 'Meeting')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update meetings' })
+      }
+
+      const [updated] = await db
+        .update(meetings)
+        .set({ projectId: input.projectId, meetingOutcome: 'converted_to_project' })
+        .where(eq(meetings.id, input.meetingId))
+        .returning()
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      }
+
+      return updated
     }),
 })

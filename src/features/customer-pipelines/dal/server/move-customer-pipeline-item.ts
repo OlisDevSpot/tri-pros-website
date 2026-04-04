@@ -1,39 +1,65 @@
-import type { CustomerPipelineStage } from '@/features/customer-pipelines/constants/active-pipeline-stages'
+import type { FreshPipelineStage } from '@/shared/pipelines/constants/fresh-pipeline'
 
-import type { CustomerPipeline } from '@/shared/types/enums'
+import type { Pipeline } from '@/shared/types/enums/pipelines'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
-import { ACTIVE_ALLOWED_DRAG_TRANSITIONS } from '@/features/customer-pipelines/constants/active-pipeline-stages'
 import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
+import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/pipelines/constants/fresh-pipeline'
 
 interface MoveParams {
   customerId: string
   fromStage: string
   toStage: string
-  pipeline: CustomerPipeline
+  pipeline: Pipeline
   userId: string
   isOmni?: boolean
 }
 
 export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, pipeline, userId, isOmni = false }: MoveParams): Promise<void> {
-  // For rehash/dead pipelines, drag simply updates pipelineStage
-  if (pipeline !== 'active') {
+  // Rehash/dead pipelines: no intra-stage dragging supported yet
+  if (pipeline === 'rehash' || pipeline === 'dead') {
+    // TODO: implement rehash/dead stage tracking — meetings don't have a pipelineStage field
+    // and customers.pipelineStage is being deprecated. Need a new mechanism for stage tracking.
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Stage dragging is not yet supported for the rehash/dead pipelines',
+    })
+  }
+
+  // Projects pipeline: update projects.pipelineStage directly
+  if (pipeline === 'projects') {
+    // Find the project for this customer and update its pipelineStage
+    const [project] = await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(eq(projects.customerId, customerId))
+      .limit(1)
+
+    if (!project) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'No project found for this customer',
+      })
+    }
+
     await db
-      .update(customers)
+      .update(projects)
       .set({ pipelineStage: toStage })
-      .where(eq(customers.id, customerId))
+      .where(eq(projects.id, project.id))
+
     return
   }
 
-  const activeFromStage = fromStage as CustomerPipelineStage
-  const activeToStage = toStage as CustomerPipelineStage
-  const allowed = ACTIVE_ALLOWED_DRAG_TRANSITIONS[activeFromStage]
-  if (!allowed.includes(activeToStage)) {
+  // Fresh pipeline: same logic as before
+  const freshFromStage = fromStage as FreshPipelineStage
+  const freshToStage = toStage as FreshPipelineStage
+  const allowed = FRESH_ALLOWED_DRAG_TRANSITIONS[freshFromStage]
+  if (!allowed.includes(freshToStage)) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
       message: `Transition from ${fromStage} to ${toStage} is not allowed`,

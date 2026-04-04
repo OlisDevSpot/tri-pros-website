@@ -82,13 +82,15 @@ export async function getProposals(userId: string, isOmni = false) {
       lastViewedAt: max(proposalViews.viewedAt),
       customerId: customers.id,
       customerName: customers.name,
+      meetingPipeline: meetings.pipeline,
+      meetingProjectId: meetings.projectId,
     })
     .from(proposals)
     .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
     .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(isOmni ? undefined : eq(proposals.ownerId, userId))
-    .groupBy(proposals.id, customers.id, customers.name)
+    .groupBy(proposals.id, customers.id, customers.name, meetings.pipeline, meetings.projectId)
     .orderBy(desc(proposals.createdAt))
 }
 

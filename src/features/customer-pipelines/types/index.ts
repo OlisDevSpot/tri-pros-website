@@ -4,6 +4,8 @@ import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
 import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
+import type { ProjectsPipelineStage } from '@/shared/pipelines/constants/projects-pipeline'
+import type { ProjectStatus } from '@/shared/types/enums/pipelines'
 
 export interface PipelineItemRep {
   id: string
@@ -20,10 +22,21 @@ export interface PipelineItemProposal {
   createdAt: string
 }
 
+export interface PipelineItemProject {
+  id: string
+  title: string
+  address: string | null
+  status: ProjectStatus
+  pipelineStage: string | null
+  meetingCount: number
+  proposalCount: number
+  totalValue: number
+}
+
 export interface CustomerPipelineItem {
   id: string
   type: 'customer'
-  stage: CustomerPipelineStage | RehashPipelineStage | DeadPipelineStage
+  stage: CustomerPipelineStage | RehashPipelineStage | DeadPipelineStage | ProjectsPipelineStage
   name: string
   phone: string | null
   email: string | null
@@ -40,6 +53,8 @@ export interface CustomerPipelineItem {
   meetingScheduledFor: string | null
   assignedRep: PipelineItemRep | null
   proposals: PipelineItemProposal[]
+  /** Present only in the projects pipeline */
+  project: PipelineItemProject | null
 }
 
 export interface CustomerPipelineRawData {
@@ -61,12 +76,27 @@ export interface CustomerPipelineRawData {
 }
 
 export type CustomerProfileMeeting
-  = Pick<Meeting, 'id' | 'ownerId' | 'meetingType' | 'meetingOutcome' | 'scheduledFor' | 'createdAt' | 'updatedAt'>
+  = Pick<Meeting, 'id' | 'ownerId' | 'meetingType' | 'meetingOutcome' | 'scheduledFor' | 'createdAt' | 'updatedAt' | 'projectId'>
     & { proposals: CustomerProfileProposal[] }
+
+export interface SowTradeScope {
+  trade: string
+  scopes: string[]
+}
 
 export type CustomerProfileProposal
   = Pick<Proposal, 'id' | 'label' | 'status' | 'token' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>
-    & { trade: string | null, value: number | null, viewCount: number }
+    & { trade: string | null, value: number | null, viewCount: number, sowSummary: SowTradeScope[] }
+
+export interface CustomerProfileProject {
+  id: string
+  title: string
+  address: string | null
+  status: string
+  pipelineStage: string | null
+  createdAt: string
+  meetings: CustomerProfileMeeting[]
+}
 
 export interface CustomerProfileProposalView {
   id: string
@@ -94,4 +124,5 @@ export interface CustomerProfileData {
   allProposals: CustomerProfileProposal[]
   notes: CustomerNote[]
   proposalViews: CustomerProfileProposalView[]
+  projects: CustomerProfileProject[]
 }

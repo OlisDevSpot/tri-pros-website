@@ -1,27 +1,23 @@
-import type { CustomerPipeline } from '@/shared/types/enums'
+import type { MeetingPipeline } from '@/shared/types/enums/pipelines'
 
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
-import { deadPipelineStages } from '@/features/customer-pipelines/constants/dead-pipeline-stages'
-import { rehashPipelineStages } from '@/features/customer-pipelines/constants/rehash-pipeline-stages'
 import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
+import { meetings } from '@/shared/db/schema/meetings'
 
-const FIRST_STAGE: Record<CustomerPipeline, string | null> = {
-  active: null,
-  rehash: rehashPipelineStages[0],
-  dead: deadPipelineStages[0],
-}
-
+/**
+ * Moves all of a customer's non-project meetings to a target pipeline.
+ * Only affects meetings with no projectId (project meetings stay in "projects" pipeline).
+ */
 export async function moveCustomerToPipeline(
   customerId: string,
-  pipeline: CustomerPipeline,
+  pipeline: MeetingPipeline,
 ): Promise<void> {
   await db
-    .update(customers)
-    .set({
-      pipeline,
-      pipelineStage: FIRST_STAGE[pipeline],
-    })
-    .where(eq(customers.id, customerId))
+    .update(meetings)
+    .set({ pipeline })
+    .where(and(
+      eq(meetings.customerId, customerId),
+      isNull(meetings.projectId),
+    ))
 }

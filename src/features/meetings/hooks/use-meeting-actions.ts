@@ -11,6 +11,7 @@ export function useMeetingActions() {
 
   const invalidate = () => {
     void queryClient.invalidateQueries(trpc.meetingsRouter.getAll.queryFilter())
+    void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerPipelineItems.queryFilter())
   }
 
   const deleteMeeting = useMutation(

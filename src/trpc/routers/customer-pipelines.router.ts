@@ -6,7 +6,7 @@ import { getCustomerPipelineItems } from '@/features/customer-pipelines/dal/serv
 import { getCustomerProfile } from '@/features/customer-pipelines/dal/server/get-customer-profile'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
-import { customerPipelines } from '@/shared/constants/enums'
+import { meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { R2_BUCKETS } from '@/shared/services/r2/buckets'
@@ -17,12 +17,12 @@ import { agentProcedure, createTRPCRouter } from '../init'
 export const customerPipelinesRouter = createTRPCRouter({
   getCustomerPipelineItems: agentProcedure
     .input(z.object({
-      pipeline: z.enum(customerPipelines).default('active'),
+      pipeline: z.enum(pipelines).default('fresh'),
     }).optional())
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
       const isOmni = ctx.ability.can('manage', 'all')
-      return getCustomerPipelineItems(userId, input?.pipeline ?? 'active', isOmni)
+      return getCustomerPipelineItems(userId, input?.pipeline ?? 'fresh', isOmni)
     }),
 
   moveCustomerPipelineItem: agentProcedure
@@ -30,7 +30,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       customerId: z.string().uuid(),
       fromStage: z.string(),
       toStage: z.string(),
-      pipeline: z.enum(customerPipelines).default('active'),
+      pipeline: z.enum(pipelines).default('fresh'),
     }))
     .mutation(async ({ ctx, input }) => {
       const isOmni = ctx.ability.can('manage', 'all')
@@ -44,7 +44,7 @@ export const customerPipelinesRouter = createTRPCRouter({
   moveCustomerToPipeline: agentProcedure
     .input(z.object({
       customerId: z.string().uuid(),
-      pipeline: z.enum(customerPipelines),
+      pipeline: z.enum(meetingPipelines),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.ability.cannot('manage', 'CustomerPipeline')) {
@@ -84,4 +84,5 @@ export const customerPipelinesRouter = createTRPCRouter({
 
       return { url }
     }),
+
 })
