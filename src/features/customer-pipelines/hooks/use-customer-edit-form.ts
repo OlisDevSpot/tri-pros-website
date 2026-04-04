@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { buildCustomerFormDefaults } from '@/features/customer-pipelines/lib/build-customer-form-defaults'
+import { invalidateCustomer } from '@/shared/dal/client/invalidation'
 import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -28,17 +29,13 @@ export function useCustomerEditForm(customer: Customer) {
 
   const profileMutation = useMutation(
     trpc.customersRouter.updateProfile.mutationOptions({
-      onSuccess: () => {
-        void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerProfile.queryFilter())
-      },
+      onSuccess: () => invalidateCustomer(queryClient, customer.id),
     }),
   )
 
   const contactMutation = useMutation(
     trpc.customersRouter.updateCustomerContact.mutationOptions({
-      onSuccess: () => {
-        void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerProfile.queryFilter())
-      },
+      onSuccess: () => invalidateCustomer(queryClient, customer.id),
     }),
   )
 

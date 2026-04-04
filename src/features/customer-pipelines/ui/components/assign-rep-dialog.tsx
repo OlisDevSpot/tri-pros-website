@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Input } from '@/shared/components/ui/input'
+import { invalidateMeeting } from '@/shared/dal/client/invalidation'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -41,8 +42,7 @@ export function AssignRepDialog({ meetingIds, currentRepId, open, onOpenChange, 
   const assignMutation = useMutation(
     trpc.meetingsRouter.assignOwner.mutationOptions({
       onSuccess: () => {
-        void queryClient.invalidateQueries(trpc.meetingsRouter.getAll.queryFilter())
-        void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerPipelineItems.queryFilter())
+        invalidateMeeting(queryClient)
         toast.success(meetingIds.length > 1 ? 'Reps assigned successfully' : 'Rep assigned successfully')
         onOpenChange(false)
         setSelectedUserId(null)

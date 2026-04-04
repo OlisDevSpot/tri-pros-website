@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
+import { QUERY_KEYS } from '@/shared/dal/client/query-keys'
 import { onPipelineChange } from '@/shared/pipelines/lib/on-pipeline-change'
-import { useTRPC } from '@/trpc/helpers'
 
 /**
  * Returns a stable callback that handles all pipeline change side effects.
@@ -17,16 +17,13 @@ import { useTRPC } from '@/trpc/helpers'
 export function usePipelineChange() {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const trpc = useTRPC()
 
   return useCallback((next: Pipeline) => {
     onPipelineChange(next, {
       navigate: p => router.push(ROOTS.dashboard.pipeline(p)),
       invalidateQueries: () => {
-        void queryClient.invalidateQueries(
-          trpc.customerPipelinesRouter.getCustomerPipelineItems.queryFilter(),
-        )
+        void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.customers.pipeline })
       },
     })
-  }, [router, queryClient, trpc])
+  }, [router, queryClient])
 }

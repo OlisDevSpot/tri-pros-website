@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 
 import { PROPOSAL_ACTIONS } from '@/shared/components/entity-actions/constants/proposal-actions'
 import { ROOTS } from '@/shared/config/roots'
+import { invalidateProposal } from '@/shared/dal/client/invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { copyToClipboard } from '@/shared/lib/clipboard'
 import { useTRPC } from '@/trpc/helpers'
@@ -55,10 +56,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
     message: 'This will permanently delete this proposal. This cannot be undone.',
   })
 
-  const invalidate = () => {
-    void queryClient.invalidateQueries(trpc.proposalsRouter.getProposals.queryFilter())
-    void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerProfile.queryFilter())
-  }
+  const invalidate = () => invalidateProposal(queryClient)
 
   const duplicateProposal = useMutation(
     trpc.proposalsRouter.duplicateProposal.mutationOptions({

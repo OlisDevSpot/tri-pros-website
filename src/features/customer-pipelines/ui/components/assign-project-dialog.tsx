@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Separator } from '@/shared/components/ui/separator'
+import { invalidateMeeting, invalidateProject, invalidateProposal } from '@/shared/dal/client/invalidation'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -38,9 +39,8 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   const assignMutation = useMutation(
     trpc.meetingsRouter.assignToProject.mutationOptions({
       onSuccess: () => {
-        void queryClient.invalidateQueries(trpc.meetingsRouter.getAll.queryFilter())
-        void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerPipelineItems.queryFilter())
-        void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerProfile.queryFilter())
+        invalidateMeeting(queryClient)
+        invalidateProject(queryClient)
         toast.success('Meeting assigned to project')
         handleClose()
       },
@@ -51,8 +51,8 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   const approveProposalMutation = useMutation(
     trpc.proposalsRouter.updateProposal.mutationOptions({
       onSuccess: () => {
-        void queryClient.invalidateQueries(trpc.meetingsRouter.getCustomerProjects.queryFilter())
-        void queryClient.invalidateQueries(trpc.proposalsRouter.getProposals.queryFilter())
+        invalidateProposal(queryClient)
+        invalidateProject(queryClient)
         toast.success('Proposal approved — a project will be created')
       },
       onError: () => toast.error('Failed to approve proposal'),

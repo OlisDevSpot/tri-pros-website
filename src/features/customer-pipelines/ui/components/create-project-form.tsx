@@ -27,6 +27,7 @@ import {
 } from '@/shared/components/ui/select'
 import { Separator } from '@/shared/components/ui/separator'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { invalidateMeeting, invalidateProject } from '@/shared/dal/client/invalidation'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -113,15 +114,8 @@ export function CreateProjectForm({
   const createMutation = useMutation(
     trpc.projectsRouter.createBusinessProject.mutationOptions({
       onSuccess: async (project) => {
-        await queryClient.invalidateQueries(
-          trpc.customerPipelinesRouter.getCustomerPipelineItems.queryFilter(),
-        )
-        await queryClient.invalidateQueries(
-          trpc.customerPipelinesRouter.getCustomerProfile.queryFilter(),
-        )
-        await queryClient.invalidateQueries(
-          trpc.meetingsRouter.getAll.queryFilter(),
-        )
+        invalidateProject(queryClient, project.id, customerId)
+        invalidateMeeting(queryClient, customerId)
         onSuccess?.(selectedProposalId, project.id)
       },
     }),

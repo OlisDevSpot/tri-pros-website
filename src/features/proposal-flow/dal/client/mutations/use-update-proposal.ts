@@ -1,4 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+
+import { invalidateProposal } from '@/shared/dal/client/invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 export function useUpdateProposal() {
@@ -7,8 +9,7 @@ export function useUpdateProposal() {
   const trpc = useTRPC()
   return useMutation(trpc.proposalsRouter.updateProposal.mutationOptions({
     onSuccess: (data) => {
-      queryClient.invalidateQueries(trpc.proposalsRouter.getProposal.queryOptions({ proposalId: data.id }))
-      queryClient.invalidateQueries(trpc.proposalsRouter.getProposals.queryOptions())
+      invalidateProposal(queryClient, data.id)
     },
   }))
 }
