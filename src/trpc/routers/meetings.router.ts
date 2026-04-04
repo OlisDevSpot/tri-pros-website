@@ -47,13 +47,19 @@ export const meetingsRouter = createTRPCRouter({
       meetingType: z.enum(meetingTypes),
       scheduledFor: z.string().optional(),
       flowStateJSON: meetingFlowStateSchema.optional(),
+      projectId: z.string().uuid().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { customerId, ...meetingData } = input
+      const { customerId, projectId, ...meetingData } = input
 
       const [created] = await db
         .insert(meetings)
-        .values({ ...meetingData, ownerId: ctx.session.user.id, customerId })
+        .values({
+          ...meetingData,
+          ownerId: ctx.session.user.id,
+          customerId,
+          ...(projectId ? { projectId } : {}),
+        })
         .returning()
 
       return created

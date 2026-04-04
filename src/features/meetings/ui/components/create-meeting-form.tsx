@@ -3,14 +3,22 @@
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { MeetingType } from '@/shared/types/enums/meetings'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { FolderOpenIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { MeetingScopesPicker } from '@/features/meetings/ui/components/meeting-scopes-picker'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
-import { meetingTypes } from '@/shared/constants/enums'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select'
+import { creatableMeetingTypes } from '@/shared/constants/enums/meetings'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -23,6 +31,7 @@ interface CreateMeetingFormProps {
     meetingType?: MeetingType
     scheduledFor?: Date
     tradeSelections?: TradeSelection[]
+    projectId?: string
   }
   onSuccess?: () => void
   onCancel?: () => void
@@ -41,6 +50,17 @@ export function CreateMeetingForm({
   const [meetingType, setMeetingType] = useState<MeetingType>(initialValues?.meetingType ?? 'Fresh')
   const [scheduledFor, setScheduledFor] = useState<Date | undefined>(initialValues?.scheduledFor)
   const [tradeSelections, setTradeSelections] = useState<TradeSelection[]>(initialValues?.tradeSelections ?? [])
+  const [projectId, setProjectId] = useState<string>(initialValues?.projectId ?? '')
+
+  const isProjectType = meetingType === 'Project'
+
+  // Fetch customer's projects when Project type is selected
+  const profileQuery = useQuery({
+    ...trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }),
+    enabled: isProjectType,
+  })
+
+  const customerProjects = profileQuery.data?.projects ?? []
 
   const createMutation = useMutation(
     trpc.meetingsRouter.create.mutationOptions({
@@ -48,6 +68,7 @@ export function CreateMeetingForm({
         setMeetingType('Fresh')
         setScheduledFor(undefined)
         setTradeSelections([])
+        setProjectId('')
         onSuccess?.()
       },
     }),
@@ -62,9 +83,10 @@ export function CreateMeetingForm({
   )
 
   const isPending = createMutation.isPending || updateMutation.isPending
+  const canSubmit = meetingType && (!isProjectType || projectId) && !isPending
 
   function handleSubmit() {
-    if (!meetingType) {
+    if (!canSubmit) {
       return
     }
 
@@ -86,6 +108,7 @@ export function CreateMeetingForm({
         flowStateJSON: tradeSelections.length > 0
           ? { tradeSelections }
           : undefined,
+        ...(isProjectType && projectId ? { projectId } : {}),
       })
     }
   }
@@ -100,11 +123,16 @@ export function CreateMeetingForm({
           <span className="text-destructive">*</span>
         </Label>
         <div className="flex flex-wrap gap-2">
-          {meetingTypes.map(t => (
+          {creatableMeetingTypes.map(t => (
             <button
               key={t}
               type="button"
-              onClick={() => setMeetingType(t)}
+              onClick={() => {
+                setMeetingType(t)
+                if (t !== 'Project') {
+                  setProjectId('')
+                }
+              }}
               className={cn(
                 'px-4 py-1.5 rounded-full text-sm font-medium border transition-colors',
                 meetingType === t
@@ -117,6 +145,42 @@ export function CreateMeetingForm({
           ))}
         </div>
       </div>
+
+      {/* Project Selection — only when type is Project */}
+      {isProjectType && (
+        <div className="space-y-2">
+          <Label>
+            Project
+            {' '}
+            <span className="text-destructive">*</span>
+          </Label>
+          {customerProjects.length > 0
+            ? (
+                <Select value={projectId} onValueChange={setProjectId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customerProjects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span className="flex items-center gap-2">
+                          <FolderOpenIcon size={14} className="text-green-600 dark:text-green-400" />
+                          {p.title}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
+            : profileQuery.isLoading
+              ? <p className="text-muted-foreground text-xs">Loading projects...</p>
+              : (
+                  <p className="text-muted-foreground text-xs">
+                    No projects found for this customer. Create a project first by approving a proposal.
+                  </p>
+                )}
+        </div>
+      )}
 
       {/* Date & Time */}
       <div className="space-y-2">
@@ -159,7 +223,7 @@ export function CreateMeetingForm({
         )}
         <Button
           className="flex-1"
-          disabled={!meetingType || isPending}
+          disabled={!canSubmit}
           onClick={handleSubmit}
         >
           {isPending

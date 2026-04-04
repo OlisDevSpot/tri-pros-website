@@ -1,5 +1,8 @@
 // Setup fields (DB-backed)
-export const meetingTypes = ['Fresh', 'Follow-up', 'Rehash'] as const
+export const meetingTypes = ['Fresh', 'Follow-up', 'Rehash', 'Project'] as const
+
+/** Meeting types shown in the create meeting form. Follow-up and Rehash are outcomes, not creation types. */
+export const creatableMeetingTypes = ['Fresh', 'Project'] as const
 export const meetingDecisionMakersPresentOptions = [
   'All present',
   'Partially present (only wife)',
