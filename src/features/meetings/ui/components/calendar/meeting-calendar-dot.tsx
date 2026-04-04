@@ -1,36 +1,19 @@
 'use client'
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
-import type { MeetingOutcome } from '@/shared/types/enums'
-
+import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entity-actions/types'
 import { format } from 'date-fns'
 
-import { MEETING_OUTCOME_COLORS } from '@/features/meetings/constants/status-colors'
+import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_DOT_COLORS, MEETING_OUTCOME_LABELS } from '@/features/meetings/constants/status-colors'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { isSelectAction } from '@/shared/components/entity-actions/types'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { cn } from '@/shared/lib/utils'
 import { useAbility } from '@/shared/permissions/hooks'
-
-const STATUS_DOT_COLORS: Record<MeetingOutcome, string> = {
-  not_set: 'bg-blue-500',
-  proposal_created: 'bg-emerald-500',
-  follow_up_needed: 'bg-amber-500',
-  not_interested: 'bg-red-500',
-  no_show: 'bg-zinc-500',
-}
-
-const STATUS_LABELS: Record<MeetingOutcome, string> = {
-  not_set: 'In Progress',
-  proposal_created: 'Proposal Created',
-  follow_up_needed: 'Follow-up Needed',
-  not_interested: 'Not Interested',
-  no_show: 'No Show',
-}
 
 interface MeetingCalendarDotProps {
   event: MeetingCalendarEvent
@@ -69,7 +52,7 @@ export function MeetingCalendarDot({
           <span
             className={cn(
               'h-1.5 w-1.5 shrink-0 rounded-full',
-              STATUS_DOT_COLORS[event.meetingOutcome],
+              MEETING_OUTCOME_DOT_COLORS[event.meetingOutcome],
             )}
           />
           <span className="text-muted-foreground shrink-0">{formattedTime}</span>
@@ -100,7 +83,7 @@ export function MeetingCalendarDot({
         {/* Status badge */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge className={cn('text-[10px] px-1.5 py-0 leading-4', MEETING_OUTCOME_COLORS[event.meetingOutcome])}>
-            {STATUS_LABELS[event.meetingOutcome]}
+            {MEETING_OUTCOME_LABELS[event.meetingOutcome] ?? event.meetingOutcome.replace(/_/g, ' ')}
           </Badge>
         </div>
 
@@ -116,28 +99,30 @@ export function MeetingCalendarDot({
           </div>
         )}
 
-        {/* Action buttons — CASL-gated */}
+        {/* Action buttons — CASL-gated, click actions only (select actions need sub-menus) */}
         {permittedActions.length > 0 && (
           <div className="flex flex-col gap-1 border-t pt-2">
-            {permittedActions.map(({ action, onAction, isLoading, isDisabled }) => {
-              const Icon = action.icon
-              return (
-                <Button
-                  key={action.id}
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'justify-start h-7 text-xs',
-                    action.destructive && 'text-destructive hover:text-destructive',
-                  )}
-                  disabled={isLoading || isDisabled}
-                  onClick={() => onAction(event)}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {action.label}
-                </Button>
-              )
-            })}
+            {permittedActions
+              .filter((c): c is EntityActionClickConfig<MeetingCalendarEvent> => !isSelectAction(c))
+              .map((config) => {
+                const Icon = config.action.icon
+                return (
+                  <Button
+                    key={config.action.id}
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      'justify-start h-7 text-xs',
+                      config.action.destructive && 'text-destructive hover:text-destructive',
+                    )}
+                    disabled={config.isLoading || config.isDisabled}
+                    onClick={() => config.onAction(event)}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {config.action.label}
+                  </Button>
+                )
+              })}
           </div>
         )}
       </PopoverContent>

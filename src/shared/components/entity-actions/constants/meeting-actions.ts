@@ -1,6 +1,6 @@
 import type { EntityAction } from '@/shared/components/entity-actions/types'
 
-import { CopyIcon, EyeIcon, FilePlusIcon, PencilIcon, PlayIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
+import { CircleDotIcon, CopyIcon, EyeIcon, FilePlusIcon, FolderOpenIcon, PlayIcon, TrashIcon, UserPlusIcon } from 'lucide-react'
 
 export const MEETING_ACTIONS = {
   view: {
@@ -16,10 +16,10 @@ export const MEETING_ACTIONS = {
     icon: PlayIcon,
     permission: ['update', 'Meeting'],
   },
-  edit: {
-    id: 'edit',
-    label: 'Edit Setup',
-    icon: PencilIcon,
+  assignProject: {
+    id: 'assignProject',
+    label: 'Assign to Project',
+    icon: FolderOpenIcon,
     permission: ['update', 'Meeting'],
   },
   duplicate: {
@@ -27,6 +27,12 @@ export const MEETING_ACTIONS = {
     label: 'Duplicate',
     icon: CopyIcon,
     permission: ['create', 'Meeting'],
+  },
+  setOutcome: {
+    id: 'setOutcome',
+    label: 'Set Outcome',
+    icon: CircleDotIcon,
+    permission: ['update', 'Meeting'],
   },
   createProposal: {
     id: 'createProposal',

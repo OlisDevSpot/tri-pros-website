@@ -35,10 +35,12 @@ export const meetingsStatConfig: StatBarItemConfig<MeetingRow>[] = [
     getValue: data => data.filter(m => m.meetingOutcome === 'follow_up_needed').length,
   },
   {
-    key: 'not_interested',
+    key: 'negative',
     label: 'Not Interested',
     icon: XCircleIcon,
     color: 'text-red-500',
-    getValue: data => data.filter(m => m.meetingOutcome === 'not_interested').length,
+    getValue: data => data.filter(m =>
+      ['not_good', 'pns', 'npns', 'ftd', 'no_show', 'lost_to_competitor', 'not_interested'].includes(m.meetingOutcome),
+    ).length,
   },
 ]

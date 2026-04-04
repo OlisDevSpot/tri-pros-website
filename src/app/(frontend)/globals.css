@@ -246,6 +246,19 @@
   }
 }
 
+/* ── Mobile bleed-right ─────────────────────────────────────────
+   Lets a horizontally-scrollable element extend into the
+   dashboard template's right padding on mobile, with matching
+   padding restored at the scroll-end.
+   Usage: add className="mobile-bleed-right" to the scrollable element.
+   ──────────────────────────────────────────────────────────────── */
+@utility mobile-bleed-right {
+  @media (max-width: 767px) {
+    margin-right: -1rem;
+    padding-right: 1rem;
+  }
+}
+
 @layer base {
   .tiptap {
     .ProseMirror {

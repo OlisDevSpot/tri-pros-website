@@ -147,7 +147,7 @@ export async function getActionQueue(userId: string, isOmni = false): Promise<Ac
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
       isOmni ? undefined : eq(meetings.ownerId, userId),
-      inArray(meetings.meetingOutcome, ['follow_up_needed', 'not_interested']),
+      inArray(meetings.meetingOutcome, ['follow_up_needed', 'not_good', 'pns', 'npns', 'ftd', 'no_show', 'lost_to_competitor', 'not_interested']),
     ))
     .orderBy(desc(meetings.createdAt))
 

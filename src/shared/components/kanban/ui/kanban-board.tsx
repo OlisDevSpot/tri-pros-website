@@ -16,6 +16,7 @@ import { useState } from 'react'
 
 import { KanbanColumn } from '@/shared/components/kanban/ui/kanban-column'
 import { KanbanDragOverlay } from '@/shared/components/kanban/ui/kanban-drag-overlay'
+import { cn } from '@/shared/lib/utils'
 
 interface Props<T extends KanbanItem = KanbanItem> {
   stageConfig: readonly KanbanStageConfig[]
@@ -29,6 +30,7 @@ interface Props<T extends KanbanItem = KanbanItem> {
   showColumnValues?: boolean
   getItemValue?: (item: T) => number | null
   renderCard: (item: T, href: string, isDragOverlay?: boolean) => React.ReactNode
+  className?: string
 }
 
 export function KanbanBoard<T extends KanbanItem>({
@@ -43,6 +45,7 @@ export function KanbanBoard<T extends KanbanItem>({
   showColumnValues,
   getItemValue,
   renderCard,
+  className,
 }: Props<T>) {
   const [activeItem, setActiveItem] = useState<T | null>(null)
 
@@ -102,7 +105,7 @@ export function KanbanBoard<T extends KanbanItem>({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-full gap-3 overflow-x-auto pb-2">
+      <div className={cn('flex h-full gap-3 overflow-x-auto pb-2', className)}>
         {stageConfig.map(stage => (
           <KanbanColumn
             key={stage.key}

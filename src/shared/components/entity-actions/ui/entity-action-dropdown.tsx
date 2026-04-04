@@ -1,8 +1,10 @@
 'use client'
 
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig, EntityActionSelectConfig } from '@/shared/components/entity-actions/types'
 
-import { MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
+import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
+
+import { isSelectAction } from '@/shared/components/entity-actions/types'
 
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -10,6 +12,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { cn } from '@/shared/lib/utils'
@@ -59,22 +64,34 @@ export function EntityActionDropdown<TEntity>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
-        {permitted.map(({ action, onAction, isLoading, isDisabled }) => (
-          <EntityActionDropdownItem
-            key={action.id}
-            action={action}
-            entity={entity}
-            onAction={onAction}
-            isLoading={isLoading}
-            isDisabled={isDisabled}
-          />
-        ))}
+        {permitted.map(config =>
+          isSelectAction(config)
+            ? (
+                <EntityActionSelectItem
+                  key={config.action.id}
+                  config={config}
+                  entity={entity}
+                />
+              )
+            : (
+                <EntityActionClickItem
+                  key={config.action.id}
+                  action={config.action}
+                  entity={entity}
+                  onAction={config.onAction}
+                  isLoading={config.isLoading}
+                  isDisabled={config.isDisabled}
+                />
+              ),
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
-interface ItemProps<TEntity> {
+// ── Click action item ────────────────────────────────────────────────────────
+
+interface ClickItemProps<TEntity> {
   action: EntityActionConfig<TEntity>['action']
   entity: TEntity
   onAction: (entity: TEntity) => void
@@ -82,13 +99,13 @@ interface ItemProps<TEntity> {
   isDisabled?: boolean
 }
 
-function EntityActionDropdownItem<TEntity>({
+function EntityActionClickItem<TEntity>({
   action,
   entity,
   onAction,
   isLoading,
   isDisabled,
-}: ItemProps<TEntity>) {
+}: ClickItemProps<TEntity>) {
   const Icon = action.icon
 
   return (
@@ -102,6 +119,54 @@ function EntityActionDropdownItem<TEntity>({
         <Icon className="h-3.5 w-3.5" />
         {action.label}
       </DropdownMenuItem>
+    </>
+  )
+}
+
+// ── Select (sub-menu) action item ────────────────────────────────────────────
+
+interface SelectItemProps<TEntity> {
+  config: EntityActionSelectConfig<TEntity>
+  entity: TEntity
+}
+
+function EntityActionSelectItem<TEntity>({
+  config,
+  entity,
+}: SelectItemProps<TEntity>) {
+  const { action, options, getCurrentValue, onSelect, isLoading, isDisabled } = config
+  const Icon = action.icon
+  const currentValue = getCurrentValue(entity)
+
+  return (
+    <>
+      {action.separatorBefore && <DropdownMenuSeparator />}
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger disabled={isLoading || isDisabled}>
+          <Icon className="h-3.5 w-3.5" />
+          {action.label}
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent>
+          {options.map(option => (
+            <DropdownMenuItem
+              key={option.value}
+              className={cn(option.value === currentValue && 'font-medium')}
+              onClick={() => onSelect(entity, option.value)}
+            >
+              <CheckIcon
+                className={cn(
+                  'h-3 w-3 shrink-0',
+                  option.value === currentValue ? 'opacity-100' : 'opacity-0',
+                )}
+              />
+              {option.color && (
+                <span className={cn('h-2 w-2 shrink-0 rounded-full', option.color)} />
+              )}
+              {option.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
     </>
   )
 }

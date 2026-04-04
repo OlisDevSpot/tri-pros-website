@@ -1,6 +1,6 @@
 import type { EntityAction } from '@/shared/components/entity-actions/types'
 
-import { ArrowRightLeftIcon, CalendarPlusIcon, EyeIcon, PencilIcon, TrashIcon } from 'lucide-react'
+import { CalendarPlusIcon, EyeIcon, PencilIcon, TrashIcon } from 'lucide-react'
 
 export const CUSTOMER_ACTIONS = {
   view: {
@@ -21,13 +21,6 @@ export const CUSTOMER_ACTIONS = {
     label: 'Schedule Meeting',
     icon: CalendarPlusIcon,
     permission: ['create', 'Meeting'],
-    separatorBefore: true,
-  },
-  moveToPipeline: {
-    id: 'moveToPipeline',
-    label: 'Move to Pipeline',
-    icon: ArrowRightLeftIcon,
-    permission: ['manage', 'CustomerPipeline'],
     separatorBefore: true,
   },
   delete: {

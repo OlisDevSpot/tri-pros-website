@@ -113,6 +113,69 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
   }, [])
 
+  // -- Mobile touch axis-lock ------------------------------------------------
+
+  const touchAxis = useRef<'x' | 'y' | null>(null)
+  const touchStart = useRef<{ x: number, y: number } | null>(null)
+  const scrollStart = useRef<{ left: number, top: number } | null>(null)
+  const AXIS_THRESHOLD = 8
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !isMobile) {
+      return
+    }
+
+    function onTouchStart(e: TouchEvent) {
+      const touch = e.touches[0]
+      if (!touch) {
+        return
+      }
+      touchAxis.current = null
+      touchStart.current = { x: touch.clientX, y: touch.clientY }
+      scrollStart.current = { left: el!.scrollLeft, top: el!.scrollTop }
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      const touch = e.touches[0]
+      if (!touch || !touchStart.current || !scrollStart.current) {
+        return
+      }
+
+      const dx = touch.clientX - touchStart.current.x
+      const dy = touch.clientY - touchStart.current.y
+
+      if (!touchAxis.current) {
+        if (Math.abs(dx) < AXIS_THRESHOLD && Math.abs(dy) < AXIS_THRESHOLD) {
+          return
+        }
+        touchAxis.current = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y'
+      }
+
+      if (touchAxis.current === 'x') {
+        el!.scrollTop = scrollStart.current.top
+      }
+      else {
+        el!.scrollLeft = scrollStart.current.left
+      }
+    }
+
+    function onTouchEnd() {
+      touchAxis.current = null
+      touchStart.current = null
+      scrollStart.current = null
+    }
+
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: true })
+    el.addEventListener('touchend', onTouchEnd, { passive: true })
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [isMobile])
+
   // -- Persist column sizes (debounced) -------------------------------------
 
   useEffect(() => {
@@ -278,7 +341,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           ref={scrollRef}
           onScroll={handleScroll}
           className={cn(
-            'grow min-h-0 overflow-auto',
+            'grow min-h-0 overflow-auto overscroll-none',
             '**:data-[slot=table-container]:overflow-visible',
             isAnyColumnResizing && 'cursor-col-resize select-none',
           )}

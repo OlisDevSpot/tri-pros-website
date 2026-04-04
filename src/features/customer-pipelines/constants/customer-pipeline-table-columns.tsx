@@ -1,12 +1,14 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 
 import { formatDistanceToNow } from 'date-fns'
 import { CalendarIcon, FileTextIcon } from 'lucide-react'
 
 import { activeStageConfig } from '@/features/customer-pipelines/constants/active-pipeline-stages'
-import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
+import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 
 export const STAGE_BADGE_COLORS: Record<string, string> = {
   meeting_scheduled: 'bg-blue-500/10 text-blue-600',
@@ -20,7 +22,7 @@ export const STAGE_BADGE_COLORS: Record<string, string> = {
 }
 
 export interface PipelineTableMeta {
-  onViewProfile: (customerId: string) => void
+  customerActions: (row: CustomerPipelineItem) => EntityActionConfig<CustomerPipelineItem>[]
 }
 
 export function getPipelineColumns(): ColumnDef<CustomerPipelineItem>[] {
@@ -30,12 +32,31 @@ export function getPipelineColumns(): ColumnDef<CustomerPipelineItem>[] {
       header: 'Customer',
       cell: ({ row, table }) => {
         const meta = table.options.meta as PipelineTableMeta | undefined
+
         return (
-          <CustomerNameCell
-            customerId={row.original.id}
-            customerName={row.original.name}
-            onViewProfile={meta?.onViewProfile}
-          />
+          <div className="flex items-center justify-between gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="min-w-0 space-y-0.5 max-w-55">
+                  <p className="font-medium leading-none truncate">{row.original.name}</p>
+                  {row.original.email && (
+                    <p className="text-xs text-muted-foreground truncate">{row.original.email}</p>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="start">
+                {row.original.name}
+              </TooltipContent>
+            </Tooltip>
+            {meta && (
+              <EntityActionMenu
+                entity={row.original}
+                actions={meta.customerActions(row.original)}
+                mode="compact"
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+              />
+            )}
+          </div>
         )
       },
     },

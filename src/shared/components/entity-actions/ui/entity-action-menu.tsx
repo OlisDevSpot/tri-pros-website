@@ -1,7 +1,8 @@
 'use client'
 
-import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entity-actions/types'
 
+import { isSelectAction } from '@/shared/components/entity-actions/types'
 import { EntityActionDropdown } from '@/shared/components/entity-actions/ui/entity-action-dropdown'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
@@ -47,8 +48,9 @@ export function EntityActionMenu<TEntity>({
     )
   }
 
-  // Bar mode: primary action as button + overflow dropdown for the rest
-  const primary = permitted.find(c => c.action.primary)
+  // Bar mode: primary action as button + overflow dropdown for the rest.
+  // Only click actions can be primary (select actions need a sub-menu).
+  const primary = permitted.find((c): c is EntityActionClickConfig<TEntity> => c.action.primary === true && !isSelectAction(c))
   const overflow = permitted.filter(c => c !== primary)
 
   const PrimaryIcon = primary?.action.icon
