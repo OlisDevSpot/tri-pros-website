@@ -76,7 +76,7 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
 
           {/* Proposals Section — compact */}
           {meeting.proposals.length > 0 && (
-            <div className="border-t px-3 pt-1.5 pb-2 space-y-1">
+            <div className="border-t px-3 pt-2 pb-2 space-y-1.5">
               <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                 <FileTextIcon className="size-3" />
                 <span>
