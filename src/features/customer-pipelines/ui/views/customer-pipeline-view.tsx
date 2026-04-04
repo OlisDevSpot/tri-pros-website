@@ -77,11 +77,10 @@ export function CustomerPipelineView() {
     }
 
     // Intercept: any leads stage → meeting_scheduled opens meeting modal
-    // Also update the lead's pipelineStage so the card moves visually
+    // Stage only updates AFTER meeting is successfully created (not on drag)
     if (pipeline === 'leads' && toStage === 'meeting_scheduled') {
       const item = pipelineQuery.data?.find(i => i.id === itemId)
       if (item) {
-        moveMutation.mutate({ customerId: itemId, fromStage, toStage, pipeline })
         setCreateMeetingForCustomer({ id: item.id, name: item.name })
       }
       return
@@ -229,7 +228,17 @@ export function CustomerPipelineView() {
         <CreateMeetingModal
           isOpen={!!createMeetingForCustomer}
           onClose={() => setCreateMeetingForCustomer(null)}
-          onSuccess={() => pipelineQuery.refetch()}
+          onSuccess={() => {
+            if (pipeline === 'leads') {
+              moveMutation.mutate({
+                customerId: createMeetingForCustomer.id,
+                fromStage: 'new',
+                toStage: 'meeting_scheduled',
+                pipeline: 'leads',
+              })
+            }
+            pipelineQuery.refetch()
+          }}
           customerId={createMeetingForCustomer.id}
           customerName={createMeetingForCustomer.name}
         />
