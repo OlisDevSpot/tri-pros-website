@@ -9,7 +9,7 @@ import {
   FileTextIcon,
   HammerIcon,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { EmailAction } from '@/shared/components/contact-actions/ui/email-action'
@@ -93,7 +93,7 @@ export function CreateProjectForm({
   const [descriptionAutoSet, setDescriptionAutoSet] = useState(false)
 
   // Auto-generate description when proposal changes
-  useMemo(() => {
+  useEffect(() => {
     if (selectedProposal && !descriptionAutoSet) {
       const autoDesc = buildDescriptionFromProposal(selectedProposal)
       if (autoDesc) {
@@ -104,7 +104,7 @@ export function CreateProjectForm({
   }, [selectedProposalId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-update title when customer data loads
-  useMemo(() => {
+  useEffect(() => {
     if (customer?.city && title === `${customerName} -`) {
       setTitle(`${customerName} - ${customer.city}`)
     }

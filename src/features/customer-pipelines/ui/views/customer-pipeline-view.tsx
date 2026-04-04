@@ -23,6 +23,7 @@ import { KanbanColumnFilter } from '@/shared/components/kanban/ui/kanban-column-
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { cn } from '@/shared/lib/utils'
@@ -31,7 +32,7 @@ import { usePipeline } from '@/shared/pipelines/hooks/pipeline-context'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
-  const [layout, setLayout] = usePersistedState<DataViewType>('tri-pros:pipeline-layout', 'kanban')
+  const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.PIPELINE_LAYOUT, 'kanban')
   const { pipeline, setPipeline } = usePipeline()
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
   const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[], currentRepId: string | null } | null>(null)

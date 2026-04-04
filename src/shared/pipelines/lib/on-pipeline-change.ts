@@ -1,13 +1,13 @@
 import type { Pipeline } from '@/shared/types/enums/pipelines'
 
-const STORAGE_KEY = 'tri-pros:active-pipeline'
+import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 
 /** localStorage keys that must reset when pipeline changes */
 const PIPELINE_SCOPED_KEYS = [
-  'tri-pros:meetings-scope',
-  'tri-pros:proposals-scope',
-  'tri-pros:meetings-filtered-count',
-  'tri-pros:proposals-filtered-count',
+  STORAGE_KEYS.MEETINGS_SCOPE,
+  STORAGE_KEYS.PROPOSALS_SCOPE,
+  STORAGE_KEYS.MEETINGS_FILTERED_COUNT,
+  STORAGE_KEYS.PROPOSALS_FILTERED_COUNT,
 ] as const
 
 /**
@@ -25,7 +25,7 @@ export function onPipelineChange(
 ) {
   // 1. Update active pipeline in localStorage
   try {
-    localStorage.setItem(STORAGE_KEY, next)
+    localStorage.setItem(STORAGE_KEYS.ACTIVE_PIPELINE, next)
 
     // 2. Reset pipeline-scoped state (scope toggles, filtered counts)
     for (const key of PIPELINE_SCOPED_KEYS) {

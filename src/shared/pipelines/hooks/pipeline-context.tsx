@@ -6,9 +6,8 @@ import { useParams } from 'next/navigation'
 import { createContext, useContext } from 'react'
 
 import { pipelines } from '@/shared/constants/enums/pipelines'
+import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { usePipelineChange } from '@/shared/pipelines/hooks/use-pipeline-change'
-
-const STORAGE_KEY = 'tri-pros:active-pipeline'
 
 interface PipelineContextValue {
   pipeline: Pipeline
@@ -56,7 +55,7 @@ export function usePipeline(): PipelineContextValue {
  */
 export function getStoredPipeline(): Pipeline {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = localStorage.getItem(STORAGE_KEYS.ACTIVE_PIPELINE)
     if (isValidPipeline(stored)) {
       return stored
     }

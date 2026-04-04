@@ -53,16 +53,18 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const [hydrated, setHydrated] = useState(false)
   const changePipeline = usePipelineChange()
 
-  // Sync sidebar badge from localStorage on mount + URL on pathname changes
+  // Hydrate once on mount from localStorage
+  useEffect(() => {
+    setActivePipeline(getStoredPipeline())
+    setHydrated(true)
+  }, [])
+
+  // Sync from URL when pathname changes to a pipeline route
   useEffect(() => {
     const match = pathname.match(/^\/dashboard\/pipeline\/(\w+)/)
     if (match && (pipelineValues as readonly string[]).includes(match[1])) {
       setActivePipeline(match[1] as Pipeline)
     }
-    else {
-      setActivePipeline(getStoredPipeline())
-    }
-    setHydrated(true)
   }, [pathname])
 
   const navConfig = useMemo(

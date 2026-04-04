@@ -188,9 +188,6 @@ export function CustomerKanbanCard({
               <div className="flex items-center gap-1.5 min-w-0">
                 <FolderOpenIcon size={14} className="shrink-0 text-green-600 dark:text-green-400" />
                 <span className="text-xs font-semibold truncate flex-1">{item.project.title}</span>
-                <Badge variant="outline" className="text-[9px] border-green-500/30 bg-green-500/10 text-green-700 dark:border-green-500/20 dark:text-green-300 shrink-0">
-                  {(item.project.pipelineStage ?? item.project.status).replace(/_/g, ' ')}
-                </Badge>
                 {!isDragOverlay && projectEntity && (
                   <EntityActionMenu
                     entity={projectEntity}
@@ -360,11 +357,7 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
           </span>
           {proposal.value != null && proposal.value > 0
             ? (
-                <span className={cn(
-                  'text-xs font-semibold flex items-center gap-0.5 ml-auto shrink-0',
-                  isApproved ? 'text-green-700 dark:text-green-400' : 'text-green-700 dark:text-green-400',
-                )}
-                >
+                <span className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-0.5 ml-auto shrink-0">
                   <DollarSignIcon size={12} />
                   {formatAsDollars(proposal.value)}
                 </span>

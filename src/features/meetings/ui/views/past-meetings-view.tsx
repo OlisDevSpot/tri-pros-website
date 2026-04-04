@@ -10,6 +10,7 @@ import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
 import { deriveMeetingPipeline } from '@/shared/pipelines/lib/derive-meeting-pipeline'
@@ -19,10 +20,10 @@ import { useTRPC } from '@/trpc/helpers'
 export function PastMeetingsView() {
   const trpc = useTRPC()
   const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
-  const [filteredCount, setFilteredCount] = usePersistedState<number | null>('tri-pros:meetings-filtered-count', null)
+  const [filteredCount, setFilteredCount] = usePersistedState<number | null>(STORAGE_KEYS.MEETINGS_FILTERED_COUNT, null)
   const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [setFilteredCount])
   const activePipeline = getStoredPipeline()
-  const [scope, setScope] = usePersistedState<PipelineScope>('tri-pros:meetings-scope', 'all')
+  const [scope, setScope] = usePersistedState<PipelineScope>(STORAGE_KEYS.MEETINGS_SCOPE, 'all')
 
   const scopedData = useMemo(() => {
     if (!meetings.data || scope === 'all') {

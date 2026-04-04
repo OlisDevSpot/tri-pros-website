@@ -9,6 +9,7 @@ import { PastProposalsTable } from '@/features/proposal-flow/ui/components/table
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
 import { deriveMeetingPipeline } from '@/shared/pipelines/lib/derive-meeting-pipeline'
@@ -16,10 +17,10 @@ import { PipelineScopeToggle } from '@/shared/pipelines/ui/pipeline-scope-toggle
 
 export function PastProposalsView() {
   const proposals = useGetProposals()
-  const [filteredCount, setFilteredCount] = usePersistedState<number | null>('tri-pros:proposals-filtered-count', null)
+  const [filteredCount, setFilteredCount] = usePersistedState<number | null>(STORAGE_KEYS.PROPOSALS_FILTERED_COUNT, null)
   const handleFilteredCountChange = useCallback((count: number) => setFilteredCount(count), [setFilteredCount])
   const activePipeline = getStoredPipeline()
-  const [scope, setScope] = usePersistedState<PipelineScope>('tri-pros:proposals-scope', 'all')
+  const [scope, setScope] = usePersistedState<PipelineScope>(STORAGE_KEYS.PROPOSALS_SCOPE, 'all')
 
   const scopedData = useMemo(() => {
     if (!proposals.data || scope === 'all') {

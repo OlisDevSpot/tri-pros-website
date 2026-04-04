@@ -30,6 +30,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
@@ -40,12 +41,12 @@ import { useTRPC } from '@/trpc/helpers'
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
 
 export function MeetingsView() {
-  const [layout, setLayout] = usePersistedState<DataViewType>('tri-pros:meetings-layout', 'calendar')
+  const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.MEETINGS_LAYOUT, 'calendar')
   const [dateRange, setDateRange] = useState<{ from: Date, to: Date } | null>(null)
   const [calendarView, setCalendarView] = useState<CalendarViewType>('week')
   const [showSaturday, setShowSaturday] = useState(false)
   const activePipeline = getStoredPipeline()
-  const [scope, setScope] = usePersistedState<PipelineScope>('tri-pros:meetings-scope', 'all')
+  const [scope, setScope] = usePersistedState<PipelineScope>(STORAGE_KEYS.MEETINGS_SCOPE, 'all')
 
   const handleToggleSaturday = useCallback(() => {
     setShowSaturday(prev => !prev)
