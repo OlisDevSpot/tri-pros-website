@@ -2,7 +2,6 @@
 
 import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
 import type { DataViewType } from '@/shared/components/data-view-type-toggle'
-import type { CustomerPipeline } from '@/shared/types/enums'
 
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -25,13 +24,15 @@ import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { cn } from '@/shared/lib/utils'
 import { useAbility } from '@/shared/permissions/hooks'
+import { usePipeline } from '@/shared/pipelines/hooks/pipeline-context'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
-  const [layout, setLayout] = useState<DataViewType>('kanban')
-  const [pipeline, setPipeline] = useState<CustomerPipeline>('active')
+  const [layout, setLayout] = usePersistedState<DataViewType>('tri-pros:pipeline-layout', 'kanban')
+  const { pipeline, setPipeline } = usePipeline()
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
   const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[], currentRepId: string | null } | null>(null)
   const trpc = useTRPC()
@@ -41,7 +42,7 @@ export function CustomerPipelineView() {
 
   const config = pipelineConfigs[pipeline]
 
-  const columnFilterConfig = pipeline === 'active'
+  const columnFilterConfig = pipeline === 'fresh'
     ? { defaultVisible: [...config.stages].filter(s => s !== 'declined') }
     : { defaultVisible: [...config.stages] }
 
@@ -63,22 +64,6 @@ export function CustomerPipelineView() {
       },
     }),
   )
-
-  const moveToPipelineMutation = useMutation(
-    trpc.customerPipelinesRouter.moveCustomerToPipeline.mutationOptions({
-      onSuccess: () => {
-        toast.success('Customer moved to pipeline')
-        pipelineQuery.refetch()
-      },
-      onError: () => {
-        toast.error('Failed to move customer between pipelines')
-      },
-    }),
-  )
-
-  const handleMoveToPipeline = useCallback((customerId: string, targetPipeline: CustomerPipeline) => {
-    moveToPipelineMutation.mutate({ customerId, pipeline: targetPipeline })
-  }, [moveToPipelineMutation])
 
   function handleMoveItem(itemId: string, fromStage: string, toStage: string) {
     // Intercept: needs_confirmation → meeting_scheduled opens modal instead
@@ -133,16 +118,13 @@ export function CustomerPipelineView() {
     (item: CustomerPipelineItem, _href: string, isDragOverlay?: boolean) => (
       <CustomerKanbanCard
         item={item}
-        currentPipeline={pipeline}
         isDragOverlay={isDragOverlay}
-        canManagePipeline={canManagePipeline}
         onViewProfile={handleViewProfile}
-        onMoveToPipeline={handleMoveToPipeline}
         onCreateMeeting={handleCreateMeeting}
         onAssignRep={handleAssignRep}
       />
     ),
-    [handleViewProfile, handleMoveToPipeline, handleCreateMeeting, handleAssignRep, pipeline, canManagePipeline],
+    [handleViewProfile, handleCreateMeeting, handleAssignRep],
   )
 
   const isInitialLoad = pipelineQuery.isLoading && !pipelineQuery.data
@@ -223,10 +205,11 @@ export function CustomerPipelineView() {
                   blockedMessages={config.blockedMessages}
                   onMoveItem={handleMoveItem}
                   onBlockedTransition={handleBlockedTransition}
-                  collapsedStages={pipeline === 'active' ? ['declined'] : []}
+                  collapsedStages={pipeline === 'fresh' ? ['declined'] : []}
                   showColumnValues
                   getItemValue={getItemValue}
                   renderCard={renderCard}
+                  className="mobile-bleed-right"
                 />
               )}
       </div>

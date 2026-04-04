@@ -1,9 +1,6 @@
-import { CustomerPipelineView } from '@/features/customer-pipelines/ui/views'
-import { protectDashboardPage } from '@/shared/permissions/lib/protect-dashboard-page'
+import { redirect } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
-
-export default async function PipelinesPage() {
-  await protectDashboardPage()
-  return <CustomerPipelineView />
+/** Redirect old /dashboard/pipelines to new route */
+export default function PipelinesRedirect() {
+  redirect('/dashboard/pipeline/fresh')
 }

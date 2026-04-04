@@ -18,7 +18,9 @@ const APP_ROOTS = {
   },
   dashboard: {
     root: '/dashboard',
-    pipelines: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/pipelines', options),
+    /** @deprecated Use dashboard.pipeline(pipelineKey) instead */
+    pipelines: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/pipeline/fresh', options),
+    pipeline: (pipeline: string = 'fresh', options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/pipeline/${pipeline}`, options),
     meetings: {
       root: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/meetings', options),
       byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/meetings/${id}`, options),

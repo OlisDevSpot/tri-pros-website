@@ -1,18 +1,18 @@
 'use client'
 
-import type { CustomerPipeline } from '@/shared/types/enums'
+import type { Pipeline } from '@/shared/types/enums/pipelines'
 
 import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 
 interface Props {
-  value: CustomerPipeline
-  onChange: (value: CustomerPipeline) => void
+  value: Pipeline
+  onChange: (value: Pipeline) => void
 }
 
 export function PipelineSelect({ value, onChange }: Props) {
   return (
-    <Select value={value} onValueChange={v => onChange(v as CustomerPipeline)}>
+    <Select value={value} onValueChange={v => onChange(v as Pipeline)}>
       <SelectTrigger className="w-35">
         <SelectValue />
       </SelectTrigger>

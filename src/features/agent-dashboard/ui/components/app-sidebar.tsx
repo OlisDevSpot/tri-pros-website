@@ -2,17 +2,19 @@
 
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import type { BetterAuthUser } from '@/shared/auth/server'
+import type { Pipeline } from '@/shared/types/enums/pipelines'
 
 import { ChevronLeftIcon, ChevronRightIcon, ZapIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { SIDEBAR_NAV_ACTIVE_STYLE } from '@/features/agent-dashboard/constants/sidebar-styles'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
+import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
 import { signOut } from '@/shared/auth/client'
 import { Button } from '@/shared/components/ui/button'
@@ -31,7 +33,9 @@ import {
   useSidebar,
 } from '@/shared/components/ui/sidebar'
 import { ROOTS } from '@/shared/config/roots'
+import { pipelines as pipelineValues } from '@/shared/constants/enums/pipelines'
 import { defineAbilitiesFor } from '@/shared/permissions/abilities'
+import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
 
 interface AppSidebarProps {
   user: BetterAuthUser
@@ -44,6 +48,16 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
   const isCollapsed = state === 'collapsed'
 
+  const [activePipeline, setActivePipeline] = useState<Pipeline>(() => getStoredPipeline())
+
+  // Sync sidebar badge from URL when pathname changes (e.g., direct navigation, back/forward)
+  useEffect(() => {
+    const match = pathname.match(/^\/dashboard\/pipeline\/(\w+)/)
+    if (match && (pipelineValues as readonly string[]).includes(match[1])) {
+      setActivePipeline(match[1] as Pipeline)
+    }
+  }, [pathname])
+
   const navConfig = useMemo(
     () => getSidebarNav(defineAbilitiesFor({ id: user.id, role: user.role })),
     [user.id, user.role],
@@ -52,6 +66,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
   function getIsActive(item: SidebarNavItem): boolean {
     if (item.href === ROOTS.dashboard.root) {
       return pathname === item.href
+    }
+    // Pipeline item: match any /dashboard/pipeline/* route
+    if (item.children) {
+      return pathname.startsWith('/dashboard/pipeline')
     }
     return pathname.startsWith(item.href)
   }
@@ -89,6 +107,29 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
+    )
+  }
+
+  function renderPipelineNavItem(item: SidebarNavItem) {
+    return (
+      <SidebarPipelineItem
+        key={item.href}
+        item={item}
+        isActive={getIsActive(item)}
+        activePipeline={activePipeline}
+        onPipelineChange={(p: Pipeline) => {
+          setActivePipeline(p)
+          router.push(ROOTS.dashboard.pipeline(p))
+          if (isMobile) {
+            setOpenMobile(false)
+          }
+        }}
+        onNavigate={() => {
+          if (isMobile) {
+            setOpenMobile(false)
+          }
+        }}
+      />
     )
   }
 
@@ -165,7 +206,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarGroupLabel>Main</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navConfig.baseItems.map(renderNavItem)}
+                {navConfig.baseItems.map(item =>
+                  item.children ? renderPipelineNavItem(item) : renderNavItem(item),
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

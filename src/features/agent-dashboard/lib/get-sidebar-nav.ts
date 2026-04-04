@@ -16,11 +16,18 @@ import {
 
 import { ROOTS } from '@/shared/config/roots'
 
+export interface SidebarNavSubItem {
+  key: string
+  label: string
+  href: string
+}
+
 export interface SidebarNavItem {
   href: string
   icon: LucideIcon
   label: string
   enabled: boolean
+  children?: readonly SidebarNavSubItem[]
 }
 
 export interface SidebarNavConfig {
@@ -31,11 +38,21 @@ export interface SidebarNavConfig {
 
 export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
   const baseItems: SidebarNavItem[] = [
-    { href: ROOTS.dashboard.root, icon: LayoutDashboardIcon, label: 'Dashboard', enabled: false },
-    { href: ROOTS.dashboard.pipelines(), icon: GitBranchIcon, label: 'Pipelines', enabled: ability.can('read', 'Customer') },
+    {
+      href: ROOTS.dashboard.pipeline(),
+      icon: GitBranchIcon,
+      label: 'Pipeline',
+      enabled: ability.can('read', 'Customer'),
+      children: [
+        { key: 'fresh', label: 'Fresh', href: ROOTS.dashboard.pipeline('fresh') },
+        { key: 'projects', label: 'Projects', href: ROOTS.dashboard.pipeline('projects') },
+        { key: 'rehash', label: 'Rehash', href: ROOTS.dashboard.pipeline('rehash') },
+        { key: 'dead', label: 'Dead', href: ROOTS.dashboard.pipeline('dead') },
+      ],
+    },
     { href: ROOTS.dashboard.meetings.root(), icon: CalendarIcon, label: 'Meetings', enabled: ability.can('read', 'Meeting') },
     { href: ROOTS.dashboard.proposals.root(), icon: FileTextIcon, label: 'Proposals', enabled: ability.can('read', 'Proposal') },
-    { href: ROOTS.dashboard.showroom.root(), icon: ImageIcon, label: 'Showroom', enabled: ability.can('read', 'Project') },
+    { href: ROOTS.dashboard.showroom.root(), icon: ImageIcon, label: 'Projects', enabled: ability.can('read', 'Project') },
   ]
 
   const adminItems: SidebarNavItem[] = ability.can('manage', 'all')
