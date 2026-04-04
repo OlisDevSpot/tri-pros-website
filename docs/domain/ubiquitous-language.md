@@ -92,27 +92,60 @@ Trade (discipline)
 
 | Term | Definition |
 |------|-----------|
-| **Entity View Context** | Any UI surface that renders one or more entities — regardless of presentation format (calendar, kanban, data table, card list, modal). Within a view context, entities appear inside containers and cards that show a snapshot of their data. View contexts can be nested: a customer kanban card is a customer view context that also contains meeting view contexts (each meeting card), and those meeting cards may contain proposal view contexts (proposal rows). Every entity rendered in a view context gets the standardized entity action menu (base actions gated by CASL + optional context-specific actions). |
+| **Entity View Context** | Any UI surface that renders one or more entities — regardless of presentation format (calendar, kanban, data table, card list, modal). View contexts nest following the ownership chain `Customer > Project > Meeting > Proposal`. Every entity in a view context gets the standardized entity action menu (base actions gated by CASL + optional context-specific actions). |
 | **Entity Action Config Hook** | A `use<Entity>ActionConfigs` React hook that is the **single source of truth** for an entity's available actions. Every view context for that entity calls this hook rather than building actions inline. The hook owns: action list from `*_ACTIONS` constants, mutations (duplicate, delete), `useConfirm` for destructive actions, and returns `{ actions, DeleteConfirmDialog }`. Context-specific handlers (onView, onEdit, onStart) are injected via the hook's `handlers` parameter. |
+
+### View Context Path Notation
+
+Use slash-separated paths to reference any view context unambiguously. Format: `Page/Container/Entity/NestedEntity`
+
+**Segments:**
+1. **Page** — `Pipeline`, `Meetings`, `Proposals`, `Projects`, `Profile`, `CreateMeeting`, `CreateProject`
+2. **Container** — `Kanban`, `Table`, `Calendar`, `Overview`, `Meetings` (tab), `Projects` (tab)
+3. **Entity** — `Customer`, `Meeting`, `Proposal`, `Project`
+4. **Pipeline qualifier** (optional) — `Pipeline[fresh]`, `Pipeline[projects]`, etc.
+
+**Examples:**
+
+| Path | What it refers to |
+|------|-------------------|
+| `Pipeline/Kanban/Customer` | Customer card in pipeline kanban |
+| `Pipeline[fresh]/Kanban/Customer/Meeting` | Meeting section inside a fresh pipeline kanban card |
+| `Pipeline[fresh]/Kanban/Customer/Meeting/Proposal` | Proposal row inside meeting section of a kanban card |
+| `Pipeline[projects]/Kanban/Customer/Project` | Project container in projects pipeline kanban card |
+| `Pipeline[projects]/Kanban/Customer/Project/Proposal` | Proposal row inside project container |
+| `Pipeline/Table/Customer` | Customer row in pipeline table view |
+| `Meetings/Calendar/Meeting` | Meeting card in calendar view |
+| `Meetings/Table/Meeting` | Meeting row in meetings data table |
+| `Proposals/Table/Proposal` | Proposal row in proposals data table |
+| `Projects/Table/Project` | Project row in projects/showroom table |
+| `Profile/Overview` | Overview tab of the customer profile modal |
+| `Profile/Meetings/Meeting` | Meeting card in the meetings tab |
+| `Profile/Projects/Project` | Project wrapper in the projects tab |
+| `Profile/Projects/Project/Meeting` | Meeting card nested inside a project card |
+| `Profile/Projects/Project/Meeting/Proposal` | Proposal row inside a project's meeting card |
+| `CreateMeeting` | Create meeting modal |
+| `CreateProject` | Create project modal |
 
 ### Entity View Context Map
 
-Follow the ownership chain `Customer → Meeting → Proposal` to find nested view contexts.
-
-| Entity | View Context | Location | Hook |
-|--------|-------------|----------|------|
-| **Customer** | Pipeline table | `customer-pipelines/ui/components/customer-pipeline-table.tsx` | `useCustomerActionConfigs` |
-| **Customer** | Pipeline kanban card | `customer-pipelines/ui/components/customer-kanban-card.tsx` | Manual (has sub-menu for pipeline moves) |
-| **Meeting** | Past meetings table | `meetings/ui/components/table/` | `useMeetingActionConfigs` |
-| **Meeting** | Calendar card (month/week) | `meetings/ui/components/calendar/meeting-calendar-card.tsx` | `useMeetingActionConfigs` (via parent) |
-| **Meeting** | Calendar dot (day) | `meetings/ui/components/calendar/meeting-calendar-dot.tsx` | `useMeetingActionConfigs` (via parent) |
-| **Meeting** | Profile modal meeting card | `customer-pipelines/ui/components/meeting-entity-card.tsx` | `useMeetingActionConfigs` |
-| **Meeting** | Kanban card meeting section | `customer-pipelines/ui/components/customer-kanban-card.tsx` | Manual (simplified) |
-| **Proposal** | Past proposals table | `proposal-flow/ui/components/table/` | `useProposalActionConfigs` |
-| **Proposal** | Profile modal proposals list | `customer-pipelines/ui/components/proposal-row.tsx` | `useProposalActionConfigs` |
-| **Proposal** | Meeting card proposal row | `customer-pipelines/ui/components/meeting-proposal-row.tsx` | `useProposalActionConfigs` |
-| **Proposal** | Kanban card proposal row | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
-| **Project** | Showroom table | `showroom/ui/components/table/` | `useProjectActionConfigs` |
+| Path | File | Hook |
+|------|------|------|
+| `Pipeline/Table/Customer` | `customer-pipelines/ui/components/customer-pipeline-table.tsx` | `useCustomerActionConfigs` |
+| `Pipeline/Kanban/Customer` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useCustomerActionConfigs` |
+| `Pipeline[fresh]/Kanban/Customer/Meeting` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useMeetingActionConfigs` |
+| `Pipeline[fresh]/Kanban/Customer/Meeting/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
+| `Pipeline[projects]/Kanban/Customer/Project` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProjectActionConfigs` |
+| `Pipeline[projects]/Kanban/Customer/Project/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
+| `Meetings/Calendar/Meeting` | `meetings/ui/components/calendar/meeting-calendar-card.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Calendar/Meeting` (dot) | `meetings/ui/components/calendar/meeting-calendar-dot.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Table/Meeting` | `meetings/ui/components/table/` | `useMeetingActionConfigs` |
+| `Proposals/Table/Proposal` | `proposal-flow/ui/components/table/` | `useProposalActionConfigs` |
+| `Projects/Table/Project` | `showroom/ui/components/table/` | `useProjectActionConfigs` |
+| `Profile/Meetings/Meeting` | `customer-pipelines/ui/components/meeting-entity-card.tsx` | `useMeetingActionConfigs` |
+| `Profile/Projects/Project` | `customer-pipelines/ui/components/project-entity-card.tsx` | `useProjectActionConfigs` |
+| `Profile/Projects/Project/Meeting` | `customer-pipelines/ui/components/meeting-entity-card.tsx` | `useMeetingActionConfigs` |
+| `Profile/Projects/Project/Meeting/Proposal` | `customer-pipelines/ui/components/meeting-proposal-row.tsx` | `useProposalActionConfigs` |
 
 ## JSONB Field Map
 
@@ -142,3 +175,4 @@ Follow the ownership chain `Customer → Meeting → Proposal` to find nested vi
 - **Project** is an active construction engagement, not just a portfolio item
 - **SFH** always uppercase. Full form: "Single Family Home"
 - **Entity View Context** not "entity card" or "entity display" — refers to the full UI surface + its nested entity containers, not a single component
+- **View Context Path** — use `Page/Container/Entity/Nested` notation to reference specific view contexts (e.g., `Profile/Projects/Project/Meeting/Proposal`)
