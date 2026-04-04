@@ -49,14 +49,17 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar()
   const isCollapsed = state === 'collapsed'
 
-  const [activePipeline, setActivePipeline] = useState<Pipeline>(() => getStoredPipeline())
+  const [activePipeline, setActivePipeline] = useState<Pipeline>('fresh')
   const changePipeline = usePipelineChange()
 
-  // Sync sidebar badge from URL when pathname changes (e.g., direct navigation, back/forward)
+  // Sync sidebar badge from localStorage on mount + URL on pathname changes
   useEffect(() => {
     const match = pathname.match(/^\/dashboard\/pipeline\/(\w+)/)
     if (match && (pipelineValues as readonly string[]).includes(match[1])) {
       setActivePipeline(match[1] as Pipeline)
+    }
+    else {
+      setActivePipeline(getStoredPipeline())
     }
   }, [pathname])
 

@@ -22,10 +22,10 @@ export const projectsStageConfig: readonly PipelineStageConfig<ProjectsPipelineS
 
 export const PROJECTS_ALLOWED_DRAG_TRANSITIONS: Record<ProjectsPipelineStage, readonly ProjectsPipelineStage[]> = {
   signed: ['permits_pending'],
-  permits_pending: ['in_progress'],
-  in_progress: ['punch_list'],
-  punch_list: ['completed'],
-  completed: [],
+  permits_pending: ['signed', 'in_progress'],
+  in_progress: ['permits_pending', 'punch_list'],
+  punch_list: ['in_progress', 'completed'],
+  completed: ['punch_list'],
 }
 
 export const PROJECTS_BLOCKED_MESSAGES: Record<string, string> = {
