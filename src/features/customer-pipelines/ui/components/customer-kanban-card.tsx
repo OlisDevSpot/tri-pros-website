@@ -6,6 +6,7 @@ import { useDraggable } from '@dnd-kit/core'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
   CalendarIcon,
+  CheckCircle2Icon,
   DollarSignIcon,
   FileTextIcon,
   FolderOpenIcon,
@@ -317,21 +318,34 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
     onEdit: handleEdit,
   })
 
+  const isApproved = proposal.status === 'approved'
+
   return (
     <>
       <DeleteConfirmDialog />
       <div
-        className="group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 hover:bg-background/50 transition-colors min-h-8"
+        className={cn(
+          'group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 transition-colors min-h-8',
+          isApproved
+            ? 'bg-green-500/8 hover:bg-green-500/12 dark:bg-green-500/10 dark:hover:bg-green-500/15'
+            : 'hover:bg-background/50',
+        )}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <FileTextIcon size={11} className="shrink-0 text-muted-foreground" />
-          <span className="text-[11px] text-muted-foreground truncate">
+          {isApproved
+            ? <CheckCircle2Icon size={11} className="shrink-0 text-green-600 dark:text-green-400" />
+            : <FileTextIcon size={11} className="shrink-0 text-muted-foreground" />}
+          <span className={cn('text-[11px] truncate', isApproved ? 'text-green-700 dark:text-green-400 font-medium' : 'text-muted-foreground')}>
             {format(new Date(proposal.createdAt), 'MMM d')}
           </span>
           {proposal.value != null && proposal.value > 0
             ? (
-                <span className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-0.5 ml-auto shrink-0">
+                <span className={cn(
+                  'text-xs font-semibold flex items-center gap-0.5 ml-auto shrink-0',
+                  isApproved ? 'text-green-700 dark:text-green-400' : 'text-green-700 dark:text-green-400',
+                )}
+                >
                   <DollarSignIcon size={12} />
                   {formatAsDollars(proposal.value)}
                 </span>

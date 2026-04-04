@@ -317,12 +317,12 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
 
   const meetingStatsMap = new Map(meetingStats.map(r => [r.customerId!, r]))
 
-  // Fetch proposal data for project-linked meetings
+  // Fetch proposal data for project-linked meetings (only approved proposals count toward value)
   const proposalStats = await db
     .select({
       customerId: meetings.customerId,
       proposalCount: count(proposals.id).as('proposal_count'),
-      totalValue: sql<number>`COALESCE(SUM(NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric), 0)`.as('total_value'),
+      totalValue: sql<number>`COALESCE(SUM(CASE WHEN ${proposals.status} = 'approved' THEN NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric ELSE 0 END), 0)`.as('total_value'),
     })
     .from(proposals)
     .innerJoin(meetings, and(
