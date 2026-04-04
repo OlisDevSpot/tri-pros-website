@@ -36,6 +36,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { pipelines as pipelineValues } from '@/shared/constants/enums/pipelines'
 import { defineAbilitiesFor } from '@/shared/permissions/abilities'
 import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
+import { usePipelineChange } from '@/shared/pipelines/hooks/use-pipeline-change'
 
 interface AppSidebarProps {
   user: BetterAuthUser
@@ -49,6 +50,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const isCollapsed = state === 'collapsed'
 
   const [activePipeline, setActivePipeline] = useState<Pipeline>(() => getStoredPipeline())
+  const changePipeline = usePipelineChange()
 
   // Sync sidebar badge from URL when pathname changes (e.g., direct navigation, back/forward)
   useEffect(() => {
@@ -119,7 +121,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         activePipeline={activePipeline}
         onPipelineChange={(p: Pipeline) => {
           setActivePipeline(p)
-          router.push(ROOTS.dashboard.pipeline(p))
+          changePipeline(p)
           if (isMobile) {
             setOpenMobile(false)
           }

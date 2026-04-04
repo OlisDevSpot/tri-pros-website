@@ -2,11 +2,11 @@
 
 import type { Pipeline } from '@/shared/types/enums/pipelines'
 
-import { useParams, useRouter } from 'next/navigation'
-import { createContext, useContext, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { createContext, useContext } from 'react'
 
-import { ROOTS } from '@/shared/config/roots'
 import { pipelines } from '@/shared/constants/enums/pipelines'
+import { usePipelineChange } from '@/shared/pipelines/hooks/use-pipeline-change'
 
 const STORAGE_KEY = 'tri-pros:active-pipeline'
 
@@ -26,31 +26,17 @@ function isValidPipeline(value: unknown): value is Pipeline {
 
 /**
  * Reads the active pipeline from the route param and provides it via context.
- * Persists the last-selected pipeline to localStorage for fallback.
+ * setPipeline uses the centralized onPipelineChange handler.
  * Mount this in the pipeline layout: `dashboard/pipeline/[pipeline]/layout.tsx`
  */
 export function PipelineProvider({ children }: { children: React.ReactNode }) {
   const params = useParams<{ pipeline: string }>()
-  const router = useRouter()
   const raw = params.pipeline
   const pipeline: Pipeline = isValidPipeline(raw) ? raw : 'fresh'
-
-  // Persist to localStorage whenever route changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, pipeline)
-    }
-    catch {
-      // SSR or storage unavailable
-    }
-  }, [pipeline])
-
-  function setPipeline(next: Pipeline) {
-    router.push(ROOTS.dashboard.pipeline(next))
-  }
+  const changePipeline = usePipelineChange()
 
   return (
-    <PipelineContext value={{ pipeline, setPipeline }}>
+    <PipelineContext value={{ pipeline, setPipeline: changePipeline }}>
       {children}
     </PipelineContext>
   )
