@@ -1,77 +1,29 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { inferRouterOutputs } from '@trpc/server'
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 import type { ProposalStatus } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { EyeIcon } from 'lucide-react'
 
 import { PROPOSAL_STATUS_COLORS } from '@/features/proposal-flow/constants/status-colors'
-import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { PROPOSAL_ACTIONS } from '@/shared/components/entity-actions/constants/proposal-actions'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
-import { ROOTS } from '@/shared/config/roots'
 import { proposalStatuses } from '@/shared/constants/enums'
-import { copyToClipboard } from '@/shared/lib/clipboard'
 import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
-type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['getProposals'][number]
+export type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['getProposals'][number]
 
 export interface ProposalTableMeta {
-  userRole: string | undefined
-  onDuplicate: (proposalId: string) => void
-  onDelete: (proposalId: string) => void
-  isDuplicating: boolean
-  isDeleting: boolean
+  proposalActions: (row: ProposalRow) => EntityActionConfig<ProposalRow>[]
   onUpdateCreatedAt: (proposalId: string, date: Date) => void
   onUpdateStatus: (proposalId: string, status: ProposalStatus) => void
   onViewProfile: (customerId: string) => void
-}
-
-function buildShareableUrl(proposalId: string, token: string | null, utmSource: 'email' | 'sms'): string {
-  const base = `${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${proposalId}`
-  const params = new URLSearchParams()
-  if (token) {
-    params.set('token', token)
-  }
-  params.set('utm_source', utmSource)
-  return `${base}?${params.toString()}`
-}
-
-function buildProposalActions(row: ProposalRow, meta: ProposalTableMeta) {
-  return [
-    {
-      action: PROPOSAL_ACTIONS.view,
-      onAction: () => window.open(`${ROOTS.public.proposals()}/proposal/${row.id}`, '_blank'),
-    },
-    {
-      action: PROPOSAL_ACTIONS.edit,
-      onAction: () => { window.location.href = ROOTS.dashboard.proposals.byId(row.id) },
-    },
-    {
-      action: PROPOSAL_ACTIONS.shareByEmail,
-      onAction: () => copyToClipboard(buildShareableUrl(row.id, row.token, 'email'), 'Proposal link (email)'),
-    },
-    {
-      action: PROPOSAL_ACTIONS.shareBySms,
-      onAction: () => copyToClipboard(buildShareableUrl(row.id, row.token, 'sms'), 'Proposal link (SMS)'),
-    },
-    {
-      action: PROPOSAL_ACTIONS.duplicate,
-      onAction: () => meta.onDuplicate(row.id),
-      isLoading: meta.isDuplicating,
-    },
-    {
-      action: PROPOSAL_ACTIONS.delete,
-      onAction: () => meta.onDelete(row.id),
-      isLoading: meta.isDeleting,
-    },
-  ]
 }
 
 export function getColumns(): ColumnDef<ProposalRow>[] {
@@ -100,7 +52,7 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
             {meta && (
               <EntityActionMenu
                 entity={row.original}
-                actions={buildProposalActions(row.original, meta)}
+                actions={meta.proposalActions(row.original)}
                 mode="compact"
                 className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               />
@@ -114,12 +66,23 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
       header: 'Customer',
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
+        const name = row.original.customerName
+        if (!name) {
+          return <span className="text-muted-foreground">—</span>
+        }
         return (
-          <CustomerNameCell
-            customerId={row.original.customerId}
-            customerName={row.original.customerName}
-            onViewProfile={meta?.onViewProfile}
-          />
+          <button
+            type="button"
+            className="text-sm text-blue-500 hover:underline cursor-pointer truncate max-w-40 block"
+            onClick={(e) => {
+              e.stopPropagation()
+              if (row.original.customerId) {
+                meta?.onViewProfile(row.original.customerId)
+              }
+            }}
+          >
+            {name}
+          </button>
         )
       },
     },

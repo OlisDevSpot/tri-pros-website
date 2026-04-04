@@ -1,23 +1,19 @@
+import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
-
 import { toast } from 'sonner'
 
 import { PROPOSAL_ACTIONS } from '@/shared/components/entity-actions/constants/proposal-actions'
 import { ROOTS } from '@/shared/config/roots'
+import { useConfirm } from '@/shared/hooks/use-confirm'
 import { copyToClipboard } from '@/shared/lib/clipboard'
 import { useTRPC } from '@/trpc/helpers'
 
 interface ProposalEntity {
   id: string
   token: string | null
-}
-
-interface ProposalActionHandlers<T extends ProposalEntity> {
-  onView: (entity: T) => void
-  onEdit: (entity: T) => void
-  onAssignOwner?: (entity: T) => void
 }
 
 function buildShareableUrl(proposalId: string, token: string | null, utmSource: 'email' | 'sms'): string {
@@ -30,11 +26,34 @@ function buildShareableUrl(proposalId: string, token: string | null, utmSource: 
   return `${base}?${params.toString()}`
 }
 
+interface ProposalActionOverrides<T extends ProposalEntity> {
+  onView?: (entity: T) => void
+  onEdit?: (entity: T) => void
+  onAssignOwner?: (entity: T) => void
+}
+
+interface ProposalActionConfigsResult<T extends ProposalEntity> {
+  actions: EntityActionConfig<T>[]
+  DeleteConfirmDialog: () => JSX.Element
+}
+
+function defaultView(entity: { id: string }) {
+  window.open(`${ROOTS.public.proposals()}/proposal/${entity.id}`, '_blank')
+}
+
+function defaultNavigate(entity: { id: string }) {
+  window.location.href = ROOTS.dashboard.proposals.byId(entity.id)
+}
+
 export function useProposalActionConfigs<T extends ProposalEntity>(
-  handlers: ProposalActionHandlers<T>,
-): EntityActionConfig<T>[] {
+  overrides: ProposalActionOverrides<T> = {},
+): ProposalActionConfigsResult<T> {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
+    title: 'Delete proposal',
+    message: 'This will permanently delete this proposal. This cannot be undone.',
+  })
 
   const invalidate = () => {
     void queryClient.invalidateQueries(trpc.proposalsRouter.getProposals.queryFilter())
@@ -61,50 +80,49 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
     }),
   )
 
-  return useMemo((): EntityActionConfig<T>[] => {
-    const configs: EntityActionConfig<T>[] = [
-      {
-        action: PROPOSAL_ACTIONS.view,
-        onAction: handlers.onView,
+  const actions = useMemo((): EntityActionConfig<T>[] => [
+    {
+      action: PROPOSAL_ACTIONS.view,
+      onAction: overrides.onView ?? defaultView,
+    },
+    {
+      action: PROPOSAL_ACTIONS.edit,
+      onAction: overrides.onEdit ?? defaultNavigate,
+    },
+    {
+      action: PROPOSAL_ACTIONS.shareByEmail,
+      onAction: (entity) => {
+        const url = buildShareableUrl(entity.id, entity.token, 'email')
+        copyToClipboard(url, 'Proposal link (email)')
       },
-      {
-        action: PROPOSAL_ACTIONS.edit,
-        onAction: handlers.onEdit,
+    },
+    {
+      action: PROPOSAL_ACTIONS.shareBySms,
+      onAction: (entity) => {
+        const url = buildShareableUrl(entity.id, entity.token, 'sms')
+        copyToClipboard(url, 'Proposal link (SMS)')
       },
-      {
-        action: PROPOSAL_ACTIONS.shareByEmail,
-        onAction: (entity) => {
-          const url = buildShareableUrl(entity.id, entity.token, 'email')
-          copyToClipboard(url, 'Proposal link (email)')
-        },
-      },
-      {
-        action: PROPOSAL_ACTIONS.shareBySms,
-        onAction: (entity) => {
-          const url = buildShareableUrl(entity.id, entity.token, 'sms')
-          copyToClipboard(url, 'Proposal link (SMS)')
-        },
-      },
-      {
-        action: PROPOSAL_ACTIONS.duplicate,
-        onAction: entity => duplicateProposal.mutate({ proposalId: entity.id }),
-        isLoading: duplicateProposal.isPending,
-      },
-    ]
-
-    if (handlers.onAssignOwner) {
-      configs.push({
-        action: PROPOSAL_ACTIONS.assignOwner,
-        onAction: handlers.onAssignOwner,
-      })
-    }
-
-    configs.push({
+    },
+    {
+      action: PROPOSAL_ACTIONS.duplicate,
+      onAction: entity => duplicateProposal.mutate({ proposalId: entity.id }),
+      isLoading: duplicateProposal.isPending,
+    },
+    {
+      action: PROPOSAL_ACTIONS.assignOwner,
+      onAction: overrides.onAssignOwner ?? defaultNavigate,
+    },
+    {
       action: PROPOSAL_ACTIONS.delete,
-      onAction: entity => deleteProposal.mutate({ proposalId: entity.id }),
+      onAction: async (entity) => {
+        const ok = await confirmDelete()
+        if (ok) {
+          deleteProposal.mutate({ proposalId: entity.id })
+        }
+      },
       isLoading: deleteProposal.isPending,
-    })
+    },
+  ], [overrides.onView, overrides.onEdit, overrides.onAssignOwner, duplicateProposal, deleteProposal, confirmDelete])
 
-    return configs
-  }, [handlers.onView, handlers.onEdit, handlers.onAssignOwner, duplicateProposal, deleteProposal])
+  return { actions, DeleteConfirmDialog }
 }

@@ -1,17 +1,20 @@
 'use client'
 
-import type { inferRouterOutputs } from '@trpc/server'
-import type { AppRouter } from '@/trpc/routers/app'
+import type { ProposalRow, ProposalTableMeta } from './columns'
+import type { ProposalStatus } from '@/shared/types/enums'
+
+import { useCallback, useState } from 'react'
 
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
+import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
 import { proposalTableFilters } from '@/features/proposal-flow/constants/table-filter-config'
+import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
 import { useProposalActions } from '@/features/proposal-flow/hooks/use-proposal-actions'
-import { useSession } from '@/shared/auth/client'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { ROOTS } from '@/shared/config/roots'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
-import { getColumns } from './columns'
 
-type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['getProposals'][number]
+import { getColumns } from './columns'
 
 const columns = getColumns()
 const defaultSort = [{ id: 'createdAt', desc: true }]
@@ -21,18 +24,60 @@ interface Props {
   onFilteredCountChange?: (count: number) => void
 }
 
-export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
-  const { deleteProposal, duplicateProposal, updateProposal } = useProposalActions()
-  const { data: session } = useSession()
-  const { open: openModal, setModal } = useModalStore()
+interface ProjectPrompt {
+  proposalId: string
+  customerId: string
+  customerName: string
+  meetingId: string
+}
 
-  const meta = {
-    userRole: session?.user?.role,
-    onDuplicate: (id: string) => duplicateProposal.mutate({ proposalId: id }),
-    onDelete: (id: string) => deleteProposal.mutate({ proposalId: id }),
-    isDuplicating: duplicateProposal.isPending,
-    isDeleting: deleteProposal.isPending,
-    onUpdateStatus: (id: string, status: string) => updateProposal.mutate({ proposalId: id, data: { status: status as 'draft' | 'sent' | 'approved' | 'declined' } }),
+export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
+  const { updateProposal } = useProposalActions()
+  const { open: openModal, setModal } = useModalStore()
+  const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
+
+  const handleView = useCallback((entity: ProposalRow) => {
+    window.open(`${ROOTS.public.proposals()}/proposal/${entity.id}`, '_blank')
+  }, [])
+
+  const handleEdit = useCallback((entity: ProposalRow) => {
+    window.location.href = ROOTS.dashboard.proposals.byId(entity.id)
+  }, [])
+
+  const { actions: sharedActions, DeleteConfirmDialog } = useProposalActionConfigs<ProposalRow>({
+    onView: handleView,
+    onEdit: handleEdit,
+  })
+
+  const handleStatusChange = useCallback((id: string, status: ProposalStatus) => {
+    // "Approved" requires project creation first — don't update status yet
+    if (status === 'approved') {
+      const row = data.find(p => p.id === id)
+      if (row?.meetingId && row.customerId) {
+        setProjectPrompt({
+          proposalId: id,
+          customerId: row.customerId,
+          customerName: row.customerName ?? 'Customer',
+          meetingId: row.meetingId,
+        })
+      }
+      return
+    }
+
+    updateProposal.mutate({ proposalId: id, data: { status } })
+  }, [data, updateProposal])
+
+  const handleProjectCreated = useCallback(() => {
+    if (projectPrompt) {
+      // Now that the project is created, update the proposal to approved
+      updateProposal.mutate({ proposalId: projectPrompt.proposalId, data: { status: 'approved' as ProposalStatus } })
+    }
+    setProjectPrompt(null)
+  }, [projectPrompt, updateProposal])
+
+  const meta: ProposalTableMeta = {
+    proposalActions: () => sharedActions,
+    onUpdateStatus: handleStatusChange,
     onUpdateCreatedAt: (id: string, date: Date) => updateProposal.mutate({ proposalId: id, data: { createdAt: date.toISOString() } }),
     onViewProfile: (customerId: string) => {
       setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
@@ -41,16 +86,29 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
   }
 
   return (
-    <DataTable
-      tableId="proposals"
-      data={data}
-      columns={columns}
-      meta={meta}
-      filterConfig={proposalTableFilters}
-      defaultSort={defaultSort}
-      entityName="proposal"
-      rowDataAttribute="data-proposal-row"
-      onFilteredCountChange={onFilteredCountChange}
-    />
+    <>
+      <DeleteConfirmDialog />
+      <DataTable
+        tableId="proposals"
+        data={data}
+        columns={columns}
+        meta={meta}
+        filterConfig={proposalTableFilters}
+        defaultSort={defaultSort}
+        entityName="proposal"
+        rowDataAttribute="data-proposal-row"
+        onFilteredCountChange={onFilteredCountChange}
+      />
+      {projectPrompt && (
+        <CreateProjectModal
+          isOpen
+          customerId={projectPrompt.customerId}
+          customerName={projectPrompt.customerName}
+          meetingId={projectPrompt.meetingId}
+          onSuccess={handleProjectCreated}
+          onClose={() => setProjectPrompt(null)}
+        />
+      )}
+    </>
   )
 }
