@@ -11,6 +11,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { computePipelineValue } from '@/shared/pipelines/lib/compute-pipeline-value'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {
   if (pipeline === 'leads') {
@@ -219,10 +220,11 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       }]),
   )
 
-  // Fetch individual proposals per customer for card display
+  // Fetch individual proposals per customer for card display + value calculation
   const proposalDetailRows = await db
     .select({
       customerId: meetings.customerId,
+      meetingId: proposals.meetingId,
       proposalId: proposals.id,
       token: proposals.token,
       status: proposals.status,
@@ -238,6 +240,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
     .orderBy(desc(proposals.createdAt))
 
   const proposalDetailMap = new Map<string, PipelineItemProposal[]>()
+  const proposalValueMap = new Map<string, Array<{ meetingId: string | null, status: string, value: number | null }>>()
   for (const r of proposalDetailRows) {
     if (!r.customerId) {
       continue
@@ -245,6 +248,10 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
     const arr = proposalDetailMap.get(r.customerId) ?? []
     arr.push({ id: r.proposalId, token: r.token, value: r.value ? Number(r.value) : null, status: r.status, createdAt: r.createdAt })
     proposalDetailMap.set(r.customerId, arr)
+
+    const valArr = proposalValueMap.get(r.customerId) ?? []
+    valArr.push({ meetingId: r.meetingId, status: r.status, value: r.value ? Number(r.value) : null })
+    proposalValueMap.set(r.customerId, valArr)
   }
 
   return rows.map((row): CustomerPipelineItem => {
@@ -293,7 +300,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       city: rawData.customerCity,
       state: row.customerState,
       zip: row.customerZip,
-      totalPipelineValue: rawData.totalPipelineValue,
+      totalPipelineValue: computePipelineValue(proposalValueMap.get(row.customerId) ?? []),
       meetingCount: rawData.meetingCount,
       proposalCount: rawData.proposalCount,
       latestActivityAt: rawData.latestActivityAt,

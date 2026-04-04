@@ -12,6 +12,8 @@ import {
   FolderOpenIcon,
   GripVerticalIcon,
   MapPinIcon,
+  SendIcon,
+  XCircleIcon,
 } from 'lucide-react'
 import { useCallback } from 'react'
 
@@ -334,7 +336,17 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
     onEdit: handleEdit,
   })
 
-  const isApproved = proposal.status === 'approved'
+  const status = proposal.status as 'draft' | 'sent' | 'approved' | 'declined'
+
+  const statusStyles = {
+    draft: { bg: 'hover:bg-background/50', icon: FileTextIcon, iconClass: 'text-muted-foreground', textClass: 'text-muted-foreground', valueClass: 'text-muted-foreground' },
+    sent: { bg: 'bg-amber-500/6 hover:bg-amber-500/10 dark:bg-amber-500/8 dark:hover:bg-amber-500/12', icon: SendIcon, iconClass: 'text-amber-600 dark:text-amber-400', textClass: 'text-amber-700 dark:text-amber-400 font-medium', valueClass: 'text-amber-700 dark:text-amber-400' },
+    approved: { bg: 'bg-green-500/8 hover:bg-green-500/12 dark:bg-green-500/10 dark:hover:bg-green-500/15', icon: CheckCircle2Icon, iconClass: 'text-green-600 dark:text-green-400', textClass: 'text-green-700 dark:text-green-400 font-medium', valueClass: 'text-green-700 dark:text-green-400' },
+    declined: { bg: 'bg-red-500/6 hover:bg-red-500/10 dark:bg-red-500/8 dark:hover:bg-red-500/12', icon: XCircleIcon, iconClass: 'text-red-500/70 dark:text-red-400/70', textClass: 'text-red-600/70 dark:text-red-400/70 line-through', valueClass: 'text-red-500/50 dark:text-red-400/50 line-through' },
+  }
+
+  const style = statusStyles[status] ?? statusStyles.draft
+  const StatusIcon = style.icon
 
   return (
     <>
@@ -342,22 +354,18 @@ function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
       <div
         className={cn(
           'group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 transition-colors min-h-8',
-          isApproved
-            ? 'bg-green-500/8 hover:bg-green-500/12 dark:bg-green-500/10 dark:hover:bg-green-500/15'
-            : 'hover:bg-background/50',
+          style.bg,
         )}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          {isApproved
-            ? <CheckCircle2Icon size={11} className="shrink-0 text-green-600 dark:text-green-400" />
-            : <FileTextIcon size={11} className="shrink-0 text-muted-foreground" />}
-          <span className={cn('text-[11px] truncate', isApproved ? 'text-green-700 dark:text-green-400 font-medium' : 'text-muted-foreground')}>
+          <StatusIcon size={11} className={cn('shrink-0', style.iconClass)} />
+          <span className={cn('text-[11px] truncate', style.textClass)}>
             {format(new Date(proposal.createdAt), 'MMM d')}
           </span>
           {proposal.value != null && proposal.value > 0
             ? (
-                <span className="text-xs font-semibold text-green-700 dark:text-green-400 flex items-center gap-0.5 ml-auto shrink-0">
+                <span className={cn('text-xs font-semibold flex items-center gap-0.5 ml-auto shrink-0', style.valueClass)}>
                   <DollarSignIcon size={12} />
                   {formatAsDollars(proposal.value)}
                 </span>
