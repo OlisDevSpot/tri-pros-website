@@ -39,6 +39,7 @@ export const projects = pgTable('projects', {
   ownerId: text('owner_id').references(() => user.id, { onDelete: 'cascade' }),
   status: projectStatusEnum('status').notNull().default('active'),
   pipelineStage: text('pipeline_stage'),
+  startedAt: timestamp('started_at', { mode: 'string', withTimezone: true }),
   createdAt,
   updatedAt,
 })

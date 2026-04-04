@@ -23,15 +23,23 @@ export interface PipelineItemProposal {
   createdAt: string
 }
 
+export interface PipelineItemProjectMeeting {
+  id: string
+  ownerId: string
+  ownerName: string
+  ownerImage: string | null
+  proposals: PipelineItemProposal[]
+}
+
 export interface PipelineItemProject {
   id: string
   title: string
   address: string | null
   status: ProjectStatus
   pipelineStage: string | null
-  meetingCount: number
-  proposalCount: number
+  startedAt: string | null
   totalValue: number
+  meetings: PipelineItemProjectMeeting[]
 }
 
 export interface CustomerPipelineItem {

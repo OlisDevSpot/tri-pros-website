@@ -329,6 +329,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
       projectAddress: projects.address,
       projectStatus: projects.status,
       projectPipelineStage: projects.pipelineStage,
+      projectStartedAt: projects.startedAt,
       projectCreatedAt: projects.createdAt,
       customerId: customers.id,
       customerName: customers.name,
@@ -361,53 +362,15 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
 
   const customerIds = Array.from(customerProjectMap.keys())
 
-  // Fetch meeting counts and proposal data for project-linked meetings
-  const meetingStats = await db
+  // Fetch meetings per project with owner info
+  const meetingRows = await db
     .select({
-      customerId: meetings.customerId,
-      meetingCount: count(meetings.id).as('meeting_count'),
-      latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
-    })
-    .from(meetings)
-    .where(and(
-      inArray(meetings.customerId, customerIds),
-      isNotNull(meetings.projectId),
-      isOmni ? undefined : eq(meetings.ownerId, userId),
-    ))
-    .groupBy(meetings.customerId)
-
-  const meetingStatsMap = new Map(meetingStats.map(r => [r.customerId!, r]))
-
-  // Fetch proposal data for project-linked meetings (only approved proposals count toward value)
-  const proposalStats = await db
-    .select({
-      customerId: meetings.customerId,
-      proposalCount: count(proposals.id).as('proposal_count'),
-      totalValue: sql<number>`COALESCE(SUM(CASE WHEN ${proposals.status} = 'approved' THEN NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric ELSE 0 END), 0)`.as('total_value'),
-    })
-    .from(proposals)
-    .innerJoin(meetings, and(
-      eq(meetings.id, proposals.meetingId),
-      isNotNull(meetings.projectId),
-    ))
-    .where(and(
-      inArray(meetings.customerId, customerIds),
-      isOmni ? undefined : eq(proposals.ownerId, userId),
-    ))
-    .groupBy(meetings.customerId)
-
-  const proposalStatsMap = new Map(proposalStats.map(r => [r.customerId!, r]))
-
-  // Fetch assigned rep per customer (from project-linked meetings)
-  const repRows = await db
-    .selectDistinctOn([meetings.customerId], {
       customerId: meetings.customerId,
       meetingId: meetings.id,
-      meetingScheduledFor: meetings.scheduledFor,
-      repId: user.id,
-      repName: user.name,
-      repEmail: user.email,
-      repImage: user.image,
+      projectId: meetings.projectId,
+      ownerId: user.id,
+      ownerName: user.name,
+      ownerImage: user.image,
     })
     .from(meetings)
     .innerJoin(user, eq(user.id, meetings.ownerId))
@@ -416,52 +379,74 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
       isNotNull(meetings.projectId),
       isOmni ? undefined : eq(meetings.ownerId, userId),
     ))
-    .orderBy(meetings.customerId, desc(meetings.scheduledFor))
+    .orderBy(desc(meetings.createdAt))
 
-  const repMap = new Map(
-    repRows
-      .filter(r => r.customerId !== null)
-      .map(r => [r.customerId!, {
-        meetingId: r.meetingId,
-        meetingScheduledFor: r.meetingScheduledFor,
-        rep: { id: r.repId, name: r.repName, email: r.repEmail, image: r.repImage } as PipelineItemRep,
-      }]),
-  )
+  // Fetch proposals per meeting
+  const meetingIds = meetingRows.map(m => m.meetingId)
+  const proposalRows = meetingIds.length > 0
+    ? await db
+        .select({
+          meetingId: proposals.meetingId,
+          proposalId: proposals.id,
+          token: proposals.token,
+          status: proposals.status,
+          createdAt: proposals.createdAt,
+          sentAt: proposals.sentAt,
+          value: sql<number | null>`NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric`.as('proposal_value'),
+        })
+        .from(proposals)
+        .where(inArray(proposals.meetingId, meetingIds))
+        .orderBy(desc(proposals.createdAt))
+    : []
 
-  // Fetch proposal details for cards
-  const proposalDetailRows = await db
-    .select({
-      customerId: meetings.customerId,
-      proposalId: proposals.id,
-      token: proposals.token,
-      status: proposals.status,
-      createdAt: proposals.createdAt,
-      value: sql<number | null>`NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric`.as('proposal_value'),
-    })
-    .from(proposals)
-    .innerJoin(meetings, and(
-      eq(meetings.id, proposals.meetingId),
-      isNotNull(meetings.projectId),
-    ))
-    .where(and(
-      inArray(meetings.customerId, customerIds),
-      isOmni ? undefined : eq(proposals.ownerId, userId),
-    ))
-    .orderBy(desc(proposals.createdAt))
-
-  const proposalDetailMap = new Map<string, PipelineItemProposal[]>()
-  for (const r of proposalDetailRows) {
-    if (!r.customerId) {
+  // Group proposals by meetingId
+  const proposalsByMeeting = new Map<string, PipelineItemProposal[]>()
+  const earliestSentByCustomer = new Map<string, string>()
+  for (const p of proposalRows) {
+    if (!p.meetingId) {
       continue
     }
-    const arr = proposalDetailMap.get(r.customerId) ?? []
-    arr.push({ id: r.proposalId, token: r.token, value: r.value ? Number(r.value) : null, status: r.status, createdAt: r.createdAt })
-    proposalDetailMap.set(r.customerId, arr)
+    const arr = proposalsByMeeting.get(p.meetingId) ?? []
+    arr.push({ id: p.proposalId, token: p.token, value: p.value ? Number(p.value) : null, status: p.status, createdAt: p.createdAt })
+    proposalsByMeeting.set(p.meetingId, arr)
+
+    // Track earliest sentAt for startedAt fallback
+    if (p.sentAt && p.status === 'approved') {
+      const meeting = meetingRows.find(m => m.meetingId === p.meetingId)
+      if (meeting?.customerId) {
+        const existing = earliestSentByCustomer.get(meeting.customerId)
+        if (!existing || p.sentAt < existing) {
+          earliestSentByCustomer.set(meeting.customerId, p.sentAt)
+        }
+      }
+    }
+  }
+
+  // Group meetings by customerId with their proposals
+  interface ProjectMeeting { id: string, ownerId: string, ownerName: string, ownerImage: string | null, proposals: PipelineItemProposal[] }
+  const meetingsByCustomer = new Map<string, ProjectMeeting[]>()
+  for (const m of meetingRows) {
+    if (!m.customerId) {
+      continue
+    }
+    const arr = meetingsByCustomer.get(m.customerId) ?? []
+    arr.push({
+      id: m.meetingId,
+      ownerId: m.ownerId,
+      ownerName: m.ownerName,
+      ownerImage: m.ownerImage,
+      proposals: proposalsByMeeting.get(m.meetingId) ?? [],
+    })
+    meetingsByCustomer.set(m.customerId, arr)
   }
 
   return Array.from(customerProjectMap.entries()).map(([customerId, row]): CustomerPipelineItem => {
-    const mStats = meetingStatsMap.get(customerId)
-    const pStats = proposalStatsMap.get(customerId)
+    const projectMeetings = meetingsByCustomer.get(customerId) ?? []
+    const allProposals = projectMeetings.flatMap(m => m.proposals)
+    const totalValue = computePipelineValue(
+      projectMeetings.flatMap(m => m.proposals.map(p => ({ meetingId: m.id, status: p.status, value: p.value }))),
+    )
+    const firstRep = projectMeetings[0]
 
     return {
       id: customerId,
@@ -474,24 +459,24 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
       city: row.customerCity,
       state: row.customerState,
       zip: row.customerZip,
-      totalPipelineValue: pStats?.totalValue ? Number(pStats.totalValue) : 0,
-      meetingCount: mStats?.meetingCount ?? 0,
-      proposalCount: pStats?.proposalCount ?? 0,
-      latestActivityAt: mStats?.latestMeetingAt ?? row.projectCreatedAt,
-      nextMeetingId: repMap.get(customerId)?.meetingId ?? null,
+      totalPipelineValue: totalValue,
+      meetingCount: projectMeetings.length,
+      proposalCount: allProposals.length,
+      latestActivityAt: row.projectCreatedAt,
+      nextMeetingId: firstRep?.id ?? null,
       nextMeetingAt: null,
-      meetingScheduledFor: repMap.get(customerId)?.meetingScheduledFor ?? null,
-      assignedRep: repMap.get(customerId)?.rep ?? null,
-      proposals: proposalDetailMap.get(customerId) ?? [],
+      meetingScheduledFor: null,
+      assignedRep: firstRep ? { id: firstRep.ownerId, name: firstRep.ownerName, email: '', image: firstRep.ownerImage } : null,
+      proposals: allProposals,
       project: {
         id: row.projectId,
         title: row.projectTitle,
         address: row.projectAddress,
         status: row.projectStatus,
         pipelineStage: row.projectPipelineStage,
-        meetingCount: mStats?.meetingCount ?? 0,
-        proposalCount: pStats?.proposalCount ?? 0,
-        totalValue: pStats?.totalValue ? Number(pStats.totalValue) : 0,
+        startedAt: row.projectStartedAt ?? earliestSentByCustomer.get(customerId) ?? null,
+        totalValue,
+        meetings: projectMeetings,
       },
     }
   })

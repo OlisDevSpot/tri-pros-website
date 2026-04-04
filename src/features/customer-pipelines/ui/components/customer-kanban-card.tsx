@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerPipelineItem, PipelineItemProposal } from '@/features/customer-pipelines/types'
+import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProposal } from '@/features/customer-pipelines/types'
 
 import { useDraggable } from '@dnd-kit/core'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -24,9 +24,12 @@ import { AddressAction } from '@/shared/components/contact-actions/ui/address-ac
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { RepProfileSnapshot } from '@/shared/components/rep-profile-snapshot'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { Separator } from '@/shared/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
@@ -184,7 +187,7 @@ export function CustomerKanbanCard({
           {/* ── Project context container (projects pipeline) ── */}
           {item.project && (
             <div className="rounded-md border border-green-500/20 bg-green-500/5 p-2.5 space-y-1.5 shadow-sm dark:border-green-500/15 dark:bg-green-500/8">
-              {/* Project title + status + project actions */}
+              {/* Project header: title + actions */}
               <div className="flex items-center gap-1.5 min-w-0">
                 <FolderOpenIcon size={14} className="shrink-0 text-green-600 dark:text-green-400" />
                 <span className="text-xs font-semibold truncate flex-1">{item.project.title}</span>
@@ -197,40 +200,25 @@ export function CustomerKanbanCard({
                 )}
               </div>
 
-              {/* Assigned rep */}
-              {item.assignedRep && (
-                <RepProfileSnapshot
-                  name={item.assignedRep.name}
-                  image={item.assignedRep.image}
-                  subtitle={item.assignedRep.email}
-                />
-              )}
-
-              {/* Project stats */}
-              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <CalendarIcon size={10} />
-                  {item.project.meetingCount}
-                  {' mtgs'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <FileTextIcon size={10} />
-                  {item.project.proposalCount}
-                  {' props'}
-                </span>
+              {/* Started date + total approved value */}
+              <div className="flex items-center gap-2 text-[11px]">
+                {item.project.startedAt && (
+                  <span className="text-muted-foreground">
+                    {format(new Date(item.project.startedAt), 'MMM d, yyyy')}
+                  </span>
+                )}
                 {item.project.totalValue > 0 && (
-                  <span className="flex items-center gap-0.5 text-green-700 dark:text-green-400 font-semibold">
-                    <DollarSignIcon size={10} />
+                  <span className="font-bold text-green-700 dark:text-green-400">
                     {formatAsDollars(item.project.totalValue)}
                   </span>
                 )}
               </div>
 
-              {/* Project proposals */}
-              {item.proposals.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  {item.proposals.map(p => (
-                    <KanbanProposalRow key={p.id} proposal={p} />
+              {/* Meetings separated by dividers, each with avatar + actions + proposals */}
+              {item.project.meetings.length > 0 && (
+                <div className="space-y-0">
+                  {item.project.meetings.map((mtg, idx) => (
+                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} isFirst={idx === 0} isDragOverlay={isDragOverlay} />
                   ))}
                 </div>
               )}
@@ -319,6 +307,59 @@ export function CustomerKanbanCard({
 }
 
 /* ── Sub-components ── */
+
+function KanbanProjectMeeting({ meeting, isFirst, isDragOverlay }: { meeting: PipelineItemProjectMeeting, isFirst: boolean, isDragOverlay?: boolean }) {
+  const handleView = useCallback(() => {
+    window.location.href = ROOTS.dashboard.meetings.byId(meeting.id)
+  }, [meeting.id])
+
+  const { actions: mtgActions, DeleteConfirmDialog: MtgDeleteDialog } = useMeetingActionConfigs({ onView: handleView })
+
+  const initials = meeting.ownerName
+    .split(' ')
+    .map(n => n.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+
+  return (
+    <>
+      <MtgDeleteDialog />
+      {!isFirst && <Separator className="my-1.5" />}
+      <div className="space-y-1">
+        {/* Meeting header: avatar + actions */}
+        <div className="flex items-center gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="shrink-0" onClick={e => e.stopPropagation()}>
+                <Avatar className="size-5">
+                  <AvatarImage src={meeting.ownerImage ?? undefined} alt={meeting.ownerName} />
+                  <AvatarFallback className="text-[8px] font-medium">{initials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {meeting.ownerName}
+            </TooltipContent>
+          </Tooltip>
+          <span className="text-[10px] text-muted-foreground flex-1 truncate">{meeting.ownerName}</span>
+          {!isDragOverlay && (
+            <EntityActionMenu entity={meeting} actions={mtgActions} mode="compact" className="opacity-60 hover:opacity-100 transition-opacity" />
+          )}
+        </div>
+
+        {/* Proposals */}
+        {meeting.proposals.length > 0 && (
+          <div className="flex flex-col gap-0.5">
+            {meeting.proposals.map(p => (
+              <KanbanProposalRow key={p.id} proposal={p} />
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
 
 function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
   const handleView = useCallback(() => {
