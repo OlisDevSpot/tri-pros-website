@@ -44,57 +44,46 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
       <DeleteConfirmDialog />
       <Card className={cn('group', isHighlighted && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
         <CardContent className="p-0">
-          {/* Meeting Header */}
-          <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Left: Info */}
-            <div className="space-y-1.5 min-w-0">
-              {/* Badges + Date */}
-              <div className="flex flex-wrap items-center gap-2">
-                {meeting.meetingType && (
-                  <Badge variant="secondary" className="text-xs font-medium">
-                    {meeting.meetingType}
-                  </Badge>
-                )}
-                <Badge variant="outline" className={MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome] ?? ''}>
-                  {MEETING_OUTCOME_LABELS[meeting.meetingOutcome] ?? meeting.meetingOutcome.replace(/_/g, ' ')}
+          {/* Meeting Header — compact */}
+          <div className="flex items-center gap-2 px-3 py-2">
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
+              {meeting.meetingType && (
+                <Badge variant="secondary" className="text-[10px] font-medium px-1.5 py-0">
+                  {meeting.meetingType}
                 </Badge>
-                {meeting.scheduledFor && (
-                  <span className="text-xs text-muted-foreground">
-                    {format(new Date(meeting.scheduledFor), 'MMM d, yyyy · h:mm a')}
-                  </span>
-                )}
-              </div>
-
-              {/* Created */}
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                <span>
-                  Created
-                  {' '}
-                  {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
+              )}
+              <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome] ?? '')}>
+                {MEETING_OUTCOME_LABELS[meeting.meetingOutcome] ?? meeting.meetingOutcome.replace(/_/g, ' ')}
+              </Badge>
+              {meeting.scheduledFor && (
+                <span className="text-[11px] text-muted-foreground">
+                  {format(new Date(meeting.scheduledFor), 'MMM d, yyyy · h:mm a')}
                 </span>
-              </div>
+              )}
+              <span className="text-[10px] text-muted-foreground/60">
+                {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
+              </span>
             </div>
 
-            {/* Right: Actions */}
+            {/* Actions — always visible, subtle hover effect */}
             <EntityActionMenu
               entity={meeting}
               actions={meetingActions}
-              mode="bar"
+              mode="compact"
+              className="opacity-60 hover:opacity-100 transition-opacity"
             />
           </div>
 
-          {/* Proposals Section */}
+          {/* Proposals Section — compact */}
           {meeting.proposals.length > 0 && (
-            <div className="border-t px-4 py-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <FileTextIcon className="h-3.5 w-3.5" />
+            <div className="border-t px-3 py-2 space-y-1">
+              <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                <FileTextIcon className="size-3" />
                 <span>
-                  Proposals (
-                  {meeting.proposals.length}
-                  )
+                  {`Proposals (${meeting.proposals.length})`}
                 </span>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-0.5">
                 {meeting.proposals.map(proposal => (
                   <MeetingProposalRow
                     key={proposal.id}
