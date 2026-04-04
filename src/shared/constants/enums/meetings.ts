@@ -73,12 +73,45 @@ export const meetingPipelineStages = [
 ] as const
 
 // Meeting outcomes (replaces meetingStatuses for the meeting flow)
+// Green = good (revenue), Yellow = neutral, Red = bad (lost), Grey = unknown
 export const meetingOutcomes = [
   'not_set',
   'proposal_created',
+  'proposal_sent',
+  'converted_to_project',
   'follow_up_needed',
-  'not_interested',
+  'not_good',
+  'pns',
+  'npns',
+  'ftd',
   'no_show',
+  'lost_to_competitor',
+  'not_interested', // deprecated — kept for DB backward compat, hidden from UI
+] as const
+
+/** Outcomes agents can manually select in dropdowns. */
+export const selectableMeetingOutcomes = [
+  'not_set',
+  'follow_up_needed',
+  'not_good',
+  'pns',
+  'npns',
+  'ftd',
+  'no_show',
+  'lost_to_competitor',
+] as const
+
+/** Derived outcomes — set automatically, visible but disabled in dropdowns. */
+export const derivedMeetingOutcomes = [
+  'proposal_created',
+  'proposal_sent',
+  'converted_to_project',
+] as const
+
+/** All outcomes shown in dropdowns (selectable + derived). Excludes deprecated. */
+export const visibleMeetingOutcomes = [
+  ...selectableMeetingOutcomes,
+  ...derivedMeetingOutcomes,
 ] as const
 
 // Agent observation enums (context panel)

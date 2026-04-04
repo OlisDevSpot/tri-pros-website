@@ -5,6 +5,7 @@ import type {
 } from '@/shared/entities/meetings/schemas'
 import { relations } from 'drizzle-orm'
 import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import {
   meetingContextSchema,
@@ -13,7 +14,8 @@ import {
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { customers } from './customers'
-import { meetingOutcomeEnum, meetingTypeEnum } from './meta'
+import { meetingOutcomeEnum, meetingPipelineEnum, meetingTypeEnum } from './meta'
+import { projects } from './projects'
 
 export const meetings = pgTable('meetings', {
   id,
@@ -21,6 +23,8 @@ export const meetings = pgTable('meetings', {
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
   meetingType: meetingTypeEnum('meeting_type').notNull().default('Fresh'),
   meetingOutcome: meetingOutcomeEnum('meeting_outcome').notNull().default('not_set'),
+  pipeline: meetingPipelineEnum('pipeline').notNull().default('fresh'),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
   scheduledFor: timestamp('scheduled_for', { mode: 'string', withTimezone: true }),
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),
@@ -37,6 +41,10 @@ export const meetingsRelations = relations(meetings, ({ one }) => ({
   customer: one(customers, {
     fields: [meetings.customerId],
     references: [customers.id],
+  }),
+  project: one(projects, {
+    fields: [meetings.projectId],
+    references: [projects.id],
   }),
 }))
 
