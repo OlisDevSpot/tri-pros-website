@@ -2,8 +2,9 @@
 
 import type { Pipeline } from '@/shared/types/enums/pipelines'
 
-import { PIPELINE_LABELS } from '@/features/customer-pipelines/constants/pipeline-labels'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { pipelines } from '@/shared/constants/enums/pipelines'
+import { PIPELINE_LABELS } from '@/shared/pipelines/constants/pipeline-registry'
 
 interface Props {
   value: Pipeline
@@ -17,8 +18,8 @@ export function PipelineSelect({ value, onChange }: Props) {
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {Object.entries(PIPELINE_LABELS).map(([key, label]) => (
-          <SelectItem key={key} value={key}>{label}</SelectItem>
+        {pipelines.map(key => (
+          <SelectItem key={key} value={key}>{PIPELINE_LABELS[key]}</SelectItem>
         ))}
       </SelectContent>
     </Select>

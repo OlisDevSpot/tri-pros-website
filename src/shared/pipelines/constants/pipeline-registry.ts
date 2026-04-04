@@ -7,10 +7,11 @@ import { leadsPipelineConfig } from './leads-pipeline'
 import { projectsPipelineConfig } from './projects-pipeline'
 import { rehashPipelineConfig } from './rehash-pipeline'
 
+/** Labels keyed by pipeline. Order comes from the `pipelines` const array, not this object. */
 export const PIPELINE_LABELS: Record<Pipeline, string> = {
-  leads: 'Leads',
-  fresh: 'Fresh',
   projects: 'Projects',
+  fresh: 'Fresh',
+  leads: 'Leads',
   rehash: 'Rehash',
   dead: 'Dead',
 }
