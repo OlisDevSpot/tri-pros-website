@@ -73,7 +73,7 @@ export function ProjectEntityCard({ project, onMutationSuccess, onNavigate, onAs
 
           {/* Meetings within this project */}
           {project.meetings.length > 0 && (
-            <div className="border-t px-3 pt-2.5 pb-3 space-y-2">
+            <div className="border-t px-3 pt-2.5 pb-3 space-y-3">
               <span className="text-xs font-medium text-muted-foreground">
                 {`Meetings (${project.meetings.length})`}
               </span>

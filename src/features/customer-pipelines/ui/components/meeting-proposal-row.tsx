@@ -2,7 +2,7 @@
 
 import type { CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
-import { DollarSignIcon, EyeIcon } from 'lucide-react'
+import { EyeIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { PROPOSAL_ROW_STYLES } from '@/features/customer-pipelines/constants/proposal-row-styles'
@@ -66,8 +66,7 @@ export function MeetingProposalRow({ proposal, onMutationSuccess: _onMutationSuc
         {/* Value + views + actions */}
         <div className="flex items-center gap-2.5 shrink-0">
           {proposal.value != null && proposal.value > 0 && (
-            <span className={cn('text-sm font-semibold flex items-center gap-0.5', style.valueClass)}>
-              <DollarSignIcon size={12} />
+            <span className={cn('text-sm font-semibold', style.valueClass)}>
               {formatAsDollars(proposal.value)}
             </span>
           )}
