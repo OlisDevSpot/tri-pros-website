@@ -92,13 +92,13 @@ export const meetingOutcomes = [
 /** Outcomes agents can manually select in dropdowns. */
 export const selectableMeetingOutcomes = [
   'not_set',
-  'follow_up_needed',
   'not_good',
   'pns',
   'npns',
   'ftd',
   'no_show',
   'lost_to_competitor',
+  'follow_up_needed',
 ] as const
 
 /** Derived outcomes — set automatically, visible but disabled in dropdowns. */
