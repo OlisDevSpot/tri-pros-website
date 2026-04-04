@@ -29,14 +29,14 @@ export function EditProjectView({ projectId }: Props) {
   const queryClient = useQueryClient()
   const router = useRouter()
 
-  const project = useQuery(trpc.showroomRouter.getProjectForEdit.queryOptions({ id: projectId }))
+  const project = useQuery(trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }))
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
     defaultValues: projectFormDefaults,
   })
 
-  const updateProject = useMutation(trpc.showroomRouter.updateProject.mutationOptions())
+  const updateProject = useMutation(trpc.projectsRouter.updateProject.mutationOptions())
 
   const initialValues = useMemo(() => {
     if (!project.data) {
@@ -95,8 +95,8 @@ export function EditProjectView({ projectId }: Props) {
     updateProject.mutate({ id: projectId, data }, {
       onSuccess: () => {
         toast.success('Project updated')
-        queryClient.invalidateQueries(trpc.showroomRouter.getProjectForEdit.queryOptions({ id: projectId }))
-        queryClient.invalidateQueries(trpc.showroomRouter.getAllProjects.queryOptions())
+        queryClient.invalidateQueries(trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }))
+        queryClient.invalidateQueries(trpc.projectsRouter.getAllPortfolioProjects.queryOptions())
       },
       onError: (error) => {
         toast.error(error.message)
@@ -105,7 +105,7 @@ export function EditProjectView({ projectId }: Props) {
   }
 
   function handleMediaUpdate() {
-    queryClient.invalidateQueries(trpc.showroomRouter.getProjectForEdit.queryOptions({ id: projectId }))
+    queryClient.invalidateQueries(trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }))
   }
 
   return (

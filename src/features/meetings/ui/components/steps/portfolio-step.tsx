@@ -25,7 +25,7 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
 
   // Fetch all portfolio data (same queries as the public portfolio page)
   const { data: allProjects = [], isLoading: projectsLoading } = useQuery(
-    trpc.showroomRouter.getProjects.queryOptions(),
+    trpc.projectsRouter.getPortfolioProjects.queryOptions(),
   )
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())

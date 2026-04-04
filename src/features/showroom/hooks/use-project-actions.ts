@@ -5,9 +5,9 @@ import { useTRPC } from '@/trpc/helpers'
 export function useProjectActions() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const invalidate = () => queryClient.invalidateQueries(trpc.showroomRouter.getAllProjects.queryOptions())
+  const invalidate = () => queryClient.invalidateQueries(trpc.projectsRouter.getAllPortfolioProjects.queryOptions())
 
-  const deleteProject = useMutation(trpc.showroomRouter.deleteProject.mutationOptions({
+  const deleteProject = useMutation(trpc.projectsRouter.deleteProject.mutationOptions({
     onSuccess: () => {
       invalidate()
       toast.success('Project deleted')

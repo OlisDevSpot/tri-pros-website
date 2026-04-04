@@ -48,7 +48,7 @@ interface Props {
 export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const editQueryOptions = trpc.showroomRouter.getProjectForEdit.queryOptions({ id: projectId })
+  const editQueryOptions = trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId })
   const { upload, isUploading } = useMediaUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentAccessTokenRef = useRef<string | null>(null)
@@ -71,7 +71,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const deleteMutation = useMutation(
-    trpc.showroomRouter.deleteMediaFile.mutationOptions({
+    trpc.projectsRouter.deleteMediaFile.mutationOptions({
       onSuccess: () => {
         onUpdate()
         toast.success('File deleted')
@@ -81,7 +81,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const bulkDeleteMutation = useMutation(
-    trpc.showroomRouter.bulkDeleteMediaFiles.mutationOptions({
+    trpc.projectsRouter.bulkDeleteMediaFiles.mutationOptions({
       onSuccess: () => {
         onUpdate()
         setSelectedIds(new Set())
@@ -92,7 +92,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const reorderMutation = useMutation(
-    trpc.showroomRouter.reorderMediaFiles.mutationOptions({
+    trpc.projectsRouter.reorderMediaFiles.mutationOptions({
       onMutate: async ({ updates }) => {
         await queryClient.cancelQueries(editQueryOptions)
         const previous = queryClient.getQueryData(editQueryOptions.queryKey)
@@ -125,7 +125,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const toggleHeroMutation = useMutation(
-    trpc.showroomRouter.toggleHeroImage.mutationOptions({
+    trpc.projectsRouter.toggleHeroImage.mutationOptions({
       onSuccess: () => {
         onUpdate()
         toast.success('Hero image updated')
@@ -135,7 +135,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const movePhaseMutation = useMutation(
-    trpc.showroomRouter.moveMediaPhase.mutationOptions({
+    trpc.projectsRouter.moveMediaPhase.mutationOptions({
       onSuccess: () => {
         onUpdate()
         setSelectedIds(new Set())
@@ -146,11 +146,11 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const { refetch: fetchAccessToken } = useQuery({
-    ...trpc.showroomRouter.getGoogleAccessToken.queryOptions(),
+    ...trpc.projectsRouter.getGoogleAccessToken.queryOptions(),
     enabled: false,
   })
 
-  const uploadFromDriveMutation = useMutation(trpc.showroomRouter.uploadFromDriveFile.mutationOptions())
+  const uploadFromDriveMutation = useMutation(trpc.projectsRouter.uploadFromDriveFile.mutationOptions())
 
   const { isLoading: isPickerLoading, openPicker } = useGooglePicker({
     onFilesPicked: async (files) => {

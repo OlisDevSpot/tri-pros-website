@@ -22,7 +22,7 @@ import { useTRPC } from '@/trpc/helpers'
 export function PortfolioProjectsView() {
   const trpc = useTRPC()
   const router = useRouter()
-  const projects = useQuery(trpc.showroomRouter.getAllProjects.queryOptions())
+  const projects = useQuery(trpc.projectsRouter.getAllPortfolioProjects.queryOptions())
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const [filteredCount, setFilteredCount] = useState<number | null>(null)

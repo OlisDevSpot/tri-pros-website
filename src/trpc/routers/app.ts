@@ -10,8 +10,8 @@ import { intakeRouter } from './intake.router'
 import { landingRouter } from './landing.router'
 import { meetingsRouter } from './meetings.router'
 import { notionRouter } from './notion.router'
+import { projectsRouter } from './projects.router'
 import { proposalsRouter } from './proposals.router'
-import { showroomRouter } from './showroom.router'
 
 export const appRouter = createTRPCRouter({
   healthcheck: baseProcedure.query(() => 'ok'),
@@ -26,7 +26,7 @@ export const appRouter = createTRPCRouter({
   notionRouter,
   customerPipelinesRouter,
   proposalsRouter,
-  showroomRouter,
+  projectsRouter,
 })
 
 export type AppRouter = typeof appRouter

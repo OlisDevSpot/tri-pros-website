@@ -1,13 +1,14 @@
 'use client'
 
-import type { ProjectRow } from './columns'
+import type { ProjectRow, ProjectTableMeta } from './columns'
 import type { DataTableFilterConfig, DataTableMultiSelectFilter } from '@/shared/components/data-table/types'
 
 import { useMemo } from 'react'
+
 import { portfolioTableFilters } from '@/features/showroom/constants/table-filter-config'
-import { useProjectActions } from '@/features/showroom/hooks/use-project-actions'
+import { useProjectActionConfigs } from '@/features/showroom/hooks/use-project-action-configs'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { useConfirm } from '@/shared/hooks/use-confirm'
+
 import { getColumns } from './columns'
 
 const defaultSort = [{ id: 'createdAt', desc: true }]
@@ -20,20 +21,10 @@ interface Props {
 }
 
 export function PortfolioProjectsTable({ data, tradeFilter, onFilteredCountChange, onRowClick }: Props) {
-  const { deleteProject } = useProjectActions()
-  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
-    title: 'Delete project',
-    message: 'This will permanently delete this project and all its media. This cannot be undone.',
-  })
+  const { actions: sharedActions, DeleteConfirmDialog } = useProjectActionConfigs<ProjectRow>()
 
-  const meta = {
-    onDelete: async (id: string) => {
-      const ok = await confirmDelete()
-      if (ok) {
-        deleteProject.mutate({ id })
-      }
-    },
-    isDeleting: deleteProject.isPending,
+  const meta: ProjectTableMeta = {
+    projectActions: () => sharedActions,
   }
 
   const columns = useMemo(() => getColumns(), [])

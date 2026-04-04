@@ -19,8 +19,8 @@ export function useMediaUpload() {
   const trpc = useTRPC()
   const [isUploading, setIsUploading] = useState(false)
 
-  const getUploadUrl = useMutation(trpc.showroomRouter.getUploadUrl.mutationOptions())
-  const createMediaFile = useMutation(trpc.showroomRouter.createMediaFile.mutationOptions())
+  const getUploadUrl = useMutation(trpc.projectsRouter.getUploadUrl.mutationOptions())
+  const createMediaFile = useMutation(trpc.projectsRouter.createMediaFile.mutationOptions())
 
   async function upload({ file, projectId, phase, meta }: UploadInput) {
     setIsUploading(true)
