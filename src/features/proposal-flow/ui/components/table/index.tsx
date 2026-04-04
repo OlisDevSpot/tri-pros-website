@@ -4,6 +4,7 @@ import type { ProposalRow, ProposalTableMeta } from './columns'
 import type { ProposalStatus } from '@/shared/types/enums'
 
 import { useCallback, useState } from 'react'
+import { toast } from 'sonner'
 
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
@@ -50,30 +51,52 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
   })
 
   const handleStatusChange = useCallback((id: string, status: ProposalStatus) => {
-    // "Approved" requires project creation first — don't update status yet
     if (status === 'approved') {
       const row = data.find(p => p.id === id)
-      if (row?.meetingId && row.customerId) {
-        setProjectPrompt({
-          proposalId: id,
-          customerId: row.customerId,
-          customerName: row.customerName ?? 'Customer',
-          meetingId: row.meetingId,
-        })
+      if (!row?.meetingId || !row.customerId) {
+        return
       }
+
+      // If the meeting already has a project, just approve — no new project needed
+      if (row.meetingProjectId) {
+        updateProposal.mutate({
+          proposalId: id,
+          data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() },
+        })
+        return
+      }
+
+      // No project yet — open the create project modal
+      setProjectPrompt({
+        proposalId: id,
+        customerId: row.customerId,
+        customerName: row.customerName ?? 'Customer',
+        meetingId: row.meetingId,
+      })
       return
     }
 
     updateProposal.mutate({ proposalId: id, data: { status } })
   }, [data, updateProposal])
 
-  const handleProjectCreated = useCallback((selectedProposalId: string) => {
-    // Update the proposal: set status to approved + record the approval timestamp
+  const handleProjectCreated = useCallback((selectedProposalId: string, projectId?: string) => {
     updateProposal.mutate({
       proposalId: selectedProposalId,
       data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() },
     })
     setProjectPrompt(null)
+
+    if (projectId) {
+      toast.success('Project created', {
+        description: 'Proposal approved and project is ready.',
+        action: {
+          label: 'View Project',
+          onClick: () => {
+            window.location.href = ROOTS.dashboard.showroom.byId(projectId)
+          },
+        },
+      })
+    }
   }, [updateProposal])
 
   const meta: ProposalTableMeta = {

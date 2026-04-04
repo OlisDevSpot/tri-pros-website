@@ -7,8 +7,8 @@ import { CreateProjectForm } from './create-project-form'
 interface CreateProjectModalProps {
   isOpen: boolean
   onClose: () => void
-  /** Called with the proposalId that should be set to 'approved' after project creation. */
-  onSuccess?: (selectedProposalId: string) => void
+  /** Called with the proposalId and projectId after successful creation. */
+  onSuccess?: (selectedProposalId: string, projectId: string) => void
   customerId: string
   customerName: string
   /** The proposal that triggered the modal (default selection). */
@@ -25,8 +25,8 @@ export function CreateProjectModal({
   onSuccess,
   proposalId,
 }: CreateProjectModalProps) {
-  function handleSuccess(selectedProposalId: string) {
-    onSuccess?.(selectedProposalId)
+  function handleSuccess(selectedProposalId: string, projectId: string) {
+    onSuccess?.(selectedProposalId, projectId)
     onClose()
   }
 

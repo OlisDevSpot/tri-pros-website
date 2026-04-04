@@ -36,8 +36,8 @@ interface CreateProjectFormProps {
   /** The proposal that triggered this modal (status changed to approved). */
   proposalId: string
   meetingId?: string
-  /** Called with the proposalId that was selected at submission time (may differ from initial). */
-  onSuccess?: (selectedProposalId: string) => void
+  /** Called with the proposalId and projectId after successful creation. */
+  onSuccess?: (selectedProposalId: string, projectId: string) => void
   onCancel?: () => void
 }
 
@@ -112,7 +112,7 @@ export function CreateProjectForm({
 
   const createMutation = useMutation(
     trpc.projectsRouter.createBusinessProject.mutationOptions({
-      onSuccess: async () => {
+      onSuccess: async (project) => {
         await queryClient.invalidateQueries(
           trpc.customerPipelinesRouter.getCustomerPipelineItems.queryFilter(),
         )
@@ -122,7 +122,7 @@ export function CreateProjectForm({
         await queryClient.invalidateQueries(
           trpc.meetingsRouter.getAll.queryFilter(),
         )
-        onSuccess?.(selectedProposalId)
+        onSuccess?.(selectedProposalId, project.id)
       },
     }),
   )
