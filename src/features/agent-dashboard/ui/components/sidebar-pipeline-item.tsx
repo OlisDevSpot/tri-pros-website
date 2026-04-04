@@ -18,7 +18,6 @@ import {
   SidebarMenuItem,
 } from '@/shared/components/ui/sidebar'
 import { ROOTS } from '@/shared/config/roots'
-import { pipelines } from '@/shared/constants/enums/pipelines'
 import { PIPELINE_LABELS } from '@/shared/pipelines/constants/pipeline-registry'
 
 interface SidebarPipelineItemProps {
@@ -101,24 +100,24 @@ export function SidebarPipelineItem({
             boxShadow: '0 8px 32px color-mix(in oklch, var(--primary) 8%, transparent), 0 2px 8px rgba(0,0,0,0.08)',
           }}
         >
-          {pipelines.map(p => (
+          {item.children?.map(child => (
             <button
-              key={p}
+              key={child.key}
               type="button"
               onClick={() => {
-                onPipelineChange(p as Pipeline)
+                onPipelineChange(child.key as Pipeline)
                 setBadgeOpen(false)
               }}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 hover:bg-accent/60"
-              style={activePipeline === p
+              style={activePipeline === child.key
                 ? {
                     background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 12%, transparent), color-mix(in oklch, var(--primary) 6%, transparent))',
                     color: 'color-mix(in oklch, var(--primary) 85%, var(--foreground))',
                   }
                 : undefined}
             >
-              <span className="flex-1 text-left">{PIPELINE_LABELS[p as Pipeline]}</span>
-              {activePipeline === p && (
+              <span className="flex-1 text-left">{child.label}</span>
+              {activePipeline === child.key && (
                 <CheckIcon className="size-3.5 opacity-70" />
               )}
             </button>

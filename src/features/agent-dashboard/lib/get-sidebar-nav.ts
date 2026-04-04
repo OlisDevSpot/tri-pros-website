@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 
 import { ROOTS } from '@/shared/config/roots'
+import { PIPELINE_LABELS } from '@/shared/pipelines/constants/pipeline-registry'
+import { getAccessiblePipelines } from '@/shared/pipelines/lib/get-accessible-pipelines'
 
 export interface SidebarNavSubItem {
   key: string
@@ -42,13 +44,11 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
       icon: GitBranchIcon,
       label: 'Pipeline',
       enabled: ability.can('read', 'Customer'),
-      children: [
-        { key: 'projects', label: 'Projects', href: ROOTS.dashboard.pipeline('projects') },
-        { key: 'fresh', label: 'Fresh', href: ROOTS.dashboard.pipeline('fresh') },
-        { key: 'leads', label: 'Leads', href: ROOTS.dashboard.pipeline('leads') },
-        { key: 'rehash', label: 'Rehash', href: ROOTS.dashboard.pipeline('rehash') },
-        { key: 'dead', label: 'Dead', href: ROOTS.dashboard.pipeline('dead') },
-      ],
+      children: getAccessiblePipelines(ability).map(key => ({
+        key,
+        label: PIPELINE_LABELS[key],
+        href: ROOTS.dashboard.pipeline(key),
+      })),
     },
     { href: ROOTS.dashboard.meetings.root(), icon: CalendarIcon, label: 'Meetings', enabled: ability.can('read', 'Meeting') },
     { href: ROOTS.dashboard.proposals.root(), icon: FileTextIcon, label: 'Proposals', enabled: ability.can('read', 'Proposal') },

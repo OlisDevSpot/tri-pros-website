@@ -344,7 +344,9 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
     .innerJoin(customers, eq(customers.id, projects.customerId))
     .where(and(
       isNotNull(projects.customerId),
-      isOmni ? undefined : eq(projects.ownerId, userId),
+      isOmni
+        ? undefined
+        : sql`(${projects.ownerId} = ${userId} OR ${projects.isPublic} = true OR EXISTS (SELECT 1 FROM meetings m WHERE m.project_id = ${projects.id} AND m.owner_id = ${userId}))`,
     ))
     .orderBy(desc(projects.createdAt))
 

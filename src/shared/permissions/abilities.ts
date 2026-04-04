@@ -67,6 +67,10 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('create', 'Project')
       can('update', 'Project')
 
+      // Agents can only navigate fresh + projects pipelines.
+      // Leads, rehash, dead are super-admin only (managed via 'manage' on 'CustomerPipeline').
+      can('read', 'CustomerPipeline')
+
       can('read', 'User')
       break
 
