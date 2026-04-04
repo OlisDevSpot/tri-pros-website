@@ -76,6 +76,17 @@ export function CustomerPipelineView() {
       return
     }
 
+    // Intercept: any leads stage → meeting_scheduled opens meeting modal
+    // Also update the lead's pipelineStage so the card moves visually
+    if (pipeline === 'leads' && toStage === 'meeting_scheduled') {
+      const item = pipelineQuery.data?.find(i => i.id === itemId)
+      if (item) {
+        moveMutation.mutate({ customerId: itemId, fromStage, toStage, pipeline })
+        setCreateMeetingForCustomer({ id: item.id, name: item.name })
+      }
+      return
+    }
+
     moveMutation.mutate({
       customerId: itemId,
       fromStage,
