@@ -71,13 +71,13 @@ export function ProjectEntityCard({ project, onMutationSuccess, onNavigate, onAs
             </span>
           </div>
 
-          {/* Meetings within this project — tight spacing */}
+          {/* Meetings within this project */}
           {project.meetings.length > 0 && (
-            <div className="border-t px-3 py-2 space-y-1.5">
-              <span className="text-[10px] font-medium text-muted-foreground">
+            <div className="border-t px-3 pt-2.5 pb-3 space-y-2">
+              <span className="text-xs font-medium text-muted-foreground">
                 {`Meetings (${project.meetings.length})`}
               </span>
-              <div className="space-y-1.5">
+              <div className="space-y-2.5">
                 {project.meetings.map(meeting => (
                   <MeetingEntityCard
                     key={meeting.id}

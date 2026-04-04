@@ -46,6 +46,14 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
         <CardContent className="p-0">
           {/* Meeting Header — compact */}
           <div className="flex items-center gap-2 px-3 pt-2 pb-2">
+            {/* Scheduled date first for stable layout */}
+            {meeting.scheduledFor && (
+              <span className="text-xs text-muted-foreground shrink-0">
+                {format(new Date(meeting.scheduledFor), 'MMM d, yyyy · h:mm a')}
+              </span>
+            )}
+
+            {/* Badges */}
             <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
               {meeting.meetingType && (
                 <Badge variant="secondary" className="text-xs font-medium">
@@ -55,17 +63,12 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
               <Badge variant="outline" className={cn('text-xs', MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome] ?? '')}>
                 {MEETING_OUTCOME_LABELS[meeting.meetingOutcome] ?? meeting.meetingOutcome.replace(/_/g, ' ')}
               </Badge>
-              {meeting.scheduledFor && (
-                <span className="text-[11px] text-muted-foreground">
-                  {format(new Date(meeting.scheduledFor), 'MMM d, yyyy · h:mm a')}
-                </span>
-              )}
-              <span className="text-[10px] text-muted-foreground/60">
-                {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
-              </span>
             </div>
 
-            {/* Actions — always visible, subtle hover effect */}
+            {/* Created at + actions — right side */}
+            <span className="text-[10px] text-muted-foreground/60 shrink-0">
+              {formatDistanceToNow(new Date(meeting.createdAt), { addSuffix: true })}
+            </span>
             <EntityActionMenu
               entity={meeting}
               actions={meetingActions}
