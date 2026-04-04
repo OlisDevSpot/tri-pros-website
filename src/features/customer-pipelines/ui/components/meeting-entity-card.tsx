@@ -42,17 +42,17 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
   return (
     <>
       <DeleteConfirmDialog />
-      <Card className={cn('group', isHighlighted && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
+      <Card className={cn('group pt-0 pb-0 gap-0', isHighlighted && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
         <CardContent className="p-0">
           {/* Meeting Header — compact */}
-          <div className="flex items-center gap-2 px-3 py-2">
+          <div className="flex items-center gap-2 px-3 pt-2 pb-2">
             <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
               {meeting.meetingType && (
-                <Badge variant="secondary" className="text-[10px] font-medium px-1.5 py-0">
+                <Badge variant="secondary" className="text-xs font-medium">
                   {meeting.meetingType}
                 </Badge>
               )}
-              <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0', MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome] ?? '')}>
+              <Badge variant="outline" className={cn('text-xs', MEETING_LIST_STATUS_COLORS[meeting.meetingOutcome] ?? '')}>
                 {MEETING_OUTCOME_LABELS[meeting.meetingOutcome] ?? meeting.meetingOutcome.replace(/_/g, ' ')}
               </Badge>
               {meeting.scheduledFor && (
@@ -76,7 +76,7 @@ export function MeetingEntityCard({ meeting, isHighlighted, onMutationSuccess, o
 
           {/* Proposals Section — compact */}
           {meeting.proposals.length > 0 && (
-            <div className="border-t px-3 py-2 space-y-1">
+            <div className="border-t px-3 pt-1.5 pb-2 space-y-1">
               <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
                 <FileTextIcon className="size-3" />
                 <span>
