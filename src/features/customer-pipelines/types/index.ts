@@ -4,6 +4,7 @@ import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
 import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
+import type { LeadsPipelineStage } from '@/shared/pipelines/constants/leads-pipeline'
 import type { ProjectsPipelineStage } from '@/shared/pipelines/constants/projects-pipeline'
 import type { ProjectStatus } from '@/shared/types/enums/pipelines'
 
@@ -36,7 +37,7 @@ export interface PipelineItemProject {
 export interface CustomerPipelineItem {
   id: string
   type: 'customer'
-  stage: CustomerPipelineStage | RehashPipelineStage | DeadPipelineStage | ProjectsPipelineStage
+  stage: CustomerPipelineStage | RehashPipelineStage | DeadPipelineStage | ProjectsPipelineStage | LeadsPipelineStage
   name: string
   phone: string | null
   email: string | null

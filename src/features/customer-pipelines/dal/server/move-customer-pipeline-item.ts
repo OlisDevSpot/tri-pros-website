@@ -6,6 +6,7 @@ import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
+import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
@@ -21,10 +22,17 @@ interface MoveParams {
 }
 
 export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, pipeline, userId, isOmni = false }: MoveParams): Promise<void> {
+  // Leads pipeline: update customers.pipelineStage directly
+  if (pipeline === 'leads') {
+    await db
+      .update(customers)
+      .set({ pipelineStage: toStage })
+      .where(eq(customers.id, customerId))
+    return
+  }
+
   // Rehash/dead pipelines: no intra-stage dragging supported yet
   if (pipeline === 'rehash' || pipeline === 'dead') {
-    // TODO: implement rehash/dead stage tracking — meetings don't have a pipelineStage field
-    // and customers.pipelineStage is being deprecated. Need a new mechanism for stage tracking.
     throw new TRPCError({
       code: 'BAD_REQUEST',
       message: 'Stage dragging is not yet supported for the rehash/dead pipelines',

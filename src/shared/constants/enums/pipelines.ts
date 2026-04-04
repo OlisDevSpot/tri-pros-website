@@ -1,5 +1,13 @@
 /** All business-wide pipelines (display + routing) */
-export const pipelines = ['fresh', 'projects', 'rehash', 'dead'] as const
+export const pipelines = ['projects', 'fresh', 'leads', 'rehash', 'dead'] as const
+
+/** Leads pipeline stages (customers with no meetings yet) */
+export const leadsPipelineStages = [
+  'new',
+  'contacted',
+  'qualified',
+  'meeting_scheduled',
+] as const
 
 /** Pipelines storable on the meetings.pipeline column (projects is derived from projectId) */
 export const meetingPipelines = ['fresh', 'rehash', 'dead'] as const

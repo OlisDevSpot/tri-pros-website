@@ -43,8 +43,9 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
       label: 'Pipeline',
       enabled: ability.can('read', 'Customer'),
       children: [
-        { key: 'fresh', label: 'Fresh', href: ROOTS.dashboard.pipeline('fresh') },
         { key: 'projects', label: 'Projects', href: ROOTS.dashboard.pipeline('projects') },
+        { key: 'fresh', label: 'Fresh', href: ROOTS.dashboard.pipeline('fresh') },
+        { key: 'leads', label: 'Leads', href: ROOTS.dashboard.pipeline('leads') },
         { key: 'rehash', label: 'Rehash', href: ROOTS.dashboard.pipeline('rehash') },
         { key: 'dead', label: 'Dead', href: ROOTS.dashboard.pipeline('dead') },
       ],

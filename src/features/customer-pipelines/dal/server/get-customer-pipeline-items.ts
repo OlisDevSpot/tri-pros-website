@@ -13,6 +13,10 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {
+  if (pipeline === 'leads') {
+    return getLeadsPipelineItems()
+  }
+
   if (pipeline === 'projects') {
     return getProjectsPipelineItems(userId, isOmni)
   }
@@ -24,6 +28,56 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Pipelin
 
   // Fresh pipeline: full query with computed stages
   return getFreshPipelineItems(userId, isOmni)
+}
+
+/**
+ * Leads pipeline items.
+ * Finds customers who have zero meetings — these are leads that haven't
+ * been scheduled for an in-home consultation yet.
+ * Stage comes from customers.pipelineStage (repurposed for leads).
+ */
+async function getLeadsPipelineItems(): Promise<CustomerPipelineItem[]> {
+  const rows = await db
+    .select({
+      id: customers.id,
+      name: customers.name,
+      phone: customers.phone,
+      email: customers.email,
+      address: customers.address,
+      city: customers.city,
+      state: customers.state,
+      zip: customers.zip,
+      pipelineStage: customers.pipelineStage,
+      createdAt: customers.createdAt,
+    })
+    .from(customers)
+    .where(
+      sql`NOT EXISTS (SELECT 1 FROM meetings m WHERE m.customer_id = ${customers.id})`,
+    )
+    .orderBy(desc(customers.createdAt))
+
+  return rows.map((row): CustomerPipelineItem => ({
+    id: row.id,
+    type: 'customer',
+    stage: (row.pipelineStage ?? 'new') as CustomerPipelineItem['stage'],
+    name: row.name,
+    phone: row.phone,
+    email: row.email,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    zip: row.zip,
+    totalPipelineValue: 0,
+    meetingCount: 0,
+    proposalCount: 0,
+    latestActivityAt: row.createdAt,
+    nextMeetingId: null,
+    nextMeetingAt: null,
+    meetingScheduledFor: null,
+    assignedRep: null,
+    proposals: [],
+    project: null,
+  }))
 }
 
 /**

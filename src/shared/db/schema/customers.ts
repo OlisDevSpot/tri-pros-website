@@ -24,7 +24,7 @@ export const customers = pgTable('customers', {
   leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),
   /** @deprecated Pipeline now lives on meetings.pipeline. Will be removed after backfill migration. */
   pipeline: customerPipelineEnum('pipeline').notNull().default('active'),
-  /** @deprecated Pipeline stage now lives on meetings/projects. Will be removed after backfill migration. */
+  /** Lead stage for customers with no meetings (leads pipeline). Default: 'new'. */
   pipelineStage: text('pipeline_stage'),
   syncedAt: timestamp('synced_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   createdAt,
