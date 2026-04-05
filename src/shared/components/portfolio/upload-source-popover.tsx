@@ -1,6 +1,6 @@
 'use client'
 
-import { HardDrive, Loader2, Monitor, Plus } from 'lucide-react'
+import { HardDrive, Loader2, Plus, UploadIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
@@ -52,8 +52,8 @@ export function UploadSourcePopover({
           className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
           onClick={handleLocalClick}
         >
-          <Monitor className="h-4 w-4 shrink-0" />
-          From Computer
+          <UploadIcon className="h-4 w-4 shrink-0" />
+          From this device
         </button>
         <button
           type="button"

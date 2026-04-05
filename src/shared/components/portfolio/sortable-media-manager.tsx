@@ -220,29 +220,33 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
       return
     }
 
-    for (const file of Array.from(files)) {
-      const ext = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
-      try {
-        await upload({
-          file,
-          projectId,
-          phase: activePhase,
-          meta: {
-            name: file.name.replace(/\.[^/.]+$/, ''),
-            mimeType: file.type,
-            fileExtension: ext,
-            phase: activePhase,
-            projectId,
-          },
-        })
-      }
-      catch {
-        toast.error(`Failed to upload ${file.name}`)
-      }
-    }
-
-    onUpdate()
+    const fileList = Array.from(files)
     e.target.value = ''
+
+    // Upload all files in parallel — each triggers onUpdate independently so images appear as they finish
+    await Promise.allSettled(
+      fileList.map(async (file) => {
+        const ext = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
+        try {
+          await upload({
+            file,
+            projectId,
+            phase: activePhase,
+            meta: {
+              name: file.name.replace(/\.[^/.]+$/, ''),
+              mimeType: file.type,
+              fileExtension: ext,
+              phase: activePhase,
+              projectId,
+            },
+          })
+          onUpdate()
+        }
+        catch {
+          toast.error(`Failed to upload ${file.name}`)
+        }
+      }),
+    )
   }
 
   async function handleDelete(fileId: number) {
