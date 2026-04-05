@@ -5,9 +5,9 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowRightIcon, FileTextIcon, GripVertical, MoreVertical, Star, Trash2 } from 'lucide-react'
-import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
@@ -112,11 +112,10 @@ export function SortablePhotoCard({
       >
         {/* Image */}
         <div className="relative aspect-5/4">
-          <Image
-            src={file.url}
+          <OptimizedImage
+            file={file}
             alt={file.name}
             fill
-            className="object-cover"
             sizes="(max-width: 640px) 50vw, 25vw"
           />
           <div className={cn('absolute inset-0 transition-colors group-hover:bg-background/40', (menuOpen || isSelected) && 'bg-background/40')} />

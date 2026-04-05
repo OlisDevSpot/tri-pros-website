@@ -1,7 +1,7 @@
 'use client'
 
 import type { MediaFile } from '@/shared/db/schema'
-import Image from 'next/image'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
 
 interface Props {
@@ -19,8 +19,8 @@ export function PhotoDetailDialog({ file, open, onOpenChange }: Props) {
         </DialogHeader>
 
         <div className="relative aspect-video overflow-hidden rounded-lg">
-          <Image
-            src={file.url}
+          <OptimizedImage
+            file={file}
             alt={file.name}
             fill
             className="object-contain bg-muted"

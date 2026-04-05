@@ -2,8 +2,8 @@
 
 import type { MediaFile, Project } from '@/shared/db/schema'
 import { motion, useInView } from 'motion/react'
-import Image from 'next/image'
 import { useRef } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
   project: Project
@@ -63,11 +63,10 @@ export function StoryChallenge({ project, mainImage }: Props) {
               transition={{ duration: 0.7, delay: 0.2 }}
               className="relative aspect-4/3 overflow-hidden rounded-2xl"
             >
-              <Image
-                src={mainImage.url}
+              <OptimizedImage
+                file={mainImage}
                 alt={mainImage.name}
                 fill
-                className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </motion.div>

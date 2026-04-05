@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 
@@ -48,13 +49,12 @@ export function ShowroomProjectCard({ project: item, index, allScopes, allTrades
           onHoverStart={() => setHovered(true)}
           onHoverEnd={() => setHovered(false)}
         >
-          {heroImage?.url
+          {heroImage
             ? (
-                <Image
-                  src={heroImage.url}
+                <OptimizedImage
+                  file={heroImage}
                   alt={project.title}
                   fill
-                  className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                   priority={index < 3}
                 />

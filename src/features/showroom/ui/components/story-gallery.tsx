@@ -3,10 +3,10 @@
 import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
 import type { MediaPhase } from '@/shared/types/enums/media'
 import { motion, useInView } from 'motion/react'
-import Image from 'next/image'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { PHASE_LABELS } from '@/features/showroom/constants/phase-labels'
 import { PhotoLightbox } from '@/features/showroom/ui/components/photo-lightbox'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { cn } from '@/shared/lib/utils'
@@ -118,11 +118,11 @@ export function StoryGallery({ media }: Props) {
                     isFeatured && 'col-span-2 row-span-2 aspect-auto',
                   )}
                 >
-                  <Image
-                    src={photo.url}
+                  <OptimizedImage
+                    file={photo}
                     alt={photo.name}
                     fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="transition-transform duration-500 group-hover:scale-105"
                     sizes={
                       isFeatured
                         ? '(max-width: 768px) 100vw, 50vw'

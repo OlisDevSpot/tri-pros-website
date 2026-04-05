@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import { useRef, useState } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Dialog, DialogContent } from '@/shared/components/ui/dialog'
 
 interface Props {
@@ -48,11 +49,10 @@ export function ProgressGallery({ media }: Props) {
               onClick={() => setLightboxSrc(file.url)}
               whileHover={{ scale: 1.03 }}
             >
-              <Image
-                src={file.url}
+              <OptimizedImage
+                file={file}
                 alt={file.name}
                 fill
-                className="object-cover"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               />
             </motion.button>

@@ -3,8 +3,8 @@
 import type { MediaFile } from '@/shared/db/schema'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import Image from 'next/image'
 import { useCallback, useEffect, useRef } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -113,8 +113,8 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
             transition={{ duration: 0.2 }}
             className="relative h-full w-full"
           >
-            <Image
-              src={photo.url}
+            <OptimizedImage
+              file={photo}
               alt={photo.name}
               fill
               className="object-contain"
@@ -164,11 +164,10 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
                   )}
                   aria-label={`View photo ${i + 1}`}
                 >
-                  <Image
-                    src={thumb.url}
+                  <OptimizedImage
+                    file={thumb}
                     alt={thumb.name}
                     fill
-                    className="object-cover"
                     sizes="80px"
                   />
                 </button>

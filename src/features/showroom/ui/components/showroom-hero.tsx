@@ -2,8 +2,8 @@
 
 import type { ShowroomProject } from '@/shared/entities/projects/types'
 import { motion } from 'motion/react'
-import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
   projects: ShowroomProject[]
@@ -151,11 +151,10 @@ function GalleryMosaic({ projects }: MosaicProps) {
               gridRow: cell.row,
             }}
           >
-            <Image
-              src={p.heroImage!.url}
+            <OptimizedImage
+              file={p.heroImage!}
               alt={p.project.title}
               fill
-              className="object-cover"
               sizes="(max-width: 768px) 50vw, 33vw"
               priority={i < 3}
             />

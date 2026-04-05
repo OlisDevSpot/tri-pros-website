@@ -2,9 +2,9 @@
 
 import type { MediaFile } from '@/shared/db/schema'
 import { motion, useInView } from 'motion/react'
-import Image from 'next/image'
 import { useRef } from 'react'
 import { JOURNEY_STEPS } from '@/features/showroom/constants/journey-steps'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
   duringPhotos: MediaFile[]
@@ -72,11 +72,10 @@ export function StoryJourney({ duringPhotos }: Props) {
                     {/* Image side */}
                     <div className={`pl-12 lg:pl-0 ${isLeft ? 'lg:pl-12 lg:order-2' : 'lg:pr-12'}`}>
                       <div className="relative aspect-video overflow-hidden rounded-xl shadow-lg">
-                        <Image
-                          src={photo.url}
+                        <OptimizedImage
+                          file={photo}
                           alt={photo.name}
                           fill
-                          className="object-cover"
                           sizes="(max-width: 1024px) 100vw, 50vw"
                         />
                       </div>

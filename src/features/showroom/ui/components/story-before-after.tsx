@@ -5,8 +5,8 @@ import type { BeforeAfterPairs } from '@/shared/entities/projects/schemas'
 import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
 import dynamic from 'next/dynamic'
-import Image from 'next/image'
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
 
@@ -123,11 +123,10 @@ export function StoryBeforeAfter({ project, media }: Props) {
                     transition={{ duration: 0.3 }}
                     className="absolute inset-0"
                   >
-                    <Image
-                      src={activePair.before.url}
+                    <OptimizedImage
+                      file={activePair.before}
                       alt={`${activePair.label} — Before`}
                       fill
-                      className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1200px"
                       priority={activePairIndex === 0}
                     />
@@ -146,11 +145,10 @@ export function StoryBeforeAfter({ project, media }: Props) {
                     transition={{ duration: 0.3 }}
                     className="absolute inset-0"
                   >
-                    <Image
-                      src={activePair.after.url}
+                    <OptimizedImage
+                      file={activePair.after}
                       alt={`${activePair.label} — After`}
                       fill
-                      className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1280px) 80vw, 1200px"
                       priority={activePairIndex === 0}
                     />
@@ -191,20 +189,18 @@ export function StoryBeforeAfter({ project, media }: Props) {
                 {/* Side-by-side thumbnail preview */}
                 <div className="flex aspect-2/1">
                   <div className="relative w-1/2">
-                    <Image
-                      src={pair.before.url}
+                    <OptimizedImage
+                      file={pair.before}
                       alt={`${pair.label} before`}
                       fill
-                      className="object-cover"
                       sizes="120px"
                     />
                   </div>
                   <div className="relative w-1/2">
-                    <Image
-                      src={pair.after.url}
+                    <OptimizedImage
+                      file={pair.after}
                       alt={`${pair.label} after`}
                       fill
-                      className="object-cover"
                       sizes="120px"
                     />
                   </div>

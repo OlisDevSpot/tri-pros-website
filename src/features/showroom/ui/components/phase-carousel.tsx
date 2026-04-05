@@ -2,8 +2,8 @@
 
 import type { CarouselApi } from '@/shared/components/ui/carousel'
 import type { MediaFile } from '@/shared/db/schema'
-import Image from 'next/image'
 import { useCallback, useState } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import {
   Carousel,
   CarouselContent,
@@ -61,11 +61,10 @@ export function PhaseCarousel({ photos, phaseLabel, onPhotoClick }: PhaseCarouse
                 className="relative block w-full aspect-video overflow-hidden rounded-xl shadow-lg cursor-pointer"
                 aria-label={`View ${phaseLabel} photo ${index + 1}`}
               >
-                <Image
-                  src={photo.url}
+                <OptimizedImage
+                  file={photo}
                   alt={photo.name}
                   fill
-                  className="object-cover"
                   sizes="(max-width: 640px) 85vw, (max-width: 768px) 70vw, (max-width: 1024px) 55vw, 45vw"
                 />
               </button>

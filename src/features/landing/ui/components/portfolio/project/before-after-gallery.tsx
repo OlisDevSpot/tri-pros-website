@@ -2,9 +2,9 @@
 
 import type { ProjectDetail } from '@/shared/entities/projects/types'
 import { motion, useInView } from 'motion/react'
-import Image from 'next/image'
 import { useRef } from 'react'
 import { ReactCompareSlider } from 'react-compare-slider'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
   media: NonNullable<ProjectDetail>['media']
@@ -45,12 +45,12 @@ export function BeforeAfterGallery({ media }: Props) {
           <ReactCompareSlider
             itemOne={(
               <div className="relative w-full h-full">
-                <Image src={beforeImage.url} alt="Before" fill className="object-cover" />
+                <OptimizedImage file={beforeImage} alt="Before" fill />
               </div>
             )}
             itemTwo={(
               <div className="relative w-full h-full">
-                <Image src={afterImage.url} alt="After" fill className="object-cover" />
+                <OptimizedImage file={afterImage} alt="After" fill />
               </div>
             )}
             style={{ height: '60vh' }}

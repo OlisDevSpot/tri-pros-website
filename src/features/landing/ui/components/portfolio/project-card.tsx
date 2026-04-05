@@ -2,9 +2,9 @@
 
 import type { PublicProject } from '@/shared/entities/projects/types'
 import { AnimatePresence, motion, useInView } from 'motion/react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
 
@@ -29,13 +29,12 @@ export function ProjectCard({ row, index }: { row: PublicProject, index: number 
           onHoverStart={() => setHovered(true)}
           onHoverEnd={() => setHovered(false)}
         >
-          {heroImage?.url
+          {heroImage
             ? (
-                <Image
-                  src={heroImage.url}
+                <OptimizedImage
+                  file={heroImage}
                   alt={project.title}
                   fill
-                  className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority={index < 2}
                 />

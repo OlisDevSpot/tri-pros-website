@@ -3,8 +3,8 @@
 import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
 import { motion, useInView } from 'motion/react'
 import dynamic from 'next/dynamic'
-import Image from 'next/image'
 import { useRef } from 'react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 
 const ReactCompareSlider = dynamic(
   () => import('react-compare-slider').then(mod => mod.ReactCompareSlider),
@@ -52,12 +52,12 @@ export function StoryTransformation({ media }: Props) {
           <ReactCompareSlider
             itemOne={(
               <div className="relative h-full w-full">
-                <Image src={beforeImage.url} alt="Before" fill className="object-cover" />
+                <OptimizedImage file={beforeImage} alt="Before" fill />
               </div>
             )}
             itemTwo={(
               <div className="relative h-full w-full">
-                <Image src={afterImage.url} alt="After" fill className="object-cover" />
+                <OptimizedImage file={afterImage} alt="After" fill />
               </div>
             )}
             style={{ height: '60vh', maxHeight: '70vh' }}
@@ -80,11 +80,10 @@ export function StoryTransformation({ media }: Props) {
                 transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
                 className="relative aspect-4/3 overflow-hidden rounded-xl"
               >
-                <Image
-                  src={file.url}
+                <OptimizedImage
+                  file={file}
                   alt={file.name}
                   fill
-                  className="object-cover"
                   sizes="(max-width: 768px) 50vw, 33vw"
                 />
               </motion.div>
