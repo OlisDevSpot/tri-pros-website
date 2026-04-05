@@ -205,6 +205,17 @@ export const projectsRouter = createTRPCRouter({
       return created
     }),
 
+  retryOptimization: agentProcedure
+    .input(z.object({ mediaFileId: z.number() }))
+    .mutation(async ({ input }) => {
+      await db
+        .update(mediaFiles)
+        .set({ optimizationStatus: 'pending' })
+        .where(eq(mediaFiles.id, input.mediaFileId))
+      void optimizeImageJob.dispatch({ mediaFileId: input.mediaFileId })
+      return { success: true }
+    }),
+
   deleteMediaFile: agentProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {

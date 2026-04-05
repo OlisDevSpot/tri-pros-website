@@ -23,6 +23,7 @@ interface Props {
   onToggleHero: (id: number, currentIsHero: boolean) => void
   onMovePhase: (id: number, phase: string) => void
   onNameUpdated: () => void
+  onRetryOptimization?: (mediaFileId: number) => void
   isDeletePending: boolean
   isHeroPending: boolean
   isSelected: boolean
@@ -37,6 +38,7 @@ export function SortablePhotoCard({
   onToggleHero,
   onMovePhase,
   onNameUpdated,
+  onRetryOptimization,
   isDeletePending,
   isHeroPending,
   isSelected,
@@ -117,6 +119,7 @@ export function SortablePhotoCard({
             alt={file.name}
             fill
             sizes="(max-width: 640px) 50vw, 25vw"
+            onRetryOptimization={onRetryOptimization}
           />
           <div className={cn('absolute inset-0 transition-colors group-hover:bg-background/40', (menuOpen || isSelected) && 'bg-background/40')} />
 

@@ -50,6 +50,9 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   const queryClient = useQueryClient()
   const editQueryOptions = trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId })
   const { upload, isUploading } = useMediaUpload()
+  const retryOptimization = useMutation(trpc.projectsRouter.retryOptimization.mutationOptions({
+    onSuccess: () => onUpdate(),
+  }))
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentAccessTokenRef = useRef<string | null>(null)
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
@@ -535,6 +538,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
                               onToggleHero={handleToggleHero}
                               onMovePhase={handleMovePhase}
                               onNameUpdated={onUpdate}
+                              onRetryOptimization={id => retryOptimization.mutate({ mediaFileId: id })}
                               isDeletePending={deleteMutation.isPending}
                               isHeroPending={toggleHeroMutation.isPending}
                               isSelected={selectedIds.has(file.id)}
