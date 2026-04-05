@@ -104,7 +104,7 @@ export function OptimizedImage({
 
       {/* Processing indicator */}
       {isProcessing && (
-        <div className="absolute bottom-1 right-1 flex items-center gap-1 rounded-full bg-black/50 px-1.5 py-0.5 text-[9px] text-white/80 backdrop-blur-sm">
+        <div className="absolute bottom-1 right-1 z-10 flex items-center gap-1 rounded-full bg-black/50 px-1.5 py-0.5 text-[9px] text-white/80 backdrop-blur-sm">
           <LoaderIcon size={8} className="animate-spin" />
           Optimizing...
         </div>
@@ -114,9 +114,13 @@ export function OptimizedImage({
       {isFailed && (
         <button
           type="button"
-          onClick={handleRetry}
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            handleRetry()
+          }}
           disabled={!file.id || !onRetryOptimization}
-          className="absolute bottom-1 right-1 flex cursor-pointer items-center gap-1 rounded-full bg-red-500/80 px-1.5 py-0.5 text-[9px] text-white backdrop-blur-sm transition-colors hover:bg-red-500 disabled:cursor-default disabled:hover:bg-red-500/80"
+          className="absolute bottom-1 right-1 z-10 flex cursor-pointer items-center gap-1 rounded-full bg-red-500/80 px-1.5 py-0.5 text-[9px] text-white backdrop-blur-sm transition-colors hover:bg-red-500 disabled:cursor-default disabled:hover:bg-red-500/80"
         >
           {file.id && onRetryOptimization
             ? <RefreshCwIcon size={8} />
