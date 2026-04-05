@@ -21,6 +21,7 @@ import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { deleteObject } from '@/shared/services/r2/delete-object'
 import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
 import { putObject } from '@/shared/services/r2/put-object'
+import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
 const PORTFOLIO_BUCKET = R2_BUCKETS.portfolioProjects
@@ -196,6 +197,10 @@ export const projectsRouter = createTRPCRouter({
         .insert(mediaFiles)
         .values({ ...input, bucket: input.bucket ?? PORTFOLIO_BUCKET })
         .returning()
+
+      if (created.mimeType.startsWith('image/')) {
+        void optimizeImageJob.dispatch({ mediaFileId: created.id })
+      }
 
       return created
     }),
@@ -416,6 +421,10 @@ export const projectsRouter = createTRPCRouter({
           projectId: input.projectId,
         })
         .returning()
+
+      if (input.mimeType.startsWith('image/')) {
+        void optimizeImageJob.dispatch({ mediaFileId: created.id })
+      }
 
       return created
     }),

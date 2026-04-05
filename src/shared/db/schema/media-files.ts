@@ -21,6 +21,8 @@ export const mediaFiles = pgTable('media_files', {
   sortOrder: integer('sort_order').notNull().default(0),
   duration: integer('duration'),
   thumbnailUrl: varchar('thumbnail_url', { length: 255 }),
+  optimizationStatus: text('optimization_status').notNull().default('pending'),
+  blurDataUrl: text('blur_data_url'),
   projectId: uuid('project_id')
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),
@@ -49,5 +51,7 @@ export const insertMediaFilesSchema = selectMediaFilesSchema.omit({
   duration: true,
   thumbnailUrl: true,
   bucket: true,
+  optimizationStatus: true,
+  blurDataUrl: true,
 })
 export type InsertMediaFilesSchema = z.infer<typeof insertMediaFilesSchema>

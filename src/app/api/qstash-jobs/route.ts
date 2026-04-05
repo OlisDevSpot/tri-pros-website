@@ -2,6 +2,7 @@ import type { Job, JobMap } from '@/shared/services/upstash/types'
 import { Receiver } from '@upstash/qstash'
 import env from '@/shared/config/server-env'
 import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai-summary'
+import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
 import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 
 /**
@@ -10,6 +11,7 @@ import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 const jobs: Job[] = [
   generateAISummaryJob,
   syncCustomersJob,
+  optimizeImageJob,
 ]
 
 /**
