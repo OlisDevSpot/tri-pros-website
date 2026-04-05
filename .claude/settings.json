@@ -317,7 +317,9 @@
       "Bash(yes)",
       "Bash(pnpm db:push:dev)",
       "WebFetch(domain:x.com)",
-      "WebFetch(domain:publish.twitter.com)"
+      "WebFetch(domain:publish.twitter.com)",
+      "Bash(grep -n \"customer_id\\\\|owner_id\\\\|status\\\\|pipeline_stage\\\\|started_at\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/db/migrations/*.sql)",
+      "Bash(grep -r \"loader\\\\|Image\\\\|imageLoader\" /home/olis-solutions/olis-v3/nextjs/tri-pros-website/next.config.*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
