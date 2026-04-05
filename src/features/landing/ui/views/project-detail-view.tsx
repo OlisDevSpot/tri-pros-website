@@ -14,11 +14,11 @@ interface Props {
 
 export function ProjectDetailView({ detail }: Props) {
   const { project, media } = detail
-  const heroUrl = media.hero[0]?.url ?? media.uncategorized[0]?.url
+  const heroImage = media.hero[0] ?? media.uncategorized[0]
 
   return (
     <main>
-      <ProjectHero project={project} heroUrl={heroUrl} />
+      <ProjectHero project={project} heroImage={heroImage} />
       <ProjectBackstory project={project} />
       <BeforeAfterGallery media={media} />
       <ProgressGallery media={media} />

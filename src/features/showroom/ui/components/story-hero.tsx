@@ -1,8 +1,10 @@
 'use client'
 
-import type { Project } from '@/shared/db/schema'
+import type { MediaFile, Project } from '@/shared/db/schema'
+
 import { motion } from 'motion/react'
-import Image from 'next/image'
+
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 
 interface NamedItem {
@@ -17,18 +19,18 @@ interface TradeWithScopes {
 
 interface Props {
   project: Project
-  heroUrl: string | undefined
+  heroImage: MediaFile | undefined
   tradesWithScopes: TradeWithScopes[]
 }
 
-export function StoryHero({ project, heroUrl, tradesWithScopes }: Props) {
+export function StoryHero({ project, heroImage, tradesWithScopes }: Props) {
   const formattedDate = project.completedAt
     ? new Date(project.completedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null
 
   return (
     <section className="relative h-[70vh] min-h-125 overflow-hidden">
-      {heroUrl
+      {heroImage
         ? (
             <motion.div
               className="absolute inset-0"
@@ -36,11 +38,10 @@ export function StoryHero({ project, heroUrl, tradesWithScopes }: Props) {
               animate={{ scale: 1 }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
             >
-              <Image
-                src={heroUrl}
+              <OptimizedImage
+                file={heroImage}
                 alt={project.title}
                 fill
-                className="object-cover"
                 sizes="100vw"
                 priority
               />

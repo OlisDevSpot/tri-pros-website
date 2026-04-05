@@ -1,19 +1,22 @@
 'use client'
 
+import type { MediaFile } from '@/shared/db/schema'
 import type { ProjectDetail } from '@/shared/entities/projects/types'
+
 import { motion } from 'motion/react'
-import Image from 'next/image'
+
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 
 interface Props {
   project: NonNullable<ProjectDetail>['project']
-  heroUrl?: string
+  heroImage?: MediaFile
 }
 
-export function ProjectHero({ project, heroUrl }: Props) {
+export function ProjectHero({ project, heroImage }: Props) {
   return (
     <div className="relative h-[70vh] w-full overflow-hidden">
-      {heroUrl
+      {heroImage
         ? (
             <motion.div
               className="absolute inset-0"
@@ -21,11 +24,11 @@ export function ProjectHero({ project, heroUrl }: Props) {
               animate={{ scale: 1 }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
             >
-              <Image
-                src={heroUrl}
+              <OptimizedImage
+                file={heroImage}
                 alt={project.title}
                 fill
-                className="object-cover"
+                sizes="100vw"
                 priority
               />
             </motion.div>

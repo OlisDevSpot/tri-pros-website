@@ -75,13 +75,16 @@ export function OptimizedImage({
 
   return (
     <div className={cn('relative overflow-hidden', fill && 'absolute inset-0', containerClassName)}>
-      {/* Blur placeholder — only for optimized images during load */}
-      {isOptimized && file.blurDataUrl && !loaded && (
+      {/* Blur placeholder — fills container as background, persists behind object-contain images */}
+      {isOptimized && file.blurDataUrl && (
         <img
           src={file.blurDataUrl}
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover scale-110 blur-xl"
+          className={cn(
+            'absolute inset-0 h-full w-full object-cover scale-110 blur-xl transition-opacity duration-500',
+            loaded && !className?.includes('object-contain') ? 'opacity-0' : loaded ? 'opacity-30' : 'opacity-100',
+          )}
         />
       )}
 

@@ -20,7 +20,7 @@ interface Props {
 export function ShowroomProjectView({ detail }: Props) {
   const trpc = useTRPC()
   const { project, media, scopeIds } = detail
-  const heroUrl = media.hero[0]?.url ?? media.uncategorized[0]?.url
+  const heroImage = media.hero[0] ?? media.uncategorized[0]
 
   const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
@@ -51,7 +51,7 @@ export function ShowroomProjectView({ detail }: Props) {
 
   return (
     <main>
-      <StoryHero project={project} heroUrl={heroUrl} tradesWithScopes={tradesWithScopes} />
+      <StoryHero project={project} heroImage={heroImage} tradesWithScopes={tradesWithScopes} />
       <StoryChallenge project={project} mainImage={media.uncategorized[0]} />
       <StoryBeforeAfter project={project} media={media} />
       {hasTimelinePhotos && <StoryTimeline project={project} media={media} />}
