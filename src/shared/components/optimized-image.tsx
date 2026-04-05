@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangleIcon, LoaderIcon, RefreshCwIcon } from 'lucide-react'
+import { LoaderIcon, RefreshCwIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { getOptimizedSrc, getOptimizedSrcSet } from '@/shared/lib/get-optimized-urls'
@@ -102,16 +102,15 @@ export function OptimizedImage({
         )}
       />
 
-      {/* Processing indicator */}
-      {isProcessing && (
+      {/* Status badges — only shown when onRetryOptimization is provided (dashboard context) */}
+      {onRetryOptimization && isProcessing && (
         <div className="absolute bottom-1 right-1 z-10 flex items-center gap-1 rounded-full bg-black/50 px-1.5 py-0.5 text-[9px] text-white/80 backdrop-blur-sm">
           <LoaderIcon size={8} className="animate-spin" />
           Optimizing...
         </div>
       )}
 
-      {/* Failed / timed out indicator with retry */}
-      {isFailed && (
+      {onRetryOptimization && isFailed && (
         <button
           type="button"
           onClick={(e) => {
@@ -119,13 +118,10 @@ export function OptimizedImage({
             e.preventDefault()
             handleRetry()
           }}
-          disabled={!file.id || !onRetryOptimization}
-          className="absolute bottom-1 right-1 z-10 flex cursor-pointer items-center gap-1 rounded-full bg-red-500/80 px-1.5 py-0.5 text-[9px] text-white backdrop-blur-sm transition-colors hover:bg-red-500 disabled:cursor-default disabled:hover:bg-red-500/80"
+          className="absolute bottom-1 right-1 z-10 flex cursor-pointer items-center gap-1 rounded-full bg-red-500/80 px-1.5 py-0.5 text-[9px] text-white backdrop-blur-sm transition-colors hover:bg-red-500"
         >
-          {file.id && onRetryOptimization
-            ? <RefreshCwIcon size={8} />
-            : <AlertTriangleIcon size={8} />}
-          {file.id && onRetryOptimization ? 'Retry' : 'Unoptimized'}
+          <RefreshCwIcon size={8} />
+          Retry
         </button>
       )}
     </div>
