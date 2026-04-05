@@ -1,7 +1,11 @@
 import type { InsertProject, Project } from '@/shared/db/schema'
+import type { R2BucketName } from '@/shared/services/r2/buckets'
+
 import { asc, eq, inArray } from 'drizzle-orm'
+
 import { db } from '@/shared/db'
-import { projects, x_projectScopes } from '@/shared/db/schema'
+import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
+import { deleteMediaWithVariants } from '@/shared/services/r2/lib/delete-media-with-variants'
 
 export async function createShowroomProject(
   data: InsertProject,
@@ -53,6 +57,16 @@ export async function updateShowroomProject(
 }
 
 export async function deleteShowroomProject(projectId: string): Promise<void> {
+  // Delete R2 files before DB cascade removes the media file records
+  const files = await db
+    .select({ pathKey: mediaFiles.pathKey, bucket: mediaFiles.bucket })
+    .from(mediaFiles)
+    .where(eq(mediaFiles.projectId, projectId))
+
+  await Promise.all(
+    files.map(f => deleteMediaWithVariants(f.bucket as R2BucketName, f.pathKey)),
+  )
+
   await db.delete(projects).where(eq(projects.id, projectId))
 }
 
