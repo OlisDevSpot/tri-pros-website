@@ -66,8 +66,11 @@ export async function POST(request: Request) {
    * Execute the handler.
    */
   const handler = registry.get(key)
-  if (handler)
-    await handler(body.payload)
+  if (handler) {
+    // QStash publishJSON sends body directly — use body.payload if wrapped, otherwise body itself
+    const payload = body.payload ?? body
+    await handler(payload)
+  }
 
   /**
    * Return a 200 response.
