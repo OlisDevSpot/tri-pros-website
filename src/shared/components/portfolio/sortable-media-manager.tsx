@@ -48,9 +48,9 @@ interface Props {
 export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const editQueryOptions = trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId })
+  const editQueryOptions = trpc.projectsRouter.portfolioCrud.getForEdit.queryOptions({ id: projectId })
   const { upload, isUploading } = useMediaUpload()
-  const retryOptimization = useMutation(trpc.projectsRouter.retryOptimization.mutationOptions({
+  const retryOptimization = useMutation(trpc.projectsRouter.media.retryOptimization.mutationOptions({
     onSuccess: () => onUpdate(),
   }))
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -74,7 +74,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const deleteMutation = useMutation(
-    trpc.projectsRouter.deleteMediaFile.mutationOptions({
+    trpc.projectsRouter.media.delete.mutationOptions({
       onSuccess: () => {
         onUpdate()
         toast.success('File deleted')
@@ -84,7 +84,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const bulkDeleteMutation = useMutation(
-    trpc.projectsRouter.bulkDeleteMediaFiles.mutationOptions({
+    trpc.projectsRouter.media.bulkDelete.mutationOptions({
       onSuccess: () => {
         onUpdate()
         setSelectedIds(new Set())
@@ -95,7 +95,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const reorderMutation = useMutation(
-    trpc.projectsRouter.reorderMediaFiles.mutationOptions({
+    trpc.projectsRouter.media.reorder.mutationOptions({
       onMutate: async ({ updates }) => {
         await queryClient.cancelQueries(editQueryOptions)
         const previous = queryClient.getQueryData(editQueryOptions.queryKey)
@@ -128,7 +128,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const toggleHeroMutation = useMutation(
-    trpc.projectsRouter.toggleHeroImage.mutationOptions({
+    trpc.projectsRouter.media.toggleHero.mutationOptions({
       onSuccess: () => {
         onUpdate()
         toast.success('Hero image updated')
@@ -138,7 +138,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const movePhaseMutation = useMutation(
-    trpc.projectsRouter.moveMediaPhase.mutationOptions({
+    trpc.projectsRouter.media.movePhase.mutationOptions({
       onSuccess: () => {
         onUpdate()
         setSelectedIds(new Set())
@@ -149,11 +149,11 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   )
 
   const { refetch: fetchAccessToken } = useQuery({
-    ...trpc.projectsRouter.getGoogleAccessToken.queryOptions(),
+    ...trpc.projectsRouter.googleDrive.getAccessToken.queryOptions(),
     enabled: false,
   })
 
-  const uploadFromDriveMutation = useMutation(trpc.projectsRouter.uploadFromDriveFile.mutationOptions())
+  const uploadFromDriveMutation = useMutation(trpc.projectsRouter.googleDrive.uploadFromFile.mutationOptions())
 
   const { isLoading: isPickerLoading, openPicker } = useGooglePicker({
     onFilesPicked: async (files) => {

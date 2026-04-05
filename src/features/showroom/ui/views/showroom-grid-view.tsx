@@ -12,7 +12,7 @@ export function ShowroomGridView() {
   const trpc = useTRPC()
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery(
-    trpc.projectsRouter.getPortfolioProjects.queryOptions(),
+    trpc.projectsRouter.portfolio.getAll.queryOptions(),
   )
 
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())

@@ -35,7 +35,7 @@ export const QUERY_KEYS = {
 
   projects: {
     all: ['projectsRouter'] as const,
-    portfolio: ['projectsRouter', 'getAllPortfolioProjects'] as const,
-    byId: (id: string) => ['projectsRouter', 'getProjectForEdit', { input: { id } }] as const,
+    portfolio: ['projectsRouter', 'portfolioCrud', 'getAll'] as const,
+    byId: (id: string) => ['projectsRouter', 'portfolioCrud', 'getForEdit', { input: { id } }] as const,
   },
 } as const

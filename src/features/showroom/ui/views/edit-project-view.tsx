@@ -33,7 +33,7 @@ export function EditProjectView({ projectId }: Props) {
   const MAX_POLL_ATTEMPTS = 10 // ~3s, 6s, 9s... stops after ~60s total
 
   const project = useQuery({
-    ...trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }),
+    ...trpc.projectsRouter.portfolioCrud.getForEdit.queryOptions({ id: projectId }),
     refetchInterval: (query) => {
       const data = query.state.data
       if (!data?.media) {
@@ -60,7 +60,7 @@ export function EditProjectView({ projectId }: Props) {
     defaultValues: projectFormDefaults,
   })
 
-  const updateProject = useMutation(trpc.projectsRouter.updateProject.mutationOptions())
+  const updateProject = useMutation(trpc.projectsRouter.portfolioCrud.update.mutationOptions())
 
   const initialValues = useMemo(() => {
     if (!project.data) {
@@ -119,8 +119,8 @@ export function EditProjectView({ projectId }: Props) {
     updateProject.mutate({ id: projectId, data }, {
       onSuccess: () => {
         toast.success('Project updated')
-        queryClient.invalidateQueries(trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }))
-        queryClient.invalidateQueries(trpc.projectsRouter.getAllPortfolioProjects.queryOptions())
+        queryClient.invalidateQueries(trpc.projectsRouter.portfolioCrud.getForEdit.queryOptions({ id: projectId }))
+        queryClient.invalidateQueries(trpc.projectsRouter.portfolioCrud.getAll.queryOptions())
       },
       onError: (error) => {
         toast.error(error.message)
@@ -129,7 +129,7 @@ export function EditProjectView({ projectId }: Props) {
   }
 
   function handleMediaUpdate() {
-    queryClient.invalidateQueries(trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }))
+    queryClient.invalidateQueries(trpc.projectsRouter.portfolioCrud.getForEdit.queryOptions({ id: projectId }))
   }
 
   return (

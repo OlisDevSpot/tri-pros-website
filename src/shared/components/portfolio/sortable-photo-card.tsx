@@ -68,7 +68,7 @@ export function SortablePhotoCard({
   }, [file.name])
 
   const renameMutation = useMutation(
-    trpc.projectsRouter.renameMediaFile.mutationOptions({
+    trpc.projectsRouter.media.rename.mutationOptions({
       onSuccess: () => onNameUpdated(),
       onError: () => toast.error('Failed to rename file'),
     }),

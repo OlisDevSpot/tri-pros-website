@@ -8,7 +8,7 @@ export function useProjectActions() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
 
-  const deleteProject = useMutation(trpc.projectsRouter.deleteProject.mutationOptions({
+  const deleteProject = useMutation(trpc.projectsRouter.portfolioCrud.delete.mutationOptions({
     onSuccess: () => {
       invalidateProject(queryClient)
       toast.success('Project deleted')

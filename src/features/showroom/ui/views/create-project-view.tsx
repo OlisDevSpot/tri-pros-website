@@ -25,7 +25,7 @@ export function CreateProjectView() {
     defaultValues: projectFormDefaults,
   })
 
-  const createProject = useMutation(trpc.projectsRouter.createPortfolioProject.mutationOptions())
+  const createProject = useMutation(trpc.projectsRouter.portfolioCrud.create.mutationOptions())
 
   function onSubmit(data: ProjectFormData) {
     createProject.mutate(data, {

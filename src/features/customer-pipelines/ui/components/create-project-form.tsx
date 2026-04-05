@@ -112,7 +112,7 @@ export function CreateProjectForm({
   }, [customer?.city]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const createMutation = useMutation(
-    trpc.projectsRouter.createBusinessProject.mutationOptions({
+    trpc.projectsRouter.business.create.mutationOptions({
       onSuccess: async (project) => {
         invalidateProject(queryClient, project.id, customerId)
         invalidateMeeting(queryClient, customerId)

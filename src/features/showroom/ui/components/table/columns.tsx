@@ -10,7 +10,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { cn } from '@/shared/lib/utils'
 
-export type ProjectRow = inferRouterOutputs<AppRouter>['projectsRouter']['getAllPortfolioProjects'][number] & {
+export type ProjectRow = inferRouterOutputs<AppRouter>['projectsRouter']['portfolioCrud']['getAll'][number] & {
   tradeNames: string[]
 }
 
