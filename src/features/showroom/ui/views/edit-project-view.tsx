@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { ProjectForm } from '@/features/showroom/ui/components/form'
@@ -29,6 +29,9 @@ export function EditProjectView({ projectId }: Props) {
   const queryClient = useQueryClient()
   const router = useRouter()
 
+  const pollCountRef = useRef(0)
+  const MAX_POLL_ATTEMPTS = 10 // ~3s, 6s, 9s... stops after ~60s total
+
   const project = useQuery({
     ...trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }),
     refetchInterval: (query) => {
@@ -39,7 +42,16 @@ export function EditProjectView({ projectId }: Props) {
       const hasPending = data.media.some(
         m => m.optimizationStatus === 'pending' || m.optimizationStatus === 'processing',
       )
-      return hasPending ? 3000 : false
+      if (!hasPending) {
+        pollCountRef.current = 0
+        return false
+      }
+      if (pollCountRef.current >= MAX_POLL_ATTEMPTS) {
+        return false
+      }
+      pollCountRef.current++
+      // Exponential backoff: 3s, 4.5s, 6.75s, 10s, 15s...
+      return Math.min(3000 * 1.5 ** (pollCountRef.current - 1), 30000)
     },
   })
 
