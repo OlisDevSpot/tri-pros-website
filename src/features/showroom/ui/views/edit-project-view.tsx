@@ -29,7 +29,19 @@ export function EditProjectView({ projectId }: Props) {
   const queryClient = useQueryClient()
   const router = useRouter()
 
-  const project = useQuery(trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }))
+  const project = useQuery({
+    ...trpc.projectsRouter.getProjectForEdit.queryOptions({ id: projectId }),
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (!data?.media) {
+        return false
+      }
+      const hasPending = data.media.some(
+        m => m.optimizationStatus === 'pending' || m.optimizationStatus === 'processing',
+      )
+      return hasPending ? 3000 : false
+    },
+  })
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
