@@ -20,6 +20,7 @@ import { refreshAccessToken } from '@/shared/services/google-drive/lib/refresh-a
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { deleteObject } from '@/shared/services/r2/delete-object'
 import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
+import { deleteMediaWithVariants } from '@/shared/services/r2/lib/delete-media-with-variants'
 import { putObject } from '@/shared/services/r2/put-object'
 import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
@@ -217,7 +218,7 @@ export const projectsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
       }
 
-      await deleteObject(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
+      await deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
       await db.delete(mediaFiles).where(eq(mediaFiles.id, input.id))
     }),
 
@@ -264,7 +265,7 @@ export const projectsRouter = createTRPCRouter({
         .where(inArray(mediaFiles.id, input.ids))
 
       for (const file of files) {
-        await deleteObject(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
+        await deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
       }
 
       await db.delete(mediaFiles).where(inArray(mediaFiles.id, input.ids))
