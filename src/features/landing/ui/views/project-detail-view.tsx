@@ -14,7 +14,7 @@ interface Props {
 
 export function ProjectDetailView({ detail }: Props) {
   const { project, media } = detail
-  const heroImage = media.hero[0] ?? media.uncategorized[0]
+  const heroImage = media.hero[0] ?? media.after[0] ?? media.during[0] ?? media.uncategorized[0]
 
   return (
     <main>

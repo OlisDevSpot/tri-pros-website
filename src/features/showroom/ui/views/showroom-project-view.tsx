@@ -20,7 +20,7 @@ interface Props {
 export function ShowroomProjectView({ detail }: Props) {
   const trpc = useTRPC()
   const { project, media, scopeIds } = detail
-  const heroImage = media.hero[0] ?? media.uncategorized[0]
+  const heroImage = media.hero[0] ?? media.after[0] ?? media.during[0] ?? media.uncategorized[0]
 
   const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
