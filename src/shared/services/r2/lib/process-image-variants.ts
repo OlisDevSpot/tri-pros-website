@@ -14,10 +14,13 @@ export interface ProcessImageResult {
 }
 
 export async function processImageVariants(originalBuffer: Buffer): Promise<ProcessImageResult> {
+  const resizeOpts = { withoutEnlargement: true }
+  const webpOpts = { quality: 72 }
+
   const [sm, md, lg, blur] = await Promise.all([
-    sharp(originalBuffer).resize(640).webp({ quality: 80 }).toBuffer(),
-    sharp(originalBuffer).resize(1280).webp({ quality: 80 }).toBuffer(),
-    sharp(originalBuffer).resize(1920).webp({ quality: 80 }).toBuffer(),
+    sharp(originalBuffer).resize(640, undefined, resizeOpts).webp(webpOpts).toBuffer(),
+    sharp(originalBuffer).resize(1280, undefined, resizeOpts).webp(webpOpts).toBuffer(),
+    sharp(originalBuffer).resize(1920, undefined, resizeOpts).webp(webpOpts).toBuffer(),
     sharp(originalBuffer).resize(20).webp({ quality: 20 }).toBuffer(),
   ])
 

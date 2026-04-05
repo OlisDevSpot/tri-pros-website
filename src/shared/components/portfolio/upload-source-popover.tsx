@@ -55,10 +55,11 @@ export function UploadSourcePopover({
           <UploadIcon className="h-4 w-4 shrink-0" />
           From this device
         </button>
+        {/* Hidden on mobile — Google Drive picker has known touch/navigation issues */}
         <button
           type="button"
           disabled={isUploading || isPickerLoading}
-          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+          className="hidden sm:flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
           onClick={handleDriveClick}
         >
           <HardDrive className="h-4 w-4 shrink-0" />
