@@ -1,13 +1,20 @@
 /**
- * Custom Next.js image loader using Cloudflare Image Transformations.
+ * Custom Next.js image loader.
  *
- * Replaces Vercel's image optimization (which has a 1,000 req/month free tier)
- * with Cloudflare's edge-based transforms (5,000 unique transforms/month free).
+ * When NEXT_PUBLIC_CF_IMAGE_TRANSFORMS=true (set after DNS migration to
+ * Cloudflare), routes remote images through /cdn-cgi/image/ for auto
+ * WebP/AVIF, resizing, and edge caching (5,000 free transforms/month).
  *
- * - Remote images (R2, external): routed through /cdn-cgi/image/ for
- *   auto WebP/AVIF conversion, resizing, and edge caching
- * - Local images (/public/): served as-is (no transformation needed)
+ * When disabled (default), serves remote images directly from source —
+ * no optimization but no Vercel quota usage either.
+ *
+ * Local images (/public/) are always served directly.
  */
+
+// eslint-disable-next-line node/prefer-global/process
+const CF_TRANSFORMS_ENABLED = process.env.NEXT_PUBLIC_CF_IMAGE_TRANSFORMS === 'true'
+const CF_DOMAIN = 'https://triprosremodeling.com'
+
 export default function cloudflareLoader({
   src,
   width,
@@ -18,7 +25,12 @@ export default function cloudflareLoader({
     return src
   }
 
-  // Remote images — transform via Cloudflare
-  const params = [`width=${width}`, `quality=${quality || 75}`, 'format=auto']
-  return `https://triprosremodeling.com/cdn-cgi/image/${params.join(',')}/${src}`
+  // Cloudflare Image Transforms — enabled after DNS migration
+  if (CF_TRANSFORMS_ENABLED) {
+    const params = [`width=${width}`, `quality=${quality || 75}`, 'format=auto']
+    return `${CF_DOMAIN}/cdn-cgi/image/${params.join(',')}/${src}`
+  }
+
+  // Fallback — serve original image directly from R2 (no optimization)
+  return src
 }
