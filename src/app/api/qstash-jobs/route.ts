@@ -5,6 +5,9 @@ import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai
 import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
 import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 
+/** Allow up to 60s for image optimization jobs (default is 10s on Hobby plan) */
+export const maxDuration = 60
+
 /**
  * An array of jobs we have defined.
  */
