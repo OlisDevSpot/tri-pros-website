@@ -2,16 +2,8 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'pub-06be62a0a47b42cbb944ba281f4df793.r2.dev',
-      },
-      {
-        protocol: 'https',
-        hostname: 'pub-e9f58acecb564416a1d1880ba1a88a7f.r2.dev',
-      },
-    ],
+    loader: 'custom',
+    loaderFile: './src/shared/lib/cloudflare-image-loader.ts',
   },
 }
 
