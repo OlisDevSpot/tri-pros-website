@@ -21,6 +21,8 @@ interface OptimizedImageProps {
   className?: string
   containerClassName?: string
   fill?: boolean
+  /** Keep blur visible after load as a soft background (e.g., behind object-contain images) */
+  persistBlur?: boolean
   onRetryOptimization?: (mediaFileId: number) => void
 }
 
@@ -35,6 +37,7 @@ export function OptimizedImage({
   className,
   containerClassName,
   fill = false,
+  persistBlur = false,
   onRetryOptimization,
 }: OptimizedImageProps) {
   const [loaded, setLoaded] = useState(false)
@@ -75,13 +78,16 @@ export function OptimizedImage({
 
   return (
     <div className={cn('relative overflow-hidden', fill && 'absolute inset-0', containerClassName)}>
-      {/* Blur placeholder — shown while real image loads, fades out completely */}
-      {isOptimized && file.blurDataUrl && !loaded && (
+      {/* Blur placeholder — shown while loading, optionally persists as background */}
+      {isOptimized && file.blurDataUrl && (!loaded || persistBlur) && (
         <img
           src={file.blurDataUrl}
           alt=""
           aria-hidden
-          className="absolute inset-0 h-full w-full object-cover scale-110 blur-xl"
+          className={cn(
+            'absolute inset-0 h-full w-full object-cover scale-110 blur-xl transition-opacity duration-500',
+            loaded && persistBlur ? 'opacity-40' : loaded ? 'opacity-0' : 'opacity-100',
+          )}
         />
       )}
 

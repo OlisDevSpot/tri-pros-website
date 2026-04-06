@@ -91,7 +91,7 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
           </button>
         </div>
 
-        {/* Main image area — no horizontal padding on mobile so image fills screen */}
+        {/* Main image area */}
         <div className="relative flex min-h-0 flex-1 items-center justify-center px-0 sm:px-14">
           {/* Prev button — overlaid on image */}
           {photos.length > 1 && (
@@ -105,20 +105,21 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
             </button>
           )}
 
-          {/* Image */}
+          {/* Image — constrained to same max-width as thumbnail strip */}
           <motion.div
             key={photo.id}
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
-            className="relative h-full w-full"
+            className="relative mx-auto h-full w-full max-w-4xl overflow-hidden rounded-lg"
           >
             <OptimizedImage
               file={photo}
               alt={photo.name}
               fill
+              persistBlur
               className="object-contain"
-              sizes="100vw"
+              sizes="(max-width: 896px) 100vw, 896px"
               priority
             />
           </motion.div>
