@@ -78,20 +78,20 @@ export function OptimizedImage({
 
   return (
     <div className={cn('relative overflow-hidden', fill && 'absolute inset-0', containerClassName)}>
-      {/* Blur placeholder — shown while loading, optionally persists as background */}
+      {/* Blur placeholder — shown while loading, optionally persists as background behind image */}
       {isOptimized && file.blurDataUrl && (!loaded || persistBlur) && (
         <img
           src={file.blurDataUrl}
           alt=""
           aria-hidden
           className={cn(
-            'absolute inset-0 h-full w-full object-cover scale-110 blur-xl transition-opacity duration-500',
+            'absolute inset-0 z-0 h-full w-full object-cover scale-110 blur-xl transition-opacity duration-500',
             loaded && persistBlur ? 'opacity-40' : loaded ? 'opacity-0' : 'opacity-100',
           )}
         />
       )}
 
-      {/* Real image — ALWAYS shown */}
+      {/* Real image — ALWAYS shown, z-10 to sit above blur */}
       <img
         src={src}
         srcSet={srcSet}
@@ -101,8 +101,9 @@ export function OptimizedImage({
         decoding="async"
         fetchPriority={priority ? 'high' : undefined}
         onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
         className={cn(
-          'h-full w-full object-cover transition-opacity duration-300',
+          'relative z-10 h-full w-full object-cover transition-opacity duration-300',
           isOptimized && file.blurDataUrl && !loaded ? 'opacity-0' : 'opacity-100',
           className,
         )}
