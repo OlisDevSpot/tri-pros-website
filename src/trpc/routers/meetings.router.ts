@@ -276,7 +276,7 @@ export const meetingsRouter = createTRPCRouter({
       return updated
     }),
 
-  // Fetch showroom projects relevant to the trades/scopes selected in the meeting flow.
+  // Fetch portfolio projects relevant to the trades/scopes selected in the meeting flow.
   // Returns up to 4 projects ordered by scope match count, with media files attached.
   getPortfolioForMeeting: agentProcedure
     .input(z.object({

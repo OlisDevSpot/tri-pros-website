@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { ShowroomGridView } from '@/features/showroom/ui/views/showroom-grid-view'
+import { PortfolioGridView } from '@/features/project-management/ui/views/portfolio-grid-view'
 import { BottomCTA } from '@/shared/components/cta'
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ function PortfolioPage() {
   return (
     <main>
       <Suspense>
-        <ShowroomGridView />
+        <PortfolioGridView />
       </Suspense>
       <BottomCTA />
     </main>

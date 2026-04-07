@@ -95,7 +95,7 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
         action: {
           label: 'View Project',
           onClick: () => {
-            window.location.href = ROOTS.dashboard.showroom.byId(projectId)
+            window.location.href = ROOTS.dashboard.projects.byId(projectId)
           },
         },
       })

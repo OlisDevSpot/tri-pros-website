@@ -7,7 +7,7 @@ import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { MeetingEntityCard } from '@/features/customer-pipelines/ui/components/meeting-entity-card'
-import { useProjectActionConfigs } from '@/features/showroom/hooks/use-project-action-configs'
+import { useProjectActionConfigs } from '@/features/project-management/hooks/use-project-action-configs'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -24,7 +24,7 @@ interface Props {
 export function ProjectEntityCard({ project, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: Props) {
   const handleViewProject = useCallback(() => {
     onNavigate?.()
-    window.location.href = ROOTS.dashboard.showroom.byId(project.id)
+    window.location.href = ROOTS.dashboard.projects.byId(project.id)
   }, [project.id, onNavigate])
 
   const { actions: projectActions, DeleteConfirmDialog } = useProjectActionConfigs({

@@ -14,13 +14,13 @@ export interface ProjectMediaGroups {
   all: MediaFile[]
 }
 
-export interface ShowroomProject {
+export interface PortfolioProject {
   project: Project
   heroImage: MediaFile | null
   scopeIds: string[]
 }
 
-export interface ShowroomProjectDetail {
+export interface PortfolioProjectDetail {
   project: Project
   media: ProjectMediaGroups
   scopeIds: string[]

@@ -30,10 +30,10 @@ const APP_ROOTS = {
       new: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/proposals/new', options),
       byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/proposals/${id}`, options),
     },
-    showroom: {
-      root: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/showroom', options),
-      new: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/showroom/new', options),
-      byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/showroom/${id}`, options),
+    projects: {
+      root: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/projects', options),
+      new: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/projects/new', options),
+      byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/projects/${id}`, options),
     },
     settings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/settings', options),
     intake: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/intake', options),

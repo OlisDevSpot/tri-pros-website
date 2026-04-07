@@ -48,7 +48,7 @@ interface Props {
 export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const editQueryOptions = trpc.projectsRouter.portfolioCrud.getForEdit.queryOptions({ id: projectId })
+  const editQueryOptions = trpc.projectsRouter.crud.getForEdit.queryOptions({ id: projectId })
   const { upload, isUploading } = useMediaUpload()
   const retryOptimization = useMutation(trpc.projectsRouter.media.retryOptimization.mutationOptions({
     onSuccess: () => onUpdate(),

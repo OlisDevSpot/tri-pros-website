@@ -38,8 +38,8 @@ export const QUERY_KEYS = {
 
   projects: {
     all: [['projectsRouter']] as const,
-    portfolio: [['projectsRouter', 'portfolioCrud', 'getAll']] as const,
-    byId: (id: string) => [['projectsRouter', 'portfolioCrud', 'getForEdit'], { input: { id } }] as const,
+    portfolio: [['projectsRouter', 'crud', 'getAll']] as const,
+    byId: (id: string) => [['projectsRouter', 'crud', 'getForEdit'], { input: { id } }] as const,
   },
 
   landing: {

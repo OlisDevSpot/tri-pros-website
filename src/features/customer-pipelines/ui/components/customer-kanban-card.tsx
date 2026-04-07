@@ -17,8 +17,8 @@ import { PROPOSAL_ROW_STYLES } from '@/features/customer-pipelines/constants/pro
 import { useCustomerActionConfigs } from '@/features/customer-pipelines/hooks/use-customer-action-configs'
 import { getMeetingTimeLabel } from '@/features/customer-pipelines/lib/get-meeting-time-label'
 import { useMeetingActionConfigs } from '@/features/meetings/hooks/use-meeting-action-configs'
+import { useProjectActionConfigs } from '@/features/project-management/hooks/use-project-action-configs'
 import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
-import { useProjectActionConfigs } from '@/features/showroom/hooks/use-project-action-configs'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
@@ -103,7 +103,7 @@ export function CustomerKanbanCard({
 
   const handleViewProject = useCallback(() => {
     if (item.project) {
-      window.location.href = ROOTS.dashboard.showroom.byId(item.project.id)
+      window.location.href = ROOTS.dashboard.projects.byId(item.project.id)
     }
   }, [item.project])
 

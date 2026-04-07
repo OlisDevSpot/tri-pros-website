@@ -1,16 +1,16 @@
 'use client'
 
-import type { ShowroomProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/entities/projects/types'
 import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
 import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { useMemo, useState } from 'react'
-import { ShowroomGrid } from '@/features/showroom/ui/components/showroom-grid'
-import { ShowroomPagination } from '@/features/showroom/ui/components/showroom-pagination'
+import { PortfolioGrid } from '@/features/project-management/ui/components/portfolio-grid'
+import { PortfolioPagination } from '@/features/project-management/ui/components/portfolio-pagination'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 
 interface TradeProjectGridProps {
   tradeName: string
-  projects: ShowroomProject[]
+  projects: PortfolioProject[]
   allScopes: ScopeOrAddon[]
   allTrades: Trade[]
 }
@@ -28,7 +28,7 @@ export function TradeProjectGrid({ tradeName, projects, allScopes, allTrades }: 
     return projects.slice(start, start + perPage)
   }, [projects, safePage, perPage])
 
-  // perPage as string for ShowroomPagination (value doesn't matter since selector is hidden)
+  // perPage as string for PortfolioPagination (value doesn't matter since selector is hidden)
   const perPageStr = String(perPage) as '10' | '20'
 
   return (
@@ -42,14 +42,14 @@ export function TradeProjectGrid({ tradeName, projects, allScopes, allTrades }: 
         </span>
       </div>
 
-      <ShowroomGrid
+      <PortfolioGrid
         projects={paginatedProjects}
         allScopes={allScopes}
         allTrades={allTrades}
       />
 
       {totalPages > 1 && (
-        <ShowroomPagination
+        <PortfolioPagination
           page={safePage}
           totalPages={totalPages}
           totalFiltered={projects.length}

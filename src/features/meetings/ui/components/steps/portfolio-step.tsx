@@ -1,13 +1,13 @@
 'use client'
 
 import type { MeetingFlowContext } from '@/features/meetings/types'
-import type { ShowroomProject } from '@/shared/entities/projects/types'
+import type { PortfolioProject } from '@/shared/entities/projects/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { TradeProjectGrid } from '@/features/meetings/ui/components/steps/trade-project-grid'
-import { useShowroomFilters } from '@/features/showroom/hooks/use-showroom-filters'
-import { ShowroomGrid } from '@/features/showroom/ui/components/showroom-grid'
-import { ShowroomPagination } from '@/features/showroom/ui/components/showroom-pagination'
+import { usePortfolioFilters } from '@/features/project-management/hooks/use-portfolio-filters'
+import { PortfolioGrid } from '@/features/project-management/ui/components/portfolio-grid'
+import { PortfolioPagination } from '@/features/project-management/ui/components/portfolio-pagination'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Separator } from '@/shared/components/ui/separator'
 import { useTRPC } from '@/trpc/helpers'
@@ -25,7 +25,7 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
 
   // Fetch all portfolio data (same queries as the public portfolio page)
   const { data: allProjects = [], isLoading: projectsLoading } = useQuery(
-    trpc.projectsRouter.portfolio.getAll.queryOptions(),
+    trpc.projectsRouter.showroomDisplay.getAll.queryOptions(),
   )
   const { data: allTrades = [] } = useQuery(trpc.notionRouter.trades.getAll.queryOptions())
   const { data: allScopes = [] } = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
@@ -40,7 +40,7 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
       .map((ts) => {
         const selectedScopeIds = new Set(ts.selectedScopes.map(s => s.id))
 
-        const matchingProjects = allProjects.filter((sp: ShowroomProject) =>
+        const matchingProjects = allProjects.filter((sp: PortfolioProject) =>
           sp.scopeIds.some(scopeId => selectedScopeIds.has(scopeId)),
         )
 
@@ -53,8 +53,8 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
       .filter(group => group.projects.length > 0)
   }, [tradeSelections, allProjects])
 
-  // Full portfolio with pagination (reuses showroom filter hook)
-  const showroomFilters = useShowroomFilters({ projects: allProjects, allScopes, allTrades })
+  // Full portfolio with pagination (reuses portfolio filter hook)
+  const portfolioFilters = usePortfolioFilters({ projects: allProjects, allScopes, allTrades })
 
   if (projectsLoading) {
     return <LoadingState description="Loading portfolio projects..." title="Loading portfolio" />
@@ -62,7 +62,7 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
 
   return (
     <div className="space-y-12">
-      {/* ── Per-Trade Portfolio Grids (filtered views of the same ShowroomGrid) */}
+      {/* ── Per-Trade Portfolio Grids (filtered views of the same PortfolioGrid) */}
       {tradeProjectGroups.length > 0 && (
         <div className="space-y-10">
           <div className="space-y-1">
@@ -97,30 +97,30 @@ export function PortfolioStep({ flowContext }: PortfolioStepProps) {
         </div>
 
         {/* Top pagination */}
-        <ShowroomPagination
-          page={showroomFilters.page}
-          totalPages={showroomFilters.totalPages}
-          totalFiltered={showroomFilters.totalFiltered}
-          perPage={showroomFilters.perPage}
-          onPageChange={showroomFilters.setPage}
-          onPerPageChange={showroomFilters.setPerPage}
+        <PortfolioPagination
+          page={portfolioFilters.page}
+          totalPages={portfolioFilters.totalPages}
+          totalFiltered={portfolioFilters.totalFiltered}
+          perPage={portfolioFilters.perPage}
+          onPageChange={portfolioFilters.setPage}
+          onPerPageChange={portfolioFilters.setPerPage}
         />
 
         {/* Grid */}
-        <ShowroomGrid
-          projects={showroomFilters.filteredProjects}
+        <PortfolioGrid
+          projects={portfolioFilters.filteredProjects}
           allScopes={allScopes}
           allTrades={allTrades}
         />
 
         {/* Bottom pagination */}
-        <ShowroomPagination
-          page={showroomFilters.page}
-          totalPages={showroomFilters.totalPages}
-          totalFiltered={showroomFilters.totalFiltered}
-          perPage={showroomFilters.perPage}
-          onPageChange={showroomFilters.setPage}
-          onPerPageChange={showroomFilters.setPerPage}
+        <PortfolioPagination
+          page={portfolioFilters.page}
+          totalPages={portfolioFilters.totalPages}
+          totalFiltered={portfolioFilters.totalFiltered}
+          perPage={portfolioFilters.perPage}
+          onPageChange={portfolioFilters.setPage}
+          onPerPageChange={portfolioFilters.setPerPage}
         />
       </div>
     </div>

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getShowroomProjectDetail } from '@/features/showroom/dal/server/get-showroom-project-detail'
-import { getShowroomProjects } from '@/features/showroom/dal/server/get-showroom-projects'
-import { ShowroomProjectView } from '@/features/showroom/ui/views/showroom-project-view'
+import { getPortfolioProjectDetail } from '@/features/project-management/dal/server/get-portfolio-project-detail'
+import { getPortfolioProjects } from '@/features/project-management/dal/server/get-portfolio-projects'
+import { ProjectStoryView } from '@/features/project-management/ui/views/project-story-view'
 
 interface Props {
   params: Promise<{ projectAccessor: string }>
@@ -10,7 +10,7 @@ interface Props {
 
 export async function generateStaticParams() {
   try {
-    const projects = await getShowroomProjects()
+    const projects = await getPortfolioProjects()
     return projects
       .filter(row => row.project.accessor)
       .map(row => ({ projectAccessor: row.project.accessor as string }))
@@ -22,7 +22,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { projectAccessor } = await params
-  const detail = await getShowroomProjectDetail(projectAccessor)
+  const detail = await getPortfolioProjectDetail(projectAccessor)
 
   if (!detail) {
     return { title: 'Project Not Found' }
@@ -41,11 +41,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProjectDetailPage({ params }: Props) {
   const { projectAccessor } = await params
-  const detail = await getShowroomProjectDetail(projectAccessor)
+  const detail = await getPortfolioProjectDetail(projectAccessor)
 
   if (!detail) {
     notFound()
   }
 
-  return <ShowroomProjectView detail={detail} />
+  return <ProjectStoryView detail={detail} />
 }
