@@ -75,10 +75,14 @@ export function getOptimizedSrcSet(file: MediaFileInput): string | undefined {
     .filter(s => VARIANT_WIDTHS[s])
     .map(s => `${domain}/${base}-${s}.webp ${VARIANT_WIDTHS[s]}w`)
 
-  // If lg variant is missing, add the original as the high-res fallback
-  // so the browser doesn't upscale a 640px image on a 1920px viewport
+  // If lg variant is missing, add the original as a high-res fallback.
+  // Advertise at the next step above the largest existing variant so
+  // the browser uses it for larger viewports without over-fetching on
+  // retina displays (declaring 2560w caused retina to always skip sm).
   if (!variants.includes('lg')) {
-    entries.push(`${file.url} 2560w`)
+    const largestVariantWidth = Math.max(...variants.map(s => VARIANT_WIDTHS[s] ?? 0))
+    const fallbackWidth = variants.includes('md') ? 1920 : largestVariantWidth > 0 ? 1280 : 1920
+    entries.push(`${file.url} ${fallbackWidth}w`)
   }
 
   return entries.join(', ')

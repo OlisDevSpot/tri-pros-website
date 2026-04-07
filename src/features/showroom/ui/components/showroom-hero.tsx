@@ -117,8 +117,8 @@ export function ShowroomHero({ projects }: Props) {
                     file={p.heroImage!}
                     alt={p.project.title}
                     fill
-                    sizes="(max-width: 768px) 50vw, 33vw"
-                    priority={i < 3}
+                    sizes="(max-width: 768px) 33vw, 25vw"
+                    priority
                   />
                   {/* Inner border for depth */}
                   <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10" />
