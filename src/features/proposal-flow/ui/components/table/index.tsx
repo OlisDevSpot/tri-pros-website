@@ -59,10 +59,10 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
 
       // If the meeting already has a project, just approve — no new project needed
       if (row.meetingProjectId) {
-        updateProposal.mutate({
-          proposalId: id,
-          data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() },
-        })
+        updateProposal.mutate(
+          { proposalId: id, data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() } },
+          { onSuccess: () => toast.success('Proposal approved') },
+        )
         return
       }
 
@@ -76,7 +76,10 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
       return
     }
 
-    updateProposal.mutate({ proposalId: id, data: { status } })
+    updateProposal.mutate(
+      { proposalId: id, data: { status } },
+      { onSuccess: () => toast.success('Status updated') },
+    )
   }, [data, updateProposal])
 
   const handleProjectCreated = useCallback((selectedProposalId: string, projectId?: string) => {
@@ -102,7 +105,10 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
   const meta: ProposalTableMeta = {
     proposalActions: () => sharedActions,
     onUpdateStatus: handleStatusChange,
-    onUpdateCreatedAt: (id: string, date: Date) => updateProposal.mutate({ proposalId: id, data: { createdAt: date.toISOString() } }),
+    onUpdateCreatedAt: (id: string, date: Date) => updateProposal.mutate(
+      { proposalId: id, data: { createdAt: date.toISOString() } },
+      { onSuccess: () => toast.success('Created date updated') },
+    ),
     onViewProfile: (customerId: string) => {
       setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
       openModal()
