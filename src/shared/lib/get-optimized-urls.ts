@@ -30,9 +30,9 @@ function resolveVariants(file: MediaFileInput): string[] {
 
 /**
  * Returns the best single src for the image.
- * - If optimized with variants: uses the largest available variant
- * - If optimized with NO variants (blur-only / tiny image): uses original URL
- * - If not yet optimized: uses original URL
+ * - If optimized with lg variant: uses -lg.webp
+ * - If optimized without lg: uses original URL (sharp, even if larger)
+ * - If not optimized or blur-only: uses original URL
  */
 export function getOptimizedSrc(file: MediaFileInput): string {
   if (file.optimizationStatus !== 'optimized') {
@@ -40,24 +40,23 @@ export function getOptimizedSrc(file: MediaFileInput): string {
   }
 
   const variants = resolveVariants(file)
-  if (variants.length === 0) {
-    return file.url
+
+  // Only use a variant as src if lg exists — otherwise original is sharper
+  if (variants.includes('lg')) {
+    const base = file.pathKey.replace(/\.[^.]+$/, '')
+    const domain = R2_PUBLIC_DOMAINS[file.bucket as keyof typeof R2_PUBLIC_DOMAINS] ?? DEFAULT_R2_DOMAIN
+    return `${domain}/${base}-lg.webp`
   }
 
-  // Pick the largest variant available
-  const largest = ['lg', 'md', 'sm'].find(s => variants.includes(s))
-  if (!largest) {
-    return file.url
-  }
-
-  const base = file.pathKey.replace(/\.[^.]+$/, '')
-  const domain = R2_PUBLIC_DOMAINS[file.bucket as keyof typeof R2_PUBLIC_DOMAINS] ?? DEFAULT_R2_DOMAIN
-  return `${domain}/${base}-${largest}.webp`
+  return file.url
 }
 
 /**
- * Returns a srcSet string referencing only the variants that actually exist.
- * - If no variants were generated, returns undefined (browser uses src only).
+ * Returns a srcSet string with optimized variants + original as fallback.
+ *
+ * When only small variants exist (e.g. ["sm"]), the original URL is included
+ * as the high-res option so the browser picks sm for mobile and the original
+ * for desktop — avoiding pixelated upscaling.
  */
 export function getOptimizedSrcSet(file: MediaFileInput): string | undefined {
   if (file.optimizationStatus !== 'optimized') {
@@ -72,8 +71,15 @@ export function getOptimizedSrcSet(file: MediaFileInput): string | undefined {
   const base = file.pathKey.replace(/\.[^.]+$/, '')
   const domain = R2_PUBLIC_DOMAINS[file.bucket as keyof typeof R2_PUBLIC_DOMAINS] ?? DEFAULT_R2_DOMAIN
 
-  return variants
+  const entries = variants
     .filter(s => VARIANT_WIDTHS[s])
     .map(s => `${domain}/${base}-${s}.webp ${VARIANT_WIDTHS[s]}w`)
-    .join(', ')
+
+  // If lg variant is missing, add the original as the high-res fallback
+  // so the browser doesn't upscale a 640px image on a 1920px viewport
+  if (!variants.includes('lg')) {
+    entries.push(`${file.url} 2560w`)
+  }
+
+  return entries.join(', ')
 }
