@@ -50,8 +50,7 @@ const MOSAIC_COUNT = CELLS.length
 
 export function ShowroomHero({ projects }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const isInView = useInView(containerRef, { once: true, amount: 0.2 })
   const [scrollProgress, setScrollProgress] = useState(0)
 
   useEffect(() => {
@@ -86,7 +85,6 @@ export function ShowroomHero({ projects }: Props) {
       {/* Parallax mosaic grid */}
       {heroProjects.length >= 3 && (
         <motion.div
-          ref={ref}
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 1 }}
