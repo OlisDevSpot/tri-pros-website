@@ -1,74 +1,124 @@
 'use client'
 
 import type { ShowroomProject } from '@/shared/entities/projects/types'
-import { motion } from 'motion/react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { motion, useInView } from 'motion/react'
+import { useMemo, useRef } from 'react'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
   projects: ShowroomProject[]
 }
 
+/**
+ * Asymmetric mosaic grid layout for the portfolio hero.
+ *
+ * 12-col × 6-row grid with 8 cells covering every pixel — no gaps.
+ * Mix of large feature cells and smaller accent cells creates
+ * visual rhythm and editorial feel.
+ *
+ * Layout (approximate):
+ * ┌──────────┬────────┬──────────┐
+ * │          │   B    │          │
+ * │    A     ├────────┤    C     │
+ * │          │   D    │          │
+ * ├──────┬───┴────────┼──────────┤
+ * │      │            │    G     │
+ * │  E   │     F      ├──────────┤
+ * │      │            │    H     │
+ * └──────┴────────────┴──────────┘
+ */
+const CELLS: { col: string, row: string, delay: number }[] = [
+  // Top-left feature (large)
+  { col: '1 / 5', row: '1 / 4', delay: 0 },
+  // Top-center
+  { col: '5 / 9', row: '1 / 3', delay: 0.08 },
+  // Top-right feature (tall)
+  { col: '9 / 13', row: '1 / 4', delay: 0.12 },
+  // Center accent (below B)
+  { col: '5 / 9', row: '3 / 4', delay: 0.18 },
+  // Bottom-left
+  { col: '1 / 4', row: '4 / 7', delay: 0.22 },
+  // Bottom-center feature (large)
+  { col: '4 / 9', row: '4 / 7', delay: 0.28 },
+  // Bottom-right top
+  { col: '9 / 13', row: '4 / 5', delay: 0.32 },
+  // Bottom-right bottom
+  { col: '9 / 13', row: '5 / 7', delay: 0.36 },
+]
+
+const MOSAIC_COUNT = CELLS.length
+
 export function ShowroomHero({ projects }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [scrollProgress, setScrollProgress] = useState(0)
-
-  useEffect(() => {
-    const el = containerRef.current
-    if (!el) {
-      return
-    }
-
-    function onScroll() {
-      const rect = el!.getBoundingClientRect()
-      const progress = Math.min(Math.max(-rect.top / rect.height, 0), 1)
-      setScrollProgress(progress)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const yValue = `${scrollProgress * 20}%`
-  const opacityValue = Math.max(1 - scrollProgress / 0.8, 0)
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true, amount: 0.2 })
 
   const heroProjects = useMemo(
-    () => projects.filter(p => p.heroImage?.url).slice(0, 7),
+    () => projects.filter(p => p.heroImage?.url).slice(0, MOSAIC_COUNT),
     [projects],
   )
 
   return (
     <section
-      ref={containerRef}
+      ref={ref}
       className="relative h-[85vh] min-h-150 overflow-hidden bg-background"
     >
-      {/* Parallax image mosaic — fades in when data arrives */}
+      {/* Mosaic grid */}
       {heroProjects.length >= 3 && (
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.2 }}
-          className="absolute inset-0 will-change-transform"
-          style={{ transform: `translateY(${yValue})` }}
+          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 1 }}
+          className="absolute inset-0"
         >
-          <GalleryMosaic projects={heroProjects} />
+          <div className="grid h-full w-full grid-cols-12 grid-rows-6 gap-1 p-1 sm:gap-1.5 sm:p-1.5">
+            {heroProjects.map((p, i) => {
+              const cell = CELLS[i]
+              if (!cell) {
+                return null
+              }
+              return (
+                <motion.div
+                  key={p.project.id}
+                  initial={{ opacity: 0, scale: 1.08 }}
+                  animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 1.08 }}
+                  transition={{
+                    duration: 1.1,
+                    delay: cell.delay,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                  className="relative overflow-hidden rounded-lg"
+                  style={{
+                    gridColumn: cell.col,
+                    gridRow: cell.row,
+                  }}
+                >
+                  <OptimizedImage
+                    file={p.heroImage!}
+                    alt={p.project.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    priority={i < 3}
+                  />
+                  {/* Inner border for depth */}
+                  <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/10" />
+                </motion.div>
+              )
+            })}
+          </div>
         </motion.div>
       )}
 
       {/* Cinematic overlays */}
-      <div className="absolute inset-0 bg-background/45" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.5)_100%)]" />
+      <div className="absolute inset-0 bg-background/50" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_0%,rgba(0,0,0,0.45)_100%)]" />
 
-      {/* Center text — always visible */}
-      <div
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ opacity: opacityValue }}
-      >
+      {/* Center text */}
+      <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative z-10 mx-4 max-w-3xl text-center">
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-foreground/20 bg-foreground/5 px-5 py-2 backdrop-blur-md"
           >
@@ -80,7 +130,7 @@ export function ShowroomHero({ projects }: Props) {
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.7, delay: 0.35 }}
             className="text-5xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-6xl lg:text-8xl"
           >
@@ -92,7 +142,7 @@ export function ShowroomHero({ projects }: Props) {
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.6, delay: 0.55 }}
             className="mx-auto mt-6 max-w-lg text-lg font-light text-foreground/70 sm:text-xl"
           >
@@ -102,7 +152,7 @@ export function ShowroomHero({ projects }: Props) {
           {/* Decorative line */}
           <motion.div
             initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
+            animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
             transition={{ duration: 1, delay: 0.8 }}
             className="mx-auto mt-10 h-px w-32 bg-linear-to-r from-transparent via-foreground/30 to-transparent"
           />
@@ -112,56 +162,5 @@ export function ShowroomHero({ projects }: Props) {
       {/* Bottom fade into page */}
       <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-background to-transparent" />
     </section>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-
-interface MosaicProps {
-  projects: ShowroomProject[]
-}
-
-function GalleryMosaic({ projects }: MosaicProps) {
-  const cells: { col: string, row: string, delay: number }[] = [
-    { col: '1 / 3', row: '1 / 3', delay: 0 },
-    { col: '3 / 5', row: '1 / 2', delay: 0.1 },
-    { col: '5 / 7', row: '1 / 2', delay: 0.15 },
-    { col: '3 / 5', row: '2 / 4', delay: 0.2 },
-    { col: '5 / 7', row: '2 / 3', delay: 0.25 },
-    { col: '1 / 3', row: '3 / 5', delay: 0.3 },
-    { col: '5 / 7', row: '3 / 5', delay: 0.35 },
-  ]
-
-  return (
-    <div className="grid h-full w-full grid-cols-6 grid-rows-4 gap-1.5 p-1.5 sm:gap-2 sm:p-2">
-      {projects.map((p, i) => {
-        const cell = cells[i]
-        if (!cell) {
-          return null
-        }
-        return (
-          <motion.div
-            key={p.project.id}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.2, delay: cell.delay, ease: 'easeOut' }}
-            className="relative overflow-hidden rounded-lg"
-            style={{
-              gridColumn: cell.col,
-              gridRow: cell.row,
-            }}
-          >
-            <OptimizedImage
-              file={p.heroImage!}
-              alt={p.project.title}
-              fill
-              sizes="(max-width: 768px) 50vw, 33vw"
-              priority={i < 3}
-            />
-            <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-foreground/10" />
-          </motion.div>
-        )
-      })}
-    </div>
   )
 }
