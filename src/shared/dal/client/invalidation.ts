@@ -19,6 +19,7 @@ import { QUERY_KEYS } from './query-keys'
 export function invalidateCustomer(qc: QueryClient, customerId?: string) {
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.pipeline })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.profile(customerId) })
+  void qc.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all })
 }
 
 /** Invalidate after any meeting mutation (create, update, delete, assign rep, change outcome) */
@@ -27,6 +28,7 @@ export function invalidateMeeting(qc: QueryClient, customerId?: string) {
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.pipeline })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.profile(customerId) })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.meetings.customerProjects })
+  void qc.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all })
 }
 
 /** Invalidate after any proposal mutation (create, update status, delete, send) */
@@ -38,6 +40,7 @@ export function invalidateProposal(qc: QueryClient, proposalId?: string, custome
   // Proposals affect pipeline values + customer profile
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.pipeline })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.profile(customerId) })
+  void qc.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all })
 }
 
 /** Invalidate after any project mutation (create, update, delete) */
@@ -50,4 +53,5 @@ export function invalidateProject(qc: QueryClient, projectId?: string, customerI
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.pipeline })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.profile(customerId) })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.meetings.customerProjects })
+  void qc.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all })
 }
