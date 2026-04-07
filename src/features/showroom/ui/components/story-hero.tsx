@@ -2,10 +2,15 @@
 
 import type { MediaFile, Project } from '@/shared/db/schema'
 
+import { PencilIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import Link from 'next/link'
 
 import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
+import { useAbility } from '@/shared/permissions/hooks'
 
 interface NamedItem {
   id: string
@@ -24,6 +29,9 @@ interface Props {
 }
 
 export function StoryHero({ project, heroImage, tradesWithScopes }: Props) {
+  const ability = useAbility()
+  const canEdit = ability.can('update', 'Project')
+
   const formattedDate = project.completedAt
     ? new Date(project.completedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null
@@ -70,9 +78,23 @@ export function StoryHero({ project, heroImage, tradesWithScopes }: Props) {
                 {formattedDate}
               </p>
             )}
-            <h1 className="mb-3 text-4xl font-bold text-foreground sm:text-5xl lg:text-6xl">
-              {project.title}
-            </h1>
+            <div className="mb-3 flex items-center gap-3">
+              <h1 className="text-4xl font-bold text-foreground sm:text-5xl lg:text-6xl">
+                {project.title}
+              </h1>
+              {canEdit && (
+                <Button
+                  asChild
+                  size="icon"
+                  variant="ghost"
+                  className="size-9 shrink-0 rounded-full text-foreground/60 backdrop-blur-sm hover:bg-foreground/10 hover:text-foreground"
+                >
+                  <Link href={ROOTS.dashboard.showroom.byId(project.id)}>
+                    <PencilIcon className="size-4" />
+                  </Link>
+                </Button>
+              )}
+            </div>
             <p className="mb-5 text-lg text-foreground/80">
               {project.city}
               {project.state ? `, ${project.state}` : ''}
