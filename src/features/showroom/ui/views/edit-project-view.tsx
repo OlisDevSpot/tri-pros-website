@@ -17,6 +17,7 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
+import { invalidateProject } from '@/shared/dal/client/invalidation'
 import { projectFormDefaults, projectFormSchema } from '@/shared/entities/projects/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -119,8 +120,7 @@ export function EditProjectView({ projectId }: Props) {
     updateProject.mutate({ id: projectId, data }, {
       onSuccess: () => {
         toast.success('Project updated')
-        queryClient.invalidateQueries(trpc.projectsRouter.portfolioCrud.getForEdit.queryOptions({ id: projectId }))
-        queryClient.invalidateQueries(trpc.projectsRouter.portfolioCrud.getAll.queryOptions())
+        invalidateProject(queryClient, projectId)
       },
       onError: (error) => {
         toast.error(error.message)
@@ -129,7 +129,7 @@ export function EditProjectView({ projectId }: Props) {
   }
 
   function handleMediaUpdate() {
-    queryClient.invalidateQueries(trpc.projectsRouter.portfolioCrud.getForEdit.queryOptions({ id: projectId }))
+    invalidateProject(queryClient, projectId)
   }
 
   return (

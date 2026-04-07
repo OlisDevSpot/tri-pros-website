@@ -43,7 +43,7 @@ export function invalidateProposal(qc: QueryClient, proposalId?: string, custome
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all })
 }
 
-/** Invalidate after any project mutation (create, update, delete) */
+/** Invalidate after any project mutation (create, update, delete, media changes) */
 export function invalidateProject(qc: QueryClient, projectId?: string, customerId?: string) {
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.projects.portfolio })
   if (projectId) {
@@ -53,5 +53,7 @@ export function invalidateProject(qc: QueryClient, projectId?: string, customerI
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.pipeline })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.customers.profile(customerId) })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.meetings.customerProjects })
+  // Landing portfolio grid shows project cards with hero images
+  void qc.invalidateQueries({ queryKey: QUERY_KEYS.landing.projects })
   void qc.invalidateQueries({ queryKey: QUERY_KEYS.dashboard.all })
 }
