@@ -2,7 +2,7 @@
 
 import type { ShowroomProject } from '@/shared/entities/projects/types'
 import { motion, useInView } from 'motion/react'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 
 interface Props {
@@ -49,8 +49,29 @@ const CELLS: { col: string, row: string, delay: number }[] = [
 const MOSAIC_COUNT = CELLS.length
 
 export function ShowroomHero({ projects }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, amount: 0.2 })
+  const [scrollProgress, setScrollProgress] = useState(0)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) {
+      return
+    }
+
+    function onScroll() {
+      const rect = el!.getBoundingClientRect()
+      const progress = Math.min(Math.max(-rect.top / rect.height, 0), 1)
+      setScrollProgress(progress)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const yValue = `${scrollProgress * 20}%`
+  const opacityValue = Math.max(1 - scrollProgress / 0.8, 0)
 
   const heroProjects = useMemo(
     () => projects.filter(p => p.heroImage?.url).slice(0, MOSAIC_COUNT),
@@ -59,16 +80,18 @@ export function ShowroomHero({ projects }: Props) {
 
   return (
     <section
-      ref={ref}
+      ref={containerRef}
       className="relative h-[85vh] min-h-150 overflow-hidden bg-background"
     >
-      {/* Mosaic grid */}
+      {/* Parallax mosaic grid */}
       {heroProjects.length >= 3 && (
         <motion.div
+          ref={ref}
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 1 }}
-          className="absolute inset-0"
+          className="absolute inset-0 will-change-transform"
+          style={{ transform: `translateY(${yValue})` }}
         >
           <div className="grid h-full w-full grid-cols-12 grid-rows-6 gap-1 p-1 sm:gap-1.5 sm:p-1.5">
             {heroProjects.map((p, i) => {
@@ -112,8 +135,11 @@ export function ShowroomHero({ projects }: Props) {
       <div className="absolute inset-0 bg-background/50" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_0%,rgba(0,0,0,0.45)_100%)]" />
 
-      {/* Center text */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      {/* Center text — fades out on scroll */}
+      <div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ opacity: opacityValue }}
+      >
         <div className="relative z-10 mx-4 max-w-3xl text-center">
           {/* Badge */}
           <motion.div
