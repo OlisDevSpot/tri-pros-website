@@ -3,9 +3,16 @@
  *
  * For each pending image in the database:
  * 1. Fetches the original from R2
- * 2. Generates 3 WebP size variants (sm/md/lg) + blur placeholder via sharp
- * 3. Uploads variants to R2
- * 4. Updates the DB record with optimizationStatus + blurDataUrl
+ * 2. Reads original dimensions + file size to decide which variants to generate
+ * 3. Generates applicable WebP size variants (sm/md/lg) + blur placeholder via sharp
+ * 4. Uploads variants to R2
+ * 5. Updates the DB record with optimizationStatus, optimizationVariants, + blurDataUrl
+ *
+ * Threshold behavior:
+ * - Tiny originals (<50KB): blur only, no resize variants. Original serves all sizes.
+ * - Per-variant: skipped if original width < target × 1.2 (not enough resolution)
+ * - Per-variant: skipped if original file size is already under the variant's budget
+ * - Blur placeholder is always generated (~200 bytes, 20px wide)
  *
  * Usage:
  *   npx tsx scripts/migrate-optimize-images.ts              # process all pending
@@ -27,7 +34,8 @@ import { S3Client } from '@aws-sdk/client-s3'
 import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import pg from 'pg'
-import sharp from 'sharp'
+
+import { processImageVariants } from '../src/shared/services/r2/lib/process-image-variants'
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -37,7 +45,6 @@ const DRY_RUN = args.includes('--dry-run')
 const limitIdx = args.indexOf('--limit')
 const LIMIT = limitIdx !== -1 ? Number.parseInt(args[limitIdx + 1], 10) : undefined
 const CONCURRENCY = 3
-const WEBP_QUALITY = 72
 
 // eslint-disable-next-line node/prefer-global/process
 const DATABASE_URL = process.env.DATABASE_URL || process.env.DATABASE_DEV_URL
@@ -83,27 +90,6 @@ async function uploadToR2(bucket: string, pathKey: string, buffer: Buffer): Prom
   }))
 }
 
-async function processImage(bucket: string, pathKey: string): Promise<{ blurDataUrl: string }> {
-  const original = await fetchFromR2(bucket, pathKey)
-  const resizeOpts = { withoutEnlargement: true }
-
-  const [sm, md, lg, blur] = await Promise.all([
-    sharp(original).resize(640, undefined, resizeOpts).webp({ quality: WEBP_QUALITY }).toBuffer(),
-    sharp(original).resize(1280, undefined, resizeOpts).webp({ quality: WEBP_QUALITY }).toBuffer(),
-    sharp(original).resize(1920, undefined, resizeOpts).webp({ quality: WEBP_QUALITY }).toBuffer(),
-    sharp(original).resize(20).webp({ quality: 20 }).toBuffer(),
-  ])
-
-  const basePath = pathKey.replace(/\.[^.]+$/, '')
-  await Promise.all([
-    uploadToR2(bucket, `${basePath}-sm.webp`, sm),
-    uploadToR2(bucket, `${basePath}-md.webp`, md),
-    uploadToR2(bucket, `${basePath}-lg.webp`, lg),
-  ])
-
-  return { blurDataUrl: `data:image/webp;base64,${blur.toString('base64')}` }
-}
-
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function migrate() {
@@ -124,11 +110,13 @@ async function migrate() {
     return
   }
 
-  console.log(`Processing with concurrency=${CONCURRENCY}, quality=${WEBP_QUALITY}, withoutEnlargement=true\n`)
+  console.log(`Processing with concurrency=${CONCURRENCY}\n`)
 
   let processed = 0
   let failed = 0
   let skipped = 0
+  let blurOnly = 0
+  let partial = 0
 
   for (let i = 0; i < rows.length; i += CONCURRENCY) {
     const batch = rows.slice(i, i + CONCURRENCY)
@@ -142,12 +130,42 @@ async function migrate() {
       try {
         await db.execute(sql`UPDATE media_files SET optimization_status = 'processing' WHERE id = ${file.id}`)
 
-        const { blurDataUrl } = await processImage(file.bucket, file.path_key)
+        const original = await fetchFromR2(file.bucket, file.path_key)
+        const { variants, blurDataUrl, variantSuffixes, decisions } = await processImageVariants(original)
 
-        await db.execute(sql`UPDATE media_files SET optimization_status = 'optimized', blur_data_url = ${blurDataUrl} WHERE id = ${file.id}`)
+        // Upload only the variants that were generated
+        const basePath = file.path_key.replace(/\.[^.]+$/, '')
+        await Promise.all(
+          variants.map(v => uploadToR2(file.bucket, `${basePath}-${v.suffix}.webp`, v.buffer)),
+        )
+
+        // Store which variants were created in the DB
+        await db.execute(
+          sql`UPDATE media_files SET optimization_status = 'optimized', optimization_variants = ${JSON.stringify(variantSuffixes)}::jsonb, blur_data_url = ${blurDataUrl} WHERE id = ${file.id}`,
+        )
 
         processed++
-        console.log(`[${processed + failed + skipped}/${rows.length}] ✓ ${file.path_key}`)
+        const count = `[${processed + failed + skipped}/${rows.length}]`
+        const sizeKB = Math.round(original.byteLength / 1024)
+
+        if (variantSuffixes.length === 0) {
+          blurOnly++
+          console.log(`${count} ⊘ ${file.path_key} (${sizeKB}KB) → blur only`)
+        }
+        else if (variantSuffixes.length < 3) {
+          partial++
+          console.log(`${count} ◐ ${file.path_key} (${sizeKB}KB) → [${variantSuffixes.join(',')}]`)
+        }
+        else {
+          console.log(`${count} ✓ ${file.path_key} (${sizeKB}KB) → [${variantSuffixes.join(',')}]`)
+        }
+
+        // Log skip decisions
+        for (const d of decisions) {
+          if (d.action === 'skipped') {
+            console.log(`       ↳ skip ${d.suffix}: ${d.reason}`)
+          }
+        }
       }
       catch (error) {
         failed++
@@ -157,7 +175,12 @@ async function migrate() {
     }))
   }
 
-  console.log(`\nDone! Processed: ${processed}, Failed: ${failed}, Skipped: ${skipped}`)
+  console.log(`\nDone!`)
+  console.log(`  All 3 variants: ${processed - blurOnly - partial}`)
+  console.log(`  Partial variants: ${partial}`)
+  console.log(`  Blur only (tiny): ${blurOnly}`)
+  console.log(`  Failed: ${failed}`)
+  console.log(`  Skipped (non-image): ${skipped}`)
   await pool.end()
 }
 

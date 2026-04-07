@@ -13,6 +13,7 @@ interface OptimizedImageProps {
     pathKey: string
     bucket: string
     optimizationStatus: string
+    optimizationVariants?: string[] | null
     blurDataUrl?: string | null
   }
   alt: string

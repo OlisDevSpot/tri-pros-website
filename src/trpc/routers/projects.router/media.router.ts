@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
+import { resetOptimizationStatus } from '@/shared/dal/server/media-files/api'
 import { db } from '@/shared/db'
 import { insertMediaFilesSchema, mediaFiles } from '@/shared/db/schema'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
@@ -56,10 +57,7 @@ export const mediaRouter = createTRPCRouter({
   retryOptimization: agentProcedure
     .input(z.object({ mediaFileId: z.number() }))
     .mutation(async ({ input }) => {
-      await db
-        .update(mediaFiles)
-        .set({ optimizationStatus: 'pending' })
-        .where(eq(mediaFiles.id, input.mediaFileId))
+      await resetOptimizationStatus(input.mediaFileId)
       void optimizeImageJob.dispatch({ mediaFileId: input.mediaFileId })
       return { success: true }
     }),
