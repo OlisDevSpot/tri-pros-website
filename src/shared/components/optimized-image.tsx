@@ -78,7 +78,7 @@ export function OptimizedImage({
   }
 
   return (
-    <div className={cn('relative overflow-hidden', fill && 'absolute inset-0', containerClassName)}>
+    <div className={cn('relative z-0 overflow-hidden', fill && 'absolute inset-0', containerClassName)}>
       {/* Blur placeholder — shown while loading, optionally persists as background behind image */}
       {isOptimized && file.blurDataUrl && (!loaded || persistBlur) && (
         <img
