@@ -6,6 +6,7 @@ import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai
 import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
 import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 import { syncQbInvoiceJob } from '@/shared/services/upstash/jobs/sync-qb-invoice'
+import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
 import { syncQbPaymentJob } from '@/shared/services/upstash/jobs/sync-qb-payment'
 
 /** Allow up to 60s for image optimization jobs (default is 10s on Hobby plan) */
@@ -21,6 +22,7 @@ const jobs: Job[] = [
   createQbRecordsJob,
   syncQbPaymentJob,
   syncQbInvoiceJob,
+  sendViewNotificationJob,
 ]
 
 /**
