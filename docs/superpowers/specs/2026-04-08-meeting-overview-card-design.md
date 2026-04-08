@@ -82,6 +82,7 @@ interface MeetingOverviewCardData {
     token?: string | null
     viewCount?: number
     createdAt: string
+    sowSummary?: Array<{ trade: string, scopes: string[] }>
   }>
 }
 
@@ -99,66 +100,147 @@ The `MeetingOverviewCardData` type uses optional fields so it works with all exi
 
 | Sub-component | Reads from context | Props | Renders |
 |---|---|---|---|
-| `MeetingOverviewCard` (root) | — | `meeting`, `highlight?`, `className?`, `children`, `onContextAction?` | Context provider div. If `onContextAction` provided, wraps in `ContextMenu` with meeting actions. |
+| `MeetingOverviewCard` (root) | — | `meeting`, `highlight?`, `className?`, `children` | Context provider div |
 | `.Header` | — | `className?`, `children` | Flex row container (`flex items-center gap-2`) |
 | `.Body` | — | `className?`, `children` | Generic content container div |
-| `.Footer` | — | `className?`, `children` | Footer container div |
 
-#### Data Display (read-only)
+#### Data Display
 
 | Sub-component | Reads from context | Props | Renders |
 |---|---|---|---|
-| `.ScheduledDate` | `meeting.scheduledFor` | `format?: 'full' \| 'date-only' \| 'time-only' \| 'relative'`, `className?` | Formatted date text span |
-| `.Type` | `meeting.meetingType` | `className?` | Badge with meeting type label |
-| `.Outcome` | `meeting.meetingOutcome` | `variant?: 'badge' \| 'dot' \| 'tint'`, `className?` | Read-only outcome display. `badge` = colored Badge, `dot` = small colored circle, `tint` = background color class (for parent containers). |
-| `.CreatedAt` | `meeting.createdAt` | `className?` | Relative timestamp ("created X ago") |
 | `.Owner` | `ownerName`, `ownerImage` | `size?: 'sm' \| 'md'`, `showName?: boolean`, `className?` | Avatar + optional name. Uses `Avatar`/`AvatarFallback` from shadcn. Renders initials fallback. |
 | `.CustomerName` | `meeting.customerName` | `className?` | Customer name text span |
-| `.Trades` | `meeting.proposals[].trade` | `max?: number`, `className?` | Inline badges of unique trades derived from all proposals. Deduplicates, shows up to `max` (default 3) with "+N more" overflow badge. Returns null if no trades. |
-| `.ProposalCount` | `meeting.proposals` | `className?` | Icon + count text (e.g., `FileTextIcon` + "3 proposals") |
-
-#### Editable Fields
-
-| Sub-component | Reads from context | Props | Renders |
-|---|---|---|---|
-| `.OutcomeSelect` | `meeting.meetingOutcome` | `onSelect: (outcome: string) => void`, `isLoading?: boolean`, `className?` | Inline dropdown (Select or DropdownMenu) to change meeting outcome. Shows current outcome as trigger with colored indicator. Uses `MEETING_OUTCOME_OPTIONS`. |
-| `.ScheduledDatePicker` | `meeting.scheduledFor` | `onChange: (date: Date) => void`, `className?` | Inline DateTimePicker (wraps existing `DateTimePicker` component). Renders as a clickable Badge showing current time. |
-
-#### Nested Entities
-
-| Sub-component | Reads from context | Props | Renders |
-|---|---|---|---|
+| `.CreatedAt` | `meeting.createdAt` | `className?` | Relative timestamp ("created X ago") |
+| `.Trades` | `meeting.proposals[].sowSummary` | `max?: number`, `className?` | Interactive trade badges. See **Trades sub-component** section below. |
 | `.Proposals` | `meeting.proposals` | `renderProposal?: (proposal) => ReactNode`, `className?`, `emptyMessage?: string` | Proposal list container with header (icon + count). Iterates proposals — uses `renderProposal` if provided, otherwise renders a default compact row. When `ProposalOverviewCard` is built later, consumers will pass `renderProposal={(p) => <ProposalOverviewCard proposal={p} />}`. |
+
+#### Editable Fields (unified)
+
+| Sub-component | Reads from context | Props | Renders |
+|---|---|---|---|
+| `.Fields` | multiple fields from context | `fields: MeetingFieldConfig[]`, `className?` | Renders a set of meeting fields — each field is both a **display** and an **edit affordance** in one. The `fields` config array tells it which fields to show and provides the mutation callbacks. See **Fields sub-component** section below. |
 
 #### Interaction
 
 | Sub-component | Reads from context | Props | Renders |
 |---|---|---|---|
-| `.Actions` | `meeting` (full entity) | `actions: EntityActionConfig[]`, `mode?: 'compact' \| 'full'`, `className?` | Wraps `EntityActionMenu`. In `compact` mode renders as `MoreHorizontalIcon` trigger (existing behavior). In `full` mode renders primary button + overflow dropdown. |
-| `.ContextMenu` | `meeting` (full entity) | `actions: EntityActionConfig[]`, `children: ReactNode` | Wraps children in shadcn `ContextMenu` + `ContextMenuTrigger` + `ContextMenuContent`. Right-click on the wrapped area opens the same actions as the dropdown. Reuses the same `EntityActionConfig` array. |
-
-**Note on `.ContextMenu`:** This is an **alternative** to passing `onContextAction` to the root. The root-level approach is simpler (actions array in one place), but `.ContextMenu` as a sub-component gives more control over which area of the card is right-clickable. **Recommendation:** Support both — root-level for the common case, `.ContextMenu` sub-component for advanced composition.
+| `.Actions` | `meeting` (full entity) | `actions: EntityActionConfig[]`, `mode?: 'compact' \| 'full'`, `className?` | Wraps `EntityActionMenu`. In `compact` mode renders as `MoreHorizontalIcon` trigger. In `full` mode renders primary button + overflow dropdown. |
+| `.ContextMenu` | `meeting` (full entity) | `actions: EntityActionConfig[]`, `children: ReactNode` | Wraps children in shadcn `ContextMenu` + `ContextMenuTrigger` + `ContextMenuContent`. Right-click on the wrapped area opens the same actions as the dropdown menu. Reuses the same `EntityActionConfig[]` array. |
 
 ### Sub-Component Summary
 
 ```
-MeetingOverviewCard          (root provider + optional ContextMenu)
-├── .Header                  (flex row)
+MeetingOverviewCard          (root context provider)
+├── .Header                  (flex row layout)
 ├── .Body                    (generic container)
-├── .Footer                  (generic container)
-├── .ScheduledDate           (read-only date display)
-├── .ScheduledDatePicker     (editable date)
-├── .Type                    (badge)
-├── .Outcome                 (read-only outcome: badge/dot/tint)
-├── .OutcomeSelect           (editable outcome dropdown)
-├── .CreatedAt               (relative time)
 ├── .Owner                   (avatar + name)
 ├── .CustomerName            (text)
-├── .Trades                  (unique trade badges from proposals)
-├── .ProposalCount           (icon + count)
+├── .CreatedAt               (relative time)
+├── .Trades                  (interactive trade+scope badges)
 ├── .Proposals               (proposal list with render prop)
+├── .Fields                  (unified editable field renderer)
 ├── .Actions                 (MoreHorizontal dropdown menu)
 └── .ContextMenu             (right-click context menu wrapper)
+```
+
+### `.Fields` Sub-Component — Unified Editable Field Renderer
+
+Instead of separate sub-components for each editable/displayable field (outcome, scheduled date, type, etc.), a single `.Fields` sub-component takes a config array that describes which fields to render and how. Each field displays its current value from context AND provides edit affordance when a handler is provided.
+
+**Field config type:**
+
+```ts
+type MeetingFieldConfig =
+  | { field: 'outcome', variant?: 'badge' | 'dot', onSelect?: (outcome: string) => void, isLoading?: boolean }
+  | { field: 'scheduledDate', format?: 'full' | 'date-only' | 'time-only' | 'relative', onChange?: (date: Date) => void }
+  | { field: 'type' }
+  | { field: 'proposalCount' }
+```
+
+**Behavior per field:**
+
+| Field | Display (no handler) | Edit (handler provided) |
+|---|---|---|
+| `outcome` | Colored Badge or dot showing current outcome label | Same display but clickable — opens outcome select dropdown. `onSelect` fires on change. |
+| `scheduledDate` | Formatted date text (format prop controls style) | Same display but clickable — opens DateTimePicker. `onChange` fires on change. |
+| `type` | Badge showing meeting type | Read-only (no edit affordance for type) |
+| `proposalCount` | FileTextIcon + "N proposals" count | Read-only |
+
+**Key insight:** The edit affordance is "derived" from providing the handler. If `onSelect` is omitted for outcome, it renders as a static badge. If provided, the same badge becomes a dropdown trigger. This means **one config, one sub-component, two modes** — not separate read/edit components.
+
+**Usage examples:**
+
+```tsx
+{/* Profile modal: editable outcome + read-only type + proposal count */}
+<MeetingOverviewCard.Fields fields={[
+  { field: 'outcome', onSelect: (o) => updateOutcome(meeting.id, o), isLoading },
+  { field: 'type' },
+  { field: 'proposalCount' },
+]} />
+
+{/* Calendar card: editable scheduled date + outcome dot */}
+<MeetingOverviewCard.Fields fields={[
+  { field: 'scheduledDate', format: 'time-only', onChange: (d) => reschedule(meeting.id, d) },
+  { field: 'outcome', variant: 'dot' },
+]} />
+
+{/* Kanban: just outcome dot, nothing editable */}
+<MeetingOverviewCard.Fields fields={[
+  { field: 'outcome', variant: 'dot' },
+]} />
+
+{/* Tooltip preview: static fields only */}
+<MeetingOverviewCard.Fields fields={[
+  { field: 'scheduledDate', format: 'full' },
+  { field: 'outcome' },
+  { field: 'proposalCount' },
+]} />
+```
+
+### `.Trades` Sub-Component — Interactive Trade+Scope Badges
+
+Derives unique trades from `meeting.proposals[].sowSummary` (each proposal has `sowSummary: SowTradeScope[]` where `SowTradeScope = { trade: string, scopes: string[] }`). Aggregates across all proposals, deduplicates by trade name, and merges scope lists.
+
+**Default state:** Renders inline shadcn Badge components for each unique trade (up to `max`, default 3), with a "+N more" overflow badge if needed. Returns null if no trades found.
+
+**Hover (desktop):** Popover (or Tooltip with rich content) appears showing the trade → scopes breakdown:
+
+```
+┌──────────────────────────────┐
+│ Windows                      │
+│   • Vinyl replacement        │
+│   • Bay window install       │
+│                              │
+│ Roofing                      │
+│   • Full tear-off & replace  │
+│   • Gutter install           │
+│                              │
+│ HVAC                         │
+│   • Central AC install       │
+└──────────────────────────────┘
+```
+
+**Click (mobile + desktop):** Opens the same popover content as a persistent popover (not just hover). On mobile, touch triggers the popover since hover isn't available.
+
+**Implementation:** Uses shadcn `Popover` + `PopoverTrigger` + `PopoverContent`. The trigger is the badges row. The content is a structured list of trades with nested scope bullets.
+
+**Data flow:**
+```ts
+// Aggregation logic (inside the sub-component):
+const tradeScopes = useMemo(() => {
+  const map = new Map<string, Set<string>>()
+  for (const proposal of meeting.proposals ?? []) {
+    for (const { trade, scopes } of proposal.sowSummary ?? []) {
+      const existing = map.get(trade) ?? new Set()
+      scopes.forEach(s => existing.add(s))
+      map.set(trade, existing)
+    }
+  }
+  return Array.from(map.entries()).map(([trade, scopes]) => ({
+    trade,
+    scopes: Array.from(scopes),
+  }))
+}, [meeting.proposals])
 ```
 
 ### Root Component Behavior
@@ -196,7 +278,7 @@ The root renders a `<div>` with the passed `className`.
 
 ### Profile Modal — Meetings Tab (replaces `MeetingEntityCard`)
 
-Full detail card with right-click context menu, editable outcome, trades, and nested proposals.
+Full detail card with right-click context menu, editable outcome, trades with scope popover, and nested proposals.
 
 ```tsx
 <Card className={cn(isHighlighted && 'outline-2 outline-primary -outline-offset-2')}>
@@ -204,12 +286,11 @@ Full detail card with right-click context menu, editable outcome, trades, and ne
     <MeetingOverviewCard meeting={meeting}>
       <MeetingOverviewCard.ContextMenu actions={meetingActions}>
         <MeetingOverviewCard.Header className="px-3 py-2">
-          <MeetingOverviewCard.ScheduledDate format="full" />
-          <MeetingOverviewCard.Type />
-          <MeetingOverviewCard.OutcomeSelect
-            onSelect={(outcome) => updateOutcome.mutate({ id: meeting.id, outcome })}
-            isLoading={updateOutcome.isPending}
-          />
+          <MeetingOverviewCard.Fields fields={[
+            { field: 'scheduledDate', format: 'full' },
+            { field: 'type' },
+            { field: 'outcome', onSelect: (o) => updateOutcome(meeting.id, o), isLoading },
+          ]} />
           <MeetingOverviewCard.Trades max={2} />
           <div className="flex items-center gap-1 ml-auto">
             <MeetingOverviewCard.CreatedAt />
@@ -232,13 +313,15 @@ Compact card with outcome dot, editable scheduled time, customer contact info, a
   <div className={cn('rounded-md border p-2.5 text-xs cursor-pointer')}>
     <MeetingOverviewCard meeting={calendarEvent} className="flex flex-col gap-1.5">
       <MeetingOverviewCard.Header className="gap-1.5">
-        <MeetingOverviewCard.Outcome variant="dot" />
+        <MeetingOverviewCard.Fields fields={[
+          { field: 'outcome', variant: 'dot' },
+        ]} />
         <MeetingOverviewCard.CustomerName className="font-medium truncate flex-1" />
         <MeetingOverviewCard.Actions actions={actions} mode="compact" />
       </MeetingOverviewCard.Header>
-      <MeetingOverviewCard.ScheduledDatePicker
-        onChange={(date) => onUpdateScheduledFor(event.meetingId, date)}
-      />
+      <MeetingOverviewCard.Fields fields={[
+        { field: 'scheduledDate', format: 'time-only', onChange: (d) => onUpdateScheduledFor(event.meetingId, d) },
+      ]} />
       <MeetingOverviewCard.Body className="space-y-1">
         <PhoneAction phone={event.customerPhone} />
         <AddressAction address={fullAddress} />
@@ -250,7 +333,7 @@ Compact card with outcome dot, editable scheduled time, customer contact info, a
 
 ### Kanban Project Meeting (replaces inline `KanbanProjectMeeting`)
 
-Minimal card — just owner avatar, trades summary, and proposal rows.
+Minimal card — just owner avatar, trades with scope popover, and proposal rows.
 
 ```tsx
 <MeetingOverviewCard meeting={mtg} className="space-y-1">
@@ -265,17 +348,19 @@ Minimal card — just owner avatar, trades summary, and proposal rows.
 
 ### Read-Only Summary (e.g., in a tooltip or preview popover)
 
-Fully read-only — no actions, no editable fields.
+Fully read-only — no actions, no handlers = no edit affordances.
 
 ```tsx
 <MeetingOverviewCard meeting={meeting} className="space-y-1 text-sm">
   <MeetingOverviewCard.Header>
-    <MeetingOverviewCard.ScheduledDate format="full" />
-    <MeetingOverviewCard.Outcome variant="badge" />
+    <MeetingOverviewCard.Fields fields={[
+      { field: 'scheduledDate', format: 'full' },
+      { field: 'outcome' },
+      { field: 'proposalCount' },
+    ]} />
   </MeetingOverviewCard.Header>
   <MeetingOverviewCard.Owner size="sm" showName />
   <MeetingOverviewCard.Trades />
-  <MeetingOverviewCard.ProposalCount />
 </MeetingOverviewCard>
 ```
 
