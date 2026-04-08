@@ -2,21 +2,16 @@ import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'
 import z from 'zod'
 import { ROOTS } from '@/shared/config/roots'
-import env from '@/shared/config/server-env'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
 import { createProposal, deleteProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
 import { getProposalViews, recordProposalView } from '@/shared/dal/server/proposals/proposal-views'
 import { db } from '@/shared/db'
 import { insertProposalSchema } from '@/shared/db/schema'
-import { user } from '@/shared/db/schema/auth'
 import { meetings } from '@/shared/db/schema/meetings'
 import { defineAbilitiesFor } from '@/shared/permissions/abilities'
-import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
-import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
-import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
-import { resendClient } from '@/shared/services/resend/client'
-import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
-import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
+import { contractService } from '@/shared/services/contract.service'
+import { emailService } from '@/shared/services/email.service'
+import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
 export const proposalsRouter = createTRPCRouter({
@@ -214,26 +209,13 @@ export const proposalsRouter = createTRPCRouter({
       const isOmni = ctx.ability.can('manage', 'all')
       const ownerKey = isOmni ? null : user.id
 
-      const { data, error } = await resendClient.emails.send({
-        from: 'Tri Pros <info@triprosremodeling.com>',
-        to: input.email,
-        bcc: 'info@triprosremodeling.com',
-        subject: 'Your Proposal From Tri Pros Remodeling',
-        react: (
-          <ProposalEmail
-            proposalUrl={`${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${input.proposalId}?token=${input.token}&utm_source=email`}
-            customerName={input.customerName}
-            repMessage={input.message}
-          />
-        ),
+      const { data } = await emailService.sendProposalEmail({
+        proposalId: input.proposalId,
+        token: input.token,
+        customerName: input.customerName,
+        email: input.email,
+        message: input.message,
       })
-
-      if (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          cause: error,
-        })
-      }
 
       const proposal = await updateProposal(ownerKey, input.proposalId, {
         status: 'sent',
@@ -241,48 +223,12 @@ export const proposalsRouter = createTRPCRouter({
       })
 
       if (!proposal) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          cause: 'Proposal not found',
-        })
+        throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
       }
 
-      // Fire-and-forget: create DocuSign draft envelope (does not block email send)
-      void (async () => {
-        try {
-          if (proposal.docusignEnvelopeId) {
-            return
-          }
-
-          const fullProposal = await getProposal(input.proposalId)
-          if (!fullProposal) {
-            return
-          }
-
-          const accessToken = await getAccessToken()
-          const body = buildEnvelopeBody(fullProposal, 'created')
-
-          const res = await fetch(`${DS_REST_BASE_URL}/restapi/v2.1/accounts/${env.DS_ACCOUNT_ID}/envelopes`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
-          })
-
-          const envelopeData = await res.json() as { envelopeId?: string }
-
-          if (envelopeData.envelopeId) {
-            await updateProposal(ownerKey, input.proposalId, {
-              docusignEnvelopeId: envelopeData.envelopeId,
-            })
-          }
-        }
-        catch {
-          // Swallow — DocuSign draft failure must not affect the email send
-        }
-      })()
+      // Create signing draft asynchronously (non-blocking)
+      void contractService.createSigningRequest(input.proposalId, ownerKey)
+        .catch(() => { /* Signing draft failure must not affect the email send */ })
 
       return { data, input, proposal }
     }),
@@ -314,10 +260,7 @@ export const proposalsRouter = createTRPCRouter({
       const proposal = await getProposal(input.proposalId)
 
       if (!proposal || proposal.token !== input.token) {
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          cause: 'Invalid token',
-        })
+        throw new TRPCError({ code: 'UNAUTHORIZED', cause: 'Invalid token' })
       }
 
       const view = await recordProposalView({
@@ -327,47 +270,40 @@ export const proposalsRouter = createTRPCRouter({
         userAgent: input.userAgent,
       })
 
-      // Fire-and-forget: send notification email to proposal owner
-      void (async () => {
-        try {
-          const [owner] = await db.select().from(user).where(eq(user.id, proposal.ownerId))
-          if (!owner?.email) {
-            return
-          }
-
-          const customerName = proposal.customer?.name ?? 'Customer'
-          const sourceLabels: Record<string, string> = {
-            email: 'Opened from email link',
-            sms: 'Opened from SMS link',
-            direct: 'Opened directly',
-            unknown: 'Opened directly',
-          }
-          const sourceLabel = sourceLabels[input.source] ?? 'Opened directly'
-
-          await resendClient.emails.send({
-            from: 'Tri Pros System <info@triprosremodeling.com>',
-            to: owner.email,
-            subject: `🔔 ${customerName} just opened their proposal`,
-            react: (
-              <ProposalViewedEmail
-                customerName={customerName}
-                proposalLabel={proposal.label}
-                viewedAt={view.viewedAt}
-                sourceLabel={sourceLabel}
-                proposalId={input.proposalId}
-              />
-            ),
-          })
-        }
-        catch {
-          // Swallow — notification failure must not affect the customer
-        }
-      })()
+      // Dispatch notification asynchronously via QStash
+      void sendViewNotificationJob.dispatch({
+        proposalOwnerId: proposal.ownerId,
+        proposalLabel: proposal.label,
+        proposalId: input.proposalId,
+        customerName: proposal.customer?.name ?? 'Customer',
+        viewedAt: view.viewedAt,
+        source: input.source,
+      }).catch(() => { /* Notification failure must not affect the customer */ })
     }),
 
   getProposalViews: agentProcedure
     .input(z.object({ proposalId: z.string() }))
     .query(async ({ input }) => {
       return getProposalViews(input.proposalId)
+    }),
+
+  createContractDraft: agentProcedure
+    .input(z.object({ proposalId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+      const ownerKey = isOmni ? null : ctx.session.user.id
+      return contractService.createSigningRequest(input.proposalId, ownerKey)
+    }),
+
+  sendContractForSigning: baseProcedure
+    .input(z.object({ proposalId: z.string(), token: z.string() }))
+    .mutation(async ({ input }) => {
+      const proposal = await getProposal(input.proposalId)
+
+      if (!proposal || proposal.token !== input.token) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
+      }
+
+      return contractService.sendSigningRequest(input.proposalId, input.token)
     }),
 })

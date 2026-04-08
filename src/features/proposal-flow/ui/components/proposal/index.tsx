@@ -23,7 +23,7 @@ export function Proposal() {
   const { setRootEl } = useScrollRoot()
   const trpc = useTRPC()
   const recordView = useMutation(trpc.proposalsRouter.recordView.mutationOptions())
-  const sendContract = useMutation(trpc.docusignRouter.sendContractForSigning.mutationOptions())
+  const sendContract = useMutation(trpc.proposalsRouter.sendContractForSigning.mutationOptions())
   const ability = useAbility()
   const hasRecorded = useRef(false)
 

@@ -5,7 +5,6 @@ import { aiRouter } from './ai.router'
 import { customerPipelinesRouter } from './customer-pipelines.router'
 import { customersRouter } from './customers.router'
 import { dashboardRouter } from './dashboard.router'
-import { docusignRouter } from './docusign.router'
 import { intakeRouter } from './intake.router'
 import { landingRouter } from './landing.router'
 import { meetingsRouter } from './meetings.router'
@@ -19,7 +18,6 @@ export const appRouter = createTRPCRouter({
   aiRouter,
   customersRouter,
   dashboardRouter,
-  docusignRouter,
   intakeRouter,
   landingRouter,
   meetingsRouter,
