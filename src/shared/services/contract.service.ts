@@ -97,7 +97,8 @@ function createContractService() {
     getSigningStatus: async (requestId: string) => {
       const res = await makeRequest(`/requests/${requestId}`, { method: 'GET' })
       if (!res.ok) {
-        throw new Error(`Zoho Sign status check failed for ${requestId}`)
+        const errorText = await res.text()
+        throw new Error(`Zoho Sign status check failed for ${requestId}: ${errorText}`)
       }
       const data = await res.json() as { requests: { request_status: string } }
       return { status: data.requests.request_status }

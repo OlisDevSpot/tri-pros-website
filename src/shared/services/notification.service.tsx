@@ -14,7 +14,10 @@ function createNotificationService() {
       viewedAt: string
       source: string
     }) => {
-      const [owner] = await db.select().from(user).where(eq(user.id, params.proposalOwnerId))
+      const [owner] = await db
+        .select({ email: user.email })
+        .from(user)
+        .where(eq(user.id, params.proposalOwnerId))
       if (!owner?.email) {
         return
       }
@@ -27,7 +30,7 @@ function createNotificationService() {
       }
       const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
 
-      await resendClient.emails.send({
+      const { error } = await resendClient.emails.send({
         from: 'Tri Pros System <info@triprosremodeling.com>',
         to: owner.email,
         subject: `🔔 ${params.customerName} just opened their proposal`,
@@ -41,6 +44,10 @@ function createNotificationService() {
           />
         ),
       })
+
+      if (error) {
+        console.error(`[notificationService] Failed to notify proposal viewed:`, error)
+      }
     },
   }
 }
