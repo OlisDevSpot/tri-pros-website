@@ -27,7 +27,7 @@ Each renders overlapping but inconsistent subsets of meeting fields with differe
 | Pattern | Context-driven compound component (`Component.SubComponent`) | Matches existing `BlogpostCard` pattern in codebase. Single import, self-documenting API via namespace. |
 | Data flow | Full meeting entity in context; sub-components read what they need | Simplest approach, future-proof. Sub-components gracefully handle missing fields. |
 | Customization | Sub-components accept `className`, event handlers, display variant props | Context provides data; props provide UI configuration. |
-| File structure | Single file (`overview-card.tsx`) | ~200-300 lines for 6-8 sub-components. Matches BlogpostCard precedent. Avoids barrel file convention violation. |
+| File structure | Single file (`overview-card.tsx`) | ~350-450 lines for ~15 sub-components. Matches BlogpostCard precedent. Avoids barrel file convention violation. |
 | Location | `src/shared/components/entities/meetings/overview-card.tsx` | Cross-feature component (used by customer-pipelines, meetings, project-management). `shared/components/entities/` is a new directory pattern for entity compound cards. |
 | Scope | MeetingOverviewCard only; other entities tracked as follow-up audit | Validate pattern before scaling. Keep PR focused. |
 
@@ -95,19 +95,71 @@ The `MeetingOverviewCardData` type uses optional fields so it works with all exi
 
 ### Sub-Components
 
+#### Layout
+
 | Sub-component | Reads from context | Props | Renders |
 |---|---|---|---|
-| `MeetingOverviewCard` (root) | — | `meeting: MeetingOverviewCardData`, `highlight?: boolean`, `className?: string`, `children: ReactNode` | Context provider + optional Card wrapper |
-| `.Header` | — | `className?: string`, `children: ReactNode` | Flex row container |
-| `.ScheduledDate` | `meeting.scheduledFor` | `format?: 'full' \| 'date-only' \| 'time-only' \| 'relative'`, `className?: string` | Formatted date text |
-| `.Type` | `meeting.meetingType` | `className?: string` | Badge with meeting type |
-| `.Status` | `meeting.meetingOutcome` | `variant?: 'badge' \| 'dot'`, `className?: string` | Outcome badge or colored dot |
-| `.CreatedAt` | `meeting.createdAt` | `className?: string` | Relative timestamp ("created X ago") |
-| `.Owner` | `meeting.ownerName`, `meeting.ownerImage` | `className?: string` | Avatar + name |
-| `.CustomerName` | `meeting.customerName` | `className?: string` | Customer name text |
-| `.Proposals` | `meeting.proposals` | `renderProposal?: (proposal) => ReactNode`, `className?: string` | Proposal list; default rendering or custom via render prop |
-| `.Actions` | `meeting` (full) | `actions: EntityActionConfig[]`, `mode?: 'compact' \| 'full'`, `className?: string` | EntityActionMenu wrapper |
-| `.Body` | — | `className?: string`, `children: ReactNode` | Generic content container |
+| `MeetingOverviewCard` (root) | — | `meeting`, `highlight?`, `className?`, `children`, `onContextAction?` | Context provider div. If `onContextAction` provided, wraps in `ContextMenu` with meeting actions. |
+| `.Header` | — | `className?`, `children` | Flex row container (`flex items-center gap-2`) |
+| `.Body` | — | `className?`, `children` | Generic content container div |
+| `.Footer` | — | `className?`, `children` | Footer container div |
+
+#### Data Display (read-only)
+
+| Sub-component | Reads from context | Props | Renders |
+|---|---|---|---|
+| `.ScheduledDate` | `meeting.scheduledFor` | `format?: 'full' \| 'date-only' \| 'time-only' \| 'relative'`, `className?` | Formatted date text span |
+| `.Type` | `meeting.meetingType` | `className?` | Badge with meeting type label |
+| `.Outcome` | `meeting.meetingOutcome` | `variant?: 'badge' \| 'dot' \| 'tint'`, `className?` | Read-only outcome display. `badge` = colored Badge, `dot` = small colored circle, `tint` = background color class (for parent containers). |
+| `.CreatedAt` | `meeting.createdAt` | `className?` | Relative timestamp ("created X ago") |
+| `.Owner` | `ownerName`, `ownerImage` | `size?: 'sm' \| 'md'`, `showName?: boolean`, `className?` | Avatar + optional name. Uses `Avatar`/`AvatarFallback` from shadcn. Renders initials fallback. |
+| `.CustomerName` | `meeting.customerName` | `className?` | Customer name text span |
+| `.Trades` | `meeting.proposals[].trade` | `max?: number`, `className?` | Inline badges of unique trades derived from all proposals. Deduplicates, shows up to `max` (default 3) with "+N more" overflow badge. Returns null if no trades. |
+| `.ProposalCount` | `meeting.proposals` | `className?` | Icon + count text (e.g., `FileTextIcon` + "3 proposals") |
+
+#### Editable Fields
+
+| Sub-component | Reads from context | Props | Renders |
+|---|---|---|---|
+| `.OutcomeSelect` | `meeting.meetingOutcome` | `onSelect: (outcome: string) => void`, `isLoading?: boolean`, `className?` | Inline dropdown (Select or DropdownMenu) to change meeting outcome. Shows current outcome as trigger with colored indicator. Uses `MEETING_OUTCOME_OPTIONS`. |
+| `.ScheduledDatePicker` | `meeting.scheduledFor` | `onChange: (date: Date) => void`, `className?` | Inline DateTimePicker (wraps existing `DateTimePicker` component). Renders as a clickable Badge showing current time. |
+
+#### Nested Entities
+
+| Sub-component | Reads from context | Props | Renders |
+|---|---|---|---|
+| `.Proposals` | `meeting.proposals` | `renderProposal?: (proposal) => ReactNode`, `className?`, `emptyMessage?: string` | Proposal list container with header (icon + count). Iterates proposals — uses `renderProposal` if provided, otherwise renders a default compact row. When `ProposalOverviewCard` is built later, consumers will pass `renderProposal={(p) => <ProposalOverviewCard proposal={p} />}`. |
+
+#### Interaction
+
+| Sub-component | Reads from context | Props | Renders |
+|---|---|---|---|
+| `.Actions` | `meeting` (full entity) | `actions: EntityActionConfig[]`, `mode?: 'compact' \| 'full'`, `className?` | Wraps `EntityActionMenu`. In `compact` mode renders as `MoreHorizontalIcon` trigger (existing behavior). In `full` mode renders primary button + overflow dropdown. |
+| `.ContextMenu` | `meeting` (full entity) | `actions: EntityActionConfig[]`, `children: ReactNode` | Wraps children in shadcn `ContextMenu` + `ContextMenuTrigger` + `ContextMenuContent`. Right-click on the wrapped area opens the same actions as the dropdown. Reuses the same `EntityActionConfig` array. |
+
+**Note on `.ContextMenu`:** This is an **alternative** to passing `onContextAction` to the root. The root-level approach is simpler (actions array in one place), but `.ContextMenu` as a sub-component gives more control over which area of the card is right-clickable. **Recommendation:** Support both — root-level for the common case, `.ContextMenu` sub-component for advanced composition.
+
+### Sub-Component Summary
+
+```
+MeetingOverviewCard          (root provider + optional ContextMenu)
+├── .Header                  (flex row)
+├── .Body                    (generic container)
+├── .Footer                  (generic container)
+├── .ScheduledDate           (read-only date display)
+├── .ScheduledDatePicker     (editable date)
+├── .Type                    (badge)
+├── .Outcome                 (read-only outcome: badge/dot/tint)
+├── .OutcomeSelect           (editable outcome dropdown)
+├── .CreatedAt               (relative time)
+├── .Owner                   (avatar + name)
+├── .CustomerName            (text)
+├── .Trades                  (unique trade badges from proposals)
+├── .ProposalCount           (icon + count)
+├── .Proposals               (proposal list with render prop)
+├── .Actions                 (MoreHorizontal dropdown menu)
+└── .ContextMenu             (right-click context menu wrapper)
+```
 
 ### Root Component Behavior
 
@@ -144,17 +196,27 @@ The root renders a `<div>` with the passed `className`.
 
 ### Profile Modal — Meetings Tab (replaces `MeetingEntityCard`)
 
+Full detail card with right-click context menu, editable outcome, trades, and nested proposals.
+
 ```tsx
 <Card className={cn(isHighlighted && 'outline-2 outline-primary -outline-offset-2')}>
   <CardContent className="p-0">
     <MeetingOverviewCard meeting={meeting}>
-      <MeetingOverviewCard.Header className="px-3 py-2">
-        <MeetingOverviewCard.ScheduledDate format="full" />
-        <MeetingOverviewCard.Type />
-        <MeetingOverviewCard.Status variant="badge" />
-        <MeetingOverviewCard.CreatedAt />
-        <MeetingOverviewCard.Actions actions={meetingActions} mode="compact" />
-      </MeetingOverviewCard.Header>
+      <MeetingOverviewCard.ContextMenu actions={meetingActions}>
+        <MeetingOverviewCard.Header className="px-3 py-2">
+          <MeetingOverviewCard.ScheduledDate format="full" />
+          <MeetingOverviewCard.Type />
+          <MeetingOverviewCard.OutcomeSelect
+            onSelect={(outcome) => updateOutcome.mutate({ id: meeting.id, outcome })}
+            isLoading={updateOutcome.isPending}
+          />
+          <MeetingOverviewCard.Trades max={2} />
+          <div className="flex items-center gap-1 ml-auto">
+            <MeetingOverviewCard.CreatedAt />
+            <MeetingOverviewCard.Actions actions={meetingActions} mode="compact" />
+          </div>
+        </MeetingOverviewCard.Header>
+      </MeetingOverviewCard.ContextMenu>
       <MeetingOverviewCard.Proposals className="border-t px-3 py-2" />
     </MeetingOverviewCard>
   </CardContent>
@@ -163,32 +225,57 @@ The root renders a `<div>` with the passed `className`.
 
 ### Calendar Card (replaces `MeetingCalendarCard`)
 
+Compact card with outcome dot, editable scheduled time, customer contact info, and right-click menu.
+
 ```tsx
-<div className={cn('rounded-md border p-2.5 text-xs', STATUS_BG_TINTS[event.meetingOutcome])}>
-  <MeetingOverviewCard meeting={calendarEvent} className="flex flex-col gap-1.5">
-    <MeetingOverviewCard.Header className="gap-1.5">
-      <MeetingOverviewCard.Status variant="dot" />
-      <MeetingOverviewCard.CustomerName className="font-medium truncate flex-1" />
-      <MeetingOverviewCard.Actions actions={actions} mode="compact" />
-    </MeetingOverviewCard.Header>
-    <MeetingOverviewCard.ScheduledDate format="time-only" />
-    <MeetingOverviewCard.Body>
-      <PhoneAction phone={event.customerPhone} />
-      <AddressAction address={fullAddress} />
-    </MeetingOverviewCard.Body>
-  </MeetingOverviewCard>
-</div>
+<MeetingOverviewCard.ContextMenu actions={actions}>
+  <div className={cn('rounded-md border p-2.5 text-xs cursor-pointer')}>
+    <MeetingOverviewCard meeting={calendarEvent} className="flex flex-col gap-1.5">
+      <MeetingOverviewCard.Header className="gap-1.5">
+        <MeetingOverviewCard.Outcome variant="dot" />
+        <MeetingOverviewCard.CustomerName className="font-medium truncate flex-1" />
+        <MeetingOverviewCard.Actions actions={actions} mode="compact" />
+      </MeetingOverviewCard.Header>
+      <MeetingOverviewCard.ScheduledDatePicker
+        onChange={(date) => onUpdateScheduledFor(event.meetingId, date)}
+      />
+      <MeetingOverviewCard.Body className="space-y-1">
+        <PhoneAction phone={event.customerPhone} />
+        <AddressAction address={fullAddress} />
+      </MeetingOverviewCard.Body>
+    </MeetingOverviewCard>
+  </div>
+</MeetingOverviewCard.ContextMenu>
 ```
 
 ### Kanban Project Meeting (replaces inline `KanbanProjectMeeting`)
 
+Minimal card — just owner avatar, trades summary, and proposal rows.
+
 ```tsx
 <MeetingOverviewCard meeting={mtg} className="space-y-1">
   <MeetingOverviewCard.Header className="gap-1.5">
-    <MeetingOverviewCard.Owner />
+    <MeetingOverviewCard.Owner size="sm" />
+    <MeetingOverviewCard.Trades max={2} />
     <MeetingOverviewCard.Actions actions={mtgActions} mode="compact" />
   </MeetingOverviewCard.Header>
   <MeetingOverviewCard.Proposals />
+</MeetingOverviewCard>
+```
+
+### Read-Only Summary (e.g., in a tooltip or preview popover)
+
+Fully read-only — no actions, no editable fields.
+
+```tsx
+<MeetingOverviewCard meeting={meeting} className="space-y-1 text-sm">
+  <MeetingOverviewCard.Header>
+    <MeetingOverviewCard.ScheduledDate format="full" />
+    <MeetingOverviewCard.Outcome variant="badge" />
+  </MeetingOverviewCard.Header>
+  <MeetingOverviewCard.Owner size="sm" showName />
+  <MeetingOverviewCard.Trades />
+  <MeetingOverviewCard.ProposalCount />
 </MeetingOverviewCard>
 ```
 
@@ -209,24 +296,49 @@ These constants already exist and should be imported, not recreated:
 
 **Recommended approach:** Move the meeting status color constants to `src/shared/constants/meetings/` since they're now genuinely cross-feature. The proposal row styles stay in the customer-pipelines feature since `.Proposals` accepts a `renderProposal` render prop — each consumer provides their own proposal row rendering.
 
+Additionally, the following existing components are reused by sub-components:
+
+| Component | Location | Used by |
+|---|---|---|
+| `EntityActionMenu` | `src/shared/components/entity-actions/ui/entity-action-menu.tsx` | `.Actions` sub-component |
+| `EntityActionDropdown` | `src/shared/components/entity-actions/ui/entity-action-dropdown.tsx` | `.Actions` sub-component |
+| `ContextMenu` (shadcn) | `src/shared/components/ui/context-menu.tsx` | `.ContextMenu` sub-component |
+| `Avatar`, `AvatarFallback`, `AvatarImage` | `src/shared/components/ui/avatar.tsx` | `.Owner` sub-component |
+| `Badge` | `src/shared/components/ui/badge.tsx` | `.Type`, `.Outcome`, `.Trades` sub-components |
+| `DateTimePicker` | `src/shared/components/date-time-picker.tsx` | `.ScheduledDatePicker` sub-component |
+| `MEETING_OUTCOME_OPTIONS` | `src/features/meetings/constants/outcome-options.ts` | `.OutcomeSelect` — needs to move to `shared/constants/meetings/` |
+
 ---
 
 ## Migration Strategy
 
-### Phase 1: Create the compound component
-- Create `src/shared/components/entities/meetings/overview-card.tsx`
-- Move meeting status constants to `src/shared/constants/meetings/` (update existing imports)
-- Write the compound component with all sub-components
+### Phase 1: Move shared constants
+- Move `MEETING_LIST_STATUS_COLORS` from `src/features/customer-pipelines/constants/meeting-status-colors.ts` → `src/shared/constants/meetings/status-colors.ts`
+- Move `MEETING_OUTCOME_DOT_COLORS` and `MEETING_OUTCOME_LABELS` from `src/features/meetings/constants/status-colors.ts` → `src/shared/constants/meetings/status-colors.ts`
+- Move `MEETING_OUTCOME_OPTIONS` from `src/features/meetings/constants/outcome-options.ts` → `src/shared/constants/meetings/outcome-options.ts`
+- Update all existing imports across the codebase
+- Leave feature-specific constants (like `STATUS_BG_TINTS` in calendar card) where they are — those are view-context specific
 
-### Phase 2: Replace existing implementations one at a time
+### Phase 2: Create the compound component
+- Create `src/shared/components/entities/meetings/overview-card.tsx`
+- Implement all ~16 sub-components:
+  - Layout: Root, Header, Body, Footer
+  - Data display: ScheduledDate, Type, Outcome, CreatedAt, Owner, CustomerName, Trades, ProposalCount
+  - Editable: OutcomeSelect, ScheduledDatePicker
+  - Nested: Proposals
+  - Interaction: Actions, ContextMenu
+
+### Phase 3: Replace existing implementations one at a time
 - Replace `MeetingEntityCard` usage in customer profile modal → compose with MeetingOverviewCard
 - Replace `MeetingCalendarCard` usage in calendar views → compose with MeetingOverviewCard
 - Replace `KanbanProjectMeeting` inline component in kanban card → compose with MeetingOverviewCard
+- Each replacement should be verified for visual + functional parity before moving to the next
 
-### Phase 3: Cleanup
+### Phase 4: Cleanup
 - Delete `meeting-entity-card.tsx` (once all usages replaced)
 - Delete `meeting-calendar-card.tsx` (once all usages replaced)
 - Remove inline `KanbanProjectMeeting` from `customer-kanban-card.tsx`
+- Remove the original constant files if they're now empty (redirect any remaining imports)
 
 ---
 
@@ -252,8 +364,17 @@ Each should become a separate GitHub issue after MeetingOverviewCard validates t
    - Calendar view → calendar cards look the same
    - Kanban board → project meeting sections look the same
 4. **Functional parity:** All interactions work identically:
-   - Action menus open and trigger correct callbacks
+   - Action menus (MoreHorizontal dropdown) open and trigger correct callbacks
+   - Right-click context menus open with same action options
    - Click handlers (navigate, view profile) work
    - Drag-and-drop still works in kanban context
    - Date picker in calendar card still works
-5. **No regressions:** Verify each view context after each replacement before moving to the next
+   - Outcome select dropdown changes outcome and shows loading state
+   - Trades badges render unique trades from proposals correctly
+5. **Sub-component isolation:** Each sub-component gracefully handles missing context data:
+   - `.Trades` returns null when no proposals have trades
+   - `.Owner` renders without crashing when ownerName is null
+   - `.OutcomeSelect` shows "Not set" when meetingOutcome is undefined
+   - `.ScheduledDatePicker` handles null scheduledFor
+6. **No regressions:** Verify each view context after each replacement before moving to the next
+7. **Constants migration:** After moving constants, grep the codebase to confirm zero remaining imports from old paths
