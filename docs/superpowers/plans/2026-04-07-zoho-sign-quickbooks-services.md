@@ -1,18 +1,54 @@
-# Zoho Sign + QuickBooks Services Implementation Plan
+# Full Services Layer Migration — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace DocuSign with Zoho Sign for contract signing and add QuickBooks Online integration for bidirectional financial sync (customers, invoices, payments).
+**Goal:** Migrate the entire codebase to a domain services layer architecture. Replace DocuSign with Zoho Sign, add QuickBooks integration, extract email/notification/media business logic from routers into proper domain services, and create typed stubs for all future services.
 
-**Architecture:** Two independent service tracks running in parallel. Each adds an SDK client directory (infrastructure) and a domain service (business logic). The Zoho Sign track also removes all DocuSign code. The QuickBooks track adds a webhook handler, 3 QStash jobs, a DB token table, and an OAuth callback route.
+**Architecture:** Domain services own all business logic. tRPC routers become thin (validate → authorize → delegate → return). QStash jobs call services, not SDK clients. Infrastructure modules (R2, Resend, Notion) are called by services directly — no pass-through wrappers.
 
-**Tech Stack:** Zoho Sign REST API v1, QuickBooks Online Accounting API v3, OAuth2 (self-client for Zoho, authorization code grant for QB), QStash for async jobs, Drizzle ORM for schema.
+**Tech Stack:** Zoho Sign REST API v1, QuickBooks Online Accounting API v3, Resend, R2, QStash, Drizzle ORM, factory function pattern (`createService()`)
 
 **Spec:** `docs/superpowers/specs/2026-04-07-zoho-sign-quickbooks-services-design.md`
+**Services Layer Plan:** `.claude/plans/inherited-dancing-valley.md`
 
 ---
 
-## Track A: Zoho Sign (Contract Signing)
+## Dependency Graph
+
+```
+Phase 1 (Foundation — no dependencies, all parallel):
+  A1: Zoho Sign SDK client
+  A2: Zoho Sign build signing request
+  A3: Env vars — remove DocuSign, add Zoho Sign
+  B1: QB SDK client + token storage schema
+  B2: QB OAuth callback route
+  B3: Env vars — add QuickBooks
+  B4: Schema — add QB reference columns + rename docusignEnvelopeId
+
+Phase 2 (Domain services — depend on Phase 1):
+  A4: contractService (depends on A1, A2, A3)
+  B5: accountingService (depends on B1, B3, B4)
+  D1: emailService (no dependencies)
+  D2: notificationService (no dependencies)
+  E1: mediaService (no dependencies)
+
+Phase 3 (Jobs + webhooks + router refactoring — depend on Phase 2):
+  B6: QStash jobs for QB (depends on B5)
+  B7: QB webhook handler (depends on B6)
+  D3: send-view-notification QStash job (depends on D2)
+  A6: Delete DocuSign + refactor proposals.router.tsx (depends on A4, D1, D2, D3)
+  D4: Refactor landing.router — use emailService (depends on D1)
+  E2: Refactor optimizeImageJob — use mediaService (depends on E1)
+
+Phase 4 (Stubs + cleanup):
+  F1: Phase 5 service stubs (all 6)
+  C1: Final verification
+  C2: Update services layer plan
+```
+
+---
+
+## Phase 1: Foundation
 
 ### Task A1: Zoho Sign SDK Client — Auth + Token Cache
 
@@ -29,14 +65,14 @@ import env from '@/shared/config/server-env'
 
 export const ZOHO_SIGN_BASE_URL = env.NODE_ENV === 'production'
   ? 'https://sign.zoho.com'
-  : 'https://sign.zoho.com' // Zoho Sign sandbox uses same domain with test templates
+  : 'https://sign.zoho.com'
 
 export const ZOHO_ACCOUNTS_URL = 'https://accounts.zoho.com'
 
 export const ZOHO_SIGN_SCOPES = 'ZohoSign.documents.CREATE,ZohoSign.templates.READ'
 ```
 
-- [ ] **Step 2: Create access token cache (same pattern as old DocuSign)**
+- [ ] **Step 2: Create access token cache**
 
 ```ts
 // src/shared/services/zoho-sign/lib/access-token-cache.ts
@@ -56,7 +92,7 @@ export function getCachedAccessToken() {
 export function setCachedAccessToken(accessToken: string, expiresInMs: number) {
   cachedToken = {
     accessToken,
-    expiresAt: Date.now() + expiresInMs - 300_000, // 5 minutes buffer
+    expiresAt: Date.now() + expiresInMs - 300_000,
   }
 }
 ```
@@ -91,20 +127,12 @@ export async function getZohoAccessToken(): Promise<string> {
   }
 
   const data = await res.json() as { access_token: string, expires_in: number }
-
   setCachedAccessToken(data.access_token, data.expires_in * 1000)
-
   return data.access_token
 }
 ```
 
-- [ ] **Step 4: Verify files compile**
-
-Run: `pnpm tsc --noEmit 2>&1 | head -20`
-
-This will fail because env vars don't exist yet — that's expected. We'll add them in Task A3.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add src/shared/services/zoho-sign/
@@ -118,9 +146,9 @@ git commit -m "feat(zoho-sign): add SDK client with OAuth2 refresh token auth"
 **Files:**
 - Create: `src/shared/services/zoho-sign/lib/build-signing-request.ts`
 
-This replaces `src/shared/services/docusign/lib/build-envelope-body.ts` with the Zoho Sign equivalent. Same data mapping, different API shape.
-
 - [ ] **Step 1: Create the signing request builder**
+
+This replaces `src/shared/services/docusign/lib/build-envelope-body.ts`. Same data mapping, Zoho Sign API shape.
 
 ```ts
 // src/shared/services/zoho-sign/lib/build-signing-request.ts
@@ -153,7 +181,6 @@ export function buildSigningRequest(
   const customerState = customer?.state ?? 'CA'
   const customerZip = customer?.zip ?? ''
 
-  // Same template selection logic as old DocuSign integration
   const templateId = TEMPLATE_IDS.base
 
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
@@ -217,12 +244,11 @@ git commit -m "feat(zoho-sign): add signing request builder with proposal field 
 **Files:**
 - Modify: `src/shared/config/server-env.ts`
 
-- [ ] **Step 1: Remove DS_* vars and add ZOHO_SIGN_* vars**
+- [ ] **Step 1: Replace DocuSign env vars with Zoho Sign vars**
 
-In `src/shared/config/server-env.ts`, replace the DOCUSIGN block:
+In `src/shared/config/server-env.ts`, replace:
 
 ```ts
-// Remove this block:
   // DOCUSIGN
   DS_DEV_USER_ID: z.string().optional(),
   DS_USER_ID: z.string(),
@@ -230,25 +256,18 @@ In `src/shared/config/server-env.ts`, replace the DOCUSIGN block:
   DS_INTEGRATION_KEY: z.string(),
   DS_JWT_PRIVATE_KEY_PATH: z.string(),
   DS_JWT_PRIVATE_KEY: z.string(),
+```
 
-// Replace with:
+With:
+
+```ts
   // ZOHO SIGN
   ZOHO_SIGN_CLIENT_ID: z.string(),
   ZOHO_SIGN_CLIENT_SECRET: z.string(),
   ZOHO_SIGN_REFRESH_TOKEN: z.string(),
 ```
 
-- [ ] **Step 2: Add the actual env values to `.env`**
-
-Add to your `.env` file (get these from Zoho API Console):
-
-```
-ZOHO_SIGN_CLIENT_ID=your_client_id
-ZOHO_SIGN_CLIENT_SECRET=your_client_secret
-ZOHO_SIGN_REFRESH_TOKEN=your_refresh_token
-```
-
-Remove all `DS_*` values from `.env`.
+- [ ] **Step 2: Add Zoho Sign values to `.env`, remove DS_* values**
 
 - [ ] **Step 3: Commit**
 
@@ -258,322 +277,6 @@ git commit -m "chore(env): replace DocuSign env vars with Zoho Sign"
 ```
 
 ---
-
-### Task A4: Contract Service (Domain Service)
-
-**Files:**
-- Create: `src/shared/services/contract.service.ts`
-
-- [ ] **Step 1: Create the contract service with factory pattern**
-
-```ts
-// src/shared/services/contract.service.ts
-import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
-import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
-import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
-import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
-import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
-
-interface ZohoCreateDocResponse {
-  requests: {
-    request_id: string
-    request_status: string
-  }
-}
-
-function createContractService() {
-  async function makeRequest(path: string, options: RequestInit) {
-    const token = await getZohoAccessToken()
-    return fetch(`${ZOHO_SIGN_BASE_URL}/api/v1${path}`, {
-      ...options,
-      headers: {
-        'Authorization': `Zoho-oauthtoken ${token}`,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
-  }
-
-  return {
-    createSigningRequest: async (proposalId: string, ownerKey: string | null) => {
-      const proposal = await getProposal(proposalId)
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
-
-      if (proposal.signingRequestId) {
-        return { requestId: proposal.signingRequestId }
-      }
-
-      const { templateId, body } = buildSigningRequest(proposal, false)
-
-      const res = await makeRequest(
-        `/templates/${templateId}/createdocument`,
-        { method: 'POST', body: JSON.stringify(body) },
-      )
-
-      if (!res.ok) {
-        const errorText = await res.text()
-        throw new Error(`Zoho Sign create document failed: ${errorText}`)
-      }
-
-      const data = await res.json() as ZohoCreateDocResponse
-      const requestId = data.requests.request_id
-
-      if (!requestId) {
-        throw new Error('Zoho Sign returned no request_id')
-      }
-
-      await updateProposal(ownerKey, proposalId, {
-        signingRequestId: requestId,
-      })
-
-      return { requestId }
-    },
-
-    sendSigningRequest: async (proposalId: string, ownerKey: string | null) => {
-      const proposal = await getProposal(proposalId)
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
-
-      let requestId = proposal.signingRequestId
-
-      if (requestId) {
-        // Draft exists — submit for signing
-        const res = await makeRequest(
-          `/requests/${requestId}/submit`,
-          { method: 'POST' },
-        )
-
-        if (!res.ok) {
-          const errorText = await res.text()
-          throw new Error(`Zoho Sign submit failed: ${errorText}`)
-        }
-      }
-      else {
-        // No draft — create and send in one step
-        const { templateId, body } = buildSigningRequest(proposal, true)
-
-        const res = await makeRequest(
-          `/templates/${templateId}/createdocument`,
-          { method: 'POST', body: JSON.stringify(body) },
-        )
-
-        if (!res.ok) {
-          const errorText = await res.text()
-          throw new Error(`Zoho Sign create+send failed: ${errorText}`)
-        }
-
-        const data = await res.json() as ZohoCreateDocResponse
-        requestId = data.requests.request_id
-      }
-
-      await updateProposal(ownerKey, proposalId, {
-        signingRequestId: requestId,
-        contractSentAt: new Date().toISOString(),
-      })
-
-      return { requestId }
-    },
-
-    getSigningStatus: async (requestId: string) => {
-      const res = await makeRequest(
-        `/requests/${requestId}`,
-        { method: 'GET' },
-      )
-
-      if (!res.ok) {
-        throw new Error(`Zoho Sign status check failed for ${requestId}`)
-      }
-
-      const data = await res.json() as {
-        requests: { request_status: string }
-      }
-
-      return { status: data.requests.request_status }
-    },
-  }
-}
-
-export type ContractService = ReturnType<typeof createContractService>
-export const contractService = createContractService()
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/shared/services/contract.service.ts
-git commit -m "feat(services): add contractService domain service wrapping Zoho Sign"
-```
-
----
-
-### Task A5: Schema Migration — Rename docusignEnvelopeId to signingRequestId
-
-**Files:**
-- Modify: `src/shared/db/schema/proposals.ts`
-
-- [ ] **Step 1: Rename the column in the schema**
-
-In `src/shared/db/schema/proposals.ts`, change line 24:
-
-```ts
-// Change this:
-  docusignEnvelopeId: text('docusign_envelope_id'),
-
-// To this:
-  signingRequestId: text('signing_request_id'),
-```
-
-- [ ] **Step 2: Push schema change**
-
-Run: `pnpm db:push:dev`
-
-This will rename the column in the dev database. Drizzle will prompt to confirm the rename.
-
-- [ ] **Step 3: Verify the schema compiled**
-
-Run: `pnpm tsc --noEmit 2>&1 | grep -c "error"` — note the error count. Errors are expected at this point because `docusignEnvelopeId` is still referenced in `proposals.router.tsx` and `docusign.router.ts` (we'll fix those next).
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add src/shared/db/schema/proposals.ts
-git commit -m "refactor(schema): rename docusignEnvelopeId to signingRequestId"
-```
-
----
-
-### Task A6: Delete DocuSign + Refactor Routers
-
-**Files:**
-- Delete: `src/shared/services/docusign/` (entire directory)
-- Delete: `src/trpc/routers/docusign.router.ts`
-- Modify: `src/trpc/routers/app.ts`
-- Modify: `src/trpc/routers/proposals.router.tsx`
-
-- [ ] **Step 1: Delete DocuSign service directory**
-
-```bash
-rm -rf src/shared/services/docusign/
-```
-
-- [ ] **Step 2: Delete DocuSign router**
-
-```bash
-rm src/trpc/routers/docusign.router.ts
-```
-
-- [ ] **Step 3: Remove docusignRouter from app.ts**
-
-In `src/trpc/routers/app.ts`:
-
-Remove the import:
-```ts
-import { docusignRouter } from './docusign.router'
-```
-
-Remove from the router object:
-```ts
-  docusignRouter,
-```
-
-- [ ] **Step 4: Refactor proposals.router.tsx — remove all DocuSign imports and fire-and-forget**
-
-In `src/trpc/routers/proposals.router.tsx`:
-
-Remove these imports (lines 14-16):
-```ts
-import { DS_REST_BASE_URL } from '@/shared/services/docusign/constants'
-import { buildEnvelopeBody } from '@/shared/services/docusign/lib/build-envelope-body'
-import { getAccessToken } from '@/shared/services/docusign/lib/get-access-token'
-```
-
-Remove the `env` import (line 5) since it was only used for `DS_ACCOUNT_ID`:
-```ts
-import env from '@/shared/config/server-env'
-```
-
-Add the contractService import:
-```ts
-import { contractService } from '@/shared/services/contract.service'
-```
-
-- [ ] **Step 5: Replace fire-and-forget DocuSign block in sendProposalEmail**
-
-In the `sendProposalEmail` mutation, replace the entire `void (async () => { ... })()` block (lines 251-285) with a clean contractService call:
-
-```ts
-      // Create signing draft asynchronously (non-blocking)
-      void contractService.createSigningRequest(input.proposalId, ownerKey)
-        .catch(() => {
-          // Signing draft failure must not affect the email send
-        })
-```
-
-- [ ] **Step 6: Add contract signing procedures to proposals router**
-
-Add these two new procedures to the `proposalsRouter` (at the bottom, before the closing `})`):
-
-```ts
-  createContractDraft: agentProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const ownerKey = isOmni ? null : ctx.session.user.id
-      return contractService.createSigningRequest(input.proposalId, ownerKey)
-    }),
-
-  sendContractForSigning: baseProcedure
-    .input(z.object({ proposalId: z.string(), token: z.string() }))
-    .mutation(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
-
-      if (!proposal || proposal.token !== input.token) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
-      }
-
-      return contractService.sendSigningRequest(input.proposalId, input.token)
-    }),
-```
-
-- [ ] **Step 7: Update any remaining references to docusignEnvelopeId**
-
-Search and replace in `proposals.router.tsx` — change any `docusignEnvelopeId` references to `signingRequestId`. After step 5, there should be none left, but verify:
-
-Run: `grep -rn "docusignEnvelopeId\|docusign_envelope_id\|DS_" src/ --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v migrations | grep -v ".json"`
-
-Expected: 0 results (migrations are excluded — they keep the old name as history).
-
-- [ ] **Step 8: Remove jsonwebtoken dependency**
-
-Run: `grep -rn "jsonwebtoken" src/ --include="*.ts" --include="*.tsx"` — confirm 0 results.
-
-Then: `pnpm remove jsonwebtoken @types/jsonwebtoken`
-
-- [ ] **Step 9: Verify everything compiles and lints**
-
-Run: `pnpm tsc --noEmit && pnpm lint`
-
-Expected: 0 errors on both.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add -A
-git commit -m "refactor: replace DocuSign with Zoho Sign contractService
-
-- Delete src/shared/services/docusign/ entirely
-- Delete docusign.router.ts, remove from app.ts
-- Refactor proposals.router.tsx: use contractService, remove fire-and-forget
-- Add createContractDraft + sendContractForSigning procedures
-- Remove jsonwebtoken dependency"
-```
-
----
-
-## Track B: QuickBooks Online (Accounting)
 
 ### Task B1: QuickBooks SDK Client — Auth + Token Storage
 
@@ -597,13 +300,11 @@ export const QB_BASE_URL = env.NODE_ENV === 'production'
   : 'https://sandbox-quickbooks.api.intuit.com'
 
 export const QB_TOKEN_URL = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
-
 export const QB_AUTH_URL = 'https://appcenter.intuit.com/connect/oauth2'
-
 export const QB_API_MINOR_VERSION = '75'
 ```
 
-- [ ] **Step 2: Create QB entity types (only fields we use)**
+- [ ] **Step 2: Create QB entity types**
 
 ```ts
 // src/shared/services/quickbooks/types.ts
@@ -631,7 +332,7 @@ export interface QBInvoice {
   DueDate?: string
   TotalAmt: number
   Balance: number
-  CustomerRef: { value: string; name?: string }
+  CustomerRef: { value: string, name?: string }
   Line: QBInvoiceLine[]
   SyncToken: string
 }
@@ -641,7 +342,7 @@ export interface QBInvoiceLine {
   DetailType: 'SalesItemLineDetail' | 'SubTotalLineDetail'
   Description?: string
   SalesItemLineDetail?: {
-    ItemRef: { value: string; name?: string }
+    ItemRef: { value: string, name?: string }
     UnitPrice?: number
     Qty?: number
   }
@@ -651,17 +352,16 @@ export interface QBPayment {
   Id: string
   TotalAmt: number
   TxnDate: string
-  CustomerRef: { value: string; name?: string }
+  CustomerRef: { value: string, name?: string }
   Line: {
     Amount: number
-    LinkedTxn: { TxnId: string; TxnType: string }[]
+    LinkedTxn: { TxnId: string, TxnType: string }[]
   }[]
   SyncToken: string
 }
 
 export interface QBQueryResponse<T> {
-  QueryResponse: {
-    [key: string]: T[]
+  QueryResponse: Record<string, T[]> & {
     startPosition: number
     maxResults: number
   }
@@ -692,7 +392,7 @@ export type QbAuthToken = z.infer<typeof selectQbAuthTokenSchema>
 
 - [ ] **Step 4: Export from schema index**
 
-In `src/shared/db/schema/index.ts`, add:
+Add to `src/shared/db/schema/index.ts`:
 
 ```ts
 export * from './qb-auth-tokens'
@@ -702,7 +402,7 @@ export * from './qb-auth-tokens'
 
 Run: `pnpm db:push:dev`
 
-- [ ] **Step 6: Create DB-backed access token management**
+- [ ] **Step 6: Create DB-backed token management**
 
 ```ts
 // src/shared/services/quickbooks/lib/access-token-cache.ts
@@ -762,7 +462,6 @@ export async function getQBAccessToken(): Promise<{ accessToken: string, realmId
     throw new Error('No QuickBooks tokens found. Complete OAuth setup at /api/quickbooks/callback first.')
   }
 
-  // Check if access token is still valid (with 5 min buffer)
   const expiresAt = new Date(stored.expiresAt).getTime()
   const isExpired = Date.now() > expiresAt - 300_000
 
@@ -770,7 +469,6 @@ export async function getQBAccessToken(): Promise<{ accessToken: string, realmId
     return { accessToken: stored.accessToken, realmId: stored.realmId }
   }
 
-  // Refresh the access token
   const credentials = Buffer.from(`${env.QB_CLIENT_ID}:${env.QB_CLIENT_SECRET}`).toString('base64')
 
   const res = await fetch(QB_TOKEN_URL, {
@@ -791,7 +489,6 @@ export async function getQBAccessToken(): Promise<{ accessToken: string, realmId
   }
 
   const data = await res.json() as TokenResponse
-
   const newExpiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString()
 
   await upsertTokens({
@@ -906,7 +603,6 @@ export async function GET(request: Request) {
   }
 
   const data = await res.json() as TokenResponse
-
   const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString()
 
   await upsertTokens({
@@ -938,9 +634,9 @@ git commit -m "feat(quickbooks): add OAuth callback route for initial token exch
 **Files:**
 - Modify: `src/shared/config/server-env.ts`
 
-- [ ] **Step 1: Add QB env vars to schema**
+- [ ] **Step 1: Add QB env vars**
 
-In `src/shared/config/server-env.ts`, add after the Zoho Sign block:
+In `src/shared/config/server-env.ts`, add after the ZOHO SIGN block:
 
 ```ts
   // QUICKBOOKS
@@ -952,13 +648,6 @@ In `src/shared/config/server-env.ts`, add after the Zoho Sign block:
 
 - [ ] **Step 2: Add values to `.env`**
 
-```
-QB_CLIENT_ID=your_client_id
-QB_CLIENT_SECRET=your_client_secret
-QB_REDIRECT_URI=http://localhost:3000/api/quickbooks/callback
-QB_WEBHOOK_VERIFIER_TOKEN=your_verifier_token
-```
-
 - [ ] **Step 3: Commit**
 
 ```bash
@@ -968,58 +657,436 @@ git commit -m "chore(env): add QuickBooks OAuth env vars"
 
 ---
 
-### Task B4: Schema — Add QB Reference Columns
+### Task B4: Schema — Add QB Reference Columns + Rename docusignEnvelopeId
 
 **Files:**
+- Modify: `src/shared/db/schema/proposals.ts`
 - Modify: `src/shared/db/schema/customers.ts`
 - Modify: `src/shared/db/schema/projects.ts`
-- Modify: `src/shared/db/schema/proposals.ts`
 
-- [ ] **Step 1: Add qbCustomerId to customers**
+- [ ] **Step 1: Rename column + add QB columns on proposals**
 
-In `src/shared/db/schema/customers.ts`, add after the `notionContactId` field:
+In `src/shared/db/schema/proposals.ts`, replace:
+
+```ts
+  docusignEnvelopeId: text('docusign_envelope_id'),
+```
+
+With:
+
+```ts
+  signingRequestId: text('signing_request_id'),
+  qbInvoiceId: text('qb_invoice_id'),
+  qbPaymentStatus: text('qb_payment_status'),
+```
+
+- [ ] **Step 2: Add qbCustomerId to customers**
+
+In `src/shared/db/schema/customers.ts`, add after `notionContactId`:
 
 ```ts
   qbCustomerId: text('qb_customer_id'),
 ```
 
-- [ ] **Step 2: Add qbSubCustomerId to projects**
+- [ ] **Step 3: Add qbSubCustomerId to projects**
 
-In `src/shared/db/schema/projects.ts`, add after the `status` field:
+In `src/shared/db/schema/projects.ts`, add after `status`:
 
 ```ts
   qbSubCustomerId: text('qb_sub_customer_id'),
-```
-
-- [ ] **Step 3: Add qbInvoiceId and qbPaymentStatus to proposals**
-
-In `src/shared/db/schema/proposals.ts`, add after the `signingRequestId` field:
-
-```ts
-  qbInvoiceId: text('qb_invoice_id'),
-  qbPaymentStatus: text('qb_payment_status'),
 ```
 
 - [ ] **Step 4: Push schema**
 
 Run: `pnpm db:push:dev`
 
-- [ ] **Step 5: Verify compilation**
-
-Run: `pnpm tsc --noEmit`
-
-Expected: 0 errors.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add src/shared/db/schema/customers.ts src/shared/db/schema/projects.ts src/shared/db/schema/proposals.ts
-git commit -m "feat(schema): add QuickBooks reference columns to customers, projects, proposals"
+git add src/shared/db/schema/proposals.ts src/shared/db/schema/customers.ts src/shared/db/schema/projects.ts
+git commit -m "feat(schema): rename docusignEnvelopeId to signingRequestId, add QB reference columns"
 ```
 
 ---
 
-### Task B5: Accounting Service (Domain Service)
+## Phase 2: Domain Services
+
+### Task A4: Contract Service
+
+**Files:**
+- Create: `src/shared/services/contract.service.ts`
+
+- [ ] **Step 1: Create the contract service**
+
+```ts
+// src/shared/services/contract.service.ts
+import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
+import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
+import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
+import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
+
+interface ZohoCreateDocResponse {
+  requests: {
+    request_id: string
+    request_status: string
+  }
+}
+
+function createContractService() {
+  async function makeRequest(path: string, options: RequestInit) {
+    const token = await getZohoAccessToken()
+    return fetch(`${ZOHO_SIGN_BASE_URL}/api/v1${path}`, {
+      ...options,
+      headers: {
+        'Authorization': `Zoho-oauthtoken ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    })
+  }
+
+  return {
+    createSigningRequest: async (proposalId: string, ownerKey: string | null) => {
+      const proposal = await getProposal(proposalId)
+      if (!proposal) {
+        throw new Error(`Proposal ${proposalId} not found`)
+      }
+
+      if (proposal.signingRequestId) {
+        return { requestId: proposal.signingRequestId }
+      }
+
+      const { templateId, body } = buildSigningRequest(proposal, false)
+
+      const res = await makeRequest(
+        `/templates/${templateId}/createdocument`,
+        { method: 'POST', body: JSON.stringify(body) },
+      )
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Zoho Sign create document failed: ${errorText}`)
+      }
+
+      const data = await res.json() as ZohoCreateDocResponse
+      const requestId = data.requests.request_id
+
+      if (!requestId) {
+        throw new Error('Zoho Sign returned no request_id')
+      }
+
+      await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
+      return { requestId }
+    },
+
+    sendSigningRequest: async (proposalId: string, ownerKey: string | null) => {
+      const proposal = await getProposal(proposalId)
+      if (!proposal) {
+        throw new Error(`Proposal ${proposalId} not found`)
+      }
+
+      let requestId = proposal.signingRequestId
+
+      if (requestId) {
+        const res = await makeRequest(`/requests/${requestId}/submit`, { method: 'POST' })
+        if (!res.ok) {
+          const errorText = await res.text()
+          throw new Error(`Zoho Sign submit failed: ${errorText}`)
+        }
+      }
+      else {
+        const { templateId, body } = buildSigningRequest(proposal, true)
+        const res = await makeRequest(
+          `/templates/${templateId}/createdocument`,
+          { method: 'POST', body: JSON.stringify(body) },
+        )
+        if (!res.ok) {
+          const errorText = await res.text()
+          throw new Error(`Zoho Sign create+send failed: ${errorText}`)
+        }
+        const data = await res.json() as ZohoCreateDocResponse
+        requestId = data.requests.request_id
+      }
+
+      await updateProposal(ownerKey, proposalId, {
+        signingRequestId: requestId,
+        contractSentAt: new Date().toISOString(),
+      })
+
+      return { requestId }
+    },
+
+    getSigningStatus: async (requestId: string) => {
+      const res = await makeRequest(`/requests/${requestId}`, { method: 'GET' })
+      if (!res.ok) {
+        throw new Error(`Zoho Sign status check failed for ${requestId}`)
+      }
+      const data = await res.json() as { requests: { request_status: string } }
+      return { status: data.requests.request_status }
+    },
+  }
+}
+
+export type ContractService = ReturnType<typeof createContractService>
+export const contractService = createContractService()
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/shared/services/contract.service.ts
+git commit -m "feat(services): add contractService domain service wrapping Zoho Sign"
+```
+
+---
+
+### Task D1: Email Service
+
+**Files:**
+- Create: `src/shared/services/email.service.ts`
+
+This extracts all user-facing email sends from routers into a single domain service. Currently `resendClient.emails.send()` is called directly in `proposals.router.tsx` (sendProposalEmail) and `landing.router/index.tsx` (scheduleConsultation, generalInquiry).
+
+- [ ] **Step 1: Create the email service**
+
+```ts
+// src/shared/services/email.service.ts
+import type { GeneralInquiryFormValues } from '@/features/landing/schemas/general-inquiry-form'
+import type { ScheduleConsultationFormValues } from '@/features/landing/schemas/schedule-consultation-form'
+import { ROOTS } from '@/shared/config/roots'
+import { resendClient } from '@/shared/services/resend/client'
+import { GeneralInquiryEmail } from '@/shared/services/resend/emails/general-inquiry-email'
+import { ProjectEmailTemplate } from '@/shared/services/resend/emails/project-inquiry-email'
+import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
+
+function createEmailService() {
+  return {
+    sendProposalEmail: async (params: {
+      proposalId: string
+      token: string
+      customerName: string
+      email: string
+      message?: string
+    }) => {
+      const proposalUrl = `${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${params.proposalId}?token=${params.token}&utm_source=email`
+
+      const { data, error } = await resendClient.emails.send({
+        from: 'Tri Pros <info@triprosremodeling.com>',
+        to: params.email,
+        bcc: 'info@triprosremodeling.com',
+        subject: 'Your Proposal From Tri Pros Remodeling',
+        react: (
+          <ProposalEmail
+            proposalUrl={proposalUrl}
+            customerName={params.customerName}
+            repMessage={params.message}
+          />
+        ),
+      })
+
+      if (error) {
+        throw new Error(`Failed to send proposal email: ${JSON.stringify(error)}`)
+      }
+
+      return { data }
+    },
+
+    sendScheduleConsultationEmail: async (data: ScheduleConsultationFormValues) => {
+      const { data: result, error } = await resendClient.emails.send({
+        to: 'Tri Pros <test@triprosremodeling.com>',
+        from: 'info@triprosremodeling.com',
+        subject: 'Consultation scheduled!',
+        react: <ProjectEmailTemplate data={data} />,
+      })
+
+      if (error) {
+        throw new Error(`Failed to send consultation email: ${JSON.stringify(error)}`)
+      }
+
+      return { data: result }
+    },
+
+    sendGeneralInquiryEmail: async (data: GeneralInquiryFormValues) => {
+      const { data: result, error } = await resendClient.emails.send({
+        to: 'Tri Pros <test@triprosremodeling.com>',
+        from: 'info@triprosremodeling.com',
+        subject: 'General Inquiry',
+        react: <GeneralInquiryEmail data={data} />,
+      })
+
+      if (error) {
+        throw new Error(`Failed to send general inquiry email: ${JSON.stringify(error)}`)
+      }
+
+      return { data: result }
+    },
+  }
+}
+
+export type EmailService = ReturnType<typeof createEmailService>
+export const emailService = createEmailService()
+```
+
+- [ ] **Step 2: Verify the import types exist**
+
+Run: `grep -rn "export.*GeneralInquiryFormValues\|export.*ScheduleConsultationFormValues" src/features/landing/schemas/`
+
+If the types are not exported by those names, check the actual schema files and adjust the imports.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/shared/services/email.service.ts
+git commit -m "feat(services): add emailService for user-facing transactional emails"
+```
+
+---
+
+### Task D2: Notification Service
+
+**Files:**
+- Create: `src/shared/services/notification.service.ts`
+
+This extracts the fire-and-forget "proposal viewed" notification from `proposals.router.tsx` `recordView` into a proper service.
+
+- [ ] **Step 1: Create the notification service**
+
+```ts
+// src/shared/services/notification.service.ts
+import { eq } from 'drizzle-orm'
+import { db } from '@/shared/db'
+import { user } from '@/shared/db/schema/auth'
+import { resendClient } from '@/shared/services/resend/client'
+import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
+
+function createNotificationService() {
+  return {
+    notifyProposalViewed: async (params: {
+      proposalOwnerId: string
+      proposalLabel: string
+      proposalId: string
+      customerName: string
+      viewedAt: string
+      source: string
+    }) => {
+      const [owner] = await db.select().from(user).where(eq(user.id, params.proposalOwnerId))
+      if (!owner?.email) {
+        return
+      }
+
+      const sourceLabels: Record<string, string> = {
+        email: 'Opened from email link',
+        sms: 'Opened from SMS link',
+        direct: 'Opened directly',
+        unknown: 'Opened directly',
+      }
+      const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
+
+      await resendClient.emails.send({
+        from: 'Tri Pros System <info@triprosremodeling.com>',
+        to: owner.email,
+        subject: `🔔 ${params.customerName} just opened their proposal`,
+        react: (
+          <ProposalViewedEmail
+            customerName={params.customerName}
+            proposalLabel={params.proposalLabel}
+            viewedAt={params.viewedAt}
+            sourceLabel={sourceLabel}
+            proposalId={params.proposalId}
+          />
+        ),
+      })
+    },
+  }
+}
+
+export type NotificationService = ReturnType<typeof createNotificationService>
+export const notificationService = createNotificationService()
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/shared/services/notification.service.ts
+git commit -m "feat(services): add notificationService for agent notifications"
+```
+
+---
+
+### Task E1: Media Service
+
+**Files:**
+- Create: `src/shared/services/media.service.ts`
+
+This extracts the business logic from `optimizeImageJob` into a service. The job becomes thin (receives payload → calls service).
+
+- [ ] **Step 1: Create the media service**
+
+```ts
+// src/shared/services/media.service.ts
+import type { R2BucketName } from '@/shared/services/r2/buckets'
+import {
+  getMediaFileById,
+  setOptimizationComplete,
+  setOptimizationFailed,
+  setOptimizationProcessing,
+} from '@/shared/dal/server/media-files/api'
+import { getObject } from '@/shared/services/r2/lib/get-object'
+import { processImageVariants } from '@/shared/services/r2/lib/process-image-variants'
+import { putObject } from '@/shared/services/r2/put-object'
+
+function createMediaService() {
+  return {
+    optimizeImage: async (mediaFileId: number) => {
+      const file = await getMediaFileById(mediaFileId)
+
+      if (!file) {
+        console.error(`[mediaService] Media file ${mediaFileId} not found`)
+        return
+      }
+
+      if (file.optimizationStatus === 'optimized') {
+        return
+      }
+
+      await setOptimizationProcessing(mediaFileId)
+
+      try {
+        const bucket = file.bucket as R2BucketName
+        const originalBuffer = await getObject(bucket, file.pathKey)
+        const { variants, blurDataUrl, variantSuffixes } = await processImageVariants(originalBuffer)
+
+        const basePath = file.pathKey.replace(/\.[^.]+$/, '')
+        await Promise.all(
+          variants.map(v =>
+            putObject(bucket, `${basePath}-${v.suffix}.webp`, v.buffer, 'image/webp'),
+          ),
+        )
+
+        await setOptimizationComplete(mediaFileId, { variantSuffixes, blurDataUrl })
+      }
+      catch (error) {
+        console.error(`[mediaService] Optimization failed for ${mediaFileId}:`, error)
+        await setOptimizationFailed(mediaFileId)
+      }
+    },
+  }
+}
+
+export type MediaService = ReturnType<typeof createMediaService>
+export const mediaService = createMediaService()
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/shared/services/media.service.ts
+git commit -m "feat(services): add mediaService for business-level media operations"
+```
+
+---
+
+### Task B5: Accounting Service
 
 **Files:**
 - Create: `src/shared/services/accounting.service.ts`
@@ -1039,11 +1106,7 @@ import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse }
 function createAccountingService() {
   return {
     ensureCustomer: async (customerId: string): Promise<string> => {
-      // 1. Check if customer already has a qbCustomerId
-      const [customer] = await db
-        .select()
-        .from(customers)
-        .where(eq(customers.id, customerId))
+      const [customer] = await db.select().from(customers).where(eq(customers.id, customerId))
 
       if (!customer) {
         throw new Error(`Customer ${customerId} not found`)
@@ -1053,7 +1116,6 @@ function createAccountingService() {
         return customer.qbCustomerId
       }
 
-      // 2. Query QB by email or DisplayName to find existing
       let existingQBCustomer: QBCustomer | undefined
 
       if (customer.email) {
@@ -1073,11 +1135,9 @@ function createAccountingService() {
       let qbCustomerId: string
 
       if (existingQBCustomer) {
-        // 3. Found in QB — store reference
         qbCustomerId = existingQBCustomer.Id
       }
       else {
-        // 4. Not found — create in QB
         const newCustomer = await qbRequest<{ Customer: QBCustomer }>(
           '/customer',
           {
@@ -1098,21 +1158,12 @@ function createAccountingService() {
         qbCustomerId = newCustomer.Customer.Id
       }
 
-      // 5. Store qbCustomerId on customer record
-      await db
-        .update(customers)
-        .set({ qbCustomerId })
-        .where(eq(customers.id, customerId))
-
+      await db.update(customers).set({ qbCustomerId }).where(eq(customers.id, customerId))
       return qbCustomerId
     },
 
     ensureProjectSubCustomer: async (projectId: string, qbParentCustomerId: string): Promise<string> => {
-      // 1. Check if project already has qbSubCustomerId
-      const [project] = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.id, projectId))
+      const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
 
       if (!project) {
         throw new Error(`Project ${projectId} not found`)
@@ -1122,7 +1173,6 @@ function createAccountingService() {
         return project.qbSubCustomerId
       }
 
-      // 2. Create sub-customer in QB
       const displayName = `${project.homeownerName ?? project.title} - ${project.title}`
 
       const newSubCustomer = await qbRequest<{ Customer: QBCustomer }>(
@@ -1130,7 +1180,7 @@ function createAccountingService() {
         {
           method: 'POST',
           body: JSON.stringify({
-            DisplayName: displayName.slice(0, 100), // QB limit
+            DisplayName: displayName.slice(0, 100),
             ParentRef: { value: qbParentCustomerId },
             BillWithParent: true,
             BillAddr: {
@@ -1144,28 +1194,17 @@ function createAccountingService() {
       )
 
       const qbSubCustomerId = newSubCustomer.Customer.Id
-
-      // 3. Store on project record
-      await db
-        .update(projects)
-        .set({ qbSubCustomerId })
-        .where(eq(projects.id, projectId))
-
+      await db.update(projects).set({ qbSubCustomerId }).where(eq(projects.id, projectId))
       return qbSubCustomerId
     },
 
     createInvoice: async (projectId: string, proposalIds: string[]): Promise<string> => {
-      // 1. Get project with its qbSubCustomerId
-      const [project] = await db
-        .select()
-        .from(projects)
-        .where(eq(projects.id, projectId))
+      const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
 
       if (!project?.qbSubCustomerId) {
         throw new Error(`Project ${projectId} has no QB sub-customer`)
       }
 
-      // 2. Get approved proposals for this project
       const proposalRows = await Promise.all(
         proposalIds.map(async (pid) => {
           const [row] = await db.select().from(proposals).where(eq(proposals.id, pid))
@@ -1173,7 +1212,6 @@ function createAccountingService() {
         }),
       )
 
-      // 3. Build line items from proposal pricing
       const lineItems: QBInvoiceLine[] = proposalRows
         .filter(Boolean)
         .map((proposal) => {
@@ -1183,7 +1221,7 @@ function createAccountingService() {
             DetailType: 'SalesItemLineDetail' as const,
             Description: `Proposal: ${proposal.label}`,
             SalesItemLineDetail: {
-              ItemRef: { value: '1', name: 'Services' }, // Default QB "Services" item
+              ItemRef: { value: '1', name: 'Services' },
               UnitPrice: funding?.finalTcp ?? 0,
               Qty: 1,
             },
@@ -1194,7 +1232,6 @@ function createAccountingService() {
         throw new Error('No proposal line items to invoice')
       }
 
-      // 4. Create invoice in QB
       const newInvoice = await qbRequest<{ Invoice: QBInvoice }>(
         '/invoice',
         {
@@ -1208,7 +1245,6 @@ function createAccountingService() {
 
       const qbInvoiceId = newInvoice.Invoice.Id
 
-      // 5. Store qbInvoiceId on first proposal (primary)
       if (proposalIds[0]) {
         await db
           .update(proposals)
@@ -1219,21 +1255,15 @@ function createAccountingService() {
       return qbInvoiceId
     },
 
-    syncPaymentStatus: async (paymentId: string, realmId: string): Promise<void> => {
-      // 1. GET payment from QB
-      const paymentData = await qbRequest<{ Payment: QBPayment }>(
-        `/payment/${paymentId}`,
-      )
-
+    syncPaymentStatus: async (paymentId: string, _realmId: string): Promise<void> => {
+      const paymentData = await qbRequest<{ Payment: QBPayment }>(`/payment/${paymentId}`)
       const payment = paymentData.Payment
 
-      // 2. Find linked invoices
       for (const line of payment.Line) {
         for (const linked of line.LinkedTxn) {
           if (linked.TxnType !== 'Invoice')
             continue
 
-          // 3. Find proposal by qbInvoiceId
           const [proposal] = await db
             .select()
             .from(proposals)
@@ -1242,43 +1272,27 @@ function createAccountingService() {
           if (!proposal)
             continue
 
-          // 4. Get invoice to check remaining balance
-          const invoiceData = await qbRequest<{ Invoice: QBInvoice }>(
-            `/invoice/${linked.TxnId}`,
-          )
-
+          const invoiceData = await qbRequest<{ Invoice: QBInvoice }>(`/invoice/${linked.TxnId}`)
           const balance = invoiceData.Invoice.Balance
           const total = invoiceData.Invoice.TotalAmt
 
           let status: string
-          if (balance <= 0) {
+          if (balance <= 0)
             status = 'paid'
-          }
-          else if (balance < total) {
+          else if (balance < total)
             status = 'partial'
-          }
-          else {
+          else
             status = 'unpaid'
-          }
 
-          // 5. Update proposal
-          await db
-            .update(proposals)
-            .set({ qbPaymentStatus: status })
-            .where(eq(proposals.id, proposal.id))
+          await db.update(proposals).set({ qbPaymentStatus: status }).where(eq(proposals.id, proposal.id))
         }
       }
     },
 
-    syncInvoiceStatus: async (invoiceId: string, realmId: string): Promise<void> => {
-      // 1. GET invoice from QB
-      const invoiceData = await qbRequest<{ Invoice: QBInvoice }>(
-        `/invoice/${invoiceId}`,
-      )
-
+    syncInvoiceStatus: async (invoiceId: string, _realmId: string): Promise<void> => {
+      const invoiceData = await qbRequest<{ Invoice: QBInvoice }>(`/invoice/${invoiceId}`)
       const invoice = invoiceData.Invoice
 
-      // 2. Find proposal by qbInvoiceId
       const [proposal] = await db
         .select()
         .from(proposals)
@@ -1287,25 +1301,18 @@ function createAccountingService() {
       if (!proposal)
         return
 
-      // 3. Update payment status based on balance
       const balance = invoice.Balance
       const total = invoice.TotalAmt
 
       let status: string
-      if (balance <= 0) {
+      if (balance <= 0)
         status = 'paid'
-      }
-      else if (balance < total) {
+      else if (balance < total)
         status = 'partial'
-      }
-      else {
+      else
         status = 'unpaid'
-      }
 
-      await db
-        .update(proposals)
-        .set({ qbPaymentStatus: status })
-        .where(eq(proposals.id, proposal.id))
+      await db.update(proposals).set({ qbPaymentStatus: status }).where(eq(proposals.id, proposal.id))
     },
   }
 }
@@ -1314,11 +1321,7 @@ export type AccountingService = ReturnType<typeof createAccountingService>
 export const accountingService = createAccountingService()
 ```
 
-- [ ] **Step 2: Verify compilation**
-
-Run: `pnpm tsc --noEmit`
-
-- [ ] **Step 3: Commit**
+- [ ] **Step 2: Commit**
 
 ```bash
 git add src/shared/services/accounting.service.ts
@@ -1326,6 +1329,8 @@ git commit -m "feat(services): add accountingService for QB customer/invoice/pay
 ```
 
 ---
+
+## Phase 3: Jobs, Webhooks, Router Refactoring
 
 ### Task B6: QStash Jobs — QB Record Creation + Sync
 
@@ -1335,58 +1340,33 @@ git commit -m "feat(services): add accountingService for QB customer/invoice/pay
 - Create: `src/shared/services/upstash/jobs/sync-qb-invoice.ts`
 - Modify: `src/app/api/qstash-jobs/route.ts`
 
-- [ ] **Step 1: Create the create-qb-records job**
+- [ ] **Step 1: Create create-qb-records job**
 
 ```ts
 // src/shared/services/upstash/jobs/create-qb-records.ts
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { projects } from '@/shared/db/schema/projects'
-import { proposals } from '@/shared/db/schema/proposals'
 import { accountingService } from '@/shared/services/accounting.service'
 import { createJob } from '../lib/create-job'
 
 export const createQbRecordsJob = createJob(
   'create-qb-records',
   async ({ projectId }: { projectId: string }) => {
-    // 1. Get project with customer
-    const [project] = await db
-      .select()
-      .from(projects)
-      .where(eq(projects.id, projectId))
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId))
 
     if (!project?.customerId) {
       console.error(`[qstash:create-qb-records] Project ${projectId} has no customer`)
       return
     }
 
-    // 2. Ensure customer exists in QB
     const qbCustomerId = await accountingService.ensureCustomer(project.customerId)
-
-    // 3. Ensure project sub-customer exists in QB
     await accountingService.ensureProjectSubCustomer(projectId, qbCustomerId)
-
-    // 4. Find approved proposals linked to this project's meetings
-    // Projects are created from approved proposals — find them
-    const approvedProposals = await db
-      .select({ id: proposals.id })
-      .from(proposals)
-      .where(eq(proposals.status, 'approved'))
-    // TODO: filter by project's meetings once we have that join path
-    // For now, this creates the QB records — invoice creation may need
-    // to be triggered separately when the relationship is clearer
-
-    if (approvedProposals.length > 0) {
-      await accountingService.createInvoice(
-        projectId,
-        approvedProposals.map(p => p.id),
-      )
-    }
   },
 )
 ```
 
-- [ ] **Step 2: Create the sync-qb-payment job**
+- [ ] **Step 2: Create sync-qb-payment job**
 
 ```ts
 // src/shared/services/upstash/jobs/sync-qb-payment.ts
@@ -1401,7 +1381,7 @@ export const syncQbPaymentJob = createJob(
 )
 ```
 
-- [ ] **Step 3: Create the sync-qb-invoice job**
+- [ ] **Step 3: Create sync-qb-invoice job**
 
 ```ts
 // src/shared/services/upstash/jobs/sync-qb-invoice.ts
@@ -1416,17 +1396,15 @@ export const syncQbInvoiceJob = createJob(
 )
 ```
 
-- [ ] **Step 4: Register jobs in the QStash route**
+- [ ] **Step 4: Register all new jobs in QStash route**
 
-In `src/app/api/qstash-jobs/route.ts`, add imports:
+In `src/app/api/qstash-jobs/route.ts`, add imports and update jobs array:
 
 ```ts
 import { createQbRecordsJob } from '@/shared/services/upstash/jobs/create-qb-records'
 import { syncQbInvoiceJob } from '@/shared/services/upstash/jobs/sync-qb-invoice'
 import { syncQbPaymentJob } from '@/shared/services/upstash/jobs/sync-qb-payment'
 ```
-
-Add to the `jobs` array:
 
 ```ts
 const jobs: Job[] = [
@@ -1466,9 +1444,9 @@ interface QBWebhookNotification {
   realmId: string
   dataChangeEvent: {
     entities: {
-      name: string // 'Invoice', 'Payment', 'Customer', etc.
+      name: string
       id: string
-      operation: string // 'Create', 'Update', 'Delete'
+      operation: string
       lastUpdated: string
     }[]
   }
@@ -1504,21 +1482,14 @@ export async function POST(request: Request) {
 
     for (const entity of notification.dataChangeEvent.entities) {
       if (entity.name === 'Payment') {
-        await syncQbPaymentJob.dispatch({
-          paymentId: entity.id,
-          realmId,
-        })
+        await syncQbPaymentJob.dispatch({ paymentId: entity.id, realmId })
       }
       else if (entity.name === 'Invoice') {
-        await syncQbInvoiceJob.dispatch({
-          invoiceId: entity.id,
-          realmId,
-        })
+        await syncQbInvoiceJob.dispatch({ invoiceId: entity.id, realmId })
       }
     }
   }
 
-  // Must respond quickly — all processing is async via QStash
   return new Response('OK', { status: 200 })
 }
 ```
@@ -1532,69 +1503,541 @@ git commit -m "feat(webhooks): add QuickBooks webhook handler with HMAC verifica
 
 ---
 
-## Track C: Finalization
+### Task D3: Send View Notification QStash Job
+
+**Files:**
+- Create: `src/shared/services/upstash/jobs/send-view-notification.ts`
+- Modify: `src/app/api/qstash-jobs/route.ts`
+
+- [ ] **Step 1: Create the job**
+
+```ts
+// src/shared/services/upstash/jobs/send-view-notification.ts
+import { notificationService } from '@/shared/services/notification.service'
+import { createJob } from '../lib/create-job'
+
+export const sendViewNotificationJob = createJob(
+  'send-view-notification',
+  async (params: {
+    proposalOwnerId: string
+    proposalLabel: string
+    proposalId: string
+    customerName: string
+    viewedAt: string
+    source: string
+  }) => {
+    await notificationService.notifyProposalViewed(params)
+  },
+)
+```
+
+- [ ] **Step 2: Register in QStash route**
+
+In `src/app/api/qstash-jobs/route.ts`, add import:
+
+```ts
+import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
+```
+
+Add to jobs array:
+
+```ts
+  sendViewNotificationJob,
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/shared/services/upstash/jobs/send-view-notification.ts src/app/api/qstash-jobs/route.ts
+git commit -m "feat(jobs): add send-view-notification QStash job"
+```
+
+---
+
+### Task A6: Delete DocuSign + Refactor proposals.router.tsx
+
+**Files:**
+- Delete: `src/shared/services/docusign/` (entire directory)
+- Delete: `src/trpc/routers/docusign.router.ts`
+- Modify: `src/trpc/routers/app.ts`
+- Modify: `src/trpc/routers/proposals.router.tsx`
+
+This is the biggest task. The proposals router goes from fat (direct SDK calls, fire-and-forget blocks) to thin (delegates to services).
+
+- [ ] **Step 1: Delete DocuSign service directory and router**
+
+```bash
+rm -rf src/shared/services/docusign/
+rm src/trpc/routers/docusign.router.ts
+```
+
+- [ ] **Step 2: Remove docusignRouter from app.ts**
+
+In `src/trpc/routers/app.ts`, remove:
+```ts
+import { docusignRouter } from './docusign.router'
+```
+And remove `docusignRouter,` from the router object.
+
+- [ ] **Step 3: Rewrite proposals.router.tsx**
+
+Replace the entire file with the refactored version. The router becomes thin — all business logic is in services.
+
+Key changes:
+- Remove all DocuSign imports (`DS_REST_BASE_URL`, `buildEnvelopeBody`, `getAccessToken`)
+- Remove `env` import (was only used for `DS_ACCOUNT_ID`)
+- Remove direct `resendClient` import
+- Remove `ProposalEmail` and `ProposalViewedEmail` imports
+- Add `contractService`, `emailService`, `sendViewNotificationJob` imports
+- Replace `sendProposalEmail` fire-and-forget with service calls
+- Replace `recordView` fire-and-forget with job dispatch
+- Add `createContractDraft` and `sendContractForSigning` procedures
+
+The new `sendProposalEmail` mutation body becomes:
+
+```ts
+  sendProposalEmail: agentProcedure
+    .input(z.object({
+      proposalId: z.string(),
+      customerName: z.string(),
+      email: z.email(),
+      token: z.string(),
+      message: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { user } = ctx.session
+      const isOmni = ctx.ability.can('manage', 'all')
+      const ownerKey = isOmni ? null : user.id
+
+      const { data } = await emailService.sendProposalEmail({
+        proposalId: input.proposalId,
+        token: input.token,
+        customerName: input.customerName,
+        email: input.email,
+        message: input.message,
+      })
+
+      const proposal = await updateProposal(ownerKey, input.proposalId, {
+        status: 'sent',
+        sentAt: new Date().toISOString(),
+      })
+
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
+      }
+
+      // Create signing draft asynchronously (non-blocking)
+      void contractService.createSigningRequest(input.proposalId, ownerKey)
+        .catch(() => { /* Signing draft failure must not affect the email send */ })
+
+      return { data, input, proposal }
+    }),
+```
+
+The new `recordView` mutation body becomes:
+
+```ts
+  recordView: baseProcedure
+    .input(z.object({
+      proposalId: z.string(),
+      token: z.string(),
+      source: z.enum(['email', 'sms', 'direct', 'unknown']).default('unknown'),
+      referer: z.string().optional(),
+      userAgent: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const proposal = await getProposal(input.proposalId)
+
+      if (!proposal || proposal.token !== input.token) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', cause: 'Invalid token' })
+      }
+
+      const view = await recordProposalView({
+        proposalId: input.proposalId,
+        source: input.source,
+        referer: input.referer,
+        userAgent: input.userAgent,
+      })
+
+      // Dispatch notification asynchronously via QStash
+      void sendViewNotificationJob.dispatch({
+        proposalOwnerId: proposal.ownerId,
+        proposalLabel: proposal.label,
+        proposalId: input.proposalId,
+        customerName: proposal.customer?.name ?? 'Customer',
+        viewedAt: view.viewedAt,
+        source: input.source,
+      }).catch(() => { /* Notification failure must not affect the customer */ })
+    }),
+```
+
+Add two new procedures:
+
+```ts
+  createContractDraft: agentProcedure
+    .input(z.object({ proposalId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+      const ownerKey = isOmni ? null : ctx.session.user.id
+      return contractService.createSigningRequest(input.proposalId, ownerKey)
+    }),
+
+  sendContractForSigning: baseProcedure
+    .input(z.object({ proposalId: z.string(), token: z.string() }))
+    .mutation(async ({ input }) => {
+      const proposal = await getProposal(input.proposalId)
+      if (!proposal || proposal.token !== input.token) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
+      }
+      return contractService.sendSigningRequest(input.proposalId, input.token)
+    }),
+```
+
+- [ ] **Step 4: Remove jsonwebtoken dependency**
+
+Run: `grep -rn "jsonwebtoken" src/ --include="*.ts" --include="*.tsx"` — confirm 0 results.
+
+Then: `pnpm remove jsonwebtoken @types/jsonwebtoken`
+
+- [ ] **Step 5: Verify compilation**
+
+Run: `pnpm tsc --noEmit && pnpm lint`
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add -A
+git commit -m "refactor: replace DocuSign with Zoho Sign, extract email/notification to services
+
+- Delete src/shared/services/docusign/ entirely
+- Delete docusign.router.ts, remove from app.ts
+- proposals.router.tsx: use contractService, emailService, sendViewNotificationJob
+- Replace fire-and-forget blocks with service calls + QStash jobs
+- Add createContractDraft + sendContractForSigning procedures
+- Remove jsonwebtoken dependency"
+```
+
+---
+
+### Task D4: Refactor landing.router — Use emailService
+
+**Files:**
+- Modify: `src/trpc/routers/landing.router/index.tsx`
+
+- [ ] **Step 1: Replace direct resendClient calls with emailService**
+
+Remove imports:
+```ts
+import { resendClient } from '@/shared/services/resend/client'
+import { GeneralInquiryEmail } from '@/shared/services/resend/emails/general-inquiry-email'
+import { ProjectEmailTemplate } from '@/shared/services/resend/emails/project-inquiry-email'
+```
+
+Add import:
+```ts
+import { emailService } from '@/shared/services/email.service'
+```
+
+Replace `scheduleConsultation` mutation body:
+```ts
+  scheduleConsultation: baseProcedure
+    .input(scheduleConsultationFormSchema)
+    .mutation(async ({ input }) => {
+      const { data } = await emailService.sendScheduleConsultationEmail(input)
+      return { data, input }
+    }),
+```
+
+Replace `generalInquiry` mutation body:
+```ts
+  generalInquiry: baseProcedure
+    .input(generalInquiryFormSchema)
+    .mutation(async ({ input }) => {
+      const { data } = await emailService.sendGeneralInquiryEmail(input)
+
+      try {
+        await putPipedriveLead(input)
+      }
+      catch (error) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', cause: error })
+      }
+
+      return { data, input }
+    }),
+```
+
+- [ ] **Step 2: Verify compilation**
+
+Run: `pnpm tsc --noEmit`
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/trpc/routers/landing.router/index.tsx
+git commit -m "refactor(landing): use emailService instead of direct resendClient calls"
+```
+
+---
+
+### Task E2: Refactor optimizeImageJob — Use mediaService
+
+**Files:**
+- Modify: `src/shared/services/upstash/jobs/optimize-image.ts`
+
+- [ ] **Step 1: Replace job logic with mediaService call**
+
+Replace the entire file:
+
+```ts
+// src/shared/services/upstash/jobs/optimize-image.ts
+import { mediaService } from '@/shared/services/media.service'
+import { createJob } from '../lib/create-job'
+
+interface OptimizeImagePayload {
+  mediaFileId: number
+}
+
+export const optimizeImageJob = createJob<OptimizeImagePayload>(
+  'optimize-image',
+  async ({ mediaFileId }) => {
+    await mediaService.optimizeImage(mediaFileId)
+  },
+)
+```
+
+- [ ] **Step 2: Verify compilation**
+
+Run: `pnpm tsc --noEmit`
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/shared/services/upstash/jobs/optimize-image.ts
+git commit -m "refactor(jobs): optimizeImageJob delegates to mediaService"
+```
+
+---
+
+## Phase 4: Stubs + Cleanup
+
+### Task F1: Phase 5 Service Stubs
+
+**Files:**
+- Create: `src/shared/services/scheduling.service.ts`
+- Create: `src/shared/services/analytics.service.ts`
+- Create: `src/shared/services/ai.service.ts`
+- Create: `src/shared/services/pdf.service.ts`
+- Create: `src/shared/services/webhook.service.ts`
+- Create: `src/shared/services/construction-data.service.ts`
+
+Each stub follows the same pattern: `createService()` factory with typed method signatures that throw `not implemented`.
+
+- [ ] **Step 1: Create scheduling.service.ts**
+
+```ts
+// src/shared/services/scheduling.service.ts
+
+/** Follow-up reminders, meeting reminders (QStash delay/schedule) */
+function createSchedulingService() {
+  return {
+    scheduleFollowUp: async (_params: { proposalId: string, delayMs: number }): Promise<void> => {
+      throw new Error('schedulingService.scheduleFollowUp not implemented')
+    },
+
+    scheduleMeetingReminder: async (_params: { meetingId: string, reminderAt: string }): Promise<void> => {
+      throw new Error('schedulingService.scheduleMeetingReminder not implemented')
+    },
+
+    cancelScheduled: async (_params: { jobId: string }): Promise<void> => {
+      throw new Error('schedulingService.cancelScheduled not implemented')
+    },
+  }
+}
+
+export type SchedulingService = ReturnType<typeof createSchedulingService>
+export const schedulingService = createSchedulingService()
+```
+
+- [ ] **Step 2: Create analytics.service.ts**
+
+```ts
+// src/shared/services/analytics.service.ts
+
+/** Engagement scoring, agent digest, event tracking */
+function createAnalyticsService() {
+  return {
+    computeEngagementScore: async (_params: { customerId: string }): Promise<number> => {
+      throw new Error('analyticsService.computeEngagementScore not implemented')
+    },
+
+    generateAgentDigest: async (_params: { agentId: string }): Promise<string> => {
+      throw new Error('analyticsService.generateAgentDigest not implemented')
+    },
+
+    trackEvent: async (_params: { event: string, metadata: Record<string, unknown> }): Promise<void> => {
+      throw new Error('analyticsService.trackEvent not implemented')
+    },
+  }
+}
+
+export type AnalyticsService = ReturnType<typeof createAnalyticsService>
+export const analyticsService = createAnalyticsService()
+```
+
+- [ ] **Step 3: Create ai.service.ts**
+
+```ts
+// src/shared/services/ai.service.ts
+
+/** Expanded AI: meeting summaries, follow-up drafts, persona enrichment */
+function createAIService() {
+  return {
+    generateMeetingSummary: async (_params: { meetingId: string }): Promise<string> => {
+      throw new Error('aiService.generateMeetingSummary not implemented')
+    },
+
+    generateFollowUpDraft: async (_params: { proposalId: string }): Promise<string> => {
+      throw new Error('aiService.generateFollowUpDraft not implemented')
+    },
+
+    enrichPersonaProfile: async (_params: { customerId: string }): Promise<void> => {
+      throw new Error('aiService.enrichPersonaProfile not implemented')
+    },
+  }
+}
+
+export type AIService = ReturnType<typeof createAIService>
+export const aiService = createAIService()
+```
+
+- [ ] **Step 4: Create pdf.service.ts**
+
+```ts
+// src/shared/services/pdf.service.ts
+
+/** Proposal PDFs, finance forms, printable documents */
+function createPDFService() {
+  return {
+    generateProposalPdf: async (_params: { proposalId: string }): Promise<Buffer> => {
+      throw new Error('pdfService.generateProposalPdf not implemented')
+    },
+
+    generateFinanceForm: async (_params: { proposalId: string }): Promise<Buffer> => {
+      throw new Error('pdfService.generateFinanceForm not implemented')
+    },
+  }
+}
+
+export type PDFService = ReturnType<typeof createPDFService>
+export const pdfService = createPDFService()
+```
+
+- [ ] **Step 5: Create webhook.service.ts**
+
+```ts
+// src/shared/services/webhook.service.ts
+
+/** Incoming webhook verification + routing to jobs */
+function createWebhookService() {
+  return {
+    verifyAndRoute: async (_params: { provider: string, payload: string, signature: string }): Promise<void> => {
+      throw new Error('webhookService.verifyAndRoute not implemented')
+    },
+  }
+}
+
+export type WebhookService = ReturnType<typeof createWebhookService>
+export const webhookService = createWebhookService()
+```
+
+- [ ] **Step 6: Create construction-data.service.ts**
+
+```ts
+// src/shared/services/construction-data.service.ts
+
+/** Trades/scopes/SOW from Notion — stable interface over existing Notion DAL */
+function createConstructionDataService() {
+  return {
+    getTrades: async (): Promise<unknown[]> => {
+      throw new Error('constructionDataService.getTrades not implemented')
+    },
+
+    getScopesByTrade: async (_params: { tradeId: string }): Promise<unknown[]> => {
+      throw new Error('constructionDataService.getScopesByTrade not implemented')
+    },
+
+    getSOWTemplates: async (_params: { scopeIds: string[] }): Promise<unknown[]> => {
+      throw new Error('constructionDataService.getSOWTemplates not implemented')
+    },
+  }
+}
+
+export type ConstructionDataService = ReturnType<typeof createConstructionDataService>
+export const constructionDataService = createConstructionDataService()
+```
+
+- [ ] **Step 7: Verify all stubs compile**
+
+Run: `pnpm tsc --noEmit`
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add src/shared/services/scheduling.service.ts src/shared/services/analytics.service.ts src/shared/services/ai.service.ts src/shared/services/pdf.service.ts src/shared/services/webhook.service.ts src/shared/services/construction-data.service.ts
+git commit -m "feat(services): add Phase 5 service stubs with typed interfaces"
+```
+
+---
 
 ### Task C1: Final Verification
 
 **Files:** None (verification only)
 
-- [ ] **Step 1: Type check everything**
+- [ ] **Step 1: Type check**
 
 Run: `pnpm tsc --noEmit`
 
 Expected: 0 errors.
 
-- [ ] **Step 2: Lint everything**
+- [ ] **Step 2: Lint**
 
 Run: `pnpm lint`
 
-Expected: 0 errors. If import sorting issues, run `pnpm lint --fix`.
+Expected: 0 errors. Run `pnpm lint --fix` if import sorting issues.
 
-- [ ] **Step 3: Verify DocuSign is fully removed**
+- [ ] **Step 3: Verify DocuSign fully removed**
 
-Run: `grep -rn "docusign\|DS_INTEGRATION\|DS_JWT\|DS_ACCOUNT\|DS_USER\|DS_DEV_USER\|docusignEnvelopeId\|docusign_envelope_id" src/ --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v migrations | grep -v ".json"`
-
-Expected: 0 results.
-
-- [ ] **Step 4: Verify no orphaned DocuSign imports**
-
-Run: `grep -rn "from.*docusign" src/ --include="*.ts" --include="*.tsx"`
+Run: `grep -rn "docusign\|DS_INTEGRATION\|DS_JWT\|DS_ACCOUNT\|DS_USER\|DS_DEV_USER\|docusignEnvelopeId\|docusign_envelope_id" src/ --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v migrations`
 
 Expected: 0 results.
 
-- [ ] **Step 5: Verify jsonwebtoken removed**
+- [ ] **Step 4: Verify no direct resendClient usage in routers**
 
-Run: `grep -rn "jsonwebtoken" src/ --include="*.ts" --include="*.tsx"`
+Run: `grep -rn "resendClient" src/trpc/ --include="*.ts" --include="*.tsx"`
 
-Expected: 0 results. If already removed in Task A6, skip.
+Expected: 0 results. All email sends should go through emailService or notificationService.
 
-- [ ] **Step 6: Verify all new files exist**
+- [ ] **Step 5: Verify all service files exist**
 
 ```bash
-ls -la src/shared/services/zoho-sign/constants/index.ts
-ls -la src/shared/services/zoho-sign/lib/access-token-cache.ts
-ls -la src/shared/services/zoho-sign/lib/get-access-token.ts
-ls -la src/shared/services/zoho-sign/lib/build-signing-request.ts
-ls -la src/shared/services/contract.service.ts
-ls -la src/shared/services/quickbooks/constants/index.ts
-ls -la src/shared/services/quickbooks/types.ts
-ls -la src/shared/services/quickbooks/client.ts
-ls -la src/shared/services/quickbooks/lib/access-token-cache.ts
-ls -la src/shared/services/quickbooks/lib/get-access-token.ts
-ls -la src/shared/services/accounting.service.ts
-ls -la src/shared/db/schema/qb-auth-tokens.ts
-ls -la src/app/api/quickbooks/callback/route.ts
-ls -la src/app/api/webhooks/quickbooks/route.ts
-ls -la src/shared/services/upstash/jobs/create-qb-records.ts
-ls -la src/shared/services/upstash/jobs/sync-qb-payment.ts
-ls -la src/shared/services/upstash/jobs/sync-qb-invoice.ts
+ls src/shared/services/contract.service.ts \
+   src/shared/services/email.service.ts \
+   src/shared/services/notification.service.ts \
+   src/shared/services/media.service.ts \
+   src/shared/services/accounting.service.ts \
+   src/shared/services/scheduling.service.ts \
+   src/shared/services/analytics.service.ts \
+   src/shared/services/ai.service.ts \
+   src/shared/services/pdf.service.ts \
+   src/shared/services/webhook.service.ts \
+   src/shared/services/construction-data.service.ts
 ```
 
-- [ ] **Step 7: Verify deleted files are gone**
+- [ ] **Step 6: Verify DocuSign directory deleted**
 
 ```bash
-test ! -d src/shared/services/docusign && echo "PASS: docusign deleted" || echo "FAIL: docusign still exists"
-test ! -f src/trpc/routers/docusign.router.ts && echo "PASS: router deleted" || echo "FAIL: router still exists"
+test ! -d src/shared/services/docusign && echo "PASS" || echo "FAIL"
+test ! -f src/trpc/routers/docusign.router.ts && echo "PASS" || echo "FAIL"
 ```
 
 ---
@@ -1604,13 +2047,28 @@ test ! -f src/trpc/routers/docusign.router.ts && echo "PASS: router deleted" || 
 **Files:**
 - Modify: `.claude/plans/inherited-dancing-valley.md`
 
-- [ ] **Step 1: Update the plan to reflect shipped services**
+- [ ] **Step 1: Update the plan**
 
-In the plan file, update the Active services table to include `contractService` and `accountingService` as shipped (not planned). Move them out of the "Phase 1/2" category into a "Shipped" category. Update the SDK clients list to show `zoho-sign/` instead of `docusign/` and add `quickbooks/`.
+Mark these as shipped:
+- `contractService` (Phase 1) — shipped
+- `emailService` (Phase 2) — shipped
+- `notificationService` (Phase 2) — shipped
+- `accountingService` — shipped (new, not in original plan)
+- `mediaService` (Phase 5) — shipped (promoted from stub)
+
+Mark Phase 5 stubs as created:
+- All 6 stub services have typed interfaces
+
+Update SDK clients:
+- Remove `docusign/`, add `zoho-sign/` and `quickbooks/`
+
+Update jobs inventory:
+- Add `create-qb-records`, `sync-qb-payment`, `sync-qb-invoice`, `send-view-notification`
+- Note `optimize-image` now delegates to `mediaService`
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add .claude/plans/inherited-dancing-valley.md
-git commit -m "docs: update services layer plan — contractService + accountingService shipped"
+git commit -m "docs: update services layer plan — full migration shipped"
 ```
