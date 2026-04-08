@@ -49,7 +49,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   )
 
   const approveProposalMutation = useMutation(
-    trpc.proposalsRouter.updateProposal.mutationOptions({
+    trpc.proposalsRouter.crud.updateProposal.mutationOptions({
       onSuccess: () => {
         invalidateProposal(queryClient)
         invalidateProject(queryClient)

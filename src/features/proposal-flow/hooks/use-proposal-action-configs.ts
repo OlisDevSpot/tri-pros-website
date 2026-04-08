@@ -59,7 +59,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
   const invalidate = () => invalidateProposal(queryClient)
 
   const duplicateProposal = useMutation(
-    trpc.proposalsRouter.duplicateProposal.mutationOptions({
+    trpc.proposalsRouter.crud.duplicateProposal.mutationOptions({
       onSuccess: () => {
         invalidate()
         toast.success('Proposal duplicated')
@@ -69,7 +69,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
   )
 
   const deleteProposal = useMutation(
-    trpc.proposalsRouter.deleteProposal.mutationOptions({
+    trpc.proposalsRouter.crud.deleteProposal.mutationOptions({
       onSuccess: () => {
         invalidate()
         toast.success('Proposal deleted')

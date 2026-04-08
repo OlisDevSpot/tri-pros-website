@@ -17,7 +17,7 @@ import { proposalStatuses } from '@/shared/constants/enums'
 import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
-export type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['getProposals'][number]
+export type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['crud']['getProposals'][number]
 
 export interface ProposalTableMeta {
   proposalActions: (row: ProposalRow) => EntityActionConfig<ProposalRow>[]

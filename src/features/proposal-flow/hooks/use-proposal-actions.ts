@@ -8,12 +8,12 @@ export function useProposalActions() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
 
-  const deleteProposal = useMutation(trpc.proposalsRouter.deleteProposal.mutationOptions({
+  const deleteProposal = useMutation(trpc.proposalsRouter.crud.deleteProposal.mutationOptions({
     onSuccess: () => invalidateProposal(queryClient),
     onError: () => toast.error('Failed to delete proposal'),
   }))
 
-  const duplicateProposal = useMutation(trpc.proposalsRouter.duplicateProposal.mutationOptions({
+  const duplicateProposal = useMutation(trpc.proposalsRouter.crud.duplicateProposal.mutationOptions({
     onSuccess: () => {
       invalidateProposal(queryClient)
       toast.success('Proposal duplicated')
@@ -21,7 +21,7 @@ export function useProposalActions() {
     onError: () => toast.error('Failed to duplicate proposal'),
   }))
 
-  const updateProposal = useMutation(trpc.proposalsRouter.updateProposal.mutationOptions({
+  const updateProposal = useMutation(trpc.proposalsRouter.crud.updateProposal.mutationOptions({
     onSuccess: () => {
       invalidateProposal(queryClient)
     },

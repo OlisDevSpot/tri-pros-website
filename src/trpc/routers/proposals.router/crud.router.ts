@@ -4,17 +4,13 @@ import z from 'zod'
 import { ROOTS } from '@/shared/config/roots'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
 import { createProposal, deleteProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
-import { getProposalViews, recordProposalView } from '@/shared/dal/server/proposals/proposal-views'
 import { db } from '@/shared/db'
 import { insertProposalSchema } from '@/shared/db/schema'
 import { meetings } from '@/shared/db/schema/meetings'
 import { defineAbilitiesFor } from '@/shared/permissions/abilities'
-import { contractService } from '@/shared/services/contract.service'
-import { emailService } from '@/shared/services/email.service'
-import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
-import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
+import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 
-export const proposalsRouter = createTRPCRouter({
+export const crudRouter = createTRPCRouter({
   getProposal: baseProcedure
     .input(z.object({
       proposalId: z.string(),
@@ -196,41 +192,6 @@ export const proposalsRouter = createTRPCRouter({
       return duplicate
     }),
 
-  sendProposalEmail: agentProcedure
-    .input(z.object({
-      proposalId: z.string(),
-      customerName: z.string(),
-      email: z.email(),
-      token: z.string(),
-      message: z.string().optional(),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const { user } = ctx.session
-      const isOmni = ctx.ability.can('manage', 'all')
-      const ownerKey = isOmni ? null : user.id
-
-      const { data } = await emailService.sendProposalEmail({
-        proposalId: input.proposalId,
-        token: input.token,
-        customerName: input.customerName,
-        email: input.email,
-        message: input.message,
-      })
-
-      const proposal = await updateProposal(ownerKey, input.proposalId, {
-        status: 'sent',
-        sentAt: new Date().toISOString(),
-      })
-
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
-      }
-
-      void contractService.createSigningRequest(input.proposalId, ownerKey).catch(() => {})
-
-      return { data, input, proposal }
-    }),
-
   getFinanceOptions: baseProcedure
     .query(async () => {
       try {
@@ -244,63 +205,5 @@ export const proposalsRouter = createTRPCRouter({
           cause: error,
         })
       }
-    }),
-
-  recordView: baseProcedure
-    .input(z.object({
-      proposalId: z.string(),
-      token: z.string(),
-      source: z.enum(['email', 'sms', 'direct', 'unknown']).default('unknown'),
-      referer: z.string().optional(),
-      userAgent: z.string().optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
-
-      if (!proposal || proposal.token !== input.token) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', cause: 'Invalid token' })
-      }
-
-      const view = await recordProposalView({
-        proposalId: input.proposalId,
-        source: input.source,
-        referer: input.referer,
-        userAgent: input.userAgent,
-      })
-
-      void sendViewNotificationJob.dispatch({
-        proposalOwnerId: proposal.ownerId,
-        proposalLabel: proposal.label,
-        proposalId: input.proposalId,
-        customerName: proposal.customer?.name ?? 'Customer',
-        viewedAt: view.viewedAt,
-        source: input.source,
-      }).catch(() => {})
-    }),
-
-  getProposalViews: agentProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .query(async ({ input }) => {
-      return getProposalViews(input.proposalId)
-    }),
-
-  createContractDraft: agentProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const ownerKey = isOmni ? null : ctx.session.user.id
-      return contractService.createSigningRequest(input.proposalId, ownerKey)
-    }),
-
-  sendContractForSigning: baseProcedure
-    .input(z.object({ proposalId: z.string(), token: z.string() }))
-    .mutation(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
-
-      if (!proposal || proposal.token !== input.token) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
-      }
-
-      return contractService.sendSigningRequest(input.proposalId, input.token)
     }),
 })

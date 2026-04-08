@@ -13,7 +13,7 @@ interface Props {
 export function ProposalViewBadge({ proposalId }: Props) {
   const trpc = useTRPC()
   const { data } = useQuery(
-    trpc.proposalsRouter.getProposalViews.queryOptions({ proposalId }),
+    trpc.proposalsRouter.delivery.getProposalViews.queryOptions({ proposalId }),
   )
 
   if (!data || data.totalViews === 0) {
