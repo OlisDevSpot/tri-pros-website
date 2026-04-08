@@ -40,18 +40,22 @@ export async function POST(request: Request) {
 
   const payload = JSON.parse(rawBody) as QBWebhookPayload
 
+  const dispatches: Promise<unknown>[] = []
+
   for (const notification of payload.eventNotifications) {
     const { realmId } = notification
 
     for (const entity of notification.dataChangeEvent.entities) {
       if (entity.name === 'Payment') {
-        await syncQbPaymentJob.dispatch({ paymentId: entity.id, realmId })
+        dispatches.push(syncQbPaymentJob.dispatch({ paymentId: entity.id, realmId }))
       }
       else if (entity.name === 'Invoice') {
-        await syncQbInvoiceJob.dispatch({ invoiceId: entity.id, realmId })
+        dispatches.push(syncQbInvoiceJob.dispatch({ invoiceId: entity.id, realmId }))
       }
     }
   }
+
+  await Promise.all(dispatches)
 
   return new Response('OK', { status: 200 })
 }

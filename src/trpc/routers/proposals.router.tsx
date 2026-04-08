@@ -226,9 +226,7 @@ export const proposalsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
       }
 
-      // Create signing draft asynchronously (non-blocking)
-      void contractService.createSigningRequest(input.proposalId, ownerKey)
-        .catch(() => { /* Signing draft failure must not affect the email send */ })
+      void contractService.createSigningRequest(input.proposalId, ownerKey).catch(() => {})
 
       return { data, input, proposal }
     }),
@@ -270,7 +268,6 @@ export const proposalsRouter = createTRPCRouter({
         userAgent: input.userAgent,
       })
 
-      // Dispatch notification asynchronously via QStash
       void sendViewNotificationJob.dispatch({
         proposalOwnerId: proposal.ownerId,
         proposalLabel: proposal.label,
@@ -278,7 +275,7 @@ export const proposalsRouter = createTRPCRouter({
         customerName: proposal.customer?.name ?? 'Customer',
         viewedAt: view.viewedAt,
         source: input.source,
-      }).catch(() => { /* Notification failure must not affect the customer */ })
+      }).catch(() => {})
     }),
 
   getProposalViews: agentProcedure
