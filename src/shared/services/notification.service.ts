@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { resendClient } from '@/shared/services/resend/client'
-import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
+import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-emails'
 
 function createNotificationService() {
   return {
@@ -34,15 +34,13 @@ function createNotificationService() {
         from: 'Tri Pros System <info@triprosremodeling.com>',
         to: owner.email,
         subject: `🔔 ${params.customerName} just opened their proposal`,
-        react: (
-          <ProposalViewedEmail
-            customerName={params.customerName}
-            proposalLabel={params.proposalLabel}
-            viewedAt={params.viewedAt}
-            sourceLabel={sourceLabel}
-            proposalId={params.proposalId}
-          />
-        ),
+        react: renderProposalViewedEmail({
+          customerName: params.customerName,
+          proposalLabel: params.proposalLabel,
+          viewedAt: params.viewedAt,
+          sourceLabel,
+          proposalId: params.proposalId,
+        }),
       })
 
       if (error) {

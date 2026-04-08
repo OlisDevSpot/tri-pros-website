@@ -368,7 +368,8 @@
       "WebFetch(domain:www.smashingmagazine.com)",
       "WebFetch(domain:www.patterns.dev)",
       "Bash(pnpm eslint:*)",
-      "Bash(ls src/shared/services/*.service.* src/shared/services/*.service.*)"
+      "Bash(ls src/shared/services/*.service.* src/shared/services/*.service.*)",
+      "Bash(git -C /home/olis-solutions/.claude rev-parse --git-dir)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

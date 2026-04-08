@@ -1,9 +1,7 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import { ROOTS } from '@/shared/config/roots'
 import { resendClient } from '@/shared/services/resend/client'
-import { GeneralInquiryEmail } from '@/shared/services/resend/emails/general-inquiry-email'
-import { ProjectEmailTemplate } from '@/shared/services/resend/emails/project-inquiry-email'
-import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
+import { renderGeneralInquiryEmail, renderProposalEmail, renderScheduleConsultationEmail } from '@/shared/services/resend/lib/render-emails'
 
 function createEmailService() {
   return {
@@ -21,13 +19,11 @@ function createEmailService() {
         to: params.email,
         bcc: 'info@triprosremodeling.com',
         subject: 'Your Proposal From Tri Pros Remodeling',
-        react: (
-          <ProposalEmail
-            proposalUrl={proposalUrl}
-            customerName={params.customerName}
-            repMessage={params.message}
-          />
-        ),
+        react: renderProposalEmail({
+          proposalUrl,
+          customerName: params.customerName,
+          message: params.message,
+        }),
       })
 
       if (error) {
@@ -42,7 +38,7 @@ function createEmailService() {
         to: 'Tri Pros <test@triprosremodeling.com>',
         from: 'info@triprosremodeling.com',
         subject: 'Consultation scheduled!',
-        react: <ProjectEmailTemplate data={formData} />,
+        react: renderScheduleConsultationEmail(formData),
       })
 
       if (error) {
@@ -57,7 +53,7 @@ function createEmailService() {
         to: 'Tri Pros <test@triprosremodeling.com>',
         from: 'info@triprosremodeling.com',
         subject: 'General Inquiry',
-        react: <GeneralInquiryEmail data={formData} />,
+        react: renderGeneralInquiryEmail(formData),
       })
 
       if (error) {
