@@ -45,8 +45,10 @@ export const projectFormSchema = z.object({
 
 export type ProjectFormData = z.infer<typeof projectFormSchema>
 
-/** Schema for creating a business project (not a portfolio item).
- *  Address fields are pulled from the customer record on the server. */
+/**
+ * Schema for creating a business project (not a portfolio item).
+ *  Address fields are pulled from the customer record on the server.
+ */
 export const createProjectFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(80),
   customerId: z.string().uuid(),

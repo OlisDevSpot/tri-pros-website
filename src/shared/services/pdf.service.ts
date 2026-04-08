@@ -1,3 +1,5 @@
+import type { Buffer } from 'node:buffer'
+
 /** Proposal PDFs, finance forms, printable documents */
 function createPDFService() {
   return {

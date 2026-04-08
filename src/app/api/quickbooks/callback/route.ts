@@ -1,4 +1,5 @@
 import type { QBTokenResponse } from '@/shared/services/quickbooks/types'
+import { Buffer } from 'node:buffer'
 import { NextResponse } from 'next/server'
 import env from '@/shared/config/server-env'
 import { QB_TOKEN_URL } from '@/shared/services/quickbooks/constants'

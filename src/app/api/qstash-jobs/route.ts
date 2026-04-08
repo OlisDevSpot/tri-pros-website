@@ -4,9 +4,9 @@ import env from '@/shared/config/server-env'
 import { createQbRecordsJob } from '@/shared/services/upstash/jobs/create-qb-records'
 import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai-summary'
 import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
+import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
 import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 import { syncQbInvoiceJob } from '@/shared/services/upstash/jobs/sync-qb-invoice'
-import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
 import { syncQbPaymentJob } from '@/shared/services/upstash/jobs/sync-qb-payment'
 
 /** Allow up to 60s for image optimization jobs (default is 10s on Hobby plan) */

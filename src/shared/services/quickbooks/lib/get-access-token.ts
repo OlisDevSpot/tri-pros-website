@@ -1,4 +1,5 @@
 import type { QBTokenResponse } from '../types'
+import { Buffer } from 'node:buffer'
 import env from '@/shared/config/server-env'
 import { QB_TOKEN_URL } from '../constants'
 import { getStoredTokens, upsertTokens } from './access-token-cache'
