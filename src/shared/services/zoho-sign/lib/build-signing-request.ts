@@ -1,11 +1,7 @@
 import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
-import env from '@/shared/config/server-env'
-import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 
-const TEMPLATE_IDS = {
-  base: env.ZOHO_SIGN_BASE_TEMPLATE_ID,
-  senior: env.ZOHO_SIGN_SENIOR_TEMPLATE_ID,
-}
+import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
+import { ZOHO_SIGN_TEMPLATE_IDS } from '@/shared/services/zoho-sign/constants'
 
 export function buildSigningRequest(
   proposal: ProposalWithCustomer,
@@ -23,7 +19,7 @@ export function buildSigningRequest(
   const customerState = customer?.state ?? 'CA'
   const customerZip = customer?.zip ?? ''
 
-  const templateId = TEMPLATE_IDS.base
+  const templateId = ZOHO_SIGN_TEMPLATE_IDS.base
 
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
   const sow1 = sowText.slice(0, 2000)
