@@ -3,12 +3,8 @@ import env from '@/shared/config/server-env'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 
 const TEMPLATE_IDS = {
-  base: env.NODE_ENV === 'production'
-    ? 'ZOHO_PROD_BASE_TEMPLATE_ID'
-    : 'ZOHO_DEV_BASE_TEMPLATE_ID',
-  senior: env.NODE_ENV === 'production'
-    ? 'ZOHO_PROD_SENIOR_TEMPLATE_ID'
-    : 'ZOHO_DEV_SENIOR_TEMPLATE_ID',
+  base: env.ZOHO_SIGN_BASE_TEMPLATE_ID,
+  senior: env.ZOHO_SIGN_SENIOR_TEMPLATE_ID,
 }
 
 export function buildSigningRequest(

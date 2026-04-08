@@ -1,15 +1,11 @@
+import type { QBTokenResponse } from '../types'
 import env from '@/shared/config/server-env'
 import { QB_TOKEN_URL } from '../constants'
 import { getStoredTokens, upsertTokens } from './access-token-cache'
 
-interface TokenResponse {
-  access_token: string
-  refresh_token: string
-  expires_in: number
-  token_type: string
-}
+let inflightRefresh: Promise<{ accessToken: string, realmId: string }> | null = null
 
-export async function getQBAccessToken(): Promise<{ accessToken: string, realmId: string }> {
+async function refreshToken(): Promise<{ accessToken: string, realmId: string }> {
   const stored = await getStoredTokens()
 
   if (!stored) {
@@ -42,7 +38,7 @@ export async function getQBAccessToken(): Promise<{ accessToken: string, realmId
     throw new Error(`QuickBooks token refresh failed: ${error}`)
   }
 
-  const data = await res.json() as TokenResponse
+  const data = await res.json() as QBTokenResponse
   const newExpiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString()
 
   await upsertTokens({
@@ -53,4 +49,16 @@ export async function getQBAccessToken(): Promise<{ accessToken: string, realmId
   })
 
   return { accessToken: data.access_token, realmId: stored.realmId }
+}
+
+export async function getQBAccessToken(): Promise<{ accessToken: string, realmId: string }> {
+  if (inflightRefresh) {
+    return inflightRefresh
+  }
+
+  inflightRefresh = refreshToken().finally(() => {
+    inflightRefresh = null
+  })
+
+  return inflightRefresh
 }

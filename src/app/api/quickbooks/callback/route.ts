@@ -1,13 +1,8 @@
+import type { QBTokenResponse } from '@/shared/services/quickbooks/types'
 import { NextResponse } from 'next/server'
 import env from '@/shared/config/server-env'
 import { QB_TOKEN_URL } from '@/shared/services/quickbooks/constants'
 import { upsertTokens } from '@/shared/services/quickbooks/lib/access-token-cache'
-
-interface TokenResponse {
-  access_token: string
-  refresh_token: string
-  expires_in: number
-}
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -46,7 +41,7 @@ export async function GET(request: Request) {
     )
   }
 
-  const data = await res.json() as TokenResponse
+  const data = await res.json() as QBTokenResponse
   const expiresAt = new Date(Date.now() + data.expires_in * 1000).toISOString()
 
   await upsertTokens({
