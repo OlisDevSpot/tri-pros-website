@@ -7,11 +7,13 @@ Tracks placeholder values, stub implementations, and missing data that must be p
 ## Zoho Sign Template IDs
 
 **File:** `src/shared/services/zoho-sign/constants/index.ts`
-**Constant:** `ZOHO_SIGN_TEMPLATE_IDS`
+**Constant:** `ZOHO_SIGN_TEMPLATE_IDS` (resolved from `ZOHO_SIGN_TEMPLATE_IDS_BY_ENV` based on `NODE_ENV`)
 
-| Key | Status | Description |
-|---|---|---|
-| `base` | STUB — empty string | Base contract template ID from Zoho Sign dashboard |
-| `senior` | STUB — empty string | Senior contract template ID from Zoho Sign dashboard |
+| Environment | Key | Status | Description |
+|---|---|---|---|
+| production | `base` | STUB — empty string | Production base contract template ID |
+| production | `senior` | STUB — empty string | Production senior contract template ID |
+| development | `base` | STUB — empty string | Development/sandbox base contract template ID |
+| development | `senior` | STUB — empty string | Development/sandbox senior contract template ID |
 
-**How to resolve:** Log into Zoho Sign > Templates > copy the template ID from the URL or template settings. Paste into the constant values.
+**How to resolve:** Log into the respective Zoho Sign account (prod or sandbox) > Templates > copy the template ID from the URL or template settings. Paste into the corresponding environment object.
