@@ -1,6 +1,6 @@
-import { CheckCircle, Eye, Mail, Minus } from 'lucide-react'
-
 import type { ZohoActionStatus } from '@/shared/services/zoho-sign/types'
+
+import { CheckCircle, Eye, Mail, Minus } from 'lucide-react'
 
 import { ACTION_STATUS_CONFIG } from '../constants/contract-statuses'
 

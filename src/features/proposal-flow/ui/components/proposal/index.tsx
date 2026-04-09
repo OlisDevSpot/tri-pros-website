@@ -93,32 +93,32 @@ export function Proposal() {
                   }}
                   />
                 )}
-                {customizableSections.includes(step.accessor) && step.accessor === 'contract' && (
+                {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
                   <step.Component
                     proposalId={params.proposalId}
                     token={token ?? undefined}
                     variant="full"
                     isAgent={ability.can('update', 'Proposal')}
-                  />
-                )}
-                {customizableSections.includes(step.accessor) && step.accessor === 'send-proposal' && (
-                  <step.Component onClick={(message) => {
-                    if (!customerEmail) {
-                      toast.error('Email is not configured')
-                      return
-                    }
-                    sendProposalEmail.mutate({
-                      proposalId: params.proposalId,
-                      email: customerEmail,
-                      token: token || '',
-                      customerName,
-                      message,
-                    }, {
-                      onSuccess: () => {
-                        toast.success('proposal sent!')
-                      },
-                    })
-                  }}
+                    proposalStatus={proposal.data.status}
+                    proposalSentAt={proposal.data.sentAt}
+                    isSendingEmail={sendProposalEmail.isPending}
+                    onSendProposalEmail={(message: string) => {
+                      if (!customerEmail) {
+                        toast.error('Email is not configured')
+                        return
+                      }
+                      sendProposalEmail.mutate({
+                        proposalId: params.proposalId,
+                        email: customerEmail,
+                        token: token || '',
+                        customerName,
+                        message,
+                      }, {
+                        onSuccess: () => {
+                          toast.success('Proposal sent!')
+                        },
+                      })
+                    }}
                   />
                 )}
                 {!customizableSections.includes(step.accessor) && (

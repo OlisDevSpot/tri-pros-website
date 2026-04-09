@@ -1,8 +1,8 @@
+import type { ZohoActionStatus, ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
-import type { ZohoActionStatus, ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
 
 interface ZohoCreateDocResponse {
   requests: {

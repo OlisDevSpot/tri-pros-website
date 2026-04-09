@@ -4,7 +4,6 @@ import { Funding } from '@/features/proposal-flow/ui/components/proposal/funding
 import { ProjectOverview } from '@/features/proposal-flow/ui/components/proposal/project-overview'
 import { RelatedProjects } from '@/features/proposal-flow/ui/components/proposal/related-projects'
 import { ScopeOfWork } from '@/features/proposal-flow/ui/components/proposal/scope-of-work'
-import { SendProposalLink } from '@/features/proposal-flow/ui/components/proposal/send-proposal-link'
 import { TrustedContractor } from '@/features/proposal-flow/ui/components/proposal/trusted-contractor'
 import { ContractStatusPanel } from '@/shared/components/contract-status-panel/ui/contract-status-panel'
 
@@ -45,16 +44,9 @@ export const proposalSteps = [
     roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Send Proposal',
-    accessor: 'send-proposal',
-    description: 'Send proposal link to homeowner',
-    Component: SendProposalLink,
-    roles: ['agent'],
-  },
-  {
-    title: 'Contract',
-    accessor: 'contract',
-    description: 'Contract signing status and management',
+    title: 'Agreement',
+    accessor: 'agreement',
+    description: 'Proposal delivery and contract signing',
     Component: ContractStatusPanel as unknown as (props: Record<string, any>) => React.ReactNode,
     roles: ['homeowner', 'agent'],
   },
@@ -68,4 +60,4 @@ export function generateProposalSteps(userRole: UserRole) {
 }
 
 export type ProposalAccessor = typeof proposalSteps[number]['accessor']
-export const customizableSections: ProposalAccessor[] = ['funding', 'send-proposal', 'contract']
+export const customizableSections: ProposalAccessor[] = ['funding', 'agreement']

@@ -5,7 +5,16 @@ import { useContractStatus } from '../hooks/use-contract-status'
 import { AgentContractView } from './agent-contract-view'
 import { HomeownerContractView } from './homeowner-contract-view'
 
-export function ContractStatusPanel({ proposalId, token, variant, isAgent }: ContractStatusPanelProps) {
+export function ContractStatusPanel({
+  proposalId,
+  token,
+  variant: _variant,
+  isAgent,
+  onSendProposalEmail,
+  isSendingEmail,
+  proposalStatus,
+  proposalSentAt,
+}: ContractStatusPanelProps) {
   const { data: contractStatus, isLoading } = useContractStatus(proposalId, token)
 
   if (isLoading) {
@@ -22,6 +31,10 @@ export function ContractStatusPanel({ proposalId, token, variant, isAgent }: Con
       <AgentContractView
         proposalId={proposalId}
         contractStatus={contractStatus ?? null}
+        onSendProposalEmail={onSendProposalEmail}
+        isSendingEmail={isSendingEmail}
+        proposalStatus={proposalStatus}
+        proposalSentAt={proposalSentAt}
       />
     )
   }
