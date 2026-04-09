@@ -63,29 +63,24 @@ function createContractService() {
         throw new Error(`Proposal ${proposalId} not found`)
       }
 
-      let requestId = proposal.signingRequestId
-
-      // Create draft if one doesn't exist yet
-      if (!requestId) {
-        const { templateId, body } = buildSigningRequest(proposal)
-        const createRes = await makeRequest(
-          `/templates/${templateId}/createdocument`,
-          { method: 'POST', body: JSON.stringify(body) },
-        )
-        if (!createRes.ok) {
-          const errorText = await createRes.text()
-          throw new Error(`Zoho Sign create document failed: ${errorText}`)
-        }
-        const createData = await createRes.json() as ZohoCreateDocResponse
-        requestId = createData.requests.request_id
+      // Recall any existing request so we always send with current proposal data
+      if (proposal.signingRequestId) {
+        await makeRequest(`/requests/${proposal.signingRequestId}/recall`, { method: 'POST' })
+          .catch(() => {}) // Ignore recall errors (request may already be completed/recalled)
       }
 
-      // Submit the draft for signing
-      const submitRes = await makeRequest(`/requests/${requestId}/submit`, { method: 'POST' })
-      if (!submitRes.ok) {
-        const errorText = await submitRes.text()
-        throw new Error(`Zoho Sign submit failed: ${errorText}`)
+      // Create fresh document with current proposal data
+      const { templateId, body } = buildSigningRequest(proposal)
+      const createRes = await makeRequest(
+        `/templates/${templateId}/createdocument`,
+        { method: 'POST', body: JSON.stringify(body) },
+      )
+      if (!createRes.ok) {
+        const errorText = await createRes.text()
+        throw new Error(`Zoho Sign create document failed: ${errorText}`)
       }
+      const createData = await createRes.json() as ZohoCreateDocResponse
+      const requestId = createData.requests.request_id
 
       await updateProposal(ownerKey, proposalId, {
         signingRequestId: requestId,
