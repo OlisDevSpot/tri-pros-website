@@ -51,7 +51,7 @@ export function buildSigningRequest(
         field_data: {
           field_text_data: {
             'start-date': startDate.toLocaleDateString(),
-            'completion': completionDate.toLocaleDateString(),
+            'completion-date': completionDate.toLocaleDateString(),
             'sow-1': sow1,
             'sow-2': sow2,
             'tcp': String(funding.finalTcp),
