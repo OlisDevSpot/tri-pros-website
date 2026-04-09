@@ -2,6 +2,7 @@ import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
+import type { ZohoActionStatus, ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
 
 interface ZohoCreateDocResponse {
   requests: {
@@ -178,14 +179,36 @@ function createContractService() {
       return { requestId }
     },
 
-    getSigningStatus: async (requestId: string) => {
+    getSigningStatus: async (requestId: string): Promise<ZohoContractStatus> => {
       const res = await jsonRequest(`/requests/${requestId}`, { method: 'GET' })
       if (!res.ok) {
         const errorText = await res.text()
         throw new Error(`Zoho Sign status check failed for ${requestId}: ${errorText}`)
       }
-      const data = await res.json() as { requests: { request_status: string } }
-      return { status: data.requests.request_status }
+
+      const data = await res.json() as {
+        requests: {
+          request_id: string
+          request_status: string
+          actions: {
+            role: string
+            action_status: string
+            recipient_email: string
+          }[]
+        }
+      }
+
+      const req = data.requests
+
+      return {
+        requestId: req.request_id,
+        requestStatus: req.request_status as ZohoRequestStatus,
+        signerStatuses: req.actions.map(a => ({
+          role: a.role,
+          status: a.action_status as ZohoActionStatus,
+          recipientEmail: a.recipient_email,
+        })),
+      }
     },
   }
 }
