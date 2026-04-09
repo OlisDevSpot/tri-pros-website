@@ -38,7 +38,9 @@ export const deliveryRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
       }
 
-      void contractService.createSigningRequest(input.proposalId, ownerKey).catch(() => {})
+      void contractService.createSigningRequest(input.proposalId, ownerKey).catch((err) => {
+        console.error('[contractService] Failed to create signing request:', err)
+      })
 
       return { data, input, proposal }
     }),

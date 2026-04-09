@@ -14,10 +14,7 @@ const TEMPLATE_ACTION_IDS = {
   },
 }
 
-export function buildSigningRequest(
-  proposal: ProposalWithCustomer,
-  quickSend: boolean,
-) {
+export function buildSigningRequest(proposal: ProposalWithCustomer) {
   const { customer, projectJSON, fundingJSON } = proposal
   const { data: project } = projectJSON
   const { data: funding } = fundingJSON
@@ -84,7 +81,6 @@ export function buildSigningRequest(
         ],
         notes: '',
       },
-      is_quicksend: quickSend,
     },
   }
 }
