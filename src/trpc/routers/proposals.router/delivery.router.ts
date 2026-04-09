@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { getProposalViews, recordProposalView } from '@/shared/dal/server/proposals/proposal-views'
+import { contractService } from '@/shared/services/contract.service'
 import { emailService } from '@/shared/services/email.service'
 import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
@@ -36,6 +37,11 @@ export const deliveryRouter = createTRPCRouter({
       if (!proposal) {
         throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
       }
+
+      // Create Zoho Sign draft in background (not sent — homeowner must initiate signing)
+      void contractService.createSigningRequest(input.proposalId, ownerKey).catch((err) => {
+        console.error('[contractService] Failed to create signing draft:', err)
+      })
 
       return { data, input, proposal }
     }),
