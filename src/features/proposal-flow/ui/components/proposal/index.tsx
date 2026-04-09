@@ -23,7 +23,6 @@ export function Proposal() {
   const { setRootEl } = useScrollRoot()
   const trpc = useTRPC()
   const recordView = useMutation(trpc.proposalsRouter.delivery.recordView.mutationOptions())
-  const sendContract = useMutation(trpc.proposalsRouter.contracts.sendContractForSigning.mutationOptions())
   const ability = useAbility()
   const hasRecorded = useRef(false)
 
@@ -94,13 +93,12 @@ export function Proposal() {
                   }}
                   />
                 )}
-                {customizableSections.includes(step.accessor) && step.accessor === 'agreement-link' && (
+                {customizableSections.includes(step.accessor) && step.accessor === 'contract' && (
                   <step.Component
-                    onClick={() => {
-                      sendContract.mutate({ proposalId: params.proposalId, token: token ?? '' })
-                    }}
-                    isPending={sendContract.isPending}
-                    isSuccess={sendContract.isSuccess}
+                    proposalId={params.proposalId}
+                    token={token ?? undefined}
+                    variant="full"
+                    isAgent={ability.can('update', 'Proposal')}
                   />
                 )}
                 {customizableSections.includes(step.accessor) && step.accessor === 'send-proposal' && (
