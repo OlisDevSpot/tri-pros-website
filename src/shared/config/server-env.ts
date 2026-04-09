@@ -38,9 +38,10 @@ const envSchema = z.object({
   PIPEDRIVE_API_KEY: z.string(),
 
   // ZOHO SIGN
-  ZOHO_SIGN_CLIENT_ID: z.string(),
-  ZOHO_SIGN_CLIENT_SECRET: z.string(),
-  ZOHO_SIGN_REFRESH_TOKEN: z.string(),
+  ZOHO_SIGN_DEV_TOKEN: z.string().optional(),
+  ZOHO_SIGN_CLIENT_ID: z.string().optional(),
+  ZOHO_SIGN_CLIENT_SECRET: z.string().optional(),
+  ZOHO_SIGN_REFRESH_TOKEN: z.string().optional(),
 
   // QUICKBOOKS
   QB_CLIENT_ID: z.string(),

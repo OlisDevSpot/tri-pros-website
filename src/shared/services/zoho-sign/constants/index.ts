@@ -4,7 +4,7 @@ export const ZOHO_SIGN_BASE_URL = 'https://sign.zoho.com'
 
 export const ZOHO_ACCOUNTS_URL = 'https://accounts.zoho.com'
 
-export const ZOHO_SIGN_SCOPES = 'ZohoSign.documents.CREATE,ZohoSign.templates.READ'
+export const ZOHO_SIGN_SCOPES = 'ZohoSign.documents.ALL,ZohoSign.templates.ALL'
 
 export const ZOHO_SIGN_TEMPLATE_IDS = {
   base: env.NODE_ENV === 'production'
