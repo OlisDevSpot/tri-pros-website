@@ -39,7 +39,10 @@ function createContractService() {
       `${ZOHO_SIGN_BASE_URL}/api/v1/templates/${templateId}/createdocument?${qs}`,
       {
         method: 'POST',
-        headers: { ...auth },
+        headers: {
+          ...auth,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
         body: `data=${encodeURIComponent(JSON.stringify(body))}`,
       },
     )
