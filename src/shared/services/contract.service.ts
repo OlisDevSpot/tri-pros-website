@@ -95,6 +95,69 @@ function createContractService() {
       return { requestId }
     },
 
+    recallSigningRequest: async (proposalId: string, ownerKey: string | null) => {
+      const proposal = await getProposal(proposalId)
+      if (!proposal) {
+        throw new Error(`Proposal ${proposalId} not found`)
+      }
+
+      if (!proposal.signingRequestId) {
+        throw new Error(`Proposal ${proposalId} has no signing request to recall`)
+      }
+
+      const res = await makeRequest(`/requests/${proposal.signingRequestId}/recall`, { method: 'POST' })
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Zoho Sign recall failed: ${errorText}`)
+      }
+
+      // Clear the signing request ID so a new one can be created
+      await updateProposal(ownerKey, proposalId, {
+        signingRequestId: null,
+        contractSentAt: null,
+      })
+
+      return { recalled: true }
+    },
+
+    resendSigningRequest: async (proposalId: string, ownerKey: string | null) => {
+      const proposal = await getProposal(proposalId)
+      if (!proposal) {
+        throw new Error(`Proposal ${proposalId} not found`)
+      }
+
+      // If there's an existing request, recall it first
+      if (proposal.signingRequestId) {
+        await makeRequest(`/requests/${proposal.signingRequestId}/recall`, { method: 'POST' })
+      }
+
+      // Create fresh document with current proposal data + send immediately
+      const { templateId, body } = buildSigningRequest(proposal)
+      const createRes = await makeRequest(
+        `/templates/${templateId}/createdocument`,
+        { method: 'POST', body: JSON.stringify(body) },
+      )
+      if (!createRes.ok) {
+        const errorText = await createRes.text()
+        throw new Error(`Zoho Sign create document failed: ${errorText}`)
+      }
+      const createData = await createRes.json() as ZohoCreateDocResponse
+      const requestId = createData.requests.request_id
+
+      const submitRes = await makeRequest(`/requests/${requestId}/submit`, { method: 'POST' })
+      if (!submitRes.ok) {
+        const errorText = await submitRes.text()
+        throw new Error(`Zoho Sign submit failed: ${errorText}`)
+      }
+
+      await updateProposal(ownerKey, proposalId, {
+        signingRequestId: requestId,
+        contractSentAt: new Date().toISOString(),
+      })
+
+      return { requestId }
+    },
+
     getSigningStatus: async (requestId: string) => {
       const res = await makeRequest(`/requests/${requestId}`, { method: 'GET' })
       if (!res.ok) {
