@@ -3,7 +3,7 @@
 import type { MeetingFlowContext } from '@/features/meetings/types'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import type { MeetingOutcome } from '@/shared/types/enums'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -28,6 +28,7 @@ import { ProgramStep } from '@/features/meetings/ui/components/steps/program-ste
 import { SpecialtiesStep } from '@/features/meetings/ui/components/steps/specialties-step'
 import { WhoWeAreStep } from '@/features/meetings/ui/components/steps/who-we-are-step'
 import { SyncStatusIndicator } from '@/features/meetings/ui/components/sync-status-indicator'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { Logo } from '@/shared/components/logo'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -50,7 +51,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
 
 function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateMeeting } = useInvalidation()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
   const [contextOpen, setContextOpen] = useState(false)
   const [personaOpen, setPersonaOpen] = useState(false)
@@ -61,13 +62,8 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   )
 
   const invalidateMeetingQueries = useCallback(() => {
-    void queryClient.invalidateQueries({
-      queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
-    })
-    void queryClient.invalidateQueries({
-      queryKey: trpc.meetingsRouter.getPersonaProfile.queryKey({ meetingId }),
-    })
-  }, [meetingId, queryClient, trpc])
+    invalidateMeeting()
+  }, [invalidateMeeting])
 
   const updateMeeting = useMutation(
     trpc.meetingsRouter.update.mutationOptions({

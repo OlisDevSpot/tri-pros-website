@@ -1,7 +1,7 @@
 'use client'
 
 import type { Meeting } from '@/shared/db/schema'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { ArrowLeftIcon, SaveIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { CustomerSearch } from '@/shared/components/customer-search'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { ROOTS } from '@/shared/config/roots'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -20,14 +21,14 @@ interface EditContactFormProps {
 export function EditContactForm({ meeting }: EditContactFormProps) {
   const router = useRouter()
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateMeeting } = useInvalidation()
 
   const [customerId, setCustomerId] = useState('')
 
   const updateMeeting = useMutation(
     trpc.meetingsRouter.update.mutationOptions({
       onSuccess: () => {
-        void queryClient.invalidateQueries(trpc.meetingsRouter.getAll.queryFilter())
+        invalidateMeeting()
         toast.success('Meeting updated')
         router.push(ROOTS.dashboard.meetings.root())
       },
