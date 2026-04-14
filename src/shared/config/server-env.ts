@@ -37,13 +37,17 @@ const envSchema = z.object({
   PIPEDRIVE_BASE_URL: z.string(),
   PIPEDRIVE_API_KEY: z.string(),
 
-  // DOCUSIGN
-  DS_DEV_USER_ID: z.string().optional(),
-  DS_USER_ID: z.string(),
-  DS_ACCOUNT_ID: z.string(),
-  DS_INTEGRATION_KEY: z.string(),
-  DS_JWT_PRIVATE_KEY_PATH: z.string(),
-  DS_JWT_PRIVATE_KEY: z.string(),
+  // ZOHO SIGN
+  ZOHO_SIGN_DEV_TOKEN: z.string().optional(),
+  ZOHO_SIGN_CLIENT_ID: z.string().optional(),
+  ZOHO_SIGN_CLIENT_SECRET: z.string().optional(),
+  ZOHO_SIGN_REFRESH_TOKEN: z.string().optional(),
+
+  // QUICKBOOKS
+  QB_CLIENT_ID: z.string(),
+  QB_CLIENT_SECRET: z.string(),
+  QB_REDIRECT_URI: z.string(),
+  QB_WEBHOOK_VERIFIER_TOKEN: z.string(),
 
   // NOTION
   NOTION_API_KEY: z.string(),

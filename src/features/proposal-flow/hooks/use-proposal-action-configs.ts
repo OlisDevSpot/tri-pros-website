@@ -1,13 +1,13 @@
 import type { JSX } from 'react'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { toast } from 'sonner'
 
 import { PROPOSAL_ACTIONS } from '@/shared/components/entity-actions/constants/proposal-actions'
 import { ROOTS } from '@/shared/config/roots'
-import { invalidateProposal } from '@/shared/dal/client/invalidation'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { copyToClipboard } from '@/shared/lib/clipboard'
 import { useTRPC } from '@/trpc/helpers'
@@ -50,18 +50,16 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
   overrides: ProposalActionOverrides<T> = {},
 ): ProposalActionConfigsResult<T> {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateProposal } = useInvalidation()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete proposal',
     message: 'This will permanently delete this proposal. This cannot be undone.',
   })
 
-  const invalidate = () => invalidateProposal(queryClient)
-
   const duplicateProposal = useMutation(
-    trpc.proposalsRouter.duplicateProposal.mutationOptions({
+    trpc.proposalsRouter.crud.duplicateProposal.mutationOptions({
       onSuccess: () => {
-        invalidate()
+        invalidateProposal()
         toast.success('Proposal duplicated')
       },
       onError: () => toast.error('Failed to duplicate proposal'),
@@ -69,9 +67,9 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
   )
 
   const deleteProposal = useMutation(
-    trpc.proposalsRouter.deleteProposal.mutationOptions({
+    trpc.proposalsRouter.crud.deleteProposal.mutationOptions({
       onSuccess: () => {
-        invalidate()
+        invalidateProposal()
         toast.success('Proposal deleted')
       },
       onError: () => toast.error('Failed to delete proposal'),

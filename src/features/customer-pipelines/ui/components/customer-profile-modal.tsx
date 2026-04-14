@@ -1,10 +1,11 @@
 'use client'
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 import { CustomerProfileModalContent } from '@/features/customer-pipelines/ui/components/customer-profile-modal-content'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { ErrorState } from '@/shared/components/states/error-state'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -17,16 +18,14 @@ interface Props {
 export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingId }: Props) {
   const { isOpen, close } = useModalStore()
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateCustomer } = useInvalidation()
 
   const profileQuery = useQuery(
     trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }),
   )
 
   function handleMutationSuccess() {
-    void queryClient.invalidateQueries(
-      trpc.customerPipelinesRouter.getCustomerProfile.queryFilter(),
-    )
+    invalidateCustomer()
   }
 
   const customerName = profileQuery.data?.customer.name

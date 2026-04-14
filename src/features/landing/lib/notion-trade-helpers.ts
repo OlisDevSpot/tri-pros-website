@@ -3,9 +3,7 @@ import type { Trade } from '@/shared/services/notion/lib/trades/schema'
 import { unstable_cache } from 'next/cache'
 
 import { getTradeImages } from '@/features/landing/lib/get-trade-images'
-import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
-import { pageToScope } from '@/shared/services/notion/lib/scopes/adapter'
-import { pageToTrade } from '@/shared/services/notion/lib/trades/adapter'
+import { constructionDataService } from '@/shared/services/construction-data.service'
 
 export type PillarSlug = 'energy-efficient-construction' | 'luxury-renovations'
 
@@ -21,10 +19,7 @@ const PILLAR_TYPE_MAP: Record<PillarSlug, string[]> = {
 
 export const getCachedTrades = unstable_cache(
   async () => {
-    const raw = await queryNotionDatabase('trades', {
-      sortBy: { property: 'name', direction: 'ascending' },
-    })
-    return raw ? raw.map(pageToTrade) : []
+    return constructionDataService.getTrades()
   },
   ['notion-trades'],
   { tags: ['notion-trades'], revalidate: 180 },
@@ -32,8 +27,7 @@ export const getCachedTrades = unstable_cache(
 
 export const getCachedScopes = unstable_cache(
   async () => {
-    const raw = await queryNotionDatabase('scopes')
-    return raw ? raw.map(pageToScope) : []
+    return constructionDataService.getAllScopes()
   },
   ['notion-scopes'],
   { tags: ['notion-scopes'], revalidate: 180 },

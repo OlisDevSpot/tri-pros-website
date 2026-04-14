@@ -3,7 +3,7 @@
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
 import type { AgentProfile } from '@/shared/entities/agents/schemas'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { CameraIcon, Loader2Icon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface HeadshotUploadProps {
@@ -19,7 +20,7 @@ interface HeadshotUploadProps {
 
 export function HeadshotUpload({ profile }: HeadshotUploadProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateAgentSettings } = useInvalidation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
 
@@ -59,7 +60,7 @@ export function HeadshotUpload({ profile }: HeadshotUploadProps) {
       await updateProfile.mutateAsync({
         agentProfileJSON: { ...(agentProfile ?? {}), headshotUrl: publicUrl },
       })
-      queryClient.invalidateQueries({ queryKey: trpc.agentSettingsRouter.getProfile.queryKey() })
+      invalidateAgentSettings()
       toast.success('Headshot uploaded')
     }
     catch {

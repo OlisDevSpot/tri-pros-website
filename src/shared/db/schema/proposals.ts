@@ -21,7 +21,9 @@ export const proposals = pgTable('proposals', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   token: text('token').notNull(),
-  docusignEnvelopeId: text('docusign_envelope_id'),
+  signingRequestId: text('signing_request_id'),
+  qbInvoiceId: text('qb_invoice_id'),
+  qbPaymentStatus: text('qb_payment_status'),
 
   formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>().notNull(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),

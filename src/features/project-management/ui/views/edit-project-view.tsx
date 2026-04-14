@@ -3,7 +3,7 @@
 import type { ProjectFormData } from '@/shared/entities/projects/schemas'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { ArrowLeftIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
@@ -17,7 +17,7 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
-import { invalidateProject } from '@/shared/dal/client/invalidation'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { projectFormDefaults, projectFormSchema } from '@/shared/entities/projects/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -27,7 +27,7 @@ interface Props {
 
 export function EditProjectView({ projectId }: Props) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateProject } = useInvalidation()
   const router = useRouter()
 
   const pollCountRef = useRef(0)
@@ -120,7 +120,7 @@ export function EditProjectView({ projectId }: Props) {
     updateProject.mutate({ id: projectId, data }, {
       onSuccess: () => {
         toast.success('Project updated')
-        invalidateProject(queryClient, projectId)
+        invalidateProject({ projectId })
       },
       onError: (error) => {
         toast.error(error.message)
@@ -129,7 +129,7 @@ export function EditProjectView({ projectId }: Props) {
   }
 
   function handleMediaUpdate() {
-    invalidateProject(queryClient, projectId)
+    invalidateProject({ projectId })
   }
 
   return (

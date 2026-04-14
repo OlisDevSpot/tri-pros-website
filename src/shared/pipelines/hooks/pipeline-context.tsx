@@ -3,7 +3,7 @@
 import type { Pipeline } from '@/shared/types/enums/pipelines'
 
 import { useParams } from 'next/navigation'
-import { createContext, useContext } from 'react'
+import { createContext, use } from 'react'
 
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
@@ -46,7 +46,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
  * or fall back to localStorage / 'fresh'.
  */
 export function usePipeline(): PipelineContextValue {
-  return useContext(PipelineContext)
+  return use(PipelineContext)
 }
 
 /**

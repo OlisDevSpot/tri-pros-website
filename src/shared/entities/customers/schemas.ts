@@ -29,6 +29,7 @@ export const customerProfileSchema = z.object({
   sellPlan: z.enum(meetingSellPlans),
   decisionTimeline: z.enum(meetingDecisionTimelines),
   projectNecessityRating: z.number().int().min(1).max(10),
+  age: z.number().int().min(18).max(120),
 }).partial()
 
 export const propertyProfileSchema = z.object({

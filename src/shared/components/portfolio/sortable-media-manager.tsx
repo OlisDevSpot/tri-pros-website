@@ -25,6 +25,7 @@ import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { mediaPhases } from '@/shared/constants/enums/media'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useMediaUpload } from '@/shared/hooks/use-media-upload'
 import { useGooglePicker } from '@/shared/services/google-drive/hooks/use-google-picker'
@@ -48,6 +49,7 @@ interface Props {
 export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const { invalidateProject } = useInvalidation()
   const editQueryOptions = trpc.projectsRouter.crud.getForEdit.queryOptions({ id: projectId })
   const { upload, isUploading } = useMediaUpload()
   const retryOptimization = useMutation(trpc.projectsRouter.media.retryOptimization.mutationOptions({
@@ -122,7 +124,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
         toast.error('Failed to reorder')
       },
       onSettled: () => {
-        queryClient.invalidateQueries(editQueryOptions)
+        invalidateProject()
       },
     }),
   )

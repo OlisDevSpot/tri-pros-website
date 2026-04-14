@@ -1,10 +1,11 @@
 'use client'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -15,13 +16,13 @@ interface Props {
 export function QuickNoteInput({ customerId, onSuccess }: Props) {
   const [content, setContent] = useState('')
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateCustomer } = useInvalidation()
 
   const addNoteMutation = useMutation(
     trpc.customersRouter.addNote.mutationOptions({
       onSuccess: () => {
         setContent('')
-        void queryClient.invalidateQueries(trpc.customerPipelinesRouter.getCustomerProfile.queryFilter())
+        invalidateCustomer()
         onSuccess()
       },
     }),

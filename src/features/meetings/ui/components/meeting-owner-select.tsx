@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { UserIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingOwnerSelectProps {
@@ -28,7 +29,7 @@ export function MeetingOwnerSelect({
   currentOwnerImage,
 }: MeetingOwnerSelectProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateMeeting } = useInvalidation()
 
   const internalUsersQuery = useQuery(
     trpc.meetingsRouter.getInternalUsers.queryOptions(),
@@ -38,9 +39,7 @@ export function MeetingOwnerSelect({
     trpc.meetingsRouter.assignOwner.mutationOptions({
       onSuccess: () => {
         toast.success('Owner assigned')
-        void queryClient.invalidateQueries({
-          queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
-        })
+        invalidateMeeting()
       },
       onError: () => {
         toast.error('Failed to assign owner')

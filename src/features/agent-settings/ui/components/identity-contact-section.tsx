@@ -4,16 +4,18 @@ import type { IdentityFormValues } from '@/features/agent-settings/schemas/profi
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { SaveIcon } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { identityFormSchema } from '@/features/agent-settings/schemas/profile-form'
+
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface IdentityContactSectionProps {
@@ -22,7 +24,7 @@ interface IdentityContactSectionProps {
 
 export function IdentityContactSection({ profile }: IdentityContactSectionProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateAgentSettings } = useInvalidation()
 
   const form = useForm<IdentityFormValues>({
     resolver: zodResolver(identityFormSchema),
@@ -37,7 +39,7 @@ export function IdentityContactSection({ profile }: IdentityContactSectionProps)
   const updateMutation = useMutation(
     trpc.agentSettingsRouter.updateProfile.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.agentSettingsRouter.getProfile.queryKey() })
+        invalidateAgentSettings()
         toast.success('Profile updated')
       },
       onError: () => {

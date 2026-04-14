@@ -3,7 +3,7 @@
 import type { MeetingFlowContext } from '@/features/meetings/types'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import type { MeetingOutcome } from '@/shared/types/enums'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -34,6 +34,7 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -50,7 +51,7 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
 
 function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateMeeting } = useInvalidation()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
   const [contextOpen, setContextOpen] = useState(false)
   const [personaOpen, setPersonaOpen] = useState(false)
@@ -61,13 +62,8 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   )
 
   const invalidateMeetingQueries = useCallback(() => {
-    void queryClient.invalidateQueries({
-      queryKey: trpc.meetingsRouter.getById.queryKey({ id: meetingId }),
-    })
-    void queryClient.invalidateQueries({
-      queryKey: trpc.meetingsRouter.getPersonaProfile.queryKey({ meetingId }),
-    })
-  }, [meetingId, queryClient, trpc])
+    invalidateMeeting()
+  }, [invalidateMeeting])
 
   const updateMeeting = useMutation(
     trpc.meetingsRouter.update.mutationOptions({

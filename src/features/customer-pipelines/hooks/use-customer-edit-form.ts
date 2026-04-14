@@ -3,13 +3,13 @@
 import type { CustomerFormValues } from '@/features/customer-pipelines/types'
 import type { Customer } from '@/shared/db/schema'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { buildCustomerFormDefaults } from '@/features/customer-pipelines/lib/build-customer-form-defaults'
-import { invalidateCustomer } from '@/shared/dal/client/invalidation'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -17,7 +17,7 @@ export function useCustomerEditForm(customer: Customer) {
   const [isEditing, setIsEditing] = useState(false)
   const ability = useAbility()
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateCustomer } = useInvalidation()
 
   const canEditContact = ability.can('update', 'Customer', 'name')
   const canEditProfiles = ability.can('update', 'Customer', 'customerProfileJSON')
@@ -29,13 +29,13 @@ export function useCustomerEditForm(customer: Customer) {
 
   const profileMutation = useMutation(
     trpc.customersRouter.updateProfile.mutationOptions({
-      onSuccess: () => invalidateCustomer(queryClient, customer.id),
+      onSuccess: () => invalidateCustomer(),
     }),
   )
 
   const contactMutation = useMutation(
     trpc.customersRouter.updateCustomerContact.mutationOptions({
-      onSuccess: () => invalidateCustomer(queryClient, customer.id),
+      onSuccess: () => invalidateCustomer(),
     }),
   )
 

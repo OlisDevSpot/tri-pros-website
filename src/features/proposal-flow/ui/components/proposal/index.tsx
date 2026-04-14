@@ -22,8 +22,7 @@ export function Proposal() {
   const proposal = useCurrentProposal()
   const { setRootEl } = useScrollRoot()
   const trpc = useTRPC()
-  const recordView = useMutation(trpc.proposalsRouter.recordView.mutationOptions())
-  const sendContract = useMutation(trpc.docusignRouter.sendContractForSigning.mutationOptions())
+  const recordView = useMutation(trpc.proposalsRouter.delivery.recordView.mutationOptions())
   const ability = useAbility()
   const hasRecorded = useRef(false)
 
@@ -94,33 +93,34 @@ export function Proposal() {
                   }}
                   />
                 )}
-                {customizableSections.includes(step.accessor) && step.accessor === 'agreement-link' && (
+                {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
                   <step.Component
-                    onClick={() => {
-                      sendContract.mutate({ proposalId: params.proposalId, token: token ?? '' })
+                    proposalId={params.proposalId}
+                    token={token ?? undefined}
+                    variant="full"
+                    isAgent={ability.can('update', 'Proposal')}
+                    customerAge={customer?.customerAge ?? null}
+                    customerId={customer?.id ?? null}
+                    proposalStatus={proposal.data.status}
+                    proposalSentAt={proposal.data.sentAt}
+                    isSendingEmail={sendProposalEmail.isPending}
+                    onSendProposalEmail={(message: string) => {
+                      if (!customerEmail) {
+                        toast.error('Email is not configured')
+                        return
+                      }
+                      sendProposalEmail.mutate({
+                        proposalId: params.proposalId,
+                        email: customerEmail,
+                        token: token || '',
+                        customerName,
+                        message,
+                      }, {
+                        onSuccess: () => {
+                          toast.success('Proposal sent!')
+                        },
+                      })
                     }}
-                    isPending={sendContract.isPending}
-                    isSuccess={sendContract.isSuccess}
-                  />
-                )}
-                {customizableSections.includes(step.accessor) && step.accessor === 'send-proposal' && (
-                  <step.Component onClick={(message) => {
-                    if (!customerEmail) {
-                      toast.error('Email is not configured')
-                      return
-                    }
-                    sendProposalEmail.mutate({
-                      proposalId: params.proposalId,
-                      email: customerEmail,
-                      token: token || '',
-                      customerName,
-                      message,
-                    }, {
-                      onSuccess: () => {
-                        toast.success('proposal sent!')
-                      },
-                    })
-                  }}
                   />
                 )}
                 {!customizableSections.includes(step.accessor) && (

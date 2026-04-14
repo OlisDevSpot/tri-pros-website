@@ -2,7 +2,7 @@
 
 import type { CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import {
   CalendarIcon,
@@ -27,7 +27,7 @@ import {
 } from '@/shared/components/ui/select'
 import { Separator } from '@/shared/components/ui/separator'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { invalidateMeeting, invalidateProject } from '@/shared/dal/client/invalidation'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -59,7 +59,7 @@ export function CreateProjectForm({
   onSuccess,
 }: CreateProjectFormProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateMeeting, invalidateProject } = useInvalidation()
 
   const profileQuery = useQuery(
     trpc.customerPipelinesRouter.getCustomerProfile.queryOptions({ customerId }),
@@ -114,8 +114,8 @@ export function CreateProjectForm({
   const createMutation = useMutation(
     trpc.projectsRouter.business.create.mutationOptions({
       onSuccess: async (project) => {
-        invalidateProject(queryClient, project.id, customerId)
-        invalidateMeeting(queryClient, customerId)
+        invalidateProject({ projectId: project.id, customerId })
+        invalidateMeeting({ customerId })
         onSuccess?.(selectedProposalId, project.id)
       },
     }),

@@ -5,18 +5,20 @@ import type { AgentSettingsProfile } from '@/features/agent-settings/types'
 import type { AgentProfile } from '@/shared/entities/agents/schemas'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { SaveIcon } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { languageOptions } from '@/features/agent-settings/constants/languages'
 import { brandFormSchema } from '@/features/agent-settings/schemas/profile-form'
+
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface CustomerBrandSectionProps {
@@ -25,7 +27,7 @@ interface CustomerBrandSectionProps {
 
 export function CustomerBrandSection({ profile }: CustomerBrandSectionProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateAgentSettings } = useInvalidation()
   const agentProfile = profile.agentProfileJSON as AgentProfile | null
 
   const form = useForm<BrandFormValues>({
@@ -43,7 +45,7 @@ export function CustomerBrandSection({ profile }: CustomerBrandSectionProps) {
   const updateMutation = useMutation(
     trpc.agentSettingsRouter.updateProfile.mutationOptions({
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: trpc.agentSettingsRouter.getProfile.queryKey() })
+        invalidateAgentSettings()
         toast.success('Brand profile updated')
       },
       onError: () => {

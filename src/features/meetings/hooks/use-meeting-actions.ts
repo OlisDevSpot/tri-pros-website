@@ -1,19 +1,19 @@
 'use client'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { invalidateMeeting } from '@/shared/dal/client/invalidation'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 export function useMeetingActions() {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateMeeting } = useInvalidation()
 
   const deleteMeeting = useMutation(
     trpc.meetingsRouter.delete.mutationOptions({
       onSuccess: () => {
-        invalidateMeeting(queryClient)
+        invalidateMeeting()
         toast.success('Meeting deleted')
       },
       onError: () => toast.error('Failed to delete meeting'),
@@ -23,7 +23,7 @@ export function useMeetingActions() {
   const duplicateMeeting = useMutation(
     trpc.meetingsRouter.duplicate.mutationOptions({
       onSuccess: () => {
-        invalidateMeeting(queryClient)
+        invalidateMeeting()
         toast.success('Meeting duplicated')
       },
       onError: () => toast.error('Failed to duplicate meeting'),
@@ -33,7 +33,7 @@ export function useMeetingActions() {
   const updateOutcome = useMutation(
     trpc.meetingsRouter.update.mutationOptions({
       onSuccess: () => {
-        invalidateMeeting(queryClient)
+        invalidateMeeting()
         toast.success('Outcome updated')
       },
       onError: () => toast.error('Failed to update outcome'),
@@ -43,7 +43,7 @@ export function useMeetingActions() {
   const updateScheduledFor = useMutation(
     trpc.meetingsRouter.update.mutationOptions({
       onSuccess: () => {
-        invalidateMeeting(queryClient)
+        invalidateMeeting()
         toast.success('Scheduled date updated')
       },
       onError: () => toast.error('Failed to update scheduled date'),

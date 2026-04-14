@@ -16,6 +16,7 @@ export interface ProposalCustomer {
   city: string
   state: string | null
   zip: string
+  customerAge: number | null
 }
 
 export async function createProposal(data: InsertProposalSchema) {
@@ -56,6 +57,7 @@ export async function getProposal(proposalId: string) {
         city: customers.city,
         state: customers.state,
         zip: customers.zip,
+        customerProfileJSON: customers.customerProfileJSON,
       },
     })
     .from(proposals)
@@ -67,7 +69,19 @@ export async function getProposal(proposalId: string) {
     return undefined
   }
 
-  const customer = row.customer?.id ? (row.customer as ProposalCustomer) : null
+  const customer: ProposalCustomer | null = row.customer?.id
+    ? {
+        id: row.customer.id,
+        name: row.customer.name,
+        phone: row.customer.phone,
+        email: row.customer.email,
+        address: row.customer.address,
+        city: row.customer.city,
+        state: row.customer.state,
+        zip: row.customer.zip,
+        customerAge: row.customer.customerProfileJSON?.age ?? null,
+      }
+    : null
 
   return { ...row, customer }
 }

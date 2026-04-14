@@ -11,9 +11,9 @@ export function getCachedAccessToken() {
   return cachedToken.accessToken
 }
 
-export function setCachedAccessToken(accessToken: string, expiresAt: number) {
+export function setCachedAccessToken(accessToken: string, expiresInMs: number) {
   cachedToken = {
     accessToken,
-    expiresAt: Date.now() + (expiresAt - 300) * 1000, // 5 minutes before expiration
+    expiresAt: Date.now() + expiresInMs - 300_000,
   }
 }
