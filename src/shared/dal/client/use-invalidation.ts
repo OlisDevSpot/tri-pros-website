@@ -40,26 +40,26 @@ export function useInvalidation() {
   // Cross-entity: procedure-level queryFilter() (precise, opt-in)
   // Dashboard: always router-level (any entity change refreshes all dashboard queries)
 
-  function invalidateCustomer(customerId?: string) {
+  function invalidateCustomer() {
     void qc.invalidateQueries(trpc.customerPipelinesRouter.pathFilter())
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
   }
 
-  function invalidateMeeting(opts?: { meetingId?: string; customerId?: string }) {
+  function invalidateMeeting(opts?: { meetingId?: string, customerId?: string }) {
     void qc.invalidateQueries(trpc.meetingsRouter.pathFilter())
     void qc.invalidateQueries(cross.customerPipeline())
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
   }
 
-  function invalidateProposal(opts?: { proposalId?: string; customerId?: string }) {
+  function invalidateProposal(opts?: { proposalId?: string, customerId?: string }) {
     void qc.invalidateQueries(trpc.proposalsRouter.pathFilter())
     void qc.invalidateQueries(cross.customerPipeline())
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
   }
 
-  function invalidateProject(opts?: { projectId?: string; customerId?: string }) {
+  function invalidateProject(opts?: { projectId?: string, customerId?: string }) {
     void qc.invalidateQueries(trpc.projectsRouter.pathFilter())
     void qc.invalidateQueries(cross.customerPipeline())
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))

@@ -29,13 +29,13 @@ export function useCustomerEditForm(customer: Customer) {
 
   const profileMutation = useMutation(
     trpc.customersRouter.updateProfile.mutationOptions({
-      onSuccess: () => invalidateCustomer(customer.id),
+      onSuccess: () => invalidateCustomer(),
     }),
   )
 
   const contactMutation = useMutation(
     trpc.customersRouter.updateCustomerContact.mutationOptions({
-      onSuccess: () => invalidateCustomer(customer.id),
+      onSuccess: () => invalidateCustomer(),
     }),
   )
 
