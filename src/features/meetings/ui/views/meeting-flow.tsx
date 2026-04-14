@@ -28,13 +28,13 @@ import { ProgramStep } from '@/features/meetings/ui/components/steps/program-ste
 import { SpecialtiesStep } from '@/features/meetings/ui/components/steps/specialties-step'
 import { WhoWeAreStep } from '@/features/meetings/ui/components/steps/who-we-are-step'
 import { SyncStatusIndicator } from '@/features/meetings/ui/components/sync-status-indicator'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { Logo } from '@/shared/components/logo'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
