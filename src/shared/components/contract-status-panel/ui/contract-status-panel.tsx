@@ -10,6 +10,8 @@ export function ContractStatusPanel({
   token,
   variant: _variant,
   isAgent,
+  customerAge,
+  customerId,
   onSendProposalEmail,
   isSendingEmail,
   proposalStatus,
@@ -31,6 +33,8 @@ export function ContractStatusPanel({
       <AgentContractView
         proposalId={proposalId}
         contractStatus={contractStatus ?? null}
+        customerAge={customerAge ?? null}
+        customerId={customerId ?? null}
         onSendProposalEmail={onSendProposalEmail}
         isSendingEmail={isSendingEmail}
         proposalStatus={proposalStatus}
@@ -44,6 +48,8 @@ export function ContractStatusPanel({
       proposalId={proposalId}
       token={token ?? ''}
       contractStatus={contractStatus ?? null}
+      customerAge={customerAge ?? null}
+      customerId={customerId ?? null}
     />
   )
 }

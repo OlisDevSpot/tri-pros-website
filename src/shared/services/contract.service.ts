@@ -74,6 +74,15 @@ function createContractService() {
     return { requestId, status: data.requests.request_status }
   }
 
+  /** Deletes a draft or recalls+deletes an in-progress request. Zoho uses PUT, not DELETE. */
+  async function deleteRequest(requestId: string) {
+    const res = await jsonRequest(`/requests/${requestId}/delete`, {
+      method: 'PUT',
+      body: JSON.stringify({ recall_inprogress: true }),
+    })
+    return res.ok
+  }
+
   return {
     /** Creates a draft signing request (not sent to signers). 0 credits if truly draft. */
     createSigningRequest: async (proposalId: string, ownerKey: string | null) => {
@@ -180,6 +189,35 @@ function createContractService() {
       })
 
       return { requestId }
+    },
+
+    /**
+     * Ensures the Zoho Sign draft reflects current proposal data.
+     * Deletes the existing request (draft or in-progress) and creates a fresh draft.
+     * Drafts are free (0 credits), so delete + recreate is the cheapest sync strategy.
+     */
+    ensureDraftSynced: async (proposalId: string, ownerKey: string | null) => {
+      const proposal = await getProposal(proposalId)
+      if (!proposal) {
+        throw new Error(`Proposal ${proposalId} not found`)
+      }
+
+      // No existing request — just create
+      if (!proposal.signingRequestId) {
+        return createDraft(proposalId, ownerKey)
+      }
+
+      // Delete old request (works for drafts and in-progress), ignore errors
+      await deleteRequest(proposal.signingRequestId).catch(() => {})
+
+      // Clear stale reference
+      await updateProposal(ownerKey, proposalId, {
+        signingRequestId: null,
+        contractSentAt: null,
+      })
+
+      // Create fresh draft with current proposal data
+      return createDraft(proposalId, ownerKey)
     },
 
     getSigningStatus: async (requestId: string): Promise<ZohoContractStatus> => {

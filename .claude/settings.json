@@ -372,7 +372,10 @@
       "Bash(git -C /home/olis-solutions/.claude rev-parse --git-dir)",
       "WebFetch(domain:better-auth.com)",
       "Bash(grep -r 'ZOHO_SIGN.*TEMPLATE' /home/olis-solutions/olis-v3/nextjs/tri-pros-website/.env*)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "WebFetch(domain:help.zoho.com)",
+      "WebFetch(domain:www.postman.com)",
+      "Bash(pnpm exec:*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
@@ -387,7 +390,8 @@
       "/home/olis-solutions/.claude/skills",
       "/home/olis-solutions",
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/app/(frontend)/dashboard/pipeline",
-      "/mnt/c/Users/porat"
+      "/mnt/c/Users/porat",
+      "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/docs/superpowers/specs"
     ]
   },
   "enabledMcpjsonServers": [

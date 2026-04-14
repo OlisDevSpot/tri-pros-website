@@ -19,16 +19,21 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
   const { data: project } = projectJSON
   const { data: funding } = fundingJSON
 
-  const customerName = customer?.name ?? ''
-  const customerEmail = customer?.email ?? ''
-  const customerPhone = customer?.phone ?? ''
-  const customerAddress = customer?.address ?? ''
-  const customerCity = customer?.city ?? ''
-  const customerState = customer?.state ?? 'CA'
-  const customerZip = customer?.zip ?? ''
+  if (customer?.customerAge == null) {
+    throw new Error('Customer age is required before creating a signing request. CSLB regulations require age-based template selection.')
+  }
 
-  const templateId = ZOHO_SIGN_TEMPLATE_IDS.base
-  const actionIds = TEMPLATE_ACTION_IDS.base
+  const customerName = customer.name ?? ''
+  const customerEmail = customer.email ?? ''
+  const customerPhone = customer.phone ?? ''
+  const customerAddress = customer.address ?? ''
+  const customerCity = customer.city ?? ''
+  const customerState = customer.state ?? 'CA'
+  const customerZip = customer.zip ?? ''
+
+  const isSenior = customer.customerAge >= 65
+  const templateId = isSenior ? ZOHO_SIGN_TEMPLATE_IDS.senior : ZOHO_SIGN_TEMPLATE_IDS.base
+  const actionIds = isSenior ? TEMPLATE_ACTION_IDS.senior : TEMPLATE_ACTION_IDS.base
 
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
   const sow1 = sowText.slice(0, 2000)

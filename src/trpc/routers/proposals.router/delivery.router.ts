@@ -38,9 +38,9 @@ export const deliveryRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
       }
 
-      // Create Zoho Sign draft in background (not sent — homeowner must initiate signing)
-      void contractService.createSigningRequest(input.proposalId, ownerKey).catch((err) => {
-        console.error('[contractService] Failed to create signing draft:', err)
+      // Sync Zoho Sign draft with current proposal data (creates if new, updates if exists, recreates if stale)
+      void contractService.ensureDraftSynced(input.proposalId, ownerKey).catch((err) => {
+        console.error('[contractService] Failed to sync signing draft:', err)
       })
 
       return { data, input, proposal }

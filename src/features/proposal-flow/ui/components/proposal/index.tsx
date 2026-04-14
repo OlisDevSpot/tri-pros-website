@@ -99,6 +99,8 @@ export function Proposal() {
                     token={token ?? undefined}
                     variant="full"
                     isAgent={ability.can('update', 'Proposal')}
+                    customerAge={customer?.customerAge ?? null}
+                    customerId={customer?.id ?? null}
                     proposalStatus={proposal.data.status}
                     proposalSentAt={proposal.data.sentAt}
                     isSendingEmail={sendProposalEmail.isPending}
