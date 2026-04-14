@@ -1,21 +1,21 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { invalidateProposal } from '@/shared/dal/client/invalidation'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 export function useProposalActions() {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateProposal } = useInvalidation()
 
   const deleteProposal = useMutation(trpc.proposalsRouter.crud.deleteProposal.mutationOptions({
-    onSuccess: () => invalidateProposal(queryClient),
+    onSuccess: () => invalidateProposal(),
     onError: () => toast.error('Failed to delete proposal'),
   }))
 
   const duplicateProposal = useMutation(trpc.proposalsRouter.crud.duplicateProposal.mutationOptions({
     onSuccess: () => {
-      invalidateProposal(queryClient)
+      invalidateProposal()
       toast.success('Proposal duplicated')
     },
     onError: () => toast.error('Failed to duplicate proposal'),
@@ -23,7 +23,7 @@ export function useProposalActions() {
 
   const updateProposal = useMutation(trpc.proposalsRouter.crud.updateProposal.mutationOptions({
     onSuccess: () => {
-      invalidateProposal(queryClient)
+      invalidateProposal()
     },
     onError: () => toast.error('Failed to update proposal'),
   }))
