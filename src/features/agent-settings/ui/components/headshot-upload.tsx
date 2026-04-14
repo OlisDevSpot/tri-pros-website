@@ -8,10 +8,10 @@ import { CameraIcon, Loader2Icon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface HeadshotUploadProps {

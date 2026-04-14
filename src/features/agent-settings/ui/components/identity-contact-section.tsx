@@ -10,11 +10,12 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { identityFormSchema } from '@/features/agent-settings/schemas/profile-form'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface IdentityContactSectionProps {
