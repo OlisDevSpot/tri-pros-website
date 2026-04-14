@@ -2,9 +2,9 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { getProposalViews, recordProposalView } from '@/shared/dal/server/proposals/proposal-views'
-import { contractService } from '@/shared/services/contract.service'
 import { emailService } from '@/shared/services/email.service'
 import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
+import { syncContractDraftJob } from '@/shared/services/upstash/jobs/sync-contract-draft'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 
 export const deliveryRouter = createTRPCRouter({
@@ -38,10 +38,8 @@ export const deliveryRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
       }
 
-      // Sync Zoho Sign draft with current proposal data (creates if new, updates if exists, recreates if stale)
-      void contractService.ensureDraftSynced(input.proposalId, ownerKey).catch((err) => {
-        console.error('[contractService] Failed to sync signing draft:', err)
-      })
+      // Dispatch async job to sync Zoho Sign draft — client polls until signingRequestId appears
+      await syncContractDraftJob.dispatch({ proposalId: input.proposalId, ownerKey })
 
       return { data, input, proposal }
     }),

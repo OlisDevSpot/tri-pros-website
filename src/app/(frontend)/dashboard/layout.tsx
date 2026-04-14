@@ -20,7 +20,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <>
       <GlobalDialogs />
       <PwaInstallPrompt />
-      <SidebarProvider defaultOpen={defaultOpen}>
+      <SidebarProvider defaultOpen={defaultOpen} data-no-gutter-stable>
         {session && <AppSidebar user={session.user} />}
         <SidebarInset
           className="h-full min-w-0 overflow-hidden"

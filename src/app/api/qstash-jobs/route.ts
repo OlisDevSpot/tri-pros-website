@@ -5,6 +5,7 @@ import { createQbRecordsJob } from '@/shared/services/upstash/jobs/create-qb-rec
 import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai-summary'
 import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
 import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
+import { syncContractDraftJob } from '@/shared/services/upstash/jobs/sync-contract-draft'
 import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 import { syncQbInvoiceJob } from '@/shared/services/upstash/jobs/sync-qb-invoice'
 import { syncQbPaymentJob } from '@/shared/services/upstash/jobs/sync-qb-payment'
@@ -23,6 +24,7 @@ const jobs: Job[] = [
   syncQbPaymentJob,
   syncQbInvoiceJob,
   sendViewNotificationJob,
+  syncContractDraftJob,
 ]
 
 /**

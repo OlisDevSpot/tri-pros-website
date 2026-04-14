@@ -62,6 +62,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
     parseAsStringLiteral(FORM_TABS).withDefault('general'),
   )
   const [activeTab, setActiveTab] = useState<FormTab>(nuqsTab)
+  const isEditMode = !!onSave
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [saveOpenMobile, setSaveOpenMobile] = useState(false)
   const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
@@ -134,125 +135,139 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
           </TabsList>
         </Tabs>
 
-        <div className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-muted p-0.75">
-          {/* Settings */}
-          <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className={cn(
-                  TOOLBAR_BUTTON_BASE,
-                  'aspect-square',
-                  settingsOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+        {isEditMode
+          ? (
+              <div className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-muted p-0.75">
+                {/* Settings */}
+                <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        TOOLBAR_BUTTON_BASE,
+                        'aspect-square',
+                        settingsOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+                      )}
+                    >
+                      <SettingsIcon className="size-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72" align="end">
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="pricing-mode" className="text-sm font-normal">
+                            Breakdown Pricing
+                          </Label>
+                          <Switch
+                            id="pricing-mode"
+                            checked={pricingMode === 'breakdown'}
+                            onCheckedChange={checked =>
+                              form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
+                          />
+                        </div>
+                      </div>
+                      <Separator />
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
+                            Show Pricing Breakdown
+                          </Label>
+                          <Switch
+                            id="show-pricing-breakdown"
+                            checked={showPricingBreakdown}
+                            onCheckedChange={checked =>
+                              form.setValue('funding.meta.showPricingBreakdown', checked)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* View */}
+                {viewHref && (
+                  <a
+                    href={viewHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
+                  >
+                    <EyeIcon className="size-3.5" />
+                  </a>
                 )}
-              >
-                <SettingsIcon className="size-3.5" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72" align="end">
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">General</p>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="pricing-mode" className="text-sm font-normal">
-                      Breakdown Pricing
-                    </Label>
-                    <Switch
-                      id="pricing-mode"
-                      checked={pricingMode === 'breakdown'}
-                      onCheckedChange={checked =>
-                        form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
-                    />
-                  </div>
-                </div>
-                <Separator />
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
-                      Show Pricing Breakdown
-                    </Label>
-                    <Switch
-                      id="show-pricing-breakdown"
-                      checked={showPricingBreakdown}
-                      onCheckedChange={checked =>
-                        form.setValue('funding.meta.showPricingBreakdown', checked)}
-                    />
-                  </div>
+
+                {/* Save — split button */}
+                <div
+                  className={cn(
+                    TOOLBAR_BUTTON_BASE,
+                    'gap-0 px-0',
+                    saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
+                    isLoading && 'pointer-events-none opacity-50',
+                  )}
+                >
+                  {/* Desktop: label triggers save, chevron opens popover */}
+                  <button
+                    type="button"
+                    disabled={isLoading}
+                    className="hidden items-center gap-1.5 px-2 leading-none lg:inline-flex"
+                    onClick={handleSaveOnly}
+                  >
+                    <SaveIcon className="size-3.5 shrink-0" />
+                    <span className="text-sm font-medium">Save</span>
+                  </button>
+                  <Popover open={saveOpenDesktop} onOpenChange={setSaveOpenDesktop}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
+                      >
+                        <ChevronDownIcon className="size-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-44 p-1" align="end">
+                      <div className="flex flex-col">
+                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
+                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {/* Mobile: entire button opens popover */}
+                  <Popover open={saveOpenMobile} onOpenChange={setSaveOpenMobile}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        className="inline-flex items-center gap-0.5 px-1.5 lg:hidden"
+                      >
+                        <SaveIcon className="size-3.5" />
+                        <ChevronDownIcon className="size-3" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-44 p-1" align="end">
+                      <div className="flex flex-col">
+                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
+                        <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* View */}
-          {viewHref && (
-            <a
-              href={viewHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
-            >
-              <EyeIcon className="size-3.5" />
-            </a>
-          )}
-
-          {/* Save — split button */}
-          <div
-            className={cn(
-              TOOLBAR_BUTTON_BASE,
-              'gap-0 px-0',
-              saveOpen ? TOOLBAR_BUTTON_ACTIVE : TOOLBAR_BUTTON_INACTIVE,
-              isLoading && 'pointer-events-none opacity-50',
+            )
+          : (
+              <Button
+                type="button"
+                size="sm"
+                disabled={isLoading}
+                onClick={handleSaveAndPreview}
+              >
+                <SaveIcon className="size-3.5" />
+                Save & Preview
+              </Button>
             )}
-          >
-            {/* Desktop: label triggers save, chevron opens popover */}
-            <button
-              type="button"
-              disabled={isLoading}
-              className="hidden items-center gap-1.5 px-2 leading-none lg:inline-flex"
-              onClick={handleSaveOnly}
-            >
-              <SaveIcon className="size-3.5 shrink-0" />
-              <span className="text-sm font-medium">Save</span>
-            </button>
-            <Popover open={saveOpenDesktop} onOpenChange={setSaveOpenDesktop}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  className="hidden items-center border-l border-current/10 ml-1 px-1.5 rounded-r-md transition-colors hover:bg-foreground/5 lg:inline-flex"
-                >
-                  <ChevronDownIcon className="size-3" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-44 p-1" align="end">
-                <div className="flex flex-col">
-                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
-                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-            {/* Mobile: entire button opens popover */}
-            <Popover open={saveOpenMobile} onOpenChange={setSaveOpenMobile}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  disabled={isLoading}
-                  className="inline-flex items-center gap-0.5 px-1.5 lg:hidden"
-                >
-                  <SaveIcon className="size-3.5" />
-                  <ChevronDownIcon className="size-3" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-44 p-1" align="end">
-                <div className="flex flex-col">
-                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveOnly}>Save</Button>
-                  <Button type="button" variant="ghost" size="sm" className="justify-start" onClick={handleSaveAndPreview}>Save & Preview</Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">

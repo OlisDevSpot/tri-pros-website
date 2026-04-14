@@ -94,13 +94,6 @@ export function CreateNewProposalView() {
     })
   }
 
-  function onSave(data: ProposalFormSchema) {
-    createProposal.mutate(buildMutationData(data), {
-      onSuccess: () => toast.success('Proposal saved'),
-      onError: error => toast.error(error.message),
-    })
-  }
-
   if (!meetingId) {
     return (
       <ErrorState
@@ -146,7 +139,6 @@ export function CreateNewProposalView() {
           <ProposalForm
             isLoading={meetingQuery.isLoading || createProposal.isPending}
             onSubmit={onSubmit}
-            onSave={onSave}
           />
         </Form>
       </div>

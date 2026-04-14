@@ -17,7 +17,8 @@ export function ContractStatusPanel({
   proposalStatus,
   proposalSentAt,
 }: ContractStatusPanelProps) {
-  const { data: contractStatus, isLoading } = useContractStatus(proposalId, token)
+  const isSent = proposalStatus === 'sent'
+  const { data: contractStatus, isLoading, isDraftSyncing } = useContractStatus(proposalId, token, isSent)
 
   if (isLoading) {
     return (
@@ -39,6 +40,7 @@ export function ContractStatusPanel({
         isSendingEmail={isSendingEmail}
         proposalStatus={proposalStatus}
         proposalSentAt={proposalSentAt}
+        isDraftSyncing={isDraftSyncing}
       />
     )
   }

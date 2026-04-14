@@ -375,7 +375,10 @@
       "Bash(git revert:*)",
       "WebFetch(domain:help.zoho.com)",
       "WebFetch(domain:www.postman.com)",
-      "Bash(pnpm exec:*)"
+      "Bash(pnpm exec:*)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features/customer-pipelines/types*)",
+      "Bash(grep -E \"\\\\.\\(ts|js|example\\)$\")",
+      "WebFetch(domain:sign.zoho.com)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

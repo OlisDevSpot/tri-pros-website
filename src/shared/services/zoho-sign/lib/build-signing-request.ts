@@ -52,6 +52,8 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
       templates: {
         field_data: {
           field_text_data: {
+            'ho-name': customerName,
+            'ho-email': customerEmail,
             'start-date': startDate.toLocaleDateString(),
             'completion-date': completionDate.toLocaleDateString(),
             'sow-1': sow1,

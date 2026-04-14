@@ -2,7 +2,7 @@
 
 import type { ZohoActionStatus, ZohoContractStatus } from '@/shared/services/zoho-sign/types'
 import { useMutation } from '@tanstack/react-query'
-import { CheckCircle, Eye, Mail, Minus, RefreshCw, Send, Trash2 } from 'lucide-react'
+import { CheckCircle, Eye, Loader2, Mail, Minus, RefreshCw, Send, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
@@ -26,6 +26,7 @@ interface AgentContractViewProps {
   isSendingEmail?: boolean
   proposalStatus?: string
   proposalSentAt?: string | null
+  isDraftSyncing?: boolean
 }
 
 const ACTION_ICONS: Record<ZohoActionStatus, React.ReactNode> = {
@@ -69,6 +70,7 @@ export function AgentContractView({
   isSendingEmail,
   proposalStatus,
   proposalSentAt,
+  isDraftSyncing,
 }: AgentContractViewProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
@@ -157,8 +159,13 @@ export function AgentContractView({
             <CustomerAgeForm proposalId={proposalId} />
           )}
 
+          {/* State: Draft is being created by background job */}
+          {!contractStatus && isDraftSyncing && customerAge != null && (
+            <DraftSyncingState />
+          )}
+
           {/* State: No contract yet (age must be set) */}
-          {!contractStatus && customerAge != null && (
+          {!contractStatus && !isDraftSyncing && customerAge != null && (
             <NoContractState
               isSent={isSent}
               isSendingEmail={isSendingEmail ?? false}
@@ -238,6 +245,31 @@ export function AgentContractView({
   )
 }
 
+function DraftSyncingState() {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/30 p-4">
+        <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          Creating draft agreement...
+        </p>
+      </div>
+      {/* Skeleton for signer grid */}
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        {[0, 1].map(i => (
+          <div key={i} className="flex items-center gap-3 rounded-lg border border-border p-3">
+            <div className="size-8 shrink-0 animate-pulse rounded-full bg-muted" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3.5 w-20 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-14 animate-pulse rounded bg-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function NoContractState(props: {
   isSent: boolean
   isSendingEmail: boolean
@@ -249,7 +281,7 @@ function NoContractState(props: {
     return (
       <div className="rounded-lg border border-border bg-muted/30 p-4">
         <p className="text-sm text-muted-foreground">
-          Proposal has been sent. A draft agreement was created automatically. If it is not showing, refresh the page.
+          Proposal has been sent. A draft agreement will appear here shortly.
         </p>
       </div>
     )
