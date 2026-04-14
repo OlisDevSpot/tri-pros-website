@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Separator } from '@/shared/components/ui/separator'
-import { invalidateMeeting, invalidateProject, invalidateProposal } from '@/shared/dal/client/invalidation'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -28,7 +28,7 @@ interface AssignProjectDialogProps {
 
 export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignProjectDialogProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateMeeting, invalidateProject, invalidateProposal } = useInvalidation()
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
   const dataQuery = useQuery({
@@ -39,8 +39,8 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   const assignMutation = useMutation(
     trpc.meetingsRouter.assignToProject.mutationOptions({
       onSuccess: () => {
-        invalidateMeeting(queryClient)
-        invalidateProject(queryClient)
+        invalidateMeeting()
+        invalidateProject()
         toast.success('Meeting assigned to project')
         handleClose()
       },
@@ -51,8 +51,8 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   const approveProposalMutation = useMutation(
     trpc.proposalsRouter.crud.updateProposal.mutationOptions({
       onSuccess: () => {
-        invalidateProposal(queryClient)
-        invalidateProject(queryClient)
+        invalidateProposal()
+        invalidateProject()
         toast.success('Proposal approved — a project will be created')
       },
       onError: () => toast.error('Failed to approve proposal'),
