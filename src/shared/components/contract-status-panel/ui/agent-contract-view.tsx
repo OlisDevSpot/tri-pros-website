@@ -1,83 +1,82 @@
 'use client'
 
-import type { ZohoContractStatus } from '@/shared/services/zoho-sign/types'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Info } from 'lucide-react'
+import type { ZohoActionStatus, ZohoContractStatus } from '@/shared/services/zoho-sign/types'
+import { useMutation } from '@tanstack/react-query'
+import { CheckCircle, Eye, Mail, Minus, RefreshCw, Send, Trash2 } from 'lucide-react'
+import { motion } from 'motion/react'
 import { useState } from 'react'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/components/ui/alert-dialog'
 import { Button } from '@/shared/components/ui/button'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { formatDate } from '@/shared/lib/formatters'
+import { cn } from '@/shared/lib/utils'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
-import { ACTION_TOOLTIPS, REQUEST_STATUS_CONFIG } from '../constants/contract-statuses'
+import { ACTION_TOOLTIPS } from '../constants/contract-statuses'
 import { useCreditCooldown } from '../hooks/use-credit-cooldown'
-import { SignerStatusRow } from './signer-status-row'
+import { CustomerAgeForm } from './customer-age-form'
+import { ResendConfirmDialog } from './resend-confirm-dialog'
 
 interface AgentContractViewProps {
   proposalId: string
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
+  customerAge: number | null
+  customerId: string | null
   onSendProposalEmail?: (message: string) => void
   isSendingEmail?: boolean
   proposalStatus?: string
   proposalSentAt?: string | null
 }
 
-function ActionButton(props: {
-  label: string
-  tooltip: string
-  onClick: () => void
-  disabled?: boolean
-  variant?: 'default' | 'outline' | 'destructive'
-  cooldownSeconds?: number
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <Button
-        size="sm"
-        variant={props.variant ?? 'outline'}
-        onClick={props.onClick}
-        disabled={props.disabled}
-      >
-        {props.cooldownSeconds
-          ? `Wait ${props.cooldownSeconds}s...`
-          : props.label}
-      </Button>
-      <HybridPopoverTooltip content={props.tooltip} side="top">
-        <Info className="size-3.5 cursor-help text-muted-foreground" />
-      </HybridPopoverTooltip>
-    </div>
-  )
+const ACTION_ICONS: Record<ZohoActionStatus, React.ReactNode> = {
+  NOACTION: <Minus className="size-3.5 text-muted-foreground" />,
+  UNOPENED: <Mail className="size-3.5 text-muted-foreground" />,
+  VIEWED: <Eye className="size-3.5 text-blue-500" />,
+  SIGNED: <CheckCircle className="size-3.5 text-green-500" />,
+}
+
+const ACTION_LABELS: Record<ZohoActionStatus, string> = {
+  NOACTION: 'Waiting',
+  UNOPENED: 'Unopened',
+  VIEWED: 'Viewed',
+  SIGNED: 'Signed',
+}
+
+function getStatusBadge(requestStatus: string | undefined) {
+  switch (requestStatus) {
+    case 'draft':
+      return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
+    case 'inprogress':
+      return { label: 'Awaiting Signatures', className: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400' }
+    case 'completed':
+      return { label: 'Signed', className: 'bg-green-500/10 text-green-700 dark:text-green-400' }
+    case 'declined':
+      return { label: 'Declined', className: 'bg-red-500/10 text-red-700 dark:text-red-400' }
+    case 'recalled':
+      return { label: 'Recalled', className: 'bg-muted text-muted-foreground' }
+    case 'expired':
+      return { label: 'Expired', className: 'bg-red-500/10 text-red-700 dark:text-red-400' }
+    default:
+      return null
+  }
 }
 
 export function AgentContractView({
   proposalId,
   contractStatus,
+  customerAge,
   onSendProposalEmail,
   isSendingEmail,
   proposalStatus,
   proposalSentAt,
 }: AgentContractViewProps) {
   const trpc = useTRPC()
-  const queryClient = useQueryClient()
+  const { invalidateProposal } = useInvalidation()
   const [showResendConfirm, setShowResendConfirm] = useState(false)
   const [message, setMessage] = useState('')
   const { isCoolingDown, remainingSeconds, startCooldown } = useCreditCooldown()
 
-  const invalidate = () => {
-    queryClient.invalidateQueries({
-      queryKey: trpc.proposalsRouter.contracts.getContractStatus.queryKey({ proposalId }),
-    })
-  }
+  const invalidate = () => invalidateProposal()
 
   const submitContract = useMutation(
     trpc.proposalsRouter.contracts.submitContract.mutationOptions({
@@ -90,9 +89,7 @@ export function AgentContractView({
 
   const recallContract = useMutation(
     trpc.proposalsRouter.contracts.recallContract.mutationOptions({
-      onSuccess: () => {
-        invalidate()
-      },
+      onSuccess: () => invalidate(),
     }),
   )
 
@@ -107,173 +104,128 @@ export function AgentContractView({
 
   const isPending = submitContract.isPending || recallContract.isPending || resendContract.isPending
   const requestStatus = contractStatus?.requestStatus
-  const statusConfig = requestStatus ? REQUEST_STATUS_CONFIG[requestStatus] : null
   const isSent = proposalStatus === 'sent'
+  const statusBadge = getStatusBadge(requestStatus)
 
-  // State 1: No contract — show send proposal email UI
-  if (!contractStatus) {
-    return (
-      <div className="flex flex-col gap-3">
-        {!isSent && (
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-muted-foreground">Personal note (optional)</label>
-            <Textarea
-              placeholder="Add a personal note..."
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              rows={3}
-              className="resize-none"
-            />
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        {/* Gradient background wash — matches homeowner view */}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-primary/4 via-primary/2 to-transparent dark:from-primary/8 dark:via-primary/3" />
+
+        <div className="relative space-y-5 p-5 sm:p-7">
+          {/* Header row: title + status badge */}
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-semibold tracking-tight sm:text-lg">
+                Agreement
+              </h3>
+              {isSent && proposalSentAt && (
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Proposal sent
+                    {' '}
+                    {formatDate(proposalSentAt)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => onSendProposalEmail?.(message)}
+                    disabled={isSendingEmail}
+                    className="text-xs font-medium text-primary hover:text-primary/80 disabled:opacity-50"
+                  >
+                    Resend
+                  </button>
+                </div>
+              )}
+            </div>
+            {statusBadge && (
+              <span className={cn(
+                'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
+                statusBadge.className,
+              )}
+              >
+                {statusBadge.label}
+              </span>
+            )}
           </div>
-        )}
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={!isSent ? 'default' : 'outline'}
-            onClick={() => onSendProposalEmail?.(message)}
-            disabled={isSendingEmail || (isSent && false)}
-          >
-            {isSent ? `Proposal Sent${proposalSentAt ? ` on ${formatDate(proposalSentAt)}` : ''}` : 'Send Proposal Link'}
-          </Button>
-          {isSent && (
-            <Button
-              variant="link"
-              onClick={() => onSendProposalEmail?.(message)}
-              size="sm"
-              className="pl-2"
-              disabled={isSendingEmail}
-            >
-              Resend?
-            </Button>
+
+          {/* Age gate — must be set before any contract actions */}
+          {customerAge == null && (
+            <CustomerAgeForm proposalId={proposalId} />
+          )}
+
+          {/* State: No contract yet (age must be set) */}
+          {!contractStatus && customerAge != null && (
+            <NoContractState
+              isSent={isSent}
+              isSendingEmail={isSendingEmail ?? false}
+              message={message}
+              onMessageChange={setMessage}
+              onSend={() => onSendProposalEmail?.(message)}
+            />
+          )}
+
+          {/* State: Has contract — show signer grid + actions */}
+          {contractStatus && (
+            <>
+              {/* Signer status grid */}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {contractStatus.signerStatuses.map(signer => (
+                  <div
+                    key={signer.role}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg border p-3',
+                      signer.status === 'SIGNED'
+                        ? 'border-green-500/20 bg-green-500/5'
+                        : 'border-border bg-muted/30',
+                    )}
+                  >
+                    <div className={cn(
+                      'flex size-8 shrink-0 items-center justify-center rounded-full',
+                      signer.status === 'SIGNED'
+                        ? 'bg-green-500/10'
+                        : 'bg-muted',
+                    )}
+                    >
+                      {ACTION_ICONS[signer.status]}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium leading-tight">{signer.role}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {ACTION_LABELS[signer.status]}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Sent date */}
+              {contractStatus.contractSentAt && (
+                <p className="text-xs text-muted-foreground">
+                  Agreement sent
+                  {' '}
+                  {formatDate(contractStatus.contractSentAt)}
+                </p>
+              )}
+
+              {/* Action buttons — contextual to current state */}
+              <ContractActions
+                requestStatus={requestStatus}
+                isPending={isPending}
+                isCoolingDown={isCoolingDown}
+                remainingSeconds={remainingSeconds}
+                onSubmit={() => submitContract.mutate({ proposalId })}
+                onRecall={() => recallContract.mutate({ proposalId })}
+                onResend={() => setShowResendConfirm(true)}
+              />
+            </>
           )}
         </div>
       </div>
-    )
-  }
 
-  // State 5: Declined / Recalled / Expired
-  if (requestStatus === 'declined' || requestStatus === 'recalled' || requestStatus === 'expired') {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">
-            Agreement:
-            {statusConfig?.label}
-          </span>
-          <span className={`size-2.5 rounded-full ${statusConfig?.dotClass}`} />
-        </div>
-        <ActionButton
-          label="Resend"
-          tooltip={ACTION_TOOLTIPS.resend}
-          onClick={() => setShowResendConfirm(true)}
-          disabled={isPending || isCoolingDown}
-          cooldownSeconds={isCoolingDown ? remainingSeconds : undefined}
-        />
-        <ResendConfirmDialog
-          open={showResendConfirm}
-          onOpenChange={setShowResendConfirm}
-          onConfirm={() => {
-            setShowResendConfirm(false)
-            resendContract.mutate({ proposalId })
-          }}
-        />
-      </div>
-    )
-  }
-
-  // State 4: Completed
-  if (requestStatus === 'completed') {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">
-            Agreement:
-            {statusConfig?.label}
-          </span>
-          <span className={`size-2.5 rounded-full ${statusConfig?.dotClass}`} />
-        </div>
-        {contractStatus.signerStatuses.map(s => (
-          <SignerStatusRow key={s.role} role={s.role} status={s.status} />
-        ))}
-        {contractStatus.contractSentAt && (
-          <p className="text-xs text-muted-foreground">
-            Sent
-            {' '}
-            {formatDate(contractStatus.contractSentAt)}
-          </p>
-        )}
-      </div>
-    )
-  }
-
-  // State 2: Draft
-  if (requestStatus === 'draft') {
-    return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Agreement: Draft</span>
-          <span className={`size-2.5 rounded-full ${statusConfig?.dotClass}`} />
-        </div>
-        {contractStatus.signerStatuses.map(s => (
-          <SignerStatusRow key={s.role} role={s.role} status={s.status} />
-        ))}
-        <div className="flex gap-2">
-          <ActionButton
-            label="Send for Signing"
-            tooltip={ACTION_TOOLTIPS.sendForSigning}
-            variant="default"
-            onClick={() => submitContract.mutate({ proposalId })}
-            disabled={isPending || isCoolingDown}
-            cooldownSeconds={isCoolingDown ? remainingSeconds : undefined}
-          />
-          <ActionButton
-            label="Recall"
-            tooltip={ACTION_TOOLTIPS.recall}
-            variant="destructive"
-            onClick={() => recallContract.mutate({ proposalId })}
-            disabled={isPending}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  // State 3: In progress
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">
-          Agreement:
-          {statusConfig?.label}
-        </span>
-        <span className={`size-2.5 rounded-full ${statusConfig?.dotClass}`} />
-      </div>
-      {contractStatus.signerStatuses.map(s => (
-        <SignerStatusRow key={s.role} role={s.role} status={s.status} />
-      ))}
-      {contractStatus.contractSentAt && (
-        <p className="text-xs text-muted-foreground">
-          Sent
-          {' '}
-          {formatDate(contractStatus.contractSentAt)}
-        </p>
-      )}
-      <div className="flex gap-2">
-        <ActionButton
-          label="Resend"
-          tooltip={ACTION_TOOLTIPS.resend}
-          onClick={() => setShowResendConfirm(true)}
-          disabled={isPending || isCoolingDown}
-          cooldownSeconds={isCoolingDown ? remainingSeconds : undefined}
-        />
-        <ActionButton
-          label="Recall"
-          tooltip={ACTION_TOOLTIPS.recall}
-          variant="destructive"
-          onClick={() => recallContract.mutate({ proposalId })}
-          disabled={isPending}
-        />
-      </div>
       <ResendConfirmDialog
         open={showResendConfirm}
         onOpenChange={setShowResendConfirm}
@@ -282,29 +234,137 @@ export function AgentContractView({
           resendContract.mutate({ proposalId })
         }}
       />
+    </motion.div>
+  )
+}
+
+function NoContractState(props: {
+  isSent: boolean
+  isSendingEmail: boolean
+  message: string
+  onMessageChange: (val: string) => void
+  onSend: () => void
+}) {
+  if (props.isSent) {
+    return (
+      <div className="rounded-lg border border-border bg-muted/30 p-4">
+        <p className="text-sm text-muted-foreground">
+          Proposal has been sent. A draft agreement was created automatically. If it is not showing, refresh the page.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm text-muted-foreground">Personal note (optional)</label>
+        <Textarea
+          placeholder="Add a personal note to the proposal email..."
+          value={props.message}
+          onChange={e => props.onMessageChange(e.target.value)}
+          rows={3}
+          className="resize-none"
+        />
+      </div>
+      <Button
+        onClick={props.onSend}
+        disabled={props.isSendingEmail}
+        className="w-full sm:w-auto"
+      >
+        <Send className="mr-2 size-4" />
+        Send Proposal Link
+      </Button>
     </div>
   )
 }
 
-function ResendConfirmDialog(props: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onConfirm: () => void
+function ContractActions(props: {
+  requestStatus: string | undefined
+  isPending: boolean
+  isCoolingDown: boolean
+  remainingSeconds: number
+  onSubmit: () => void
+  onRecall: () => void
+  onResend: () => void
 }) {
-  return (
-    <AlertDialog open={props.open} onOpenChange={props.onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Resend Agreement?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will invalidate the existing agreement. The homeowner will need to request a new agreement link. Continue?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={props.onConfirm}>Confirm</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
+  const cooldownLabel = props.isCoolingDown ? `Wait ${props.remainingSeconds}s...` : null
+
+  // Draft: Send for Signing (primary) + Recall (subtle)
+  if (props.requestStatus === 'draft') {
+    return (
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <HybridPopoverTooltip content={ACTION_TOOLTIPS.sendForSigning} side="top">
+          <Button
+            onClick={props.onSubmit}
+            disabled={props.isPending || props.isCoolingDown}
+            className="w-full sm:w-auto"
+          >
+            <Send className="mr-2 size-4" />
+            {cooldownLabel ?? 'Send for Signing'}
+          </Button>
+        </HybridPopoverTooltip>
+        <HybridPopoverTooltip content={ACTION_TOOLTIPS.recall} side="top">
+          <Button
+            variant="outline"
+            onClick={props.onRecall}
+            disabled={props.isPending}
+            className="w-full border-destructive/30 text-destructive hover:border-destructive/50 hover:bg-destructive/5 sm:w-auto"
+          >
+            <Trash2 className="mr-2 size-4" />
+            Discard Draft
+          </Button>
+        </HybridPopoverTooltip>
+      </div>
+    )
+  }
+
+  // In progress: Resend (outline) + Recall (subtle)
+  if (props.requestStatus === 'inprogress') {
+    return (
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <HybridPopoverTooltip content={ACTION_TOOLTIPS.resend} side="top">
+          <Button
+            variant="outline"
+            onClick={props.onResend}
+            disabled={props.isPending || props.isCoolingDown}
+            className="w-full sm:w-auto"
+          >
+            <RefreshCw className="mr-2 size-4" />
+            {cooldownLabel ?? 'Resend Agreement'}
+          </Button>
+        </HybridPopoverTooltip>
+        <HybridPopoverTooltip content={ACTION_TOOLTIPS.recall} side="top">
+          <Button
+            variant="outline"
+            onClick={props.onRecall}
+            disabled={props.isPending}
+            className="w-full border-destructive/30 text-destructive hover:border-destructive/50 hover:bg-destructive/5 sm:w-auto"
+          >
+            <Trash2 className="mr-2 size-4" />
+            Recall
+          </Button>
+        </HybridPopoverTooltip>
+      </div>
+    )
+  }
+
+  // Declined / Recalled / Expired: Resend only
+  if (props.requestStatus === 'declined' || props.requestStatus === 'recalled' || props.requestStatus === 'expired') {
+    return (
+      <HybridPopoverTooltip content={ACTION_TOOLTIPS.resend} side="top">
+        <Button
+          onClick={props.onResend}
+          disabled={props.isPending || props.isCoolingDown}
+          className="w-full sm:w-auto"
+        >
+          <RefreshCw className="mr-2 size-4" />
+          {cooldownLabel ?? 'Resend Agreement'}
+        </Button>
+      </HybridPopoverTooltip>
+    )
+  }
+
+  // Completed: no actions needed
+  return null
 }
