@@ -1,4 +1,4 @@
-import { MeetingFlowView } from '@/features/meetings/ui/views/meeting-flow'
+import { MeetingFlowView } from '@/features/meeting-flow/ui/views/meeting-flow'
 
 interface Props {
   params: Promise<{ meetingId: string }>

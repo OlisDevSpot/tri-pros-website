@@ -10,6 +10,15 @@ export const meetingDecisionMakersPresentOptions = [
   'Partially present (missing family member)',
   'None present',
 ] as const
+export const meetingOutcomePriorities = ['Price', 'Quality', 'Speed'] as const
+export const meetingTriggerEvents = [
+  'Damage or leak',
+  'Maintenance',
+  'Neighbor\'s project',
+  'High bill',
+  'Selling soon',
+  'Other',
+] as const
 export const meetingHouseholdTypes = [
   'Single man',
   'Single woman',
@@ -18,15 +27,6 @@ export const meetingHouseholdTypes = [
   'Senior(s)',
   'Empty nester(s)',
   'Multi-gen home',
-] as const
-export const meetingOutcomePriorities = ['Price', 'Quality', 'Speed'] as const
-export const meetingTriggerEvents = [
-  'Neighbor\'s project',
-  'Damage or leak',
-  'Scheduled maintenance',
-  'High bill',
-  'Selling soon',
-  'Other',
 ] as const
 export const meetingPriorContractorExperience = [
   'No',

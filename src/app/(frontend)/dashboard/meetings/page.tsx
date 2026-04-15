@@ -1,4 +1,4 @@
-import { MeetingsView } from '@/features/meetings/ui/views'
+import { MeetingsView } from '@/features/meeting-flow/ui/views'
 import { protectDashboardPage } from '@/shared/permissions/lib/protect-dashboard-page'
 
 export const dynamic = 'force-dynamic'
