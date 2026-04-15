@@ -3,8 +3,8 @@ import type { EntityActionConfig } from '@/shared/components/entity-actions/type
 
 import { useMemo } from 'react'
 
-import { CUSTOMER_ACTIONS } from '@/shared/components/entity-actions/constants/customer-actions'
 import { ROOTS } from '@/shared/config/roots'
+import { CUSTOMER_ACTIONS } from '@/shared/entities/customers/constants/actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
 interface CustomerEntity {
