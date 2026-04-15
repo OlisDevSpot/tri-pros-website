@@ -1,6 +1,7 @@
 'use client'
 
 import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProposal } from '@/features/customer-pipelines/types'
+import type { MeetingOverviewCardProposal } from '@/shared/components/entities/meetings/overview-card'
 
 import { useDraggable } from '@dnd-kit/core'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -20,16 +21,13 @@ import { useProjectActionConfigs } from '@/features/project-management/hooks/use
 import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
+import { MeetingOverviewCard } from '@/shared/components/entities/meetings/overview-card'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
-import { RepProfileSnapshot } from '@/shared/components/rep-profile-snapshot'
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Separator } from '@/shared/components/ui/separator'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { ROOTS } from '@/shared/config/roots'
-import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
@@ -85,19 +83,6 @@ export function CustomerKanbanCard({
     onScheduleMeeting: handleScheduleMeeting,
   })
 
-  // -- Meeting entity actions (for the next meeting on this customer) --
-  const meetingEntity = item.nextMeetingId ? { id: item.nextMeetingId } : null
-
-  const handleAssignOwner = useCallback(() => {
-    if (item.nextMeetingId) {
-      onAssignRep?.(item.nextMeetingId, item.assignedRep?.id ?? null)
-    }
-  }, [item.nextMeetingId, item.assignedRep, onAssignRep])
-
-  const { actions: meetingActions, DeleteConfirmDialog: MeetingDeleteDialog } = useMeetingActionConfigs({
-    onAssignOwner: handleAssignOwner,
-  })
-
   // -- Project entity actions (for the project container in projects pipeline) --
   const projectEntity = item.project ? { id: item.project.id } : null
 
@@ -115,7 +100,6 @@ export function CustomerKanbanCard({
   return (
     <>
       <CustomerDeleteDialog />
-      <MeetingDeleteDialog />
       <ProjectDeleteDialog />
       <Card
         ref={!isDragOverlay ? setNodeRef : undefined}
@@ -217,7 +201,7 @@ export function CustomerKanbanCard({
               {item.project.meetings.length > 0 && (
                 <div className="space-y-0">
                   {item.project.meetings.map((mtg, idx) => (
-                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} isFirst={idx === 0} isDragOverlay={isDragOverlay} />
+                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} customerId={item.id} isFirst={idx === 0} isDragOverlay={isDragOverlay} />
                   ))}
                 </div>
               )}
@@ -225,64 +209,65 @@ export function CustomerKanbanCard({
           )}
 
           {/* ── Meeting context container (fresh pipeline) ── */}
-          {!item.project && hasMeetingContext && (
+          {!item.project && hasMeetingContext && item.nextMeetingId && (
             <div className="rounded-md border border-border/50 bg-accent/50 p-2.5 space-y-1.5 shadow-sm dark:bg-accent/30">
-              {/* Rep (top) + meeting more menu */}
-              <div className="flex items-center gap-1.5 min-w-0">
-                <div className="flex-1 min-w-0">
-                  {item.assignedRep && (
-                    <RepProfileSnapshot
-                      name={item.assignedRep.name}
-                      image={item.assignedRep.image}
-                      subtitle={item.assignedRep.email}
-                    />
+              <MeetingOverviewCard
+                meeting={{
+                  id: item.nextMeetingId,
+                  scheduledFor: item.meetingScheduledFor ?? undefined,
+                  ownerId: item.assignedRep?.id,
+                  ownerName: item.assignedRep?.name,
+                  ownerImage: item.assignedRep?.image,
+                  proposals: item.proposals as MeetingOverviewCardProposal[],
+                }}
+                customerId={item.id}
+                onAssignOwner={onAssignRep
+                  ? () => onAssignRep(item.nextMeetingId!, item.assignedRep?.id ?? null)
+                  : undefined}
+                className="space-y-1.5"
+              >
+                {/* Rep + actions */}
+                <MeetingOverviewCard.Header className="gap-1.5 min-w-0">
+                  <MeetingOverviewCard.Owner size="sm" showName className="flex-1 min-w-0" />
+                  {!isDragOverlay && (
+                    <MeetingOverviewCard.Actions mode="compact" />
                   )}
-                </div>
-                {!isDragOverlay && meetingEntity && (
-                  <EntityActionMenu
-                    entity={meetingEntity}
-                    actions={meetingActions}
-                    mode="compact"
-                  />
-                )}
-              </div>
+                </MeetingOverviewCard.Header>
 
-              {/* Meeting time badge — always shown when meeting exists */}
-              {isScheduledOrInProgress && meetingLabel
-                ? (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'gap-1 text-[11px] font-normal w-fit',
-                        meetingLabel.variant === 'active' && 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-500/10 dark:text-yellow-300',
-                        meetingLabel.variant === 'upcoming' && 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
-                        meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
-                      )}
-                    >
-                      <CalendarIcon size={10} />
-                      {meetingLabel.text}
-                    </Badge>
-                  )
-                : item.meetingScheduledFor
+                {/* Meeting time badge — preserved from original kanban rendering */}
+                {isScheduledOrInProgress && meetingLabel
                   ? (
                       <Badge
                         variant="outline"
-                        className="gap-1 text-[11px] font-normal w-fit border-muted-foreground/20 text-muted-foreground"
+                        className={cn(
+                          'gap-1 text-[11px] font-normal w-fit',
+                          meetingLabel.variant === 'active' && 'border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:border-yellow-500/20 dark:bg-yellow-500/10 dark:text-yellow-300',
+                          meetingLabel.variant === 'upcoming' && 'border-blue-500/30 bg-blue-500/10 text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300',
+                          meetingLabel.variant === 'past' && 'border-muted-foreground/20 text-muted-foreground',
+                        )}
                       >
                         <CalendarIcon size={10} />
-                        {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}
+                        {meetingLabel.text}
                       </Badge>
                     )
-                  : null}
+                  : item.meetingScheduledFor
+                    ? (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 text-[11px] font-normal w-fit border-muted-foreground/20 text-muted-foreground"
+                        >
+                          <CalendarIcon size={10} />
+                          {formatDistanceToNow(new Date(item.meetingScheduledFor), { addSuffix: true })}
+                        </Badge>
+                      )
+                    : null}
 
-              {/* Individual proposal rows */}
-              {item.proposals.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  {item.proposals.map(p => (
-                    <KanbanProposalRow key={p.id} proposal={p} />
-                  ))}
-                </div>
-              )}
+                {/* Individual proposal rows */}
+                <MeetingOverviewCard.Proposals
+                  showHeader={false}
+                  renderProposal={p => <KanbanProposalRow key={p.id} proposal={p as PipelineItemProposal} />}
+                />
+              </MeetingOverviewCard>
             </div>
           )}
 
@@ -307,55 +292,36 @@ export function CustomerKanbanCard({
 
 /* ── Sub-components ── */
 
-function KanbanProjectMeeting({ meeting, isFirst, isDragOverlay }: { meeting: PipelineItemProjectMeeting, isFirst: boolean, isDragOverlay?: boolean }) {
-  const handleView = useCallback(() => {
-    window.location.href = ROOTS.dashboard.meetings.byId(meeting.id)
-  }, [meeting.id])
-
-  const { actions: mtgActions, DeleteConfirmDialog: MtgDeleteDialog } = useMeetingActionConfigs({ onView: handleView })
-
-  const initials = meeting.ownerName
-    .split(' ')
-    .map(n => n.charAt(0))
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-
+function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay }: { meeting: PipelineItemProjectMeeting, customerId: string, isFirst: boolean, isDragOverlay?: boolean }) {
   return (
     <>
-      <MtgDeleteDialog />
       {!isFirst && <Separator className="my-1.5" />}
-      <div className="space-y-1">
+      <MeetingOverviewCard
+        meeting={{
+          id: meeting.id,
+          ownerId: meeting.ownerId,
+          ownerName: meeting.ownerName,
+          ownerImage: meeting.ownerImage,
+          proposals: meeting.proposals as MeetingOverviewCardProposal[],
+        }}
+        customerId={customerId}
+        className="space-y-1"
+      >
         {/* Meeting header: avatar + actions */}
-        <div className="flex items-center gap-1.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" className="shrink-0" onClick={e => e.stopPropagation()}>
-                <Avatar className="size-5">
-                  <AvatarImage src={meeting.ownerImage ?? undefined} alt={meeting.ownerName} />
-                  <AvatarFallback className="text-[8px] font-medium">{initials}</AvatarFallback>
-                </Avatar>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              {meeting.ownerName}
-            </TooltipContent>
-          </Tooltip>
-          <span className="text-[10px] text-muted-foreground flex-1 truncate">{meeting.ownerName}</span>
+        <MeetingOverviewCard.Header className="gap-1.5">
+          <MeetingOverviewCard.Owner size="sm" showName className="flex-1 min-w-0" />
           {!isDragOverlay && (
-            <EntityActionMenu entity={meeting} actions={mtgActions} mode="compact" className="opacity-60 hover:opacity-100 transition-opacity" />
+            <MeetingOverviewCard.Actions mode="compact" className="opacity-60 hover:opacity-100 transition-opacity" />
           )}
-        </div>
+        </MeetingOverviewCard.Header>
 
         {/* Proposals */}
-        {meeting.proposals.length > 0 && (
-          <div className="flex flex-col gap-0.5">
-            {meeting.proposals.map(p => (
-              <KanbanProposalRow key={p.id} proposal={p} />
-            ))}
-          </div>
-        )}
-      </div>
+        <MeetingOverviewCard.Proposals
+          showHeader={false}
+          className="flex flex-col gap-0.5"
+          renderProposal={p => <KanbanProposalRow key={p.id} proposal={p as PipelineItemProposal} />}
+        />
+      </MeetingOverviewCard>
     </>
   )
 }
