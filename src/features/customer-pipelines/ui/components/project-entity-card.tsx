@@ -1,19 +1,22 @@
 'use client'
 
-import type { CustomerProfileProject } from '@/features/customer-pipelines/types'
+import type { CustomerProfileProject, CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
 import { formatDistanceToNow } from 'date-fns'
 import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
-import { MeetingEntityCard } from '@/features/customer-pipelines/ui/components/meeting-entity-card'
+import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
 import { useProjectActionConfigs } from '@/features/project-management/hooks/use-project-action-configs'
+import { MeetingOverviewCard } from '@/shared/components/entities/meetings/overview-card'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
+  customerId: string
   project: CustomerProfileProject
   onMutationSuccess: () => void
   onNavigate?: () => void
@@ -21,7 +24,7 @@ interface Props {
   highlightMeetingId?: string
 }
 
-export function ProjectEntityCard({ project, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: Props) {
+export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: Props) {
   const handleViewProject = useCallback(() => {
     onNavigate?.()
     window.location.href = ROOTS.dashboard.projects.byId(project.id)
@@ -79,14 +82,39 @@ export function ProjectEntityCard({ project, onMutationSuccess, onNavigate, onAs
               </span>
               <div className="space-y-2.5">
                 {project.meetings.map(meeting => (
-                  <MeetingEntityCard
-                    key={meeting.id}
-                    isHighlighted={meeting.id === highlightMeetingId}
-                    meeting={meeting}
-                    onAssignRep={onAssignRep}
-                    onMutationSuccess={onMutationSuccess}
-                    onNavigate={onNavigate}
-                  />
+                  <Card key={meeting.id} className={cn('group pt-0 pb-0 gap-0', meeting.id === highlightMeetingId && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
+                    <CardContent className="p-0">
+                      <MeetingOverviewCard
+                        meeting={meeting}
+                        customerId={customerId}
+                        onAssignOwner={onAssignRep ? () => onAssignRep(meeting.id, meeting.ownerId ?? null) : undefined}
+                      >
+                        <MeetingOverviewCard.Header className="px-3 py-2">
+                          <MeetingOverviewCard.Fields fields={[
+                            { field: 'scheduledDate', format: 'full' },
+                            { field: 'type' },
+                            { field: 'outcome' },
+                            { field: 'proposalCount' },
+                          ]}
+                          />
+                          <MeetingOverviewCard.CreatedAt />
+                          <MeetingOverviewCard.Actions mode="compact" className="ml-auto opacity-60 hover:opacity-100 transition-opacity" />
+                        </MeetingOverviewCard.Header>
+                        <MeetingOverviewCard.Proposals
+                          showHeader={false}
+                          className="border-t px-3 pt-2 pb-2 space-y-0.5"
+                          renderProposal={p => (
+                            <MeetingProposalRow
+                              key={p.id}
+                              proposal={p as CustomerProfileProposal}
+                              onMutationSuccess={onMutationSuccess}
+                              onNavigate={onNavigate}
+                            />
+                          )}
+                        />
+                      </MeetingOverviewCard>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </div>

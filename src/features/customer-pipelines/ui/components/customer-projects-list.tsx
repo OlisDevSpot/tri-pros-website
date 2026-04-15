@@ -1,10 +1,13 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/customer-pipelines/types'
+import type { CustomerProfileData, CustomerProfileProposal } from '@/features/customer-pipelines/types'
 
-import { MeetingEntityCard } from '@/features/customer-pipelines/ui/components/meeting-entity-card'
+import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
 import { ProjectEntityCard } from '@/features/customer-pipelines/ui/components/project-entity-card'
+import { MeetingOverviewCard } from '@/shared/components/entities/meetings/overview-card'
 import { EmptyState } from '@/shared/components/states/empty-state'
+import { Card, CardContent } from '@/shared/components/ui/card'
+import { cn } from '@/shared/lib/utils'
 
 interface Props {
   data: CustomerProfileData
@@ -26,6 +29,7 @@ export function CustomerProjectsList({ data, onMutationSuccess, highlightMeeting
       {data.projects.map(project => (
         <ProjectEntityCard
           key={project.id}
+          customerId={data.customer.id}
           highlightMeetingId={highlightMeetingId}
           onMutationSuccess={onMutationSuccess}
           project={project}
@@ -41,12 +45,34 @@ export function CustomerProjectsList({ data, onMutationSuccess, highlightMeeting
             </span>
           )}
           {unassignedMeetings.map(meeting => (
-            <MeetingEntityCard
-              key={meeting.id}
-              isHighlighted={meeting.id === highlightMeetingId}
-              meeting={meeting}
-              onMutationSuccess={onMutationSuccess}
-            />
+            <Card key={meeting.id} className={cn('group pt-0 pb-0 gap-0', meeting.id === highlightMeetingId && 'outline-2 outline-primary -outline-offset-2 shadow-sm')}>
+              <CardContent className="p-0">
+                <MeetingOverviewCard meeting={meeting} customerId={data.customer.id}>
+                  <MeetingOverviewCard.Header className="px-3 py-2">
+                    <MeetingOverviewCard.Fields fields={[
+                      { field: 'scheduledDate', format: 'full' },
+                      { field: 'type' },
+                      { field: 'outcome' },
+                      { field: 'proposalCount' },
+                    ]}
+                    />
+                    <MeetingOverviewCard.CreatedAt />
+                    <MeetingOverviewCard.Actions mode="compact" className="ml-auto opacity-60 hover:opacity-100 transition-opacity" />
+                  </MeetingOverviewCard.Header>
+                  <MeetingOverviewCard.Proposals
+                    showHeader={false}
+                    className="border-t px-3 pt-2 pb-2 space-y-0.5"
+                    renderProposal={p => (
+                      <MeetingProposalRow
+                        key={p.id}
+                        proposal={p as CustomerProfileProposal}
+                        onMutationSuccess={onMutationSuccess}
+                      />
+                    )}
+                  />
+                </MeetingOverviewCard>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
