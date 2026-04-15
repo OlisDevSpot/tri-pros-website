@@ -17,6 +17,7 @@ import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-a
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Badge } from '@/shared/components/ui/badge'
+import { CustomerProfileModal } from '@/shared/entities/customers/components/customer-profile-modal'
 import {
   MEETING_LIST_STATUS_COLORS,
   MEETING_OUTCOME_DOT_COLORS,
@@ -98,10 +99,7 @@ function MeetingOverviewCardRoot({
 }: MeetingOverviewCardProps) {
   const { open: openModal, setModal } = useModalStore()
 
-  const handleView = useCallback(async () => {
-    const { CustomerProfileModal } = await import(
-      '@/features/customer-pipelines/ui/components',
-    )
+  const handleView = useCallback(() => {
     setModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
