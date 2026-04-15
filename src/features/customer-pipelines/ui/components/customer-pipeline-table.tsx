@@ -7,8 +7,8 @@ import { useCallback, useMemo } from 'react'
 
 import { getPipelineColumns } from '@/features/customer-pipelines/constants/customer-pipeline-table-columns'
 import { pipelineTableFilters } from '@/features/customer-pipelines/constants/customer-pipeline-table-filters'
-import { useCustomerActionConfigs } from '@/features/customer-pipelines/hooks/use-customer-action-configs'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
 interface Props {
   data: CustomerPipelineItem[]
