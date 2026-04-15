@@ -1,29 +1,29 @@
 import {
-  meetingCreditScoreRanges,
-  meetingDecisionTimelines,
-  meetingHouseholdTypes,
-  meetingOutcomePriorities,
-  meetingPriorContractorExperience,
-  meetingSellPlans,
-  meetingTriggerEvents,
-  meetingYearBuiltRanges,
-  meetingYearsInHome,
-} from '@/shared/constants/enums'
+  creditScoreRanges,
+  decisionTimelines,
+  householdTypes,
+  outcomePriorities,
+  priorContractorExperiences,
+  sellPlans,
+  triggerEvents,
+  yearBuiltRanges,
+  yearsInHomeRanges,
+} from '@/shared/constants/enums/customers'
 
 export const CUSTOMER_PROFILE_ENUM_OPTIONS: Record<string, readonly string[]> = {
-  decisionTimeline: meetingDecisionTimelines,
-  householdType: meetingHouseholdTypes,
-  outcomePriority: meetingOutcomePriorities,
-  priorContractorExperience: meetingPriorContractorExperience,
-  sellPlan: meetingSellPlans,
-  timeInHome: meetingYearsInHome,
-  triggerEvent: meetingTriggerEvents,
+  decisionTimeline: decisionTimelines,
+  householdType: householdTypes,
+  outcomePriority: outcomePriorities,
+  priorContractorExperience: priorContractorExperiences,
+  sellPlan: sellPlans,
+  timeInHome: yearsInHomeRanges,
+  triggerEvent: triggerEvents,
 }
 
 export const PROPERTY_PROFILE_ENUM_OPTIONS: Record<string, readonly string[]> = {
-  yearBuilt: meetingYearBuiltRanges,
+  yearBuilt: yearBuiltRanges,
 }
 
 export const FINANCIAL_PROFILE_ENUM_OPTIONS: Record<string, readonly string[]> = {
-  creditScore: meetingCreditScoreRanges,
+  creditScore: creditScoreRanges,
 }

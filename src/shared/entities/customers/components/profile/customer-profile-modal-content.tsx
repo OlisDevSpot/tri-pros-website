@@ -5,11 +5,11 @@ import type { CustomerProfileData } from '@/shared/entities/customers/types'
 import { Separator } from '@/shared/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
-import { CustomerMeetingsList } from './customer-meetings-list'
+import { CustomerMeetingsList } from '../lists/customer-meetings-list'
+import { CustomerProjectsList } from '../lists/customer-projects-list'
 import { CustomerProfileHeader } from './customer-profile-header'
 import { CustomerProfileKeyInsights } from './customer-profile-key-insights'
 import { CustomerProfileOverview } from './customer-profile-overview'
-import { CustomerProjectsList } from './customer-projects-list'
 import { ProfileEditActions } from './profile-edit-actions'
 
 interface Props {

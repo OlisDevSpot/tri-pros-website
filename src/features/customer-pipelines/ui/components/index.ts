@@ -1,1 +1,1 @@
-export { CustomerProfileModal } from '@/shared/entities/customers/components/customer-profile-modal'
+export { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'

@@ -1,15 +1,17 @@
 import {
-  meetingCreditScoreRanges,
+  creditScoreRanges,
+  householdTypes,
+  outcomePriorities,
+  priorContractorExperiences,
+  sellPlans,
+  triggerEvents,
+  yearBuiltRanges,
+  yearsInHomeRanges,
+} from '@/shared/constants/enums/customers'
+import {
   meetingDecisionMakersPresentOptions,
-  meetingHouseholdTypes,
-  meetingOutcomePriorities,
   meetingPainTypes,
-  meetingPriorContractorExperience,
-  meetingSellPlans,
-  meetingTriggerEvents,
-  meetingYearBuiltRanges,
-  meetingYearsInHome,
-} from '@/shared/constants/enums'
+} from '@/shared/constants/enums/meetings'
 
 // Field IDs map 1:1 to keys inside the JSONB section specified by jsonbKey.
 // `entity` determines whether the field is saved to the meeting or the customer.
@@ -39,7 +41,7 @@ export const INTAKE_STEPS = [
         id: 'triggerEvent',
         jsonbKey: 'customerProfileJSON',
         label: 'What triggered this visit?',
-        options: meetingTriggerEvents,
+        options: triggerEvents,
         type: 'select',
       },
       {
@@ -47,7 +49,7 @@ export const INTAKE_STEPS = [
         id: 'outcomePriority',
         jsonbKey: 'customerProfileJSON',
         label: 'What matters most to them?',
-        options: meetingOutcomePriorities,
+        options: outcomePriorities,
         type: 'select',
       },
     ],
@@ -70,7 +72,7 @@ export const INTAKE_STEPS = [
         id: 'householdType',
         jsonbKey: 'customerProfileJSON',
         label: 'Household type',
-        options: meetingHouseholdTypes,
+        options: householdTypes,
         type: 'select',
       },
     ],
@@ -85,7 +87,7 @@ export const INTAKE_STEPS = [
         id: 'timeInHome',
         jsonbKey: 'customerProfileJSON',
         label: 'Years in this home',
-        options: meetingYearsInHome,
+        options: yearsInHomeRanges,
         type: 'select',
       },
       {
@@ -93,7 +95,7 @@ export const INTAKE_STEPS = [
         id: 'sellPlan',
         jsonbKey: 'customerProfileJSON',
         label: 'Planning to sell?',
-        options: meetingSellPlans,
+        options: sellPlans,
         type: 'select',
       },
       {
@@ -101,7 +103,7 @@ export const INTAKE_STEPS = [
         id: 'yearBuilt',
         jsonbKey: 'propertyProfileJSON',
         label: 'Year home was built',
-        options: meetingYearBuiltRanges,
+        options: yearBuiltRanges,
         type: 'select',
       },
       {
@@ -157,7 +159,7 @@ export const INTAKE_STEPS = [
         id: 'creditScore',
         jsonbKey: 'financialProfileJSON',
         label: 'Estimated credit score range',
-        options: meetingCreditScoreRanges,
+        options: creditScoreRanges,
         type: 'select',
       },
       {
@@ -165,7 +167,7 @@ export const INTAKE_STEPS = [
         id: 'priorContractorExperience',
         jsonbKey: 'customerProfileJSON',
         label: 'Prior contractor experience',
-        options: meetingPriorContractorExperience,
+        options: priorContractorExperiences,
         type: 'select',
       },
     ],

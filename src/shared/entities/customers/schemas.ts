@@ -1,15 +1,15 @@
 import z from 'zod'
 import {
-  meetingCreditScoreRanges,
-  meetingDecisionTimelines,
-  meetingHouseholdTypes,
-  meetingOutcomePriorities,
-  meetingPriorContractorExperience,
-  meetingSellPlans,
-  meetingTriggerEvents,
-  meetingYearBuiltRanges,
-  meetingYearsInHome,
-} from '@/shared/constants/enums'
+  creditScoreRanges,
+  decisionTimelines,
+  householdTypes,
+  outcomePriorities,
+  priorContractorExperiences,
+  sellPlans,
+  triggerEvents,
+  yearBuiltRanges,
+  yearsInHomeRanges,
+} from '@/shared/constants/enums/customers'
 
 // HELPER SCHEMA
 export const painSchema = z.object({
@@ -18,28 +18,28 @@ export const painSchema = z.object({
 })
 
 export const customerProfileSchema = z.object({
-  triggerEvent: z.enum(meetingTriggerEvents),
+  triggerEvent: z.enum(triggerEvents),
   mainPainPoint: painSchema,
   additionalPainPoints: z.array(painSchema),
-  outcomePriority: z.enum(meetingOutcomePriorities),
-  timeInHome: z.enum(meetingYearsInHome),
-  householdType: z.enum(meetingHouseholdTypes),
-  priorContractorExperience: z.enum(meetingPriorContractorExperience),
+  outcomePriority: z.enum(outcomePriorities),
+  timeInHome: z.enum(yearsInHomeRanges),
+  householdType: z.enum(householdTypes),
+  priorContractorExperience: z.enum(priorContractorExperiences),
   constructionOutlookFavorabilityRating: z.number().int().min(1).max(10),
-  sellPlan: z.enum(meetingSellPlans),
-  decisionTimeline: z.enum(meetingDecisionTimelines),
+  sellPlan: z.enum(sellPlans),
+  decisionTimeline: z.enum(decisionTimelines),
   projectNecessityRating: z.number().int().min(1).max(10),
   age: z.number().int().min(18).max(120),
 }).partial()
 
 export const propertyProfileSchema = z.object({
   hoa: z.boolean().default(false).optional(),
-  yearBuilt: z.enum(meetingYearBuiltRanges),
+  yearBuilt: z.enum(yearBuiltRanges),
 }).partial()
 
 export const financialProfileSchema = z.object({
   numQuotesReceived: z.number().int().min(0),
-  creditScore: z.enum(meetingCreditScoreRanges),
+  creditScore: z.enum(creditScoreRanges),
 }).partial()
 
 export type CustomerProfile = z.infer<typeof customerProfileSchema>

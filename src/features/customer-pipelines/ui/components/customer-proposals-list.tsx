@@ -4,7 +4,7 @@ import type { CustomerProfileData } from '@/features/customer-pipelines/types'
 
 import { CreateProposalPopover } from '@/features/customer-pipelines/ui/components/create-proposal-popover'
 import { EmptyState } from '@/shared/components/states/empty-state'
-import { MeetingProposalRow } from '@/shared/entities/customers/components/meeting-proposal-row'
+import { MeetingProposalRow } from '@/shared/entities/customers/components/lists/meeting-proposal-row'
 
 interface Props {
   data: CustomerProfileData

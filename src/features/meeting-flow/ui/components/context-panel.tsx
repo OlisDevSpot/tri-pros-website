@@ -5,21 +5,23 @@ import { useCallback } from 'react'
 import { ContextPanelSection } from '@/features/meeting-flow/ui/components/context-panel-section'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet'
 import {
-  customerDemeanors,
-  meetingCreditScoreRanges,
-  meetingDecisionMakersPresentOptions,
-  meetingDecisionTimelines,
-  meetingHouseholdTypes,
-  meetingOutcomePriorities,
-  meetingOutcomes,
-  meetingPriorContractorExperience,
-  meetingSellPlans,
-  meetingTriggerEvents,
-  meetingYearBuiltRanges,
-  meetingYearsInHome,
-  observedBudgetComforts,
+  budgetComforts,
+  creditScoreRanges,
+  decisionTimelines,
+  demeanors,
+  householdTypes,
+  outcomePriorities,
+  priorContractorExperiences,
+  sellPlans,
   spouseDynamics,
-} from '@/shared/constants/enums'
+  triggerEvents,
+  yearBuiltRanges,
+  yearsInHomeRanges,
+} from '@/shared/constants/enums/customers'
+import {
+  meetingDecisionMakersPresentOptions,
+  meetingOutcomes,
+} from '@/shared/constants/enums/meetings'
 
 interface ContextPanelProps {
   customer: Customer | null
@@ -166,43 +168,43 @@ export function ContextPanel({
               {
                 id: 'triggerEvent',
                 label: 'Trigger Event',
-                options: meetingTriggerEvents,
+                options: triggerEvents,
                 type: 'select',
               },
               {
                 id: 'outcomePriority',
                 label: 'Outcome Priority',
-                options: meetingOutcomePriorities,
+                options: outcomePriorities,
                 type: 'select',
               },
               {
                 id: 'householdType',
                 label: 'Household Type',
-                options: meetingHouseholdTypes,
+                options: householdTypes,
                 type: 'select',
               },
               {
                 id: 'timeInHome',
                 label: 'Time in Home',
-                options: meetingYearsInHome,
+                options: yearsInHomeRanges,
                 type: 'select',
               },
               {
                 id: 'sellPlan',
                 label: 'Sell Plan',
-                options: meetingSellPlans,
+                options: sellPlans,
                 type: 'select',
               },
               {
                 id: 'priorContractorExperience',
                 label: 'Prior Contractor Experience',
-                options: meetingPriorContractorExperience,
+                options: priorContractorExperiences,
                 type: 'select',
               },
               {
                 id: 'decisionTimeline',
                 label: 'Decision Timeline',
-                options: meetingDecisionTimelines,
+                options: decisionTimelines,
                 type: 'select',
               },
               {
@@ -232,7 +234,7 @@ export function ContextPanel({
               {
                 id: 'yearBuilt',
                 label: 'Year Built',
-                options: meetingYearBuiltRanges,
+                options: yearBuiltRanges,
                 type: 'select',
               },
               {
@@ -253,7 +255,7 @@ export function ContextPanel({
               {
                 id: 'creditScore',
                 label: 'Credit Score',
-                options: meetingCreditScoreRanges,
+                options: creditScoreRanges,
                 type: 'select',
               },
               {
@@ -282,7 +284,7 @@ export function ContextPanel({
               {
                 id: 'observedBudgetComfort',
                 label: 'Budget Comfort',
-                options: observedBudgetComforts,
+                options: budgetComforts,
                 type: 'select',
               },
               {
@@ -294,7 +296,7 @@ export function ContextPanel({
               {
                 id: 'customerDemeanor',
                 label: 'Customer Demeanor',
-                options: customerDemeanors,
+                options: demeanors,
                 type: 'select',
               },
             ]}

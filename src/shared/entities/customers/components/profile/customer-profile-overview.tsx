@@ -3,9 +3,9 @@
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 
+import { CustomerTimeline } from '../timeline/customer-timeline'
 import { CustomerProfileDetails } from './customer-profile-details'
 import { CustomerRecordingPlayer } from './customer-recording-player'
-import { CustomerTimeline } from './customer-timeline'
 
 interface Props {
   data: CustomerProfileData

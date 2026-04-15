@@ -1,10 +1,10 @@
 import z from 'zod'
 import {
-  customerDemeanors,
-  meetingDecisionMakersPresentOptions,
-  observedBudgetComforts,
+  budgetComforts,
+  demeanors,
   spouseDynamics,
-} from '@/shared/constants/enums'
+} from '@/shared/constants/enums/customers'
+import { meetingDecisionMakersPresentOptions } from '@/shared/constants/enums/meetings'
 
 // ── Context Panel Schema (replaces situationProfileSchema) ──────────────────
 
@@ -13,9 +13,9 @@ export const meetingContextSchema = z.object({
   decisionMakersPresent: z.enum(meetingDecisionMakersPresentOptions),
   // During-meeting observations
   observedUrgency: z.number().int().min(1).max(10),
-  observedBudgetComfort: z.enum(observedBudgetComforts),
+  observedBudgetComfort: z.enum(budgetComforts),
   spouseDynamic: z.enum(spouseDynamics),
-  customerDemeanor: z.enum(customerDemeanors),
+  customerDemeanor: z.enum(demeanors),
 }).partial()
 
 export type MeetingContext = z.infer<typeof meetingContextSchema>

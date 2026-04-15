@@ -397,7 +397,17 @@
       "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/customer-profile-modal|@/shared/entities/customers/components/customer-profile-modal|\" src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx src/features/meetings/ui/views/meetings-view.tsx)",
       "Bash(sed -i \"s|@/features/customer-pipelines/constants/proposal-row-styles|@/shared/entities/proposals/constants/proposal-row-styles|\" src/features/customer-pipelines/ui/components/customer-kanban-card.tsx)",
       "Bash(sed -i \"s|@/features/customer-pipelines/lib/get-meeting-time-label|@/shared/entities/customers/lib/get-meeting-time-label|\" src/features/customer-pipelines/ui/components/customer-kanban-card.tsx)",
-      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/meeting-proposal-row|@/shared/entities/customers/components/meeting-proposal-row|\" src/features/customer-pipelines/ui/components/customer-proposals-list.tsx)"
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/meeting-proposal-row|@/shared/entities/customers/components/meeting-proposal-row|\" src/features/customer-pipelines/ui/components/customer-proposals-list.tsx)",
+      "WebFetch(domain:alexop.dev)",
+      "WebFetch(domain:hannahstulberg.substack.com)",
+      "Skill(statusline)",
+      "Skill(statusline:*)",
+      "Bash(jq --version)",
+      "Bash(bash /home/olis-solutions/.claude/statusline-command.sh)",
+      "Bash(claude --version)",
+      "Bash(ls -la /home/olis-solutions/.claude/settings*.json)",
+      "Bash(chmod +x /home/olis-solutions/.claude/statusline-command.sh)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/entities/customers/components/*.ts)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
