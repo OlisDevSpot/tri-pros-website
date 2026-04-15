@@ -1,5 +1,6 @@
 import z from 'zod'
-import { homeAreas, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
+import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
+import { homeAreas } from '@/shared/domains/construction/constants/enums'
 
 // SUB-SCHEMAS
 const homeAreaSchema = z.enum(homeAreas)

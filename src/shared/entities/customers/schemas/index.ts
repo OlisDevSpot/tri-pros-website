@@ -1,13 +1,5 @@
 import z from 'zod'
 import {
-  foundationTypes,
-  hvacComponents,
-  hvacTypes,
-  insulationLevels,
-  roofTypes,
-  windowsTypes,
-} from '@/shared/constants/enums'
-import {
   creditScoreRanges,
   decisionTimelines,
   householdTypes,
@@ -18,6 +10,14 @@ import {
   yearBuiltRanges,
   yearsInHomeRanges,
 } from '@/shared/constants/enums/customers'
+import {
+  foundationTypes,
+  hvacComponents,
+  hvacTypes,
+  insulationLevels,
+  roofTypes,
+  windowsTypes,
+} from '@/shared/domains/construction/constants/enums'
 
 // HELPER SCHEMA
 export const painSchema = z.object({
@@ -43,12 +43,6 @@ export const customerProfileSchema = z.object({
 export const propertyProfileSchema = z.object({
   hoa: z.boolean().default(false).optional(),
   yearBuilt: z.enum(yearBuiltRanges),
-  roofType: z.enum(roofTypes),
-  foundationTypes: z.enum(foundationTypes),
-  hvacTypes: z.enum(hvacTypes),
-  hvacComponents: z.enum(hvacComponents),
-  windowsTypes: z.enum(windowsTypes),
-  insulationLevels: z.enum(insulationLevels),
 }).partial()
 
 export const financialProfileSchema = z.object({
