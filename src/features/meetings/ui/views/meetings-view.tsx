@@ -242,6 +242,7 @@ export function MeetingsView() {
               <MeetingCalendar
                 data={scopedData}
                 actions={meetingActions}
+                onAssignOwner={handleAssignOwner}
                 onDateRangeChange={setDateRange}
                 onUpdateScheduledFor={handleUpdateScheduledFor}
                 activeView={calendarView}
