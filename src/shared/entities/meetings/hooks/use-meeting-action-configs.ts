@@ -1,4 +1,7 @@
+'use client'
+
 import type { JSX } from 'react'
+
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 import type { MeetingOutcome } from '@/shared/types/enums'
 
@@ -47,43 +50,53 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     message: 'This will permanently delete this meeting and its data. This cannot be undone.',
   })
 
-  const actions = useMemo((): EntityActionConfig<T>[] => [
-    {
-      action: MEETING_ACTIONS.view,
-      onAction: overrides.onView ?? defaultNavigate,
-    },
-    {
-      action: MEETING_ACTIONS.start,
-      onAction: overrides.onStart ?? defaultNavigate,
-    },
-    {
-      action: MEETING_ACTIONS.assignProject,
-      onAction: overrides.onAssignProject ?? defaultNavigate,
-    },
-    {
-      action: MEETING_ACTIONS.duplicate,
-      onAction: entity => duplicateMeeting.mutate({ id: entity.id }),
-      isLoading: duplicateMeeting.isPending,
-    },
-    {
-      action: MEETING_ACTIONS.setOutcome,
-      type: 'select' as const,
-      options: MEETING_OUTCOME_OPTIONS,
-      getCurrentValue: (entity: T) => entity.meetingOutcome ?? 'not_set',
-      onSelect: (entity: T, value: string) => {
-        updateOutcome.mutate({ id: entity.id, meetingOutcome: value as MeetingOutcome })
+  const actions = useMemo((): EntityActionConfig<T>[] => {
+    const configs: EntityActionConfig<T>[] = [
+      {
+        action: MEETING_ACTIONS.view,
+        onAction: overrides.onView ?? defaultNavigate,
       },
-      isLoading: updateOutcome.isPending,
-    },
-    {
-      action: MEETING_ACTIONS.createProposal,
-      onAction: overrides.onCreateProposal ?? defaultCreateProposal,
-    },
-    {
-      action: MEETING_ACTIONS.assignOwner,
-      onAction: overrides.onAssignOwner ?? defaultNavigate,
-    },
-    {
+      {
+        action: MEETING_ACTIONS.start,
+        onAction: overrides.onStart ?? defaultNavigate,
+      },
+      {
+        action: MEETING_ACTIONS.duplicate,
+        onAction: entity => duplicateMeeting.mutate({ id: entity.id }),
+        isLoading: duplicateMeeting.isPending,
+      },
+      {
+        action: MEETING_ACTIONS.setOutcome,
+        type: 'select' as const,
+        options: MEETING_OUTCOME_OPTIONS,
+        getCurrentValue: (entity: T) => entity.meetingOutcome ?? 'not_set',
+        onSelect: (entity: T, value: string) => {
+          updateOutcome.mutate({ id: entity.id, meetingOutcome: value as MeetingOutcome })
+        },
+        isLoading: updateOutcome.isPending,
+      },
+      {
+        action: MEETING_ACTIONS.createProposal,
+        onAction: overrides.onCreateProposal ?? defaultCreateProposal,
+      },
+    ]
+
+    // Extension actions — only appear when handler provided
+    if (overrides.onAssignOwner) {
+      configs.push({
+        action: MEETING_ACTIONS.assignOwner,
+        onAction: overrides.onAssignOwner,
+      })
+    }
+
+    if (overrides.onAssignProject) {
+      configs.push({
+        action: MEETING_ACTIONS.assignProject,
+        onAction: overrides.onAssignProject,
+      })
+    }
+
+    configs.push({
       action: MEETING_ACTIONS.delete,
       onAction: async (entity: T) => {
         const ok = await confirmDelete()
@@ -92,8 +105,10 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         }
       },
       isLoading: deleteMeeting.isPending,
-    },
-  ], [overrides.onView, overrides.onStart, overrides.onAssignProject, overrides.onCreateProposal, overrides.onAssignOwner, duplicateMeeting, updateOutcome, deleteMeeting, confirmDelete])
+    })
+
+    return configs
+  }, [overrides.onView, overrides.onStart, overrides.onAssignProject, overrides.onCreateProposal, overrides.onAssignOwner, duplicateMeeting, updateOutcome, deleteMeeting, confirmDelete])
 
   return { actions, DeleteConfirmDialog }
 }

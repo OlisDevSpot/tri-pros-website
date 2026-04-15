@@ -9,10 +9,10 @@ import { CustomerProfileModal } from '@/features/customer-pipelines/ui/component
 import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components/assign-project-dialog'
 import { AssignRepDialog } from '@/features/customer-pipelines/ui/components/assign-rep-dialog'
 import { meetingTableFilters } from '@/features/meetings/constants/table-filter-config'
-import { useMeetingActionConfigs } from '@/features/meetings/hooks/use-meeting-action-configs'
-import { useMeetingActions } from '@/features/meetings/hooks/use-meeting-actions'
 import { getMeetingRowClassName } from '@/features/meetings/lib/meeting-row-class'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
+import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 
 import { getColumns } from './columns'

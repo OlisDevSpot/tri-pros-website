@@ -7,12 +7,12 @@ import { FileTextIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
-import { useMeetingActionConfigs } from '@/features/meetings/hooks/use-meeting-action-configs'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
 import { MEETING_LIST_STATUS_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/constants/meetings/status-colors'
+import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
