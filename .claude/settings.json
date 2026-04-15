@@ -378,7 +378,8 @@
       "Bash(pnpm exec:*)",
       "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features/customer-pipelines/types*)",
       "Bash(grep -E \"\\\\.\\(ts|js|example\\)$\")",
-      "WebFetch(domain:sign.zoho.com)"
+      "WebFetch(domain:sign.zoho.com)",
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features/meetings/hooks/use-meeting-action*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
