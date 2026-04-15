@@ -8,11 +8,11 @@ import { useCallback } from 'react'
 
 import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
 import { useProjectActionConfigs } from '@/features/project-management/hooks/use-project-action-configs'
-import { MeetingOverviewCard } from '@/shared/components/entities/meetings/overview-card'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
+import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {

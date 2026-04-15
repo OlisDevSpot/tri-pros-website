@@ -1,7 +1,7 @@
 'use client'
 
 import type { CustomerPipelineItem, PipelineItemProjectMeeting, PipelineItemProposal } from '@/features/customer-pipelines/types'
-import type { MeetingOverviewCardProposal } from '@/shared/components/entities/meetings/overview-card'
+import type { MeetingOverviewCardProposal } from '@/shared/entities/meetings/components/overview-card'
 
 import { useDraggable } from '@dnd-kit/core'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -21,13 +21,13 @@ import { useProjectActionConfigs } from '@/features/project-management/hooks/use
 import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
-import { MeetingOverviewCard } from '@/shared/components/entities/meetings/overview-card'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
+import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'

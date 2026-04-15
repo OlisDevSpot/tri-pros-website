@@ -4,8 +4,8 @@ import type { inferRouterOutputs } from '@trpc/server'
 
 import type { MeetingCalendarEvent } from '@/features/meetings/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
-import type { MeetingOverviewCardData } from '@/shared/components/entities/meetings/overview-card'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { MeetingOverviewCardData } from '@/shared/entities/meetings/components/overview-card'
 import type { MeetingOutcome } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
@@ -16,7 +16,7 @@ import { toCalendarEvent } from '@/features/meetings/lib/to-calendar-event'
 import { getDateRange } from '@/shared/components/calendar/lib/calendar-helpers'
 import { CalendarHeader } from '@/shared/components/calendar/ui/calendar-header'
 import { CalendarMonthView } from '@/shared/components/calendar/ui/calendar-month-view'
-import { MeetingOverviewCard } from '@/shared/components/entities/meetings/overview-card'
+import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
 import { MeetingCalendarDot } from './meeting-calendar-dot'

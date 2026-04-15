@@ -379,7 +379,11 @@
       "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features/customer-pipelines/types*)",
       "Bash(grep -E \"\\\\.\\(ts|js|example\\)$\")",
       "WebFetch(domain:sign.zoho.com)",
-      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features/meetings/hooks/use-meeting-action*)"
+      "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/features/meetings/hooks/use-meeting-action*)",
+      "Bash(sed -i \"s|@/features/meetings/ui/components/meeting-scopes-picker|./meeting-scopes-picker|\" src/shared/entities/meetings/components/create-meeting-form.tsx)",
+      "Bash(sed -i \"s|@/features/meetings/ui/components/create-meeting-modal|@/shared/entities/meetings/components/create-meeting-modal|\" src/features/meetings/ui/views/meetings-view.tsx src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx)",
+      "Bash(sed -i \"s|@/features/meetings/ui/components/create-meeting-form|@/shared/entities/meetings/components/create-meeting-form|\" src/features/customer-pipelines/ui/components/customer-meetings-list.tsx)",
+      "Bash(sed -i \"s|@/shared/components/entities/meetings/overview-card|@/shared/entities/meetings/components/overview-card|\" src/features/meetings/ui/components/calendar/meeting-calendar.tsx src/features/customer-pipelines/ui/components/customer-meetings-list.tsx src/features/customer-pipelines/ui/components/customer-kanban-card.tsx src/features/customer-pipelines/ui/components/customer-projects-list.tsx src/features/customer-pipelines/ui/components/project-entity-card.tsx)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

@@ -4,9 +4,9 @@ import type { CustomerProfileData, CustomerProfileProposal } from '@/features/cu
 
 import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
 import { ProjectEntityCard } from '@/features/customer-pipelines/ui/components/project-entity-card'
-import { MeetingOverviewCard } from '@/shared/components/entities/meetings/overview-card'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Card, CardContent } from '@/shared/components/ui/card'
+import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {

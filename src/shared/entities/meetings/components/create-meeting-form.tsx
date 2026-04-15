@@ -7,7 +7,6 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { FolderOpenIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { MeetingScopesPicker } from '@/features/meetings/ui/components/meeting-scopes-picker'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
@@ -21,6 +20,8 @@ import {
 import { creatableMeetingTypes } from '@/shared/constants/enums/meetings'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
+
+import { MeetingScopesPicker } from './meeting-scopes-picker'
 
 interface CreateMeetingFormProps {
   customerId: string
