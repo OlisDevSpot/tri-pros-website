@@ -4,9 +4,9 @@ import type { MeetingOutcome } from '@/shared/types/enums'
 
 import { useMemo } from 'react'
 
-import { MEETING_OUTCOME_OPTIONS } from '@/features/meetings/constants/outcome-options'
 import { MEETING_ACTIONS } from '@/shared/components/entity-actions/constants/meeting-actions'
 import { ROOTS } from '@/shared/config/roots'
+import { MEETING_OUTCOME_OPTIONS } from '@/shared/constants/meetings/outcome-options'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
 import { useMeetingActions } from './use-meeting-actions'

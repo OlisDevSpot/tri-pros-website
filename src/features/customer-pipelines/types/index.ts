@@ -4,6 +4,7 @@ import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
 import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
+import type { SowTradeScope } from '@/shared/entities/proposals/types'
 import type { LeadsPipelineStage } from '@/shared/pipelines/constants/leads-pipeline'
 import type { ProjectsPipelineStage } from '@/shared/pipelines/constants/projects-pipeline'
 import type { ProjectStatus } from '@/shared/types/enums/pipelines'
@@ -88,10 +89,7 @@ export type CustomerProfileMeeting
   = Pick<Meeting, 'id' | 'ownerId' | 'meetingType' | 'meetingOutcome' | 'scheduledFor' | 'createdAt' | 'updatedAt' | 'projectId'>
     & { proposals: CustomerProfileProposal[] }
 
-export interface SowTradeScope {
-  trade: string
-  scopes: string[]
-}
+export type { SowTradeScope } from '@/shared/entities/proposals/types'
 
 export type CustomerProfileProposal
   = Pick<Proposal, 'id' | 'label' | 'status' | 'token' | 'sentAt' | 'contractSentAt' | 'meetingId' | 'createdAt'>

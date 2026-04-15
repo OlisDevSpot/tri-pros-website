@@ -7,13 +7,13 @@ import type { MeetingOutcome } from '@/shared/types/enums'
 import { format } from 'date-fns'
 import { CalendarIcon, ChevronDownIcon, MapPinIcon } from 'lucide-react'
 
-import { MEETING_OUTCOME_DOT_COLORS } from '@/features/meetings/constants/status-colors'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { isSelectAction } from '@/shared/components/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
+import { MEETING_OUTCOME_DOT_COLORS } from '@/shared/constants/meetings/status-colors'
 import { cn } from '@/shared/lib/utils'
 
 const STATUS_BG_TINTS: Partial<Record<MeetingOutcome, string>> = {

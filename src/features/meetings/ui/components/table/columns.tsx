@@ -6,13 +6,13 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 import { UserIcon } from 'lucide-react'
 
-import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/features/meetings/constants/status-colors'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { visibleMeetingOutcomes } from '@/shared/constants/enums'
+import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/constants/meetings/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 import { getOutcomeDisabledChecker } from '@/shared/pipelines/lib/get-disabled-outcomes'
 

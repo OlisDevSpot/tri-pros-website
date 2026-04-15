@@ -6,14 +6,13 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { FileTextIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
-import { MEETING_LIST_STATUS_COLORS } from '@/features/customer-pipelines/constants/meeting-status-colors'
 import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
-import { MEETING_OUTCOME_LABELS } from '@/features/meetings/constants/status-colors'
 import { useMeetingActionConfigs } from '@/features/meetings/hooks/use-meeting-action-configs'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
+import { MEETING_LIST_STATUS_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/constants/meetings/status-colors'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {

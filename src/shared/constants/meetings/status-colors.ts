@@ -1,5 +1,20 @@
+// Profile modal badge colors (used with Badge variant="outline")
+export const MEETING_LIST_STATUS_COLORS: Record<string, string> = {
+  not_set: 'bg-zinc-500/10 text-zinc-600',
+  converted_to_project: 'bg-green-500/10 text-green-600',
+  proposal_sent: 'bg-lime-500/10 text-lime-600',
+  proposal_created: 'bg-amber-500/10 text-amber-600',
+  follow_up_needed: 'bg-purple-500/10 text-purple-600',
+  not_good: 'bg-red-500/10 text-red-600',
+  pns: 'bg-red-500/10 text-red-600',
+  npns: 'bg-red-500/10 text-red-600',
+  ftd: 'bg-red-500/10 text-red-600',
+  no_show: 'bg-red-500/10 text-red-600',
+  lost_to_competitor: 'bg-red-500/10 text-red-600',
+  not_interested: 'bg-red-500/10 text-red-600',
+}
+
 // Table badge colors (used with StatusDropdownCell default Badge)
-// Scale: green (won) → amber (proposal out) → purple (follow-up) → red (lost) → grey (unset)
 export const MEETING_OUTCOME_COLORS: Record<string, string> = {
   not_set: 'border-zinc-500/30 bg-zinc-500/10 text-zinc-400',
   converted_to_project: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
@@ -12,7 +27,7 @@ export const MEETING_OUTCOME_COLORS: Record<string, string> = {
   ftd: 'border-red-500/30 bg-red-500/10 text-red-400',
   no_show: 'border-red-500/30 bg-red-500/10 text-red-400',
   lost_to_competitor: 'border-red-500/30 bg-red-500/10 text-red-400',
-  not_interested: 'border-red-500/30 bg-red-500/10 text-red-400', // deprecated
+  not_interested: 'border-red-500/30 bg-red-500/10 text-red-400',
 }
 
 // Human-readable labels for display
@@ -28,10 +43,10 @@ export const MEETING_OUTCOME_LABELS: Record<string, string> = {
   ftd: 'FTD',
   no_show: 'No Show',
   lost_to_competitor: 'Lost to Contractor',
-  not_interested: 'Not Interested', // deprecated
+  not_interested: 'Not Interested',
 }
 
-// Dot colors for sub-menu option indicators
+// Dot colors for status indicators and sub-menu option indicators
 export const MEETING_OUTCOME_DOT_COLORS: Record<string, string> = {
   not_set: 'bg-zinc-500',
   converted_to_project: 'bg-emerald-500',
