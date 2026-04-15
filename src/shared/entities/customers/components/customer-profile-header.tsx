@@ -1,7 +1,7 @@
 'use client'
 
 import type { UseFormRegister } from 'react-hook-form'
-import type { CustomerFormValues, CustomerProfileData } from '@/features/customer-pipelines/types'
+import type { CustomerFormValues, CustomerProfileData } from '@/shared/entities/customers/types'
 
 import { MailIcon, MapPinIcon, PhoneIcon, PlusIcon } from 'lucide-react'
 

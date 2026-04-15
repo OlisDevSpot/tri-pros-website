@@ -2,11 +2,10 @@
 
 import type { Control } from 'react-hook-form'
 
-import type { CustomerFormValues } from '@/features/customer-pipelines/types'
+import type { CustomerFormValues } from '@/shared/entities/customers/types'
 
 import { Controller } from 'react-hook-form'
 
-import { formatProfileValue } from '@/features/customer-pipelines/lib/format-profile-value'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Input } from '@/shared/components/ui/input'
 import {
@@ -17,6 +16,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { Switch } from '@/shared/components/ui/switch'
+import { formatProfileValue } from '@/shared/entities/customers/lib/format-profile-value'
 
 interface Props {
   title: string

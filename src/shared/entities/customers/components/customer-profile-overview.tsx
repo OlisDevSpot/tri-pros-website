@@ -1,11 +1,11 @@
 'use client'
 
-import type { useCustomerEditForm } from '@/features/customer-pipelines/hooks/use-customer-edit-form'
-import type { CustomerProfileData } from '@/features/customer-pipelines/types'
+import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
+import type { CustomerProfileData } from '@/shared/entities/customers/types'
 
-import { CustomerProfileDetails } from '@/features/customer-pipelines/ui/components/customer-profile-details'
-import { CustomerRecordingPlayer } from '@/features/customer-pipelines/ui/components/customer-recording-player'
-import { CustomerTimeline } from '@/features/customer-pipelines/ui/components/customer-timeline'
+import { CustomerProfileDetails } from './customer-profile-details'
+import { CustomerRecordingPlayer } from './customer-recording-player'
+import { CustomerTimeline } from './customer-timeline'
 
 interface Props {
   data: CustomerProfileData

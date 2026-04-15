@@ -1,14 +1,14 @@
 'use client'
 
-import type { CustomerProfileProposal } from '@/features/customer-pipelines/types'
+import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 
 import { EyeIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
-import { PROPOSAL_ROW_STYLES } from '@/features/customer-pipelines/constants/proposal-row-styles'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { PROPOSAL_ROW_STYLES } from '@/shared/entities/proposals/constants/proposal-row-styles'
 import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'

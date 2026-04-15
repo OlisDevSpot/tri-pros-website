@@ -1,12 +1,11 @@
 'use client'
 
-import type { CustomerProfileProject, CustomerProfileProposal } from '@/features/customer-pipelines/types'
+import type { CustomerProfileProject, CustomerProfileProposal } from '@/shared/entities/customers/types'
 
 import { formatDistanceToNow } from 'date-fns'
 import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
-import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -14,6 +13,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 import { cn } from '@/shared/lib/utils'
+import { MeetingProposalRow } from './meeting-proposal-row'
 
 interface Props {
   customerId: string

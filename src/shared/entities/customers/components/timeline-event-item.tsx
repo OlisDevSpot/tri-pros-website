@@ -1,11 +1,11 @@
 'use client'
 
-import type { TimelineEvent } from '@/features/customer-pipelines/types/timeline'
+import type { TimelineEvent } from '@/shared/entities/customers/types/timeline'
 
 import { formatDistanceToNow } from 'date-fns'
 
-import { TIMELINE_EVENT_CONFIG } from '@/features/customer-pipelines/constants/timeline-event-config'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/components/ui/tooltip'
+import { TIMELINE_EVENT_CONFIG } from '@/shared/entities/customers/constants/timeline-event-config'
 
 interface Props {
   event: TimelineEvent

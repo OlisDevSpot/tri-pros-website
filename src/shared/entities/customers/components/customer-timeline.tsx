@@ -1,15 +1,15 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/customer-pipelines/types'
+import type { CustomerProfileData } from '@/shared/entities/customers/types'
 
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { buildTimelineEvents } from '@/features/customer-pipelines/lib/build-timeline-events'
-import { QuickNoteInput } from '@/features/customer-pipelines/ui/components/quick-note-input'
-import { TimelineEventItem } from '@/features/customer-pipelines/ui/components/timeline-event-item'
 import { Button } from '@/shared/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/components/ui/tooltip'
+import { buildTimelineEvents } from '@/shared/entities/customers/lib/build-timeline-events'
+import { QuickNoteInput } from './quick-note-input'
+import { TimelineEventItem } from './timeline-event-item'
 
 interface Props {
   data: CustomerProfileData

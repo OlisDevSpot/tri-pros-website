@@ -1,13 +1,13 @@
 'use client'
 
-import type { CustomerProfileData, CustomerProfileProposal } from '@/features/customer-pipelines/types'
+import type { CustomerProfileData, CustomerProfileProposal } from '@/shared/entities/customers/types'
 
-import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
-import { ProjectEntityCard } from '@/features/customer-pipelines/ui/components/project-entity-card'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { cn } from '@/shared/lib/utils'
+import { MeetingProposalRow } from './meeting-proposal-row'
+import { ProjectEntityCard } from './project-entity-card'
 
 interface Props {
   data: CustomerProfileData

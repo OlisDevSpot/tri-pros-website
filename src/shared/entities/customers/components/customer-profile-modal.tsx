@@ -2,12 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 
-import { CustomerProfileModalContent } from '@/features/customer-pipelines/ui/components/customer-profile-modal-content'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
+import { CustomerProfileModalContent } from './customer-profile-modal-content'
 
 interface Props {
   customerId: string

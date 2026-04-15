@@ -1,5 +1,5 @@
-import type { CustomerProfileData } from '@/features/customer-pipelines/types'
-import type { TimelineEvent } from '@/features/customer-pipelines/types/timeline'
+import type { CustomerProfileData } from '@/shared/entities/customers/types'
+import type { TimelineEvent } from '@/shared/entities/customers/types/timeline'
 
 export function buildTimelineEvents(data: CustomerProfileData): TimelineEvent[] {
   const events: TimelineEvent[] = []

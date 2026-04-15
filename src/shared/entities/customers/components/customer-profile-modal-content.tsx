@@ -1,16 +1,16 @@
 'use client'
 
-import type { CustomerProfileData } from '@/features/customer-pipelines/types'
+import type { CustomerProfileData } from '@/shared/entities/customers/types'
 
-import { useCustomerEditForm } from '@/features/customer-pipelines/hooks/use-customer-edit-form'
-import { CustomerMeetingsList } from '@/features/customer-pipelines/ui/components/customer-meetings-list'
-import { CustomerProfileHeader } from '@/features/customer-pipelines/ui/components/customer-profile-header'
-import { CustomerProfileKeyInsights } from '@/features/customer-pipelines/ui/components/customer-profile-key-insights'
-import { CustomerProfileOverview } from '@/features/customer-pipelines/ui/components/customer-profile-overview'
-import { CustomerProjectsList } from '@/features/customer-pipelines/ui/components/customer-projects-list'
-import { ProfileEditActions } from '@/features/customer-pipelines/ui/components/profile-edit-actions'
 import { Separator } from '@/shared/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
+import { CustomerMeetingsList } from './customer-meetings-list'
+import { CustomerProfileHeader } from './customer-profile-header'
+import { CustomerProfileKeyInsights } from './customer-profile-key-insights'
+import { CustomerProfileOverview } from './customer-profile-overview'
+import { CustomerProjectsList } from './customer-projects-list'
+import { ProfileEditActions } from './profile-edit-actions'
 
 interface Props {
   data: CustomerProfileData

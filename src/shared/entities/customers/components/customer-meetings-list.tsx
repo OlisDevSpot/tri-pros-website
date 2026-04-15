@@ -1,11 +1,10 @@
 'use client'
 
-import type { CustomerProfileMeeting, CustomerProfileProposal } from '@/features/customer-pipelines/types'
+import type { CustomerProfileMeeting, CustomerProfileProposal } from '@/shared/entities/customers/types'
 
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { MeetingProposalRow } from '@/features/customer-pipelines/ui/components/meeting-proposal-row'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
@@ -14,6 +13,7 @@ import { CreateMeetingForm } from '@/shared/entities/meetings/components/create-
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 import { useAbility } from '@/shared/permissions/hooks'
+import { MeetingProposalRow } from './meeting-proposal-row'
 
 interface Props {
   meetings: CustomerProfileMeeting[]

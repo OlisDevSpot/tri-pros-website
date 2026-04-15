@@ -1,6 +1,6 @@
 'use client'
 
-import type { useCustomerEditForm } from '@/features/customer-pipelines/hooks/use-customer-edit-form'
+import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 
 import { PencilIcon } from 'lucide-react'
 

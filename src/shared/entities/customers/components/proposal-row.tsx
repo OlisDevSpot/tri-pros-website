@@ -1,14 +1,14 @@
 'use client'
 
-import type { CustomerProfileProposal } from '@/features/customer-pipelines/types'
+import type { CustomerProfileProposal } from '@/shared/entities/customers/types'
 
 import { EyeIcon, FlameIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
-import { PROPOSAL_STATUS_COLORS } from '@/features/customer-pipelines/constants/proposal-status-colors'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
 import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 
 interface Props {

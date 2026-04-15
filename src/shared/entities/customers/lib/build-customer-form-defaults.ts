@@ -1,5 +1,5 @@
-import type { CustomerFormValues } from '@/features/customer-pipelines/types'
 import type { Customer } from '@/shared/db/schema'
+import type { CustomerFormValues } from '@/shared/entities/customers/types'
 
 export function buildCustomerFormDefaults(customer: Customer): CustomerFormValues {
   return {

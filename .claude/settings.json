@@ -387,7 +387,17 @@
       "Bash(sed -i \"s|@/features/proposal-flow/hooks/use-proposal-action-configs|@/shared/entities/proposals/hooks/use-proposal-action-configs|\" src/features/customer-pipelines/ui/components/meeting-proposal-row.tsx src/features/customer-pipelines/ui/components/proposal-row.tsx src/features/customer-pipelines/ui/components/customer-kanban-card.tsx src/features/proposal-flow/ui/components/table/index.tsx)",
       "Bash(sed -i \"s|@/features/proposal-flow/hooks/use-proposal-actions|@/shared/entities/proposals/hooks/use-proposal-actions|\" src/features/proposal-flow/ui/components/table/index.tsx)",
       "Bash(sed -i \"s|@/features/project-management/hooks/use-project-action-configs|@/shared/entities/projects/hooks/use-project-action-configs|\" src/features/project-management/ui/components/table/index.tsx src/features/customer-pipelines/ui/components/project-entity-card.tsx src/features/customer-pipelines/ui/components/customer-kanban-card.tsx)",
-      "Bash(sed -i \"s|@/features/project-management/hooks/use-project-actions|@/shared/entities/projects/hooks/use-project-actions|\" src/features/project-management/ui/views/portfolio-projects-view.tsx)"
+      "Bash(sed -i \"s|@/features/project-management/hooks/use-project-actions|@/shared/entities/projects/hooks/use-project-actions|\" src/features/project-management/ui/views/portfolio-projects-view.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/meeting-proposal-row|./meeting-proposal-row|\" components/project-entity-card.tsx components/customer-meetings-list.tsx components/customer-projects-list.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/customer-profile-modal-content|./customer-profile-modal-content|\" components/customer-profile-modal.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/customer-profile-details|./customer-profile-details|\" components/customer-profile-overview.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/customer-recording-player|./customer-recording-player|\" components/customer-profile-overview.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/customer-timeline|./customer-timeline|\" components/customer-profile-overview.tsx)",
+      "Bash(xargs sed *)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/customer-profile-modal|@/shared/entities/customers/components/customer-profile-modal|\" src/features/customer-pipelines/ui/views/customer-pipeline-view.tsx src/features/meetings/ui/views/meetings-view.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/constants/proposal-row-styles|@/shared/entities/proposals/constants/proposal-row-styles|\" src/features/customer-pipelines/ui/components/customer-kanban-card.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/lib/get-meeting-time-label|@/shared/entities/customers/lib/get-meeting-time-label|\" src/features/customer-pipelines/ui/components/customer-kanban-card.tsx)",
+      "Bash(sed -i \"s|@/features/customer-pipelines/ui/components/meeting-proposal-row|@/shared/entities/customers/components/meeting-proposal-row|\" src/features/customer-pipelines/ui/components/customer-proposals-list.tsx)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

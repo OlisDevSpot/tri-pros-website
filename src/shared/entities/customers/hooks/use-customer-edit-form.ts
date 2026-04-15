@@ -1,15 +1,15 @@
 'use client'
 
-import type { CustomerFormValues } from '@/features/customer-pipelines/types'
 import type { Customer } from '@/shared/db/schema'
+import type { CustomerFormValues } from '@/shared/entities/customers/types'
 
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { buildCustomerFormDefaults } from '@/features/customer-pipelines/lib/build-customer-form-defaults'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { buildCustomerFormDefaults } from '@/shared/entities/customers/lib/build-customer-form-defaults'
 import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 

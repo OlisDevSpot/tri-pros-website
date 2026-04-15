@@ -1,18 +1,18 @@
 'use client'
 
-import type { useCustomerEditForm } from '@/features/customer-pipelines/hooks/use-customer-edit-form'
+import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 
 import {
   CUSTOMER_PROFILE_ENUM_OPTIONS,
   FINANCIAL_PROFILE_ENUM_OPTIONS,
   PROPERTY_PROFILE_ENUM_OPTIONS,
-} from '@/features/customer-pipelines/constants/profile-field-enums'
+} from '@/shared/entities/customers/constants/profile-field-enums'
 import {
   customerProfileLabels,
   financialProfileLabels,
   propertyProfileLabels,
-} from '@/features/customer-pipelines/constants/profile-field-labels'
-import { ProfileCard } from '@/features/customer-pipelines/ui/components/profile-card'
+} from '@/shared/entities/customers/constants/profile-field-labels'
+import { ProfileCard } from './profile-card'
 
 interface Props {
   editForm: ReturnType<typeof useCustomerEditForm>

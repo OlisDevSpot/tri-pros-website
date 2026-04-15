@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 
-import type { TimelineEventType } from '@/features/customer-pipelines/types/timeline'
+import type { TimelineEventType } from '@/shared/entities/customers/types/timeline'
 import {
   CalendarCheckIcon,
   CalendarPlusIcon,
