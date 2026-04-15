@@ -2,8 +2,8 @@
 'use client'
 
 import type { IntakeFormData } from '@/features/intake/schemas/intake-form-schema'
+import type { IntakeMode } from '@/shared/constants/enums'
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
-import type { IntakeMode } from '@/shared/types/enums'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { APIProvider } from '@vis.gl/react-google-maps'

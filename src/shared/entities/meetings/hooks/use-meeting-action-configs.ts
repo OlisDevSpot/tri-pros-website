@@ -3,7 +3,7 @@
 import type { JSX } from 'react'
 
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
-import type { MeetingOutcome } from '@/shared/types/enums'
+import type { MeetingOutcome } from '@/shared/constants/enums'
 
 import { useMemo } from 'react'
 

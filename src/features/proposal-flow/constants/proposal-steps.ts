@@ -1,5 +1,5 @@
 import type { ProposalStep } from '@/features/proposal-flow/types'
-import type { UserRole } from '@/shared/types/enums'
+import type { UserRole } from '@/shared/constants/enums'
 import { Funding } from '@/features/proposal-flow/ui/components/proposal/funding'
 import { ProjectOverview } from '@/features/proposal-flow/ui/components/proposal/project-overview'
 import { RelatedProjects } from '@/features/proposal-flow/ui/components/proposal/related-projects'

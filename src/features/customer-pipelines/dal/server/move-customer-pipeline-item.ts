@@ -1,6 +1,6 @@
-import type { FreshPipelineStage } from '@/shared/pipelines/constants/fresh-pipeline'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
-import type { Pipeline } from '@/shared/types/enums/pipelines'
+import type { FreshPipelineStage } from '@/shared/pipelines/constants/fresh-pipeline'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'

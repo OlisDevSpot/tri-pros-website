@@ -24,29 +24,10 @@ export function getProfileBenefits(
   const painPoints = tradeSelections.flatMap(t => t.painPoints)
   const tradeNames = tradeSelections.map(t => t.tradeName.toLowerCase())
 
-  const hasEnergyTrade = tradeNames.some(t =>
-    ['insulation', 'hvac', 'windows', 'solar'].some(e => t.includes(e)),
-  )
   const hasRoofing = tradeNames.some(t => t.includes('roof'))
   const hasInterior = tradeNames.some(t =>
     ['bathroom', 'kitchen', 'flooring', 'painting'].some(e => t.includes(e)),
   )
-
-  // ── Senior-focused benefits ───────────────────────────────────────────
-  if (householdType === 'Senior(s)') {
-    benefits.push({
-      headline: 'Protect what you\'ve built',
-      body: 'After decades in your home, the last thing you need is a surprise repair bill. This program locks in pricing today — no cost increases, no hidden fees — so you know exactly what you\'re investing.',
-      category: 'security',
-    })
-    if (hasEnergyTrade) {
-      benefits.push({
-        headline: 'Lower your monthly bills permanently',
-        body: 'Energy costs rise every year. Upgrading your insulation, windows, or HVAC now means your fixed income stretches further — every single month, for the rest of the time you\'re in this home.',
-        category: 'financial',
-      })
-    }
-  }
 
   // ── Single woman benefits ─────────────────────────────────────────────
   if (householdType === 'Single woman') {
@@ -72,7 +53,7 @@ export function getProfileBenefits(
   }
 
   // ── Family-focused benefits ───────────────────────────────────────────
-  if (householdType === 'Family' || householdType === 'Multi-gen home') {
+  if (householdType === 'Family' || householdType === 'Relatives') {
     benefits.push({
       headline: 'A safer, healthier home for your family',
       body: 'Outdated insulation, leaky windows, and aging systems don\'t just cost money — they affect air quality, comfort, and safety. This project makes your home work for everyone who lives in it.',

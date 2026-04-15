@@ -1,7 +1,7 @@
 'use client'
 
+import type { MeetingType } from '@/shared/constants/enums/meetings'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { MeetingType } from '@/shared/types/enums/meetings'
 
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 

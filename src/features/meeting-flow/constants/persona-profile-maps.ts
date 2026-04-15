@@ -1,4 +1,4 @@
-import type { PainPointCategory, PainPointEmotionalDriver } from '@/shared/types/enums'
+import type { PainPointCategory, PainPointEmotionalDriver } from '@/shared/constants/enums'
 
 // ---------------------------------------------------------------------------
 // Fear templates: keyed by pain point category, each with a generic fear
@@ -226,17 +226,7 @@ export const HOUSEHOLD_AMPLIFIED_CONCERNS: Record<string, string[]> = {
     'Budget consciousness is high — financing options are key',
     'Disruption tolerance is low — clear timeline and phasing matter',
   ],
-  'Senior(s)': [
-    'Fixed income vulnerability — financing and monthly payment framing critical',
-    'Health and safety are top priorities — emphasize IAQ, accessibility, non-slip surfaces',
-    'Trust is paramount — due diligence story resonates strongly',
-  ],
-  'Empty nester(s)': [
-    'Resale ROI matters — they may be downsizing soon',
-    'Lifestyle upgrades appeal — they have time and space to enjoy improvements',
-    'Less tolerance for construction disruption — emphasize timeline and project management',
-  ],
-  'Multi-gen home': [
+  'Relatives': [
     'Multiple stakeholder needs — address comfort, safety, and accessibility for all generations',
     'Health concerns span generations — IAQ, temperature consistency matter for elderly and children',
     'Space optimization is valued — ADU or layout changes may resonate',

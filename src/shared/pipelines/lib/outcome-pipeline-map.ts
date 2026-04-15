@@ -1,4 +1,4 @@
-import type { MeetingPipeline } from '@/shared/types/enums/pipelines'
+import type { MeetingPipeline } from '@/shared/constants/enums/pipelines'
 
 export const OUTCOME_PIPELINE_MAP: Record<string, MeetingPipeline | null> = {
   not_set: null,
@@ -12,5 +12,4 @@ export const OUTCOME_PIPELINE_MAP: Record<string, MeetingPipeline | null> = {
   ftd: 'rehash',
   no_show: 'rehash',
   lost_to_competitor: 'dead',
-  not_interested: 'dead',
 }

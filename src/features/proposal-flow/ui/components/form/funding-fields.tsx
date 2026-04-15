@@ -1,5 +1,5 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { IncentiveType } from '@/shared/types/enums'
+import type { IncentiveType } from '@/shared/constants/enums'
 import { PlusIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'

@@ -1,5 +1,5 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { ProjectType } from '@/shared/types/enums'
+import type { ProjectType } from '@/shared/constants/enums'
 import { useFormContext } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'

@@ -2,7 +2,7 @@
 
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import type { BetterAuthUser } from '@/shared/auth/server'
-import type { Pipeline } from '@/shared/types/enums/pipelines'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { ChevronLeftIcon, ChevronRightIcon, ZapIcon } from 'lucide-react'
 import { motion } from 'motion/react'

@@ -1,7 +1,7 @@
 'use client'
 
+import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { InsertMediaFilesSchema } from '@/shared/db/schema'
-import type { MediaPhase } from '@/shared/types/enums/media'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTRPC } from '@/trpc/helpers'

@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Label } from '@/shared/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Separator } from '@/shared/components/ui/separator'
-import { visibleMeetingOutcomes } from '@/shared/constants/enums'
+import { meetingOutcomes } from '@/shared/constants/enums'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { cn } from '@/shared/lib/utils'
 import { getOutcomeDisabledChecker } from '@/shared/pipelines/lib/get-disabled-outcomes'
@@ -209,7 +209,7 @@ export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange, prop
             <SelectValue placeholder="Select outcome…" />
           </SelectTrigger>
           <SelectContent>
-            {visibleMeetingOutcomes.map((outcome) => {
+            {meetingOutcomes.map((outcome) => {
               const disabled = outcome !== meetingOutcome && isOutcomeDisabled(outcome)
               return (
                 <SelectItem

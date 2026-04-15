@@ -1,7 +1,7 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 import type { Customer } from '@/shared/db/schema'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { MeetingOutcome, MeetingType } from '@/shared/types/enums'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
 // ── Intake Collection Field (used by intake step components) ────────────────

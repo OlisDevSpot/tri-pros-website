@@ -1,7 +1,7 @@
 'use client'
 
+import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { ProjectMediaGroups } from '@/shared/entities/projects/types'
-import type { MediaPhase } from '@/shared/types/enums/media'
 import { motion, useInView } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { PHASE_LABELS } from '@/features/project-management/constants/phase-labels'

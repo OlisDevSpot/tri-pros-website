@@ -1,4 +1,4 @@
-import type { MeetingPipeline, Pipeline } from '@/shared/types/enums/pipelines'
+import type { MeetingPipeline, Pipeline } from '@/shared/constants/enums/pipelines'
 
 interface MeetingPipelineInput {
   projectId: string | null

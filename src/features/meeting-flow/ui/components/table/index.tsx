@@ -1,7 +1,7 @@
 'use client'
 
 import type { MeetingRow, MeetingTableMeta } from './columns'
-import type { MeetingOutcome } from '@/shared/types/enums'
+import type { MeetingOutcome } from '@/shared/constants/enums'
 
 import { useCallback, useState } from 'react'
 

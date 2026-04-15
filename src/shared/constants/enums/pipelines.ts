@@ -1,5 +1,6 @@
 /** All business-wide pipelines (display + routing) */
 export const pipelines = ['projects', 'fresh', 'leads', 'rehash', 'dead'] as const
+export type Pipeline = (typeof pipelines)[number]
 
 /** Leads pipeline stages (customers with no meetings yet) */
 export const leadsPipelineStages = [
@@ -8,9 +9,11 @@ export const leadsPipelineStages = [
   'qualified',
   'meeting_scheduled',
 ] as const
+export type LeadsPipelineStage = (typeof leadsPipelineStages)[number]
 
 /** Pipelines storable on the meetings.pipeline column (projects is derived from projectId) */
 export const meetingPipelines = ['fresh', 'rehash', 'dead'] as const
+export type MeetingPipeline = (typeof meetingPipelines)[number]
 
 /** Fresh pipeline — meeting phase stages */
 export const freshMeetingStages = [
@@ -20,6 +23,7 @@ export const freshMeetingStages = [
   'meeting_completed',
   'follow_up_scheduled',
 ] as const
+export type FreshMeetingStage = (typeof freshMeetingStages)[number]
 
 /** Fresh pipeline — proposal phase stages */
 export const freshProposalStages = [
@@ -28,9 +32,11 @@ export const freshProposalStages = [
   'approved',
   'declined',
 ] as const
+export type FreshProposalStage = (typeof freshProposalStages)[number]
 
 /** Project lifecycle statuses */
 export const projectStatuses = ['active', 'completed', 'on_hold'] as const
+export type ProjectStatus = (typeof projectStatuses)[number]
 
 /** Project management pipeline stages */
 export const projectPipelineStages = [
@@ -46,3 +52,4 @@ export const projectPipelineStages = [
   'cancelled',
   'on_hold',
 ] as const
+export type ProjectPipelineStage = (typeof projectPipelineStages)[number]

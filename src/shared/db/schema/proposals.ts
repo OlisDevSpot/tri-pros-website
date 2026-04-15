@@ -1,6 +1,6 @@
 import type z from 'zod'
+import type { ProposalStatus } from '@/shared/constants/enums'
 import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
-import type { ProposalStatus } from '@/shared/types/enums'
 import { relations } from 'drizzle-orm'
 import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'

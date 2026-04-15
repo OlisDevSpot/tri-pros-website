@@ -1,7 +1,7 @@
 'use client'
 
 import type { MeetingFlowContext, QualificationContext } from '@/features/meeting-flow/types'
-import type { MeetingType } from '@/shared/types/enums'
+import type { MeetingType } from '@/shared/constants/enums'
 import { ArrowRightIcon, SparklesIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { BENEFIT_CATEGORY_CONFIG } from '@/features/meeting-flow/constants/benefit-categories'

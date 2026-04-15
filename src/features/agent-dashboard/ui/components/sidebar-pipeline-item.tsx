@@ -1,7 +1,7 @@
 'use client'
 
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
-import type { Pipeline } from '@/shared/types/enums/pipelines'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { CheckIcon, LoaderIcon } from 'lucide-react'
 import Link from 'next/link'

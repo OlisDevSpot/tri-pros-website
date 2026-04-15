@@ -1,6 +1,6 @@
 'use client'
 
-import type { UserRole } from '@/shared/types/enums'
+import type { UserRole } from '@/shared/constants/enums'
 
 import type { NavItemsGroup } from '@/shared/types/nav'
 import Link from 'next/link'

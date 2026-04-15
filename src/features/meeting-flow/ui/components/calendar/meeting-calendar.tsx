@@ -5,8 +5,8 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { MeetingCalendarEvent } from '@/features/meeting-flow/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { MeetingOverviewCardData } from '@/shared/entities/meetings/components/overview-card'
-import type { MeetingOutcome } from '@/shared/types/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { ChevronDownIcon, MapPinIcon } from 'lucide-react'
@@ -39,7 +39,6 @@ const STATUS_BG_TINTS: Partial<Record<MeetingOutcome, string>> = {
   ftd: 'bg-red-500/5 border-red-500/20',
   no_show: 'bg-red-500/5 border-red-500/20',
   lost_to_competitor: 'bg-red-500/5 border-red-500/20',
-  not_interested: 'bg-red-500/5 border-red-500/20',
 }
 
 interface MeetingCalendarProps {

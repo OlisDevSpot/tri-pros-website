@@ -26,7 +26,6 @@ export async function resetDb() {
   await deleteTable(schema.benefits)
   await deleteTable(schema.benefitCategories)
   await deleteTable(schema.tags)
-  await deleteTable(schema.variables)
   await deleteTable(schema.projects)
   await deleteTable(schema.mediaFiles)
   await deleteTable(schema.x_scopeMaterials)

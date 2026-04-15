@@ -1,4 +1,4 @@
-import type { MediaPhase } from '@/shared/types/enums/media'
+import type { MediaPhase } from '@/shared/constants/enums/media'
 
 export interface ScrapedImage {
   url: string

@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { inferRouterOutputs } from '@trpc/server'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
-import type { ProposalStatus } from '@/shared/types/enums'
+import type { ProposalStatus } from '@/shared/constants/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { EyeIcon } from 'lucide-react'

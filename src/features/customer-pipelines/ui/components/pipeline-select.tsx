@@ -1,6 +1,6 @@
 'use client'
 
-import type { Pipeline } from '@/shared/types/enums/pipelines'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { useAbility } from '@/shared/permissions/hooks'

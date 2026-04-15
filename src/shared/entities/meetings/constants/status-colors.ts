@@ -11,7 +11,6 @@ export const MEETING_LIST_STATUS_COLORS: Record<string, string> = {
   ftd: 'bg-red-500/10 text-red-600',
   no_show: 'bg-red-500/10 text-red-600',
   lost_to_competitor: 'bg-red-500/10 text-red-600',
-  not_interested: 'bg-red-500/10 text-red-600',
 }
 
 // Table badge colors (used with StatusDropdownCell default Badge)
@@ -27,7 +26,6 @@ export const MEETING_OUTCOME_COLORS: Record<string, string> = {
   ftd: 'border-red-500/30 bg-red-500/10 text-red-400',
   no_show: 'border-red-500/30 bg-red-500/10 text-red-400',
   lost_to_competitor: 'border-red-500/30 bg-red-500/10 text-red-400',
-  not_interested: 'border-red-500/30 bg-red-500/10 text-red-400',
 }
 
 // Human-readable labels for display
@@ -43,7 +41,6 @@ export const MEETING_OUTCOME_LABELS: Record<string, string> = {
   ftd: 'FTD',
   no_show: 'No Show',
   lost_to_competitor: 'Lost to Contractor',
-  not_interested: 'Not Interested',
 }
 
 // Dot colors for status indicators and sub-menu option indicators
@@ -59,5 +56,4 @@ export const MEETING_OUTCOME_DOT_COLORS: Record<string, string> = {
   ftd: 'bg-red-500',
   no_show: 'bg-red-500',
   lost_to_competitor: 'bg-red-500',
-  not_interested: 'bg-red-500',
 }

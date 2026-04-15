@@ -1,7 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import type { inferRouterOutputs } from '@trpc/server'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
-import type { MeetingOutcome } from '@/shared/types/enums'
+import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { UserIcon } from 'lucide-react'
@@ -11,7 +11,7 @@ import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dro
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
-import { visibleMeetingOutcomes } from '@/shared/constants/enums'
+import { meetingOutcomes } from '@/shared/constants/enums'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 import { getOutcomeDisabledChecker } from '@/shared/pipelines/lib/get-disabled-outcomes'
@@ -72,7 +72,7 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
         return (
           <StatusDropdownCell
             currentStatus={row.original.meetingOutcome}
-            statuses={visibleMeetingOutcomes}
+            statuses={meetingOutcomes}
             colorMap={MEETING_OUTCOME_COLORS}
             formatLabel={status => MEETING_OUTCOME_LABELS[status] ?? status.replace(/_/g, ' ')}
             isStatusDisabled={getOutcomeDisabledChecker({

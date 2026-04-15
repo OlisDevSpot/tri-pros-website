@@ -1,5 +1,5 @@
 import type { ProposalFormSchema } from '../schemas/form-schema'
-import type { UserRole } from '@/shared/types/enums'
+import type { UserRole } from '@/shared/constants/enums'
 
 export interface ProposalStep<P> {
   title: string

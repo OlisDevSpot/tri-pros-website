@@ -1,4 +1,4 @@
-import type { MeetingPipeline } from '@/shared/types/enums/pipelines'
+import type { MeetingPipeline } from '@/shared/constants/enums/pipelines'
 
 import { and, eq, isNull } from 'drizzle-orm'
 

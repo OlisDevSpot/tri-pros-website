@@ -1,7 +1,7 @@
 'use client'
 
 import type { ProposalRow, ProposalTableMeta } from './columns'
-import type { ProposalStatus } from '@/shared/types/enums'
+import type { ProposalStatus } from '@/shared/constants/enums'
 
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'

@@ -1,4 +1,4 @@
-import type { Pipeline } from '@/shared/types/enums/pipelines'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 interface CustomerPipelineInput {
   meetings: Array<{ projectId: string | null, pipeline: string }>

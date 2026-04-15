@@ -40,7 +40,7 @@ export const meetingsStatConfig: StatBarItemConfig<MeetingRow>[] = [
     icon: XCircleIcon,
     color: 'text-red-500',
     getValue: data => data.filter(m =>
-      ['not_good', 'pns', 'npns', 'ftd', 'no_show', 'lost_to_competitor', 'not_interested'].includes(m.meetingOutcome),
+      ['not_good', 'pns', 'npns', 'ftd', 'no_show', 'lost_to_competitor'].includes(m.meetingOutcome),
     ).length,
   },
 ]

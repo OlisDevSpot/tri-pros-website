@@ -1,4 +1,4 @@
-import type { MediaPhase } from '@/shared/types/enums/media'
+import type { MediaPhase } from '@/shared/constants/enums/media'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'

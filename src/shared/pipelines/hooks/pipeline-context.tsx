@@ -1,6 +1,6 @@
 'use client'
 
-import type { Pipeline } from '@/shared/types/enums/pipelines'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { useParams } from 'next/navigation'
 import { createContext, use } from 'react'

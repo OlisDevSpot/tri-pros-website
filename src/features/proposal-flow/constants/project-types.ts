@@ -1,4 +1,4 @@
-import type { ProjectType } from '@/shared/types/enums'
+import type { ProjectType } from '@/shared/constants/enums'
 
 export const PROJECT_TYPES: Record<ProjectType, { title: string, description: string }> = {
   'energy-efficient': {

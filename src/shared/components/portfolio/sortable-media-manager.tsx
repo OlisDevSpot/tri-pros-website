@@ -1,8 +1,8 @@
 'use client'
 
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { MediaFile } from '@/shared/db/schema'
-import type { MediaPhase } from '@/shared/types/enums/media'
 import {
   AutoScrollActivator,
   closestCenter,

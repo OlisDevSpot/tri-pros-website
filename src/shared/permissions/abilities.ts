@@ -15,7 +15,7 @@
 
 import type { AppAbility } from './types'
 
-import type { UserRole } from '@/shared/types/enums'
+import type { UserRole } from '@/shared/constants/enums'
 import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 
 // The user shape we need for permission decisions.

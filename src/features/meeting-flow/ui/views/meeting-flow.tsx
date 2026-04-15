@@ -1,8 +1,8 @@
 'use client'
 
 import type { MeetingFlowContext } from '@/features/meeting-flow/types'
+import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
-import type { MeetingOutcome } from '@/shared/types/enums'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'

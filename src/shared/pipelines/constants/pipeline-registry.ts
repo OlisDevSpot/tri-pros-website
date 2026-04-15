@@ -1,5 +1,5 @@
 import type { PipelineConfig } from '../types'
-import type { Pipeline } from '@/shared/types/enums/pipelines'
+import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { deadPipelineConfig } from './dead-pipeline'
 import { freshPipelineConfig } from './fresh-pipeline'

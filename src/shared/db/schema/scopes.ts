@@ -1,6 +1,6 @@
 import type z from 'zod'
 
-import type { HomeArea } from '@/shared/types/enums'
+import type { HomeArea } from '@/shared/constants/enums'
 
 import { relations } from 'drizzle-orm'
 import { integer, jsonb, pgTable, text } from 'drizzle-orm/pg-core'
