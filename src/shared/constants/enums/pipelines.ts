@@ -12,6 +12,23 @@ export const leadsPipelineStages = [
 /** Pipelines storable on the meetings.pipeline column (projects is derived from projectId) */
 export const meetingPipelines = ['fresh', 'rehash', 'dead'] as const
 
+/** Fresh pipeline — meeting phase stages */
+export const freshMeetingStages = [
+  'needs_confirmation',
+  'meeting_scheduled',
+  'meeting_in_progress',
+  'meeting_completed',
+  'follow_up_scheduled',
+] as const
+
+/** Fresh pipeline — proposal phase stages */
+export const freshProposalStages = [
+  'proposal_sent',
+  'contract_sent',
+  'approved',
+  'declined',
+] as const
+
 /** Project lifecycle statuses */
 export const projectStatuses = ['active', 'completed', 'on_hold'] as const
 

@@ -27,15 +27,6 @@ export const meetingPainTypes = [
   'Home is not place of rest / comfort',
 ] as const
 
-// Meeting pipeline stages (will move to pipelines.ts in Phase 2)
-export const meetingPipelineStages = [
-  'needs_confirmation',
-  'meeting_scheduled',
-  'meeting_in_progress',
-  'meeting_completed',
-  'follow_up_scheduled',
-] as const
-
 export const selectableMeetingOutcomes = [
   'not_set',
   'not_good',

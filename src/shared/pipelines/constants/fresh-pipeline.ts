@@ -11,10 +11,9 @@ import {
   XCircleIcon,
 } from 'lucide-react'
 
-import { meetingPipelineStages } from '@/shared/constants/enums/meetings'
-import { proposalPipelineStages } from '@/shared/constants/enums/proposals'
+import { freshMeetingStages, freshProposalStages } from '@/shared/constants/enums/pipelines'
 
-export const freshPipelineStages = [...meetingPipelineStages, ...proposalPipelineStages] as const
+export const freshPipelineStages = [...freshMeetingStages, ...freshProposalStages] as const
 
 export type FreshPipelineStage = (typeof freshPipelineStages)[number]
 
