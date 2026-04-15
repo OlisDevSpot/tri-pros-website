@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerPersonaProfile } from '@/shared/entities/customers/persona-profile-schema'
+import type { CustomerPersonaProfile } from '@/shared/entities/customers/schemas/persona-profile-schema'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangleIcon,

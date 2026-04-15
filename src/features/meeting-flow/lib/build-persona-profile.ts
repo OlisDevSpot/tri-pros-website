@@ -1,3 +1,4 @@
+import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
 import type {
   CustomerPersonaProfile,
   PersonaBenefit,
@@ -6,8 +7,7 @@ import type {
   PersonaFear,
   PersonaHouseholdResonance,
   PersonaRiskFactor,
-} from '@/shared/entities/customers/persona-profile-schema'
-import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
+} from '@/shared/entities/customers/schemas/persona-profile-schema'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import type { NotionPainPoint } from '@/shared/services/notion/lib/pain-points/schema'
 import {

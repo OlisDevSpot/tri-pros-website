@@ -409,7 +409,8 @@
       "Bash(chmod +x /home/olis-solutions/.claude/statusline-command.sh)",
       "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/entities/customers/components/*.ts)",
       "Bash(grep -h \"export const\" src/shared/constants/enums/*.ts)",
-      "Bash(grep -h \"export type\" src/shared/types/enums/*.ts)"
+      "Bash(grep -h \"export type\" src/shared/types/enums/*.ts)",
+      "Bash(ls src/shared/entities/customers/schemas*)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",
