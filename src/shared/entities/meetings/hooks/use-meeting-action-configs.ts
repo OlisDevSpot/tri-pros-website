@@ -7,9 +7,9 @@ import type { MeetingOutcome } from '@/shared/types/enums'
 
 import { useMemo } from 'react'
 
-import { MEETING_ACTIONS } from '@/shared/components/entity-actions/constants/meeting-actions'
 import { ROOTS } from '@/shared/config/roots'
-import { MEETING_OUTCOME_OPTIONS } from '@/shared/constants/meetings/outcome-options'
+import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
+import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
 import { useMeetingActions } from './use-meeting-actions'
@@ -108,7 +108,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     })
 
     return configs
-  }, [overrides.onView, overrides.onStart, overrides.onAssignProject, overrides.onCreateProposal, overrides.onAssignOwner, duplicateMeeting, updateOutcome, deleteMeeting, confirmDelete])
+  }, [overrides, duplicateMeeting, updateOutcome, deleteMeeting, confirmDelete])
 
   return { actions, DeleteConfirmDialog }
 }

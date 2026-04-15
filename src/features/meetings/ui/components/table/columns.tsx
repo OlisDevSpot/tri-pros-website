@@ -12,7 +12,7 @@ import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { visibleMeetingOutcomes } from '@/shared/constants/enums'
-import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/constants/meetings/status-colors'
+import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 import { getOutcomeDisabledChecker } from '@/shared/pipelines/lib/get-disabled-outcomes'
 

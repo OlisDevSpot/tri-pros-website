@@ -21,7 +21,7 @@ import {
   MEETING_LIST_STATUS_COLORS,
   MEETING_OUTCOME_DOT_COLORS,
   MEETING_OUTCOME_LABELS,
-} from '@/shared/constants/meetings/status-colors'
+} from '@/shared/entities/meetings/constants/status-colors'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
