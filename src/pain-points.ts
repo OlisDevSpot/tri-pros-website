@@ -71,7 +71,7 @@ export type EmotionalDriver
 export type UrgencyMultiplier = 'critical' | 'high' | 'medium' | 'low'
 
 /**
- * Household types from meetingHouseholdTypes enum.
+ * Household types from householdTypes enum (shared/constants/enums/customers).
  * Used to prioritize which pain points resonate most in the room.
  */
 export type HouseholdResonance
