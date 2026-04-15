@@ -10,7 +10,7 @@ import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
-import { useAbility } from '@/shared/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 
 interface NamedItem {
   id: string

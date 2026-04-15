@@ -5,8 +5,8 @@ import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/shared/components/ui/button'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { cn } from '@/shared/lib/utils'
-import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 export function NotionRefreshButton() {

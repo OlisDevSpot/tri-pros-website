@@ -9,8 +9,8 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { buildCustomerFormDefaults } from '@/shared/entities/customers/lib/build-customer-form-defaults'
-import { useAbility } from '@/shared/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 export function useCustomerEditForm(customer: Customer) {

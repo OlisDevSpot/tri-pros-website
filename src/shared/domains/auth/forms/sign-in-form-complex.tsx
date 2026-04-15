@@ -1,16 +1,16 @@
 'use client'
 
-import type { LoginFormSchema } from '@/shared/auth/schemas'
+import type { LoginFormSchema } from '@/shared/domains/auth/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
-import { loginFormSchema } from '@/shared/auth/schemas'
-
 import { Button } from '@/shared/components/ui/button'
+
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { PasswordInput } from '@/shared/components/ui/password-input'
+import { loginFormSchema } from '@/shared/domains/auth/schemas'
 import { cn } from '@/shared/lib/utils'
 
 interface Props extends React.ComponentProps<'div'> {

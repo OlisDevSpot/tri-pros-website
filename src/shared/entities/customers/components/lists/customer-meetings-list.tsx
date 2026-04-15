@@ -9,10 +9,10 @@ import { EmptyState } from '@/shared/components/states/empty-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { CreateMeetingForm } from '@/shared/entities/meetings/components/create-meeting-form'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { cn } from '@/shared/lib/utils'
-import { useAbility } from '@/shared/permissions/hooks'
 import { MeetingProposalRow } from './meeting-proposal-row'
 
 interface Props {

@@ -1,7 +1,7 @@
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'
 import { cache } from 'react'
-import { auth } from '@/shared/auth/server'
 import env from '@/shared/config/server-env'
+import { auth } from '@/shared/domains/auth/server'
 import { makeQueryClient } from './query-client'
 import { appRouter } from './routers/app'
 import 'server-only' // <-- ensure this file cannot be imported from the client

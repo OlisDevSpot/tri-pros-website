@@ -5,8 +5,8 @@ import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/compo
 import { isSelectAction } from '@/shared/components/entity-actions/types'
 import { EntityActionDropdown } from '@/shared/components/entity-actions/ui/entity-action-dropdown'
 import { Button } from '@/shared/components/ui/button'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { cn } from '@/shared/lib/utils'
-import { useAbility } from '@/shared/permissions/hooks'
 
 interface EntityActionMenuProps<TEntity> {
   entity: TEntity

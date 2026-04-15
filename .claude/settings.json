@@ -410,7 +410,13 @@
       "Bash(ls -la /home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/entities/customers/components/*.ts)",
       "Bash(grep -h \"export const\" src/shared/constants/enums/*.ts)",
       "Bash(grep -h \"export type\" src/shared/types/enums/*.ts)",
-      "Bash(ls src/shared/entities/customers/schemas*)"
+      "Bash(ls src/shared/entities/customers/schemas*)",
+      "Bash(ls -d src/shared/*/)",
+      "Bash(ls -d src/features/meeting-flow/*/)",
+      "Bash(sed 's|src/features/meeting-flow/||')",
+      "Bash(ls -d src/features/customer-pipelines/*/)",
+      "Bash(sed 's|src/features/customer-pipelines/||')",
+      "Bash(ls -d src/shared/entities/customers/*/)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

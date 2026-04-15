@@ -7,7 +7,7 @@ import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
-import { onPipelineChange } from '@/shared/pipelines/lib/on-pipeline-change'
+import { onPipelineChange } from '@/shared/domains/pipelines/lib/on-pipeline-change'
 
 /**
  * Returns a stable callback that handles all pipeline change side effects.

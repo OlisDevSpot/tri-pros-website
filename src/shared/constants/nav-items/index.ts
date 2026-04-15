@@ -1,4 +1,4 @@
-import type { AppAbility } from '@/shared/permissions/types'
+import type { AppAbility } from '@/shared/domains/permissions/types'
 import type { DynamicNavSections, NavItemsGroup } from '@/shared/types/nav'
 import { marketingNavItems } from './marketing'
 import { tprInternalNavItems } from './tpr-internal'

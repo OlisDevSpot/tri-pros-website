@@ -4,11 +4,11 @@ import type { DynamicNavSections, NavItemsGroup } from '@/shared/types/nav'
 
 import { AnimatePresence, motion } from 'motion/react'
 import { Fragment, useState } from 'react'
-import { useSession } from '@/shared/auth/client'
+import { useSession } from '@/shared/domains/auth/client'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
-import { useAbility } from '@/shared/permissions/hooks'
 
 import { SignInGoogleButton } from '../buttons/auth/sign-in-google-button'
 import { UserButton } from '../buttons/user-button'

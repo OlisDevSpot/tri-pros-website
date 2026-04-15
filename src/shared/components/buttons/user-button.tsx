@@ -1,6 +1,6 @@
 'use client'
 
-import type { BetterAuthUser } from '@/shared/auth/server'
+import type { BetterAuthUser } from '@/shared/domains/auth/server'
 import { ChevronsUpDown } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Button } from '../ui/button'

@@ -11,7 +11,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { computePipelineValue } from '@/shared/pipelines/lib/compute-pipeline-value'
+import { computePipelineValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {
   if (pipeline === 'leads') {

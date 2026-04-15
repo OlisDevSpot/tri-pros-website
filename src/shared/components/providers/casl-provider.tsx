@@ -11,10 +11,10 @@
 // 4. AbilityContext.Provider makes it available to all children
 
 import { useMemo } from 'react'
-import { useSession } from '@/shared/auth/client'
+import { useSession } from '@/shared/domains/auth/client'
 
-import { defineAbilitiesFor } from '../../permissions/abilities'
-import { AbilityContext } from '../../permissions/context'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { AbilityContext } from '@/shared/domains/permissions/context'
 
 export function AbilityProvider({ children }: { children: React.ReactNode }) {
   const session = useSession()

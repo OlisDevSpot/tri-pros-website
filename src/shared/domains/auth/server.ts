@@ -2,9 +2,9 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { openAPI } from 'better-auth/plugins'
 import env from '@/shared/config/server-env'
+import { userRoles } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import * as schema from '@/shared/db/schema'
-import { userRoles } from '../constants/enums'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {

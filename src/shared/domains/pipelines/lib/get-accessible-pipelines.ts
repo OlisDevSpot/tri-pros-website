@@ -1,5 +1,5 @@
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
-import type { AppAbility } from '@/shared/permissions/types'
+import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import { pipelines } from '@/shared/constants/enums/pipelines'
 

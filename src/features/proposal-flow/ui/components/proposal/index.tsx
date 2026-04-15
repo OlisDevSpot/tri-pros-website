@@ -11,7 +11,7 @@ import { useSendProposalEmail } from '@/features/proposal-flow/dal/client/mutati
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { useAbility } from '@/shared/permissions/hooks'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 import { Heading } from './heading'
 

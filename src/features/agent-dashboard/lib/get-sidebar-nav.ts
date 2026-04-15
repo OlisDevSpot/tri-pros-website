@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 
-import type { AppAbility } from '@/shared/permissions/types'
+import type { AppAbility } from '@/shared/domains/permissions/types'
 
 import {
   BarChart3Icon,
@@ -14,8 +14,8 @@ import {
 } from 'lucide-react'
 
 import { ROOTS } from '@/shared/config/roots'
-import { PIPELINE_LABELS } from '@/shared/pipelines/constants/pipeline-registry'
-import { getAccessiblePipelines } from '@/shared/pipelines/lib/get-accessible-pipelines'
+import { PIPELINE_LABELS } from '@/shared/domains/pipelines/constants/pipeline-registry'
+import { getAccessiblePipelines } from '@/shared/domains/pipelines/lib/get-accessible-pipelines'
 
 export interface SidebarNavSubItem {
   key: string

@@ -7,9 +7,9 @@ import { useEffect } from 'react'
 import { meetingsDashboardStepParser } from '@/features/meeting-flow/lib/url-parsers'
 import { MeetingsSidebar } from '@/features/meeting-flow/ui/components/meetings-sidebar'
 import { PastMeetingsView } from '@/features/meeting-flow/ui/views/past-meetings-view'
-import { useSession } from '@/shared/auth/client'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { useSession } from '@/shared/domains/auth/client'
 
 export function MeetingsDashboard() {
   const router = useRouter()

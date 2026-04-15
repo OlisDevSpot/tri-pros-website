@@ -9,9 +9,9 @@ import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { Logo } from '@/shared/components/logo'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { ROOTS } from '@/shared/config/roots'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useActiveSection } from '@/shared/hooks/use-active-section'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { useAbility } from '@/shared/permissions/hooks'
 import { ProposalNavbarFrame } from './navbar-frame'
 
 export function ProposalPageNavbar() {

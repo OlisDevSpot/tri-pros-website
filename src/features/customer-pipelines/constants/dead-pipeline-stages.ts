@@ -4,4 +4,4 @@ export {
   type DeadPipelineStage,
   deadPipelineStages,
   deadStageConfig,
-} from '@/shared/pipelines/constants/dead-pipeline'
+} from '@/shared/domains/pipelines/constants/dead-pipeline'

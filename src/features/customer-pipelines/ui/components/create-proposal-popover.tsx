@@ -9,12 +9,12 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { useSession } from '@/shared/auth/client'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { ROOTS } from '@/shared/config/roots'
-import { useAbility } from '@/shared/permissions/hooks'
+import { useSession } from '@/shared/domains/auth/client'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {

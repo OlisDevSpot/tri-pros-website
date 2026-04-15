@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listAccounts } from '@/shared/auth/client'
+import { listAccounts } from '@/shared/domains/auth/client'
 
 interface Props {
   enabled?: boolean

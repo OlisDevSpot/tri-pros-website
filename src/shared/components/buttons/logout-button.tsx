@@ -2,8 +2,8 @@
 
 import { LogOutIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { signOut } from '@/shared/auth/client'
 import { ROOTS } from '@/shared/config/roots'
+import { signOut } from '@/shared/domains/auth/client'
 import { Button } from '../ui/button'
 
 interface Props {

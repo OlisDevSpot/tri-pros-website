@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { DashboardIntakeView } from '@/features/intake/ui/views/dashboard-intake-view'
-import { protectDashboardPage } from '@/shared/permissions/lib/protect-dashboard-page'
+import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 
 export const dynamic = 'force-dynamic'
 

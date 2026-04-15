@@ -1,10 +1,10 @@
 'use client'
 
-import type { LoginFormSchema } from '@/shared/auth/schemas'
+import type { LoginFormSchema } from '@/shared/domains/auth/schemas'
 import { FaGoogle } from 'react-icons/fa6'
 
-import { signIn } from '@/shared/auth/client'
 import { Button } from '@/shared/components/ui/button'
+import { signIn } from '@/shared/domains/auth/client'
 
 interface Props extends React.ComponentProps<'div'> {
   onSubmitCallback?: (data: LoginFormSchema) => Promise<void>

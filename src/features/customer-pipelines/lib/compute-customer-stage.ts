@@ -1,1 +1,1 @@
-export { computeFreshStage as computeCustomerStage } from '@/shared/pipelines/lib/compute-fresh-stage'
+export { computeFreshStage as computeCustomerStage } from '@/shared/domains/pipelines/lib/compute-fresh-stage'

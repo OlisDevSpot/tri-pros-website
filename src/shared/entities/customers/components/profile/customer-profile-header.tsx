@@ -10,8 +10,8 @@ import { EmailAction } from '@/shared/components/contact-actions/ui/email-action
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { useAbility } from '@/shared/permissions/hooks'
 
 interface Props {
   customer: CustomerProfileData['customer']

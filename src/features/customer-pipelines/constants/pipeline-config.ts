@@ -1,1 +1,1 @@
-export { pipelineConfigs } from '@/shared/pipelines/constants/pipeline-registry'
+export { pipelineConfigs } from '@/shared/domains/pipelines/constants/pipeline-registry'

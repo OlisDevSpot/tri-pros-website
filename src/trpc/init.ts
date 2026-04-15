@@ -1,11 +1,11 @@
-import type { BetterAuthSession } from '@/shared/auth/server'
+import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import { initTRPC, TRPCError } from '@trpc/server'
 import { headers as getHeaders } from 'next/headers'
 import { cache } from 'react'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
-import { auth } from '@/shared/auth/server'
-import { defineAbilitiesFor } from '@/shared/permissions/abilities'
+import { auth } from '@/shared/domains/auth/server'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
 export interface CoreTRPCContext {
   session: BetterAuthSession | null

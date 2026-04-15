@@ -11,9 +11,9 @@ import { isSelectAction } from '@/shared/components/entity-actions/types'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_DOT_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { cn } from '@/shared/lib/utils'
-import { useAbility } from '@/shared/permissions/hooks'
 
 interface MeetingCalendarDotProps {
   event: MeetingCalendarEvent

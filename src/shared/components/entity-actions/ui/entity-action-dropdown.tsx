@@ -17,8 +17,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { cn } from '@/shared/lib/utils'
-import { useAbility } from '@/shared/permissions/hooks'
 
 interface EntityActionDropdownProps<TEntity> {
   entity: TEntity

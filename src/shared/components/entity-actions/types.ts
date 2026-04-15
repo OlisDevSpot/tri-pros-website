@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { ComponentProps } from 'react'
 
 import type { Button } from '@/shared/components/ui/button'
-import type { AppActions, AppSubjects } from '@/shared/permissions/types'
+import type { AppActions, AppSubjects } from '@/shared/domains/permissions/types'
 
 // ── Legacy standalone button props (kept for backward compat) ────────────────
 

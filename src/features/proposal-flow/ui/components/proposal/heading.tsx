@@ -7,9 +7,9 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
-import { useAbility } from '@/shared/permissions/hooks'
 
 export function Heading() {
   const proposal = useCurrentProposal()

@@ -1,1 +1,1 @@
-export { PIPELINE_LABELS } from '@/shared/pipelines/constants/pipeline-registry'
+export { PIPELINE_LABELS } from '@/shared/domains/pipelines/constants/pipeline-registry'

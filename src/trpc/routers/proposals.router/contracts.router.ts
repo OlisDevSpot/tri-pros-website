@@ -4,7 +4,7 @@ import z from 'zod'
 import { getProposal } from '@/shared/dal/server/proposals/api'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
-import { defineAbilitiesFor } from '@/shared/permissions/abilities'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { contractService } from '@/shared/services/contract.service'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 

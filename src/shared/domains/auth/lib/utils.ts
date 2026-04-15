@@ -1,4 +1,4 @@
-import { auth } from '@/shared/auth/server'
+import { auth } from '@/shared/domains/auth/server'
 
 export async function requireAuth(headers: Headers, onNotAuthenticated: () => void) {
   const session = await auth.api.getSession({

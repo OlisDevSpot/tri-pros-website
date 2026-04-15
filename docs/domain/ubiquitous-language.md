@@ -3,6 +3,56 @@
 > Living glossary of canonical terms. Every AI session, PR, and issue MUST use these terms exactly.
 > Updated: 2026-03-23
 
+## Single Unit Folder Structure
+
+A **Single Unit** is any self-contained domain module in the codebase. Every single unit follows the same internal folder structure — this is the fractal pattern that repeats at every level of the architecture.
+
+### Base Subdirectories
+
+| Subdirectory | Contains | File Pattern |
+|---|---|---|
+| `constants/` | Static data, config objects, display arrays, lookup maps | `kebab-case.ts` |
+| `hooks/` | Custom React hooks | `use-*.ts` |
+| `lib/` | Pure utility/helper functions (no React, no side effects) | `verb-noun.ts` |
+| `components/` | React components (props-driven, reusable within this unit) | `kebab-case.tsx` |
+| `schemas/` | Zod validation schemas + inferred types (`schemas/index.ts` is the base) | `*-schema.ts` or `index.ts` |
+| `types/` | TypeScript interfaces/types not derived from schemas | `index.ts` or `domain.ts` |
+| `ui/` | Views (`ui/views/`) and feature-specific components (`ui/components/`) | Only in features |
+| `dal/` | Data Access Layer — `server/` and `client/` subdirs | Only where DB access needed |
+
+Not every subdirectory is required — only create what the unit needs. The structure is the same whether the unit is a feature, an entity, a domain system, or the root `shared/` level.
+
+### Where the pattern appears
+
+```
+shared/                              ← Single Unit (root shared level)
+├── constants/, hooks/, lib/, components/, types/, dal/, ...
+
+shared/entities/customers/           ← Single Unit (entity)
+├── constants/, hooks/, lib/, components/, schemas/, types/
+
+shared/entities/meetings/            ← Single Unit (entity)
+├── constants/, hooks/, components/, schemas/
+
+shared/pipelines/                    ← Single Unit (domain system)
+├── constants/, hooks/, lib/, types/, ui/
+
+shared/auth/                         ← Single Unit (domain system)
+├── hooks/, lib/, schemas/
+
+features/meeting-flow/               ← Single Unit (feature)
+├── constants/, hooks/, lib/, types/, ui/
+
+features/customer-pipelines/         ← Single Unit (feature)
+├── constants/, hooks/, lib/, types/, ui/, dal/
+```
+
+### The distinction test
+
+A directory is a **Single Unit** (domain/entity/feature) when it has 2+ of these subdirectories. A directory that contains only files (no subdirectories) is a leaf — part of a parent unit's structure, not a unit itself.
+
+---
+
 ## Core Entities
 
 | Term | Definition | Code Location |
@@ -83,7 +133,7 @@ Trade (discipline)
 |---------|------|-------------|
 | Agent Dashboard | `agent-dashboard` | Central hub: action center, pipeline toggle, activity |
 | Customer Pipelines | `customer-pipelines` | Kanban + table view of customers by stage |
-| Meetings | `meetings` | Calendar, intake form, program flow, past meetings |
+| Meeting Flow | `meeting-flow` | Calendar, intake form, program flow, past meetings |
 | Proposal Flow | `proposal-flow` | Multi-step proposal builder + editor |
 | Showroom / Projects | `showroom` | All projects (active construction + portfolio). Filter by status/isPublic. |
 | Landing | `landing` | Marketing pages: home, about, services, blog, contact |
@@ -137,15 +187,15 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 | `Pipeline[fresh]/Kanban/Customer/Meeting/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
 | `Pipeline[projects]/Kanban/Customer/Project` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProjectActionConfigs` |
 | `Pipeline[projects]/Kanban/Customer/Project/Proposal` | `customer-pipelines/ui/components/customer-kanban-card.tsx` | `useProposalActionConfigs` |
-| `Meetings/Calendar/Meeting` | `meetings/ui/components/calendar/meeting-calendar-card.tsx` | `useMeetingActionConfigs` |
-| `Meetings/Calendar/Meeting` (dot) | `meetings/ui/components/calendar/meeting-calendar-dot.tsx` | `useMeetingActionConfigs` |
-| `Meetings/Table/Meeting` | `meetings/ui/components/table/` | `useMeetingActionConfigs` |
+| `Meetings/Calendar/Meeting` | `meeting-flow/ui/components/calendar/meeting-calendar.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Calendar/Meeting` (dot) | `meeting-flow/ui/components/calendar/meeting-calendar-dot.tsx` | `useMeetingActionConfigs` |
+| `Meetings/Table/Meeting` | `meeting-flow/ui/components/table/` | `useMeetingActionConfigs` |
 | `Proposals/Table/Proposal` | `proposal-flow/ui/components/table/` | `useProposalActionConfigs` |
-| `Projects/Table/Project` | `showroom/ui/components/table/` | `useProjectActionConfigs` |
-| `Profile/Meetings/Meeting` | `customer-pipelines/ui/components/meeting-entity-card.tsx` | `useMeetingActionConfigs` |
-| `Profile/Projects/Project` | `customer-pipelines/ui/components/project-entity-card.tsx` | `useProjectActionConfigs` |
-| `Profile/Projects/Project/Meeting` | `customer-pipelines/ui/components/meeting-entity-card.tsx` | `useMeetingActionConfigs` |
-| `Profile/Projects/Project/Meeting/Proposal` | `customer-pipelines/ui/components/meeting-proposal-row.tsx` | `useProposalActionConfigs` |
+| `Projects/Table/Project` | `project-management/ui/components/table/` | `useProjectActionConfigs` |
+| `Profile/Meetings/Meeting` | `shared/entities/meetings/components/overview-card.tsx` | `useMeetingActionConfigs` |
+| `Profile/Projects/Project` | `shared/entities/customers/components/lists/project-entity-card.tsx` | `useProjectActionConfigs` |
+| `Profile/Projects/Project/Meeting` | `shared/entities/meetings/components/overview-card.tsx` | `useMeetingActionConfigs` |
+| `Profile/Projects/Project/Meeting/Proposal` | `shared/entities/customers/components/lists/meeting-proposal-row.tsx` | `useProposalActionConfigs` |
 
 ## JSONB Field Map
 

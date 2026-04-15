@@ -7,7 +7,7 @@ import { createContext, use } from 'react'
 
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
-import { usePipelineChange } from '@/shared/pipelines/hooks/use-pipeline-change'
+import { usePipelineChange } from '@/shared/domains/pipelines/hooks/use-pipeline-change'
 
 interface PipelineContextValue {
   pipeline: Pipeline

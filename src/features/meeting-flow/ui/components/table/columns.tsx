@@ -12,9 +12,9 @@ import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
+import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
-import { getOutcomeDisabledChecker } from '@/shared/pipelines/lib/get-disabled-outcomes'
 
 export type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
 

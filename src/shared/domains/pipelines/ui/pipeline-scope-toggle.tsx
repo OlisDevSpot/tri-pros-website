@@ -4,8 +4,8 @@ import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { Label } from '@/shared/components/ui/label'
 import { Switch } from '@/shared/components/ui/switch'
+import { PIPELINE_LABELS } from '@/shared/domains/pipelines/constants/pipeline-registry'
 import { cn } from '@/shared/lib/utils'
-import { PIPELINE_LABELS } from '@/shared/pipelines/constants/pipeline-registry'
 
 type PipelineScope = 'all' | Pipeline
 

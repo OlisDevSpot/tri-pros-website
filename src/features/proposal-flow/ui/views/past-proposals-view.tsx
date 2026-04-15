@@ -1,6 +1,6 @@
 'use client'
 
-import type { PipelineScope } from '@/shared/pipelines/ui/pipeline-scope-toggle'
+import type { PipelineScope } from '@/shared/domains/pipelines/ui/pipeline-scope-toggle'
 
 import { motion } from 'motion/react'
 import { useCallback, useMemo } from 'react'
@@ -10,10 +10,10 @@ import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
+import { getStoredPipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
+import { deriveMeetingPipeline } from '@/shared/domains/pipelines/lib/derive-meeting-pipeline'
+import { PipelineScopeToggle } from '@/shared/domains/pipelines/ui/pipeline-scope-toggle'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
-import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
-import { deriveMeetingPipeline } from '@/shared/pipelines/lib/derive-meeting-pipeline'
-import { PipelineScopeToggle } from '@/shared/pipelines/ui/pipeline-scope-toggle'
 
 export function PastProposalsView() {
   const proposals = useGetProposals()

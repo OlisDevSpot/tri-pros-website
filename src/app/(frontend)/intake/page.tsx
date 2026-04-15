@@ -2,9 +2,9 @@ import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
-import { auth } from '@/shared/auth/server'
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { auth } from '@/shared/domains/auth/server'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 
 interface Props {

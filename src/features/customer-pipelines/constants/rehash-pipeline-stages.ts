@@ -4,4 +4,4 @@ export {
   type RehashPipelineStage,
   rehashPipelineStages,
   rehashStageConfig,
-} from '@/shared/pipelines/constants/rehash-pipeline'
+} from '@/shared/domains/pipelines/constants/rehash-pipeline'

@@ -2,8 +2,8 @@ import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
 import type { DeadPipelineStage } from '../constants/dead-pipeline-stages'
 import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
 import type { ProjectStatus } from '@/shared/constants/enums/pipelines'
-import type { LeadsPipelineStage } from '@/shared/pipelines/constants/leads-pipeline'
-import type { ProjectsPipelineStage } from '@/shared/pipelines/constants/projects-pipeline'
+import type { LeadsPipelineStage } from '@/shared/domains/pipelines/constants/leads-pipeline'
+import type { ProjectsPipelineStage } from '@/shared/domains/pipelines/constants/projects-pipeline'
 
 // Re-export entity-level types for backward compatibility
 export type {

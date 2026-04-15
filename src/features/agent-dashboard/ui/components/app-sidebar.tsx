@@ -1,8 +1,8 @@
 'use client'
 
 import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-nav'
-import type { BetterAuthUser } from '@/shared/auth/server'
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
+import type { BetterAuthUser } from '@/shared/domains/auth/server'
 
 import { ChevronLeftIcon, ChevronRightIcon, ZapIcon } from 'lucide-react'
 import { motion } from 'motion/react'
@@ -16,7 +16,6 @@ import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
-import { signOut } from '@/shared/auth/client'
 import { Button } from '@/shared/components/ui/button'
 import {
   Sidebar,
@@ -34,9 +33,10 @@ import {
 } from '@/shared/components/ui/sidebar'
 import { ROOTS } from '@/shared/config/roots'
 import { pipelines as pipelineValues } from '@/shared/constants/enums/pipelines'
-import { defineAbilitiesFor } from '@/shared/permissions/abilities'
-import { getStoredPipeline } from '@/shared/pipelines/hooks/pipeline-context'
-import { usePipelineChange } from '@/shared/pipelines/hooks/use-pipeline-change'
+import { signOut } from '@/shared/domains/auth/client'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { getStoredPipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
+import { usePipelineChange } from '@/shared/domains/pipelines/hooks/use-pipeline-change'
 
 interface AppSidebarProps {
   user: BetterAuthUser

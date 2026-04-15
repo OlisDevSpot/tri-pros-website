@@ -4,4 +4,4 @@ export {
   freshStageConfig as activeStageConfig,
   type FreshPipelineStage as CustomerPipelineStage,
   freshPipelineStages as customerPipelineStages,
-} from '@/shared/pipelines/constants/fresh-pipeline'
+} from '@/shared/domains/pipelines/constants/fresh-pipeline'

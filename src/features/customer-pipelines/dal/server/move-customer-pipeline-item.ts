@@ -1,6 +1,6 @@
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
-import type { FreshPipelineStage } from '@/shared/pipelines/constants/fresh-pipeline'
+import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
@@ -10,7 +10,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/pipelines/constants/fresh-pipeline'
+import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 
 interface MoveParams {
   customerId: string

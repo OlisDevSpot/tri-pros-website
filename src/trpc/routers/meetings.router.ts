@@ -7,9 +7,9 @@ import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain
 import { meetingTypes } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
+import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
-import { OUTCOME_PIPELINE_MAP } from '@/shared/pipelines/lib/outcome-pipeline-map'
 import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 

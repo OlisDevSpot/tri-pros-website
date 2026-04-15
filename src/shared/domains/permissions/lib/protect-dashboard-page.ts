@@ -14,10 +14,10 @@
 //   return <DashboardView authState={authState} />
 
 import type { AppAbility } from '../types'
-import type { BetterAuthSession } from '@/shared/auth/server'
+import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { auth } from '@/shared/auth/server'
+import { auth } from '@/shared/domains/auth/server'
 import { defineAbilitiesFor } from '../abilities'
 
 export type DashboardAuthState

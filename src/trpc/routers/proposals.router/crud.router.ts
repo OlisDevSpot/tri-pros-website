@@ -7,7 +7,7 @@ import { createProposal, deleteProposal, getProposal, getProposals, updatePropos
 import { db } from '@/shared/db'
 import { insertProposalSchema } from '@/shared/db/schema'
 import { meetings } from '@/shared/db/schema/meetings'
-import { defineAbilitiesFor } from '@/shared/permissions/abilities'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 
 export const crudRouter = createTRPCRouter({

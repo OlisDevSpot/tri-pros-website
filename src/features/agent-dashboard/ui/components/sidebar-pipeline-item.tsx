@@ -18,7 +18,7 @@ import {
   SidebarMenuItem,
 } from '@/shared/components/ui/sidebar'
 import { ROOTS } from '@/shared/config/roots'
-import { PIPELINE_LABELS } from '@/shared/pipelines/constants/pipeline-registry'
+import { PIPELINE_LABELS } from '@/shared/domains/pipelines/constants/pipeline-registry'
 
 interface SidebarPipelineItemProps {
   item: SidebarNavItem

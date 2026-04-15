@@ -1,5 +1,5 @@
 import { SettingsView } from '@/features/agent-settings/ui/views/settings-view'
-import { protectDashboardPage } from '@/shared/permissions/lib/protect-dashboard-page'
+import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 
 export const dynamic = 'force-dynamic'
 
