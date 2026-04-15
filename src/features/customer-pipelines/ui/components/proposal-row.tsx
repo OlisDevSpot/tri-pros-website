@@ -6,10 +6,10 @@ import { EyeIcon, FlameIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { PROPOSAL_STATUS_COLORS } from '@/features/customer-pipelines/constants/proposal-status-colors'
-import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 
 interface Props {
   proposal: CustomerProfileProposal

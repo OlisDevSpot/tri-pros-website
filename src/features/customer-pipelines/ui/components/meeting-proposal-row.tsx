@@ -6,10 +6,10 @@ import { EyeIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { PROPOSAL_ROW_STYLES } from '@/features/customer-pipelines/constants/proposal-row-styles'
-import { useProposalActionConfigs } from '@/features/proposal-flow/hooks/use-proposal-action-configs'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
 import { ROOTS } from '@/shared/config/roots'
+import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
