@@ -6,8 +6,8 @@ import type { DataTableFilterConfig, DataTableMultiSelectFilter } from '@/shared
 import { useMemo } from 'react'
 
 import { portfolioTableFilters } from '@/features/project-management/constants/table-filter-config'
-import { useProjectActionConfigs } from '@/features/project-management/hooks/use-project-action-configs'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 
 import { getColumns } from './columns'
 
