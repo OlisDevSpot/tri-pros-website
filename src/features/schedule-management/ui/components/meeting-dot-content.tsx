@@ -1,46 +1,37 @@
 'use client'
 
-import type { MeetingCalendarEvent } from '@/features/meeting-flow/types'
-import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entity-actions/types'
+import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
+import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
+
 import { format } from 'date-fns'
 
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { isSelectAction } from '@/shared/components/entity-actions/types'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { useAbility } from '@/shared/domains/permissions/hooks'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_DOT_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { cn } from '@/shared/lib/utils'
 
-interface MeetingCalendarDotProps {
-  event: MeetingCalendarEvent
-  actions: EntityActionConfig<MeetingCalendarEvent>[]
+import { DotActions } from './dot-actions'
+
+interface MeetingDotContentProps {
+  event: ScheduleMeetingEvent
+  formattedTime: string
+  permittedActions: EntityActionConfig<ScheduleCalendarEvent>[]
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
 }
 
-export function MeetingCalendarDot({
+export function MeetingDotContent({
   event,
-  actions,
+  formattedTime,
+  permittedActions,
   onUpdateScheduledFor,
-}: MeetingCalendarDotProps) {
-  const ability = useAbility()
-
-  const formattedTime = format(new Date(event.startAt), 'h:mm a')
+}: MeetingDotContentProps) {
   const formattedDateTime = format(new Date(event.startAt), 'MMM d, h:mm a')
-
   const formattedAddress = [event.customerAddress, event.customerCity]
     .filter(Boolean)
     .join(', ')
-
-  const permittedActions = actions.filter(({ action }) => {
-    if (!action.permission) {
-      return true
-    }
-    return ability.can(action.permission[0], action.permission[1])
-  })
 
   return (
     <Popover>
@@ -99,32 +90,8 @@ export function MeetingCalendarDot({
           </div>
         )}
 
-        {/* Action buttons — CASL-gated, click actions only (select actions need sub-menus) */}
-        {permittedActions.length > 0 && (
-          <div className="flex flex-col gap-1 border-t pt-2">
-            {permittedActions
-              .filter((c): c is EntityActionClickConfig<MeetingCalendarEvent> => !isSelectAction(c))
-              .map((config) => {
-                const Icon = config.action.icon
-                return (
-                  <Button
-                    key={config.action.id}
-                    variant="ghost"
-                    size="sm"
-                    className={cn(
-                      'justify-start h-7 text-xs',
-                      config.action.destructive && 'text-destructive hover:text-destructive',
-                    )}
-                    disabled={config.isLoading || config.isDisabled}
-                    onClick={() => config.onAction(event)}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {config.action.label}
-                  </Button>
-                )
-              })}
-          </div>
-        )}
+        {/* Action buttons */}
+        <DotActions actions={permittedActions} event={event} />
       </PopoverContent>
     </Popover>
   )

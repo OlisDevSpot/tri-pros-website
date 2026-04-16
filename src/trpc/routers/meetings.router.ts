@@ -10,6 +10,7 @@ import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposa
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
+import { schedulingService } from '@/shared/services/scheduling.service'
 import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
@@ -62,6 +63,12 @@ export const meetingsRouter = createTRPCRouter({
         })
         .returning()
 
+      if (created.scheduledFor) {
+        await schedulingService
+          .pushToGCal(ctx.session.user.id, 'meeting', created.id)
+          .catch(() => {})
+      }
+
       return created
     }),
 
@@ -71,7 +78,7 @@ export const meetingsRouter = createTRPCRouter({
       id: z.string(),
       customerId: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...rest } = input
 
       const [updated] = await db
@@ -95,6 +102,13 @@ export const meetingsRouter = createTRPCRouter({
             Object.assign(updated, refetched)
           }
         }
+      }
+
+      // Push to Google Calendar if schedule-relevant fields changed
+      if ('scheduledFor' in rest || 'meetingType' in rest || 'agentNotes' in rest) {
+        await schedulingService
+          .pushToGCal(ctx.session.user.id, 'meeting', id)
+          .catch(() => {})
       }
 
       // Publish realtime event for cross-device sync

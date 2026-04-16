@@ -1,12 +1,13 @@
 import type { inferRouterOutputs } from '@trpc/server'
 
-import type { MeetingCalendarEvent } from '@/features/meeting-flow/types'
+import type { ScheduleMeetingEvent } from '@/features/schedule-management/types'
 import type { AppRouter } from '@/trpc/routers/app'
 
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
 
-export function toCalendarEvent(meeting: MeetingRow): MeetingCalendarEvent {
+export function toCalendarEvent(meeting: MeetingRow): ScheduleMeetingEvent {
   return {
+    kind: 'meeting',
     id: meeting.id,
     meetingId: meeting.id,
     startAt: meeting.scheduledFor ?? meeting.createdAt,

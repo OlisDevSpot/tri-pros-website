@@ -50,7 +50,7 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
         href: ROOTS.dashboard.pipeline(key),
       })),
     },
-    { href: ROOTS.dashboard.meetings.root(), icon: CalendarIcon, label: 'Meetings', enabled: ability.can('read', 'Meeting') },
+    { href: '/dashboard/schedule', icon: CalendarIcon, label: 'Schedule', enabled: ability.can('read', 'Meeting') },
     { href: ROOTS.dashboard.proposals.root(), icon: FileTextIcon, label: 'Proposals', enabled: ability.can('read', 'Proposal') },
     { href: ROOTS.dashboard.projects.root(), icon: ImageIcon, label: 'Projects', enabled: ability.can('read', 'Project') },
   ]

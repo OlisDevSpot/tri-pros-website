@@ -1,6 +1,6 @@
 'use client'
 
-import type { MeetingCalendarEvent } from '@/features/meeting-flow/types'
+import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
 import { format, isToday, parseISO } from 'date-fns'
 import { useEffect, useMemo, useRef } from 'react'
@@ -10,19 +10,19 @@ import { cn } from '@/shared/lib/utils'
 
 const DAY_MIN_WIDTH_PX = 210
 
-interface MeetingWeekViewProps {
-  events: MeetingCalendarEvent[]
+interface ScheduleWeekViewProps {
+  events: ScheduleCalendarEvent[]
   currentDate: Date
   hiddenDays: number[]
-  renderCard: (event: MeetingCalendarEvent) => React.ReactNode
+  renderCard: (event: ScheduleCalendarEvent) => React.ReactNode
 }
 
-export function MeetingWeekView({
+export function ScheduleWeekView({
   events,
   currentDate,
   hiddenDays,
   renderCard,
-}: MeetingWeekViewProps) {
+}: ScheduleWeekViewProps) {
   const weekDays = useMemo(
     () => getWeekDays(currentDate, hiddenDays),
     [currentDate, hiddenDays],
@@ -95,7 +95,7 @@ export function MeetingWeekView({
               >
                 {sorted.length === 0 && (
                   <div className="flex flex-1 items-center justify-center min-h-48">
-                    <span className="text-[10px] text-muted-foreground/50">No meetings</span>
+                    <span className="text-[10px] text-muted-foreground/50">No events</span>
                   </div>
                 )}
                 {sorted.map(event => (

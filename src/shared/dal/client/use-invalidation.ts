@@ -68,6 +68,11 @@ export function useInvalidation() {
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
   }
 
+  function invalidateActivities() {
+    void qc.invalidateQueries(trpc.scheduleRouter.pathFilter())
+    void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
+  }
+
   function invalidateAgentSettings() {
     void qc.invalidateQueries(trpc.agentSettingsRouter.pathFilter())
   }
@@ -77,6 +82,7 @@ export function useInvalidation() {
     invalidateMeeting,
     invalidateProposal,
     invalidateProject,
+    invalidateActivities,
     invalidateAgentSettings,
   }
 }

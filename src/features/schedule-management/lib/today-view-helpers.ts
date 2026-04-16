@@ -1,5 +1,5 @@
-import type { TimeBucket } from '@/features/meeting-flow/constants/today-view-buckets'
-import type { MeetingCalendarEvent } from '@/features/meeting-flow/types'
+import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
+import type { TimeBucket } from '@/shared/constants/today-view-buckets'
 
 import { parseISO } from 'date-fns'
 
@@ -11,9 +11,9 @@ export interface SwimlaneOwner {
 
 /** Filter events whose startAt hour falls within [bucket.startHour, bucket.endHour) */
 export function getEventsForBucket(
-  events: MeetingCalendarEvent[],
+  events: ScheduleCalendarEvent[],
   bucket: TimeBucket,
-): MeetingCalendarEvent[] {
+): ScheduleCalendarEvent[] {
   return events
     .filter((event) => {
       const hour = parseISO(event.startAt).getHours()
@@ -24,9 +24,9 @@ export function getEventsForBucket(
 
 /** Group events by ownerId. Only owners present in the events array get entries. */
 export function groupEventsByOwner(
-  events: MeetingCalendarEvent[],
-): Map<string, MeetingCalendarEvent[]> {
-  const map = new Map<string, MeetingCalendarEvent[]>()
+  events: ScheduleCalendarEvent[],
+): Map<string, ScheduleCalendarEvent[]> {
+  const map = new Map<string, ScheduleCalendarEvent[]>()
 
   for (const event of events) {
     const existing = map.get(event.ownerId)
@@ -42,7 +42,7 @@ export function groupEventsByOwner(
 }
 
 /** Extract unique owners from events for swimlane headers. */
-export function getUniqueOwners(events: MeetingCalendarEvent[]): SwimlaneOwner[] {
+export function getUniqueOwners(events: ScheduleCalendarEvent[]): SwimlaneOwner[] {
   const seen = new Map<string, SwimlaneOwner>()
 
   for (const event of events) {
@@ -50,7 +50,7 @@ export function getUniqueOwners(events: MeetingCalendarEvent[]): SwimlaneOwner[]
       seen.set(event.ownerId, {
         id: event.ownerId,
         name: event.ownerName,
-        image: event.ownerImage,
+        image: event.kind === 'meeting' ? event.ownerImage : null,
       })
     }
   }
