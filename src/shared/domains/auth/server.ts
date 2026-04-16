@@ -30,6 +30,7 @@ export const auth = betterAuth({
         'email',
         'profile',
         'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/calendar',
       ],
     },
   },

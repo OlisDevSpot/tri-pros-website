@@ -29,6 +29,10 @@ export const meetings = pgTable('meetings', {
   contextJSON: jsonb('context_json').$type<MeetingContext>(),
   flowStateJSON: jsonb('flow_state_json').$type<MeetingFlowState>(),
   agentNotes: text('agent_notes'),
+  // Google Calendar sync
+  gcalEventId: text('gcal_event_id'),
+  gcalEtag: text('gcal_etag'),
+  gcalSyncedAt: timestamp('gcal_synced_at', { mode: 'string', withTimezone: true }),
   createdAt,
   updatedAt,
 })

@@ -64,6 +64,10 @@ export const account = pgTable(
     refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
     scope: text('scope'),
     password: text('password'),
+    gcalCalendarId: text('gcal_calendar_id'),
+    gcalSyncToken: text('gcal_sync_token'),
+    gcalChannelId: text('gcal_channel_id'),
+    gcalChannelExpiry: timestamp('gcal_channel_expiry', { mode: 'string', withTimezone: true }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .$onUpdate(() => /* @__PURE__ */ new Date())
