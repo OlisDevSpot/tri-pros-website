@@ -22,6 +22,9 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().optional(),
   BETTER_AUTH_SECRET: z.string(),
 
+  // Tunnel (dev — public HTTPS URL for webhooks)
+  NGROK_URL: z.string().optional(),
+
   // GOOGLE
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string(),

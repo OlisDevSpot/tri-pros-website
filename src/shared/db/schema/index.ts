@@ -4,6 +4,7 @@
 export * from './meta'
 
 // schema
+export * from './activities'
 export * from './addons'
 export * from './customers'
 export * from './auth'

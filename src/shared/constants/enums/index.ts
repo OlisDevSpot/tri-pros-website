@@ -1,3 +1,4 @@
+export * from './activities'
 export * from './customer-pipelines'
 export * from './customers'
 export * from './leads'

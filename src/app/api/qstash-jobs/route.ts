@@ -3,8 +3,10 @@ import { Receiver } from '@upstash/qstash'
 import env from '@/shared/config/server-env'
 import { createQbRecordsJob } from '@/shared/services/upstash/jobs/create-qb-records'
 import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai-summary'
+import { initialCalendarSyncJob } from '@/shared/services/upstash/jobs/initial-calendar-sync'
 import { optimizeImageJob } from '@/shared/services/upstash/jobs/optimize-image'
 import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
+import { syncCalendarsJob } from '@/shared/services/upstash/jobs/sync-calendars'
 import { syncContractDraftJob } from '@/shared/services/upstash/jobs/sync-contract-draft'
 import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 import { syncQbInvoiceJob } from '@/shared/services/upstash/jobs/sync-qb-invoice'
@@ -25,6 +27,8 @@ const jobs: Job[] = [
   syncQbInvoiceJob,
   sendViewNotificationJob,
   syncContractDraftJob,
+  syncCalendarsJob,
+  initialCalendarSyncJob,
 ]
 
 /**
@@ -56,7 +60,8 @@ export async function POST(request: Request) {
   /**
    * Decode the request body.
    */
-  const body = await request.json()
+  const text = await request.text()
+  const body = text ? JSON.parse(text) : {}
 
   /**
    * Verify the request.
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
 
   const valid = await receiver.verify({
     signature,
-    body: JSON.stringify(body),
+    body: text,
   })
 
   if (!valid) {

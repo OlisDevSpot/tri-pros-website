@@ -1,5 +1,7 @@
 import { pgEnum } from 'drizzle-orm/pg-core'
 import {
+  activityEntityTypes,
+  activityTypes,
   customerPipelines,
   leadSources,
   leadTypes,
@@ -19,6 +21,9 @@ import {
   tradeLocations,
   variableDataTypes,
 } from '@/shared/domains/construction/constants/enums'
+
+export const activityTypeEnum = pgEnum('activity_type', activityTypes)
+export const activityEntityTypeEnum = pgEnum('activity_entity_type', activityEntityTypes)
 
 export const userRoleEnum = pgEnum('user_role', userRoles)
 export const constructionTypeEnum = pgEnum('construction_type', constructionTypes)

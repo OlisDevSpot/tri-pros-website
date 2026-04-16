@@ -22,10 +22,13 @@
     "scrape-project": "tsx scripts/portfolio-scraper/index.ts",
     "import-project": "tsx scripts/portfolio-scraper/import-project.ts",
     "portfolio": "tsx scripts/portfolio-manager.ts",
+    "migrate:notes": "tsx scripts/migrate-notes-to-activities.ts",
+    "migrate:notes:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notes-to-activities.ts",
     "migrate:notion": "tsx scripts/migrate-notion-contacts.ts",
     "migrate:notion:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notion-contacts.ts",
     "meta": "tsx scripts/meta/index.ts",
-    "dispatch": "bash scripts/dispatch.sh"
+    "dispatch": "bash scripts/dispatch.sh",
+    "tunnel": "ngrok http --url=destined-emu-bold.ngrok-free.app 3000"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
