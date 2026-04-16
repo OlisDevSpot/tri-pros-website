@@ -24,6 +24,7 @@ import {
   MEETING_OUTCOME_LABELS,
 } from '@/shared/entities/meetings/constants/status-colors'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
+import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
 
@@ -99,7 +100,7 @@ function MeetingOverviewCardRoot({
 }: MeetingOverviewCardProps) {
   const { open: openModal, setModal } = useModalStore()
 
-  const handleView = useCallback(() => {
+  const openProfile = useCallback(() => {
     setModal({
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
@@ -108,8 +109,8 @@ function MeetingOverviewCardRoot({
     openModal()
   }, [customerId, meeting.id, setModal, openModal])
 
-  const { actions, DeleteConfirmDialog } = useMeetingActionConfigs({
-    onView: handleView,
+  const { actions, DeleteConfirmDialog, AssignOwnerDialog } = useMeetingActionConfigs({
+    onView: () => openProfile(),
     onAssignOwner: onAssignOwner
       ? () => onAssignOwner(meeting)
       : undefined,
@@ -126,7 +127,8 @@ function MeetingOverviewCardRoot({
   return (
     <MeetingOverviewCardContext value={value}>
       <DeleteConfirmDialog />
-      <div className={className}>
+      <AssignOwnerDialog />
+      <div className={className} onClick={openProfile}>
         {children}
       </div>
     </MeetingOverviewCardContext>
@@ -189,9 +191,9 @@ function Owner({
     return (
       <div className={cn('flex items-center gap-1.5 min-w-0', className)}>
         <HybridPopoverTooltip content={meeting.ownerName}>
-          <button type="button" className="shrink-0" onClick={e => e.stopPropagation()}>
+          <div className="shrink-0 cursor-pointer" onClick={e => e.stopPropagation()}>
             {avatar}
-          </button>
+          </div>
         </HybridPopoverTooltip>
         <span className="text-[10px] text-muted-foreground truncate">{meeting.ownerName}</span>
       </div>
@@ -200,9 +202,9 @@ function Owner({
 
   return (
     <HybridPopoverTooltip content={meeting.ownerName}>
-      <button type="button" className={cn('shrink-0', className)} onClick={e => e.stopPropagation()}>
+      <div className={cn('shrink-0 cursor-pointer', className)} onClick={e => e.stopPropagation()}>
         {avatar}
-      </button>
+      </div>
     </HybridPopoverTooltip>
   )
 }
@@ -473,11 +475,14 @@ function Proposals({
 
 function DefaultProposalRow({ proposal }: { proposal: MeetingOverviewCardProposal }) {
   return (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground py-0.5">
-      <FileTextIcon className="size-3 shrink-0" />
-      <span className="truncate">{proposal.label ?? format(new Date(proposal.createdAt), 'MMM d')}</span>
-      <span className="ml-auto text-[10px]">{proposal.status}</span>
-    </div>
+    <ProposalOverviewCard
+      proposal={proposal}
+      className="flex items-center gap-2 text-xs py-0.5"
+    >
+      <ProposalOverviewCard.StatusIcon size="sm" />
+      <ProposalOverviewCard.Label />
+      <ProposalOverviewCard.StatusBadge className="ml-auto text-[10px]" />
+    </ProposalOverviewCard>
   )
 }
 

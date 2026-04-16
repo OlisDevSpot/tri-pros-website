@@ -28,6 +28,16 @@ export interface CustomerProfileProposalView {
   source: string
 }
 
+export interface ProfileFieldConfig {
+  id: string
+  label: string
+  type: 'select' | 'multi-select' | 'number' | 'boolean' | 'textarea' | 'text'
+  options?: readonly string[]
+  placeholder?: string
+  min?: number
+  max?: number
+}
+
 export interface CustomerFormValues {
   name: string
   phone: string

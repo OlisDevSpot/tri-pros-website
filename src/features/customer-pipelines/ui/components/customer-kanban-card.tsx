@@ -7,7 +7,6 @@ import { useDraggable } from '@dnd-kit/core'
 import { format, formatDistanceToNow } from 'date-fns'
 import {
   CalendarIcon,
-  DollarSignIcon,
   FolderOpenIcon,
   GripVerticalIcon,
   MapPinIcon,
@@ -26,8 +25,8 @@ import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-
 import { getMeetingTimeLabel } from '@/shared/entities/customers/lib/get-meeting-time-label'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
+import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
 import { PROPOSAL_ROW_STYLES } from '@/shared/entities/proposals/constants/proposal-row-styles'
-import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
@@ -201,7 +200,7 @@ export function CustomerKanbanCard({
               {item.project.meetings.length > 0 && (
                 <div className="space-y-0">
                   {item.project.meetings.map((mtg, idx) => (
-                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} customerId={item.id} isFirst={idx === 0} isDragOverlay={isDragOverlay} />
+                    <KanbanProjectMeeting key={mtg.id} meeting={mtg} customerId={item.id} isFirst={idx === 0} isDragOverlay={isDragOverlay} onAssignRep={onAssignRep} />
                   ))}
                 </div>
               )}
@@ -292,7 +291,7 @@ export function CustomerKanbanCard({
 
 /* ── Sub-components ── */
 
-function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay }: { meeting: PipelineItemProjectMeeting, customerId: string, isFirst: boolean, isDragOverlay?: boolean }) {
+function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay, onAssignRep }: { meeting: PipelineItemProjectMeeting, customerId: string, isFirst: boolean, isDragOverlay?: boolean, onAssignRep?: (meetingId: string, currentRepId: string | null) => void }) {
   return (
     <>
       {!isFirst && <Separator className="my-1.5" />}
@@ -305,6 +304,9 @@ function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay }: {
           proposals: meeting.proposals as MeetingOverviewCardProposal[],
         }}
         customerId={customerId}
+        onAssignOwner={onAssignRep
+          ? () => onAssignRep(meeting.id, meeting.ownerId ?? null)
+          : undefined}
         className="space-y-1"
       >
         {/* Meeting header: avatar + actions */}
@@ -327,53 +329,34 @@ function KanbanProjectMeeting({ meeting, customerId, isFirst, isDragOverlay }: {
 }
 
 function KanbanProposalRow({ proposal }: { proposal: PipelineItemProposal }) {
-  const handleView = useCallback(() => {
-    window.open(`${ROOTS.public.proposals()}/proposal/${proposal.id}`, '_blank')
-  }, [proposal.id])
-
   const handleEdit = useCallback(() => {
     window.location.href = ROOTS.dashboard.proposals.byId(proposal.id)
   }, [proposal.id])
 
-  const { actions: proposalActions, DeleteConfirmDialog } = useProposalActionConfigs<PipelineItemProposal>({
-    onView: handleView,
-    onEdit: handleEdit,
-  })
-
   const style = PROPOSAL_ROW_STYLES[proposal.status] ?? PROPOSAL_ROW_STYLES.draft
-  const StatusIcon = style.icon
 
   return (
-    <>
-      <DeleteConfirmDialog />
-      <div
-        className={cn(
-          'group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 transition-colors min-h-8',
-          style.bg,
-        )}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <StatusIcon size={11} className={cn('shrink-0', style.iconClass)} />
-          <span className={cn('text-[11px] truncate', style.textClass)}>
-            {format(new Date(proposal.createdAt), 'MMM d')}
-          </span>
-          {proposal.value != null && proposal.value > 0
-            ? (
-                <span className={cn('text-xs font-semibold flex items-center gap-0.5 ml-auto shrink-0', style.valueClass)}>
-                  <DollarSignIcon size={12} />
-                  {formatAsDollars(proposal.value)}
-                </span>
-              )
-            : <span className="text-[11px] text-muted-foreground italic ml-auto shrink-0">No price</span>}
-        </div>
-        <EntityActionMenu
-          entity={proposal}
-          actions={proposalActions}
-          mode="compact"
-          className="opacity-100 sm:opacity-0 sm:group-hover/proposal:opacity-100 transition-opacity"
+    <ProposalOverviewCard
+      proposal={proposal}
+      onEdit={handleEdit}
+      className={cn(
+        'group/proposal flex items-center justify-between gap-2 rounded-md px-1.5 py-1.5 transition-colors min-h-8',
+        style.bg,
+      )}
+    >
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <ProposalOverviewCard.StatusIcon size="sm" />
+        <ProposalOverviewCard.Label className="text-[11px]" />
+        <ProposalOverviewCard.Value
+          showIcon
+          className="text-xs ml-auto"
+          fallback={<span className="text-[11px] text-muted-foreground italic ml-auto shrink-0">No price</span>}
         />
       </div>
-    </>
+      <ProposalOverviewCard.Actions
+        mode="compact"
+        className="opacity-100 sm:opacity-0 sm:group-hover/proposal:opacity-100 transition-opacity"
+      />
+    </ProposalOverviewCard>
   )
 }
