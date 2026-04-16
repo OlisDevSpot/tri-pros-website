@@ -416,7 +416,12 @@
       "Bash(sed 's|src/features/meeting-flow/||')",
       "Bash(ls -d src/features/customer-pipelines/*/)",
       "Bash(sed 's|src/features/customer-pipelines/||')",
-      "Bash(ls -d src/shared/entities/customers/*/)"
+      "Bash(ls -d src/shared/entities/customers/*/)",
+      "Bash(ls /home/olis-solutions/olis-v3/nextjs/tri-pros-website/next.config.*)",
+      "Bash(ngrok version *)",
+      "Bash(curl -s https://ngrok-agent.s3.amazonaws.com/ngrok-v3-stable-linux-amd64.tgz -o /tmp/ngrok.tgz)",
+      "Bash(curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok-v3-stable-linux-amd64.tgz -L -o /tmp/ngrok.tgz)",
+      "Bash(chmod +x /home/olis-solutions/olis-v3/nextjs/tri-pros-website/scripts/tunnel.sh)"
     ],
     "additionalDirectories": [
       "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/src/shared/components/data-table/ui",

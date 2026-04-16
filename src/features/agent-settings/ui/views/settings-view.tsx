@@ -7,6 +7,7 @@ import { CompanyInfoSection } from '@/features/agent-settings/ui/components/comp
 import { CustomerBrandSection } from '@/features/agent-settings/ui/components/customer-brand-section'
 import { HeadshotUpload } from '@/features/agent-settings/ui/components/headshot-upload'
 import { IdentityContactSection } from '@/features/agent-settings/ui/components/identity-contact-section'
+import { IntegrationsSection } from '@/features/agent-settings/ui/components/integrations-section'
 import { ProfileHeaderCard } from '@/features/agent-settings/ui/components/profile-header-card'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useTRPC } from '@/trpc/helpers'
@@ -36,6 +37,7 @@ export function SettingsView() {
           <IdentityContactSection profile={profile} />
           <AppSettingsSection />
           <CustomerBrandSection profile={profile} />
+          <IntegrationsSection />
           <CompanyInfoSection />
         </div>
       </div>

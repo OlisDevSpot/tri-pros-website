@@ -35,6 +35,7 @@ const APP_ROOTS = {
       new: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/projects/new', options),
       byId: (id: string, options?: Parameters<typeof generateUrl>[1]) => generateUrl(`/dashboard/projects/${id}`, options),
     },
+    schedule: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/schedule', options),
     settings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/settings', options),
     intake: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/intake', options),
     team: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/team', options),

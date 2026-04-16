@@ -1,16 +1,16 @@
 'use client'
 
-import type { MeetingCalendarEvent } from '@/features/meeting-flow/types'
+import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
 import { isSameDay, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import { TODAY_VIEW_BUCKETS } from '@/features/meeting-flow/constants/today-view-buckets'
-import { getEventsForBucket, getUniqueOwners, groupEventsByOwner } from '@/features/meeting-flow/lib/today-view-helpers'
+import { getEventsForBucket, getUniqueOwners, groupEventsByOwner } from '@/features/schedule-management/lib/today-view-helpers'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
+import { TODAY_VIEW_BUCKETS } from '@/shared/constants/today-view-buckets'
 import { cn } from '@/shared/lib/utils'
 
 const BUCKET_COUNT = TODAY_VIEW_BUCKETS.length
@@ -24,17 +24,17 @@ function makeGridCols(labelWidth: number): string {
   return `${labelWidth}px repeat(${BUCKET_COUNT}, minmax(${BUCKET_COL_MIN_WIDTH}px, 1fr))`
 }
 
-interface MeetingTodayViewProps {
-  events: MeetingCalendarEvent[]
+interface ScheduleTodayViewProps {
+  events: ScheduleCalendarEvent[]
   currentDate: Date
-  renderCard: (event: MeetingCalendarEvent) => React.ReactNode
+  renderCard: (event: ScheduleCalendarEvent) => React.ReactNode
 }
 
-export function MeetingTodayView({
+export function ScheduleTodayView({
   events,
   currentDate,
   renderCard,
-}: MeetingTodayViewProps) {
+}: ScheduleTodayViewProps) {
   const todayEvents = useMemo(
     () => events.filter(e => isSameDay(parseISO(e.startAt), currentDate)),
     [events, currentDate],
@@ -74,7 +74,7 @@ export function MeetingTodayView({
   if (owners.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
-        <span className="text-sm text-muted-foreground">No meetings scheduled for this day</span>
+        <span className="text-sm text-muted-foreground">No events scheduled for this day</span>
       </div>
     )
   }
@@ -151,8 +151,8 @@ export function MeetingTodayView({
 
 interface SwimlaneRowProps {
   owner: { id: string, name: string | null, image: string | null }
-  ownerEvents: MeetingCalendarEvent[]
-  renderCard: (event: MeetingCalendarEvent) => React.ReactNode
+  ownerEvents: ScheduleCalendarEvent[]
+  renderCard: (event: ScheduleCalendarEvent) => React.ReactNode
   collapsed: boolean
   gridCols: string
 }
