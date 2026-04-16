@@ -1,6 +1,6 @@
 'use client'
 
-import type { ContextPanelFieldConfig } from '@/features/meeting-flow/ui/components/context-panel-field'
+import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
 import { ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
 import { ContextPanelField } from '@/features/meeting-flow/ui/components/context-panel-field'
@@ -10,7 +10,7 @@ import { cn } from '@/shared/lib/utils'
 
 interface ContextPanelSectionProps {
   defaultOpen?: boolean
-  fields: ContextPanelFieldConfig[]
+  fields: ProfileFieldConfig[]
   title: string
   values: Record<string, unknown>
   onFieldChange: (id: string, value: unknown) => void

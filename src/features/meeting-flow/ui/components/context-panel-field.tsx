@@ -1,5 +1,7 @@
 'use client'
 
+import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
+
 import { useCallback, useRef, useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Checkbox } from '@/shared/components/ui/checkbox'
@@ -9,18 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/shared/components/ui/switch'
 import { Textarea } from '@/shared/components/ui/textarea'
 
-export interface ContextPanelFieldConfig {
-  id: string
-  label: string
-  type: 'select' | 'multi-select' | 'number' | 'boolean' | 'textarea' | 'text'
-  options?: readonly string[]
-  placeholder?: string
-  min?: number
-  max?: number
-}
-
 interface ContextPanelFieldProps {
-  config: ContextPanelFieldConfig
+  config: ProfileFieldConfig
   value: unknown
   onChange: (id: string, value: unknown) => void
 }

@@ -2,16 +2,9 @@
 
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 
-import {
-  CUSTOMER_PROFILE_ENUM_OPTIONS,
-  FINANCIAL_PROFILE_ENUM_OPTIONS,
-  PROPERTY_PROFILE_ENUM_OPTIONS,
-} from '@/shared/entities/customers/constants/profile-field-enums'
-import {
-  customerProfileLabels,
-  financialProfileLabels,
-  propertyProfileLabels,
-} from '@/shared/entities/customers/constants/profile-field-labels'
+import { CUSTOMER_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-profile-fields'
+import { FINANCIAL_PROFILE_FIELDS } from '@/shared/entities/customers/constants/financial-profile-fields'
+import { PROPERTY_PROFILE_FIELDS } from '@/shared/entities/customers/constants/property-profile-fields'
 import { ProfileCard } from './profile-card'
 
 interface Props {
@@ -33,33 +26,30 @@ export function CustomerProfileDetails({
     <div className="space-y-4">
       <ProfileCard
         title="Customer Profile"
+        fields={CUSTOMER_PROFILE_FIELDS}
         data={customerProfileJSON}
-        labels={customerProfileLabels}
         editMode={isEditing}
         canEditField={() => canEditProfiles}
         formPrefix="customerProfileJSON"
         control={form.control}
-        enumOptions={CUSTOMER_PROFILE_ENUM_OPTIONS}
       />
       <ProfileCard
         title="Property Profile"
+        fields={PROPERTY_PROFILE_FIELDS}
         data={propertyProfileJSON}
-        labels={propertyProfileLabels}
         editMode={isEditing}
         canEditField={() => canEditProfiles}
         formPrefix="propertyProfileJSON"
         control={form.control}
-        enumOptions={PROPERTY_PROFILE_ENUM_OPTIONS}
       />
       <ProfileCard
         title="Financial Profile"
+        fields={FINANCIAL_PROFILE_FIELDS}
         data={financialProfileJSON}
-        labels={financialProfileLabels}
         editMode={isEditing}
         canEditField={() => canEditProfiles}
         formPrefix="financialProfileJSON"
         control={form.control}
-        enumOptions={FINANCIAL_PROFILE_ENUM_OPTIONS}
       />
     </div>
   )

@@ -1,27 +1,49 @@
 'use client'
 
 import type { Customer, Meeting } from '@/shared/db/schema'
+import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
 import { useCallback } from 'react'
 import { ContextPanelSection } from '@/features/meeting-flow/ui/components/context-panel-section'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet'
 import {
   budgetComforts,
-  creditScoreRanges,
-  decisionTimelines,
   demeanors,
-  householdTypes,
-  outcomePriorities,
-  priorContractorExperiences,
-  sellPlans,
   spouseDynamics,
-  triggerEvents,
-  yearBuiltRanges,
-  yearsInHomeRanges,
 } from '@/shared/constants/enums/customers'
 import {
   meetingDecisionMakersPresentOptions,
   meetingOutcomes,
 } from '@/shared/constants/enums/meetings'
+import { CUSTOMER_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-profile-fields'
+import { FINANCIAL_PROFILE_FIELDS } from '@/shared/entities/customers/constants/financial-profile-fields'
+import { PROPERTY_PROFILE_FIELDS } from '@/shared/entities/customers/constants/property-profile-fields'
+
+// Meeting-specific field definitions (not customer profile fields)
+const SITUATIONAL_FIELDS: ProfileFieldConfig[] = [
+  {
+    id: 'decisionMakersPresent',
+    label: 'Decision Makers Present',
+    options: meetingDecisionMakersPresentOptions,
+    type: 'select',
+  },
+  {
+    id: 'agentNotes',
+    label: 'Agent Notes',
+    placeholder: 'Internal notes...',
+    type: 'textarea',
+  },
+]
+
+const OBSERVATION_FIELDS: ProfileFieldConfig[] = [
+  { id: 'observedUrgency', label: 'Observed Urgency (1-10)', type: 'number', min: 1, max: 10 },
+  { id: 'observedBudgetComfort', label: 'Budget Comfort', type: 'select', options: budgetComforts },
+  { id: 'spouseDynamic', label: 'Spouse Dynamic', type: 'select', options: spouseDynamics },
+  { id: 'customerDemeanor', label: 'Customer Demeanor', type: 'select', options: demeanors },
+]
+
+const OUTCOME_FIELDS: ProfileFieldConfig[] = [
+  { id: 'meetingOutcome', label: 'Meeting Outcome', type: 'select', options: meetingOutcomes },
+]
 
 interface ContextPanelProps {
   customer: Customer | null
@@ -135,20 +157,7 @@ export function ContextPanel({
         <div className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
           {/* Section 1 — Situational */}
           <ContextPanelSection
-            fields={[
-              {
-                id: 'decisionMakersPresent',
-                label: 'Decision Makers Present',
-                options: meetingDecisionMakersPresentOptions,
-                type: 'select',
-              },
-              {
-                id: 'agentNotes',
-                label: 'Agent Notes',
-                placeholder: 'Internal notes…',
-                type: 'textarea',
-              },
-            ]}
+            fields={SITUATIONAL_FIELDS}
             title="Situational"
             values={situationalValues}
             onFieldChange={(id, value) => {
@@ -164,64 +173,7 @@ export function ContextPanel({
           {/* Section 2 — Customer Profile */}
           <ContextPanelSection
             defaultOpen={false}
-            fields={[
-              {
-                id: 'triggerEvent',
-                label: 'Trigger Event',
-                options: triggerEvents,
-                type: 'select',
-              },
-              {
-                id: 'outcomePriority',
-                label: 'Outcome Priority',
-                options: outcomePriorities,
-                type: 'select',
-              },
-              {
-                id: 'householdType',
-                label: 'Household Type',
-                options: householdTypes,
-                type: 'select',
-              },
-              {
-                id: 'timeInHome',
-                label: 'Time in Home',
-                options: yearsInHomeRanges,
-                type: 'select',
-              },
-              {
-                id: 'sellPlan',
-                label: 'Sell Plan',
-                options: sellPlans,
-                type: 'select',
-              },
-              {
-                id: 'priorContractorExperience',
-                label: 'Prior Contractor Experience',
-                options: priorContractorExperiences,
-                type: 'select',
-              },
-              {
-                id: 'decisionTimeline',
-                label: 'Decision Timeline',
-                options: decisionTimelines,
-                type: 'select',
-              },
-              {
-                id: 'projectNecessityRating',
-                label: 'Project Necessity (1–10)',
-                max: 10,
-                min: 1,
-                type: 'number',
-              },
-              {
-                id: 'constructionOutlookFavorabilityRating',
-                label: 'Construction Outlook (1–10)',
-                max: 10,
-                min: 1,
-                type: 'number',
-              },
-            ]}
+            fields={CUSTOMER_PROFILE_FIELDS}
             title="Customer Profile"
             values={customerProfile}
             onFieldChange={handleCustomerProfileChange}
@@ -230,19 +182,7 @@ export function ContextPanel({
           {/* Section 3 — Property */}
           <ContextPanelSection
             defaultOpen={false}
-            fields={[
-              {
-                id: 'yearBuilt',
-                label: 'Year Built',
-                options: yearBuiltRanges,
-                type: 'select',
-              },
-              {
-                id: 'hoa',
-                label: 'HOA',
-                type: 'boolean',
-              },
-            ]}
+            fields={PROPERTY_PROFILE_FIELDS}
             title="Property"
             values={propertyProfile}
             onFieldChange={handlePropertyChange}
@@ -251,20 +191,7 @@ export function ContextPanel({
           {/* Section 4 — Financial */}
           <ContextPanelSection
             defaultOpen={false}
-            fields={[
-              {
-                id: 'creditScore',
-                label: 'Credit Score',
-                options: creditScoreRanges,
-                type: 'select',
-              },
-              {
-                id: 'numQuotesReceived',
-                label: '# Quotes Received',
-                min: 0,
-                type: 'number',
-              },
-            ]}
+            fields={FINANCIAL_PROFILE_FIELDS}
             title="Financial"
             values={financialProfile}
             onFieldChange={handleFinancialChange}
@@ -273,33 +200,7 @@ export function ContextPanel({
           {/* Section 5 — Agent Observations */}
           <ContextPanelSection
             defaultOpen={false}
-            fields={[
-              {
-                id: 'observedUrgency',
-                label: 'Observed Urgency (1–10)',
-                max: 10,
-                min: 1,
-                type: 'number',
-              },
-              {
-                id: 'observedBudgetComfort',
-                label: 'Budget Comfort',
-                options: budgetComforts,
-                type: 'select',
-              },
-              {
-                id: 'spouseDynamic',
-                label: 'Spouse Dynamic',
-                options: spouseDynamics,
-                type: 'select',
-              },
-              {
-                id: 'customerDemeanor',
-                label: 'Customer Demeanor',
-                options: demeanors,
-                type: 'select',
-              },
-            ]}
+            fields={OBSERVATION_FIELDS}
             title="Agent Observations"
             values={observationValues}
             onFieldChange={handleObservationsChange}
@@ -308,14 +209,7 @@ export function ContextPanel({
           {/* Section 6 — Outcome */}
           <ContextPanelSection
             defaultOpen={false}
-            fields={[
-              {
-                id: 'meetingOutcome',
-                label: 'Meeting Outcome',
-                options: meetingOutcomes,
-                type: 'select',
-              },
-            ]}
+            fields={OUTCOME_FIELDS}
             title="Outcome"
             values={outcomeValues}
             onFieldChange={handleOutcomeChange}

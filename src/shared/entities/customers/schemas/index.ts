@@ -1,6 +1,7 @@
 import z from 'zod'
 import {
   creditScoreRanges,
+  customerAgeGroups,
   decisionTimelines,
   householdTypes,
   outcomePriorities,
@@ -37,12 +38,19 @@ export const customerProfileSchema = z.object({
   sellPlan: z.enum(sellPlans),
   decisionTimeline: z.enum(decisionTimelines),
   projectNecessityRating: z.number().int().min(1).max(10),
+  ageGroup: z.enum(customerAgeGroups),
   age: z.number().int().min(18).max(120),
 }).partial()
 
 export const propertyProfileSchema = z.object({
   hoa: z.boolean().default(false).optional(),
   yearBuilt: z.enum(yearBuiltRanges),
+  roofType: z.enum(roofTypes),
+  foundationType: z.enum(foundationTypes),
+  hvacType: z.enum(hvacTypes),
+  hvacComponents: z.enum(hvacComponents),
+  windowsType: z.enum(windowsTypes),
+  insulationLevel: z.enum(insulationLevels),
 }).partial()
 
 export const financialProfileSchema = z.object({
