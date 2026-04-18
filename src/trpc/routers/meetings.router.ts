@@ -289,9 +289,31 @@ export const meetingsRouter = createTRPCRouter({
 
   // Returns all participants for a meeting with user info (name, email, image).
   // Used by the inline ParticipantPicker and ManageParticipantsModal.
+  // Super-admins (manage all) can read any meeting; agents can only read meetings
+  // they are a participant of.
   getParticipants: agentProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+
+      if (!isOmni) {
+        const [membership] = await db
+          .select({ id: meetingParticipants.id })
+          .from(meetingParticipants)
+          .where(and(
+            eq(meetingParticipants.meetingId, input.meetingId),
+            eq(meetingParticipants.userId, ctx.session.user.id),
+          ))
+          .limit(1)
+
+        if (!membership) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You do not have access to this meeting',
+          })
+        }
+      }
+
       return getParticipantsForMeeting(input.meetingId)
     }),
 
