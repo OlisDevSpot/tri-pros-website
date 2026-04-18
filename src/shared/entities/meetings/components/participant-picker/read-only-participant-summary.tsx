@@ -1,6 +1,9 @@
 'use client'
 
+import type { InitialParticipantSummary } from './types'
+
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { buttonVariants } from '@/shared/components/ui/button'
@@ -9,9 +12,19 @@ import { getInitials } from '@/shared/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
+import { buildPlaceholderParticipants } from './build-placeholder-participants'
+
 interface ReadOnlyParticipantSummaryProps {
   meetingId: string
   variant?: 'default' | 'compact'
+  /**
+   * Optional owner / co-owner snapshot supplied by the parent (e.g. table
+   * rows). When provided, used as `initialData` so this component renders
+   * instantly without per-row `getParticipants` fetches. Helpers aren't
+   * displayed here, so `initialData` (no background refetch) is safe.
+   */
+  initialOwner?: InitialParticipantSummary | null
+  initialCoOwner?: InitialParticipantSummary | null
 }
 
 /*
@@ -20,19 +33,26 @@ interface ReadOnlyParticipantSummaryProps {
  * trigger's visual structure (avatar group + summary text) so the surrounding
  * layout doesn't shift, but with no chevron / popover / hover affordance.
  *
- * Fetches participants via the same `getParticipants` query the picker uses
- * (option A — simple parallel fetch). If/when the picker is refactored to
- * accept participants as props, both call sites can lift the fetch out.
+ * Accepts optional `initialOwner` / `initialCoOwner` to seed the React Query
+ * cache, eliminating per-row fetches in tables.
  */
 export function ReadOnlyParticipantSummary({
   meetingId,
   variant = 'default',
+  initialOwner,
+  initialCoOwner,
 }: ReadOnlyParticipantSummaryProps) {
   const trpc = useTRPC()
 
-  const participantsQuery = useQuery(
-    trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
+  const initialData = useMemo(
+    () => buildPlaceholderParticipants(initialOwner, initialCoOwner),
+    [initialOwner, initialCoOwner],
   )
+
+  const participantsQuery = useQuery({
+    ...trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
+    initialData: initialData ?? undefined,
+  })
 
   const isCompact = variant === 'compact'
 

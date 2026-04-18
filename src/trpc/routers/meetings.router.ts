@@ -1,6 +1,7 @@
 import type { MediaFile } from '@/shared/db/schema'
 import { TRPCError } from '@trpc/server'
 import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import z from 'zod'
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
@@ -26,11 +27,24 @@ import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
-  // Get all meetings — super-admin sees all, agents see their own
+  // Get all meetings — super-admin sees all, agents see their own.
+  //
+  // Owner + co-owner are resolved via the meetingParticipants junction table
+  // (single source of truth) so each row carries the data needed by the
+  // ParticipantPicker / ReadOnlyParticipantSummary as initial cache. This
+  // eliminates the per-row getParticipants fetch on table mount.
   getAll: agentProcedure
     .query(async ({ ctx }) => {
       const isOmni = ctx.ability.can('manage', 'all')
-      return db
+
+      // Aliased joins so we can pull both owner and co_owner participants
+      // from the same junction table in a single round-trip.
+      const ownerParticipant = alias(meetingParticipants, 'owner_participant')
+      const coOwnerParticipant = alias(meetingParticipants, 'co_owner_participant')
+      const ownerUser = alias(user, 'owner_user')
+      const coOwnerUser = alias(user, 'co_owner_user')
+
+      const rows = await db
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
@@ -39,8 +53,22 @@ export const meetingsRouter = createTRPCRouter({
           customerCity: customers.city,
           customerState: customers.state,
           customerZip: customers.zip,
+          // Legacy fields — still derived from meetings.ownerId for backward
+          // compatibility with consumers that read ownerName/ownerImage directly.
           ownerName: user.name,
           ownerImage: user.image,
+          // Participant-driven owner / co-owner — used by ParticipantPicker as
+          // initial data so the picker doesn't need to refetch per row.
+          ownerUserId: ownerUser.id,
+          ownerParticipantUserName: ownerUser.name,
+          ownerParticipantUserEmail: ownerUser.email,
+          ownerParticipantUserImage: ownerUser.image,
+          ownerParticipantId: ownerParticipant.id,
+          coOwnerUserId: coOwnerUser.id,
+          coOwnerUserName: coOwnerUser.name,
+          coOwnerUserEmail: coOwnerUser.email,
+          coOwnerUserImage: coOwnerUser.image,
+          coOwnerParticipantId: coOwnerParticipant.id,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
           hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
           hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
@@ -48,8 +76,62 @@ export const meetingsRouter = createTRPCRouter({
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
         .leftJoin(user, eq(user.id, meetings.ownerId))
+        .leftJoin(
+          ownerParticipant,
+          and(
+            eq(ownerParticipant.meetingId, meetings.id),
+            eq(ownerParticipant.role, 'owner'),
+          ),
+        )
+        .leftJoin(ownerUser, eq(ownerUser.id, ownerParticipant.userId))
+        .leftJoin(
+          coOwnerParticipant,
+          and(
+            eq(coOwnerParticipant.meetingId, meetings.id),
+            eq(coOwnerParticipant.role, 'co_owner'),
+          ),
+        )
+        .leftJoin(coOwnerUser, eq(coOwnerUser.id, coOwnerParticipant.userId))
         .where(isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id))
         .orderBy(desc(meetings.createdAt))
+
+      // Reshape into nested owner/coOwner objects (or null) so consumers can
+      // pass them as `initialOwner` / `initialCoOwner` props to the picker.
+      return rows.map(({
+        ownerParticipantId,
+        ownerUserId,
+        ownerParticipantUserName,
+        ownerParticipantUserEmail,
+        ownerParticipantUserImage,
+        coOwnerParticipantId,
+        coOwnerUserId,
+        coOwnerUserName,
+        coOwnerUserEmail,
+        coOwnerUserImage,
+        ...rest
+      }) => ({
+        ...rest,
+        owner: ownerParticipantId && ownerUserId
+          ? {
+              id: ownerParticipantId,
+              userId: ownerUserId,
+              role: 'owner' as const,
+              userName: ownerParticipantUserName,
+              userEmail: ownerParticipantUserEmail,
+              userImage: ownerParticipantUserImage,
+            }
+          : null,
+        coOwner: coOwnerParticipantId && coOwnerUserId
+          ? {
+              id: coOwnerParticipantId,
+              userId: coOwnerUserId,
+              role: 'co_owner' as const,
+              userName: coOwnerUserName,
+              userEmail: coOwnerUserEmail,
+              userImage: coOwnerUserImage,
+            }
+          : null,
+      }))
     }),
 
   // Create a new meeting record (called when an agent starts a meeting)

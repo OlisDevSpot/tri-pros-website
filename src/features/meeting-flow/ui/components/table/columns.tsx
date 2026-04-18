@@ -90,16 +90,32 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
       header: 'Rep',
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
+        // Owner + co-owner come from the table query (joined via the
+        // meetingParticipants junction). Passing them as initial data lets
+        // the picker / read-only summary skip the per-row getParticipants
+        // fetch on table mount.
+        const initialOwner = row.original.owner
+        const initialCoOwner = row.original.coOwner
+
         if (!meta?.canAssignMeeting) {
           // Read-only fallback: no popover means no need for stopPropagation —
           // row click should still navigate as normal.
-          return <ReadOnlyParticipantSummary meetingId={row.original.id} variant="compact" />
+          return (
+            <ReadOnlyParticipantSummary
+              meetingId={row.original.id}
+              variant="compact"
+              initialOwner={initialOwner}
+              initialCoOwner={initialCoOwner}
+            />
+          )
         }
         return (
           <div onClick={e => e.stopPropagation()}>
             <ParticipantPicker
               meetingId={row.original.id}
               variant="compact"
+              initialOwner={initialOwner}
+              initialCoOwner={initialCoOwner}
               onManageClick={() => meta.onAssignRep(row.original.id, row.original.ownerId)}
             />
           </div>
