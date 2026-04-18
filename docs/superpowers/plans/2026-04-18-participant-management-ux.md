@@ -156,7 +156,7 @@ export function ParticipantRoleIcon({ isOwner, className }: ParticipantRoleIconP
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex size-7 items-center justify-center rounded-md text-muted-foreground/30 transition-colors',
+        'inline-flex size-7 items-center justify-center rounded-md text-muted-foreground/30',
         'group-hover:text-primary group-hover:bg-accent group-focus-visible:text-primary group-focus-visible:bg-accent',
         'motion-safe:transition-colors',
         className,
@@ -318,7 +318,7 @@ export function CurrentParticipantRow({
               onClick={onRemove}
               disabled={isPending}
               aria-label={`Remove ${name} from this meeting`}
-              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
             >
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
             </button>
@@ -429,7 +429,7 @@ export function AvailableParticipantRow({
         <div className="truncate text-xs text-muted-foreground">{email}</div>
       </div>
 
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground opacity-60 transition-opacity group-hover:opacity-100 group-data-[selected=true]:opacity-100 motion-safe:transition-opacity">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground opacity-60 group-hover:opacity-100 group-data-[selected=true]:opacity-100 motion-safe:transition-opacity">
         {isPending
           ? <Loader2 className="size-3 animate-spin" />
           : (
