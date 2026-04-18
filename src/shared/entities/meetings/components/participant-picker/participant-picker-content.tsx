@@ -55,7 +55,7 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
       {/* Current section — static layout, not part of the searchable list */}
       <div className="border-b border-border bg-muted/40 p-2">
         <div className="flex items-center justify-between px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
-          <span>{`Current · ${participants.filter(p => p.role !== 'helper').length} of 2 max`}</span>
+          <span>{`Current · ${(owner ? 1 : 0) + (coOwner ? 1 : 0)} of 2 max`}</span>
         </div>
         <div className="space-y-1">
           {owner && (
@@ -91,7 +91,7 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
         </div>
         {owner && coOwner == null && (
           <p className="mt-1.5 flex items-center gap-1 px-1 text-[11px] text-muted-foreground">
-            <Lock className="size-3" />
+            <Lock aria-hidden="true" className="size-3" />
             Owner can only be removed once a co-owner is added.
           </p>
         )}
@@ -107,26 +107,38 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
 
       {/* Results */}
       <CommandList>
-        <CommandEmpty>
-          No team members match
-          {' '}
-          <span className="font-medium">{`"${search}"`}</span>
-          .
-        </CommandEmpty>
-        <CommandGroup>
-          {available.map(u => (
-            <AvailableParticipantRow
-              key={u.id}
-              name={u.name ?? u.email ?? 'Unknown'}
-              email={u.email}
-              image={u.image}
-              inferredRole={owner ? 'co_owner' : 'owner'}
-              disabled={slotsFull}
-              isPending={pendingUserId === u.id}
-              onAdd={() => add(u.id, owner ? 'co_owner' : 'owner')}
-            />
-          ))}
-        </CommandGroup>
+        {internalUsersQuery.error
+          ? (
+              <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                You don't have permission to add participants here.
+                {' '}
+                Use Manage Participants for full controls.
+              </p>
+            )
+          : (
+              <>
+                <CommandEmpty>
+                  No team members match
+                  {' '}
+                  <span className="font-medium">{`"${search}"`}</span>
+                  .
+                </CommandEmpty>
+                <CommandGroup>
+                  {available.map(u => (
+                    <AvailableParticipantRow
+                      key={u.id}
+                      name={u.name ?? u.email ?? 'Unknown'}
+                      email={u.email}
+                      image={u.image}
+                      inferredRole={owner ? 'co_owner' : 'owner'}
+                      disabled={slotsFull}
+                      isPending={pendingUserId === u.id}
+                      onAdd={() => add(u.id, owner ? 'co_owner' : 'owner')}
+                    />
+                  ))}
+                </CommandGroup>
+              </>
+            )}
       </CommandList>
 
       {/* Footer */}
