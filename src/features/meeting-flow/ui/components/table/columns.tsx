@@ -11,7 +11,7 @@ import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-a
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
-import { ParticipantPicker } from '@/shared/entities/meetings/components/participant-picker'
+import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities/meetings/components/participant-picker'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 
@@ -22,6 +22,7 @@ export interface MeetingTableMeta {
   onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => void
   onUpdateScheduledFor: (meetingId: string, date: Date) => void
   onAssignRep: (meetingId: string, currentOwnerId: string) => void
+  canAssignMeeting: boolean
 }
 
 export function getColumns(): ColumnDef<MeetingRow>[] {
@@ -89,12 +90,17 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
       header: 'Rep',
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
+        if (!meta?.canAssignMeeting) {
+          // Read-only fallback: no popover means no need for stopPropagation —
+          // row click should still navigate as normal.
+          return <ReadOnlyParticipantSummary meetingId={row.original.id} variant="compact" />
+        }
         return (
           <div onClick={e => e.stopPropagation()}>
             <ParticipantPicker
               meetingId={row.original.id}
               variant="compact"
-              onManageClick={() => meta?.onAssignRep(row.original.id, row.original.ownerId)}
+              onManageClick={() => meta.onAssignRep(row.original.id, row.original.ownerId)}
             />
           </div>
         )

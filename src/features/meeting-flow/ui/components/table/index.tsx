@@ -10,6 +10,7 @@ import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components
 import { meetingTableFilters } from '@/features/meeting-flow/constants/table-filter-config'
 import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-class'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataChange }: Props) {
+  const ability = useAbility()
   const { updateOutcome, updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
 
@@ -66,6 +68,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
     onAssignRep: (meetingId: string, _currentOwnerId: string) => {
       setAssignRepDialog({ meetingId })
     },
+    canAssignMeeting: ability.can('assign', 'Meeting'),
   }
 
   return (
