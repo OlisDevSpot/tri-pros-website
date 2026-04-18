@@ -4,6 +4,7 @@ import { Loader2, Plus } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { CommandItem } from '@/shared/components/ui/command'
+import { getInitials } from '@/shared/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 
 interface AvailableParticipantRowProps {
@@ -16,15 +17,6 @@ interface AvailableParticipantRowProps {
   disabled: boolean
   isPending: boolean
   onAdd: () => void
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(part => part[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 export function AvailableParticipantRow({

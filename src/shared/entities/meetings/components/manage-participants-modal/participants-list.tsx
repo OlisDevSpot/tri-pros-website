@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { PARTICIPANT_ROLE_SORT_ORDER } from '@/shared/entities/meetings/constants/participants'
+import { getInitials } from '@/shared/lib/get-initials'
 
 interface ParticipantRow {
   email: string | null
@@ -27,15 +28,6 @@ interface ParticipantsListProps {
   rows: ParticipantRow[]
   onRemove: (userId: string) => void
   onRoleChange: (userId: string, newRole: 'co_owner' | 'helper' | 'owner') => void
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(p => p[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 export function ParticipantsList({

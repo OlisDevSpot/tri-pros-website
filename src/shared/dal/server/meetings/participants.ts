@@ -19,6 +19,24 @@ export function userParticipatesInMeeting(userId: string, meetingIdColumn: SQL |
 
 // ── Queries ─────────────────────────────────────────────────────────────────
 
+/**
+ * Standalone async check: is this user a participant in this meeting (any role)?
+ * Use this when you need a boolean rather than a SQL clause to embed.
+ * For embedding in WHERE clauses, use {@link userParticipatesInMeeting} instead.
+ */
+export async function isParticipant(meetingId: string, userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: meetingParticipants.id })
+    .from(meetingParticipants)
+    .where(and(
+      eq(meetingParticipants.meetingId, meetingId),
+      eq(meetingParticipants.userId, userId),
+    ))
+    .limit(1)
+
+  return row !== undefined
+}
+
 export async function getParticipantsForMeeting(meetingId: string) {
   return db
     .select({

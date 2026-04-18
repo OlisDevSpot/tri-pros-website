@@ -4,6 +4,7 @@ import { Loader2, X } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
+import { getInitials } from '@/shared/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 
 import { ParticipantRoleIcon } from './participant-role-icon'
@@ -23,15 +24,6 @@ interface CurrentParticipantRowProps {
   onPromote: () => void
   /** Click handler for the remove (✕) button. */
   onRemove: () => void
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(part => part[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 export function CurrentParticipantRow({

@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { getInitials } from '@/shared/lib/get-initials'
 
 interface AddParticipantRowProps {
   coOwnerSlotFilled: boolean
@@ -21,15 +22,6 @@ interface AddParticipantRowProps {
   /** Disable role options that have already been filled. */
   ownerSlotFilled: boolean
   onAdd: (role: 'co_owner' | 'helper' | 'owner') => void
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(p => p[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 export function AddParticipantRow({

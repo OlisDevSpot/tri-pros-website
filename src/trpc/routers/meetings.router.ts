@@ -10,6 +10,7 @@ import {
   countParticipantsByRole,
   getParticipantByRole,
   getParticipantsForMeeting,
+  isParticipant,
   removeParticipant,
   updateParticipantRole,
   userParticipatesInMeeting,
@@ -296,22 +297,11 @@ export const meetingsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const isOmni = ctx.ability.can('manage', 'all')
 
-      if (!isOmni) {
-        const [membership] = await db
-          .select({ id: meetingParticipants.id })
-          .from(meetingParticipants)
-          .where(and(
-            eq(meetingParticipants.meetingId, input.meetingId),
-            eq(meetingParticipants.userId, ctx.session.user.id),
-          ))
-          .limit(1)
-
-        if (!membership) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'You do not have access to this meeting',
-          })
-        }
+      if (!isOmni && !(await isParticipant(input.meetingId, ctx.session.user.id))) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have access to this meeting',
+        })
       }
 
       return getParticipantsForMeeting(input.meetingId)

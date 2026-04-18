@@ -4,6 +4,7 @@ import { ChevronDown } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
+import { getInitials } from '@/shared/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 
 interface ParticipantSummary {
@@ -18,15 +19,6 @@ interface ParticipantPickerTriggerProps {
   coOwner: ParticipantSummary | null
   variant?: 'default' | 'compact'
   isLoading?: boolean
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(part => part[0] ?? '')
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
 }
 
 export function ParticipantPickerTrigger({
