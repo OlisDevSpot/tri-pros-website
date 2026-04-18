@@ -59,6 +59,9 @@ export function ManageParticipantsModal({
       onMutate: ({ userId }) => {
         setPendingUserId(userId)
       },
+      onSuccess: () => {
+        onSuccess?.()
+      },
       onSettled: () => {
         setPendingUserId(null)
         if (meetingIds.length === 1) {
@@ -67,7 +70,6 @@ export function ManageParticipantsModal({
           )
         }
         invalidateMeeting()
-        onSuccess?.()
       },
     }),
   )

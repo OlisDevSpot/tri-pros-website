@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
@@ -42,6 +42,15 @@ export function AddParticipantRow({
   onAdd,
 }: AddParticipantRowProps) {
   const [selectedRole, setSelectedRole] = useState<'co_owner' | 'helper' | 'owner'>('helper')
+
+  useEffect(() => {
+    if (selectedRole === 'owner' && ownerSlotFilled) {
+      setSelectedRole('helper')
+    }
+    if (selectedRole === 'co_owner' && coOwnerSlotFilled) {
+      setSelectedRole('helper')
+    }
+  }, [selectedRole, ownerSlotFilled, coOwnerSlotFilled])
 
   return (
     <div className="flex items-center gap-2 rounded-md border border-border p-2">
