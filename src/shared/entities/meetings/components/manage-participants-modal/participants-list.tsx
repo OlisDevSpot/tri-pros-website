@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
+import { PARTICIPANT_ROLE_SORT_ORDER } from '@/shared/entities/meetings/constants/participants'
 
 interface ParticipantRow {
   email: string | null
@@ -37,8 +38,6 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-const ROLE_ORDER: Record<ParticipantRow['role'], number> = { co_owner: 1, helper: 2, owner: 0 }
-
 export function ParticipantsList({
   isLastOwner,
   pendingUserId,
@@ -46,7 +45,7 @@ export function ParticipantsList({
   onRemove,
   onRoleChange,
 }: ParticipantsListProps) {
-  const sorted = [...rows].sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role])
+  const sorted = [...rows].sort((a, b) => PARTICIPANT_ROLE_SORT_ORDER[a.role] - PARTICIPANT_ROLE_SORT_ORDER[b.role])
 
   if (sorted.length === 0) {
     return (
