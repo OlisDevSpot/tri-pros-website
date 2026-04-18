@@ -11,6 +11,7 @@ import {
   getParticipantByRole,
   removeParticipant,
   updateParticipantRole,
+  userParticipatesInMeeting,
 } from '@/shared/dal/server/meetings/participants'
 import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
@@ -45,7 +46,7 @@ export const meetingsRouter = createTRPCRouter({
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
         .leftJoin(user, eq(user.id, meetings.ownerId))
-        .where(isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id))
+        .where(isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id))
         .orderBy(desc(meetings.createdAt))
     }),
 
@@ -221,7 +222,7 @@ export const meetingsRouter = createTRPCRouter({
       const [original] = await db
         .select()
         .from(meetings)
-        .where(and(eq(meetings.id, input.id), isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id)))
+        .where(and(eq(meetings.id, input.id), isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id)))
 
       if (!original) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
@@ -257,7 +258,7 @@ export const meetingsRouter = createTRPCRouter({
       const isOmni = ctx.ability.can('manage', 'all')
       await db
         .delete(meetings)
-        .where(and(eq(meetings.id, input.id), isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id)))
+        .where(and(eq(meetings.id, input.id), isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id)))
     }),
 
   // List all internal users (agents + super-admins) for the owner assignment dropdown.
