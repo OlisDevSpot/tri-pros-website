@@ -24,8 +24,8 @@ import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { AssignRepDialog } from '@/shared/entities/meetings/components/assign-rep-dialog'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
+import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { cn } from '@/shared/lib/utils'
@@ -35,7 +35,7 @@ export function CustomerPipelineView() {
   const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.PIPELINE_LAYOUT, 'kanban')
   const { pipeline, setPipeline } = usePipeline()
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
-  const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[], currentRepId: string | null } | null>(null)
+  const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[] } | null>(null)
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
   const ability = useAbility()
@@ -118,8 +118,8 @@ export function CustomerPipelineView() {
     return item.totalPipelineValue > 0 ? item.totalPipelineValue : null
   }
 
-  const handleAssignRep = useCallback((meetingId: string, currentRepId: string | null) => {
-    setAssignRepTarget({ meetingIds: [meetingId], currentRepId })
+  const handleAssignRep = useCallback((meetingId: string, _currentRepId: string | null) => {
+    setAssignRepTarget({ meetingIds: [meetingId] })
   }, [])
 
   // TODO: Wire up when deleteCustomer tRPC procedure is implemented
@@ -244,9 +244,8 @@ export function CustomerPipelineView() {
         />
       )}
       {assignRepTarget && (
-        <AssignRepDialog
+        <ManageParticipantsModal
           meetingIds={assignRepTarget.meetingIds}
-          currentRepId={assignRepTarget.currentRepId}
           open={!!assignRepTarget}
           onOpenChange={open => !open && setAssignRepTarget(null)}
           onSuccess={() => pipelineQuery.refetch()}

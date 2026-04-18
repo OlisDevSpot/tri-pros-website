@@ -30,8 +30,8 @@ import { getStoredPipeline } from '@/shared/domains/pipelines/hooks/pipeline-con
 import { deriveMeetingPipeline } from '@/shared/domains/pipelines/lib/derive-meeting-pipeline'
 import { PipelineScopeToggle } from '@/shared/domains/pipelines/ui/pipeline-scope-toggle'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { AssignRepDialog } from '@/shared/entities/meetings/components/assign-rep-dialog'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
+import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
@@ -91,12 +91,11 @@ export function MeetingsView() {
   // Assign rep dialog state
   const [assignRepDialog, setAssignRepDialog] = useState<{
     meetingId: string
-    currentRepId: string | null
   } | null>(null)
 
   const handleAssignOwner = useCallback((entity: ScheduleCalendarEvent) => {
     if (entity.kind === 'meeting') {
-      setAssignRepDialog({ meetingId: entity.meetingId, currentRepId: entity.ownerId })
+      setAssignRepDialog({ meetingId: entity.meetingId })
     }
   }, [])
 
@@ -278,9 +277,8 @@ export function MeetingsView() {
       )}
 
       {/* Assign rep dialog */}
-      <AssignRepDialog
+      <ManageParticipantsModal
         meetingIds={assignRepDialog ? [assignRepDialog.meetingId] : []}
-        currentRepId={assignRepDialog?.currentRepId}
         open={!!assignRepDialog}
         onOpenChange={open => !open && setAssignRepDialog(null)}
       />
