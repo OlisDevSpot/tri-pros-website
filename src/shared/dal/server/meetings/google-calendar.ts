@@ -96,10 +96,10 @@ export async function clearMeetingGCalFields(meetingId: string): Promise<void> {
     .where(eq(meetings.id, meetingId))
 }
 
-export async function clearAllMeetingGCalFieldsForUser(userId: string): Promise<void> {
+export async function clearAllMeetingGCalFields(): Promise<void> {
   await db.update(meetings)
     .set({ gcalEventId: null, gcalEtag: null, gcalSyncedAt: null })
-    .where(eq(meetings.ownerId, userId))
+    .where(isNotNull(meetings.gcalEventId))
 }
 
 export async function updateMeetingScheduledFor(

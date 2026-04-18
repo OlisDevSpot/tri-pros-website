@@ -20,7 +20,7 @@ import {
   updateActivityGCalFields,
 } from '@/shared/dal/server/activities/google-calendar'
 import {
-  clearAllMeetingGCalFieldsForUser,
+  clearAllMeetingGCalFields,
   clearMeetingGCalFields,
   getAllMeetingsWithSchedule,
   getMeetingByGCalEventId,
@@ -267,11 +267,13 @@ function createSchedulingService() {
       }
 
       await clearAccountGCalFields(acct.id)
-      // Meetings live on the centralized info@ calendar, so only clear meeting fields
-      // when the system owner disconnects. Per-agent disconnects only affect activities.
+      // Meetings live on the centralized info@ calendar, so only clear meeting
+      // fields when the system owner disconnects (clears every meeting's GCal
+      // linkage since they all pointed at that calendar). Per-agent disconnects
+      // only affect activities.
       const systemUserId = await getSystemOwnerId()
       if (userId === systemUserId) {
-        await clearAllMeetingGCalFieldsForUser(userId)
+        await clearAllMeetingGCalFields()
       }
       await clearAllActivityGCalFieldsForUser(userId)
     },
