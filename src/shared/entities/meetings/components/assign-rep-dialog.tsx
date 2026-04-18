@@ -40,7 +40,7 @@ export function AssignRepDialog({ meetingIds, currentRepId, open, onOpenChange, 
   })
 
   const assignMutation = useMutation(
-    trpc.meetingsRouter.assignOwner.mutationOptions({
+    trpc.meetingsRouter.manageParticipants.mutationOptions({
       onSuccess: () => {
         invalidateMeeting()
         toast.success(meetingIds.length > 1 ? 'Reps assigned successfully' : 'Rep assigned successfully')
@@ -49,8 +49,8 @@ export function AssignRepDialog({ meetingIds, currentRepId, open, onOpenChange, 
         setSearch('')
         onSuccess?.()
       },
-      onError: () => {
-        toast.error('Failed to assign rep')
+      onError: (err) => {
+        toast.error(err.message || 'Failed to assign rep')
       },
     }),
   )
@@ -59,9 +59,15 @@ export function AssignRepDialog({ meetingIds, currentRepId, open, onOpenChange, 
     if (!selectedUserId) {
       return
     }
+    // Re-assigning the primary owner: change_role auto-demotes any existing owner.
     // For now, assign one at a time. Bulk will be a batched mutation later.
     for (const meetingId of meetingIds) {
-      assignMutation.mutate({ meetingId, newOwnerId: selectedUserId })
+      assignMutation.mutate({
+        meetingId,
+        action: 'change_role',
+        userId: selectedUserId,
+        role: 'owner',
+      })
     }
   }
 

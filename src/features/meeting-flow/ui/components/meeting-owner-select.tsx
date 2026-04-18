@@ -36,13 +36,13 @@ export function MeetingOwnerSelect({
   )
 
   const assignOwnerMutation = useMutation(
-    trpc.meetingsRouter.assignOwner.mutationOptions({
+    trpc.meetingsRouter.manageParticipants.mutationOptions({
       onSuccess: () => {
         toast.success('Owner assigned')
         invalidateMeeting()
       },
-      onError: () => {
-        toast.error('Failed to assign owner')
+      onError: (err) => {
+        toast.error(err.message || 'Failed to assign owner')
       },
     }),
   )
@@ -51,7 +51,12 @@ export function MeetingOwnerSelect({
     if (newOwnerId === currentOwnerId) {
       return
     }
-    assignOwnerMutation.mutate({ meetingId, newOwnerId })
+    assignOwnerMutation.mutate({
+      meetingId,
+      action: 'change_role',
+      userId: newOwnerId,
+      role: 'owner',
+    })
   }
 
   const initials = currentOwnerName

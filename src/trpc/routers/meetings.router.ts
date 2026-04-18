@@ -15,7 +15,7 @@ import {
 } from '@/shared/dal/server/meetings/participants'
 import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
-import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
+import { customers, insertMeetingSchema, mediaFiles, meetingParticipants, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
@@ -349,9 +349,32 @@ export const meetingsRouter = createTRPCRouter({
         if (role === 'owner') {
           const currentOwner = await getParticipantByRole(meetingId, 'owner')
           if (currentOwner && currentOwner.userId !== userId) {
-            await updateParticipantRole(meetingId, currentOwner.userId, 'co_owner')
+            // Demote current owner. If there's already a co_owner, remove the
+            // outgoing owner instead of creating a 2-co_owner conflict.
+            const existingCoOwner = await getParticipantByRole(meetingId, 'co_owner')
+            if (existingCoOwner && existingCoOwner.userId !== userId) {
+              await removeParticipant(meetingId, currentOwner.userId)
+            }
+            else {
+              await updateParticipantRole(meetingId, currentOwner.userId, 'co_owner')
+            }
           }
-          await updateParticipantRole(meetingId, userId, 'owner')
+          // Upsert the incoming user as owner. They may already be a participant
+          // (in any role), or they may not be in the table at all.
+          const existingRow = await db.query.meetingParticipants.findFirst({
+            where: and(
+              eq(meetingParticipants.meetingId, meetingId),
+              eq(meetingParticipants.userId, userId),
+            ),
+          })
+          if (existingRow) {
+            if (existingRow.role !== 'owner') {
+              await updateParticipantRole(meetingId, userId, 'owner')
+            }
+          }
+          else {
+            await addParticipant(meetingId, userId, 'owner')
+          }
           await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
         }
         else if (role === 'co_owner') {
