@@ -34,7 +34,7 @@ export function ParticipantRoleIcon({ isOwner, className }: ParticipantRoleIconP
     <span
       aria-hidden="true"
       className={cn(
-        'inline-flex size-7 items-center justify-center rounded-md text-muted-foreground/30 transition-colors',
+        'inline-flex size-7 items-center justify-center rounded-md text-muted-foreground/30',
         'group-hover:text-primary group-hover:bg-accent group-focus-visible:text-primary group-focus-visible:bg-accent',
         'motion-safe:transition-colors',
         className,
