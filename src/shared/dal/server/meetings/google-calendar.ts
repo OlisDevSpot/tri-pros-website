@@ -1,6 +1,7 @@
 import type { MeetingForGCal } from '@/shared/services/google-calendar/lib/map-to-gcal'
 
 import { and, eq, isNotNull } from 'drizzle-orm'
+import { getParticipantEmails } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -13,6 +14,7 @@ export async function getMeetingForGCal(meetingId: string): Promise<MeetingForGC
       id: meetings.id,
       scheduledFor: meetings.scheduledFor,
       meetingType: meetings.meetingType,
+      projectId: meetings.projectId,
       agentNotes: meetings.agentNotes,
       flowStateJSON: meetings.flowStateJSON,
       gcalEventId: meetings.gcalEventId,
@@ -35,11 +37,13 @@ export async function getMeetingForGCal(meetingId: string): Promise<MeetingForGC
 
   const flowState = row.flowStateJSON as { tradeSelections?: { tradeName: string, selectedScopes: { label: string }[] }[] } | null
   const tradeSelections = flowState?.tradeSelections ?? []
+  const participantEmails = await getParticipantEmails(meetingId)
 
   return {
     id: row.id,
     scheduledFor: row.scheduledFor,
     meetingType: row.meetingType,
+    projectId: row.projectId,
     customerName: row.customerName,
     customerPhone: row.customerPhone,
     customerEmail: row.customerEmail,
@@ -51,6 +55,7 @@ export async function getMeetingForGCal(meetingId: string): Promise<MeetingForGC
     tradeSelections,
     gcalEventId: row.gcalEventId,
     gcalEtag: row.gcalEtag,
+    participantEmails,
   }
 }
 

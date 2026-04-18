@@ -1,5 +1,8 @@
 import type { GCalEventInput } from '../types'
 
+import { ROOTS } from '@/shared/config/roots'
+import { GCAL_ACTIVITY_COLORS, GCAL_MEETING_COLORS } from '@/shared/constants/gcal-colors'
+
 interface TradeSelectionForGCal {
   tradeName: string
   selectedScopes: { label: string }[]
@@ -9,6 +12,7 @@ export interface MeetingForGCal {
   id: string
   scheduledFor: string | null
   meetingType: string | null
+  projectId: string | null
   // Customer info
   customerName: string | null
   customerPhone: string | null
@@ -23,6 +27,8 @@ export interface MeetingForGCal {
   // GCal sync fields
   gcalEventId: string | null
   gcalEtag: string | null
+  // Participant emails for attendees
+  participantEmails: string[]
 }
 
 interface ActivityForGCal {
@@ -74,6 +80,10 @@ function buildMeetingDescription(meeting: MeetingForGCal): string {
     sections.push(`NOTES\n${meeting.agentNotes}`)
   }
 
+  // Dashboard deep link
+  const dashboardUrl = ROOTS.dashboard.meetings.byId(meeting.id, { absolute: true, isProduction: true })
+  sections.push(`🔗 View in Dashboard: ${dashboardUrl}`)
+
   // Footer
   sections.push('— Synced from Tri Pros Remodeling')
 
@@ -88,12 +98,22 @@ export function meetingToGCalEvent(meeting: MeetingForGCal): GCalEventInput | nu
   const start = new Date(meeting.scheduledFor)
   const end = new Date(start.getTime() + DEFAULT_MEETING_DURATION_MS)
 
+  const colorId = meeting.projectId
+    ? GCAL_MEETING_COLORS.Project
+    : GCAL_MEETING_COLORS[meeting.meetingType as keyof typeof GCAL_MEETING_COLORS] ?? GCAL_MEETING_COLORS.Fresh
+
+  const prefix = meeting.projectId
+    ? 'Project'
+    : meeting.meetingType ?? 'Meeting'
+
   return {
-    summary: `${meeting.meetingType ?? 'Meeting'}: ${meeting.customerName ?? 'No Customer'}`,
+    summary: `${prefix}: ${meeting.customerName ?? 'No Customer'}`,
     description: buildMeetingDescription(meeting),
     location: buildMeetingAddress(meeting),
     start: { dateTime: start.toISOString() },
     end: { dateTime: end.toISOString() },
+    colorId,
+    attendees: meeting.participantEmails.map(email => ({ email })),
   }
 }
 
@@ -104,6 +124,7 @@ export function activityToGCalEvent(activity: ActivityForGCal): GCalEventInput |
 
   const meta = activity.metaJSON as { allDay?: boolean, location?: string } | null
   const isAllDay = meta?.allDay ?? false
+  const colorId = GCAL_ACTIVITY_COLORS[activity.type as keyof typeof GCAL_ACTIVITY_COLORS]
 
   if (isAllDay) {
     const dateStr = activity.scheduledFor.split('T')[0]
@@ -113,6 +134,7 @@ export function activityToGCalEvent(activity: ActivityForGCal): GCalEventInput |
       location: meta?.location ?? undefined,
       start: { date: dateStr },
       end: { date: dateStr },
+      colorId,
     }
   }
 
@@ -125,5 +147,6 @@ export function activityToGCalEvent(activity: ActivityForGCal): GCalEventInput |
     location: meta?.location ?? undefined,
     start: { dateTime: start.toISOString() },
     end: { dateTime: end.toISOString() },
+    colorId,
   }
 }
