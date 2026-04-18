@@ -4,7 +4,15 @@ import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm
 import z from 'zod'
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
-import { meetingTypes } from '@/shared/constants/enums'
+import { meetingParticipantRoles, meetingTypes } from '@/shared/constants/enums'
+import {
+  addParticipant,
+  countParticipantsByRole,
+  getParticipantByRole,
+  removeParticipant,
+  updateParticipantRole,
+} from '@/shared/dal/server/meetings/participants'
+import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
 import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
@@ -63,10 +71,13 @@ export const meetingsRouter = createTRPCRouter({
         })
         .returning()
 
+      // Mirror ownership in the participant junction table
+      await addParticipant(created.id, ctx.session.user.id, 'owner')
+
       if (created.scheduledFor) {
         await schedulingService
           .pushToGCal(ctx.session.user.id, 'meeting', created.id)
-          .catch(() => {})
+          .catch(err => console.error(`[meetings.create] GCal push failed for ${created.id}:`, err))
       }
 
       return created
@@ -108,7 +119,7 @@ export const meetingsRouter = createTRPCRouter({
       if ('scheduledFor' in rest || 'meetingType' in rest || 'agentNotes' in rest) {
         await schedulingService
           .pushToGCal(ctx.session.user.id, 'meeting', id)
-          .catch(() => {})
+          .catch(err => console.error(`[meetings.update] GCal push failed for ${id}:`, err))
       }
 
       // Publish realtime event for cross-device sync
@@ -227,6 +238,15 @@ export const meetingsRouter = createTRPCRouter({
         })
         .returning()
 
+      // Mirror ownership in the participant junction table
+      await addParticipant(created.id, ctx.session.user.id, 'owner')
+
+      if (created.scheduledFor) {
+        await schedulingService
+          .pushToGCal(ctx.session.user.id, 'meeting', created.id)
+          .catch(err => console.error(`[meetings.duplicate] GCal push failed for ${created.id}:`, err))
+      }
+
       return created
     }),
 
@@ -265,29 +285,93 @@ export const meetingsRouter = createTRPCRouter({
       return internalUsers
     }),
 
-  // Reassign meeting ownership to another internal user.
+  // Manage meeting participants (add/remove/change role).
   // Only users with 'assign' permission on Meeting may call this.
-  assignOwner: agentProcedure
+  manageParticipants: agentProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
-      newOwnerId: z.string().min(1),
+      action: z.enum(['add', 'remove', 'change_role']),
+      userId: z.string().min(1),
+      role: z.enum(meetingParticipantRoles).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.ability.cannot('assign', 'Meeting')) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can manage meeting participants' })
       }
 
-      const [updated] = await db
-        .update(meetings)
-        .set({ ownerId: input.newOwnerId })
-        .where(eq(meetings.id, input.meetingId))
-        .returning()
+      const { meetingId, action, userId, role } = input
 
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      if (action === 'add') {
+        if (!role) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Role is required when adding a participant' })
+        }
+
+        if (role === 'owner') {
+          const existingOwner = await getParticipantByRole(meetingId, 'owner')
+          if (existingOwner && existingOwner.userId !== userId) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has an owner. Use change_role to swap.' })
+          }
+        }
+
+        if (role === 'co_owner') {
+          const coOwnerCount = await countParticipantsByRole(meetingId, 'co_owner')
+          if (coOwnerCount >= 1) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has a co-owner.' })
+          }
+        }
+
+        await addParticipant(meetingId, userId, role)
+
+        if (role === 'owner') {
+          await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
+        }
       }
 
-      return updated
+      if (action === 'remove') {
+        const existing = await getParticipantByRole(meetingId, 'owner')
+        const isRemovingOwner = existing?.userId === userId
+
+        await removeParticipant(meetingId, userId)
+
+        if (isRemovingOwner) {
+          const systemOwnerId = await getSystemOwnerId()
+          await addParticipant(meetingId, systemOwnerId, 'owner')
+          await db.update(meetings).set({ ownerId: systemOwnerId }).where(eq(meetings.id, meetingId))
+        }
+      }
+
+      if (action === 'change_role') {
+        if (!role) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Role is required when changing role' })
+        }
+
+        if (role === 'owner') {
+          const currentOwner = await getParticipantByRole(meetingId, 'owner')
+          if (currentOwner && currentOwner.userId !== userId) {
+            await updateParticipantRole(meetingId, currentOwner.userId, 'co_owner')
+          }
+          await updateParticipantRole(meetingId, userId, 'owner')
+          await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
+        }
+        else if (role === 'co_owner') {
+          const existingCoOwner = await getParticipantByRole(meetingId, 'co_owner')
+          if (existingCoOwner && existingCoOwner.userId !== userId) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has a co-owner.' })
+          }
+          await updateParticipantRole(meetingId, userId, role)
+        }
+        else {
+          await updateParticipantRole(meetingId, userId, role)
+        }
+      }
+
+      // Push updated attendee list to Google Calendar
+      const systemOwnerId = await getSystemOwnerId()
+      await schedulingService
+        .pushToGCal(systemOwnerId, 'meeting', meetingId)
+        .catch(err => console.error(`[manageParticipants] GCal push failed for ${meetingId}:`, err))
+
+      return { success: true }
     }),
 
   // Fetch portfolio projects relevant to the trades/scopes selected in the meeting flow.
