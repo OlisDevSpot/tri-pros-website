@@ -3,6 +3,8 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
+import { buttonVariants } from '@/shared/components/ui/button'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { getInitials } from '@/shared/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
@@ -32,6 +34,26 @@ export function ReadOnlyParticipantSummary({
     trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
   )
 
+  const isCompact = variant === 'compact'
+
+  if (participantsQuery.isLoading) {
+    return (
+      <div
+        className={cn(
+          buttonVariants({ variant: 'outline', size: 'sm' }),
+          'cursor-default hover:bg-transparent hover:text-foreground',
+          isCompact && 'px-2',
+        )}
+      >
+        <span className="flex items-center -space-x-1.5">
+          <Skeleton className="size-5 rounded-full" />
+          <Skeleton className="size-5 rounded-full" />
+        </span>
+        {!isCompact && <Skeleton className="h-3 w-24" />}
+      </div>
+    )
+  }
+
   const participants = participantsQuery.data ?? []
   const owner = participants.find(p => p.role === 'owner')
   const coOwner = participants.find(p => p.role === 'co_owner')
@@ -45,15 +67,15 @@ export function ReadOnlyParticipantSummary({
       ? `${ownerName ?? '—'} + ${coOwnerName ?? 'Unknown'}`
       : (ownerName ?? '—')
 
-  const isCompact = variant === 'compact'
-
   return (
     <div
       aria-label={`Participants: ${summary}`}
       className={cn(
-        // Mirror Button variant="outline" size="sm" structure (minus interactivity)
-        // so the header layout doesn't shift between picker and read-only states.
-        'inline-flex items-center gap-2 whitespace-nowrap rounded-md border border-border/70 text-sm font-medium text-foreground shadow-xs h-8 px-3',
+        // Mirror Button variant="outline" size="sm" so the header layout
+        // doesn't shift between picker and read-only states. Strip
+        // interactive affordances since this is non-interactive.
+        buttonVariants({ variant: 'outline', size: 'sm' }),
+        'cursor-default hover:bg-transparent hover:text-foreground',
         isCompact && 'px-2',
       )}
     >
