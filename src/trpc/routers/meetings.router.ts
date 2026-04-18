@@ -9,6 +9,7 @@ import {
   addParticipant,
   countParticipantsByRole,
   getParticipantByRole,
+  getParticipantsForMeeting,
   removeParticipant,
   updateParticipantRole,
   userParticipatesInMeeting,
@@ -284,6 +285,14 @@ export const meetingsRouter = createTRPCRouter({
         .orderBy(user.name)
 
       return internalUsers
+    }),
+
+  // Returns all participants for a meeting with user info (name, email, image).
+  // Used by the inline ParticipantPicker and ManageParticipantsModal.
+  getParticipants: agentProcedure
+    .input(z.object({ meetingId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      return getParticipantsForMeeting(input.meetingId)
     }),
 
   // Manage meeting participants (add/remove/change role).
