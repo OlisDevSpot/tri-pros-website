@@ -24,6 +24,16 @@ interface AddParticipantRowProps {
   onAdd: (role: 'co_owner' | 'helper' | 'owner') => void
 }
 
+function getDefaultRole(ownerFilled: boolean, coOwnerFilled: boolean): 'co_owner' | 'helper' | 'owner' {
+  if (!ownerFilled) {
+    return 'owner'
+  }
+  if (!coOwnerFilled) {
+    return 'co_owner'
+  }
+  return 'helper'
+}
+
 export function AddParticipantRow({
   coOwnerSlotFilled,
   email,
@@ -33,14 +43,16 @@ export function AddParticipantRow({
   ownerSlotFilled,
   onAdd,
 }: AddParticipantRowProps) {
-  const [selectedRole, setSelectedRole] = useState<'co_owner' | 'helper' | 'owner'>('helper')
+  const [selectedRole, setSelectedRole] = useState<'co_owner' | 'helper' | 'owner'>(
+    () => getDefaultRole(ownerSlotFilled, coOwnerSlotFilled),
+  )
 
   useEffect(() => {
     if (selectedRole === 'owner' && ownerSlotFilled) {
-      setSelectedRole('helper')
+      setSelectedRole(getDefaultRole(ownerSlotFilled, coOwnerSlotFilled))
     }
     if (selectedRole === 'co_owner' && coOwnerSlotFilled) {
-      setSelectedRole('helper')
+      setSelectedRole(getDefaultRole(ownerSlotFilled, coOwnerSlotFilled))
     }
   }, [selectedRole, ownerSlotFilled, coOwnerSlotFilled])
 

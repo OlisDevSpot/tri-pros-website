@@ -34,35 +34,43 @@ export function useParticipantPickerMutations({ meetingId }: UseParticipantPicke
 
   const queryOpts = trpc.meetingsRouter.getParticipants.queryOptions({ meetingId })
 
-  const baseMutationOptions = {
-    onMutate: async (input: { userId: string }) => {
-      setPendingUserId(input.userId)
-      await qc.cancelQueries(queryOpts)
-      const previous = qc.getQueryData(queryOpts.queryKey)
-      return { previous }
-    },
-    onError: (
-      err: { message?: string },
-      _vars: { userId: string },
-      context: { previous: ParticipantsCache | undefined } | undefined,
-    ) => {
-      if (context?.previous) {
-        qc.setQueryData(queryOpts.queryKey, context.previous)
-      }
-      toast.error(err.message || 'Couldn\'t update participant')
-    },
-    onSettled: () => {
-      setPendingUserId(null)
-      qc.invalidateQueries(queryOpts)
-      invalidateMeeting()
-    },
+  function makeBaseOptions(extraInvalidate?: () => void) {
+    return {
+      onMutate: async (input: { userId: string }) => {
+        setPendingUserId(input.userId)
+        await qc.cancelQueries(queryOpts)
+        const previous = qc.getQueryData(queryOpts.queryKey)
+        return { previous }
+      },
+      onError: (
+        err: { message?: string },
+        _vars: { userId: string },
+        context: { previous: ParticipantsCache | undefined } | undefined,
+      ) => {
+        if (context?.previous) {
+          qc.setQueryData(queryOpts.queryKey, context.previous)
+        }
+        toast.error(err.message || 'Couldn\'t update participant')
+      },
+      onSettled: () => {
+        setPendingUserId(null)
+        qc.invalidateQueries(queryOpts)
+        extraInvalidate?.()
+      },
+    }
   }
 
   const addMutation = useMutation(
     trpc.meetingsRouter.manageParticipants.mutationOptions({
-      ...baseMutationOptions,
+      ...makeBaseOptions(),
       onMutate: async (input) => {
-        const ctx = await baseMutationOptions.onMutate(input)
+        const ctx = await makeBaseOptions().onMutate(input)
+        // Guard: if role is somehow absent, skip the optimistic insert —
+        // the server will reject with BAD_REQUEST and the rollback will handle it.
+        if (!input.role) {
+          return ctx
+        }
+        const role = input.role
         // Optimistically insert a placeholder row so the popover updates instantly
         qc.setQueryData(queryOpts.queryKey, (old: ParticipantsCache | undefined) => {
           if (!old) {
@@ -75,7 +83,7 @@ export function useParticipantPickerMutations({ meetingId }: UseParticipantPicke
             {
               id: `optimistic-${input.userId}`,
               userId: input.userId,
-              role: input.role!,
+              role,
               userName: '',
               userEmail: '',
               userImage: null,
@@ -89,9 +97,9 @@ export function useParticipantPickerMutations({ meetingId }: UseParticipantPicke
 
   const removeMutation = useMutation(
     trpc.meetingsRouter.manageParticipants.mutationOptions({
-      ...baseMutationOptions,
+      ...makeBaseOptions(),
       onMutate: async (input) => {
-        const ctx = await baseMutationOptions.onMutate(input)
+        const ctx = await makeBaseOptions().onMutate(input)
         qc.setQueryData(queryOpts.queryKey, (old: ParticipantsCache | undefined) => {
           if (!old) {
             return old
@@ -103,11 +111,13 @@ export function useParticipantPickerMutations({ meetingId }: UseParticipantPicke
     }),
   )
 
+  // promoteMutation triggers full meeting invalidation: owner changes cascade to
+  // ownerId-dependent displays (meeting list rows, meeting header, etc.)
   const promoteMutation = useMutation(
     trpc.meetingsRouter.manageParticipants.mutationOptions({
-      ...baseMutationOptions,
+      ...makeBaseOptions(invalidateMeeting),
       onMutate: async (input) => {
-        const ctx = await baseMutationOptions.onMutate(input)
+        const ctx = await makeBaseOptions(invalidateMeeting).onMutate(input)
         qc.setQueryData(queryOpts.queryKey, (old: ParticipantsCache | undefined) => {
           if (!old) {
             return old
