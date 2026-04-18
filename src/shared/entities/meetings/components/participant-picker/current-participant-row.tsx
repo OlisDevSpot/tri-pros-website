@@ -9,7 +9,6 @@ import { cn } from '@/shared/lib/utils'
 import { ParticipantRoleIcon } from './participant-role-icon'
 
 interface CurrentParticipantRowProps {
-  userId: string
   name: string
   email: string | null
   image: string | null
@@ -102,15 +101,17 @@ export function CurrentParticipantRow({
         ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  disabled
-                  aria-disabled="true"
-                  aria-label={`Cannot remove ${name} — ${removeDisabledReason ?? 'meeting needs at least one owner'}`}
-                  className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground/40"
-                >
-                  <X className="size-4" />
-                </button>
+                <span className="inline-flex">
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    aria-label={`Cannot remove ${name} — ${removeDisabledReason ?? 'meeting needs at least one owner'}`}
+                    className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground/40"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </span>
               </TooltipTrigger>
               <TooltipContent>{removeDisabledReason ?? 'Meeting requires at least one owner'}</TooltipContent>
             </Tooltip>
@@ -121,7 +122,7 @@ export function CurrentParticipantRow({
               onClick={onRemove}
               disabled={isPending}
               aria-label={`Remove ${name} from this meeting`}
-              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
             >
               {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
             </button>
