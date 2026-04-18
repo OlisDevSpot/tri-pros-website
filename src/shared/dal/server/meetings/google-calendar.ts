@@ -1,6 +1,6 @@
 import type { MeetingForGCal } from '@/shared/services/google-calendar/lib/map-to-gcal'
 
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { eq, isNotNull } from 'drizzle-orm'
 import { getParticipantEmails } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
@@ -59,11 +59,11 @@ export async function getMeetingForGCal(meetingId: string): Promise<MeetingForGC
   }
 }
 
-export async function getMeetingsByOwnerWithSchedule(userId: string): Promise<{ id: string }[]> {
+export async function getAllMeetingsWithSchedule(): Promise<{ id: string }[]> {
   return db
     .select({ id: meetings.id })
     .from(meetings)
-    .where(and(eq(meetings.ownerId, userId), isNotNull(meetings.scheduledFor)))
+    .where(isNotNull(meetings.scheduledFor))
 }
 
 export async function getMeetingByGCalEventId(gcalEventId: string) {

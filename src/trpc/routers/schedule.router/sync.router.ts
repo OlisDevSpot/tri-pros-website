@@ -1,6 +1,7 @@
 import { and, eq, isNotNull, isNull, or } from 'drizzle-orm'
 
 import { gcalSyncableActivityTypes } from '@/shared/constants/enums'
+import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
 import { activities } from '@/shared/db/schema/activities'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -34,20 +35,21 @@ export const syncRouter = createTRPCRouter({
   triggerSync: agentProcedure
     .mutation(async ({ ctx }) => {
       const userId = ctx.session.user.id
+      const systemOwnerId = await getSystemOwnerId()
 
       // 1. Push unsynced meetings (have scheduledFor but no gcalEventId)
+      // All meetings live on the centralized info@ calendar regardless of owner.
       const unsyncedMeetings = await db
         .select({ id: meetings.id })
         .from(meetings)
         .where(and(
-          eq(meetings.ownerId, userId),
           isNotNull(meetings.scheduledFor),
           isNull(meetings.gcalEventId),
         ))
 
       for (const m of unsyncedMeetings) {
         await schedulingService
-          .pushToGCal(userId, 'meeting', m.id)
+          .pushToGCal(systemOwnerId, 'meeting', m.id)
           .catch((err) => {
             console.error(`[triggerSync] pushToGCal meeting ${m.id} failed:`, err)
           })
