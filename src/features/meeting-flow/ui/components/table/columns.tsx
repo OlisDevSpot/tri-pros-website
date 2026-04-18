@@ -4,8 +4,6 @@ import type { EntityActionConfig } from '@/shared/components/entity-actions/type
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { UserIcon } from 'lucide-react'
-
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
@@ -13,6 +11,7 @@ import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-a
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
+import { ParticipantPicker } from '@/shared/entities/meetings/components/participant-picker'
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 
@@ -90,20 +89,14 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
       header: 'Rep',
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
-        const name = row.original.ownerName
-
         return (
-          <button
-            type="button"
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm cursor-pointer transition-colors duration-150 hover:bg-muted/50"
-            onClick={(e) => {
-              e.stopPropagation()
-              meta?.onAssignRep(row.original.id, row.original.ownerId)
-            }}
-          >
-            <UserIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate max-w-24">{name ?? 'Unassigned'}</span>
-          </button>
+          <div onClick={e => e.stopPropagation()}>
+            <ParticipantPicker
+              meetingId={row.original.id}
+              variant="compact"
+              onManageClick={() => meta?.onAssignRep(row.original.id, row.original.ownerId)}
+            />
+          </div>
         )
       },
     },
