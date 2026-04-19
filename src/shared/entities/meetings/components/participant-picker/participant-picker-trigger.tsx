@@ -2,9 +2,8 @@
 
 import { ChevronDown } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
-import { getInitials } from '@/shared/entities/users/lib/get-initials'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
 interface ParticipantSummary {
@@ -38,6 +37,11 @@ export function ParticipantPickerTrigger({
 
   const isCompact = variant === 'compact'
 
+  const stackUsers = [
+    owner && { id: owner.userId, name: owner.name, image: owner.image },
+    coOwner && { id: coOwner.userId, name: coOwner.name, image: coOwner.image },
+  ].filter((u): u is { id: string, name: string, image: string | null } => u !== null)
+
   return (
     <Button
       {...rest}
@@ -49,26 +53,14 @@ export function ParticipantPickerTrigger({
       aria-label={isCompact ? `Participants: ${summary}` : rest['aria-label']}
       className={cn('gap-2', isCompact && 'h-8 px-2', className)}
     >
-      <span className="flex items-center -space-x-1.5">
-        {owner && (
-          <Avatar className="size-5 ring-2 ring-background">
-            <AvatarImage src={owner.image ?? undefined} alt="" />
-            <AvatarFallback className="text-[9px]">{getInitials(owner.name)}</AvatarFallback>
-          </Avatar>
-        )}
-        {coOwner && (
-          <Avatar className="size-5 ring-2 ring-background">
-            <AvatarImage src={coOwner.image ?? undefined} alt="" />
-            <AvatarFallback className="text-[9px]">{getInitials(coOwner.name)}</AvatarFallback>
-          </Avatar>
-        )}
-        {!owner && !coOwner && (
-          <span
-            aria-hidden="true"
-            className="size-5 rounded-full border border-dashed border-muted-foreground/40"
-          />
-        )}
-      </span>
+      {stackUsers.length > 0
+        ? <UserOverviewCard.Stack users={stackUsers} size="xs" withTooltip={false} />
+        : (
+            <span
+              aria-hidden="true"
+              className="size-5 rounded-full border border-dashed border-muted-foreground/40"
+            />
+          )}
       {!isCompact && <span className="truncate text-xs font-medium">{summary}</span>}
       <ChevronDown aria-hidden="true" className="size-3.5 text-muted-foreground" />
     </Button>

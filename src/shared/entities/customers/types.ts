@@ -52,7 +52,7 @@ export interface CustomerFormValues {
 }
 
 export interface CustomerProfileData {
-  customer: Customer
+  customer: Customer & { hasSentProposal: boolean }
   meetings: CustomerProfileMeeting[]
   allProposals: CustomerProfileProposal[]
   notes: CustomerNote[]

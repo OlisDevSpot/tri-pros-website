@@ -1,3 +1,5 @@
+import { format as formatDateFns, isSameDay, isSameWeek } from 'date-fns'
+
 export function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString('en-US', {
     month: 'long',
@@ -12,6 +14,45 @@ export function formatAsPhoneNumber(phone: string) {
 
 export function formatAddress(address: string, city: string, state: string, zipCode: string) {
   return `${address},\n${city}, ${state}, ${zipCode}`
+}
+
+export interface AddressParts {
+  address?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
+}
+
+export interface FormattedAddress {
+  /** True when at least one component is populated. */
+  hasAddress: boolean
+  /** Street line (e.g. "26070 Adamor Road"). Empty if missing. */
+  line1: string
+  /** City + state + zip line (e.g. "Calabasas, CA 91302"). Empty if missing. */
+  line2: string
+  /** Full address joined with commas — use for geocoding, deep links, copy. */
+  singleLine: string
+}
+
+/**
+ * Canonical address formatter. Produces a single, two-line, or single-line
+ * view of a customer address. Consumers render whichever shape fits their
+ * layout (e.g. `line1` + `line2` stacked on mobile, `singleLine` on desktop).
+ */
+export function formatCustomerAddress(parts: AddressParts): FormattedAddress {
+  const line1 = (parts.address ?? '').trim()
+  const city = (parts.city ?? '').trim()
+  const state = (parts.state ?? '').trim()
+  const zip = (parts.zip ?? '').trim()
+  const stateZip = [state, zip].filter(Boolean).join(' ')
+  const line2 = [city, stateZip].filter(Boolean).join(', ')
+  const singleLine = [line1, line2].filter(Boolean).join(', ')
+  return {
+    hasAddress: singleLine.length > 0,
+    line1,
+    line2,
+    singleLine,
+  }
 }
 
 export function formatStringAsDate(stringDate: string, options: Intl.DateTimeFormatOptions = {}) {
@@ -62,6 +103,30 @@ export function convertUTCToPST(date: Date | string) {
   const pstDate = new Date(date)
   pstDate.setHours(pstDate.getHours() - 8)
   return pstDate
+}
+
+/**
+ * Condensed meeting stamp for use alongside the relative-time badge.
+ * - Same day        → `Today @2PM`
+ * - Same ISO week   → `Thu @2PM`
+ * - Further out     → `Thu May 2 @2PM`
+ *
+ * Null input → empty string so callers can render nothing when scheduledFor is absent.
+ */
+export function formatMeetingShortStamp(scheduledFor: string | Date | null | undefined): string {
+  if (!scheduledFor) {
+    return ''
+  }
+  const date = new Date(scheduledFor)
+  const now = new Date()
+
+  if (isSameDay(date, now)) {
+    return `Today @${formatDateFns(date, 'ha')}`
+  }
+  if (isSameWeek(date, now, { weekStartsOn: 0 })) {
+    return formatDateFns(date, 'EEE \'@\'ha')
+  }
+  return formatDateFns(date, 'EEE MMM d \'@\'ha')
 }
 
 /**

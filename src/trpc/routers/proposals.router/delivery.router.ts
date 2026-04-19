@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { getProposalViews, recordProposalView } from '@/shared/dal/server/proposals/proposal-views'
+import { deriveOutcomeOnProposalSent } from '@/shared/entities/meetings/lib/derive-outcome-on-proposal-sent'
 import { emailService } from '@/shared/services/email.service'
 import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
 import { syncContractDraftJob } from '@/shared/services/upstash/jobs/sync-contract-draft'
@@ -36,6 +37,10 @@ export const deliveryRouter = createTRPCRouter({
 
       if (!proposal) {
         throw new TRPCError({ code: 'NOT_FOUND', cause: 'Proposal not found' })
+      }
+
+      if (proposal.meetingId) {
+        await deriveOutcomeOnProposalSent(proposal.meetingId)
       }
 
       // Dispatch async job to sync Zoho Sign draft — client polls until signingRequestId appears

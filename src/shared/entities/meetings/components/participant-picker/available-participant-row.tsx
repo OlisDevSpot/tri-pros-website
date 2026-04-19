@@ -1,16 +1,15 @@
 'use client'
 
+import type { UserOverviewCardUser } from '@/shared/entities/users/components/overview-card'
+
 import { Loader2, Plus } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { CommandItem } from '@/shared/components/ui/command'
-import { getInitials } from '@/shared/entities/users/lib/get-initials'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
 interface AvailableParticipantRowProps {
-  name: string
-  email: string | null
-  image: string | null
+  user: UserOverviewCardUser
   /** Role this user will be added as if clicked — used in the affordance label. */
   inferredRole: 'owner' | 'co_owner'
   /** True when both slots are full; row is dimmed and click is no-op. */
@@ -20,18 +19,18 @@ interface AvailableParticipantRowProps {
 }
 
 export function AvailableParticipantRow({
-  name,
-  email,
-  image,
+  user,
   inferredRole,
   disabled,
   isPending,
   onAdd,
 }: AvailableParticipantRowProps) {
+  const name = user.name ?? user.email ?? 'Unknown'
+
   return (
     <CommandItem
       // cmdk filter uses the value field; combine searchable parts so name + email both match
-      value={`${name} ${email ?? ''}`}
+      value={`${name} ${user.email ?? ''}`}
       disabled={disabled || isPending}
       onSelect={() => {
         if (!disabled && !isPending) {
@@ -44,15 +43,13 @@ export function AvailableParticipantRow({
       )}
       aria-label={`Add ${name} as ${inferredRole === 'owner' ? 'owner' : 'co-owner'}`}
     >
-      <Avatar className="size-6 shrink-0">
-        <AvatarImage src={image ?? undefined} alt="" />
-        <AvatarFallback className="text-[10px] font-semibold">{getInitials(name)}</AvatarFallback>
-      </Avatar>
-
-      <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
-        <div className="truncate text-sm font-medium text-foreground">{name}</div>
-        <div className="truncate text-xs text-muted-foreground">{email}</div>
-      </div>
+      <UserOverviewCard user={user} className="contents">
+        <UserOverviewCard.Avatar size="sm" className="size-6" />
+        <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
+          <UserOverviewCard.Name className="text-sm font-medium text-foreground" />
+          <UserOverviewCard.Email className="text-xs text-muted-foreground" />
+        </div>
+      </UserOverviewCard>
 
       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground opacity-60 group-hover:opacity-100 group-data-[selected=true]:opacity-100 motion-safe:transition-opacity">
         {isPending

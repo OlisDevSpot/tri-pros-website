@@ -11,6 +11,7 @@ import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 
 interface Props {
@@ -25,6 +26,7 @@ export function CustomerProfileHeader({ customer, isEditing = false, register, o
   const isMobile = useIsMobile()
   const canEditContact = ability.can('update', 'Customer', 'name')
   const showInputs = isEditing && canEditContact && register
+  const phoneUnlocked = canAgentSeePhone(ability, customer)
 
   const addressLine1 = customer.address ?? ''
   const addressLine2 = [customer.city, customer.zip].filter(Boolean).join(', ')
@@ -56,7 +58,10 @@ export function CustomerProfileHeader({ customer, isEditing = false, register, o
               />
             )
           : (
-              canEditContact && (
+              // Null phone: only show "Add phone" to users who can edit AND
+              // are entitled to see the real phone. Gated agents get nothing —
+              // no UI hint that a phone might exist behind a gate.
+              phoneUnlocked && canEditContact && (
                 <Button
                   variant="outline"
                   size="sm"

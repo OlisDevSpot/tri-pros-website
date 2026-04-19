@@ -145,6 +145,47 @@ function StatusIcon({
   return <Icon size={iconSize} className={cn('shrink-0', style.iconClass, className)} />
 }
 
+/**
+ * Status icon wrapped in a square tile with a status-colored border.
+ *
+ * Designed to sit at the leading edge of a full-height proposal row using a
+ * CSS grid layout. Grid cells have deterministic block-size when the parent
+ * uses `items-stretch`, which lets `h-full aspect-square` compute width from
+ * height reliably (a quirk that fails in pure flex since the inline-size is
+ * resolved before the aspect-ratio kicks in):
+ *
+ *   <ProposalOverviewCard className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-stretch ... p-2">
+ *     <ProposalOverviewCard.StatusIconTile />
+ *     ...
+ *   </ProposalOverviewCard>
+ *
+ * The tile inherits its color from `style.iconClass`, so the border
+ * (`border-current/25`) and icon share the status hue without needing a
+ * separate borderClass token.
+ */
+function StatusIconTile({
+  iconSize = 18,
+  className,
+}: {
+  iconSize?: number
+  className?: string
+}) {
+  const { style } = useProposalOverviewCard()
+  const Icon = style.icon
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        'flex aspect-square h-full items-center justify-center rounded-md border border-current/25 bg-background/40',
+        style.iconClass,
+        className,
+      )}
+    >
+      <Icon size={iconSize} className="shrink-0" />
+    </div>
+  )
+}
+
 function StatusBadge({ className }: { className?: string }) {
   const { proposal, style } = useProposalOverviewCard()
   if (!proposal.status) {
@@ -355,6 +396,7 @@ export const ProposalOverviewCard = Object.assign(ProposalOverviewCardRoot, {
   Header,
   Body,
   StatusIcon,
+  StatusIconTile,
   StatusBadge,
   StatusDot,
   Label,

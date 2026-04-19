@@ -141,6 +141,42 @@ export async function getOwnerCoOwnerForMeetings(meetingIds: string[]): Promise<
   return result
 }
 
+export interface MeetingParticipantRow {
+  meetingId: string
+  participantId: string
+  userId: string
+  role: MeetingParticipantRole
+  userName: string
+  userEmail: string
+  userImage: string | null
+}
+
+/**
+ * Batch-fetch ALL participants (all roles) for a set of meetings, ordered by
+ * user.id ASC so callers can derive deterministic combo keys (e.g. swimlane
+ * grouping by participant set).
+ */
+export async function getAllParticipantsForMeetings(meetingIds: string[]): Promise<MeetingParticipantRow[]> {
+  if (meetingIds.length === 0) {
+    return []
+  }
+
+  return db
+    .select({
+      meetingId: meetingParticipants.meetingId,
+      participantId: meetingParticipants.id,
+      userId: meetingParticipants.userId,
+      role: meetingParticipants.role,
+      userName: user.name,
+      userEmail: user.email,
+      userImage: user.image,
+    })
+    .from(meetingParticipants)
+    .innerJoin(user, eq(user.id, meetingParticipants.userId))
+    .where(inArray(meetingParticipants.meetingId, meetingIds))
+    .orderBy(asc(user.id))
+}
+
 // ── Mutations ───────────────────────────────────────────────────────────────
 
 export async function addParticipant(

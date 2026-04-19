@@ -11,6 +11,7 @@ import { user } from '@/shared/db/schema/auth'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
@@ -28,38 +29,50 @@ const intakeRatelimit = new Ratelimit({
 export const customersRouter = createTRPCRouter({
   // Fetch all locally-cached customers
   getAll: agentProcedure
-    .query(async () => {
-      return getCustomers()
+    .query(async ({ ctx }) => {
+      const isSuperAdmin = ctx.ability.can('manage', 'all')
+      return getCustomers({ isSuperAdmin })
     }),
 
   // Fetch a single customer by internal UUID
   getById: agentProcedure
     .input(z.object({ customerId: z.string().uuid() }))
-    .query(async ({ input }) => {
-      return getCustomer(input.customerId)
+    .query(async ({ input, ctx }) => {
+      const isSuperAdmin = ctx.ability.can('manage', 'all')
+      return getCustomer(input.customerId, { isSuperAdmin })
     }),
 
   // Fetch a single customer by Notion contact ID
   getByNotionId: agentProcedure
     .input(z.object({ notionContactId: z.string() }))
-    .query(async ({ input }) => {
-      return getCustomerByNotionId(input.notionContactId)
+    .query(async ({ input, ctx }) => {
+      const isSuperAdmin = ctx.ability.can('manage', 'all')
+      return getCustomerByNotionId(input.notionContactId, { isSuperAdmin })
     }),
 
-  // Search customers by name or phone
+  // Search customers by name (agents) or name + phone (super-admins). Phone
+  // is returned gated — agents only see it once a proposal has been sent for
+  // the customer. See canAgentSeePhone / phone-gating-sql.
   search: agentProcedure
     .input(z.object({ query: z.string().min(1) }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const isSuperAdmin = ctx.ability.can('manage', 'all')
       const q = `%${input.query}%`
+      // Super-admins can also match by phone — agents cannot (they'd leak
+      // which customers exist at which numbers).
+      const where = isSuperAdmin
+        ? or(ilike(customers.name, q), ilike(customers.phone, q))
+        : ilike(customers.name, q)
       return db
         .select({
           id: customers.id,
           name: customers.name,
-          phone: customers.phone,
+          phone: gatedPhoneSql(isSuperAdmin),
+          hasSentProposal: hasSentProposalSql(),
           address: customers.address,
         })
         .from(customers)
-        .where(or(ilike(customers.name, q), ilike(customers.phone, q)))
+        .where(where)
         .limit(10)
     }),
 
@@ -105,10 +118,10 @@ export const customersRouter = createTRPCRouter({
       }
 
       const { customerId, ...fields } = input
-      const updateData: Partial<typeof fields> = {}
+      const updateData: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(fields)) {
         if (value !== undefined) {
-          (updateData as Record<string, unknown>)[key] = value
+          updateData[key] = value
         }
       }
 

@@ -57,6 +57,8 @@ export interface CustomerPipelineItem {
   stage: CustomerPipelineStage | RehashPipelineStage | DeadPipelineStage | ProjectsPipelineStage | LeadsPipelineStage
   name: string
   phone: string | null
+  /** True when the customer has at least one proposal with status `sent` — used to distinguish a gated (locked) phone from a genuinely missing one. */
+  hasSentProposal: boolean
   email: string | null
   address: string | null
   city: string
@@ -79,6 +81,7 @@ export interface CustomerPipelineRawData {
   customerId: string
   customerName: string
   customerPhone: string | null
+  customerHasSentProposal: boolean
   customerEmail: string | null
   customerAddress: string | null
   customerCity: string
