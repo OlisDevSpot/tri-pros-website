@@ -51,16 +51,12 @@ export function ManageParticipantsModal({
     enabled: open,
   })
 
+  // Note: no onError/onSuccess toast here — applyToAll handles all user-facing
+  // feedback so single and bulk paths emit one summary toast each.
   const mutation = useMutation(
     trpc.meetingsRouter.manageParticipants.mutationOptions({
-      onError: (err) => {
-        toast.error(err.message || 'Couldn\'t update participant')
-      },
       onMutate: ({ userId }) => {
         setPendingUserId(userId)
-      },
-      onSuccess: () => {
-        onSuccess?.()
       },
       onSettled: () => {
         setPendingUserId(null)
@@ -74,14 +70,57 @@ export function ManageParticipantsModal({
     }),
   )
 
-  function applyToAll(
+  async function applyToAll(
     action: 'add' | 'change_role' | 'remove',
     userId: string,
     role?: 'co_owner' | 'helper' | 'owner',
   ) {
-    for (const meetingId of meetingIds) {
-      mutation.mutate({ action, meetingId, role, userId })
+    const total = meetingIds.length
+    const results = await Promise.allSettled(
+      meetingIds.map(meetingId =>
+        mutation.mutateAsync({ action, meetingId, role, userId }),
+      ),
+    )
+
+    const failures = results
+      .map((r, i) => ({ meetingId: meetingIds[i] ?? '', result: r }))
+      .filter((r): r is { meetingId: string, result: PromiseRejectedResult } =>
+        r.result.status === 'rejected',
+      )
+    const succeededCount = total - failures.length
+    const isBulk = total > 1
+
+    if (failures.length === 0) {
+      if (isBulk) {
+        toast.success(`Updated participant in ${total} meetings`)
+      }
+      onSuccess?.()
+      return
     }
+
+    // Pick the most representative error message for the summary.
+    const firstError = failures[0]?.result.reason
+    const errorMessage
+      = firstError instanceof Error && firstError.message
+        ? firstError.message
+        : 'Couldn\'t update participant'
+
+    if (succeededCount === 0) {
+      if (isBulk) {
+        toast.error(`Failed to update participant in all ${total} meetings: ${errorMessage}`)
+      }
+      else {
+        toast.error(errorMessage)
+      }
+      return
+    }
+
+    toast.warning(
+      `Updated ${succeededCount} of ${total} meetings. ${failures.length} failed: ${errorMessage}`,
+    )
+    // Treat partial success like success for closing — preserves prior behavior
+    // where any successful mutation triggered onSuccess.
+    onSuccess?.()
   }
 
   const participants = participantsQuery.data ?? []
