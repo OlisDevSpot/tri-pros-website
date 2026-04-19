@@ -34,10 +34,39 @@ import { schedulingService } from '@/shared/services/scheduling.service'
 
 const THROTTLE_MS = 100
 
+/**
+ * The runtime DB client at src/shared/db/index.ts picks between DATABASE_URL
+ * (prod) and DATABASE_DEV_URL based on NODE_ENV, NOT DRIZZLE_TARGET. That
+ * makes it easy to accidentally run this against the wrong DB. Surface the
+ * exact host + NODE_ENV at the start of every run so the operator can abort
+ * if it's not what they expected.
+ */
+function describeTargetDb(): { env: string, host: string } {
+  const nodeEnv = process.env.NODE_ENV ?? '(unset)'
+  const isProd = process.env.NODE_ENV === 'production'
+  const raw = isProd
+    ? process.env.DATABASE_URL
+    : (process.env.DATABASE_DEV_URL ?? process.env.DATABASE_URL)
+  let host = '(unknown)'
+  if (raw) {
+    try {
+      host = new URL(raw).host
+    }
+    catch {
+      host = '(unparseable)'
+    }
+  }
+  return { env: nodeEnv, host }
+}
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run')
+  const { env, host } = describeTargetDb()
 
   console.log(`--- REBUILD GCAL DESCRIPTIONS${dryRun ? ' (dry run)' : ''} ---`)
+  console.log(`NODE_ENV: ${env}`)
+  console.log(`DB host:  ${host}`)
+  console.log('')
 
   const systemOwnerId = await getSystemOwnerId()
 
