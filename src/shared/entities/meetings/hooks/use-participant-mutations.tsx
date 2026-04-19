@@ -136,10 +136,29 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
     ),
   )
 
+  // removeMutation triggers full meeting invalidation: when removing the owner,
+  // the co-owner is promoted (or the system user takes over), which cascades to
+  // ownerId-dependent displays (meeting list rows, meeting header, etc.)
   const removeMutation = useMutation(
     trpc.meetingsRouter.manageParticipants.mutationOptions(
       makeOptions({
-        mutateCache: (input, old) => old.filter(p => p.userId !== input.userId),
+        extraInvalidate: invalidateMeeting,
+        mutateCache: (input, old) => {
+          // Mirror server: removing the owner with a co-owner present promotes
+          // the co-owner. Without a co-owner, the server backfills with the
+          // system user — we don't have its profile, so let the refetch fill it in.
+          const owner = old.find(p => p.role === 'owner')
+          const coOwner = old.find(p => p.role === 'co_owner')
+          const removingOwner = owner?.userId === input.userId
+
+          if (removingOwner && coOwner) {
+            return old
+              .filter(p => p.userId !== input.userId)
+              .map(p => p.userId === coOwner.userId ? { ...p, role: 'owner' as const } : p)
+          }
+
+          return old.filter(p => p.userId !== input.userId)
+        },
       }),
     ),
   )

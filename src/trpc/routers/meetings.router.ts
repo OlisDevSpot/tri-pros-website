@@ -432,15 +432,28 @@ export const meetingsRouter = createTRPCRouter({
       }
 
       if (action === 'remove') {
-        const existing = await getParticipantByRole(meetingId, 'owner')
-        const isRemovingOwner = existing?.userId === userId
-
-        await removeParticipant(meetingId, userId)
+        const existingOwner = await getParticipantByRole(meetingId, 'owner')
+        const isRemovingOwner = existingOwner?.userId === userId
 
         if (isRemovingOwner) {
-          const systemOwnerId = await getSystemOwnerId()
-          await addParticipant(meetingId, systemOwnerId, 'owner')
-          await db.update(meetings).set({ ownerId: systemOwnerId }).where(eq(meetings.id, meetingId))
+          const existingCoOwner = await getParticipantByRole(meetingId, 'co_owner')
+
+          if (existingCoOwner) {
+            // Promote co-owner to owner; remove the outgoing owner.
+            await removeParticipant(meetingId, userId)
+            await updateParticipantRole(meetingId, existingCoOwner.userId, 'owner')
+            await db.update(meetings).set({ ownerId: existingCoOwner.userId }).where(eq(meetings.id, meetingId))
+          }
+          else {
+            // No co-owner — fall back to system user (preserve prior behavior).
+            await removeParticipant(meetingId, userId)
+            const systemOwnerId = await getSystemOwnerId()
+            await addParticipant(meetingId, systemOwnerId, 'owner')
+            await db.update(meetings).set({ ownerId: systemOwnerId }).where(eq(meetings.id, meetingId))
+          }
+        }
+        else {
+          await removeParticipant(meetingId, userId)
         }
       }
 

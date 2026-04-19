@@ -18,6 +18,8 @@ interface CurrentParticipantRowProps {
   removeDisabled: boolean
   /** Disabled-state explanation, shown in tooltip when removeDisabled is true. */
   removeDisabledReason?: string
+  /** Tooltip shown on the remove button when it is enabled (e.g. to clarify side-effects). */
+  removeTooltip?: string
   /** True while a mutation targeting this row is in flight. */
   isPending: boolean
   /** Click handler for the crown icon (only meaningful for co_owner — promote). */
@@ -33,6 +35,7 @@ export function CurrentParticipantRow({
   role,
   removeDisabled,
   removeDisabledReason,
+  removeTooltip,
   isPending,
   onPromote,
   onRemove,
@@ -108,17 +111,34 @@ export function CurrentParticipantRow({
               <TooltipContent>{removeDisabledReason ?? 'Meeting requires at least one owner'}</TooltipContent>
             </Tooltip>
           )
-        : (
-            <button
-              type="button"
-              onClick={onRemove}
-              disabled={isPending}
-              aria-label={`Remove ${name} from this meeting`}
-              className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
-            >
-              {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
-            </button>
-          )}
+        : removeTooltip
+          ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={onRemove}
+                    disabled={isPending}
+                    aria-label={`Remove ${name} from this meeting`}
+                    className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+                  >
+                    {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{removeTooltip}</TooltipContent>
+              </Tooltip>
+            )
+          : (
+              <button
+                type="button"
+                onClick={onRemove}
+                disabled={isPending}
+                aria-label={`Remove ${name} from this meeting`}
+                className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+              >
+                {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
+              </button>
+            )}
     </div>
   )
 }

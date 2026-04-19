@@ -64,11 +64,12 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
               email={owner.userEmail}
               image={owner.userImage}
               role="owner"
-              removeDisabled
-              removeDisabledReason="Promote another participant first"
+              removeDisabled={!coOwner}
+              removeDisabledReason={!coOwner ? 'Add a co-owner first to promote' : undefined}
+              removeTooltip={coOwner ? 'Removes owner and promotes co-owner' : undefined}
               isPending={pendingUserId === owner.userId}
               onPromote={() => {}}
-              onRemove={() => {}}
+              onRemove={() => remove(owner.userId)}
             />
           )}
           {coOwner && (
@@ -97,49 +98,68 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
         )}
       </div>
 
-      {/* Search */}
-      <CommandInput
-        placeholder="Search team to add…"
-        value={search}
-        onValueChange={setSearch}
-        aria-label="Search team to add participants"
-      />
-
-      {/* Results */}
-      <CommandList>
-        {internalUsersQuery.error
-          ? (
-              <p className="px-3 py-4 text-center text-xs text-muted-foreground">
-                You don't have permission to add participants here.
-                {' '}
-                Use Manage Participants for full controls.
-              </p>
-            )
-          : (
-              <>
-                <CommandEmpty>
-                  No team members match
-                  {' '}
-                  <span className="font-medium">{`"${search}"`}</span>
-                  .
-                </CommandEmpty>
-                <CommandGroup>
-                  {available.map(u => (
-                    <AvailableParticipantRow
-                      key={u.id}
-                      name={u.name ?? u.email ?? 'Unknown'}
-                      email={u.email}
-                      image={u.image}
-                      inferredRole={owner ? 'co_owner' : 'owner'}
-                      disabled={slotsFull}
-                      isPending={pendingUserId === u.id}
-                      onAdd={() => add(u.id, owner ? 'co_owner' : 'owner')}
-                    />
-                  ))}
-                </CommandGroup>
-              </>
-            )}
-      </CommandList>
+      {/* Search + results — only when there's an open slot.
+          When both slots are filled, helpers must be added via the modal. */}
+      {slotsFull
+        ? (
+            <p className="px-3 py-3 text-center text-xs text-muted-foreground">
+              Both slots filled.
+              {' '}
+              <button
+                type="button"
+                onClick={onOpenManageModal}
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Manage participants
+              </button>
+              {' '}
+              to add helpers.
+            </p>
+          )
+        : (
+            <>
+              <CommandInput
+                placeholder="Search team to add…"
+                value={search}
+                onValueChange={setSearch}
+                aria-label="Search team to add participants"
+              />
+              <CommandList>
+                {internalUsersQuery.error
+                  ? (
+                      <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+                        You don't have permission to add participants here.
+                        {' '}
+                        Use Manage Participants for full controls.
+                      </p>
+                    )
+                  : (
+                      <>
+                        <CommandEmpty>
+                          No team members match
+                          {' '}
+                          <span className="font-medium">{`"${search}"`}</span>
+                          .
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {available.map(u => (
+                            <AvailableParticipantRow
+                              key={u.id}
+                              name={u.name ?? u.email ?? 'Unknown'}
+                              email={u.email}
+                              image={u.image}
+                              inferredRole={owner ? 'co_owner' : 'owner'}
+                              disabled={false}
+                              isPending={pendingUserId === u.id}
+                              onAdd={() => add(u.id, owner ? 'co_owner' : 'owner')}
+                            />
+                          ))}
+                        </CommandGroup>
+                      </>
+                    )}
+              </CommandList>
+            </>
+          )}
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-border bg-muted/40 px-3 py-2">
