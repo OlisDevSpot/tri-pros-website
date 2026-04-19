@@ -80,9 +80,12 @@ function buildMeetingDescription(meeting: MeetingForGCal): string {
     sections.push(`NOTES\n${meeting.agentNotes}`)
   }
 
-  // Dashboard deep link
-  const dashboardUrl = ROOTS.dashboard.meetings.byId(meeting.id, { absolute: true, isProduction: true })
-  sections.push(`🔗 View in Dashboard: ${dashboardUrl}`)
+  // Schedule deep link — nuqs params trigger scroll + highlight in schedule view
+  if (meeting.scheduledFor) {
+    const scheduleBase = ROOTS.dashboard.schedule({ absolute: true, isProduction: true })
+    const scheduleUrl = `${scheduleBase}?highlightMeeting=${meeting.id}&highlightDate=${encodeURIComponent(meeting.scheduledFor)}`
+    sections.push(`🔗 View in Schedule: ${scheduleUrl}`)
+  }
 
   // Footer
   sections.push('— Synced from Tri Pros Remodeling')

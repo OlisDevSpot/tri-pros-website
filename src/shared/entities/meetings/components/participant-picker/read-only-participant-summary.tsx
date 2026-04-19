@@ -5,10 +5,9 @@ import type { InitialParticipantSummary } from './types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { buttonVariants } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { getInitials } from '@/shared/entities/users/lib/get-initials'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -87,6 +86,11 @@ export function ReadOnlyParticipantSummary({
       ? `${ownerName ?? '—'} + ${coOwnerName ?? 'Unknown'}`
       : (ownerName ?? '—')
 
+  const stackUsers = [
+    owner && { id: owner.userId, name: ownerName ?? 'Unknown', image: owner.userImage },
+    coOwner && { id: coOwner.userId, name: coOwnerName ?? 'Unknown', image: coOwner.userImage },
+  ].filter((u): u is { id: string, name: string, image: string | null } => u !== null)
+
   return (
     <div
       aria-label={`Participants: ${summary}`}
@@ -99,26 +103,14 @@ export function ReadOnlyParticipantSummary({
         isCompact && 'px-2',
       )}
     >
-      <span className="flex items-center -space-x-1.5">
-        {owner && (
-          <Avatar className="size-5 ring-2 ring-background">
-            <AvatarImage src={owner.userImage ?? undefined} alt="" />
-            <AvatarFallback className="text-[9px]">{getInitials(ownerName ?? 'Unknown')}</AvatarFallback>
-          </Avatar>
-        )}
-        {coOwner && (
-          <Avatar className="size-5 ring-2 ring-background">
-            <AvatarImage src={coOwner.userImage ?? undefined} alt="" />
-            <AvatarFallback className="text-[9px]">{getInitials(coOwnerName ?? 'Unknown')}</AvatarFallback>
-          </Avatar>
-        )}
-        {!owner && !coOwner && (
-          <span
-            aria-hidden="true"
-            className="size-5 rounded-full border border-dashed border-muted-foreground/40"
-          />
-        )}
-      </span>
+      {stackUsers.length > 0
+        ? <UserOverviewCard.Stack users={stackUsers} size="xs" withTooltip={false} />
+        : (
+            <span
+              aria-hidden="true"
+              className="size-5 rounded-full border border-dashed border-muted-foreground/40"
+            />
+          )}
       {!isCompact && <span className="truncate text-xs font-medium">{summary}</span>}
     </div>
   )

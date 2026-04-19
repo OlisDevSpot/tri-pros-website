@@ -14,8 +14,8 @@ import { AddressAction } from '@/shared/components/contact-actions/ui/address-ac
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Badge } from '@/shared/components/ui/badge'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import {
@@ -25,7 +25,9 @@ import {
 } from '@/shared/entities/meetings/constants/status-colors'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { formatMeetingShortStamp } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -48,6 +50,8 @@ export type MeetingOverviewCardData
       ownerImage?: string | null
       customerName?: string | null
       customerPhone?: string | null
+      /** True when the customer has sent ≥ 1 proposal. Lets the Phone slot show a lock tooltip when phone is null for a gated (non-super-admin) viewer. */
+      customerHasSentProposal?: boolean | null
       customerAddress?: string | null
       customerCity?: string | null
       customerState?: string | null
@@ -57,7 +61,7 @@ export type MeetingOverviewCardData
 
 export type MeetingFieldConfig
   = | { field: 'outcome', variant?: 'badge' | 'dot' }
-    | { field: 'scheduledDate', format?: 'full' | 'date-only' | 'time-only' | 'relative', onChange?: (date: Date) => void }
+    | { field: 'scheduledDate', format?: 'full' | 'date-only' | 'time-only' | 'relative' | 'short-stamp', onChange?: (date: Date) => void }
     | { field: 'type' }
     | { field: 'proposalCount' }
 
@@ -124,11 +128,19 @@ function MeetingOverviewCardRoot({
     [meeting, customerId, actions],
   )
 
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    // Prevent bubbling when nested inside a parent kanban/list card that has
+    // its own click handler (e.g. customer-kanban-card opens the customer
+    // profile modal). The meeting card owns its own "View Meeting" click.
+    e.stopPropagation()
+    openProfile()
+  }, [openProfile])
+
   return (
     <MeetingOverviewCardContext value={value}>
       <DeleteConfirmDialog />
       <AssignOwnerDialog />
-      <div className={className} onClick={openProfile}>
+      <div className={className} onClick={handleClick}>
         {children}
       </div>
     </MeetingOverviewCardContext>
@@ -160,31 +172,25 @@ function Owner({
   showName = false,
   className,
 }: {
-  size?: 'sm' | 'md'
+  size?: 'xs' | 'sm' | 'md'
   showName?: boolean
   className?: string
 }) {
   const { meeting } = useMeetingOverviewCard()
-  if (!meeting.ownerName) {
+  if (!meeting.ownerName || !meeting.ownerId) {
     return null
   }
 
-  const initials = meeting.ownerName
-    .split(' ')
-    .map(n => n.charAt(0))
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+  const user = {
+    id: meeting.ownerId,
+    name: meeting.ownerName,
+    image: meeting.ownerImage ?? null,
+  }
 
-  const avatarSize = size === 'md' ? 'size-6' : 'size-5'
-
-  const avatar = (
-    <Avatar className={cn(avatarSize, 'shrink-0')}>
-      <AvatarImage src={meeting.ownerImage ?? undefined} alt={meeting.ownerName} />
-      <AvatarFallback className={cn(size === 'md' ? 'text-[9px]' : 'text-[8px]', 'font-medium')}>
-        {initials}
-      </AvatarFallback>
-    </Avatar>
+  const avatarNode = (
+    <UserOverviewCard user={user} meta={{ role: 'owner' }} className="inline-flex">
+      <UserOverviewCard.Avatar size={size} />
+    </UserOverviewCard>
   )
 
   if (showName) {
@@ -192,7 +198,7 @@ function Owner({
       <div className={cn('flex items-center gap-1.5 min-w-0', className)}>
         <HybridPopoverTooltip content={meeting.ownerName}>
           <div className="shrink-0 cursor-pointer" onClick={e => e.stopPropagation()}>
-            {avatar}
+            {avatarNode}
           </div>
         </HybridPopoverTooltip>
         <span className="text-[10px] text-muted-foreground truncate">{meeting.ownerName}</span>
@@ -203,7 +209,7 @@ function Owner({
   return (
     <HybridPopoverTooltip content={meeting.ownerName}>
       <div className={cn('shrink-0 cursor-pointer', className)} onClick={e => e.stopPropagation()}>
-        {avatar}
+        {avatarNode}
       </div>
     </HybridPopoverTooltip>
   )
@@ -235,6 +241,8 @@ function CreatedAt({ className }: { className?: string }) {
 
 function Phone({ className }: { className?: string }) {
   const { meeting } = useMeetingOverviewCard()
+  // Null phone renders nothing — gated agents get no UI hint that a phone
+  // might exist behind a lock.
   if (!meeting.customerPhone) {
     return null
   }
@@ -295,10 +303,10 @@ function OutcomeField({ variant = 'badge' }: { variant?: 'badge' | 'dot' }) {
 }
 
 function ScheduledDateField({
-  format: dateFormat = 'full',
+  format: dateFormat = 'short-stamp',
   onChange,
 }: {
-  format?: 'full' | 'date-only' | 'time-only' | 'relative'
+  format?: 'full' | 'date-only' | 'time-only' | 'relative' | 'short-stamp'
   onChange?: (date: Date) => void
 }) {
   const { meeting } = useMeetingOverviewCard()
@@ -321,6 +329,13 @@ function ScheduledDateField({
     case 'relative':
       display = formatDistanceToNow(date, { addSuffix: true })
       break
+    case 'short-stamp':
+      display = formatMeetingShortStamp(date)
+      break
+  }
+
+  if (!display) {
+    return null
   }
 
   if (onChange) {
@@ -438,37 +453,64 @@ function Trades({ max, className }: { max?: number, className?: string }) {
 
 // ── Proposals sub-component ────────────────────────────────────────────────────
 
+/**
+ * Proposals for this meeting.
+ *
+ * Two rendering modes — chosen by `showHeader`:
+ * - `showHeader=true` (default) — renders an `EntityList` with card chrome,
+ *   count, header action, and empty state. Use inside meeting detail views
+ *   where Proposals sits alongside Participants as a peer card.
+ * - `showHeader=false` — bare list of rows, no header, no card wrapper. Use
+ *   inside compact containers like kanban cards where the proposals are just
+ *   extra lines under a meeting summary.
+ */
 function Proposals({
   renderProposal,
   showHeader = true,
   className,
+  emptyStateAction,
+  entityListVariant = 'card',
 }: {
   renderProposal?: (proposal: MeetingOverviewCardProposal) => ReactNode
   showHeader?: boolean
   className?: string
+  /** Call-to-action shown when `proposals.length === 0` in card mode. */
+  emptyStateAction?: ReactNode
+  /** Chrome strategy passed to `EntityList`. See `EntityList.variant`. */
+  entityListVariant?: 'card' | 'flush'
 }) {
   const { meeting } = useMeetingOverviewCard()
-  const proposals = meeting.proposals
+  const proposals = meeting.proposals ?? []
 
-  if (!proposals || proposals.length === 0) {
+  if (showHeader) {
+    return (
+      <EntityList
+        title="Proposals"
+        icon={FileTextIcon}
+        items={proposals}
+        getItemKey={p => p.id}
+        renderItem={p => renderProposal ? renderProposal(p) : <DefaultProposalRow proposal={p} />}
+        variant={entityListVariant}
+        emptyState={{
+          message: 'No proposals yet.',
+          action: emptyStateAction,
+        }}
+        className={className}
+      />
+    )
+  }
+
+  if (proposals.length === 0) {
     return null
   }
 
   return (
-    <div className={className}>
-      {showHeader && (
-        <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground mb-1.5">
-          <FileTextIcon className="size-3" />
-          <span>{`Proposals (${proposals.length})`}</span>
-        </div>
-      )}
-      <div className="space-y-0.5">
-        {proposals.map(p => (
-          <React.Fragment key={p.id}>
-            {renderProposal ? renderProposal(p) : <DefaultProposalRow proposal={p} />}
-          </React.Fragment>
-        ))}
-      </div>
+    <div className={cn('space-y-0.5', className)}>
+      {proposals.map(p => (
+        <React.Fragment key={p.id}>
+          {renderProposal ? renderProposal(p) : <DefaultProposalRow proposal={p} />}
+        </React.Fragment>
+      ))}
     </div>
   )
 }

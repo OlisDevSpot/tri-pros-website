@@ -1,7 +1,8 @@
 import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
+import type { CustomersViewer } from '@/shared/dal/server/customers/api'
 
 import { TRPCError } from '@trpc/server'
-import { count, desc, eq, sql } from 'drizzle-orm'
+import { count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
@@ -10,10 +11,17 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 
-export async function getCustomerProfile(customerId: string): Promise<CustomerProfileData> {
+export async function getCustomerProfile(customerId: string, viewer: CustomersViewer): Promise<CustomerProfileData> {
+  const { phone: _phone, ...customerCols } = getTableColumns(customers)
+
   const [customer] = await db
-    .select()
+    .select({
+      ...customerCols,
+      phone: gatedPhoneSql(viewer.isSuperAdmin),
+      hasSentProposal: hasSentProposalSql(),
+    })
     .from(customers)
     .where(eq(customers.id, customerId))
 

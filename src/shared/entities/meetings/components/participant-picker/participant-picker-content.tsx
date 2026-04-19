@@ -60,9 +60,12 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
         <div className="space-y-1">
           {owner && (
             <CurrentParticipantRow
-              name={owner.userName ?? 'Unknown'}
-              email={owner.userEmail}
-              image={owner.userImage}
+              user={{
+                id: owner.userId,
+                name: owner.userName,
+                image: owner.userImage,
+                email: owner.userEmail,
+              }}
               role="owner"
               removeDisabled={!coOwner}
               removeDisabledReason={!coOwner ? 'Add a co-owner first to promote' : undefined}
@@ -74,9 +77,12 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
           )}
           {coOwner && (
             <CurrentParticipantRow
-              name={coOwner.userName ?? 'Unknown'}
-              email={coOwner.userEmail}
-              image={coOwner.userImage}
+              user={{
+                id: coOwner.userId,
+                name: coOwner.userName,
+                image: coOwner.userImage,
+                email: coOwner.userEmail,
+              }}
               role="co_owner"
               removeDisabled={false}
               isPending={pendingUserId === coOwner.userId}
@@ -145,9 +151,12 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
                           {available.map(u => (
                             <AvailableParticipantRow
                               key={u.id}
-                              name={u.name ?? u.email ?? 'Unknown'}
-                              email={u.email}
-                              image={u.image}
+                              user={{
+                                id: u.id,
+                                name: u.name,
+                                image: u.image,
+                                email: u.email,
+                              }}
                               inferredRole={owner ? 'co_owner' : 'owner'}
                               // Disable ALL Add buttons whenever any add is in-flight,
                               // so two near-simultaneous clicks on different rows can't

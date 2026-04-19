@@ -13,10 +13,11 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { computePipelineValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {
   if (pipeline === 'leads') {
-    return getLeadsPipelineItems()
+    return getLeadsPipelineItems(isOmni)
   }
 
   if (pipeline === 'projects') {
@@ -38,12 +39,13 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Pipelin
  * been scheduled for an in-home consultation yet.
  * Stage comes from customers.pipelineStage (repurposed for leads).
  */
-async function getLeadsPipelineItems(): Promise<CustomerPipelineItem[]> {
+async function getLeadsPipelineItems(isOmni: boolean): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .select({
       id: customers.id,
       name: customers.name,
-      phone: customers.phone,
+      phone: gatedPhoneSql(isOmni),
+      hasSentProposal: hasSentProposalSql(),
       email: customers.email,
       address: customers.address,
       city: customers.city,
@@ -64,6 +66,7 @@ async function getLeadsPipelineItems(): Promise<CustomerPipelineItem[]> {
     stage: (row.pipelineStage ?? 'new') as CustomerPipelineItem['stage'],
     name: row.name,
     phone: row.phone,
+    hasSentProposal: row.hasSentProposal,
     email: row.email,
     address: row.address,
     city: row.city,
@@ -92,7 +95,8 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
     .selectDistinctOn([customers.id], {
       id: customers.id,
       name: customers.name,
-      phone: customers.phone,
+      phone: gatedPhoneSql(isOmni),
+      hasSentProposal: hasSentProposalSql(),
       email: customers.email,
       address: customers.address,
       city: customers.city,
@@ -116,6 +120,7 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
     stage: defaultStage as CustomerPipelineItem['stage'],
     name: row.name,
     phone: row.phone,
+    hasSentProposal: row.hasSentProposal,
     email: row.email,
     address: row.address,
     city: row.city,
@@ -143,7 +148,8 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
     .select({
       customerId: customers.id,
       customerName: customers.name,
-      customerPhone: customers.phone,
+      customerPhone: gatedPhoneSql(isOmni),
+      customerHasSentProposal: hasSentProposalSql(),
       customerEmail: customers.email,
       customerAddress: customers.address,
       customerCity: customers.city,
@@ -268,6 +274,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       customerId: row.customerId,
       customerName: row.customerName,
       customerPhone: row.customerPhone,
+      customerHasSentProposal: row.customerHasSentProposal,
       customerEmail: row.customerEmail,
       customerAddress: row.customerAddress,
       customerCity: row.customerCity,
@@ -296,6 +303,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       stage,
       name: rawData.customerName,
       phone: rawData.customerPhone,
+      hasSentProposal: rawData.customerHasSentProposal,
       email: rawData.customerEmail,
       address: rawData.customerAddress,
       city: rawData.customerCity,
@@ -334,7 +342,8 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
       projectCreatedAt: projects.createdAt,
       customerId: customers.id,
       customerName: customers.name,
-      customerPhone: customers.phone,
+      customerPhone: gatedPhoneSql(isOmni),
+      customerHasSentProposal: hasSentProposalSql(),
       customerEmail: customers.email,
       customerAddress: customers.address,
       customerCity: customers.city,
@@ -457,6 +466,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
       stage: (row.projectPipelineStage ?? 'signed') as CustomerPipelineItem['stage'],
       name: row.customerName,
       phone: row.customerPhone,
+      hasSentProposal: row.customerHasSentProposal,
       email: row.customerEmail,
       address: row.customerAddress,
       city: row.customerCity,

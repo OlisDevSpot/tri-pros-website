@@ -109,9 +109,13 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
     }
   }
 
+  // addMutation triggers full meeting invalidation: new participants reshape
+  // swimlane combos, participant-avatar stacks, and any list surface that
+  // embeds meeting participants (schedule getAll, customer pipeline, dashboard).
   const addMutation = useMutation(
     trpc.meetingsRouter.manageParticipants.mutationOptions(
       makeOptions({
+        extraInvalidate: invalidateMeeting,
         mutateCache: (input, old) => {
           // Guard: role is required for add. If absent, skip the optimistic
           // insert — the server will reject with BAD_REQUEST and rollback runs.

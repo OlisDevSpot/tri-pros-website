@@ -1,5 +1,6 @@
 'use client'
 
+import type { SwimlaneCombo } from '@/features/schedule-management/lib/today-view-helpers'
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
@@ -7,10 +8,10 @@ import { isSameDay, parseISO } from 'date-fns'
 import { motion } from 'motion/react'
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
-import { getEventsForBucket, getUniqueOwners, groupEventsByOwner } from '@/features/schedule-management/lib/today-view-helpers'
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
+import { getEventsForBucket, getUniqueCombos, groupEventsByParticipantCombo } from '@/features/schedule-management/lib/today-view-helpers'
 import { ScrollBar } from '@/shared/components/ui/scroll-area'
 import { TODAY_VIEW_BUCKETS } from '@/shared/constants/today-view-buckets'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
 const BUCKET_COUNT = TODAY_VIEW_BUCKETS.length
@@ -40,8 +41,8 @@ export function ScheduleTodayView({
     [events, currentDate],
   )
 
-  const owners = useMemo(() => getUniqueOwners(todayEvents), [todayEvents])
-  const eventsByOwner = useMemo(() => groupEventsByOwner(todayEvents), [todayEvents])
+  const combos = useMemo(() => getUniqueCombos(todayEvents), [todayEvents])
+  const eventsByCombo = useMemo(() => groupEventsByParticipantCombo(todayEvents), [todayEvents])
 
   const viewportRef = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
@@ -71,7 +72,7 @@ export function ScheduleTodayView({
   const gridCols = makeGridCols(collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED)
   const gridMinWidth = (collapsed ? LABEL_COL_COLLAPSED : LABEL_COL_EXPANDED) + BUCKET_COUNT * BUCKET_COL_MIN_WIDTH
 
-  if (owners.length === 0) {
+  if (combos.length === 0) {
     return (
       <div className="flex h-full items-center justify-center">
         <span className="text-sm text-muted-foreground">No events scheduled for this day</span>
@@ -116,12 +117,12 @@ export function ScheduleTodayView({
             ))}
           </motion.div>
 
-          {/* Swimlane rows */}
-          {owners.map(owner => (
+          {/* Swimlane rows — one per unique participant combo */}
+          {combos.map(combo => (
             <SwimlaneRow
-              key={owner.id}
-              owner={owner}
-              ownerEvents={eventsByOwner.get(owner.id) ?? []}
+              key={combo.key}
+              combo={combo}
+              comboEvents={eventsByCombo.get(combo.key) ?? []}
               renderCard={renderCard}
               collapsed={collapsed}
               gridCols={gridCols}
@@ -150,20 +151,17 @@ export function ScheduleTodayView({
 }
 
 interface SwimlaneRowProps {
-  owner: { id: string, name: string | null, image: string | null }
-  ownerEvents: ScheduleCalendarEvent[]
+  combo: SwimlaneCombo
+  comboEvents: ScheduleCalendarEvent[]
   renderCard: (event: ScheduleCalendarEvent) => React.ReactNode
   collapsed: boolean
   gridCols: string
 }
 
-function SwimlaneRow({ owner, ownerEvents, renderCard, collapsed, gridCols }: SwimlaneRowProps) {
-  const initials = (owner.name ?? 'U')
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+function SwimlaneRow({ combo, comboEvents, renderCard, collapsed, gridCols }: SwimlaneRowProps) {
+  const comboLabel = combo.participants
+    .map(p => p.name ?? 'Unknown')
+    .join(' · ')
 
   return (
     <motion.div
@@ -172,24 +170,21 @@ function SwimlaneRow({ owner, ownerEvents, renderCard, collapsed, gridCols }: Sw
       animate={{ gridTemplateColumns: gridCols }}
       transition={TRANSITION}
     >
-      {/* Owner label — sticky left, collapses to avatar-only on scroll */}
+      {/* Combo label — sticky left, collapses to avatar-stack-only on scroll */}
       <div className="sticky left-0 z-10 flex items-center gap-2 overflow-hidden border-r bg-background px-3 py-3">
-        <Avatar className="h-6 w-6 shrink-0">
-          <AvatarImage src={owner.image ?? undefined} alt={owner.name ?? 'User'} />
-          <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-        </Avatar>
+        <UserOverviewCard.Stack users={combo.participants} max={3} size="sm" />
         <motion.span
           className="truncate text-xs font-medium leading-6 whitespace-nowrap"
           animate={{ opacity: collapsed ? 0 : 1, width: collapsed ? 0 : 'auto' }}
           transition={TRANSITION}
         >
-          {owner.name ?? 'Unknown'}
+          {comboLabel}
         </motion.span>
       </div>
 
       {/* Bucket cells */}
       {TODAY_VIEW_BUCKETS.map((bucket) => {
-        const bucketEvents = getEventsForBucket(ownerEvents, bucket)
+        const bucketEvents = getEventsForBucket(comboEvents, bucket)
 
         return (
           <div

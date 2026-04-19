@@ -9,9 +9,11 @@ import { EmptyState } from '@/shared/components/states/empty-state'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { CreateMeetingForm } from '@/shared/entities/meetings/components/create-meeting-form'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
+import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { cn } from '@/shared/lib/utils'
 import { MeetingProposalRow } from './meeting-proposal-row'
 
@@ -79,7 +81,7 @@ export function CustomerMeetingsList({
                   <MeetingOverviewCard meeting={meeting} customerId={customerId}>
                     <MeetingOverviewCard.Header className="px-3 py-2">
                       <MeetingOverviewCard.Fields fields={[
-                        { field: 'scheduledDate', format: 'full' },
+                        { field: 'scheduledDate' },
                         { field: 'type' },
                         { field: 'outcome' },
                         { field: 'proposalCount' },
@@ -88,17 +90,42 @@ export function CustomerMeetingsList({
                       <MeetingOverviewCard.CreatedAt />
                       <MeetingOverviewCard.Actions mode="compact" className="ml-auto opacity-60 hover:opacity-100 transition-opacity" />
                     </MeetingOverviewCard.Header>
-                    <MeetingOverviewCard.Proposals
-                      showHeader={false}
-                      className="border-t px-3 pt-2 pb-2 space-y-0.5"
-                      renderProposal={p => (
-                        <MeetingProposalRow
-                          key={p.id}
-                          proposal={p as CustomerProfileProposal}
-                          onMutationSuccess={_onMutationSuccess}
+                    {/* Peer detail panels: Participants | Proposals. One outer
+                        surface + internal divider (md+ = vertical, mobile =
+                        horizontal stack). Proposals is wider (3fr vs 2fr) —
+                        it's the primary content; participants is contextual. */}
+                    <div className="grid grid-cols-1 border-t divide-y md:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] md:divide-y-0 md:divide-x">
+                      <div className="p-3">
+                        <ParticipantsSlot meetingId={meeting.id} variant="full" entityListVariant="flush" />
+                      </div>
+                      <div className="p-3">
+                        <MeetingOverviewCard.Proposals
+                          showHeader
+                          entityListVariant="flush"
+                          emptyStateAction={ability.can('create', 'Proposal') && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 gap-1 text-xs"
+                              asChild
+                            >
+                              <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
+                                <PlusIcon className="size-3" />
+                                Create proposal
+                              </a>
+                            </Button>
+                          )}
+                          renderProposal={p => (
+                            <MeetingProposalRow
+                              key={p.id}
+                              proposal={p as CustomerProfileProposal}
+                              onMutationSuccess={_onMutationSuccess}
+                            />
+                          )}
                         />
-                      )}
-                    />
+                      </div>
+                    </div>
                   </MeetingOverviewCard>
                 </CardContent>
               </Card>

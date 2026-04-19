@@ -3,14 +3,17 @@
 import type { CustomerProfileProject, CustomerProfileProposal } from '@/shared/entities/customers/types'
 
 import { formatDistanceToNow } from 'date-fns'
-import { FolderOpenIcon, MapPinIcon } from 'lucide-react'
+import { FolderOpenIcon, MapPinIcon, PlusIcon } from 'lucide-react'
 import { useCallback } from 'react'
 
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
+import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
+import { useAbility } from '@/shared/domains/permissions/hooks'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
+import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 import { cn } from '@/shared/lib/utils'
 import { MeetingProposalRow } from './meeting-proposal-row'
@@ -25,6 +28,8 @@ interface Props {
 }
 
 export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNavigate, onAssignRep, highlightMeetingId }: Props) {
+  const ability = useAbility()
+  const canCreateProposal = ability.can('create', 'Proposal')
   const handleViewProject = useCallback(() => {
     onNavigate?.()
     window.location.href = ROOTS.dashboard.projects.byId(project.id)
@@ -91,7 +96,7 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
                       >
                         <MeetingOverviewCard.Header className="px-3 py-2">
                           <MeetingOverviewCard.Fields fields={[
-                            { field: 'scheduledDate', format: 'full' },
+                            { field: 'scheduledDate' },
                             { field: 'type' },
                             { field: 'outcome' },
                             { field: 'proposalCount' },
@@ -100,18 +105,39 @@ export function ProjectEntityCard({ customerId, project, onMutationSuccess, onNa
                           <MeetingOverviewCard.CreatedAt />
                           <MeetingOverviewCard.Actions mode="compact" className="ml-auto opacity-60 hover:opacity-100 transition-opacity" />
                         </MeetingOverviewCard.Header>
-                        <MeetingOverviewCard.Proposals
-                          showHeader={false}
-                          className="border-t px-3 pt-2 pb-2 space-y-0.5"
-                          renderProposal={p => (
-                            <MeetingProposalRow
-                              key={p.id}
-                              proposal={p as CustomerProfileProposal}
-                              onMutationSuccess={onMutationSuccess}
-                              onNavigate={onNavigate}
+                        <div className="grid grid-cols-1 border-t divide-y md:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] md:divide-y-0 md:divide-x">
+                          <div className="p-3">
+                            <ParticipantsSlot meetingId={meeting.id} variant="full" entityListVariant="flush" />
+                          </div>
+                          <div className="p-3">
+                            <MeetingOverviewCard.Proposals
+                              showHeader
+                              entityListVariant="flush"
+                              emptyStateAction={canCreateProposal && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 gap-1 text-xs"
+                                  asChild
+                                >
+                                  <a href={`${ROOTS.dashboard.proposals.new()}?meetingId=${meeting.id}`}>
+                                    <PlusIcon className="size-3" />
+                                    Create proposal
+                                  </a>
+                                </Button>
+                              )}
+                              renderProposal={p => (
+                                <MeetingProposalRow
+                                  key={p.id}
+                                  proposal={p as CustomerProfileProposal}
+                                  onMutationSuccess={onMutationSuccess}
+                                  onNavigate={onNavigate}
+                                />
+                              )}
                             />
-                          )}
-                        />
+                          </div>
+                        </div>
                       </MeetingOverviewCard>
                     </CardContent>
                   </Card>

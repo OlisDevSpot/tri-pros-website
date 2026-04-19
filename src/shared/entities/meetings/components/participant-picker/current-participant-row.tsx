@@ -1,18 +1,17 @@
 'use client'
 
+import type { UserOverviewCardUser } from '@/shared/entities/users/components/overview-card'
+
 import { Loader2, X } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
-import { getInitials } from '@/shared/entities/users/lib/get-initials'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
 import { ParticipantRoleIcon } from './participant-role-icon'
 
 interface CurrentParticipantRowProps {
-  name: string
-  email: string | null
-  image: string | null
+  user: UserOverviewCardUser
   role: 'owner' | 'co_owner'
   /** Disable the remove button (last owner protection). */
   removeDisabled: boolean
@@ -29,9 +28,7 @@ interface CurrentParticipantRowProps {
 }
 
 export function CurrentParticipantRow({
-  name,
-  email,
-  image,
+  user,
   role,
   removeDisabled,
   removeDisabledReason,
@@ -41,24 +38,21 @@ export function CurrentParticipantRow({
   onRemove,
 }: CurrentParticipantRowProps) {
   const isOwner = role === 'owner'
-  const roleLabel = isOwner ? 'Owner' : 'Co-owner'
+  const name = user.name ?? 'Unknown'
 
   return (
-    <div
+    <UserOverviewCard
+      user={user}
+      meta={{ role }}
       className={cn(
         'flex items-center gap-2 rounded-md border border-border bg-card p-2',
         isPending && 'pointer-events-none opacity-60',
       )}
     >
-      <Avatar className="size-6 shrink-0">
-        <AvatarImage src={image ?? undefined} alt="" />
-        <AvatarFallback className="text-[10px] font-semibold">
-          {getInitials(name)}
-        </AvatarFallback>
-      </Avatar>
+      <UserOverviewCard.Avatar size="sm" className="size-6" />
 
       <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
-        <div className="truncate text-sm font-medium text-foreground">{name}</div>
+        <UserOverviewCard.Name className="text-sm font-medium text-foreground" />
         <div className="truncate text-xs text-muted-foreground">
           <span
             className={cn(
@@ -66,9 +60,9 @@ export function CurrentParticipantRow({
               isOwner ? 'text-primary' : 'text-teal-700 dark:text-teal-400',
             )}
           >
-            {roleLabel}
+            {isOwner ? 'Owner' : 'Co-owner'}
           </span>
-          {email}
+          {user.email}
         </div>
       </div>
 
@@ -139,6 +133,6 @@ export function CurrentParticipantRow({
                 {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
               </button>
             )}
-    </div>
+    </UserOverviewCard>
   )
 }
