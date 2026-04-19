@@ -1,13 +1,13 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useParticipantMutations } from '@/shared/entities/meetings/hooks/use-participant-mutations'
 import { useTRPC } from '@/trpc/helpers'
 
 import { AddParticipantRow } from './add-participant-row'
@@ -24,7 +24,8 @@ interface ManageParticipantsModalProps {
  * Full participant management. Used as a fallback from the inline picker for
  * helper management, and as the dropdown-action target ("Manage participants…").
  *
- * v1: bulk mode iterates manageParticipants per meeting client-side.
+ * v1: bulk mode iterates manageParticipants per meeting client-side, with
+ * per-meeting optimistic cache updates handled by useParticipantMutations.
  */
 export function ManageParticipantsModal({
   meetingIds,
@@ -33,10 +34,7 @@ export function ManageParticipantsModal({
   onSuccess,
 }: ManageParticipantsModalProps) {
   const trpc = useTRPC()
-  const qc = useQueryClient()
-  const { invalidateMeeting } = useInvalidation()
   const [search, setSearch] = useState('')
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null)
 
   // For v1 single-meeting fast path. Bulk mode reads first meeting's participants for display reference.
   const primaryMeetingId = meetingIds[0] ?? ''
@@ -51,24 +49,11 @@ export function ManageParticipantsModal({
     enabled: open,
   })
 
-  // Note: no onError/onSuccess toast here — applyToAll handles all user-facing
-  // feedback so single and bulk paths emit one summary toast each.
-  const mutation = useMutation(
-    trpc.meetingsRouter.manageParticipants.mutationOptions({
-      onMutate: ({ userId }) => {
-        setPendingUserId(userId)
-      },
-      onSettled: () => {
-        setPendingUserId(null)
-        if (meetingIds.length === 1) {
-          void qc.invalidateQueries(
-            trpc.meetingsRouter.getParticipants.queryOptions({ meetingId: primaryMeetingId }),
-          )
-        }
-        invalidateMeeting()
-      },
-    }),
-  )
+  // Shared optimistic mutations. The hook owns pendingUserId tracking, cache
+  // snapshot/rollback, and per-meeting participants invalidation. `silent: true`
+  // suppresses the per-mutation toast so applyToAll can emit a single bulk
+  // summary toast instead.
+  const { pendingUserId, addMutation, removeMutation, changeRoleMutation } = useParticipantMutations({ silent: true })
 
   async function applyToAll(
     action: 'add' | 'change_role' | 'remove',
@@ -77,9 +62,15 @@ export function ManageParticipantsModal({
   ) {
     const total = meetingIds.length
     const results = await Promise.allSettled(
-      meetingIds.map(meetingId =>
-        mutation.mutateAsync({ action, meetingId, role, userId }),
-      ),
+      meetingIds.map((meetingId) => {
+        if (action === 'add') {
+          return addMutation.mutateAsync({ action: 'add', meetingId, role, userId })
+        }
+        if (action === 'remove') {
+          return removeMutation.mutateAsync({ action: 'remove', meetingId, userId })
+        }
+        return changeRoleMutation.mutateAsync({ action: 'change_role', meetingId, role, userId })
+      }),
     )
 
     const failures = results

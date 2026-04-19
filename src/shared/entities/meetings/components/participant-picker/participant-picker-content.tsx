@@ -11,11 +11,11 @@ import {
   CommandInput,
   CommandList,
 } from '@/shared/components/ui/command'
+import { useParticipantMutations } from '@/shared/entities/meetings/hooks/use-participant-mutations'
 import { useTRPC } from '@/trpc/helpers'
 
 import { AvailableParticipantRow } from './available-participant-row'
 import { CurrentParticipantRow } from './current-participant-row'
-import { useParticipantPickerMutations } from './use-participant-picker-mutations'
 
 interface ParticipantPickerContentProps {
   meetingId: string
@@ -34,7 +34,7 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
     trpc.meetingsRouter.getInternalUsers.queryOptions(),
   )
 
-  const { pendingUserId, add, remove, promoteToOwner } = useParticipantPickerMutations({ meetingId })
+  const { pendingUserId, add, remove, promoteToOwner } = useParticipantMutations({ meetingId })
 
   const participants = participantsQuery.data ?? []
 
