@@ -13,8 +13,8 @@ interface ParticipantSummary {
   image: string | null
 }
 
-interface ParticipantPickerTriggerProps {
-  ref?: React.Ref<HTMLButtonElement>
+interface ParticipantPickerTriggerProps
+  extends Omit<React.ComponentProps<typeof Button>, 'children' | 'variant' | 'size'> {
   owner: ParticipantSummary | null
   coOwner: ParticipantSummary | null
   variant?: 'default' | 'compact'
@@ -27,6 +27,8 @@ export function ParticipantPickerTrigger({
   coOwner,
   variant = 'default',
   isLoading = false,
+  className,
+  ...rest
 }: ParticipantPickerTriggerProps) {
   const summary = !owner && !coOwner
     ? 'Unassigned'
@@ -38,13 +40,14 @@ export function ParticipantPickerTrigger({
 
   return (
     <Button
+      {...rest}
       ref={ref}
       type="button"
       variant="outline"
       size="sm"
       disabled={isLoading}
-      aria-label={isCompact ? `Participants: ${summary}` : undefined}
-      className={cn('gap-2', isCompact && 'h-8 px-2')}
+      aria-label={isCompact ? `Participants: ${summary}` : rest['aria-label']}
+      className={cn('gap-2', isCompact && 'h-8 px-2', className)}
     >
       <span className="flex items-center -space-x-1.5">
         {owner && (
