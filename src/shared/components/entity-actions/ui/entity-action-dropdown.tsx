@@ -200,16 +200,27 @@ function EntityActionCustomItem<TEntity>({
 }: CustomItemProps<TEntity>) {
   const { action, renderContent, isLoading, isDisabled } = config
   const Icon = action.icon
+  // Controlled submenu state. Needed because cmdk's <Command> / <CommandInput>
+  // call stopPropagation on pointer/key events, which prevents Radix's default
+  // close-on-pointer-leave / close-on-sibling-hover behavior from firing.
+  const [subOpen, setSubOpen] = useState(false)
 
   return (
     <>
       {action.separatorBefore && <DropdownMenuSeparator />}
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger disabled={isLoading || isDisabled}>
+      <DropdownMenuSub open={subOpen} onOpenChange={setSubOpen}>
+        <DropdownMenuSubTrigger
+          disabled={isLoading || isDisabled}
+          onPointerEnter={() => setSubOpen(true)}
+        >
           <Icon className="h-3.5 w-3.5" />
           {action.label}
         </DropdownMenuSubTrigger>
-        <DropdownMenuSubContent className="w-[min(420px,calc(100vw-2rem))] p-0">
+        <DropdownMenuSubContent
+          className="w-[min(420px,calc(100vw-2rem))] p-0"
+          onFocusOutside={() => setSubOpen(false)}
+          onInteractOutside={() => setSubOpen(false)}
+        >
           {renderContent(entity, closeDropdown)}
         </DropdownMenuSubContent>
       </DropdownMenuSub>
