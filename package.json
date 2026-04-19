@@ -26,8 +26,8 @@
     "migrate:notes:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notes-to-activities.ts",
     "migrate:notion": "tsx scripts/migrate-notion-contacts.ts",
     "migrate:notion:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notion-contacts.ts",
-    "rebuild:gcal": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
-    "rebuild:gcal:dev": "DRIZZLE_TARGET=dev NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
+    "rebuild:gcal": "NODE_ENV=production NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
+    "rebuild:gcal:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "meta": "tsx scripts/meta/index.ts",
     "dispatch": "bash scripts/dispatch.sh",
     "tunnel": "ngrok http --url=destined-emu-bold.ngrok-free.app 3000"
