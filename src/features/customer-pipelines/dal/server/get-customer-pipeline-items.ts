@@ -12,7 +12,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { computePipelineValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
+import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {
@@ -455,7 +455,10 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
   return Array.from(customerProjectMap.entries()).map(([customerId, row]): CustomerPipelineItem => {
     const projectMeetings = meetingsByCustomer.get(customerId) ?? []
     const allProposals = projectMeetings.flatMap(m => m.proposals)
-    const totalValue = computePipelineValue(
+    // Projects pipeline: sum only approved proposals. A project already
+    // represents committed work — sent/draft upsells under the same project
+    // shouldn't inflate its total (computePipelineValue would average them).
+    const totalValue = computeProjectValue(
       projectMeetings.flatMap(m => m.proposals.map(p => ({ meetingId: m.id, status: p.status, value: p.value }))),
     )
     const firstRep = projectMeetings[0]

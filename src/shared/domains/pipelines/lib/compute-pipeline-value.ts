@@ -15,6 +15,28 @@ interface ProposalForValue {
   value: number | null
 }
 
+/**
+ * Sum of approved proposal values for the PROJECTS pipeline.
+ *
+ * A project only comes into existence once at least one proposal is
+ * approved, so the displayed total should represent money actually
+ * committed — not pipeline expectation. Sent/draft/declined proposals
+ * attached to meetings under the project don't belong in this total
+ * (they're upsells, re-quotes, or dead offers).
+ *
+ * Use `computePipelineValue` (above) for the meetings pipeline where
+ * uncertainty averaging still makes sense.
+ */
+export function computeProjectValue(proposals: ProposalForValue[]): number {
+  let total = 0
+  for (const p of proposals) {
+    if (p.status === 'approved' && p.value != null && p.value > 0) {
+      total += p.value
+    }
+  }
+  return Math.round(total)
+}
+
 export function computePipelineValue(proposals: ProposalForValue[]): number {
   // Group proposals by meetingId
   const byMeeting = new Map<string, ProposalForValue[]>()
