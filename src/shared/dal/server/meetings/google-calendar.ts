@@ -1,6 +1,7 @@
 import type { MeetingForGCal } from '@/shared/services/google-calendar/lib/map-to-gcal'
 
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { eq, isNotNull } from 'drizzle-orm'
+import { getParticipantEmails } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -13,6 +14,7 @@ export async function getMeetingForGCal(meetingId: string): Promise<MeetingForGC
       id: meetings.id,
       scheduledFor: meetings.scheduledFor,
       meetingType: meetings.meetingType,
+      projectId: meetings.projectId,
       agentNotes: meetings.agentNotes,
       flowStateJSON: meetings.flowStateJSON,
       gcalEventId: meetings.gcalEventId,
@@ -35,11 +37,13 @@ export async function getMeetingForGCal(meetingId: string): Promise<MeetingForGC
 
   const flowState = row.flowStateJSON as { tradeSelections?: { tradeName: string, selectedScopes: { label: string }[] }[] } | null
   const tradeSelections = flowState?.tradeSelections ?? []
+  const participantEmails = await getParticipantEmails(meetingId)
 
   return {
     id: row.id,
     scheduledFor: row.scheduledFor,
     meetingType: row.meetingType,
+    projectId: row.projectId,
     customerName: row.customerName,
     customerPhone: row.customerPhone,
     customerEmail: row.customerEmail,
@@ -51,14 +55,15 @@ export async function getMeetingForGCal(meetingId: string): Promise<MeetingForGC
     tradeSelections,
     gcalEventId: row.gcalEventId,
     gcalEtag: row.gcalEtag,
+    participantEmails,
   }
 }
 
-export async function getMeetingsByOwnerWithSchedule(userId: string): Promise<{ id: string }[]> {
+export async function getAllMeetingsWithSchedule(): Promise<{ id: string }[]> {
   return db
     .select({ id: meetings.id })
     .from(meetings)
-    .where(and(eq(meetings.ownerId, userId), isNotNull(meetings.scheduledFor)))
+    .where(isNotNull(meetings.scheduledFor))
 }
 
 export async function getMeetingByGCalEventId(gcalEventId: string) {
@@ -91,10 +96,10 @@ export async function clearMeetingGCalFields(meetingId: string): Promise<void> {
     .where(eq(meetings.id, meetingId))
 }
 
-export async function clearAllMeetingGCalFieldsForUser(userId: string): Promise<void> {
+export async function clearAllMeetingGCalFields(): Promise<void> {
   await db.update(meetings)
     .set({ gcalEventId: null, gcalEtag: null, gcalSyncedAt: null })
-    .where(eq(meetings.ownerId, userId))
+    .where(isNotNull(meetings.gcalEventId))
 }
 
 export async function updateMeetingScheduledFor(

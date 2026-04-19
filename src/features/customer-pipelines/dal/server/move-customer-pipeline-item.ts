@@ -5,6 +5,7 @@ import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fr
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
+import { userParticipatesInMeeting } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -86,7 +87,7 @@ export async function moveCustomerPipelineItem({ customerId, fromStage, toStage,
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        isOmni ? undefined : eq(meetings.ownerId, userId),
+        isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
         eq(meetings.meetingOutcome, 'not_set'),
       ))
       .orderBy(meetings.createdAt)

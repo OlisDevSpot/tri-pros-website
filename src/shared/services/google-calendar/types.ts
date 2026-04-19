@@ -24,6 +24,8 @@ export interface GCalEventInput {
   location?: string
   start: GCalDateTime
   end: GCalDateTime
+  attendees?: { email: string }[]
+  colorId?: string
 }
 
 export interface GCalEventListResponse {

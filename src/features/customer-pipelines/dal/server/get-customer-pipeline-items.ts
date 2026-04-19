@@ -5,6 +5,7 @@ import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import { and, count, desc, eq, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
 
 import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
+import { userParticipatesInMeeting } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -103,7 +104,7 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
       eq(meetings.customerId, customers.id),
       eq(meetings.pipeline, pipeline as 'fresh' | 'rehash' | 'dead'),
       isNull(meetings.projectId),
-      isOmni ? undefined : eq(meetings.ownerId, userId),
+      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
     ))
     .orderBy(customers.id, desc(customers.updatedAt))
 
@@ -160,7 +161,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       eq(meetings.customerId, customers.id),
       eq(meetings.pipeline, 'fresh'),
       isNull(meetings.projectId),
-      isOmni ? undefined : eq(meetings.ownerId, userId),
+      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
     ))
     .groupBy(customers.id)
     .orderBy(desc(customers.updatedAt))
@@ -206,7 +207,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
     .innerJoin(user, eq(user.id, meetings.ownerId))
     .where(and(
       inArray(meetings.customerId, customerIds),
-      isOmni ? undefined : eq(meetings.ownerId, userId),
+      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
     ))
     .orderBy(meetings.customerId, desc(meetings.scheduledFor))
 
@@ -346,7 +347,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
       isNotNull(projects.customerId),
       isOmni
         ? undefined
-        : sql`(${projects.ownerId} = ${userId} OR ${projects.isPublic} = true OR EXISTS (SELECT 1 FROM meetings m WHERE m.project_id = ${projects.id} AND m.owner_id = ${userId}))`,
+        : sql`(${projects.ownerId} = ${userId} OR ${projects.isPublic} = true OR EXISTS (SELECT 1 FROM meetings m INNER JOIN meeting_participants mp ON mp.meeting_id = m.id WHERE m.project_id = ${projects.id} AND mp.user_id = ${userId}))`,
     ))
     .orderBy(desc(projects.createdAt))
 
@@ -379,7 +380,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
     .where(and(
       inArray(meetings.customerId, customerIds),
       isNotNull(meetings.projectId),
-      isOmni ? undefined : eq(meetings.ownerId, userId),
+      isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
     ))
     .orderBy(desc(meetings.createdAt))
 

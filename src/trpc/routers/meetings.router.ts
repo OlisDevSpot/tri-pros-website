@@ -4,9 +4,22 @@ import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm
 import z from 'zod'
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
-import { meetingTypes } from '@/shared/constants/enums'
+import { meetingParticipantRoles, meetingTypes } from '@/shared/constants/enums'
+import {
+  addParticipant,
+  countParticipantsByRole,
+  getOwnerCoOwnerForMeetings,
+  getParticipantByRole,
+  getParticipantsForMeeting,
+  isParticipant,
+  removeParticipant,
+  updateParticipantRole,
+  userParticipatesInMeeting,
+} from '@/shared/dal/server/meetings/participants'
+import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
-import { customers, insertMeetingSchema, mediaFiles, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
+import { isUniqueViolation } from '@/shared/db/lib/pg-errors'
+import { customers, insertMeetingSchema, mediaFiles, meetingParticipants, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
@@ -15,11 +28,23 @@ import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
-  // Get all meetings — super-admin sees all, agents see their own
+  // Get all meetings — super-admin sees all, agents see their own.
+  //
+  // Owner + co-owner are resolved via the meetingParticipants junction table
+  // (single source of truth) so each row carries the data needed by the
+  // ParticipantPicker / ReadOnlyParticipantSummary as initial cache. This
+  // eliminates the per-row getParticipants fetch on table mount.
+  //
+  // Participants are batched in a separate query (rather than role-filtered
+  // LEFT JOINs) so a defensive duplicate row in `meeting_participants` can
+  // never multiply the meetings result via cross-product. The DB-level
+  // partial unique indexes (see meeting-participants schema) prevent
+  // duplicates in the first place; this is belt-and-suspenders.
   getAll: agentProcedure
     .query(async ({ ctx }) => {
       const isOmni = ctx.ability.can('manage', 'all')
-      return db
+
+      const rows = await db
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
@@ -28,6 +53,8 @@ export const meetingsRouter = createTRPCRouter({
           customerCity: customers.city,
           customerState: customers.state,
           customerZip: customers.zip,
+          // Legacy fields — still derived from meetings.ownerId for backward
+          // compatibility with consumers that read ownerName/ownerImage directly.
           ownerName: user.name,
           ownerImage: user.image,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
@@ -37,8 +64,55 @@ export const meetingsRouter = createTRPCRouter({
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
         .leftJoin(user, eq(user.id, meetings.ownerId))
-        .where(isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id))
+        .where(isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id))
         .orderBy(desc(meetings.createdAt))
+
+      // Batch-fetch owner + co_owner participants for all returned meetings.
+      // First-encountered wins per (meetingId, role) — DAL orders by
+      // created_at ASC for determinism in the defensive duplicate case.
+      const meetingIds = rows.map(r => r.id)
+      const participantRows = await getOwnerCoOwnerForMeetings(meetingIds)
+
+      const ownerByMeeting = new Map<string, typeof participantRows[number]>()
+      const coOwnerByMeeting = new Map<string, typeof participantRows[number]>()
+      for (const p of participantRows) {
+        if (p.role === 'owner' && !ownerByMeeting.has(p.meetingId)) {
+          ownerByMeeting.set(p.meetingId, p)
+        }
+        if (p.role === 'co_owner' && !coOwnerByMeeting.has(p.meetingId)) {
+          coOwnerByMeeting.set(p.meetingId, p)
+        }
+      }
+
+      // Reshape into nested owner/coOwner objects (or null) so consumers can
+      // pass them as `initialOwner` / `initialCoOwner` props to the picker.
+      return rows.map((row) => {
+        const ownerRow = ownerByMeeting.get(row.id)
+        const coOwnerRow = coOwnerByMeeting.get(row.id)
+        return {
+          ...row,
+          owner: ownerRow
+            ? {
+                id: ownerRow.participantId,
+                userId: ownerRow.userId,
+                role: 'owner' as const,
+                userName: ownerRow.userName,
+                userEmail: ownerRow.userEmail,
+                userImage: ownerRow.userImage,
+              }
+            : null,
+          coOwner: coOwnerRow
+            ? {
+                id: coOwnerRow.participantId,
+                userId: coOwnerRow.userId,
+                role: 'co_owner' as const,
+                userName: coOwnerRow.userName,
+                userEmail: coOwnerRow.userEmail,
+                userImage: coOwnerRow.userImage,
+              }
+            : null,
+        }
+      })
     }),
 
   // Create a new meeting record (called when an agent starts a meeting)
@@ -63,10 +137,13 @@ export const meetingsRouter = createTRPCRouter({
         })
         .returning()
 
+      // Mirror ownership in the participant junction table
+      await addParticipant(created.id, ctx.session.user.id, 'owner')
+
       if (created.scheduledFor) {
         await schedulingService
           .pushToGCal(ctx.session.user.id, 'meeting', created.id)
-          .catch(() => {})
+          .catch(err => console.error(`[meetings.create] GCal push failed for ${created.id}:`, err))
       }
 
       return created
@@ -108,7 +185,7 @@ export const meetingsRouter = createTRPCRouter({
       if ('scheduledFor' in rest || 'meetingType' in rest || 'agentNotes' in rest) {
         await schedulingService
           .pushToGCal(ctx.session.user.id, 'meeting', id)
-          .catch(() => {})
+          .catch(err => console.error(`[meetings.update] GCal push failed for ${id}:`, err))
       }
 
       // Publish realtime event for cross-device sync
@@ -210,7 +287,7 @@ export const meetingsRouter = createTRPCRouter({
       const [original] = await db
         .select()
         .from(meetings)
-        .where(and(eq(meetings.id, input.id), isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id)))
+        .where(and(eq(meetings.id, input.id), isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id)))
 
       if (!original) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
@@ -227,6 +304,15 @@ export const meetingsRouter = createTRPCRouter({
         })
         .returning()
 
+      // Mirror ownership in the participant junction table
+      await addParticipant(created.id, ctx.session.user.id, 'owner')
+
+      if (created.scheduledFor) {
+        await schedulingService
+          .pushToGCal(ctx.session.user.id, 'meeting', created.id)
+          .catch(err => console.error(`[meetings.duplicate] GCal push failed for ${created.id}:`, err))
+      }
+
       return created
     }),
 
@@ -237,7 +323,7 @@ export const meetingsRouter = createTRPCRouter({
       const isOmni = ctx.ability.can('manage', 'all')
       await db
         .delete(meetings)
-        .where(and(eq(meetings.id, input.id), isOmni ? undefined : eq(meetings.ownerId, ctx.session.user.id)))
+        .where(and(eq(meetings.id, input.id), isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id)))
     }),
 
   // List all internal users (agents + super-admins) for the owner assignment dropdown.
@@ -265,29 +351,176 @@ export const meetingsRouter = createTRPCRouter({
       return internalUsers
     }),
 
-  // Reassign meeting ownership to another internal user.
+  // Returns all participants for a meeting with user info (name, email, image).
+  // Used by the inline ParticipantPicker and ManageParticipantsModal.
+  // Super-admins (manage all) can read any meeting; agents can only read meetings
+  // they are a participant of.
+  getParticipants: agentProcedure
+    .input(z.object({ meetingId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+
+      if (!isOmni && !(await isParticipant(input.meetingId, ctx.session.user.id))) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have access to this meeting',
+        })
+      }
+
+      return getParticipantsForMeeting(input.meetingId)
+    }),
+
+  // Manage meeting participants (add/remove/change role).
   // Only users with 'assign' permission on Meeting may call this.
-  assignOwner: agentProcedure
+  manageParticipants: agentProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
-      newOwnerId: z.string().min(1),
+      action: z.enum(['add', 'remove', 'change_role']),
+      userId: z.string().min(1),
+      role: z.enum(meetingParticipantRoles).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.ability.cannot('assign', 'Meeting')) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to assign meeting owners' })
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can manage meeting participants' })
       }
 
-      const [updated] = await db
-        .update(meetings)
-        .set({ ownerId: input.newOwnerId })
-        .where(eq(meetings.id, input.meetingId))
-        .returning()
+      const { meetingId, action, userId, role } = input
 
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
+      if (action === 'add') {
+        if (!role) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Role is required when adding a participant' })
+        }
+
+        // Pre-insert checks: fast-fail with friendly messages in the common
+        // non-racing case. The DB-level partial unique indexes
+        // (meeting_one_owner_idx, meeting_one_co_owner_idx) are the actual
+        // race-safe enforcement — these checks are no longer load-bearing.
+        if (role === 'owner') {
+          const existingOwner = await getParticipantByRole(meetingId, 'owner')
+          if (existingOwner && existingOwner.userId !== userId) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has an owner. Use change_role to swap.' })
+          }
+        }
+
+        if (role === 'co_owner') {
+          const coOwnerCount = await countParticipantsByRole(meetingId, 'co_owner')
+          if (coOwnerCount >= 1) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has a co-owner.' })
+          }
+        }
+
+        try {
+          await addParticipant(meetingId, userId, role)
+        }
+        catch (err) {
+          if (isUniqueViolation(err)) {
+            if (role === 'owner') {
+              throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has an owner.' })
+            }
+            if (role === 'co_owner') {
+              throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has a co-owner.' })
+            }
+            // helper has no slot constraint — must be the (meeting_id, user_id)
+            // collision (user already a participant in some role).
+            throw new TRPCError({ code: 'CONFLICT', message: 'User is already a participant in this meeting.' })
+          }
+          throw err
+        }
+
+        if (role === 'owner') {
+          await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
+        }
       }
 
-      return updated
+      if (action === 'remove') {
+        const existingOwner = await getParticipantByRole(meetingId, 'owner')
+        const isRemovingOwner = existingOwner?.userId === userId
+
+        if (isRemovingOwner) {
+          const existingCoOwner = await getParticipantByRole(meetingId, 'co_owner')
+
+          if (existingCoOwner) {
+            // Promote co-owner to owner; remove the outgoing owner.
+            await removeParticipant(meetingId, userId)
+            await updateParticipantRole(meetingId, existingCoOwner.userId, 'owner')
+            await db.update(meetings).set({ ownerId: existingCoOwner.userId }).where(eq(meetings.id, meetingId))
+          }
+          else {
+            // No co-owner — fall back to system user (preserve prior behavior).
+            await removeParticipant(meetingId, userId)
+            const systemOwnerId = await getSystemOwnerId()
+            await addParticipant(meetingId, systemOwnerId, 'owner')
+            await db.update(meetings).set({ ownerId: systemOwnerId }).where(eq(meetings.id, meetingId))
+          }
+        }
+        else {
+          await removeParticipant(meetingId, userId)
+        }
+      }
+
+      if (action === 'change_role') {
+        if (!role) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Role is required when changing role' })
+        }
+
+        if (role === 'owner') {
+          const currentOwner = await getParticipantByRole(meetingId, 'owner')
+          if (currentOwner && currentOwner.userId !== userId) {
+            // Demote current owner. If there's already a co_owner, remove the
+            // outgoing owner instead of creating a 2-co_owner conflict.
+            const existingCoOwner = await getParticipantByRole(meetingId, 'co_owner')
+            if (existingCoOwner && existingCoOwner.userId !== userId) {
+              await removeParticipant(meetingId, currentOwner.userId)
+            }
+            else {
+              await updateParticipantRole(meetingId, currentOwner.userId, 'co_owner')
+            }
+          }
+          // Upsert the incoming user as owner. They may already be a participant
+          // (in any role), or they may not be in the table at all.
+          const existingRow = await db.query.meetingParticipants.findFirst({
+            where: and(
+              eq(meetingParticipants.meetingId, meetingId),
+              eq(meetingParticipants.userId, userId),
+            ),
+          })
+          if (existingRow) {
+            if (existingRow.role !== 'owner') {
+              await updateParticipantRole(meetingId, userId, 'owner')
+            }
+          }
+          else {
+            try {
+              await addParticipant(meetingId, userId, 'owner')
+            }
+            catch (err) {
+              if (isUniqueViolation(err)) {
+                throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has an owner.' })
+              }
+              throw err
+            }
+          }
+          await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
+        }
+        else if (role === 'co_owner') {
+          const existingCoOwner = await getParticipantByRole(meetingId, 'co_owner')
+          if (existingCoOwner && existingCoOwner.userId !== userId) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has a co-owner.' })
+          }
+          await updateParticipantRole(meetingId, userId, role)
+        }
+        else {
+          await updateParticipantRole(meetingId, userId, role)
+        }
+      }
+
+      // Push updated attendee list to Google Calendar
+      const systemOwnerId = await getSystemOwnerId()
+      await schedulingService
+        .pushToGCal(systemOwnerId, 'meeting', meetingId)
+        .catch(err => console.error(`[manageParticipants] GCal push failed for ${meetingId}:`, err))
+
+      return { success: true }
     }),
 
   // Fetch portfolio projects relevant to the trades/scopes selected in the meeting flow.

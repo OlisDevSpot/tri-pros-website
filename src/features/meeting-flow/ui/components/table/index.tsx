@@ -10,7 +10,8 @@ import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components
 import { meetingTableFilters } from '@/features/meeting-flow/constants/table-filter-config'
 import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-class'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { AssignRepDialog } from '@/shared/entities/meetings/components/assign-rep-dialog'
+import { useAbility } from '@/shared/domains/permissions/hooks'
+import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
@@ -27,11 +28,12 @@ interface Props {
 }
 
 export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataChange }: Props) {
+  const ability = useAbility()
   const { updateOutcome, updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
 
   // Dialog state
-  const [assignRepDialog, setAssignRepDialog] = useState<{ meetingId: string, currentOwnerId: string } | null>(null)
+  const [assignRepDialog, setAssignRepDialog] = useState<{ meetingId: string } | null>(null)
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
 
   const handleView = useCallback((entity: MeetingRow) => {
@@ -46,7 +48,7 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
   }, [setModal, openModal])
 
   const handleAssignOwner = useCallback((entity: MeetingRow) => {
-    setAssignRepDialog({ meetingId: entity.id, currentOwnerId: entity.ownerId })
+    setAssignRepDialog({ meetingId: entity.id })
   }, [])
 
   const handleAssignProject = useCallback((entity: MeetingRow) => {
@@ -63,9 +65,10 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
     meetingActions: () => sharedActions,
     onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome }),
     onUpdateScheduledFor: (meetingId: string, date: Date) => updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
-    onAssignRep: (meetingId: string, currentOwnerId: string) => {
-      setAssignRepDialog({ meetingId, currentOwnerId })
+    onAssignRep: (meetingId: string, _currentOwnerId: string) => {
+      setAssignRepDialog({ meetingId })
     },
+    canAssignMeeting: ability.can('assign', 'Meeting'),
   }
 
   return (
@@ -91,9 +94,8 @@ export function PastMeetingsTable({ data, onFilteredCountChange, onFilteredDataC
       />
 
       {/* Assign rep dialog */}
-      <AssignRepDialog
+      <ManageParticipantsModal
         meetingIds={assignRepDialog ? [assignRepDialog.meetingId] : []}
-        currentRepId={assignRepDialog?.currentOwnerId}
         open={!!assignRepDialog}
         onOpenChange={open => !open && setAssignRepDialog(null)}
       />
