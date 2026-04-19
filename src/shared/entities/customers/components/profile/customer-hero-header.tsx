@@ -30,6 +30,7 @@ import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
 import { getInitials } from '@/shared/entities/users/lib/get-initials'
 import { copyToClipboard } from '@/shared/lib/clipboard'
 import { formatAsPhoneNumber, formatCustomerAddress } from '@/shared/lib/formatters'
+import { openExternalUrl } from '@/shared/lib/pwa'
 import { cn } from '@/shared/lib/utils'
 import { AddressEditDialog } from './address-edit-dialog'
 
@@ -74,9 +75,13 @@ export function CustomerHeroHeader({ customer, editForm }: Props) {
         <div className="flex items-center gap-1.5">
           {editForm.isEditing && canEditContact
             ? (
+                // Bounded width keeps the save/cancel buttons visually anchored
+                // close to where the pencil sat — the input never fills the
+                // whole row, so there is minimal layout shift between display
+                // and edit modes. Width is stable regardless of typed content.
                 <Input
                   {...editForm.form.register('name')}
-                  className="h-8 flex-1 bg-white/10 text-lg font-semibold tracking-tight text-white placeholder:text-white/50 sm:text-xl"
+                  className="h-8 w-full max-w-64 bg-white/10 text-lg font-semibold tracking-tight text-white placeholder:text-white/50 sm:max-w-80 sm:text-xl"
                   placeholder="Customer name"
                 />
               )
@@ -183,22 +188,19 @@ function AddressBadge({ address, canEdit, onEdit }: AddressBadgeProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" className={cn(BADGE_BASE, 'items-start sm:items-center')} onClick={e => e.stopPropagation()}>
-          <MapPinIcon className="mt-0.5 size-3.5 shrink-0 text-white/80 sm:mt-0" />
-          {/* Mobile: stacked line1/line2. Desktop: single line for compactness. */}
-          <span className="flex flex-col items-start text-left sm:hidden">
-            <span className="leading-tight">{address.line1 || address.line2}</span>
-            {address.line1 && address.line2 && <span className="leading-tight text-white/75">{address.line2}</span>}
-          </span>
-          <span className="hidden max-w-95 truncate sm:inline">{address.singleLine}</span>
+        <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
+          <MapPinIcon className="size-3.5 shrink-0 text-white/80" />
+          {/* Single-line across all breakpoints — truncation keeps the badge
+              shape consistent with phone/email. On mobile the column stacks
+              badges, so a narrower cap prevents the row from blowing out. */}
+          <span className="max-w-52 truncate sm:max-w-95">{address.singleLine}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuItem
           onClick={() => {
-            window.open(
+            openExternalUrl(
               `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.singleLine)}`,
-              '_blank',
             )
           }}
         >
@@ -207,9 +209,8 @@ function AddressBadge({ address, canEdit, onEdit }: AddressBadgeProps) {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
-            window.open(
+            openExternalUrl(
               `https://earth.google.com/web/search/${encodeURIComponent(address.singleLine)}`,
-              '_blank',
             )
           }}
         >

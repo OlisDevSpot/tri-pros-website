@@ -38,11 +38,15 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
 
           {/* Content fills the hero band and stacks from the bottom.
               - px/pb are the "base" padding, matched on all three sides
-              - pt is slightly larger for visual breathing room at the top
-              - On mobile the hero is content-dictated (no min-h), so content
-                sits near the top with minimal padding above it. On desktop,
-                sm:min-h-72 + justify-end parks the tabs at the bottom. */}
-          <div className="relative z-10 flex flex-1 flex-col justify-end gap-4 px-4 pb-4 pt-10 text-white sm:px-6 sm:pb-6">
+              - pt respects the iOS safe-area (notch / Dynamic Island) so the
+                floating X + view-toggle chrome never overlaps the header
+                content on PWA. On non-iOS / browsers without a safe-area,
+                env() resolves to 0 and this collapses to the original 2.5rem.
+              - The map backdrop (absolute inset-0) intentionally extends
+                edge-to-edge including behind the notch — only the content
+                is pushed down by safe-area. This also makes the hero taller
+                on iOS PWA, which is the desired effect. */}
+          <div className="relative z-10 flex flex-1 flex-col justify-end gap-4 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+4.25rem)] text-white sm:px-6 sm:pb-6 sm:pt-10">
             <CustomerHeroHeader customer={data.customer} editForm={editForm} />
 
             {profile && <CustomerProfileKeyInsights profile={profile} />}
