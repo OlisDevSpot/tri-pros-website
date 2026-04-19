@@ -4,7 +4,7 @@ import { Loader2, Plus } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { CommandItem } from '@/shared/components/ui/command'
-import { getInitials } from '@/shared/lib/get-initials'
+import { getInitials } from '@/shared/entities/users/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 
 interface AvailableParticipantRowProps {

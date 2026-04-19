@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { getInitials } from '@/shared/lib/get-initials'
+import { getInitials } from '@/shared/entities/users/lib/get-initials'
 
 interface AddParticipantRowProps {
   coOwnerSlotFilled: boolean

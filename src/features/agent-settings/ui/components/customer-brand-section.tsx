@@ -2,7 +2,7 @@
 
 import type { BrandFormValues } from '@/features/agent-settings/schemas/profile-form'
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
-import type { AgentProfile } from '@/shared/entities/agents/schemas'
+import type { AgentProfile } from '@/shared/entities/users/schemas'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { PARTICIPANT_ROLE_SORT_ORDER } from '@/shared/entities/meetings/constants/participants'
-import { getInitials } from '@/shared/lib/get-initials'
+import { getInitials } from '@/shared/entities/users/lib/get-initials'
 
 interface ParticipantRow {
   email: string | null

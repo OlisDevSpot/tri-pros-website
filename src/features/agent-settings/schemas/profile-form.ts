@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { agentProfileSchema } from '@/shared/entities/agents/schemas'
+import { agentProfileSchema } from '@/shared/entities/users/schemas'
 
 export const identityFormSchema = z.object({
   phone: z.string().optional(),

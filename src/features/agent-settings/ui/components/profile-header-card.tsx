@@ -1,7 +1,7 @@
 'use client'
 
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
-import type { AgentProfile } from '@/shared/entities/agents/schemas'
+import type { AgentProfile } from '@/shared/entities/users/schemas'
 
 import { formatTenure } from '@/features/agent-settings/lib/format-tenure'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'

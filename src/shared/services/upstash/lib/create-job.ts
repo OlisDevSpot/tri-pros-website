@@ -13,6 +13,11 @@ export function createJob<T>(key: string, handler: JobHandler<T>) {
     key,
     handler,
     dispatch: async (payload: T, options?: DispatchOptions<T>) => {
+      // QStash is a cloud service and cannot reach localhost, so in dev we
+      // route callbacks through NGROK_URL. Prod has NGROK_URL unset and falls
+      // back to the real base URL. Mirrors the pattern used in
+      // scheduling.service.ts for the GCal webhook.
+      const callbackBaseUrl = env.NGROK_URL ?? env.NEXT_PUBLIC_BASE_URL
       // eslint-disable-next-line no-console
       console.log('DISPATCHING JOB', key)
       try {
@@ -20,7 +25,7 @@ export function createJob<T>(key: string, handler: JobHandler<T>) {
           ...options,
           body: payload,
           method: 'POST',
-          url: `${env.NEXT_PUBLIC_BASE_URL}/api/qstash-jobs?job=${key}`,
+          url: `${callbackBaseUrl}/api/qstash-jobs?job=${key}`,
         })
       }
       catch (error) {
