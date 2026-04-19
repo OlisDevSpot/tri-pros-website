@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema'
-import { agentProfileSchema } from '@/shared/entities/agents/schemas'
+import { agentProfileSchema } from '@/shared/entities/users/schemas'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
 import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
 

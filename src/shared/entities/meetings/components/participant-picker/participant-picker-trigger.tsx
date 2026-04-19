@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
-import { getInitials } from '@/shared/lib/get-initials'
+import { getInitials } from '@/shared/entities/users/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 
 interface ParticipantSummary {

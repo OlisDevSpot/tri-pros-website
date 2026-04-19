@@ -8,7 +8,7 @@ import { useMemo } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { buttonVariants } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { getInitials } from '@/shared/lib/get-initials'
+import { getInitials } from '@/shared/entities/users/lib/get-initials'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 

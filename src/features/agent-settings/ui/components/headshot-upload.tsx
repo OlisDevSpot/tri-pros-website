@@ -1,7 +1,7 @@
 'use client'
 
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
-import type { AgentProfile } from '@/shared/entities/agents/schemas'
+import type { AgentProfile } from '@/shared/entities/users/schemas'
 
 import { useMutation } from '@tanstack/react-query'
 import { CameraIcon, Loader2Icon } from 'lucide-react'

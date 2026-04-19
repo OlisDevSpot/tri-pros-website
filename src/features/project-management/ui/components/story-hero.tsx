@@ -2,13 +2,11 @@
 
 import type { MediaFile, Project } from '@/shared/db/schema'
 
-import { PencilIcon } from 'lucide-react'
 import { motion } from 'motion/react'
-import Link from 'next/link'
 
+import { InlineEditButton } from '@/shared/components/buttons/inline-edit-button'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 
@@ -83,16 +81,10 @@ export function StoryHero({ project, heroImage, tradesWithScopes }: Props) {
                 {project.title}
               </h1>
               {canEdit && (
-                <Button
-                  asChild
-                  size="icon"
-                  variant="ghost"
-                  className="size-9 shrink-0 rounded-full text-foreground/60 backdrop-blur-sm hover:bg-foreground/10 hover:text-foreground"
-                >
-                  <Link href={ROOTS.dashboard.projects.byId(project.id)}>
-                    <PencilIcon className="size-4" />
-                  </Link>
-                </Button>
+                <InlineEditButton
+                  href={ROOTS.dashboard.projects.byId(project.id)}
+                  ariaLabel="Edit project"
+                />
               )}
             </div>
             <p className="mb-5 text-lg text-foreground/80">
