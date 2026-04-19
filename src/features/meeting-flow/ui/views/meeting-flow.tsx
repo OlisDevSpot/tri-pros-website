@@ -34,9 +34,6 @@ import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
-import { useAbility } from '@/shared/domains/permissions/hooks'
-import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
-import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities/meetings/components/participant-picker'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -53,14 +50,11 @@ export function MeetingFlowView({ meetingId }: MeetingFlowViewProps) {
 
 function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const trpc = useTRPC()
-  const ability = useAbility()
   const { invalidateMeeting } = useInvalidation()
   const [currentStep, setCurrentStep] = useQueryState('step', stepParser)
   const [contextOpen, setContextOpen] = useState(false)
-  const [participantsModalOpen, setParticipantsModalOpen] = useState(false)
   const [personaOpen, setPersonaOpen] = useState(false)
   const { status: syncStatus } = useMeetingSync(meetingId)
-  const canAssign = ability.can('assign', 'Meeting')
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.getById.queryOptions({ id: meetingId }),
@@ -193,16 +187,6 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
         <div className="ml-auto flex items-center gap-3">
           <SyncStatusIndicator status={syncStatus} />
-          {canAssign
-            ? (
-                <ParticipantPicker
-                  meetingId={meetingId}
-                  onManageClick={() => setParticipantsModalOpen(true)}
-                />
-              )
-            : (
-                <ReadOnlyParticipantSummary meetingId={meetingId} />
-              )}
           <div className="hidden h-10 w-32 sm:block">
             <Logo variant="right" />
           </div>
@@ -292,12 +276,6 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
       </footer>
 
       {/* Overlay sheets */}
-      <ManageParticipantsModal
-        meetingIds={[meetingId]}
-        open={participantsModalOpen}
-        onOpenChange={setParticipantsModalOpen}
-      />
-
       <ContextPanel
         customer={customer}
         isOpen={contextOpen}
