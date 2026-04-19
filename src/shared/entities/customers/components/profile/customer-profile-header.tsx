@@ -19,9 +19,14 @@ interface Props {
   isEditing?: boolean
   register?: UseFormRegister<CustomerFormValues>
   onEditField?: (field: string) => void
+  /**
+   * When false, the address field is omitted from the row (useful when it's
+   * rendered elsewhere, e.g. as a hero header badge). Defaults to true.
+   */
+  showAddress?: boolean
 }
 
-export function CustomerProfileHeader({ customer, isEditing = false, register, onEditField }: Props) {
+export function CustomerProfileHeader({ customer, isEditing = false, register, onEditField, showAddress = true }: Props) {
   const ability = useAbility()
   const isMobile = useIsMobile()
   const canEditContact = ability.can('update', 'Customer', 'name')
@@ -112,7 +117,7 @@ export function CustomerProfileHeader({ customer, isEditing = false, register, o
             )}
 
       {/* Address */}
-      {showInputs
+      {showAddress && (showInputs
         ? (
             <span className="flex items-center gap-1.5">
               <MapPinIcon size={14} className="shrink-0" />
@@ -160,7 +165,7 @@ export function CustomerProfileHeader({ customer, isEditing = false, register, o
                   Add address
                 </Button>
               )
-            )}
+            ))}
     </div>
   )
 }

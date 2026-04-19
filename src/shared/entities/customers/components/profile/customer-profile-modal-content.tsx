@@ -1,84 +1,91 @@
 'use client'
 
+import type { HeroView } from './hero-view-toggle'
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 
-import { Separator } from '@/shared/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 import { CustomerMeetingsList } from '../lists/customer-meetings-list'
 import { CustomerProjectsList } from '../lists/customer-projects-list'
-import { CustomerProfileHeader } from './customer-profile-header'
+import { CustomerAddressHero } from './customer-address-hero'
+import { CustomerHeroHeader } from './customer-hero-header'
 import { CustomerProfileKeyInsights } from './customer-profile-key-insights'
 import { CustomerProfileOverview } from './customer-profile-overview'
-import { ProfileEditActions } from './profile-edit-actions'
 
 interface Props {
   data: CustomerProfileData
   defaultTab?: 'overview' | 'meetings' | 'projects'
+  heroAddress: string | null
+  heroView: HeroView
   highlightMeetingId?: string
   onMutationSuccess: () => void
 }
 
-export function CustomerProfileModalContent({ data, defaultTab, highlightMeetingId, onMutationSuccess }: Props) {
+export function CustomerProfileModalContent({ data, defaultTab, heroAddress, heroView, highlightMeetingId, onMutationSuccess }: Props) {
   const editForm = useCustomerEditForm(data.customer)
-
   const profile = data.customer.customerProfileJSON ?? null
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
-      <div className="flex items-center justify-between gap-2">
-        <CustomerProfileHeader
-          customer={data.customer}
-          isEditing={editForm.isEditing}
-          register={editForm.canEditContact ? editForm.form.register : undefined}
-          onEditField={editForm.startEditing}
-        />
-        <ProfileEditActions editForm={editForm} />
-      </div>
-      {profile && (
-        <>
-          <Separator className="my-2" />
-          <CustomerProfileKeyInsights profile={profile} />
-        </>
-      )}
-      <Separator className="my-3" />
+      <Tabs className="flex min-h-0 flex-1 flex-col gap-0" defaultValue={defaultTab ?? 'overview'}>
+        {/* Hero band: map backdrop + content overlay. Parent is a flex column
+            so the content layer can use flex-1 to fill the band's height;
+            justify-end anchors the content to the bottom with consistent
+            padding on sides + bottom. Extra space (from the map min-height)
+            collects above the content — no dead space below the tabs. */}
+        <div className="dark relative isolate flex flex-col overflow-hidden shadow-lg sm:min-h-72">
+          <CustomerAddressHero address={heroAddress} key={heroAddress} view={heroView} />
 
-      <Tabs className="flex min-h-0 flex-1 flex-col" defaultValue={defaultTab ?? 'overview'}>
-        <TabsList className="w-full shrink-0 justify-start">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="meetings">
-            {`Meetings (${data.meetings.length})`}
-          </TabsTrigger>
-          <TabsTrigger value="projects">
-            {`Projects (${data.projects.length})`}
-          </TabsTrigger>
-        </TabsList>
+          {/* Content fills the hero band and stacks from the bottom.
+              - px/pb are the "base" padding, matched on all three sides
+              - pt is slightly larger for visual breathing room at the top
+              - On mobile the hero is content-dictated (no min-h), so content
+                sits near the top with minimal padding above it. On desktop,
+                sm:min-h-72 + justify-end parks the tabs at the bottom. */}
+          <div className="relative z-10 flex flex-1 flex-col justify-end gap-4 px-4 pb-4 pt-10 text-white sm:px-6 sm:pb-6">
+            <CustomerHeroHeader customer={data.customer} editForm={editForm} />
 
-        <div className="mt-3 flex-1 overflow-y-auto pr-1">
-          <TabsContent className="mt-0" value="overview">
-            <CustomerProfileOverview
-              data={data}
-              editForm={editForm}
-              onMutationSuccess={onMutationSuccess}
-            />
-          </TabsContent>
-          <TabsContent className="mt-0" value="meetings">
-            <CustomerMeetingsList
-              customerId={data.customer.id}
-              customerName={data.customer.name}
-              highlightMeetingId={highlightMeetingId}
-              meetings={data.meetings}
-              onMutationSuccess={onMutationSuccess}
-            />
-          </TabsContent>
-          <TabsContent className="mt-0" value="projects">
-            <CustomerProjectsList
-              data={data}
-              highlightMeetingId={highlightMeetingId}
-              onMutationSuccess={onMutationSuccess}
-            />
-          </TabsContent>
+            {profile && <CustomerProfileKeyInsights profile={profile} />}
+
+            <TabsList className="w-full justify-start border border-white/10 bg-black/40 backdrop-blur-md">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="meetings">
+                {`Meetings (${data.meetings.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="projects">
+                {`Projects (${data.projects.length})`}
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </div>
+
+        {/* Tab content: the modal is flush, so each tab owns its own padding. */}
+        <TabsContent
+          className="mt-0 flex min-h-0 flex-col overflow-y-auto p-4 sm:p-6 md:overflow-hidden"
+          value="overview"
+        >
+          <CustomerProfileOverview
+            data={data}
+            editForm={editForm}
+            onMutationSuccess={onMutationSuccess}
+          />
+        </TabsContent>
+        <TabsContent className="mt-0 min-h-0 overflow-y-auto p-4 sm:p-6" value="meetings">
+          <CustomerMeetingsList
+            customerId={data.customer.id}
+            customerName={data.customer.name}
+            highlightMeetingId={highlightMeetingId}
+            meetings={data.meetings}
+            onMutationSuccess={onMutationSuccess}
+          />
+        </TabsContent>
+        <TabsContent className="mt-0 min-h-0 overflow-y-auto p-4 sm:p-6" value="projects">
+          <CustomerProjectsList
+            data={data}
+            highlightMeetingId={highlightMeetingId}
+            onMutationSuccess={onMutationSuccess}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   )

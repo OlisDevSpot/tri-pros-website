@@ -1,6 +1,6 @@
 import type z from 'zod'
 import type { CustomerProfile, FinancialProfile, LeadMeta, PropertyProfile } from '@/shared/entities/customers/schemas'
-import { jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
+import { doublePrecision, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
@@ -17,6 +17,9 @@ export const customers = pgTable('customers', {
   city: text('city').notNull(),
   state: varchar('state', { length: 2 }).default('CA'),
   zip: text('zip').notNull(),
+  latitude: doublePrecision('latitude'),
+  longitude: doublePrecision('longitude'),
+  geocodedAt: timestamp('geocoded_at', { mode: 'string', withTimezone: true }),
   customerProfileJSON: jsonb('customer_profile_json').$type<CustomerProfile>(),
   propertyProfileJSON: jsonb('property_profile_json').$type<PropertyProfile>(),
   financialProfileJSON: jsonb('financial_profile_json').$type<FinancialProfile>(),
