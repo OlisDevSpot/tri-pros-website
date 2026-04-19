@@ -57,8 +57,9 @@ export const customerPipelinesRouter = createTRPCRouter({
     .input(z.object({
       customerId: z.string().uuid(),
     }))
-    .query(async ({ input }) => {
-      return getCustomerProfile(input.customerId)
+    .query(async ({ input, ctx }) => {
+      const isSuperAdmin = ctx.ability.can('manage', 'all')
+      return getCustomerProfile(input.customerId, { isSuperAdmin })
     }),
 
   getRecordingUrl: agentProcedure

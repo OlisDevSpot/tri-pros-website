@@ -8,7 +8,7 @@ import { meetingParticipantRoles, meetingTypes } from '@/shared/constants/enums'
 import {
   addParticipant,
   countParticipantsByRole,
-  getOwnerCoOwnerForMeetings,
+  getAllParticipantsForMeetings,
   getParticipantByRole,
   getParticipantsForMeeting,
   isParticipant,
@@ -21,6 +21,7 @@ import { db } from '@/shared/db'
 import { isUniqueViolation } from '@/shared/db/lib/pg-errors'
 import { customers, insertMeetingSchema, mediaFiles, meetingParticipants, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
 import { schedulingService } from '@/shared/services/scheduling.service'
@@ -48,7 +49,8 @@ export const meetingsRouter = createTRPCRouter({
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
-          customerPhone: customers.phone,
+          customerPhone: gatedPhoneSql(isOmni),
+          customerHasSentProposal: hasSentProposalSql(),
           customerAddress: customers.address,
           customerCity: customers.city,
           customerState: customers.state,
@@ -67,30 +69,37 @@ export const meetingsRouter = createTRPCRouter({
         .where(isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id))
         .orderBy(desc(meetings.createdAt))
 
-      // Batch-fetch owner + co_owner participants for all returned meetings.
-      // First-encountered wins per (meetingId, role) — DAL orders by
-      // created_at ASC for determinism in the defensive duplicate case.
+      // Batch-fetch ALL participants (owner + co_owner + helpers) for every
+      // returned meeting. DAL orders by user.id ASC so the resulting array is
+      // a canonical representation — combo keys (e.g. swimlane grouping) and
+      // owner/coOwner pick-first both stay deterministic.
       const meetingIds = rows.map(r => r.id)
-      const participantRows = await getOwnerCoOwnerForMeetings(meetingIds)
+      const participantRows = await getAllParticipantsForMeetings(meetingIds)
 
-      const ownerByMeeting = new Map<string, typeof participantRows[number]>()
-      const coOwnerByMeeting = new Map<string, typeof participantRows[number]>()
+      const participantsByMeeting = new Map<string, typeof participantRows>()
       for (const p of participantRows) {
-        if (p.role === 'owner' && !ownerByMeeting.has(p.meetingId)) {
-          ownerByMeeting.set(p.meetingId, p)
+        const list = participantsByMeeting.get(p.meetingId)
+        if (list) {
+          list.push(p)
         }
-        if (p.role === 'co_owner' && !coOwnerByMeeting.has(p.meetingId)) {
-          coOwnerByMeeting.set(p.meetingId, p)
+        else {
+          participantsByMeeting.set(p.meetingId, [p])
         }
       }
 
-      // Reshape into nested owner/coOwner objects (or null) so consumers can
-      // pass them as `initialOwner` / `initialCoOwner` props to the picker.
       return rows.map((row) => {
-        const ownerRow = ownerByMeeting.get(row.id)
-        const coOwnerRow = coOwnerByMeeting.get(row.id)
+        const rowParticipants = participantsByMeeting.get(row.id) ?? []
+        const ownerRow = rowParticipants.find(p => p.role === 'owner')
+        const coOwnerRow = rowParticipants.find(p => p.role === 'co_owner')
+
         return {
           ...row,
+          participants: rowParticipants.map(p => ({
+            id: p.userId,
+            name: p.userName,
+            image: p.userImage,
+            role: p.role,
+          })),
           owner: ownerRow
             ? {
                 id: ownerRow.participantId,
@@ -228,11 +237,20 @@ export const meetingsRouter = createTRPCRouter({
   // Get a single meeting by ID, with nested customer data and owner info
   getById: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+      // Swap the raw phone column out of the customer projection so
+      // destructuring `row.customer` can't accidentally leak the ungated value.
+      const { phone: _customerPhone, ...customerCols } = getTableColumns(customers)
+
       const [row] = await db
         .select({
           ...getTableColumns(meetings),
-          customer: getTableColumns(customers),
+          customer: {
+            ...customerCols,
+            phone: gatedPhoneSql(isOmni),
+            hasSentProposal: hasSentProposalSql(),
+          },
           ownerName: user.name,
           ownerImage: user.image,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),

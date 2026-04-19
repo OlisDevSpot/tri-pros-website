@@ -2,7 +2,6 @@
 
 import { Loader2, X } from 'lucide-react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
 import {
   Select,
@@ -12,7 +11,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { PARTICIPANT_ROLE_SORT_ORDER } from '@/shared/entities/meetings/constants/participants'
-import { getInitials } from '@/shared/entities/users/lib/get-initials'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 
 interface ParticipantRow {
   email: string | null
@@ -52,14 +51,16 @@ export function ParticipantsList({
         const isPending = pendingUserId === p.userId
 
         return (
-          <div key={p.userId} className="flex items-center gap-2 rounded-md border border-border p-2">
-            <Avatar className="size-7 shrink-0">
-              <AvatarImage alt="" src={p.image ?? undefined} />
-              <AvatarFallback className="text-[10px]">{getInitials(p.name)}</AvatarFallback>
-            </Avatar>
+          <UserOverviewCard
+            key={p.userId}
+            user={{ id: p.userId, name: p.name, image: p.image, email: p.email }}
+            meta={{ role: p.role }}
+            className="flex items-center gap-2 rounded-md border border-border p-2"
+          >
+            <UserOverviewCard.Avatar size="sm" className="size-7" />
             <div className="min-w-0 flex-1 overflow-hidden">
-              <div className="truncate text-sm font-medium">{p.name}</div>
-              <div className="truncate text-xs text-muted-foreground">{p.email}</div>
+              <UserOverviewCard.Name className="text-sm font-medium" />
+              <UserOverviewCard.Email className="text-xs text-muted-foreground" />
             </div>
             <Select
               disabled={isPending}
@@ -92,7 +93,7 @@ export function ParticipantsList({
                 ? <Loader2 className="size-4 animate-spin" />
                 : <X className="size-4" />}
             </Button>
-          </div>
+          </UserOverviewCard>
         )
       })}
     </div>

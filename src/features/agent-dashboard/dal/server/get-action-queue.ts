@@ -6,6 +6,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 
 type ActionTier = 'HOT_NOW' | 'HOT_LEAD' | 'FOLLOW_UP_DUE' | 'STALE' | 'NO_PROPOSAL'
 
@@ -119,7 +120,7 @@ export async function getActionQueue(userId: string, isOmni = false): Promise<Ac
     .select({
       id: proposals.id,
       customerName: sql<string>`COALESCE(${customers.name}, 'Unknown')`.as('customer_name'),
-      customerPhone: sql<string | null>`${customers.phone}`.as('customer_phone'),
+      customerPhone: gatedPhoneSql(isOmni).as('customer_phone'),
       customerEmail: sql<string | null>`${customers.email}`.as('customer_email'),
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'trade'->>'label'`.as('trade'),
       sentAt: proposals.sentAt,
@@ -134,7 +135,9 @@ export async function getActionQueue(userId: string, isOmni = false): Promise<Ac
       isOmni ? undefined : eq(proposals.ownerId, userId),
       eq(proposals.status, 'sent'),
     ))
-    .groupBy(proposals.id, customers.name, customers.phone, customers.email)
+    // customers.id included so the correlated EXISTS subquery inside
+    // gatedPhoneSql resolves against a grouped column.
+    .groupBy(proposals.id, customers.id, customers.name, customers.phone, customers.email)
     .orderBy(desc(proposals.sentAt))
 
   // 2. Completed meetings without proposals

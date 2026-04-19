@@ -9,6 +9,7 @@ import { motion } from 'motion/react'
 
 import { STATUS_BG_TINTS } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
+import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { cn } from '@/shared/lib/utils'
 
 interface MeetingCardProps {
@@ -32,6 +33,7 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
     ownerImage: event.ownerImage,
     customerName: event.customerName,
     customerPhone: event.customerPhone,
+    customerHasSentProposal: event.customerHasSentProposal,
     customerAddress: event.customerAddress,
     customerCity: event.customerCity,
     customerState: event.customerState,
@@ -48,7 +50,7 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
       customerId={event.customerId ?? ''}
       onAssignOwner={handleAssignOwner}
       className={cn(
-        'group relative flex h-full flex-col gap-1.5 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
+        'group relative flex h-full flex-col gap-1 overflow-hidden rounded-md border p-2.5 text-xs cursor-pointer transition-colors hover:border-foreground/20',
         STATUS_BG_TINTS[event.meetingOutcome],
       )}
     >
@@ -70,10 +72,26 @@ export function MeetingCard({ event, onAssignOwner, onUpdateScheduledFor, isHigh
       }]}
       />
 
-      {/* Row 3: Phone */}
+      {/* Row 3: Participants — overlapping avatars with stable per-rep color +
+          first names separated by `/`. Click opens a popover with full detail.
+          Thumbnail is seeded from event.participants so this row doesn't fire
+          a per-card getParticipants fetch at list render — the detail query
+          runs lazily when the popover opens. */}
+      <ParticipantsSlot
+        meetingId={event.meetingId}
+        variant="compact"
+        initialParticipants={event.participants.map(p => ({
+          id: p.id,
+          name: p.name,
+          image: p.image,
+          role: p.role,
+        }))}
+      />
+
+      {/* Row 4: Phone */}
       <MeetingOverviewCard.Phone />
 
-      {/* Row 4: Address */}
+      {/* Row 5: Address */}
       <MeetingOverviewCard.Address>
         <button
           type="button"

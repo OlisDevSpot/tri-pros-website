@@ -1,13 +1,32 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { Customer } from '@/shared/db/schema/customers'
 import type { Contact } from '@/shared/services/notion/lib/contacts/schema'
-import { eq } from 'drizzle-orm'
+import { eq, getTableColumns } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
 
 export type { Customer }
+
+export type CustomerWithPhoneGate = Customer & { hasSentProposal: boolean }
+
+/** Viewer context for phone-gating decisions in the customers DAL. */
+export interface CustomersViewer {
+  isSuperAdmin: boolean
+}
+
+function customerSelectWithGate(viewer: CustomersViewer) {
+  // Override the raw `phone` column with the gated expression so consumers
+  // that destructure `...customer` can't accidentally leak the ungated value.
+  const { phone: _phone, ...rest } = getTableColumns(customers)
+  return {
+    ...rest,
+    phone: gatedPhoneSql(viewer.isSuperAdmin),
+    hasSentProposal: hasSentProposalSql(),
+  }
+}
 
 // ── Core upsert ──────────────────────────────────────────────────────────────
 
@@ -87,21 +106,21 @@ export async function findOrCreateCustomerFromHomeowner(data: HomeownerData): Pr
 
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
-export async function getCustomer(customerId: string): Promise<Customer | undefined> {
+export async function getCustomer(customerId: string, viewer: CustomersViewer): Promise<CustomerWithPhoneGate | undefined> {
   const [customer] = await db
-    .select()
+    .select(customerSelectWithGate(viewer))
     .from(customers)
     .where(eq(customers.id, customerId))
   return customer
 }
 
-export async function getCustomers(): Promise<Customer[]> {
-  return db.select().from(customers)
+export async function getCustomers(viewer: CustomersViewer): Promise<CustomerWithPhoneGate[]> {
+  return db.select(customerSelectWithGate(viewer)).from(customers)
 }
 
-export async function getCustomerByNotionId(notionContactId: string): Promise<Customer | undefined> {
+export async function getCustomerByNotionId(notionContactId: string, viewer: CustomersViewer): Promise<CustomerWithPhoneGate | undefined> {
   const [customer] = await db
-    .select()
+    .select(customerSelectWithGate(viewer))
     .from(customers)
     .where(eq(customers.notionContactId, notionContactId))
   return customer

@@ -1,8 +1,9 @@
 'use client'
 
+import type { UserOverviewCardUser } from '@/shared/entities/users/components/overview-card'
+
 import { useEffect, useState } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
 import { Button } from '@/shared/components/ui/button'
 import {
   Select,
@@ -11,9 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { getInitials } from '@/shared/entities/users/lib/get-initials'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
 
 interface AddParticipantRowProps {
+  user: UserOverviewCardUser
   coOwnerSlotFilled: boolean
   /**
    * Disable the Add button regardless of per-row pending state. Used by the
@@ -21,10 +23,7 @@ interface AddParticipantRowProps {
    * two near-simultaneous clicks on different rows from racing past slot guards.
    */
   disabled?: boolean
-  email: string | null
-  image: string | null
   isPending: boolean
-  name: string
   /** Disable role options that have already been filled. */
   ownerSlotFilled: boolean
   onAdd: (role: 'co_owner' | 'helper' | 'owner') => void
@@ -41,12 +40,10 @@ function getDefaultRole(ownerFilled: boolean, coOwnerFilled: boolean): 'co_owner
 }
 
 export function AddParticipantRow({
+  user,
   coOwnerSlotFilled,
   disabled = false,
-  email,
-  image,
   isPending,
-  name,
   ownerSlotFilled,
   onAdd,
 }: AddParticipantRowProps) {
@@ -64,14 +61,14 @@ export function AddParticipantRow({
   }, [selectedRole, ownerSlotFilled, coOwnerSlotFilled])
 
   return (
-    <div className="flex items-center gap-2 rounded-md border border-border p-2">
-      <Avatar className="size-7 shrink-0">
-        <AvatarImage alt="" src={image ?? undefined} />
-        <AvatarFallback className="text-[10px]">{getInitials(name)}</AvatarFallback>
-      </Avatar>
+    <UserOverviewCard
+      user={user}
+      className="flex items-center gap-2 rounded-md border border-border p-2"
+    >
+      <UserOverviewCard.Avatar size="sm" className="size-7" />
       <div className="min-w-0 flex-1 overflow-hidden">
-        <div className="truncate text-sm font-medium">{name}</div>
-        <div className="truncate text-xs text-muted-foreground">{email}</div>
+        <UserOverviewCard.Name className="text-sm font-medium" />
+        <UserOverviewCard.Email className="text-xs text-muted-foreground" />
       </div>
       <Select
         value={selectedRole}
@@ -98,6 +95,6 @@ export function AddParticipantRow({
       >
         Add
       </Button>
-    </div>
+    </UserOverviewCard>
   )
 }
