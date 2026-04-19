@@ -1,5 +1,6 @@
 import type { InsertProposalSchema } from '@/shared/db/schema'
 import { CheckIcon } from 'lucide-react'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 import { ExpirationBadge } from './expiration-badge'
@@ -7,7 +8,8 @@ import { ExpirationBadge } from './expiration-badge'
 export function PricingBreakdown({ proposalData }: { proposalData: InsertProposalSchema }) {
   const { pricingMode } = proposalData.formMetaJSON
   const sow = proposalData.projectJSON.data.sow
-  const { finalTcp, incentives, miscPrice, startingTcp } = proposalData.fundingJSON.data
+  const { incentives, miscPrice, startingTcp } = proposalData.fundingJSON.data
+  const finalTcp = computeFinalTcp(proposalData.fundingJSON.data)
 
   return (
     <div className="rounded-xl border border-border/40 overflow-hidden text-sm">

@@ -69,7 +69,6 @@ export function CreateProposalPopover({ meetings }: Props) {
         data: {
           cashInDeal: 0,
           depositAmount: 0,
-          finalTcp: 0,
           startingTcp: 0,
           incentives: [],
         },

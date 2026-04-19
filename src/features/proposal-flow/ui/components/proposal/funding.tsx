@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { getLoanValues } from '@/shared/lib/loan-calculations'
 import { cn } from '@/shared/lib/utils'
 
@@ -30,7 +31,7 @@ export function Funding({ onPickFinancingOption }: Props) {
 
   useEffect(() => {
     if (proposal.data && cashInDeal === null) {
-      const tcp = proposal.data.fundingJSON.data.finalTcp || 0
+      const tcp = computeFinalTcp(proposal.data.fundingJSON.data)
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setCashInDeal(proposal.data.fundingJSON.data.cashInDeal ?? tcp)
     }
@@ -41,7 +42,7 @@ export function Funding({ onPickFinancingOption }: Props) {
       return 0
     }
 
-    return proposal.data.fundingJSON.data.finalTcp - cashInDeal
+    return computeFinalTcp(proposal.data.fundingJSON.data) - cashInDeal
   }, [cashInDeal, proposal.data])
 
   function pickFinancingOption(option: FinanceOption) {

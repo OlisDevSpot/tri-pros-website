@@ -4,6 +4,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { qbRequest } from '@/shared/services/quickbooks/client'
 
 function createAccountingService() {
@@ -124,13 +125,14 @@ function createAccountingService() {
         .filter(Boolean)
         .map((proposal) => {
           const funding = proposal.fundingJSON?.data
+          const amount = funding ? computeFinalTcp(funding) : 0
           return {
-            Amount: funding?.finalTcp ?? 0,
+            Amount: amount,
             DetailType: 'SalesItemLineDetail' as const,
             Description: `Proposal: ${proposal.label}`,
             SalesItemLineDetail: {
               ItemRef: { value: '1', name: 'Services' },
-              UnitPrice: funding?.finalTcp ?? 0,
+              UnitPrice: amount,
               Qty: 1,
             },
           }

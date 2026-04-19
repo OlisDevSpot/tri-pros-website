@@ -1,4 +1,5 @@
 import { getProposal } from '@/shared/dal/server/proposals/api'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 function stripHtml(html: string): string {
@@ -111,7 +112,7 @@ export async function GET(
     }
   }
 
-  lines.push(`\n**Final Contract Price:** ${formatAsDollars(fund.finalTcp)}`)
+  lines.push(`\n**Final Contract Price:** ${formatAsDollars(computeFinalTcp(fund))}`)
   lines.push(`**Deposit:** ${formatAsDollars(fund.depositAmount)}`)
   lines.push(`**Cash in Deal:** ${formatAsDollars(fund.cashInDeal)}`)
 

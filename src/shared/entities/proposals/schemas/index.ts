@@ -48,10 +48,13 @@ const projectDataSchema = z.object({
   sow: z.array(sowSchema).min(1, { message: 'At least one scope is required' }),
 })
 
+// `finalTcp` is NOT stored here — it is derived via
+// `computeFinalTcp(fundingData)` in `entities/proposals/lib`. Persisted
+// derived values invite drift between inputs and the cached number;
+// always compute on demand from `startingTcp` + `incentives`.
 const fundingDataSchema = z.object({
   cashInDeal: z.number(),
   depositAmount: z.number(),
-  finalTcp: z.number(),
   incentives: z.array(incentiveSchema),
   miscPrice: z.number().optional(),
   startingTcp: z.number(),
@@ -128,7 +131,6 @@ export const proposalFormBaseDefaultValues: ProposalFormSchema = {
     data: {
       cashInDeal: 0,
       depositAmount: 1000,
-      finalTcp: 0,
       incentives: [],
       miscPrice: 0,
       startingTcp: 0,

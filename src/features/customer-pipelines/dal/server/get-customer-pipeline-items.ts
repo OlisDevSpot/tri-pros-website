@@ -14,6 +14,7 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {
   if (pipeline === 'leads') {
@@ -178,11 +179,12 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
 
   const customerIds = rows.map(r => r.customerId)
 
+  // Pipeline value is computed per-customer below from the fetched funding
+  // JSON via computeFinalTcp — no SQL-side TCP extraction.
   const proposalRows = await db
     .select({
       customerId: customers.id,
       proposalCount: count(proposals.id).as('proposal_count'),
-      totalPipelineValue: sql<number>`COALESCE(SUM(NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric), 0)`.as('total_value'),
       proposalStatuses: sql<string[] | string>`array_agg(DISTINCT ${proposals.status})`.as('proposal_statuses'),
       hasSentContract: sql<boolean>`bool_or(${proposals.contractSentAt} IS NOT NULL)`.as('has_sent_contract'),
       latestProposalAt: max(proposals.createdAt).as('latest_proposal_at'),
@@ -227,7 +229,9 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       }]),
   )
 
-  // Fetch individual proposals per customer for card display + value calculation
+  // Fetch individual proposals per customer for card display + value calculation.
+  // We fetch the full fundingJSON and compute finalTcp in TS via the
+  // canonical `computeFinalTcp` helper — no SQL path extracts.
   const proposalDetailRows = await db
     .select({
       customerId: meetings.customerId,
@@ -236,7 +240,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       token: proposals.token,
       status: proposals.status,
       createdAt: proposals.createdAt,
-      value: sql<number | null>`NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric`.as('proposal_value'),
+      fundingJSON: proposals.fundingJSON,
     })
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
@@ -252,12 +256,13 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
     if (!r.customerId) {
       continue
     }
+    const value = computeFinalTcp(r.fundingJSON.data)
     const arr = proposalDetailMap.get(r.customerId) ?? []
-    arr.push({ id: r.proposalId, token: r.token, value: r.value ? Number(r.value) : null, status: r.status, createdAt: r.createdAt })
+    arr.push({ id: r.proposalId, token: r.token, value, status: r.status, createdAt: r.createdAt })
     proposalDetailMap.set(r.customerId, arr)
 
     const valArr = proposalValueMap.get(r.customerId) ?? []
-    valArr.push({ meetingId: r.meetingId, status: r.status, value: r.value ? Number(r.value) : null })
+    valArr.push({ meetingId: r.meetingId, status: r.status, value })
     proposalValueMap.set(r.customerId, valArr)
   }
 
@@ -285,7 +290,6 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
       hasScheduledFutureMeeting: row.hasScheduledFutureMeeting ?? false,
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
-      totalPipelineValue: pData?.totalPipelineValue ? Number(pData.totalPipelineValue) : 0,
       latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? null,
     }
 
@@ -395,6 +399,8 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
 
   // Fetch proposals per meeting
   const meetingIds = meetingRows.map(m => m.meetingId)
+  // Fetch full fundingJSON per proposal; finalTcp is computed in TS via
+  // `computeFinalTcp` rather than extracted SQL-side.
   const proposalRows = meetingIds.length > 0
     ? await db
         .select({
@@ -404,7 +410,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
           status: proposals.status,
           createdAt: proposals.createdAt,
           approvedAt: proposals.approvedAt,
-          value: sql<number | null>`NULLIF(${proposals.fundingJSON}->'data'->>'finalTcp', '')::numeric`.as('proposal_value'),
+          fundingJSON: proposals.fundingJSON,
         })
         .from(proposals)
         .where(inArray(proposals.meetingId, meetingIds))
@@ -418,8 +424,9 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
     if (!p.meetingId) {
       continue
     }
+    const value = computeFinalTcp(p.fundingJSON.data)
     const arr = proposalsByMeeting.get(p.meetingId) ?? []
-    arr.push({ id: p.proposalId, token: p.token, value: p.value ? Number(p.value) : null, status: p.status, createdAt: p.createdAt })
+    arr.push({ id: p.proposalId, token: p.token, value, status: p.status, createdAt: p.createdAt })
     proposalsByMeeting.set(p.meetingId, arr)
 
     // Track earliest approvedAt for project startedAt fallback

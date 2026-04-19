@@ -73,10 +73,10 @@ export function CreateNewProposalView() {
         meta: data.project.meta,
       },
       fundingJSON: {
+        // finalTcp is derived — never written. See `computeFinalTcp`.
         data: {
           ...data.funding.data,
           cashInDeal: data.funding.data.startingTcp - totalProjectDiscounts,
-          finalTcp: data.funding.data.startingTcp - totalProjectDiscounts,
         },
         meta: data.funding.meta,
       },

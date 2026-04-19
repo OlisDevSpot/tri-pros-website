@@ -12,6 +12,7 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
 export async function getCustomerProfile(customerId: string, viewer: CustomersViewer): Promise<CustomerProfileData> {
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
@@ -55,7 +56,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomersVi
       contractSentAt: proposals.contractSentAt,
       createdAt: proposals.createdAt,
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
-      value: sql<number | null>`(${proposals.fundingJSON}->'data'->>'finalTcp')::numeric`.as('value'),
+      fundingJSON: proposals.fundingJSON,
       sowRaw: sql<string | null>`${proposals.projectJSON}->'data'->'sow'`.as('sow_raw'),
       viewCount: count(proposalViews.id).as('view_count'),
     })
@@ -98,7 +99,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomersVi
       status: p.status,
       token: p.token,
       trade: p.trade,
-      value: p.value != null ? Number(p.value) : null,
+      value: computeFinalTcp(p.fundingJSON.data),
       sentAt: p.sentAt,
       contractSentAt: p.contractSentAt,
       viewCount: p.viewCount,

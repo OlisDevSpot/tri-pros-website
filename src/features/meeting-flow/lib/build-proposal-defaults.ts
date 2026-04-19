@@ -32,12 +32,12 @@ export function buildProposalDefaults(
     if (ds.startingTcp !== undefined) {
       defaults.funding.data.startingTcp = ds.startingTcp
     }
-    if (ds.finalTcp !== undefined) {
-      defaults.funding.data.finalTcp = ds.finalTcp
-    }
     if (ds.depositAmount !== undefined) {
       defaults.funding.data.depositAmount = ds.depositAmount
     }
+    // Cash mode: seed cashInDeal with the meeting's final TCP. finalTcp
+    // itself is not stored on the proposal — it is derived via
+    // `computeFinalTcp(fundingData)`.
     if (ds.mode === 'cash' && ds.finalTcp !== undefined) {
       defaults.funding.data.cashInDeal = ds.finalTcp
     }

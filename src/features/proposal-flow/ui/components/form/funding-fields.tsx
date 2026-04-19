@@ -39,7 +39,6 @@ export function FundingFields({ pricingMode }: Props) {
     message: 'Are you sure you want to delete this incentive? This action cannot be undone.',
   })
 
-  const startingTcp = useWatch({ control: form.control, name: 'funding.data.startingTcp' })
   const incentives = useWatch({ control: form.control, name: 'funding.data.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
   const miscPrice = useWatch({ control: form.control, name: 'funding.data.miscPrice' })
@@ -77,18 +76,18 @@ export function FundingFields({ pricingMode }: Props) {
   }
 
   useEffect(() => {
-    const { totalProjectDiscounts, totalSOWPriceBreakdown } = getProposalAggregates(form.getValues())
-
+    // finalTcp is derived via `computeFinalTcp(fundingData)` — never set here.
+    // In breakdown mode, sync startingTcp to Σ sow.price + miscPrice so the
+    // canonical formula (startingTcp − discounts) stays correct.
     if (pricingMode !== 'breakdown') {
-      form.setValue('funding.data.finalTcp', startingTcp - totalProjectDiscounts)
+      return
     }
-    else {
-      if (!totalSOWPriceBreakdown || totalSOWPriceBreakdown === 0)
-        return
-      form.setValue('funding.data.startingTcp', totalSOWPriceBreakdown + (miscPrice ?? 0))
-      form.setValue('funding.data.finalTcp', totalSOWPriceBreakdown + (miscPrice ?? 0) - totalProjectDiscounts)
+    const { totalSOWPriceBreakdown } = getProposalAggregates(form.getValues())
+    if (!totalSOWPriceBreakdown || totalSOWPriceBreakdown === 0) {
+      return
     }
-  }, [sow, miscPrice, pricingMode, incentives, form, startingTcp])
+    form.setValue('funding.data.startingTcp', totalSOWPriceBreakdown + (miscPrice ?? 0))
+  }, [sow, miscPrice, pricingMode, form])
 
   return (
     <>
@@ -269,8 +268,6 @@ export function FundingFields({ pricingMode }: Props) {
                                                 onChange={(value) => {
                                                   const numericValue = Number(value.target.value.replace(/\D/g, ''))
                                                   field.onChange(numericValue)
-                                                  const { totalProjectDiscounts } = getProposalAggregates(form.getValues())
-                                                  form.setValue('funding.data.finalTcp', form.getValues('funding.data.startingTcp') - totalProjectDiscounts)
                                                 }}
                                               />
                                             </FormControl>

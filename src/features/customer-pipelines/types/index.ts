@@ -92,6 +92,5 @@ export interface CustomerPipelineRawData {
   hasScheduledFutureMeeting: boolean
   proposalStatuses: string[]
   hasSentContract: boolean
-  totalPipelineValue: number
   latestActivityAt: string | null
 }

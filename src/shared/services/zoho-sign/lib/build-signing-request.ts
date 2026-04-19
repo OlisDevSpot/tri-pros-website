@@ -1,4 +1,5 @@
 import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 import { ZOHO_SIGN_TEMPLATE_IDS } from '../constants'
 
@@ -59,7 +60,7 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
             'completion-date': completionDate.toLocaleDateString(),
             'sow-1': sow1,
             'sow-2': sow2,
-            'tcp': String(funding.finalTcp),
+            'tcp': String(computeFinalTcp(funding)),
             'deposit': String(funding.depositAmount),
             'ho-address': customerAddress,
             'ho-city-state-zip': `${customerCity}, ${customerState} ${customerZip}`,
