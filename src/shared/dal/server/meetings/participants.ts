@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm'
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
-import { and, eq, exists } from 'drizzle-orm'
+import { and, asc, eq, exists, inArray, or } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { meetingParticipants, user } from '@/shared/db/schema'
 
@@ -81,6 +81,64 @@ export async function countParticipantsByRole(meetingId: string, role: MeetingPa
     ))
 
   return rows.length
+}
+
+export interface OwnerCoOwnerRow {
+  meetingId: string
+  participantId: string
+  userId: string
+  role: 'co_owner' | 'owner'
+  userName: string
+  userEmail: string
+  userImage: string | null
+}
+
+/**
+ * Batch-fetch owner + co_owner participants for a set of meetings.
+ *
+ * Returned rows are ordered by `created_at ASC` so that, in the defensive case
+ * where duplicate owner/co_owner rows somehow exist for a meeting, callers that
+ * pick the first row per (meetingId, role) get a deterministic result.
+ *
+ * Use when reshaping a list of meetings into per-row owner/coOwner objects —
+ * avoids the cross-product multiplication that LEFT JOIN-ing the junction
+ * table directly would cause if duplicates exist.
+ */
+export async function getOwnerCoOwnerForMeetings(meetingIds: string[]): Promise<OwnerCoOwnerRow[]> {
+  if (meetingIds.length === 0) {
+    return []
+  }
+
+  const rows = await db
+    .select({
+      meetingId: meetingParticipants.meetingId,
+      participantId: meetingParticipants.id,
+      userId: meetingParticipants.userId,
+      role: meetingParticipants.role,
+      userName: user.name,
+      userEmail: user.email,
+      userImage: user.image,
+    })
+    .from(meetingParticipants)
+    .innerJoin(user, eq(user.id, meetingParticipants.userId))
+    .where(and(
+      inArray(meetingParticipants.meetingId, meetingIds),
+      or(
+        eq(meetingParticipants.role, 'owner'),
+        eq(meetingParticipants.role, 'co_owner'),
+      ),
+    ))
+    .orderBy(asc(meetingParticipants.createdAt))
+
+  // Narrow the role enum to owner | co_owner. The WHERE clause already filters
+  // these out at the DB level; this is just a type-level guard.
+  const result: OwnerCoOwnerRow[] = []
+  for (const r of rows) {
+    if (r.role === 'owner' || r.role === 'co_owner') {
+      result.push({ ...r, role: r.role })
+    }
+  }
+  return result
 }
 
 // ── Mutations ───────────────────────────────────────────────────────────────

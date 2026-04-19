@@ -1,7 +1,7 @@
 import type z from 'zod'
 
-import { relations } from 'drizzle-orm'
-import { pgTable, text, unique, uuid } from 'drizzle-orm/pg-core'
+import { relations, sql } from 'drizzle-orm'
+import { pgTable, text, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
@@ -22,6 +22,15 @@ export const meetingParticipants = pgTable('meeting_participants', {
   updatedAt,
 }, table => [
   unique('meeting_id_user_id_unique').on(table.meetingId, table.userId),
+  // Partial unique indexes: at most one owner row and one co_owner row per
+  // meeting. Enforced atomically at the DB level — closes the TOCTOU window
+  // in the application's check-then-insert pattern. Helpers are unconstrained.
+  uniqueIndex('meeting_one_owner_idx')
+    .on(table.meetingId)
+    .where(sql`role = 'owner'`),
+  uniqueIndex('meeting_one_co_owner_idx')
+    .on(table.meetingId)
+    .where(sql`role = 'co_owner'`),
 ])
 
 export const meetingParticipantRelations = relations(meetingParticipants, ({ one }) => ({

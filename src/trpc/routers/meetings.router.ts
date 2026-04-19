@@ -1,7 +1,6 @@
 import type { MediaFile } from '@/shared/db/schema'
 import { TRPCError } from '@trpc/server'
 import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
-import { alias } from 'drizzle-orm/pg-core'
 import z from 'zod'
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
@@ -9,6 +8,7 @@ import { meetingParticipantRoles, meetingTypes } from '@/shared/constants/enums'
 import {
   addParticipant,
   countParticipantsByRole,
+  getOwnerCoOwnerForMeetings,
   getParticipantByRole,
   getParticipantsForMeeting,
   isParticipant,
@@ -18,6 +18,7 @@ import {
 } from '@/shared/dal/server/meetings/participants'
 import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
+import { isUniqueViolation } from '@/shared/db/lib/pg-errors'
 import { customers, insertMeetingSchema, mediaFiles, meetingParticipants, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
@@ -33,16 +34,15 @@ export const meetingsRouter = createTRPCRouter({
   // (single source of truth) so each row carries the data needed by the
   // ParticipantPicker / ReadOnlyParticipantSummary as initial cache. This
   // eliminates the per-row getParticipants fetch on table mount.
+  //
+  // Participants are batched in a separate query (rather than role-filtered
+  // LEFT JOINs) so a defensive duplicate row in `meeting_participants` can
+  // never multiply the meetings result via cross-product. The DB-level
+  // partial unique indexes (see meeting-participants schema) prevent
+  // duplicates in the first place; this is belt-and-suspenders.
   getAll: agentProcedure
     .query(async ({ ctx }) => {
       const isOmni = ctx.ability.can('manage', 'all')
-
-      // Aliased joins so we can pull both owner and co_owner participants
-      // from the same junction table in a single round-trip.
-      const ownerParticipant = alias(meetingParticipants, 'owner_participant')
-      const coOwnerParticipant = alias(meetingParticipants, 'co_owner_participant')
-      const ownerUser = alias(user, 'owner_user')
-      const coOwnerUser = alias(user, 'co_owner_user')
 
       const rows = await db
         .select({
@@ -57,18 +57,6 @@ export const meetingsRouter = createTRPCRouter({
           // compatibility with consumers that read ownerName/ownerImage directly.
           ownerName: user.name,
           ownerImage: user.image,
-          // Participant-driven owner / co-owner — used by ParticipantPicker as
-          // initial data so the picker doesn't need to refetch per row.
-          ownerUserId: ownerUser.id,
-          ownerParticipantUserName: ownerUser.name,
-          ownerParticipantUserEmail: ownerUser.email,
-          ownerParticipantUserImage: ownerUser.image,
-          ownerParticipantId: ownerParticipant.id,
-          coOwnerUserId: coOwnerUser.id,
-          coOwnerUserName: coOwnerUser.name,
-          coOwnerUserEmail: coOwnerUser.email,
-          coOwnerUserImage: coOwnerUser.image,
-          coOwnerParticipantId: coOwnerParticipant.id,
           proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
           hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
           hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
@@ -76,62 +64,55 @@ export const meetingsRouter = createTRPCRouter({
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
         .leftJoin(user, eq(user.id, meetings.ownerId))
-        .leftJoin(
-          ownerParticipant,
-          and(
-            eq(ownerParticipant.meetingId, meetings.id),
-            eq(ownerParticipant.role, 'owner'),
-          ),
-        )
-        .leftJoin(ownerUser, eq(ownerUser.id, ownerParticipant.userId))
-        .leftJoin(
-          coOwnerParticipant,
-          and(
-            eq(coOwnerParticipant.meetingId, meetings.id),
-            eq(coOwnerParticipant.role, 'co_owner'),
-          ),
-        )
-        .leftJoin(coOwnerUser, eq(coOwnerUser.id, coOwnerParticipant.userId))
         .where(isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id))
         .orderBy(desc(meetings.createdAt))
 
+      // Batch-fetch owner + co_owner participants for all returned meetings.
+      // First-encountered wins per (meetingId, role) — DAL orders by
+      // created_at ASC for determinism in the defensive duplicate case.
+      const meetingIds = rows.map(r => r.id)
+      const participantRows = await getOwnerCoOwnerForMeetings(meetingIds)
+
+      const ownerByMeeting = new Map<string, typeof participantRows[number]>()
+      const coOwnerByMeeting = new Map<string, typeof participantRows[number]>()
+      for (const p of participantRows) {
+        if (p.role === 'owner' && !ownerByMeeting.has(p.meetingId)) {
+          ownerByMeeting.set(p.meetingId, p)
+        }
+        if (p.role === 'co_owner' && !coOwnerByMeeting.has(p.meetingId)) {
+          coOwnerByMeeting.set(p.meetingId, p)
+        }
+      }
+
       // Reshape into nested owner/coOwner objects (or null) so consumers can
       // pass them as `initialOwner` / `initialCoOwner` props to the picker.
-      return rows.map(({
-        ownerParticipantId,
-        ownerUserId,
-        ownerParticipantUserName,
-        ownerParticipantUserEmail,
-        ownerParticipantUserImage,
-        coOwnerParticipantId,
-        coOwnerUserId,
-        coOwnerUserName,
-        coOwnerUserEmail,
-        coOwnerUserImage,
-        ...rest
-      }) => ({
-        ...rest,
-        owner: ownerParticipantId && ownerUserId
-          ? {
-              id: ownerParticipantId,
-              userId: ownerUserId,
-              role: 'owner' as const,
-              userName: ownerParticipantUserName,
-              userEmail: ownerParticipantUserEmail,
-              userImage: ownerParticipantUserImage,
-            }
-          : null,
-        coOwner: coOwnerParticipantId && coOwnerUserId
-          ? {
-              id: coOwnerParticipantId,
-              userId: coOwnerUserId,
-              role: 'co_owner' as const,
-              userName: coOwnerUserName,
-              userEmail: coOwnerUserEmail,
-              userImage: coOwnerUserImage,
-            }
-          : null,
-      }))
+      return rows.map((row) => {
+        const ownerRow = ownerByMeeting.get(row.id)
+        const coOwnerRow = coOwnerByMeeting.get(row.id)
+        return {
+          ...row,
+          owner: ownerRow
+            ? {
+                id: ownerRow.participantId,
+                userId: ownerRow.userId,
+                role: 'owner' as const,
+                userName: ownerRow.userName,
+                userEmail: ownerRow.userEmail,
+                userImage: ownerRow.userImage,
+              }
+            : null,
+          coOwner: coOwnerRow
+            ? {
+                id: coOwnerRow.participantId,
+                userId: coOwnerRow.userId,
+                role: 'co_owner' as const,
+                userName: coOwnerRow.userName,
+                userEmail: coOwnerRow.userEmail,
+                userImage: coOwnerRow.userImage,
+              }
+            : null,
+        }
+      })
     }),
 
   // Create a new meeting record (called when an agent starts a meeting)
@@ -410,6 +391,10 @@ export const meetingsRouter = createTRPCRouter({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Role is required when adding a participant' })
         }
 
+        // Pre-insert checks: fast-fail with friendly messages in the common
+        // non-racing case. The DB-level partial unique indexes
+        // (meeting_one_owner_idx, meeting_one_co_owner_idx) are the actual
+        // race-safe enforcement — these checks are no longer load-bearing.
         if (role === 'owner') {
           const existingOwner = await getParticipantByRole(meetingId, 'owner')
           if (existingOwner && existingOwner.userId !== userId) {
@@ -424,7 +409,23 @@ export const meetingsRouter = createTRPCRouter({
           }
         }
 
-        await addParticipant(meetingId, userId, role)
+        try {
+          await addParticipant(meetingId, userId, role)
+        }
+        catch (err) {
+          if (isUniqueViolation(err)) {
+            if (role === 'owner') {
+              throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has an owner.' })
+            }
+            if (role === 'co_owner') {
+              throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has a co-owner.' })
+            }
+            // helper has no slot constraint — must be the (meeting_id, user_id)
+            // collision (user already a participant in some role).
+            throw new TRPCError({ code: 'CONFLICT', message: 'User is already a participant in this meeting.' })
+          }
+          throw err
+        }
 
         if (role === 'owner') {
           await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
@@ -489,7 +490,15 @@ export const meetingsRouter = createTRPCRouter({
             }
           }
           else {
-            await addParticipant(meetingId, userId, 'owner')
+            try {
+              await addParticipant(meetingId, userId, 'owner')
+            }
+            catch (err) {
+              if (isUniqueViolation(err)) {
+                throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has an owner.' })
+              }
+              throw err
+            }
           }
           await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
         }

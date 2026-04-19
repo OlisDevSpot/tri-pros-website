@@ -201,6 +201,11 @@ export function ManageParticipantsModal({
                   email={u.email}
                   image={u.image}
                   isPending={pendingUserId === u.id}
+                  // Disable ALL Add buttons whenever any add is in-flight, so
+                  // two near-simultaneous clicks on different rows can't race
+                  // past the slot-uniqueness guards. The bulk applyToAll uses
+                  // mutateAsync so isPending stays true for the entire bulk run.
+                  disabled={addMutation.isPending}
                   name={u.name ?? u.email ?? 'Unknown'}
                   ownerSlotFilled={!!owner}
                   onAdd={role => applyToAll('add', u.id, role)}

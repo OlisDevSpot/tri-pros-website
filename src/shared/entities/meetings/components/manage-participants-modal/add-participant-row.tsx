@@ -15,6 +15,12 @@ import { getInitials } from '@/shared/lib/get-initials'
 
 interface AddParticipantRowProps {
   coOwnerSlotFilled: boolean
+  /**
+   * Disable the Add button regardless of per-row pending state. Used by the
+   * parent to lock ALL rows whenever any add-mutation is in flight, preventing
+   * two near-simultaneous clicks on different rows from racing past slot guards.
+   */
+  disabled?: boolean
   email: string | null
   image: string | null
   isPending: boolean
@@ -36,6 +42,7 @@ function getDefaultRole(ownerFilled: boolean, coOwnerFilled: boolean): 'co_owner
 
 export function AddParticipantRow({
   coOwnerSlotFilled,
+  disabled = false,
   email,
   image,
   isPending,
@@ -84,7 +91,7 @@ export function AddParticipantRow({
         </SelectContent>
       </Select>
       <Button
-        disabled={isPending}
+        disabled={isPending || disabled}
         size="sm"
         type="button"
         onClick={() => onAdd(selectedRole)}

@@ -34,7 +34,7 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
     trpc.meetingsRouter.getInternalUsers.queryOptions(),
   )
 
-  const { pendingUserId, add, remove, promoteToOwner } = useParticipantMutations({ meetingId })
+  const { pendingUserId, addMutation, add, remove, promoteToOwner } = useParticipantMutations({ meetingId })
 
   const participants = participantsQuery.data ?? []
 
@@ -149,7 +149,10 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
                               email={u.email}
                               image={u.image}
                               inferredRole={owner ? 'co_owner' : 'owner'}
-                              disabled={false}
+                              // Disable ALL Add buttons whenever any add is in-flight,
+                              // so two near-simultaneous clicks on different rows can't
+                              // race past the slot-uniqueness guards.
+                              disabled={addMutation.isPending}
                               isPending={pendingUserId === u.id}
                               onAdd={() => add(u.id, owner ? 'co_owner' : 'owner')}
                             />
