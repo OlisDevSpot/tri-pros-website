@@ -9,6 +9,7 @@ import { useCallback, useMemo, useState } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
+import { ParticipantPickerContent } from '@/shared/entities/meetings/components/participant-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
 import { useConfirm } from '@/shared/hooks/use-confirm'
@@ -133,10 +134,21 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         action: MEETING_ACTIONS.createProposal,
         onAction: overrides.onCreateProposal ?? defaultCreateProposal,
       },
-      // Always present — CASL permission ['assign', 'Meeting'] controls visibility
+      // Always present — CASL permission ['assign', 'Meeting'] controls visibility.
+      // Renders the inline participant picker as a submenu; the picker's footer
+      // "Manage participants" link closes the menu and opens the full modal.
       {
         action: MEETING_ACTIONS.assignOwner,
-        onAction: overrides.onAssignOwner ?? defaultAssignOwner,
+        type: 'custom' as const,
+        renderContent: (entity, closeMenu) => (
+          <ParticipantPickerContent
+            meetingId={entity.id}
+            onOpenManageModal={() => {
+              closeMenu()
+              ;(overrides.onAssignOwner ?? defaultAssignOwner)(entity)
+            }}
+          />
+        ),
       },
     ]
 

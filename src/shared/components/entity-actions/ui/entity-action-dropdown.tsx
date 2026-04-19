@@ -1,10 +1,11 @@
 'use client'
 
-import type { EntityActionConfig, EntityActionSelectConfig } from '@/shared/components/entity-actions/types'
+import type { EntityActionConfig, EntityActionCustomConfig, EntityActionSelectConfig } from '@/shared/components/entity-actions/types'
 
 import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
+import { useCallback, useState } from 'react'
 
-import { isSelectAction } from '@/shared/components/entity-actions/types'
+import { isCustomAction, isSelectAction } from '@/shared/components/entity-actions/types'
 
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -36,6 +37,8 @@ export function EntityActionDropdown<TEntity>({
   triggerClassName,
 }: EntityActionDropdownProps<TEntity>) {
   const ability = useAbility()
+  const [open, setOpen] = useState(false)
+  const closeDropdown = useCallback(() => setOpen(false), [])
 
   const permitted = actions.filter(({ action }) => {
     if (!action.permission) {
@@ -51,7 +54,7 @@ export function EntityActionDropdown<TEntity>({
   const TriggerIcon = orientation === 'horizontal' ? MoreHorizontalIcon : MoreVerticalIcon
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -64,26 +67,37 @@ export function EntityActionDropdown<TEntity>({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
-        {permitted.map(config =>
-          isSelectAction(config)
-            ? (
-                <EntityActionSelectItem
-                  key={config.action.id}
-                  config={config}
-                  entity={entity}
-                />
-              )
-            : (
-                <EntityActionClickItem
-                  key={config.action.id}
-                  action={config.action}
-                  entity={entity}
-                  onAction={config.onAction}
-                  isLoading={config.isLoading}
-                  isDisabled={config.isDisabled}
-                />
-              ),
-        )}
+        {permitted.map((config) => {
+          if (isSelectAction(config)) {
+            return (
+              <EntityActionSelectItem
+                key={config.action.id}
+                config={config}
+                entity={entity}
+              />
+            )
+          }
+          if (isCustomAction(config)) {
+            return (
+              <EntityActionCustomItem
+                key={config.action.id}
+                config={config}
+                entity={entity}
+                closeDropdown={closeDropdown}
+              />
+            )
+          }
+          return (
+            <EntityActionClickItem
+              key={config.action.id}
+              action={config.action}
+              entity={entity}
+              onAction={config.onAction}
+              isLoading={config.isLoading}
+              isDisabled={config.isDisabled}
+            />
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -165,6 +179,38 @@ function EntityActionSelectItem<TEntity>({
               {option.label}
             </DropdownMenuItem>
           ))}
+        </DropdownMenuSubContent>
+      </DropdownMenuSub>
+    </>
+  )
+}
+
+// ── Custom (sub-menu) action item ────────────────────────────────────────────
+
+interface CustomItemProps<TEntity> {
+  config: EntityActionCustomConfig<TEntity>
+  entity: TEntity
+  closeDropdown: () => void
+}
+
+function EntityActionCustomItem<TEntity>({
+  config,
+  entity,
+  closeDropdown,
+}: CustomItemProps<TEntity>) {
+  const { action, renderContent, isLoading, isDisabled } = config
+  const Icon = action.icon
+
+  return (
+    <>
+      {action.separatorBefore && <DropdownMenuSeparator />}
+      <DropdownMenuSub>
+        <DropdownMenuSubTrigger disabled={isLoading || isDisabled}>
+          <Icon className="h-3.5 w-3.5" />
+          {action.label}
+        </DropdownMenuSubTrigger>
+        <DropdownMenuSubContent className="w-[min(420px,calc(100vw-2rem))] p-0">
+          {renderContent(entity, closeDropdown)}
         </DropdownMenuSubContent>
       </DropdownMenuSub>
     </>

@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import type { Button } from '@/shared/components/ui/button'
 import type { AppActions, AppSubjects } from '@/shared/domains/permissions/types'
@@ -61,12 +61,37 @@ export interface EntityActionSelectConfig<TEntity> {
   isDisabled?: boolean
 }
 
+/**
+ * Custom sub-menu action — renders arbitrary interactive content inside a
+ * `DropdownMenuSubContent`. Use when neither a click action nor a static
+ * option list fits (e.g. inline pickers, search inputs).
+ */
+export interface EntityActionCustomConfig<TEntity> {
+  action: EntityAction
+  type: 'custom'
+  /**
+   * Renders inside the submenu's `DropdownMenuSubContent`. The `closeMenu`
+   * callback closes the entire dropdown (including the parent menu). Useful
+   * when the rendered content opens a modal — call `closeMenu()` before
+   * opening the modal so the menu doesn't linger underneath.
+   */
+  renderContent: (entity: TEntity, closeMenu: () => void) => ReactNode
+  isLoading?: boolean
+  isDisabled?: boolean
+}
+
 /** Union of all action config types. */
 export type EntityActionConfig<TEntity>
   = EntityActionClickConfig<TEntity>
     | EntityActionSelectConfig<TEntity>
+    | EntityActionCustomConfig<TEntity>
 
 /** Type guard: is this a select (sub-menu) action? */
 export function isSelectAction<TEntity>(config: EntityActionConfig<TEntity>): config is EntityActionSelectConfig<TEntity> {
   return 'type' in config && config.type === 'select'
+}
+
+/** Type guard: is this a custom (sub-menu) action? */
+export function isCustomAction<TEntity>(config: EntityActionConfig<TEntity>): config is EntityActionCustomConfig<TEntity> {
+  return 'type' in config && config.type === 'custom'
 }
