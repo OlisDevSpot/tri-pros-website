@@ -1,19 +1,7 @@
 import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
-import { ZOHO_SIGN_TEMPLATE_IDS } from '../constants'
-
-/** Action IDs from Zoho Sign templates — fixed per template */
-const TEMPLATE_ACTION_IDS = {
-  base: {
-    contractor: '563034000000046252',
-    homeowner: '563034000000046258',
-  },
-  senior: {
-    contractor: '563034000000046434',
-    homeowner: '563034000000046453',
-  },
-}
+import { ZOHO_SIGN_TEMPLATES } from '../constants'
 
 export function buildSigningRequest(proposal: ProposalWithCustomer) {
   const { customer, projectJSON, fundingJSON } = proposal
@@ -33,8 +21,7 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
   const customerZip = customer.zip ?? ''
 
   const isSenior = customer.customerAge >= 65
-  const templateId = isSenior ? ZOHO_SIGN_TEMPLATE_IDS.senior : ZOHO_SIGN_TEMPLATE_IDS.base
-  const actionIds = isSenior ? TEMPLATE_ACTION_IDS.senior : TEMPLATE_ACTION_IDS.base
+  const { templateId, actions: actionIds } = isSenior ? ZOHO_SIGN_TEMPLATES.senior : ZOHO_SIGN_TEMPLATES.base
 
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
   const sow1 = sowText.slice(0, 2000)

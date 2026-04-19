@@ -4,7 +4,19 @@ export const ZOHO_ACCOUNTS_URL = 'https://accounts.zoho.com'
 
 export const ZOHO_SIGN_SCOPES = 'ZohoSign.documents.ALL,ZohoSign.templates.ALL'
 
-export const ZOHO_SIGN_TEMPLATE_IDS = {
-  base: '563034000000046241',
-  senior: '563034000000046431',
-}
+export const ZOHO_SIGN_TEMPLATES = {
+  base: {
+    templateId: '563034000000046241',
+    actions: {
+      contractor: '563034000000046252',
+      homeowner: '563034000000046258',
+    },
+  },
+  senior: {
+    templateId: '563034000000055081',
+    actions: {
+      contractor: '563034000000055125',
+      homeowner: '563034000000055136',
+    },
+  },
+} as const
