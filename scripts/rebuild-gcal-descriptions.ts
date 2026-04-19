@@ -13,9 +13,17 @@
  * Throttled to 10 req/sec (well under Google Calendar's 100/sec hard quota)
  * so it won't trigger rate limiting even on large datasets.
  *
- * Usage:
- *   pnpm tsx scripts/rebuild-gcal-descriptions.ts
- *   pnpm tsx scripts/rebuild-gcal-descriptions.ts --dry-run
+ * Usage (pnpm scripts set the required NODE_OPTIONS flag):
+ *   pnpm rebuild:gcal:dev -- --dry-run   # dev DB, count only
+ *   pnpm rebuild:gcal:dev                # dev DB, real run
+ *   pnpm rebuild:gcal -- --dry-run       # prod DB, count only
+ *   pnpm rebuild:gcal                    # prod DB, real run
+ *
+ * The `--conditions=react-server` Node flag (set by the pnpm scripts) makes
+ * `server-only` resolve to its no-op `empty.js` export, which lets this CLI
+ * import `schedulingService` — and its transitive `server-only` imports —
+ * without needing the Next.js webpack alias that normally provides that
+ * behavior inside the running app.
  */
 import 'dotenv/config'
 import { isNotNull } from 'drizzle-orm'
