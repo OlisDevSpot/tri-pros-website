@@ -42,7 +42,7 @@ export function HybridPopoverTooltip({ children, content, side = 'top' }: Props)
   if (isTouch) {
     return (
       <Popover>
-        <PopoverTrigger>{children}</PopoverTrigger>
+        <PopoverTrigger asChild>{children}</PopoverTrigger>
         <PopoverContent side={side} className="max-w-xs text-sm">
           {content}
         </PopoverContent>
@@ -53,7 +53,7 @@ export function HybridPopoverTooltip({ children, content, side = 'top' }: Props)
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger>{children}</TooltipTrigger>
+        <TooltipTrigger asChild>{children}</TooltipTrigger>
         <TooltipContent side={side} className="max-w-xs text-sm">
           {content}
         </TooltipContent>
