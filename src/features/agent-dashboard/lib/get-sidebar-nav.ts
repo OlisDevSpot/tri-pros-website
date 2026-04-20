@@ -8,9 +8,12 @@ import {
   ClipboardListIcon,
   FileTextIcon,
   GitBranchIcon,
+  HandshakeIcon,
   ImageIcon,
+  LayoutDashboardIcon,
   SettingsIcon,
   UsersIcon,
+  UsersRoundIcon,
 } from 'lucide-react'
 
 import { ROOTS } from '@/shared/config/roots'
@@ -32,13 +35,22 @@ export interface SidebarNavItem {
 }
 
 export interface SidebarNavConfig {
-  baseItems: readonly SidebarNavItem[]
+  dashboardItem: SidebarNavItem
+  mainItems: readonly SidebarNavItem[]
+  recordsItems: readonly SidebarNavItem[]
   adminItems: readonly SidebarNavItem[]
   footerItems: readonly SidebarNavItem[]
 }
 
 export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
-  const baseItems: SidebarNavItem[] = [
+  const dashboardItem: SidebarNavItem = {
+    href: ROOTS.dashboard.root,
+    icon: LayoutDashboardIcon,
+    label: 'Dashboard',
+    enabled: true,
+  }
+
+  const mainItems: SidebarNavItem[] = [
     {
       href: ROOTS.dashboard.pipeline(),
       icon: GitBranchIcon,
@@ -50,9 +62,39 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
         href: ROOTS.dashboard.pipeline(key),
       })),
     },
-    { href: '/dashboard/schedule', icon: CalendarIcon, label: 'Schedule', enabled: ability.can('read', 'Meeting') },
-    { href: ROOTS.dashboard.proposals.root(), icon: FileTextIcon, label: 'Proposals', enabled: ability.can('read', 'Proposal') },
-    { href: ROOTS.dashboard.projects.root(), icon: ImageIcon, label: 'Projects', enabled: ability.can('read', 'Project') },
+    {
+      href: ROOTS.dashboard.schedule(),
+      icon: CalendarIcon,
+      label: 'Schedule',
+      enabled: ability.can('read', 'Meeting'),
+    },
+  ]
+
+  const recordsItems: SidebarNavItem[] = [
+    {
+      href: ROOTS.dashboard.customers.root(),
+      icon: UsersRoundIcon,
+      label: 'Customers',
+      enabled: false,
+    },
+    {
+      href: ROOTS.dashboard.meetings.root(),
+      icon: HandshakeIcon,
+      label: 'Meetings',
+      enabled: ability.can('read', 'Meeting'),
+    },
+    {
+      href: ROOTS.dashboard.proposals.root(),
+      icon: FileTextIcon,
+      label: 'Proposals',
+      enabled: ability.can('read', 'Proposal'),
+    },
+    {
+      href: ROOTS.dashboard.projects.root(),
+      icon: ImageIcon,
+      label: 'Projects',
+      enabled: ability.can('read', 'Project'),
+    },
   ]
 
   const adminItems: SidebarNavItem[] = ability.can('manage', 'all')
@@ -67,5 +109,5 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
     { href: ROOTS.dashboard.settings(), icon: SettingsIcon, label: 'Settings', enabled: true },
   ]
 
-  return { baseItems, adminItems, footerItems }
+  return { dashboardItem, mainItems, recordsItems, adminItems, footerItems }
 }
