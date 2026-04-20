@@ -210,7 +210,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           </motion.div>
           <Button
             variant="outline"
-            className="absolute -bottom-2.5 -right-2.5 z-20 hidden size-5 rounded-full border bg-background p-0 shadow-sm md:flex items-center justify-center"
+            className="absolute -bottom-2.5 -right-2.5 z-20 hidden size-5 rounded-full border bg-background p-0 shadow-sm md:flex items-center justify-center group-data-[collapsible=icon]:-right-1"
             onClick={toggleSidebar}
           >
             {isCollapsed
@@ -234,8 +234,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 dark:from-black/30 dark:to-black/55
                 dark:ring-white/5
                 dark:shadow-[0_1px_3px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.06),inset_0_2px_8px_rgb(0_0_0/0.55),inset_0_-1px_3px_rgb(0_0_0/0.25),inset_0_-1px_0_rgb(255_255_255/0.03)]
-                transition-[padding] duration-200 ease-linear
+                transition-[padding,border-radius] duration-200 ease-linear
                 group-data-[collapsible=icon]:p-0
+                group-data-[collapsible=icon]:rounded-md
               "
             >
               <SidebarMenu>
