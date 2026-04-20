@@ -274,196 +274,185 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
       )}
 
       <div className="grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden">
-        {/*
-          Single-axis-per-gesture scroll:
-          - Outer wrapper: vertical scroll only (touch-pan-y)
-          - Inner wrapper: horizontal scroll only (touch-pan-x)
-          Browser locks to dominant axis at gesture start, preventing diagonal drift
-          on mobile while keeping native momentum. Inner uses overflow-y-clip (not
-          visible) to avoid CSS auto-normalization of mixed visible/auto, which
-          would otherwise trap the sticky header inside the horizontal container.
-        */}
-        <div className="grow min-h-0 overflow-y-auto overflow-x-hidden overscroll-none touch-pan-y">
-          <div
-            ref={scrollRef}
-            onScroll={handleScroll}
-            className={cn(
-              'overflow-x-auto overflow-y-clip touch-pan-x',
-              '**:data-[slot=table-container]:overflow-visible',
-              isAnyColumnResizing && 'cursor-col-resize select-none',
-            )}
-          >
-            <Table className="table-fixed border-separate border-spacing-0" style={{ width: tableWidth }}>
-              <TableHeader className="sticky top-0 z-10 bg-background">
-                {table.getHeaderGroups().map(headerGroup => (
-                  <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
-                    {headerGroup.headers.map((header, colIdx) => {
-                      const isColResizing = header.column.getIsResizing()
-                      const isFirstCol = colIdx === 0
-                      const isLastCol = colIdx === headerGroup.headers.length - 1
-                      const colWidth = header.getSize() + (isLastCol ? lastColExtra : 0)
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className={cn(
+            'grow min-h-0 overflow-auto overscroll-none touch-pan-x touch-pan-y',
+            '**:data-[slot=table-container]:overflow-visible',
+            isAnyColumnResizing && 'cursor-col-resize select-none',
+          )}
+        >
+          <Table className="table-fixed border-separate border-spacing-0" style={{ width: tableWidth }}>
+            <TableHeader className="sticky top-0 z-10 bg-background">
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
+                  {headerGroup.headers.map((header, colIdx) => {
+                    const isColResizing = header.column.getIsResizing()
+                    const isFirstCol = colIdx === 0
+                    const isLastCol = colIdx === headerGroup.headers.length - 1
+                    const colWidth = header.getSize() + (isLastCol ? lastColExtra : 0)
 
-                      return (
-                        <TableHead
-                          key={header.id}
-                          className={cn(
-                            'group/th relative',
-                            CELL_BORDER,
-                            isFirstCol && isFrozen && cn(
-                              'sticky left-0 z-30 bg-background border-r border-border/50',
-                              'transition-shadow duration-200',
-                              showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
-                            ),
-                          )}
-                          style={{
-                            width: colWidth,
-                            ...(isFirstCol && isFrozen ? { borderRightStyle: 'dashed' as const } : undefined),
-                          }}
-                        >
-                          {/* Header content — first col gets a pin toggle */}
-                          {isFirstCol
-                            ? (
-                                <div className="flex items-center gap-1">
-                                  <div className="min-w-0 flex-1">
-                                    {header.isPlaceholder
-                                      ? null
-                                      : flexRender(header.column.columnDef.header, header.getContext())}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      toggleFrozen()
-                                    }}
-                                    className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-muted"
-                                    title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
-                                  >
-                                    <PinIcon
-                                      className={cn(
-                                        'h-3 w-3 rotate-45 transition-colors',
-                                        isFrozen
-                                          ? 'fill-foreground text-foreground'
-                                          : 'text-muted-foreground/50',
-                                      )}
-                                    />
-                                  </button>
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          'group/th relative',
+                          CELL_BORDER,
+                          isFirstCol && isFrozen && cn(
+                            'sticky left-0 z-30 bg-background border-r border-border/50',
+                            'transition-shadow duration-200',
+                            showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
+                          ),
+                        )}
+                        style={{
+                          width: colWidth,
+                          ...(isFirstCol && isFrozen ? { borderRightStyle: 'dashed' as const } : undefined),
+                        }}
+                      >
+                        {/* Header content — first col gets a pin toggle */}
+                        {isFirstCol
+                          ? (
+                              <div className="flex items-center gap-1">
+                                <div className="min-w-0 flex-1">
+                                  {header.isPlaceholder
+                                    ? null
+                                    : flexRender(header.column.columnDef.header, header.getContext())}
                                 </div>
-                              )
-                            : (header.isPlaceholder
-                                ? null
-                                : flexRender(header.column.columnDef.header, header.getContext())
-                              )}
-
-                          {/* Resize handle — centred on the column's right edge */}
-                          {header.column.getCanResize() && !isLastCol && (
-                            <div
-                              onMouseDown={header.getResizeHandler()}
-                              onTouchStart={header.getResizeHandler()}
-                              onDoubleClick={() => header.column.resetSize()}
-                              className="absolute right-0 translate-x-1/2 top-0 z-30 w-2 cursor-col-resize select-none touch-none"
-                              style={{ height: isColResizing ? 9999 : '100%' }}
-                            >
-                              <div
-                                className={cn(
-                                  'mx-auto h-full',
-                                  isColResizing
-                                    ? 'w-0.5 border-l-2 border-dashed border-primary'
-                                    : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
-                                )}
-                              />
-                            </div>
-                          )}
-
-                          {/* Last column: resize handle on the RIGHT edge (inside the cell) */}
-                          {header.column.getCanResize() && isLastCol && (
-                            <div
-                              onMouseDown={header.getResizeHandler()}
-                              onTouchStart={header.getResizeHandler()}
-                              onDoubleClick={() => header.column.resetSize()}
-                              className="absolute right-0 top-0 z-30 w-1 cursor-col-resize select-none touch-none"
-                              style={{ height: isColResizing ? 9999 : '100%' }}
-                            >
-                              <div
-                                className={cn(
-                                  'ml-auto h-full',
-                                  isColResizing
-                                    ? 'w-0.5 border-l-2 border-dashed border-primary'
-                                    : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
-                                )}
-                              />
-                            </div>
-                          )}
-                        </TableHead>
-                      )
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-
-              <TableBody>
-                {table.getRowModel().rows.length > 0
-                  ? table.getRowModel().rows.map((row) => {
-                      const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
-                      const customRowClass = getRowClassName?.(row.original)
-
-                      return (
-                        <TableRow
-                          key={row.id}
-                          className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
-                          onClick={() => {
-                            if (onRowClick) {
-                              onRowClick(row.original)
-                            }
-                            else if (isMobile) {
-                              setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
-                            }
-                          }}
-                          {...rowProps}
-                        >
-                          {row.getVisibleCells().map((cell, colIdx) => {
-                            if (colIdx === 0 && isFrozen) {
-                              return (
-                                <TableCell
-                                  key={cell.id}
-                                  className={cn(
-                                    'sticky left-0 z-5 p-0 border-r border-border/50',
-                                    CELL_BORDER,
-                                    'transition-shadow duration-200',
-                                    showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
-                                  )}
-                                  style={{ borderRightStyle: 'dashed' }}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleFrozen()
+                                  }}
+                                  className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-muted"
+                                  title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
                                 >
-                                  <div className="absolute inset-0 bg-background group-hover:bg-muted/50" />
-                                  {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
-                                  <div className="relative p-2">
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                  </div>
-                                </TableCell>
-                              )
-                            }
+                                  <PinIcon
+                                    className={cn(
+                                      'h-3 w-3 rotate-45 transition-colors',
+                                      isFrozen
+                                        ? 'fill-foreground text-foreground'
+                                        : 'text-muted-foreground/50',
+                                    )}
+                                  />
+                                </button>
+                              </div>
+                            )
+                          : (header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())
+                            )}
 
+                        {/* Resize handle — centred on the column's right edge */}
+                        {header.column.getCanResize() && !isLastCol && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            onDoubleClick={() => header.column.resetSize()}
+                            className="absolute right-0 translate-x-1/2 top-0 z-30 w-2 cursor-col-resize select-none touch-none"
+                            style={{ height: isColResizing ? 9999 : '100%' }}
+                          >
+                            <div
+                              className={cn(
+                                'mx-auto h-full',
+                                isColResizing
+                                  ? 'w-0.5 border-l-2 border-dashed border-primary'
+                                  : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
+                              )}
+                            />
+                          </div>
+                        )}
+
+                        {/* Last column: resize handle on the RIGHT edge (inside the cell) */}
+                        {header.column.getCanResize() && isLastCol && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            onDoubleClick={() => header.column.resetSize()}
+                            className="absolute right-0 top-0 z-30 w-1 cursor-col-resize select-none touch-none"
+                            style={{ height: isColResizing ? 9999 : '100%' }}
+                          >
+                            <div
+                              className={cn(
+                                'ml-auto h-full',
+                                isColResizing
+                                  ? 'w-0.5 border-l-2 border-dashed border-primary'
+                                  : 'w-px opacity-0 bg-border group-hover/th:opacity-100',
+                              )}
+                            />
+                          </div>
+                        )}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+
+            <TableBody>
+              {table.getRowModel().rows.length > 0
+                ? table.getRowModel().rows.map((row) => {
+                    const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
+                    const customRowClass = getRowClassName?.(row.original)
+
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
+                        onClick={() => {
+                          if (onRowClick) {
+                            onRowClick(row.original)
+                          }
+                          else if (isMobile) {
+                            setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
+                          }
+                        }}
+                        {...rowProps}
+                      >
+                        {row.getVisibleCells().map((cell, colIdx) => {
+                          if (colIdx === 0 && isFrozen) {
                             return (
-                              <TableCell key={cell.id} className={CELL_BORDER}>
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              <TableCell
+                                key={cell.id}
+                                className={cn(
+                                  'sticky left-0 z-5 p-0 border-r border-border/50',
+                                  CELL_BORDER,
+                                  'transition-shadow duration-200',
+                                  showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
+                                )}
+                                style={{ borderRightStyle: 'dashed' }}
+                              >
+                                <div className="absolute inset-0 bg-background group-hover:bg-muted/50" />
+                                {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
+                                <div className="relative p-2">
+                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </div>
                               </TableCell>
                             )
-                          })}
-                        </TableRow>
-                      )
-                    })
-                  : (
-                      <TableRow>
-                        <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                          No
-                          {' '}
-                          {entityName}
-                          s match your filter.
-                        </TableCell>
+                          }
+
+                          return (
+                            <TableCell key={cell.id} className={CELL_BORDER}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          )
+                        })}
                       </TableRow>
-                    )}
-              </TableBody>
-            </Table>
-          </div>
+                    )
+                  })
+                : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                        No
+                        {' '}
+                        {entityName}
+                        s match your filter.
+                      </TableCell>
+                    </TableRow>
+                  )}
+            </TableBody>
+          </Table>
         </div>
 
         <DataTablePagination table={table} />
