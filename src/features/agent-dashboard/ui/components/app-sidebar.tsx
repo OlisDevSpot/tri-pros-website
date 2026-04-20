@@ -221,7 +221,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
         <SidebarSeparator className="mx-0" />
 
-        <SidebarContent className="gap-1">
+        <SidebarContent className="gap-0">
           <SidebarSearchBar />
 
           <SidebarGroup>
@@ -254,7 +254,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           />
 
           {navConfig.adminItems.length > 0 && (
-            <SidebarGroup className="mt-3">
+            <SidebarGroup className="mt-6">
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
