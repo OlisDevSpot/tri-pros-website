@@ -11,10 +11,13 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 
+import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
 import { SIDEBAR_NAV_ACTIVE_STYLE } from '@/features/agent-dashboard/constants/sidebar-styles'
 import { getSidebarNav } from '@/features/agent-dashboard/lib/get-sidebar-nav'
 import { ActionCenterSheet } from '@/features/agent-dashboard/ui/components/action-center-sheet'
 import { SidebarPipelineItem } from '@/features/agent-dashboard/ui/components/sidebar-pipeline-item'
+import { SidebarRecordsGroup } from '@/features/agent-dashboard/ui/components/sidebar-records-group'
+import { SidebarSearchBar } from '@/features/agent-dashboard/ui/components/sidebar-search-bar'
 import { SidebarUserButton } from '@/features/agent-dashboard/ui/components/sidebar-user-button'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -112,7 +115,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
             className={item.enabled ? '' : 'pointer-events-none opacity-50'}
           >
             <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
-            <span>{item.label}</span>
+            <motion.span
+              initial={false}
+              animate={isCollapsed && !isMobile ? SIDEBAR_LABEL_ANIMATE.collapsed : SIDEBAR_LABEL_ANIMATE.expanded}
+              transition={SIDEBAR_TRANSITION}
+              className="overflow-hidden whitespace-nowrap"
+            >
+              {item.label}
+            </motion.span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -211,37 +221,39 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
         <SidebarSeparator className="mx-0" />
 
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {renderNavItem(navConfig.dashboardItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        <SidebarContent className="gap-1">
+          <SidebarSearchBar />
 
           <SidebarGroup>
-            <SidebarGroupLabel>Main</SidebarGroupLabel>
-            <SidebarGroupContent>
+            <div
+              className="
+                rounded-xl p-1
+                bg-linear-to-b from-primary/5 to-primary/12
+                ring-1 ring-inset ring-black/5
+                shadow-[0_1px_3px_rgb(0_0_0/0.04),inset_0_1px_0_rgb(255_255_255/0.9),inset_0_2px_5px_rgb(0_0_0/0.08),inset_0_-1px_2px_rgb(0_0_0/0.03),inset_0_-1px_0_rgb(255_255_255/0.5)]
+                dark:from-black/30 dark:to-black/55
+                dark:ring-white/5
+                dark:shadow-[0_1px_3px_rgb(0_0_0/0.35),inset_0_1px_0_rgb(255_255_255/0.06),inset_0_2px_8px_rgb(0_0_0/0.55),inset_0_-1px_3px_rgb(0_0_0/0.25),inset_0_-1px_0_rgb(255_255_255/0.03)]
+                transition-[padding] duration-200 ease-linear
+                group-data-[collapsible=icon]:p-0
+              "
+            >
               <SidebarMenu>
+                {renderNavItem(navConfig.dashboardItem)}
                 {navConfig.mainItems.map(item =>
                   item.children ? renderPipelineNavItem(item) : renderNavItem(item),
                 )}
               </SidebarMenu>
-            </SidebarGroupContent>
+            </div>
           </SidebarGroup>
 
-          <SidebarGroup>
-            <SidebarGroupLabel>Records</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {navConfig.recordsItems.map(renderNavItem)}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <SidebarRecordsGroup
+            items={navConfig.recordsItems}
+            renderItem={renderNavItem}
+          />
 
           {navConfig.adminItems.length > 0 && (
-            <SidebarGroup>
+            <SidebarGroup className="mt-3">
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>

@@ -4,9 +4,11 @@ import type { SidebarNavItem } from '@/features/agent-dashboard/lib/get-sidebar-
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import { CheckIcon, LoaderIcon } from 'lucide-react'
+import { motion } from 'motion/react'
 import Link from 'next/link'
 import { useState } from 'react'
 
+import { SIDEBAR_LABEL_ANIMATE, SIDEBAR_TRANSITION } from '@/features/agent-dashboard/constants/sidebar-motion'
 import { SIDEBAR_NAV_ACTIVE_STYLE } from '@/features/agent-dashboard/constants/sidebar-styles'
 import {
   Popover,
@@ -16,6 +18,7 @@ import {
 import {
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/shared/components/ui/sidebar'
 import { ROOTS } from '@/shared/config/roots'
 import { PIPELINE_LABELS } from '@/shared/domains/pipelines/constants/pipeline-registry'
@@ -38,6 +41,8 @@ export function SidebarPipelineItem({
   onNavigate,
 }: SidebarPipelineItemProps) {
   const [badgeOpen, setBadgeOpen] = useState(false)
+  const { state, isMobile } = useSidebar()
+  const isIconCollapsed = state === 'collapsed' && !isMobile
 
   return (
     <SidebarMenuItem>
@@ -61,7 +66,14 @@ export function SidebarPipelineItem({
           className={item.enabled ? '' : 'pointer-events-none opacity-50'}
         >
           <item.icon className={`size-4 shrink-0 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
-          <span>{item.label}</span>
+          <motion.span
+            initial={false}
+            animate={isIconCollapsed ? SIDEBAR_LABEL_ANIMATE.collapsed : SIDEBAR_LABEL_ANIMATE.expanded}
+            transition={SIDEBAR_TRANSITION}
+            className="overflow-hidden whitespace-nowrap"
+          >
+            {item.label}
+          </motion.span>
         </Link>
       </SidebarMenuButton>
 
@@ -74,7 +86,7 @@ export function SidebarPipelineItem({
             onClick={(e) => {
               e.stopPropagation()
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-all duration-200 select-none group-data-[collapsible=icon]:hidden disabled:cursor-default"
+            className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider select-none transition-[opacity,transform,background,color,box-shadow] duration-200 ease-linear disabled:cursor-default group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:scale-90 group-data-[collapsible=icon]:opacity-0"
             style={{
               background: 'linear-gradient(135deg, color-mix(in oklch, var(--primary) 14%, transparent), color-mix(in oklch, var(--primary) 8%, transparent))',
               color: 'color-mix(in oklch, var(--primary) 80%, var(--foreground))',
