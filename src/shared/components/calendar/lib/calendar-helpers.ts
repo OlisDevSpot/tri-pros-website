@@ -104,69 +104,6 @@ export function getCalendarCells(selectedDate: Date): CalendarCell[] {
   return [...prevMonthCells, ...currentMonthCells, ...nextMonthCells]
 }
 
-export function groupEvents<T extends CalendarEvent>(dayEvents: T[]): T[][] {
-  const sortedEvents = [...dayEvents].sort(
-    (a, b) => parseISO(a.startAt).getTime() - parseISO(b.startAt).getTime(),
-  )
-  const groups: T[][] = []
-
-  for (const event of sortedEvents) {
-    const eventStart = parseISO(event.startAt)
-    let placed = false
-
-    for (const group of groups) {
-      const lastEventInGroup = group[group.length - 1]
-      const lastEventEnd = lastEventInGroup.endAt
-        ? parseISO(lastEventInGroup.endAt)
-        : parseISO(lastEventInGroup.startAt)
-
-      if (eventStart >= lastEventEnd) {
-        group.push(event)
-        placed = true
-        break
-      }
-    }
-
-    if (!placed) {
-      groups.push([event])
-    }
-  }
-
-  return groups
-}
-
-export function getEventBlockStyle<T extends CalendarEvent>(
-  event: T,
-  day: Date,
-  groupIndex: number,
-  groupSize: number,
-  startHour = 0,
-  endHour = 24,
-): { top: string, width: string, left: string, height: string } {
-  const startDate = parseISO(event.startAt)
-  const endDate = event.endAt ? parseISO(event.endAt) : new Date(startDate.getTime() + 60 * 60 * 1000)
-  const dayStart = startOfDay(day)
-  const rangeStartMinutes = startHour * 60
-  const totalVisibleMinutes = (endHour - startHour) * 60
-
-  const eventStart = startDate < dayStart ? dayStart : startDate
-  const startMinutes = (eventStart.getTime() - dayStart.getTime()) / 60000
-  const durationMinutes = (endDate.getTime() - eventStart.getTime()) / 60000
-
-  const clampedStart = Math.max(startMinutes - rangeStartMinutes, 0)
-  const top = (clampedStart / totalVisibleMinutes) * 100
-  const height = (Math.max(durationMinutes, 30) / totalVisibleMinutes) * 100
-  const width = 100 / groupSize
-  const left = groupIndex * width
-
-  return {
-    top: `${top}%`,
-    height: `${height}%`,
-    width: `${width}%`,
-    left: `${left}%`,
-  }
-}
-
 export function getWeekDays(date: Date, hiddenDays: number[] = []): Date[] {
   const weekStart = startOfWeek(date)
   const allDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -181,10 +118,4 @@ export function getEventsForDay<T extends CalendarEvent>(
     const startDate = parseISO(event.startAt)
     return isSameDay(startDate, date)
   })
-}
-
-export function formatHour(hour: number): string {
-  const period = hour >= 12 ? 'PM' : 'AM'
-  const displayHour = hour % 12 || 12
-  return `${displayHour} ${period}`
 }
