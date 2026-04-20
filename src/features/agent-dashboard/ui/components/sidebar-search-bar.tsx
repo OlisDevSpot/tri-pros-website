@@ -37,7 +37,7 @@ export function SidebarSearchBar() {
             onClick={() => setOpen(true)}
             aria-label="Search"
             className="
-              flex h-9 w-full items-center gap-2 overflow-hidden
+              flex h-8 w-full items-center gap-2 overflow-hidden
               rounded-lg border border-border/70
               bg-linear-to-b from-background to-muted/50
               px-2.5 text-sm text-muted-foreground
