@@ -254,7 +254,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           />
 
           {navConfig.adminItems.length > 0 && (
-            <SidebarGroup className="mt-6">
+            <SidebarGroup>
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
