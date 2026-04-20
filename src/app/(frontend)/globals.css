@@ -370,6 +370,16 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Sonner toasts in PWA mode                                      */
+/* Sonner sets --mobile-offset-top / --offset-top as inline styles, */
+/* so !important is required to push toasts below the status bar. */
+@media (display-mode: standalone) {
+  [data-sonner-toaster][data-y-position='top'] {
+    --mobile-offset-top: calc(16px + env(safe-area-inset-top)) !important;
+    --offset-top: calc(24px + env(safe-area-inset-top)) !important;
+  }
+}
+
 /* ── Dashboard sidebar nav hover ───────────────────────────────── */
 /* Soft tint on hover — no border, no shadow, just a gentle wash  */
 /* that hints at interactivity without mimicking the active state. */
