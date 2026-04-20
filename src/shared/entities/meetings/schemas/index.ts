@@ -40,18 +40,19 @@ export const dealStructureIncentiveSchema = z.object({
 
 export type DealStructureIncentive = z.infer<typeof dealStructureIncentiveSchema>
 
+// `finalTcp`, `monthlyPayment`, and `depositPercent` are NOT stored — they
+// are derived via the helpers in `entities/meetings/lib/compute-deal-derived`
+// (same pattern as proposals' `computeFinalTcp`). Persisting them invites
+// drift when upstream inputs change without a re-save of this scratchpad.
 export const dealStructureSchema = z.object({
   mode: z.enum(['finance', 'cash']),
   startingTcp: z.number(),
   incentives: z.array(dealStructureIncentiveSchema),
-  finalTcp: z.number(),
   // Finance-specific
   financeTermMonths: z.number().optional(),
   apr: z.number().optional(),
-  monthlyPayment: z.number().optional(),
   // Cash-specific
   depositAmount: z.number().optional(),
-  depositPercent: z.number().optional(),
 }).partial()
 
 export type DealStructure = z.infer<typeof dealStructureSchema>

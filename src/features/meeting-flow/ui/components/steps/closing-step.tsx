@@ -13,6 +13,7 @@ import { Separator } from '@/shared/components/ui/separator'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
+import { computeDealDepositPercent, computeDealFinalTcp, computeDealMonthlyPayment } from '@/shared/entities/meetings/lib/compute-deal-derived'
 import { cn } from '@/shared/lib/utils'
 
 interface ClosingStepProps {
@@ -40,17 +41,18 @@ export function ClosingStep({ flowContext, meetingOutcome, onOutcomeChange, prop
 
   const mode = deal.mode ?? 'finance'
   const startingTcp = deal.startingTcp ?? 0
-  const finalTcp = deal.finalTcp ?? startingTcp
   const incentives = useMemo(() => deal.incentives ?? [], [deal.incentives])
   const totalDeductions = useMemo(
     () => incentives.reduce((sum, inc) => sum + inc.amount, 0),
     [incentives],
   )
-  const monthlyPayment = deal.monthlyPayment ?? 0
+  // Derived values — never stored, always computed from inputs.
+  const finalTcp = computeDealFinalTcp(deal)
+  const monthlyPayment = computeDealMonthlyPayment(deal)
+  const depositPercent = computeDealDepositPercent(deal)
   const financeTermMonths = deal.financeTermMonths ?? 60
   const apr = deal.apr ?? 0
   const depositAmount = deal.depositAmount ?? 0
-  const depositPercent = deal.depositPercent ?? 0
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

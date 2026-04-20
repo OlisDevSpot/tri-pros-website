@@ -1,6 +1,7 @@
 'use client'
 
 import type { MeetingFlowContext } from '@/features/meeting-flow/types'
+import type { DealStructure } from '@/shared/entities/meetings/schemas'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { SaveIcon } from 'lucide-react'
 import { useEffect, useMemo } from 'react'
@@ -8,10 +9,10 @@ import { useForm, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
 import z from 'zod'
 import { getProgramByAccessor } from '@/features/meeting-flow/constants/programs'
-import { calculateMonthlyPayment } from '@/features/meeting-flow/lib/loan-calc'
 import { DealStructureFields } from '@/features/meeting-flow/ui/components/steps/deal-structure-fields'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
+import { computeDealFinalTcp, computeDealMonthlyPayment } from '@/shared/entities/meetings/lib/compute-deal-derived'
 
 // ── Form schema (local to this step) ────────────────────────────────────────
 
@@ -71,14 +72,23 @@ export function DealStructureStep({ flowContext }: DealStructureStepProps) {
     [incentiveDisplays],
   )
 
-  const calculatedFinalTcp = Math.max(0, startingTcp - totalDeductions)
+  // Live form preview uses the canonical helpers — same code path as
+  // persisted reads in closing-step / create-proposal-step. A DealStructure
+  // snapshot is synthesized from current form values so we feed the helpers
+  // the exact shape they expect.
+  const dealSnapshot: DealStructure = useMemo(
+    () => ({
+      mode,
+      startingTcp,
+      incentives: incentiveDisplays.map(i => ({ label: i.label, amount: i.amount, source: program?.name ?? '' })),
+      financeTermMonths,
+      apr,
+    }),
+    [mode, startingTcp, incentiveDisplays, financeTermMonths, apr, program],
+  )
 
-  const monthlyPayment = useMemo(() => {
-    if (mode !== 'finance' || calculatedFinalTcp === 0 || apr === 0) {
-      return 0
-    }
-    return calculateMonthlyPayment(calculatedFinalTcp, apr, financeTermMonths)
-  }, [mode, calculatedFinalTcp, apr, financeTermMonths])
+  const calculatedFinalTcp = computeDealFinalTcp(dealSnapshot)
+  const monthlyPayment = computeDealMonthlyPayment(dealSnapshot)
 
   // Reset server data into form when meeting data changes externally
   const serverDealJson = JSON.stringify(serverDeal)
@@ -107,27 +117,16 @@ export function DealStructureStep({ flowContext }: DealStructureStepProps) {
           .filter(i => i.amount > 0)
       : []
 
-    const deductions = incentives.reduce((sum, d) => sum + d.amount, 0)
-    const finalTcp = Math.max(0, values.startingTcp - deductions)
-    const payment = values.mode === 'finance' && finalTcp > 0 && (values.apr ?? 0) > 0
-      ? calculateMonthlyPayment(finalTcp, values.apr ?? 0, values.financeTermMonths ?? 180)
-      : undefined
-
-    const depositPercent = values.mode === 'cash' && finalTcp > 0 && (values.depositAmount ?? 0) > 0
-      ? Math.round(((values.depositAmount ?? 0) / finalTcp) * 100)
-      : undefined
-
+    // Only inputs are persisted — finalTcp / monthlyPayment / depositPercent
+    // are derived via the compute-deal-derived helpers on every read.
     flowContext.onFlowStateChange({
       dealStructure: {
         mode: values.mode,
         startingTcp: values.startingTcp,
         incentives,
-        finalTcp,
         financeTermMonths: values.mode === 'finance' ? values.financeTermMonths : undefined,
         apr: values.mode === 'finance' ? values.apr : undefined,
-        monthlyPayment: values.mode === 'finance' ? Math.round(payment ?? 0) : undefined,
         depositAmount: values.mode === 'cash' ? values.depositAmount : undefined,
-        depositPercent: values.mode === 'cash' ? depositPercent : undefined,
       },
     })
 

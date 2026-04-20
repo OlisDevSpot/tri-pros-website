@@ -1,6 +1,7 @@
 import type { Customer, Meeting } from '@/shared/db/schema'
 import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
 import { getProgramByAccessor } from '@/features/meeting-flow/constants/programs'
+import { computeDealFinalTcp } from '@/shared/entities/meetings/lib/compute-deal-derived'
 import { proposalFormBaseDefaultValues } from '@/shared/entities/proposals/schemas'
 
 export function buildProposalDefaults(
@@ -35,11 +36,10 @@ export function buildProposalDefaults(
     if (ds.depositAmount !== undefined) {
       defaults.funding.data.depositAmount = ds.depositAmount
     }
-    // Cash mode: seed cashInDeal with the meeting's final TCP. finalTcp
-    // itself is not stored on the proposal — it is derived via
-    // `computeFinalTcp(fundingData)`.
-    if (ds.mode === 'cash' && ds.finalTcp !== undefined) {
-      defaults.funding.data.cashInDeal = ds.finalTcp
+    // Cash mode: seed cashInDeal with the meeting's derived final TCP.
+    // Neither side stores finalTcp — both compute it on demand.
+    if (ds.mode === 'cash') {
+      defaults.funding.data.cashInDeal = computeDealFinalTcp(ds)
     }
 
     // Map incentives

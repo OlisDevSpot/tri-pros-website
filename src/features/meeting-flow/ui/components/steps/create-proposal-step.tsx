@@ -7,6 +7,7 @@ import { formatCurrency } from '@/features/meeting-flow/lib/loan-calc'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
+import { computeDealDepositPercent, computeDealFinalTcp, computeDealMonthlyPayment } from '@/shared/entities/meetings/lib/compute-deal-derived'
 
 interface CreateProposalStepProps {
   flowContext: MeetingFlowContext
@@ -29,11 +30,13 @@ export function CreateProposalStep({ flowContext, meetingId }: CreateProposalSte
 
   const deal = flowState?.dealStructure ?? {}
   const startingTcp = deal.startingTcp ?? 0
-  const finalTcp = deal.finalTcp ?? 0
   const mode = deal.mode ?? 'finance'
   const financeTermMonths = deal.financeTermMonths
   const apr = deal.apr
-  const monthlyPayment = deal.monthlyPayment
+  // Derived values — always computed from inputs, never read from storage.
+  const finalTcp = computeDealFinalTcp(deal)
+  const monthlyPayment = computeDealMonthlyPayment(deal)
+  const depositPercent = computeDealDepositPercent(deal)
 
   const proposalHref = `${ROOTS.dashboard.proposals.new()}?meetingId=${meetingId}`
 
@@ -80,7 +83,7 @@ export function CreateProposalStep({ flowContext, meetingId }: CreateProposalSte
               <Separator />
               <TransferRow
                 label="Deposit"
-                value={`${formatCurrency(deal.depositAmount)}${deal.depositPercent != null ? ` (${deal.depositPercent}%)` : ''}`}
+                value={`${formatCurrency(deal.depositAmount)}${depositPercent > 0 ? ` (${depositPercent}%)` : ''}`}
               />
             </>
           )}
