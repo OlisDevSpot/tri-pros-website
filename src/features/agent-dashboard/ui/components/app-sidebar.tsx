@@ -213,12 +213,29 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
         <SidebarContent>
           <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {renderNavItem(navConfig.dashboardItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
             <SidebarGroupLabel>Main</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navConfig.baseItems.map(item =>
+                {navConfig.mainItems.map(item =>
                   item.children ? renderPipelineNavItem(item) : renderNavItem(item),
                 )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupLabel>Records</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {navConfig.recordsItems.map(renderNavItem)}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
