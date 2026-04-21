@@ -64,7 +64,7 @@ export function LeadSourceDetail({ leadSourceId }: LeadSourceDetailProps) {
       </section>
 
       <section aria-label="Intake URL" className="flex flex-col gap-3 border-t border-border/40 pt-6">
-        <IntakeUrlCard leadSourceId={source.id} token={source.token} />
+        <IntakeUrlCard leadSourceId={source.id} slug={source.slug} token={source.token} />
       </section>
 
       <section aria-label="Form configuration" className="flex flex-col gap-4 border-t border-border/40 pt-6">

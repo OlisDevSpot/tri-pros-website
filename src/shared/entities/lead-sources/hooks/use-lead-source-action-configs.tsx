@@ -15,6 +15,7 @@ import { useLeadSourceActions } from './use-lead-source-actions'
 
 interface LeadSourceEntity {
   id: string
+  slug: string
   token: string
   isActive: boolean
 }
@@ -45,7 +46,7 @@ export function useLeadSourceActionConfigs<T extends LeadSourceEntity>(
   })
 
   const copyIntakeUrl = useCallback((entity: T) => {
-    const url = getIntakeUrl(entity.token, window.location.origin)
+    const url = getIntakeUrl(entity.slug, entity.token, window.location.origin)
     navigator.clipboard.writeText(url).then(
       () => toast.success('Intake URL copied'),
       () => toast.error('Failed to copy'),
@@ -53,7 +54,7 @@ export function useLeadSourceActionConfigs<T extends LeadSourceEntity>(
   }, [])
 
   const previewIntake = useCallback((entity: T) => {
-    const url = getIntakeUrl(entity.token, window.location.origin)
+    const url = getIntakeUrl(entity.slug, entity.token, window.location.origin)
     window.open(url, '_blank', 'noopener,noreferrer')
   }, [])
 
