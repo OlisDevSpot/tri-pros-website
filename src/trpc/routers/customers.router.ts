@@ -6,6 +6,7 @@ import z from 'zod'
 import env from '@/shared/config/server-env'
 import { intakeModes, leadSources } from '@/shared/constants/enums'
 import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
+import { addParticipant } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
@@ -337,7 +338,15 @@ export const customersRouter = createTRPCRouter({
             })
             .returning()
 
-          meetingId = meeting?.id ?? null
+          if (!meeting) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create meeting' })
+          }
+
+          // Mirror ownership in the participant junction table so every
+          // meeting has ≥1 owner participant (intake parity with meetings.create).
+          await addParticipant(meeting.id, ownerId, 'owner', tx)
+
+          meetingId = meeting.id
         }
 
         return { customerId: customer.id, meetingId }
