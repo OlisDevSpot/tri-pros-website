@@ -5,7 +5,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { leadSourcesTable } from './lead-sources'
-import { customerPipelineEnum, leadSourceEnum, leadTypeEnum } from './meta'
+import { customerPipelineEnum, leadTypeEnum } from './meta'
 
 export const customers = pgTable('customers', {
   id,
@@ -24,8 +24,6 @@ export const customers = pgTable('customers', {
   customerProfileJSON: jsonb('customer_profile_json').$type<CustomerProfile>(),
   propertyProfileJSON: jsonb('property_profile_json').$type<PropertyProfile>(),
   financialProfileJSON: jsonb('financial_profile_json').$type<FinancialProfile>(),
-  /** @deprecated Use leadSourceId instead. Kept for backfill compatibility; removed in a follow-up migration once prod is fully on FK. */
-  leadSource: leadSourceEnum('lead_source'),
   leadSourceId: uuid('lead_source_id').references(() => leadSourcesTable.id, { onDelete: 'set null' }),
   leadType: leadTypeEnum('lead_type'),
   leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),

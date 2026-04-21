@@ -26,6 +26,7 @@ import * as schema from '../src/shared/db/schema'
 import { user } from '../src/shared/db/schema/auth'
 import { customerNotes } from '../src/shared/db/schema/customer-notes'
 import { customers } from '../src/shared/db/schema/customers'
+import { leadSourcesTable } from '../src/shared/db/schema/lead-sources'
 import { meetings } from '../src/shared/db/schema/meetings'
 import { notionClient } from '../src/shared/services/notion/client'
 import { notionDatabasesMeta } from '../src/shared/services/notion/constants/databases'
@@ -192,8 +193,15 @@ function buildTradeSelections(
 
 // ── Phase 1: Contacts ──────────────────────────────────────
 
+async function buildLeadSourceMap(): Promise<Map<string, string>> {
+  const rows = await db.select({ slug: leadSourcesTable.slug, id: leadSourcesTable.id }).from(leadSourcesTable)
+  return new Map(rows.map(r => [r.slug, r.id]))
+}
+
 async function migrateContacts(contactPages: PageObjectResponse[]) {
   console.log(`\n══ Phase 1: Contacts (${contactPages.length} found) ══\n`)
+
+  const leadSourceIdBySlug = await buildLeadSourceMap()
 
   let inserted = 0
   let skipped = 0
@@ -214,7 +222,8 @@ async function migrateContacts(contactPages: PageObjectResponse[]) {
         closedBy = closedByProp.rich_text.map(t => t.plain_text).join('') || null
       }
 
-      const { leadSource, leadType } = classifyContact(closedBy)
+      const { leadSource: leadSourceSlug, leadType } = classifyContact(closedBy)
+      const leadSourceId = leadSourceIdBySlug.get(leadSourceSlug) ?? null
 
       // Insert only — skip if customer already exists (PG is source of truth)
       const [row] = await db
@@ -228,7 +237,7 @@ async function migrateContacts(contactPages: PageObjectResponse[]) {
           city: contact.city || '',
           state: contact.state ?? undefined,
           zip: contact.zip || '',
-          leadSource,
+          leadSourceId,
           leadType,
         })
         .onConflictDoNothing({ target: customers.notionContactId })
@@ -282,7 +291,7 @@ async function migrateContacts(contactPages: PageObjectResponse[]) {
       }
 
       if (isNew) {
-        console.log(`Inserted: ${contact.name} (${leadSource})`)
+        console.log(`Inserted: ${contact.name} (${leadSourceSlug})`)
         inserted++
       }
       else {
