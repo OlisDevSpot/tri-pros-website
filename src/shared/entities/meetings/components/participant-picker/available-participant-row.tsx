@@ -11,11 +11,17 @@ import { cn } from '@/shared/lib/utils'
 interface AvailableParticipantRowProps {
   user: UserOverviewCardUser
   /** Role this user will be added as if clicked — used in the affordance label. */
-  inferredRole: 'owner' | 'co_owner'
+  inferredRole: 'owner' | 'co_owner' | 'helper'
   /** True when both slots are full; row is dimmed and click is no-op. */
   disabled: boolean
   isPending: boolean
   onAdd: () => void
+}
+
+const ADD_LABEL: Record<'owner' | 'co_owner' | 'helper', string> = {
+  owner: 'Add as owner',
+  co_owner: 'Add as co-owner',
+  helper: 'Add as helper',
 }
 
 export function AvailableParticipantRow({
@@ -37,27 +43,34 @@ export function AvailableParticipantRow({
           onAdd()
         }
       }}
+      // Override shadcn's data-[selected=true]:bg-accent default. In our dark
+      // theme, --accent equals --primary, which produces the overpowering blue
+      // row-flood we're moving away from. Use a neutral muted tint instead so
+      // hover/focus stays subtle and the owner row (which IS primary-tinted)
+      // remains the single loudest element.
       className={cn(
-        'group flex items-center gap-2 rounded-md p-2',
+        'group flex items-center gap-3 rounded-md px-3 py-2.5',
+        'data-[selected=true]:bg-muted/70 hover:bg-muted/70',
+        'data-[selected=true]:text-foreground',
         disabled && 'opacity-50',
       )}
-      aria-label={`Add ${name} as ${inferredRole === 'owner' ? 'owner' : 'co-owner'}`}
+      aria-label={`${ADD_LABEL[inferredRole]} — ${name}`}
     >
       <UserOverviewCard user={user} className="contents">
-        <UserOverviewCard.Avatar size="sm" className="size-6" />
+        <UserOverviewCard.Avatar size="sm" className="size-8" />
         <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
-          <UserOverviewCard.Name className="text-sm font-medium text-foreground" />
-          <UserOverviewCard.Email className="text-xs text-muted-foreground" />
+          <UserOverviewCard.Name className="truncate text-sm font-medium text-foreground group-data-[selected=true]:font-semibold" />
+          <UserOverviewCard.Email className="truncate text-xs text-muted-foreground" />
         </div>
       </UserOverviewCard>
 
-      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground opacity-60 group-hover:opacity-100 group-data-[selected=true]:opacity-100 motion-safe:transition-opacity">
+      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/60 bg-background/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground opacity-0 group-hover:opacity-100 group-data-[selected=true]:opacity-100 group-data-[selected=true]:text-foreground motion-safe:transition-opacity">
         {isPending
           ? <Loader2 className="size-3 animate-spin" />
           : (
               <>
                 <Plus className="size-3" />
-                {inferredRole === 'owner' ? 'add as owner' : 'add as co-owner'}
+                {ADD_LABEL[inferredRole]}
               </>
             )}
       </span>
