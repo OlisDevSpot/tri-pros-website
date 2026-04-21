@@ -27,9 +27,10 @@ export function ManageParticipantsModal({
   return (
     <Modal
       close={() => onOpenChange(false)}
-      description="Add, remove, or change roles for this meeting's participants."
+      description="Assign owner, co-owner, and helpers for this meeting."
       isOpen={open}
       title="Manage participants"
+      className="sm:max-w-xl"
     >
       {meetingId !== ''
         ? <ParticipantPickerContent meetingId={meetingId} variant="modal" />

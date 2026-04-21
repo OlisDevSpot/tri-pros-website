@@ -19,6 +19,11 @@ interface CurrentParticipantRowProps {
   removeDisabledReason?: string
   /** Tooltip shown on the remove button when it is enabled (e.g. to clarify side-effects). */
   removeTooltip?: string
+  /**
+   * Id of a live region / note that explains the disabled-state to screen
+   * readers. Wired via aria-describedby on the disabled remove button.
+   */
+  removeDisabledHintId?: string
   /** True while a mutation targeting this row is in flight. */
   isPending: boolean
   /** Click handler for the crown icon (only meaningful for co_owner — promote). */
@@ -33,43 +38,47 @@ export function CurrentParticipantRow({
   removeDisabled,
   removeDisabledReason,
   removeTooltip,
+  removeDisabledHintId,
   isPending,
   onPromote,
   onRemove,
 }: CurrentParticipantRowProps) {
   const isOwner = role === 'owner'
   const name = user.name ?? 'Unknown'
+  const roleLabel = isOwner ? 'Owner' : 'Co-owner'
 
   return (
     <UserOverviewCard
       user={user}
       meta={{ role }}
       className={cn(
-        'flex items-center gap-2 rounded-md border border-border bg-card p-2',
+        'group/row flex items-center gap-3 rounded-lg px-3 py-2.5 focus-within:ring-1 focus-within:ring-ring/60',
+        // Owner row carries the single primary-color moment on the whole modal:
+        // a subtle tint + hairline ring so the eye lands here first.
+        isOwner
+          ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
+          : 'border border-border/60 bg-card/40',
         isPending && 'pointer-events-none opacity-60',
       )}
     >
-      <UserOverviewCard.Avatar size="sm" className="size-6" />
+      <UserOverviewCard.Avatar size="sm" className="size-8" />
 
       <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
-        <UserOverviewCard.Name className="text-sm font-medium text-foreground" />
+        <UserOverviewCard.Name className="truncate text-sm font-medium text-foreground" />
         <div className="truncate text-xs text-muted-foreground">
-          <span
-            className={cn(
-              'mr-1.5 text-[10px] font-semibold uppercase tracking-wide',
-              isOwner ? 'text-primary' : 'text-teal-700 dark:text-teal-400',
-            )}
-          >
-            {isOwner ? 'Owner' : 'Co-owner'}
-          </span>
-          {user.email}
+          <span className="font-medium text-foreground/70">{roleLabel}</span>
+          {user.email != null && user.email !== '' && (
+            <>
+              <span aria-hidden="true" className="mx-1.5 text-muted-foreground/50">·</span>
+              <span>{user.email}</span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Crown — interactive only when co_owner (promote action) */}
       {isOwner
         ? (
-            <span title="Already owner">
+            <span className="inline-flex size-11 items-center justify-center" title="Owner">
               <ParticipantRoleIcon isOwner />
             </span>
           )
@@ -79,13 +88,12 @@ export function CurrentParticipantRow({
               onClick={onPromote}
               disabled={isPending}
               aria-label={`Promote ${name} to owner`}
-              className="group inline-flex size-9 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="group inline-flex size-11 items-center justify-center rounded-md hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
             >
               <ParticipantRoleIcon isOwner={false} />
             </button>
           )}
 
-      {/* Remove ✕ */}
       {removeDisabled
         ? (
             <Tooltip>
@@ -96,7 +104,8 @@ export function CurrentParticipantRow({
                     disabled
                     aria-disabled="true"
                     aria-label={`Cannot remove ${name} — ${removeDisabledReason ?? 'meeting needs at least one owner'}`}
-                    className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground/40"
+                    aria-describedby={removeDisabledHintId}
+                    className="inline-flex size-11 cursor-not-allowed items-center justify-center rounded-md text-muted-foreground/40"
                   >
                     <X className="size-4" />
                   </button>
@@ -114,7 +123,7 @@ export function CurrentParticipantRow({
                     onClick={onRemove}
                     disabled={isPending}
                     aria-label={`Remove ${name} from this meeting`}
-                    className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+                    className="inline-flex size-11 items-center justify-center rounded-md text-destructive/60 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
                   >
                     {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
                   </button>
@@ -128,7 +137,7 @@ export function CurrentParticipantRow({
                 onClick={onRemove}
                 disabled={isPending}
                 aria-label={`Remove ${name} from this meeting`}
-                className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+                className="inline-flex size-11 items-center justify-center rounded-md text-destructive/60 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
               >
                 {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
               </button>

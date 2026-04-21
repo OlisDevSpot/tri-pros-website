@@ -1,8 +1,8 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Loader2, Lock, Settings2, X } from 'lucide-react'
-import { useState } from 'react'
+import { Loader2, Settings2, X } from 'lucide-react'
+import { useId, useState } from 'react'
 
 import {
   Command,
@@ -22,15 +22,14 @@ import { CurrentParticipantRow } from './current-participant-row'
 interface ParticipantPickerContentProps {
   meetingId: string
   /**
-   * 'picker' (default): compact popover used from the meeting actions submenu.
-   *   - Owner + co-owner slots only. When both are filled, search is replaced
-   *     with a "Both slots filled → Manage participants" redirect.
-   *   - Footer exposes a "Manage participants" link that opens the full modal.
-   * 'modal': embedded directly in the ManageParticipantsModal.
-   *   - Shows a Helpers section.
-   *   - When both slots are filled, the search list stays open and new adds
-   *     go in as helpers (no redirect).
-   *   - No footer link (we ARE the modal).
+   * 'picker' (default): compact popover used from the meeting's inline
+   * participants control (e.g. the meetings table column). Shows owner +
+   * co-owner slots. When both are filled, the search is replaced by a
+   * redirect to the full modal; a footer "Manage participants" link is
+   * always available.
+   * 'modal': embedded in ManageParticipantsModal. The search stays open,
+   * inferred role falls through to 'helper' when slots are full, a Helpers
+   * section appears, and the footer link is suppressed.
    */
   variant?: 'picker' | 'modal'
   /** Required in 'picker' variant; unused in 'modal' variant. */
@@ -45,6 +44,7 @@ export function ParticipantPickerContent({
   const isModal = variant === 'modal'
   const trpc = useTRPC()
   const [search, setSearch] = useState('')
+  const lockHintId = useId()
 
   const participantsQuery = useQuery(
     trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
@@ -61,30 +61,47 @@ export function ParticipantPickerContent({
   // while the add mutation is in-flight and the cache hasn't been refetched yet.
   const owner = participants.find(p => p.role === 'owner' && p.userName !== '') ?? null
   const coOwner = participants.find(p => p.role === 'co_owner' && p.userName !== '') ?? null
-
   const helpers = participants.filter(p => p.role === 'helper' && p.userName !== '')
   const helperCount = helpers.length
   const slotsFull = !!owner && !!coOwner
 
-  // "Available" candidates: internal users not already in the meeting
   const assignedUserIds = new Set(participants.map(p => p.userId))
   const available = (internalUsersQuery.data ?? []).filter(u => !assignedUserIds.has(u.id))
 
   // Role inference differs per variant:
-  // - picker: owner first, then co_owner. Blocked when slots full.
-  // - modal: owner → co_owner → helper (falls through past full slots).
+  // - picker: owner → co_owner, then blocked (helpers only via modal).
+  // - modal: owner → co_owner → helper, no block.
   const inferredAddRole: 'owner' | 'co_owner' | 'helper'
     = !owner ? 'owner' : !coOwner ? 'co_owner' : 'helper'
   const searchOpen = isModal || !slotsFull
 
   return (
-    <Command className="w-full" shouldFilter={true}>
-      {/* Current section — static layout, not part of the searchable list */}
-      <div className="border-b border-border bg-muted/40 p-2">
-        <div className="flex items-center justify-between px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
-          <span>{`Current · ${(owner ? 1 : 0) + (coOwner ? 1 : 0)} of 2 max`}</span>
+    <Command
+      className={cn(
+        'w-full bg-transparent',
+        // Contain touch scrolls inside the modal so overscroll doesn't bleed to
+        // the underlying page. `touch-action: manipulation` removes the legacy
+        // 300ms tap delay on older mobile browsers.
+        isModal && 'overscroll-contain touch-manipulation',
+      )}
+      shouldFilter={true}
+    >
+      {/* Current section — one of two primary regions. Flat surface, no nested
+          card wrapper. Spacing + typography establish hierarchy. */}
+      <section
+        aria-label="Current participants"
+        className={cn(
+          // Announce cache mutations (add / remove / promote) politely so
+          // assistive tech picks up the role change without stealing focus.
+          'contents',
+        )}
+      >
+        <div className="flex items-baseline justify-between px-1 pb-2">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
+            {`Current · ${(owner ? 1 : 0) + (coOwner ? 1 : 0)} of 2`}
+          </h3>
         </div>
-        <div className="space-y-1">
+        <div aria-live="polite" className="space-y-2">
           {owner && (
             <CurrentParticipantRow
               user={{
@@ -96,6 +113,7 @@ export function ParticipantPickerContent({
               role="owner"
               removeDisabled={!coOwner}
               removeDisabledReason={!coOwner ? 'Add a co-owner first to promote' : undefined}
+              removeDisabledHintId={!coOwner ? lockHintId : undefined}
               removeTooltip={coOwner ? 'Removes owner and promotes co-owner' : undefined}
               isPending={pendingUserId === owner.userId}
               onPromote={() => {}}
@@ -118,62 +136,81 @@ export function ParticipantPickerContent({
             />
           )}
           {!owner && !coOwner && (
-            <p className="px-2 py-3 text-center text-xs text-muted-foreground">
-              No one assigned yet — search below to add.
+            <p className="rounded-lg border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+              No one assigned. Search below to pick an owner.
             </p>
           )}
         </div>
-        {owner && coOwner == null && (
-          <p className="mt-1.5 flex items-center gap-1 px-1 text-[11px] text-muted-foreground">
-            <Lock aria-hidden="true" className="size-3" />
-            Owner can only be removed once a co-owner is added.
+        {owner && !coOwner && (
+          <p
+            id={lockHintId}
+            className="mt-3 px-1 text-[11px] leading-relaxed text-muted-foreground"
+          >
+            Add a co-owner below to make this owner removable.
           </p>
         )}
-      </div>
+      </section>
 
-      {/* Helpers section — modal variant only. Sits between the slots and the
-          search so helpers have a visible, removable presence. */}
-      {isModal && helperCount > 0 && (
-        <div className="border-b border-border p-2">
-          <div className="flex items-center justify-between px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
-            <span>{`Helpers · ${helperCount}`}</span>
-          </div>
-          <div className="space-y-1">
-            {helpers.map(h => (
-              <HelperRow
-                key={h.userId}
-                user={{
-                  id: h.userId,
-                  name: h.userName,
-                  image: h.userImage,
-                  email: h.userEmail,
-                }}
-                isPending={pendingUserId === h.userId}
-                onRemove={() => remove(h.userId)}
-              />
-            ))}
-          </div>
+      {/* Helpers section — modal variant only. Animates in via grid-template-rows
+          so content mounts/unmounts without layout jump. */}
+      {isModal && (
+        <div
+          data-helpers-open={helperCount > 0}
+          className="grid grid-rows-[0fr] motion-safe:transition-[grid-template-rows] motion-safe:duration-200 ease-out data-[helpers-open=true]:grid-rows-[1fr]"
+        >
+          <section aria-label="Helpers" className="overflow-hidden">
+            <div className="pt-5">
+              <div className="flex items-baseline justify-between px-1 pb-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
+                  {`Helpers · ${helperCount}`}
+                </h3>
+              </div>
+              <div aria-live="polite" className="space-y-2">
+                {helpers.map(h => (
+                  <HelperRow
+                    key={h.userId}
+                    user={{
+                      id: h.userId,
+                      name: h.userName,
+                      image: h.userImage,
+                      email: h.userEmail,
+                    }}
+                    isPending={pendingUserId === h.userId}
+                    onRemove={() => remove(h.userId)}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
-      {/* Search + results — open in modal variant always; in picker variant,
-          closed when both slots are filled (helpers must be added via modal). */}
+      {/* Search + available list — open in modal variant always; in picker
+          variant, closed when both slots are filled (helpers via modal). */}
       {searchOpen
         ? (
-            <>
+            <section aria-label="Add participant" className="mt-5 space-y-2">
+              <label
+                htmlFor="participant-search"
+                className="block px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                Add participant
+              </label>
               <CommandInput
-                placeholder="Search team to add…"
+                id="participant-search"
+                placeholder="Search team by name or email…"
                 value={search}
                 onValueChange={setSearch}
                 aria-label="Search team to add participants"
+                autoComplete="off"
+                spellCheck={false}
               />
-              <CommandList>
+              <CommandList className="max-h-72">
                 {internalUsersQuery.error
                   ? (
                       <p className="px-3 py-4 text-center text-xs text-muted-foreground">
-                        You don't have permission to add participants here.
-                        {' '}
-                        {!isModal && 'Use Manage Participants for full controls.'}
+                        You don’t have permission to add participants here.
+                        {!isModal && ' Use Manage Participants for full controls.'}
                       </p>
                     )
                   : (
@@ -181,7 +218,7 @@ export function ParticipantPickerContent({
                         <CommandEmpty>
                           No team members match
                           {' '}
-                          <span className="font-medium">{`"${search}"`}</span>
+                          <span className="font-medium">{`“${search}”`}</span>
                           .
                         </CommandEmpty>
                         <CommandGroup>
@@ -207,16 +244,16 @@ export function ParticipantPickerContent({
                       </>
                     )}
               </CommandList>
-            </>
+            </section>
           )
         : (
-            <p className="px-3 py-3 text-center text-xs text-muted-foreground">
-              Both slots filled.
+            <p className="mt-5 rounded-lg border border-dashed border-border/60 px-3 py-4 text-center text-xs text-muted-foreground">
+              Both slots are filled.
               {' '}
               <button
                 type="button"
                 onClick={onOpenManageModal}
-                className="font-medium text-primary underline-offset-2 hover:underline"
+                className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
               >
                 Manage participants
               </button>
@@ -226,16 +263,16 @@ export function ParticipantPickerContent({
           )}
 
       {/* Footer — picker variant only. In modal variant the caller provides
-          its own chrome and we skip the redundant "Manage participants" link. */}
+          its own chrome. */}
       {!isModal && (
-        <div className="flex items-center justify-between border-t border-border bg-muted/40 px-3 py-2">
+        <div className="mt-3 flex items-center justify-between border-t border-border/60 px-1 pt-3">
           <span className="text-xs text-muted-foreground tabular-nums">
             {helperCount > 0 ? `+ ${helperCount} helper${helperCount === 1 ? '' : 's'}` : 'No helpers'}
           </span>
           <button
             type="button"
             onClick={onOpenManageModal}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-foreground/80 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
           >
             <Settings2 className="size-3.5" />
             Manage participants
@@ -248,8 +285,8 @@ export function ParticipantPickerContent({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers row — modal-variant only. Helpers have no slot-uniqueness or promote
-// semantics, so the picker's `CurrentParticipantRow` (owner/co_owner only)
-// doesn't apply. Kept inline to avoid a single-use sibling component.
+// semantics, so CurrentParticipantRow (owner/co_owner only) doesn't apply.
+// Kept inline to avoid a single-use sibling component file.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface HelperRowProps {
@@ -265,18 +302,21 @@ function HelperRow({ user, isPending, onRemove }: HelperRowProps) {
       user={user}
       meta={{ role: 'helper' }}
       className={cn(
-        'flex items-center gap-2 rounded-md border border-border bg-card p-2',
+        'group/row flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 px-3 py-2.5 focus-within:ring-1 focus-within:ring-ring/60',
         isPending && 'pointer-events-none opacity-60',
       )}
     >
-      <UserOverviewCard.Avatar size="sm" className="size-6" />
+      <UserOverviewCard.Avatar size="sm" className="size-8" />
       <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
-        <UserOverviewCard.Name className="text-sm font-medium text-foreground" />
+        <UserOverviewCard.Name className="truncate text-sm font-medium text-foreground" />
         <div className="truncate text-xs text-muted-foreground">
-          <span className="mr-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Helper
-          </span>
-          {user.email}
+          <span className="font-medium text-foreground/70">Helper</span>
+          {user.email != null && user.email !== '' && (
+            <>
+              <span aria-hidden="true" className="mx-1.5 text-muted-foreground/50">·</span>
+              <span>{user.email}</span>
+            </>
+          )}
         </div>
       </div>
       <button
@@ -284,7 +324,7 @@ function HelperRow({ user, isPending, onRemove }: HelperRowProps) {
         onClick={onRemove}
         disabled={isPending}
         aria-label={`Remove ${name} from this meeting`}
-        className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+        className="inline-flex size-11 items-center justify-center rounded-md text-destructive/60 hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
       >
         {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
       </button>
