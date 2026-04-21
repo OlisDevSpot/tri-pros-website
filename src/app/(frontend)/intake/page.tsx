@@ -2,38 +2,42 @@ import { eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
+import { ROOTS } from '@/shared/config/roots'
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { auth } from '@/shared/domains/auth/server'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 
 interface Props {
-  searchParams: Promise<{ source?: string }>
+  searchParams: Promise<{ source?: string, token?: string }>
 }
 
 export default async function PublicIntakePage({ searchParams }: Props) {
-  const { source } = await searchParams
+  const { source, token } = await searchParams
 
-  // No source param — check auth and redirect accordingly
-  if (!source) {
+  // Bare /intake — route super-admins to the Lead Sources admin page,
+  // everyone else to the home page. External URLs always include both
+  // `source` and `token`, so this branch only fires on accidental hits.
+  if (!source || !token) {
     const reqHeaders = await headers()
     const session = await auth.api.getSession({ headers: reqHeaders })
 
     if (session?.user.role === 'super-admin') {
-      redirect('/dashboard/intake')
+      redirect(ROOTS.dashboard.leadSources())
     }
 
     redirect('/')
   }
 
-  // Fetch lead source by slug
+  // Fetch lead source by slug, then verify token matches. 404 on any mismatch
+  // so attackers can't distinguish "slug doesn't exist" from "wrong token".
   const [row] = await db
     .select()
     .from(leadSourcesTable)
     .where(eq(leadSourcesTable.slug, source))
     .limit(1)
 
-  if (!row || !row.isActive) {
+  if (!row || !row.isActive || row.token !== token) {
     notFound()
   }
 

@@ -11,10 +11,11 @@ import { useConfirm } from '@/shared/hooks/use-confirm'
 
 interface IntakeUrlCardProps {
   leadSourceId: string
+  slug: string
   token: string
 }
 
-export function IntakeUrlCard({ leadSourceId, token }: IntakeUrlCardProps) {
+export function IntakeUrlCard({ leadSourceId, slug, token }: IntakeUrlCardProps) {
   const [copied, setCopied] = useState(false)
   const { rotateToken } = useLeadSourceActions()
   const [RotateConfirmDialog, confirmRotate] = useConfirm({
@@ -23,8 +24,8 @@ export function IntakeUrlCard({ leadSourceId, token }: IntakeUrlCardProps) {
   })
 
   const url = typeof window !== 'undefined'
-    ? getIntakeUrl(token, window.location.origin)
-    : `…/intake/${token}`
+    ? getIntakeUrl(slug, token, window.location.origin)
+    : `…/intake?source=${slug}&token=${token}`
 
   const copy = () => {
     navigator.clipboard.writeText(url).then(
