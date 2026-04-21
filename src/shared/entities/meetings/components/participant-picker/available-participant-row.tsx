@@ -11,11 +11,17 @@ import { cn } from '@/shared/lib/utils'
 interface AvailableParticipantRowProps {
   user: UserOverviewCardUser
   /** Role this user will be added as if clicked — used in the affordance label. */
-  inferredRole: 'owner' | 'co_owner'
+  inferredRole: 'owner' | 'co_owner' | 'helper'
   /** True when both slots are full; row is dimmed and click is no-op. */
   disabled: boolean
   isPending: boolean
   onAdd: () => void
+}
+
+const ADD_LABEL: Record<'owner' | 'co_owner' | 'helper', string> = {
+  owner: 'add as owner',
+  co_owner: 'add as co-owner',
+  helper: 'add as helper',
 }
 
 export function AvailableParticipantRow({
@@ -41,7 +47,7 @@ export function AvailableParticipantRow({
         'group flex items-center gap-2 rounded-md p-2',
         disabled && 'opacity-50',
       )}
-      aria-label={`Add ${name} as ${inferredRole === 'owner' ? 'owner' : 'co-owner'}`}
+      aria-label={`Add ${name} as ${inferredRole === 'co_owner' ? 'co-owner' : inferredRole}`}
     >
       <UserOverviewCard user={user} className="contents">
         <UserOverviewCard.Avatar size="sm" className="size-6" />
@@ -57,7 +63,7 @@ export function AvailableParticipantRow({
           : (
               <>
                 <Plus className="size-3" />
-                {inferredRole === 'owner' ? 'add as owner' : 'add as co-owner'}
+                {ADD_LABEL[inferredRole]}
               </>
             )}
       </span>

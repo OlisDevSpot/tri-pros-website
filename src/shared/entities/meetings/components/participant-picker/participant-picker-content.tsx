@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Lock, Settings2 } from 'lucide-react'
+import { Loader2, Lock, Settings2, X } from 'lucide-react'
 import { useState } from 'react'
 
 import {
@@ -12,6 +12,8 @@ import {
   CommandList,
 } from '@/shared/components/ui/command'
 import { useParticipantMutations } from '@/shared/entities/meetings/hooks/use-participant-mutations'
+import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
+import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
 import { AvailableParticipantRow } from './available-participant-row'
@@ -19,11 +21,28 @@ import { CurrentParticipantRow } from './current-participant-row'
 
 interface ParticipantPickerContentProps {
   meetingId: string
-  /** Called when user clicks the manage-participants link in the footer. */
-  onOpenManageModal: () => void
+  /**
+   * 'picker' (default): compact popover used from the meeting actions submenu.
+   *   - Owner + co-owner slots only. When both are filled, search is replaced
+   *     with a "Both slots filled → Manage participants" redirect.
+   *   - Footer exposes a "Manage participants" link that opens the full modal.
+   * 'modal': embedded directly in the ManageParticipantsModal.
+   *   - Shows a Helpers section.
+   *   - When both slots are filled, the search list stays open and new adds
+   *     go in as helpers (no redirect).
+   *   - No footer link (we ARE the modal).
+   */
+  variant?: 'picker' | 'modal'
+  /** Required in 'picker' variant; unused in 'modal' variant. */
+  onOpenManageModal?: () => void
 }
 
-export function ParticipantPickerContent({ meetingId, onOpenManageModal }: ParticipantPickerContentProps) {
+export function ParticipantPickerContent({
+  meetingId,
+  variant = 'picker',
+  onOpenManageModal,
+}: ParticipantPickerContentProps) {
+  const isModal = variant === 'modal'
   const trpc = useTRPC()
   const [search, setSearch] = useState('')
 
@@ -43,12 +62,20 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
   const owner = participants.find(p => p.role === 'owner' && p.userName !== '') ?? null
   const coOwner = participants.find(p => p.role === 'co_owner' && p.userName !== '') ?? null
 
-  const helperCount = participants.filter(p => p.role === 'helper').length
+  const helpers = participants.filter(p => p.role === 'helper' && p.userName !== '')
+  const helperCount = helpers.length
   const slotsFull = !!owner && !!coOwner
 
   // "Available" candidates: internal users not already in the meeting
   const assignedUserIds = new Set(participants.map(p => p.userId))
   const available = (internalUsersQuery.data ?? []).filter(u => !assignedUserIds.has(u.id))
+
+  // Role inference differs per variant:
+  // - picker: owner first, then co_owner. Blocked when slots full.
+  // - modal: owner → co_owner → helper (falls through past full slots).
+  const inferredAddRole: 'owner' | 'co_owner' | 'helper'
+    = !owner ? 'owner' : !coOwner ? 'co_owner' : 'helper'
+  const searchOpen = isModal || !slotsFull
 
   return (
     <Command className="w-full" shouldFilter={true}>
@@ -104,25 +131,35 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
         )}
       </div>
 
-      {/* Search + results — only when there's an open slot.
-          When both slots are filled, helpers must be added via the modal. */}
-      {slotsFull
+      {/* Helpers section — modal variant only. Sits between the slots and the
+          search so helpers have a visible, removable presence. */}
+      {isModal && helperCount > 0 && (
+        <div className="border-b border-border p-2">
+          <div className="flex items-center justify-between px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums">
+            <span>{`Helpers · ${helperCount}`}</span>
+          </div>
+          <div className="space-y-1">
+            {helpers.map(h => (
+              <HelperRow
+                key={h.userId}
+                user={{
+                  id: h.userId,
+                  name: h.userName,
+                  image: h.userImage,
+                  email: h.userEmail,
+                }}
+                isPending={pendingUserId === h.userId}
+                onRemove={() => remove(h.userId)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Search + results — open in modal variant always; in picker variant,
+          closed when both slots are filled (helpers must be added via modal). */}
+      {searchOpen
         ? (
-            <p className="px-3 py-3 text-center text-xs text-muted-foreground">
-              Both slots filled.
-              {' '}
-              <button
-                type="button"
-                onClick={onOpenManageModal}
-                className="font-medium text-primary underline-offset-2 hover:underline"
-              >
-                Manage participants
-              </button>
-              {' '}
-              to add helpers.
-            </p>
-          )
-        : (
             <>
               <CommandInput
                 placeholder="Search team to add…"
@@ -136,7 +173,7 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
                       <p className="px-3 py-4 text-center text-xs text-muted-foreground">
                         You don't have permission to add participants here.
                         {' '}
-                        Use Manage Participants for full controls.
+                        {!isModal && 'Use Manage Participants for full controls.'}
                       </p>
                     )
                   : (
@@ -157,13 +194,13 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
                                 image: u.image,
                                 email: u.email,
                               }}
-                              inferredRole={owner ? 'co_owner' : 'owner'}
+                              inferredRole={inferredAddRole}
                               // Disable ALL Add buttons whenever any add is in-flight,
                               // so two near-simultaneous clicks on different rows can't
                               // race past the slot-uniqueness guards.
                               disabled={addMutation.isPending}
                               isPending={pendingUserId === u.id}
-                              onAdd={() => add(u.id, owner ? 'co_owner' : 'owner')}
+                              onAdd={() => add(u.id, inferredAddRole)}
                             />
                           ))}
                         </CommandGroup>
@@ -171,22 +208,86 @@ export function ParticipantPickerContent({ meetingId, onOpenManageModal }: Parti
                     )}
               </CommandList>
             </>
+          )
+        : (
+            <p className="px-3 py-3 text-center text-xs text-muted-foreground">
+              Both slots filled.
+              {' '}
+              <button
+                type="button"
+                onClick={onOpenManageModal}
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                Manage participants
+              </button>
+              {' '}
+              to add helpers.
+            </p>
           )}
 
-      {/* Footer */}
-      <div className="flex items-center justify-between border-t border-border bg-muted/40 px-3 py-2">
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {helperCount > 0 ? `+ ${helperCount} helper${helperCount === 1 ? '' : 's'}` : 'No helpers'}
-        </span>
-        <button
-          type="button"
-          onClick={onOpenManageModal}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <Settings2 className="size-3.5" />
-          Manage participants
-        </button>
-      </div>
+      {/* Footer — picker variant only. In modal variant the caller provides
+          its own chrome and we skip the redundant "Manage participants" link. */}
+      {!isModal && (
+        <div className="flex items-center justify-between border-t border-border bg-muted/40 px-3 py-2">
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {helperCount > 0 ? `+ ${helperCount} helper${helperCount === 1 ? '' : 's'}` : 'No helpers'}
+          </span>
+          <button
+            type="button"
+            onClick={onOpenManageModal}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <Settings2 className="size-3.5" />
+            Manage participants
+          </button>
+        </div>
+      )}
     </Command>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers row — modal-variant only. Helpers have no slot-uniqueness or promote
+// semantics, so the picker's `CurrentParticipantRow` (owner/co_owner only)
+// doesn't apply. Kept inline to avoid a single-use sibling component.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface HelperRowProps {
+  user: { id: string, name: string | null, image: string | null, email: string | null }
+  isPending: boolean
+  onRemove: () => void
+}
+
+function HelperRow({ user, isPending, onRemove }: HelperRowProps) {
+  const name = user.name ?? 'Unknown'
+  return (
+    <UserOverviewCard
+      user={user}
+      meta={{ role: 'helper' }}
+      className={cn(
+        'flex items-center gap-2 rounded-md border border-border bg-card p-2',
+        isPending && 'pointer-events-none opacity-60',
+      )}
+    >
+      <UserOverviewCard.Avatar size="sm" className="size-6" />
+      <div className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
+        <UserOverviewCard.Name className="text-sm font-medium text-foreground" />
+        <div className="truncate text-xs text-muted-foreground">
+          <span className="mr-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Helper
+          </span>
+          {user.email}
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={isPending}
+        aria-label={`Remove ${name} from this meeting`}
+        className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-safe:transition-colors"
+      >
+        {isPending ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4" />}
+      </button>
+    </UserOverviewCard>
   )
 }
