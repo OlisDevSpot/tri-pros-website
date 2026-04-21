@@ -77,6 +77,10 @@ export function useInvalidation() {
     void qc.invalidateQueries(trpc.agentSettingsRouter.pathFilter())
   }
 
+  function invalidateLeadSource() {
+    void qc.invalidateQueries(trpc.leadSourcesRouter.pathFilter())
+  }
+
   return {
     invalidateCustomer,
     invalidateMeeting,
@@ -84,5 +88,6 @@ export function useInvalidation() {
     invalidateProject,
     invalidateActivities,
     invalidateAgentSettings,
+    invalidateLeadSource,
   }
 }

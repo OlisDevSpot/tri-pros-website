@@ -7,6 +7,7 @@ import { customersRouter } from './customers.router'
 import { dashboardRouter } from './dashboard.router'
 import { intakeRouter } from './intake.router'
 import { landingRouter } from './landing.router'
+import { leadSourcesRouter } from './lead-sources.router'
 import { meetingsRouter } from './meetings.router'
 import { notionRouter } from './notion.router'
 import { projectsRouter } from './projects.router'
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   dashboardRouter,
   intakeRouter,
   landingRouter,
+  leadSourcesRouter,
   meetingsRouter,
   notionRouter,
   customerPipelinesRouter,

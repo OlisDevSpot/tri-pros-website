@@ -41,6 +41,7 @@ const APP_ROOTS = {
     schedule: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/schedule', options),
     settings: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/settings', options),
     intake: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/intake', options),
+    leadSources: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/lead-sources', options),
     team: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/team', options),
     analytics: (options?: Parameters<typeof generateUrl>[1]) => generateUrl('/dashboard/analytics', options),
   },
