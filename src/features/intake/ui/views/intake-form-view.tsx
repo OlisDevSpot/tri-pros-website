@@ -90,7 +90,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
       state: data.state || undefined,
       notes: data.notes || undefined,
       mode: data.mode,
-      leadSource: (leadSourceSlug ?? 'other') as Parameters<typeof submit.mutate>[0]['leadSource'],
+      leadSourceSlug,
       leadMetaJSON,
     })
   }

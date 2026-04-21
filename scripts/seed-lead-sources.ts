@@ -13,6 +13,20 @@ const db = drizzle(new Pool({ connectionString: dbUrl }), { schema })
 
 const LEAD_SOURCES = [
   {
+    name: 'Manual',
+    slug: 'manual',
+    formConfigJSON: {
+      mode: 'customer_only' as const,
+      showEmail: true,
+      requireEmail: false,
+      showNotes: true,
+      showMeetingScheduler: true,
+      requireMeetingScheduler: false,
+      showMp3Upload: true,
+      closedByOptions: [],
+    },
+  },
+  {
     name: 'Telemarketing Leads - Philippines',
     slug: 'telemarketing_leads_philippines',
     formConfigJSON: {
