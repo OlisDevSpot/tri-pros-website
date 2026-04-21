@@ -3,7 +3,6 @@ import {
   activityEntityTypes,
   activityTypes,
   customerPipelines,
-  leadSources,
   leadTypes,
   mediaPhases,
   meetingOutcomes,
@@ -51,6 +50,4 @@ export const meetingPipelineEnum = pgEnum('meeting_pipeline', meetingPipelines)
 export const projectStatusEnum = pgEnum('project_status', projectStatuses)
 
 // LEADS
-/** @deprecated Use `lead_source_id` FK on customers. Kept for dual-column migration; dropped in a follow-up. */
-export const leadSourceEnum = pgEnum('lead_source', leadSources)
 export const leadTypeEnum = pgEnum('lead_type', leadTypes)
