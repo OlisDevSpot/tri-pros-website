@@ -9,11 +9,9 @@ import { useCallback, useMemo, useState } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
-import { ParticipantPickerContent } from '@/shared/entities/meetings/components/participant-picker'
 import { MEETING_ACTIONS } from '@/shared/entities/meetings/constants/actions'
 import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/outcome-options'
 import { useConfirm } from '@/shared/hooks/use-confirm'
-import { useIsMobile } from '@/shared/hooks/use-mobile'
 
 import { useMeetingActions } from './use-meeting-actions'
 
@@ -80,7 +78,6 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
   overrides: MeetingActionOverrides<T> = {},
 ): MeetingActionConfigsResult<T> {
   const { deleteMeeting, duplicateMeeting, updateOutcome } = useMeetingActions()
-  const isMobile = useIsMobile()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete meeting',
     message: 'This will permanently delete this meeting and its data. This cannot be undone.',
@@ -137,28 +134,13 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         onAction: overrides.onCreateProposal ?? defaultCreateProposal,
       },
       // Always present — CASL permission ['assign', 'Meeting'] controls visibility.
-      // Desktop: inline participant picker as a submenu; picker's footer
-      // "Manage participants" link closes the menu and opens the full modal.
-      // Mobile: skip the submenu (it overflows the viewport) and open the
-      // modal directly so the action is reachable.
-      isMobile
-        ? {
-            action: MEETING_ACTIONS.assignOwner,
-            onAction: overrides.onAssignOwner ?? defaultAssignOwner,
-          }
-        : {
-            action: MEETING_ACTIONS.assignOwner,
-            type: 'custom' as const,
-            renderContent: (entity, closeMenu) => (
-              <ParticipantPickerContent
-                meetingId={entity.id}
-                onOpenManageModal={() => {
-                  closeMenu()
-                  ;(overrides.onAssignOwner ?? defaultAssignOwner)(entity)
-                }}
-              />
-            ),
-          },
+      // Single click opens the full ManageParticipantsModal on every platform.
+      // (A prior desktop-only submenu rendered the same picker inline, which was
+      // redundant with the modal now that both share ParticipantPickerContent.)
+      {
+        action: MEETING_ACTIONS.assignOwner,
+        onAction: overrides.onAssignOwner ?? defaultAssignOwner,
+      },
     ]
 
     if (overrides.onAssignProject) {
@@ -180,7 +162,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     })
 
     return configs
-  }, [overrides, duplicateMeeting, updateOutcome, deleteMeeting, confirmDelete, defaultAssignOwner, isMobile])
+  }, [overrides, duplicateMeeting, updateOutcome, deleteMeeting, confirmDelete, defaultAssignOwner])
 
   return { actions, DeleteConfirmDialog, AssignOwnerDialog }
 }
