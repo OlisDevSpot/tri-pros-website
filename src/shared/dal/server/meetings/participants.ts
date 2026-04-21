@@ -1,5 +1,6 @@
 import type { SQL } from 'drizzle-orm'
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
+import type { DbOrTx } from '@/shared/db'
 import { and, asc, eq, exists, inArray, or } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { meetingParticipants, user } from '@/shared/db/schema'
@@ -183,8 +184,9 @@ export async function addParticipant(
   meetingId: string,
   userId: string,
   role: MeetingParticipantRole,
+  executor: DbOrTx = db,
 ): Promise<void> {
-  await db.insert(meetingParticipants).values({ meetingId, userId, role })
+  await executor.insert(meetingParticipants).values({ meetingId, userId, role })
 }
 
 export async function removeParticipant(meetingId: string, userId: string): Promise<void> {
