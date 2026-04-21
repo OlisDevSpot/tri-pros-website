@@ -5,7 +5,6 @@ import type { AppAbility } from '@/shared/domains/permissions/types'
 import {
   BarChart3Icon,
   CalendarIcon,
-  ClipboardListIcon,
   FileTextIcon,
   GitBranchIcon,
   HandshakeIcon,
@@ -101,7 +100,6 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
   const adminItems: SidebarNavItem[] = ability.can('manage', 'all')
     ? [
         { href: ROOTS.dashboard.leadSources(), icon: RadioTowerIcon, label: 'Lead Sources', enabled: true },
-        { href: ROOTS.dashboard.intake(), icon: ClipboardListIcon, label: 'Intake Form', enabled: true },
         { href: ROOTS.dashboard.team(), icon: UsersIcon, label: 'Team', enabled: false },
         { href: ROOTS.dashboard.analytics(), icon: BarChart3Icon, label: 'Analytics', enabled: false },
       ]

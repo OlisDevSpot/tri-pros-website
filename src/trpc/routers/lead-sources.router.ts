@@ -49,12 +49,9 @@ function generateToken(): string {
   return randomBytes(16).toString('hex')
 }
 
-// Bridge the enum ↔ table mismatch: match `customers.lead_source::text` against
-// `lead_sources.slug`. Works for legacy enum values that already equal a slug.
-// For newly-created lead sources whose slug is NOT in the pgEnum, counts are 0
-// until #121 migrates the customer column to an FK.
-function customersMatchingSource(slug: string) {
-  return sql`${customers.leadSource}::text = ${slug}`
+// Match customers to a lead source by FK. Callers pass the lead_sources.id.
+function customersMatchingSource(leadSourceId: string) {
+  return eq(customers.leadSourceId, leadSourceId)
 }
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
@@ -97,11 +94,11 @@ export const leadSourcesRouter = createTRPCRouter({
           updatedAt: leadSourcesTable.updatedAt,
           totalLeads: sql<number>`(
             SELECT COUNT(*)::int FROM ${customers}
-            WHERE ${customers.leadSource}::text = ${leadSourcesTable.slug}
+            WHERE ${customers.leadSourceId} = ${leadSourcesTable.id}
           )`,
           leadsThisMonth: sql<number>`(
             SELECT COUNT(*)::int FROM ${customers}
-            WHERE ${customers.leadSource}::text = ${leadSourcesTable.slug}
+            WHERE ${customers.leadSourceId} = ${leadSourcesTable.id}
               AND ${customers.createdAt} >= date_trunc('month', NOW())
           )`,
         })
@@ -134,7 +131,7 @@ export const leadSourcesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
       const [src] = await db
-        .select({ slug: leadSourcesTable.slug })
+        .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
         .where(eq(leadSourcesTable.id, input.id))
         .limit(1)
@@ -145,7 +142,7 @@ export const leadSourcesRouter = createTRPCRouter({
       const rangeFrom = input.from ? new Date(input.from) : null
       const rangeTo = input.to ? new Date(input.to) : null
 
-      const baseMatch = customersMatchingSource(src.slug)
+      const baseMatch = customersMatchingSource(src.id)
 
       const rangeClauses = [
         rangeFrom ? gte(customers.createdAt, rangeFrom.toISOString()) : undefined,
@@ -205,7 +202,7 @@ export const leadSourcesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
       const [src] = await db
-        .select({ slug: leadSourcesTable.slug })
+        .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
         .where(eq(leadSourcesTable.id, input.id))
         .limit(1)
@@ -213,7 +210,7 @@ export const leadSourcesRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
       }
 
-      const match = customersMatchingSource(src.slug)
+      const match = customersMatchingSource(src.id)
       const where = input.search
         ? and(
             match,

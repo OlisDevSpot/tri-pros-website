@@ -4,13 +4,14 @@ import { Redis } from '@upstash/redis'
 import { desc, eq, ilike, or } from 'drizzle-orm'
 import z from 'zod'
 import env from '@/shared/config/server-env'
-import { intakeModes, leadSources } from '@/shared/constants/enums'
+import { intakeModes } from '@/shared/constants/enums'
 import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
 import { addParticipant } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
+import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
@@ -269,11 +270,11 @@ export const customersRouter = createTRPCRouter({
       email: z.string().optional(),
       notes: z.string().optional(),
       mode: z.enum(intakeModes),
-      leadSource: z.enum(leadSources).default('other'),
+      leadSourceSlug: z.string().optional(),
       leadMetaJSON: leadMetaSchema.optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const { notes, mode, ...customerData } = input
+      const { notes, mode, leadSourceSlug, ...customerData } = input
 
       // Rate limit by IP
       const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
@@ -286,10 +287,30 @@ export const customersRouter = createTRPCRouter({
       const session = (ctx as { session?: { user: { id: string } } }).session ?? null
 
       return db.transaction(async (tx) => {
+        // Resolve lead source FK: slug → id, defaulting to 'manual' when absent.
+        // Public 3rd-party forms pass their own slug; dashboard manual adds omit it.
+        const resolveSlug = leadSourceSlug ?? 'manual'
+        const [leadSourceRow] = await tx
+          .select({ id: leadSourcesTable.id })
+          .from(leadSourcesTable)
+          .where(eq(leadSourcesTable.slug, resolveSlug))
+          .limit(1)
+
+        if (!leadSourceRow) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Lead source "${resolveSlug}" not found. Contact an administrator.`,
+          })
+        }
+
         // 1. Insert customer
         const [customer] = await tx
           .insert(customers)
-          .values({ ...customerData, zip: customerData.zip || '' })
+          .values({
+            ...customerData,
+            zip: customerData.zip || '',
+            leadSourceId: leadSourceRow.id,
+          })
           .returning()
 
         if (!customer) {
