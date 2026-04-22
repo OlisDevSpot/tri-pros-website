@@ -1,21 +1,25 @@
 'use client'
 
+import type { TimeRangeKey } from '@/features/lead-sources-admin/constants/time-ranges'
+
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon, RadioTowerIcon } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { ALL_PSEUDO_ID } from '@/features/lead-sources-admin/constants/pseudo-ids'
+import { BASE_TIME_RANGE_CHIPS, DEFAULT_RANGE_KEY } from '@/features/lead-sources-admin/constants/time-ranges'
+import { buildChipsWithYears, resolveTimeRange } from '@/features/lead-sources-admin/lib/resolve-time-range'
 import { AddCustomerSheet } from '@/features/lead-sources-admin/ui/components/add-customer-sheet'
 import { AllDetail } from '@/features/lead-sources-admin/ui/components/all-detail'
 import { LeadSourceList } from '@/features/lead-sources-admin/ui/components/lead-source-list'
 import { NewLeadSourceSheet } from '@/features/lead-sources-admin/ui/components/new-lead-source-sheet'
 import { SourceDetail } from '@/features/lead-sources-admin/ui/components/source-detail'
+import { TimeRangeChips } from '@/features/lead-sources-admin/ui/components/time-range-chips'
 import { Button } from '@/shared/components/ui/button'
 import { useTRPC } from '@/trpc/helpers'
 
 interface AddSheetState {
-  /** Lead source slug to attribute the new customer to; undefined → `manual`. */
   slug?: string
   name?: string
 }
@@ -26,11 +30,32 @@ export function LeadSourcesView() {
     'id',
     parseAsString.withDefault(ALL_PSEUDO_ID),
   )
+  const [rangeKey, setRangeKey] = useQueryState(
+    'range',
+    parseAsString.withDefault(DEFAULT_RANGE_KEY),
+  )
   const [newSheetOpen, setNewSheetOpen] = useState(false)
   const [addSheetState, setAddSheetState] = useState<AddSheetState | null>(null)
 
+  // Global time range — one source of truth. Every pane + the left-col
+  // stats consume the same `activeChip`. `resolveTimeRange` is memoised on
+  // `activeChip.key` so rolling windows don't reshuffle timestamps each
+  // render (see PR #127 for the infinite-refetch fix).
+  const yearsQuery = useQuery(
+    trpc.leadSourcesRouter.getYearsWithActivity.queryOptions(),
+  )
+  const chips = useMemo(
+    () => buildChipsWithYears(BASE_TIME_RANGE_CHIPS, yearsQuery.data ?? []),
+    [yearsQuery.data],
+  )
+  const activeChip = chips.find(c => c.key === rangeKey) ?? chips[0]!
+  const range = useMemo(() => resolveTimeRange(activeChip), [activeChip.key])
+
   const { data: sources, isLoading } = useQuery(
-    trpc.leadSourcesRouter.list.queryOptions(),
+    trpc.leadSourcesRouter.list.queryOptions({
+      from: range.from,
+      to: range.to,
+    }),
   )
 
   const hasSources = (sources?.length ?? 0) > 0
@@ -45,6 +70,17 @@ export function LeadSourcesView() {
         </p>
       </header>
 
+      <div className="flex items-center justify-between gap-4 border-b border-border/40 px-6 py-3">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Time range
+        </span>
+        <TimeRangeChips
+          chips={chips}
+          value={activeChip.key}
+          onChange={k => setRangeKey(k as TimeRangeKey, { history: 'replace' })}
+        />
+      </div>
+
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label="Lead source list"
@@ -56,6 +92,7 @@ export function LeadSourcesView() {
               isLoading={isLoading}
               selectedId={selectedId}
               onSelect={id => setSelectedId(id, { history: 'push' })}
+              rangeLabel={activeChip.label}
             />
           </div>
           <div className="shrink-0 border-t border-border/40 p-3">
@@ -77,12 +114,16 @@ export function LeadSourcesView() {
               ? (
                   <AllDetail
                     sourceCount={sources?.length ?? 0}
+                    activeChip={activeChip}
+                    range={range}
                     onAddCustomer={() => setAddSheetState({})}
                   />
                 )
               : (
                   <SourceDetail
                     leadSourceId={selectedId}
+                    activeChip={activeChip}
+                    range={range}
                     onAddCustomer={src => setAddSheetState(src)}
                   />
                 )}

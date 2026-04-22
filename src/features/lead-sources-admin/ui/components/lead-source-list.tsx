@@ -19,9 +19,11 @@ interface LeadSourceListProps {
   /** `selectedId` may be a uuid or the literal `'all'`. */
   selectedId: string | null
   onSelect: (id: string) => void
+  /** Label for the range-scoped stat column (mirrors the global time picker). */
+  rangeLabel: string
 }
 
-export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: LeadSourceListProps) {
+export function LeadSourceList({ sources, isLoading, selectedId, onSelect, rangeLabel }: LeadSourceListProps) {
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
@@ -37,8 +39,8 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: Lea
     )
   }, [sources, search])
 
-  const allTotal = useMemo(
-    () => (sources ?? []).reduce((acc, s) => acc + (s.totalLeads ?? 0), 0),
+  const allInRange = useMemo(
+    () => (sources ?? []).reduce((acc, s) => acc + (s.leadsInRange ?? 0), 0),
     [sources],
   )
 
@@ -63,7 +65,8 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: Lea
       <nav aria-label="Lead sources" className="flex flex-col gap-1">
         {/* Pinned "All" pseudo-row — always at top, not filtered, not searchable. */}
         <AllRow
-          total={allTotal}
+          total={allInRange}
+          rangeLabel={rangeLabel}
           isSelected={isAllSelected}
           onSelect={() => onSelect(ALL_PSEUDO_ID)}
           disabled={isLoading}
@@ -85,8 +88,8 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: Lea
                   <LeadSourceOverviewCard.Indicator />
                   <LeadSourceOverviewCard.Identity />
                   <LeadSourceOverviewCard.Stat
-                    value={source.leadsThisMonth}
-                    label="This month"
+                    value={source.leadsInRange}
+                    label={rangeLabel}
                   />
                 </LeadSourceOverviewCard>
               ))}
@@ -97,12 +100,13 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: Lea
 
 interface AllRowProps {
   total: number
+  rangeLabel: string
   isSelected: boolean
   onSelect: () => void
   disabled: boolean
 }
 
-function AllRow({ total, isSelected, onSelect, disabled }: AllRowProps) {
+function AllRow({ total, rangeLabel, isSelected, onSelect, disabled }: AllRowProps) {
   return (
     <button
       type="button"
@@ -124,7 +128,7 @@ function AllRow({ total, isSelected, onSelect, disabled }: AllRowProps) {
       </span>
       <span className="flex flex-col items-end gap-px tabular-nums">
         <span className="text-sm font-semibold text-foreground">{total}</span>
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</span>
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{rangeLabel}</span>
       </span>
     </button>
   )

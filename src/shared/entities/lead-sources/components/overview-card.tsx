@@ -14,7 +14,7 @@ export interface LeadSourceOverviewCardSource {
   slug: string
   isActive: boolean
   totalLeads?: number
-  leadsThisMonth?: number
+  leadsInRange?: number
 }
 
 interface ContextValue {

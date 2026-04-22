@@ -77,11 +77,25 @@ const updateInput = z.object({
 
 export const leadSourcesRouter = createTRPCRouter({
   // List of all lead sources with compact stats for the left-pane picker.
+  // The optional time range scopes `leadsInRange` so the list reacts to the
+  // global time picker in the page header. When absent, `leadsInRange`
+  // degrades to `totalLeads`.
   list: agentProcedure
-    .input(z.object({ includeInactive: z.boolean().default(true) }).optional())
+    .input(z.object({
+      includeInactive: z.boolean().default(true),
+      from: z.string().datetime().optional(),
+      to: z.string().datetime().optional(),
+    }).optional())
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
       const includeInactive = input?.includeInactive ?? true
+      const from = input?.from
+      const to = input?.to
+
+      // Build the range predicate as raw SQL fragments that plug into the
+      // correlated subquery below. NULL bounds simply drop their clause.
+      const fromClause = from ? sql`AND ${customers.createdAt} >= ${from}` : sql``
+      const toClause = to ? sql`AND ${customers.createdAt} <= ${to}` : sql``
 
       const rows = await db
         .select({
@@ -96,10 +110,11 @@ export const leadSourcesRouter = createTRPCRouter({
             SELECT COUNT(*)::int FROM ${customers}
             WHERE ${customers.leadSourceId} = ${leadSourcesTable.id}
           )`,
-          leadsThisMonth: sql<number>`(
+          leadsInRange: sql<number>`(
             SELECT COUNT(*)::int FROM ${customers}
             WHERE ${customers.leadSourceId} = ${leadSourcesTable.id}
-              AND ${customers.createdAt} >= date_trunc('month', NOW())
+              ${fromClause}
+              ${toClause}
           )`,
         })
         .from(leadSourcesTable)

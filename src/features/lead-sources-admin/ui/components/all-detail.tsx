@@ -1,47 +1,29 @@
 'use client'
 
-import type { TimeRangeKey } from '@/features/lead-sources-admin/constants/time-ranges'
+import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
 
-import { BASE_TIME_RANGE_CHIPS, DEFAULT_RANGE_KEY } from '@/features/lead-sources-admin/constants/time-ranges'
-import { buildChipsWithYears, resolveTimeRange } from '@/features/lead-sources-admin/lib/resolve-time-range'
 import { AllCustomersSection } from '@/features/lead-sources-admin/ui/components/all-customers-section'
 import { PerformanceStrip } from '@/features/lead-sources-admin/ui/components/performance-strip'
-import { TimeRangeChips } from '@/features/lead-sources-admin/ui/components/time-range-chips'
 import { Button } from '@/shared/components/ui/button'
 import { useTRPC } from '@/trpc/helpers'
 
 interface AllDetailProps {
   sourceCount: number
+  activeChip: TimeRangeChip
+  range: { from?: string, to?: string }
   onAddCustomer: () => void
 }
 
 /**
- * Aggregate pane shown when the "All" pseudo-row is selected. No tabs — the
- * primary job here is (a) glance at total pipeline health across every source
- * and (b) log an ad-hoc manual customer that wasn't tied to a campaign.
+ * Aggregate pane shown when the "All" pseudo-row is selected. Receives the
+ * globally-selected time range from the view so the performance strip reacts
+ * to the same chip as the left-col stats.
  */
-export function AllDetail({ sourceCount, onAddCustomer }: AllDetailProps) {
+export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: AllDetailProps) {
   const trpc = useTRPC()
-  const [rangeKey, setRangeKey] = useState<TimeRangeKey>(DEFAULT_RANGE_KEY)
-
-  const yearsQuery = useQuery(
-    trpc.leadSourcesRouter.getYearsWithActivity.queryOptions(),
-  )
-
-  const chips = useMemo(
-    () => buildChipsWithYears(BASE_TIME_RANGE_CHIPS, yearsQuery.data ?? []),
-    [yearsQuery.data],
-  )
-  const activeChip = chips.find(c => c.key === rangeKey) ?? chips[0]!
-  // `resolveTimeRange` calls `new Date()` for rolling windows, so a naked
-  // call per render produces a ms-different `from`/`to` each tick — which
-  // becomes a new tRPC query key → refetch → re-render → new timestamp.
-  // Memoise on `activeChip.key` so the range is stable per chip selection.
-  const range = useMemo(() => resolveTimeRange(activeChip), [activeChip.key])
 
   const statsQuery = useQuery(
     trpc.leadSourcesRouter.getAggregateStats.queryOptions({
@@ -66,12 +48,9 @@ export function AllDetail({ sourceCount, onAddCustomer }: AllDetailProps) {
       </header>
 
       <section aria-label="Aggregate performance" className="flex flex-col gap-4 border-t border-border/40 pt-6">
-        <div className="flex items-center justify-between gap-4">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Performance
-          </h3>
-          <TimeRangeChips chips={chips} value={activeChip.key} onChange={setRangeKey} />
-        </div>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Performance
+        </h3>
         <PerformanceStrip
           stats={statsQuery.data}
           chip={activeChip}

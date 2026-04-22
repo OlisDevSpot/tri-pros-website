@@ -1,20 +1,16 @@
 'use client'
 
-import type { TimeRangeKey } from '@/features/lead-sources-admin/constants/time-ranges'
+import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { parseAsStringEnum, useQueryState } from 'nuqs'
-import { useMemo, useState } from 'react'
 
-import { BASE_TIME_RANGE_CHIPS, DEFAULT_RANGE_KEY } from '@/features/lead-sources-admin/constants/time-ranges'
-import { buildChipsWithYears, resolveTimeRange } from '@/features/lead-sources-admin/lib/resolve-time-range'
 import { FormConfigEditor } from '@/features/lead-sources-admin/ui/components/form-config-editor'
 import { IntakeUrlCard } from '@/features/lead-sources-admin/ui/components/intake-url-card'
 import { LeadSourceCustomersSection } from '@/features/lead-sources-admin/ui/components/lead-source-customers-section'
 import { LeadSourceDetailHeader } from '@/features/lead-sources-admin/ui/components/lead-source-detail-header'
 import { PerformanceStrip } from '@/features/lead-sources-admin/ui/components/performance-strip'
-import { TimeRangeChips } from '@/features/lead-sources-admin/ui/components/time-range-chips'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
@@ -25,12 +21,13 @@ type SourceTab = (typeof SOURCE_TABS)[number]
 
 interface SourceDetailProps {
   leadSourceId: string
+  activeChip: TimeRangeChip
+  range: { from?: string, to?: string }
   onAddCustomer: (source: { slug: string, name: string }) => void
 }
 
-export function SourceDetail({ leadSourceId, onAddCustomer }: SourceDetailProps) {
+export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer }: SourceDetailProps) {
   const trpc = useTRPC()
-  const [rangeKey, setRangeKey] = useState<TimeRangeKey>(DEFAULT_RANGE_KEY)
   const [tab, setTab] = useQueryState(
     'tab',
     parseAsStringEnum([...SOURCE_TABS]).withDefault('overview'),
@@ -39,20 +36,6 @@ export function SourceDetail({ leadSourceId, onAddCustomer }: SourceDetailProps)
   const sourceQuery = useQuery(
     trpc.leadSourcesRouter.getById.queryOptions({ id: leadSourceId }),
   )
-  const yearsQuery = useQuery(
-    trpc.leadSourcesRouter.getYearsWithActivity.queryOptions(),
-  )
-
-  const chips = useMemo(
-    () => buildChipsWithYears(BASE_TIME_RANGE_CHIPS, yearsQuery.data ?? []),
-    [yearsQuery.data],
-  )
-  const activeChip = chips.find(c => c.key === rangeKey) ?? chips[0]!
-  // `resolveTimeRange` calls `new Date()` for rolling windows, so a naked
-  // call per render produces a ms-different `from`/`to` each tick — which
-  // becomes a new tRPC query key → refetch → re-render → new timestamp.
-  // Memoise on `activeChip.key` so the range is stable per chip selection.
-  const range = useMemo(() => resolveTimeRange(activeChip), [activeChip.key])
 
   const statsQuery = useQuery(
     trpc.leadSourcesRouter.getStats.queryOptions({
@@ -86,12 +69,9 @@ export function SourceDetail({ leadSourceId, onAddCustomer }: SourceDetailProps)
 
         <TabsContent value="overview" className="flex flex-col gap-8 pt-4">
           <section aria-label="Performance" className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-4">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Performance
-              </h3>
-              <TimeRangeChips chips={chips} value={activeChip.key} onChange={setRangeKey} />
-            </div>
+            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Performance
+            </h3>
             <PerformanceStrip
               stats={statsQuery.data}
               chip={activeChip}
