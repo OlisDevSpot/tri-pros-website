@@ -19,9 +19,12 @@ export interface TimeRangeChip {
 
 export const DEFAULT_RANGE_KEY: TimeRangeKey = 'this-month'
 
+// Chronological order: shortest rolling window first, then this-month (which
+// is close to 30d but semantically distinct), then longer windows, then "all
+// time" as the terminator. Years append after this list.
 export const BASE_TIME_RANGE_CHIPS: readonly TimeRangeChip[] = [
-  { key: 'this-month', label: 'This month', kind: 'rolling', days: 30 },
   { key: '7d', label: '7d', kind: 'rolling', days: 7 },
+  { key: 'this-month', label: 'This month', kind: 'rolling', days: 30 },
   { key: '30d', label: '30d', kind: 'rolling', days: 30 },
   { key: '90d', label: '90d', kind: 'rolling', days: 90 },
   { key: 'all', label: 'All time', kind: 'all' },

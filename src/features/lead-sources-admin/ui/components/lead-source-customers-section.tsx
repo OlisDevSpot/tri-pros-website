@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 
 import { Input } from '@/shared/components/ui/input'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { CustomerPipelineBadge } from '@/shared/entities/customers/components/customer-pipeline-badge'
 import { useTRPC } from '@/trpc/helpers'
 
 type CustomerRow = AppRouterOutputs['leadSourcesRouter']['getCustomers'][number]
@@ -93,7 +94,9 @@ function CustomerTableRow({ customer }: { customer: CustomerRow }) {
     <tr className="hover:bg-muted/40 motion-safe:transition-colors">
       <td className="px-3 py-2.5 font-medium text-foreground">{customer.name}</td>
       <td className="px-3 py-2.5 text-muted-foreground">{customer.email ?? '—'}</td>
-      <td className="px-3 py-2.5 text-xs text-muted-foreground">{customer.pipeline ?? '—'}</td>
+      <td className="px-3 py-2.5">
+        <CustomerPipelineBadge pipeline={customer.pipeline} />
+      </td>
       <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
         {new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
           .format(new Date(customer.createdAt))}

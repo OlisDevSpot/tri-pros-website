@@ -37,7 +37,11 @@ export function AllDetail({ sourceCount, onAddCustomer }: AllDetailProps) {
     [yearsQuery.data],
   )
   const activeChip = chips.find(c => c.key === rangeKey) ?? chips[0]!
-  const range = resolveTimeRange(activeChip)
+  // `resolveTimeRange` calls `new Date()` for rolling windows, so a naked
+  // call per render produces a ms-different `from`/`to` each tick — which
+  // becomes a new tRPC query key → refetch → re-render → new timestamp.
+  // Memoise on `activeChip.key` so the range is stable per chip selection.
+  const range = useMemo(() => resolveTimeRange(activeChip), [activeChip.key])
 
   const statsQuery = useQuery(
     trpc.leadSourcesRouter.getAggregateStats.queryOptions({
