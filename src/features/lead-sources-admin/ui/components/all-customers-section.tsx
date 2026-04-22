@@ -2,12 +2,16 @@
 
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
+import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Input } from '@/shared/components/ui/input'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { CustomerPipelineBadge } from '@/shared/entities/customers/components/customer-pipeline-badge'
+import { formatDateCell } from '@/shared/lib/formatters'
 import { useTRPC } from '@/trpc/helpers'
 
 type AllCustomerRow = AppRouterOutputs['leadSourcesRouter']['getAllCustomers'][number]
@@ -19,12 +23,24 @@ type AllCustomerRow = AppRouterOutputs['leadSourcesRouter']['getAllCustomers'][n
  */
 export function AllCustomersSection() {
   const trpc = useTRPC()
+  const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const [search, setSearch] = useState('')
 
   const { data, isLoading } = useQuery(
     trpc.leadSourcesRouter.getAllCustomers.queryOptions({
       search: search.trim() || undefined,
       limit: 100,
+    }),
+  )
+
+  const updateCreatedAt = useMutation(
+    trpc.customersRouter.updateCreatedAt.mutationOptions({
+      onSuccess: () => {
+        toast.success('Created date updated')
+        invalidateCustomer()
+        invalidateLeadSource()
+      },
+      onError: err => toast.error(err.message),
     }),
   )
 
@@ -72,7 +88,15 @@ export function AllCustomersSection() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
-                    {data?.map(c => <Row key={c.id} customer={c} />)}
+                    {data?.map(c => (
+                      <Row
+                        key={c.id}
+                        customer={c}
+                        onUpdateCreatedAt={(date) => {
+                          updateCreatedAt.mutate({ customerId: c.id, createdAt: date.toISOString() })
+                        }}
+                      />
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -81,7 +105,13 @@ export function AllCustomersSection() {
   )
 }
 
-function Row({ customer }: { customer: AllCustomerRow }) {
+interface RowProps {
+  customer: AllCustomerRow
+  onUpdateCreatedAt: (date: Date) => void
+}
+
+function Row({ customer, onUpdateCreatedAt }: RowProps) {
+  const { relative, dayAtTime } = formatDateCell(customer.createdAt)
   return (
     <tr className="hover:bg-muted/40 motion-safe:transition-colors">
       <td className="px-3 py-2.5 font-medium text-foreground">{customer.name}</td>
@@ -92,9 +122,21 @@ function Row({ customer }: { customer: AllCustomerRow }) {
       <td className="px-3 py-2.5">
         <CustomerPipelineBadge pipeline={customer.pipeline} />
       </td>
-      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">
-        {new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-          .format(new Date(customer.createdAt))}
+      <td className="px-3 py-2.5 text-right" onClick={e => e.stopPropagation()}>
+        <DateTimePicker
+          value={new Date(customer.createdAt)}
+          onChange={(date) => {
+            if (date) {
+              onUpdateCreatedAt(date)
+            }
+          }}
+          className="ml-auto"
+        >
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-medium leading-tight">{relative}</span>
+            <span className="text-xs text-muted-foreground tabular-nums">{dayAtTime}</span>
+          </div>
+        </DateTimePicker>
       </td>
     </tr>
   )

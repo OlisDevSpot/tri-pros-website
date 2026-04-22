@@ -103,6 +103,35 @@ export const customersRouter = createTRPCRouter({
       return updated
     }),
 
+  // Overwrite a customer's `createdAt` — super-admin only. Legacy Notion
+  // imports land with today's timestamp regardless of when the lead
+  // actually came in, so lead-source stats by range are misleading until
+  // the super-admin corrects them. Lead-source stats depend on this
+  // column, so the caller should invalidate both customer + lead-source
+  // queries on success.
+  updateCreatedAt: agentProcedure
+    .input(z.object({
+      customerId: z.string().uuid(),
+      createdAt: z.string().datetime(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.session.user.role !== 'super-admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can edit the created date.' })
+      }
+
+      const [updated] = await db
+        .update(customers)
+        .set({ createdAt: input.createdAt })
+        .where(eq(customers.id, input.customerId))
+        .returning({ id: customers.id, createdAt: customers.createdAt })
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+
+      return updated
+    }),
+
   // Update top-level contact fields — super-admin only
   updateCustomerContact: agentProcedure
     .input(z.object({

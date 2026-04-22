@@ -89,13 +89,14 @@ export const leadSourcesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
       const includeInactive = input?.includeInactive ?? true
-      const from = input?.from
-      const to = input?.to
 
-      // Build the range predicate as raw SQL fragments that plug into the
-      // correlated subquery below. NULL bounds simply drop their clause.
-      const fromClause = from ? sql`AND ${customers.createdAt} >= ${from}` : sql``
-      const toClause = to ? sql`AND ${customers.createdAt} <= ${to}` : sql``
+      // Interpolating an empty Drizzle `sql` fragment into a correlated
+      // subquery can silently zero out the count (witnessed on "All time"
+      // → every leadsInRange came back 0). Always interpolate a real ISO
+      // string — fall back to epoch/far-future sentinels when the
+      // corresponding boundary is absent so the predicate stays a no-op.
+      const effectiveFrom = input?.from ?? '1970-01-01T00:00:00.000Z'
+      const effectiveTo = input?.to ?? '2999-12-31T23:59:59.999Z'
 
       const rows = await db
         .select({
@@ -113,8 +114,8 @@ export const leadSourcesRouter = createTRPCRouter({
           leadsInRange: sql<number>`(
             SELECT COUNT(*)::int FROM ${customers}
             WHERE ${customers.leadSourceId} = ${leadSourcesTable.id}
-              ${fromClause}
-              ${toClause}
+              AND ${customers.createdAt} >= ${effectiveFrom}
+              AND ${customers.createdAt} <= ${effectiveTo}
           )`,
         })
         .from(leadSourcesTable)
