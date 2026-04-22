@@ -57,6 +57,9 @@ export function useInvalidation() {
     void qc.invalidateQueries(cross.customerPipeline())
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
+    // Proposal approval creates a project, which flips the customer's "signed"
+    // status — lead-source signed counts must refresh alongside.
+    void qc.invalidateQueries(trpc.leadSourcesRouter.pathFilter())
   }
 
   function invalidateProject(opts?: { projectId?: string, customerId?: string }) {
@@ -66,6 +69,9 @@ export function useInvalidation() {
     void qc.invalidateQueries(cross.meetingCustomerProjects())
     void qc.invalidateQueries(cross.landingProjects())
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
+    // Signed-customer status is defined as "has ≥1 project" — any project
+    // mutation can change a source's signed count.
+    void qc.invalidateQueries(trpc.leadSourcesRouter.pathFilter())
   }
 
   function invalidateActivities() {

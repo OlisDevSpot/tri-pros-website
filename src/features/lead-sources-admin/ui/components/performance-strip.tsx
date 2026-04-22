@@ -10,7 +10,7 @@ import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entranc
 import { Skeleton } from '@/shared/components/ui/skeleton'
 
 interface PerformanceStripProps {
-  stats: { total: number, range: number, signedProposals: number } | undefined
+  stats: { total: number, range: number, signedCustomers: number } | undefined
   chip: TimeRangeChip
   isLoading: boolean
 }
@@ -30,7 +30,7 @@ export function PerformanceStrip({ stats, chip, isLoading }: PerformanceStripPro
     )
   }
 
-  const { total, range, signedProposals } = stats
+  const { total, range, signedCustomers } = stats
 
   if (total === 0) {
     return (
@@ -40,7 +40,7 @@ export function PerformanceStrip({ stats, chip, isLoading }: PerformanceStripPro
     )
   }
 
-  const conversionRate = Math.round((signedProposals / total) * 100)
+  const conversionRate = Math.round((signedCustomers / total) * 100)
   const showRange = chip.kind !== 'all'
 
   return (
@@ -48,7 +48,7 @@ export function PerformanceStrip({ stats, chip, isLoading }: PerformanceStripPro
       <div className="flex flex-col gap-1">
         <motion.p {...entrance(0)} className="flex items-baseline gap-2">
           <span className="text-3xl font-semibold tabular-nums text-foreground">
-            {formatCount(signedProposals)}
+            {formatCount(signedCustomers)}
           </span>
           <span className="text-base text-muted-foreground">
             of
