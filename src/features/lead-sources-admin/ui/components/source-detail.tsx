@@ -68,10 +68,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer }:
         </TabsList>
 
         <TabsContent value="overview" className="flex flex-col gap-8 pt-4">
-          <section aria-label="Performance" className="flex flex-col gap-4">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Performance
-            </h3>
+          <section aria-label="Performance">
             <PerformanceStrip
               stats={statsQuery.data}
               chip={activeChip}

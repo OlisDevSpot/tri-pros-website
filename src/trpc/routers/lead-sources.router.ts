@@ -1,13 +1,12 @@
 import { randomBytes } from 'node:crypto'
 import { TRPCError } from '@trpc/server'
-import { and, asc, countDistinct, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
-import { meetings } from '@/shared/db/schema/meetings'
-import { proposals } from '@/shared/db/schema/proposals'
+import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 
 import { agentProcedure, createTRPCRouter } from '../init'
@@ -142,7 +141,8 @@ export const leadSourcesRouter = createTRPCRouter({
     }),
 
   // Performance stats for a single lead source over a time range.
-  // Stats: total leads (all-time), leads within range, signed proposals (all-time).
+  // Stats: total leads (all-time), leads within range, signed customers (all-time).
+  // "Signed" is defined by `isSignedCustomerSql` (customer has ≥1 project).
   getStats: agentProcedure
     .input(z.object({ id: z.string().uuid() }).merge(timeRangeInput))
     .query(async ({ ctx, input }) => {
@@ -158,69 +158,39 @@ export const leadSourcesRouter = createTRPCRouter({
 
       const baseMatch = customersMatchingSource(src.id)
       const rangeClauses = customerCreatedAtInRange(input.from, input.to)
+      const rangeWhere = rangeClauses.length > 0
+        ? and(baseMatch, ...rangeClauses)
+        : baseMatch
 
-      const [totalRow] = await db
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(customers)
-        .where(baseMatch)
+      const [total, range, signedCustomers] = await Promise.all([
+        db.$count(customers, baseMatch),
+        db.$count(customers, rangeWhere),
+        db.$count(customers, and(baseMatch, isSignedCustomerSql())),
+      ])
 
-      const [rangeRow] = await db
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(customers)
-        .where(rangeClauses.length > 0 ? and(baseMatch, ...rangeClauses) : baseMatch)
-
-      // Proposals link to customers via meetings.customerId, not directly.
-      // Chain: customers → meetings → proposals. DISTINCT customer id so a
-      // customer with multiple approved proposals counts once.
-      const [signedRow] = await db
-        .select({ count: countDistinct(customers.id).mapWith(Number) })
-        .from(customers)
-        .innerJoin(meetings, eq(meetings.customerId, customers.id))
-        .innerJoin(proposals, eq(proposals.meetingId, meetings.id))
-        .where(and(baseMatch, eq(proposals.status, 'approved')))
-
-      return {
-        total: totalRow?.count ?? 0,
-        range: rangeRow?.count ?? 0,
-        signedProposals: signedRow?.count ?? 0,
-      }
+      return { total, range, signedCustomers }
     }),
 
   // Aggregate performance across every lead source. Mirrors getStats shape so
   // the PerformanceStrip renders identically for the "All" pane and per-source
   // panes. `total` counts every customer (including legacy NULL-source rows);
-  // `range` applies the time window; `signedProposals` is DISTINCT customers
-  // with an approved proposal.
+  // `range` applies the time window; `signedCustomers` counts customers with
+  // at least one project (see `isSignedCustomerSql`).
   getAggregateStats: agentProcedure
     .input(timeRangeInput)
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
 
       const rangeClauses = customerCreatedAtInRange(input.from, input.to)
+      const rangeWhere = rangeClauses.length > 0 ? and(...rangeClauses) : undefined
 
-      const [totalRow] = await db
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(customers)
+      const [total, range, signedCustomers] = await Promise.all([
+        db.$count(customers),
+        db.$count(customers, rangeWhere),
+        db.$count(customers, isSignedCustomerSql()),
+      ])
 
-      const rangeQuery = db
-        .select({ count: sql<number>`COUNT(*)::int` })
-        .from(customers)
-      const [rangeRow] = rangeClauses.length > 0
-        ? await rangeQuery.where(and(...rangeClauses))
-        : await rangeQuery
-
-      const [signedRow] = await db
-        .select({ count: countDistinct(customers.id).mapWith(Number) })
-        .from(customers)
-        .innerJoin(meetings, eq(meetings.customerId, customers.id))
-        .innerJoin(proposals, eq(proposals.meetingId, meetings.id))
-        .where(eq(proposals.status, 'approved'))
-
-      return {
-        total: totalRow?.count ?? 0,
-        range: rangeRow?.count ?? 0,
-        signedProposals: signedRow?.count ?? 0,
-      }
+      return { total, range, signedCustomers }
     }),
 
   // Dynamic list of years with at least one customer for any lead source.

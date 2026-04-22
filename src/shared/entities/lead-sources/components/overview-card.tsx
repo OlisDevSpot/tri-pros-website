@@ -53,7 +53,7 @@ function Root({ source, isSelected, onClick, children, className }: RootProps) {
         onClick={onClick}
         aria-current={isSelected ? 'true' : undefined}
         className={cn(
-          'group/card flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-colors',
+          'group/card flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-[background-color,opacity,box-shadow] motion-safe:duration-200',
           // The one primary-color moment in the list — the selected card.
           isSelected
             ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
@@ -77,7 +77,7 @@ function Indicator({ className }: { className?: string }) {
     <span
       aria-hidden="true"
       className={cn(
-        'inline-block size-2 shrink-0 rounded-full',
+        'inline-block size-2 shrink-0 rounded-full motion-safe:transition-colors motion-safe:duration-200',
         source.isActive ? 'bg-emerald-500' : 'bg-muted-foreground/30',
         className,
       )}

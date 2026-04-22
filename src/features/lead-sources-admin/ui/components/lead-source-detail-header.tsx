@@ -2,50 +2,86 @@
 
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
+import { motion } from 'motion/react'
+import { useId } from 'react'
+
+import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entrance-motion'
 import { EntityActionDropdown } from '@/shared/components/entity-actions/ui/entity-action-dropdown'
+import { Switch } from '@/shared/components/ui/switch'
 import { useLeadSourceActionConfigs } from '@/shared/entities/lead-sources/hooks/use-lead-source-action-configs'
+import { useLeadSourceActions } from '@/shared/entities/lead-sources/hooks/use-lead-source-actions'
 import { cn } from '@/shared/lib/utils'
 
 type LeadSourceRow = AppRouterOutputs['leadSourcesRouter']['getById']
 
 export function LeadSourceDetailHeader({ source }: { source: LeadSourceRow }) {
   const { actions, DeleteConfirmDialog } = useLeadSourceActionConfigs<LeadSourceRow>()
+  const entrance = useEntranceMotion()
 
   return (
     <>
       <header className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex items-center gap-2.5">
-            <StatusPill isActive={source.isActive} />
-            <h2 className="truncate text-lg font-semibold text-foreground">{source.name}</h2>
-          </div>
-          <p className="truncate text-xs text-muted-foreground tabular-nums">
-            /
-            {source.slug}
-          </p>
+          <motion.p
+            {...entrance(0, 6)}
+            className="text-[11px] text-muted-foreground"
+          >
+            <span className="font-medium uppercase tracking-[0.18em]">Lead source</span>
+            <span aria-hidden="true" className="mx-2 opacity-40">·</span>
+            <span className="tabular-nums" translate="no">
+              /
+              {source.slug}
+            </span>
+          </motion.p>
+          <motion.h2
+            {...entrance(0.04, 6)}
+            className="truncate text-3xl font-semibold tracking-tight text-foreground"
+          >
+            {source.name}
+          </motion.h2>
         </div>
-        <EntityActionDropdown entity={source} actions={actions} orientation="horizontal" />
+        <motion.div {...entrance(0.08, 6)} className="flex shrink-0 items-center gap-3">
+          <ActiveToggle source={source} />
+          <EntityActionDropdown entity={source} actions={actions} orientation="horizontal" />
+        </motion.div>
       </header>
       <DeleteConfirmDialog />
     </>
   )
 }
 
-function StatusPill({ isActive }: { isActive: boolean }) {
+interface ActiveToggleProps {
+  source: Pick<LeadSourceRow, 'id' | 'isActive'>
+}
+
+function ActiveToggle({ source }: ActiveToggleProps) {
+  const { toggleActive } = useLeadSourceActions()
+  const switchId = useId()
+
+  const pendingForThis = toggleActive.isPending && toggleActive.variables?.id === source.id
+  const displayActive = pendingForThis
+    ? toggleActive.variables?.isActive ?? source.isActive
+    : source.isActive
+
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums',
-        isActive
-          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : 'border-border/60 bg-muted/40 text-muted-foreground',
-      )}
-    >
-      <span
-        aria-hidden="true"
-        className={cn('size-1.5 rounded-full', isActive ? 'bg-emerald-500' : 'bg-muted-foreground/40')}
+    <span className="inline-flex items-center gap-2">
+      <Switch
+        id={switchId}
+        checked={displayActive}
+        disabled={pendingForThis}
+        onCheckedChange={next => toggleActive.mutate({ id: source.id, isActive: next })}
+        aria-label={displayActive ? 'Deactivate source' : 'Activate source'}
+        className="data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500"
       />
-      {isActive ? 'Active' : 'Inactive'}
+      <label
+        htmlFor={switchId}
+        className={cn(
+          'cursor-pointer select-none text-xs tabular-nums motion-safe:transition-colors',
+          displayActive ? 'text-foreground' : 'text-muted-foreground',
+        )}
+      >
+        {displayActive ? 'Active' : 'Inactive'}
+      </label>
     </span>
   )
 }
