@@ -238,19 +238,24 @@ export const leadSourcesRouter = createTRPCRouter({
           )
         : match
 
-      return db
-        .select({
-          id: customers.id,
-          name: customers.name,
-          email: customers.email,
-          createdAt: customers.createdAt,
-          pipeline: customers.pipeline,
-        })
-        .from(customers)
-        .where(where)
-        .orderBy(desc(customers.createdAt))
-        .limit(input.limit)
-        .offset(input.offset)
+      const [rows, total] = await Promise.all([
+        db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            createdAt: customers.createdAt,
+            pipeline: customers.pipeline,
+          })
+          .from(customers)
+          .where(where)
+          .orderBy(desc(customers.createdAt))
+          .limit(input.limit)
+          .offset(input.offset),
+        db.$count(customers, where),
+      ])
+
+      return { rows, total }
     }),
 
   // Customers across every lead source (plus legacy NULL-source rows). Used by
@@ -272,23 +277,28 @@ export const leadSourcesRouter = createTRPCRouter({
           )
         : undefined
 
-      return db
-        .select({
-          id: customers.id,
-          name: customers.name,
-          email: customers.email,
-          createdAt: customers.createdAt,
-          pipeline: customers.pipeline,
-          leadSourceId: customers.leadSourceId,
-          leadSourceName: leadSourcesTable.name,
-          leadSourceSlug: leadSourcesTable.slug,
-        })
-        .from(customers)
-        .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
-        .where(where)
-        .orderBy(desc(customers.createdAt))
-        .limit(input.limit)
-        .offset(input.offset)
+      const [rows, total] = await Promise.all([
+        db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            createdAt: customers.createdAt,
+            pipeline: customers.pipeline,
+            leadSourceId: customers.leadSourceId,
+            leadSourceName: leadSourcesTable.name,
+            leadSourceSlug: leadSourcesTable.slug,
+          })
+          .from(customers)
+          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
+          .where(where)
+          .orderBy(desc(customers.createdAt))
+          .limit(input.limit)
+          .offset(input.offset),
+        db.$count(customers, where),
+      ])
+
+      return { rows, total }
     }),
 
   create: agentProcedure

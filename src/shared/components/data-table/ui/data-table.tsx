@@ -76,6 +76,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   onRowClick,
   onFilteredCountChange,
   onFilteredDataChange,
+  serverPagination,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
@@ -218,18 +219,39 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     columns: patchedColumns,
     filterFns,
     defaultColumn: { minSize: 60, maxSize: 800 },
-    state: { sorting, columnFilters, columnVisibility, columnSizing },
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      columnSizing,
+      ...(serverPagination
+        ? { pagination: { pageIndex: serverPagination.pageIndex, pageSize: serverPagination.pageSize } }
+        : {}),
+    },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnSizingChange: setColumnSizing,
+    onPaginationChange: serverPagination
+      ? (updater) => {
+          const prev = { pageIndex: serverPagination.pageIndex, pageSize: serverPagination.pageSize }
+          const next = typeof updater === 'function' ? updater(prev) : updater
+          if (next.pageIndex !== prev.pageIndex) {
+            serverPagination.onPageChange(next.pageIndex)
+          }
+          if (next.pageSize !== prev.pageSize) {
+            serverPagination.onPageSizeChange?.(next.pageSize)
+          }
+        }
+      : undefined,
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
     autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize } },
+    ...(serverPagination
+      ? { manualPagination: true, rowCount: serverPagination.rowCount }
+      : { getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize } } }),
     meta: {
       ...meta,
       activeRowId,
