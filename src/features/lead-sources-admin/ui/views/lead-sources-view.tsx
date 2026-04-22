@@ -38,30 +38,36 @@ export function LeadSourcesView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex items-center justify-between gap-4 border-b border-border/40 px-6 py-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold text-foreground">Lead Sources</h1>
-          <p className="text-xs text-muted-foreground">
-            Performance tracking and intake configuration for every lead channel.
-          </p>
-        </div>
-        <Button onClick={() => setNewSheetOpen(true)} className="gap-1.5">
-          <PlusIcon className="size-4" />
-          New lead source
-        </Button>
+      <header className="flex flex-col gap-1 border-b border-border/40 px-6 py-4">
+        <h1 className="text-xl font-semibold text-foreground">Lead Sources</h1>
+        <p className="text-xs text-muted-foreground">
+          Performance tracking and intake configuration for every lead channel.
+        </p>
       </header>
 
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label="Lead source list"
-          className="flex w-full min-w-0 flex-1 flex-col overflow-y-auto border-r border-border/40 px-4 py-4 sm:max-w-xs lg:max-w-sm"
+          className="flex w-full min-w-0 flex-1 flex-col border-r border-border/40 sm:max-w-xs lg:max-w-sm"
         >
-          <LeadSourceList
-            sources={sources}
-            isLoading={isLoading}
-            selectedId={selectedId}
-            onSelect={id => setSelectedId(id, { history: 'push' })}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            <LeadSourceList
+              sources={sources}
+              isLoading={isLoading}
+              selectedId={selectedId}
+              onSelect={id => setSelectedId(id, { history: 'push' })}
+            />
+          </div>
+          <div className="shrink-0 border-t border-border/40 p-3">
+            <Button
+              variant="outline"
+              onClick={() => setNewSheetOpen(true)}
+              className="w-full justify-start gap-2 border-dashed text-muted-foreground motion-safe:transition-colors hover:border-solid hover:bg-muted/60 hover:text-foreground"
+            >
+              <PlusIcon className="size-4" />
+              New lead source
+            </Button>
+          </div>
         </aside>
 
         <main className="flex min-w-0 flex-3 flex-col overflow-y-auto">
