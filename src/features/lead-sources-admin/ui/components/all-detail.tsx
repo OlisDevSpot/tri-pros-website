@@ -36,8 +36,8 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
   )
 
   return (
-    <div className="flex flex-col gap-8 p-6">
-      <header className="flex items-start justify-between gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-8 p-6">
+      <header className="flex shrink-0 items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
           <motion.p
             {...entrance(0, 6)}
@@ -62,7 +62,7 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
         </motion.div>
       </header>
 
-      <section aria-label="Aggregate performance" className="flex flex-col gap-3 border-t border-border/40 pt-6">
+      <section aria-label="Aggregate performance" className="flex shrink-0 flex-col gap-3 border-t border-border/40 pt-6">
         <PerformanceStrip
           stats={statsQuery.data}
           chip={activeChip}
@@ -77,7 +77,7 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
         </p>
       </section>
 
-      <section aria-label="All customers" className="border-t border-border/40 pt-6">
+      <section aria-label="All customers" className="flex min-h-0 flex-1 flex-col border-t border-border/40 pt-6">
         <AllCustomersSection />
       </section>
     </div>

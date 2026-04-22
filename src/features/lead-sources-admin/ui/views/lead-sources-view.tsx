@@ -107,7 +107,7 @@ export function LeadSourcesView() {
           </div>
         </aside>
 
-        <main className="flex min-w-0 flex-3 flex-col overflow-y-auto">
+        <main className="flex min-h-0 min-w-0 flex-3 flex-col">
           {!isLoading && !hasSources
             ? <EmptyState onCreate={() => setNewSheetOpen(true)} />
             : isAllSelected

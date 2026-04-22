@@ -108,11 +108,11 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   return (
     <section
       aria-label="Customers from this lead source"
-      className="flex min-h-96 flex-col gap-3"
+      className="flex min-h-0 flex-1 flex-col gap-3"
     >
       <DeleteConfirmDialog />
 
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex shrink-0 items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Customers from this source

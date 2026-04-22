@@ -58,16 +58,23 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer }:
   const source = sourceQuery.data
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex h-full min-h-0 flex-col gap-6 p-6">
       <LeadSourceDetailHeader source={source} />
 
-      <Tabs value={tab} onValueChange={v => setTab(v as SourceTab, { history: 'replace' })}>
-        <TabsList>
+      <Tabs
+        value={tab}
+        onValueChange={v => setTab(v as SourceTab, { history: 'replace' })}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        <TabsList className="shrink-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="flex flex-col gap-8 pt-4">
+        <TabsContent
+          value="overview"
+          className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto pt-4"
+        >
           <section aria-label="Performance">
             <PerformanceStrip
               stats={statsQuery.data}
@@ -85,8 +92,11 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer }:
           </section>
         </TabsContent>
 
-        <TabsContent value="customers" className="flex flex-col gap-4 pt-4">
-          <div className="flex items-center justify-end">
+        <TabsContent
+          value="customers"
+          className="flex min-h-0 flex-1 flex-col gap-4 pt-4"
+        >
+          <div className="flex shrink-0 items-center justify-end">
             <Button
               size="sm"
               onClick={() => onAddCustomer({ slug: source.slug, name: source.name })}
