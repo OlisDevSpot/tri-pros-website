@@ -3,35 +3,41 @@
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon, RadioTowerIcon } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-import { LeadSourceDetail } from '@/features/lead-sources-admin/ui/components/lead-source-detail'
+import { ALL_PSEUDO_ID } from '@/features/lead-sources-admin/constants/pseudo-ids'
+import { AddCustomerSheet } from '@/features/lead-sources-admin/ui/components/add-customer-sheet'
+import { AllDetail } from '@/features/lead-sources-admin/ui/components/all-detail'
 import { LeadSourceList } from '@/features/lead-sources-admin/ui/components/lead-source-list'
 import { NewLeadSourceSheet } from '@/features/lead-sources-admin/ui/components/new-lead-source-sheet'
+import { SourceDetail } from '@/features/lead-sources-admin/ui/components/source-detail'
 import { Button } from '@/shared/components/ui/button'
 import { useTRPC } from '@/trpc/helpers'
 
+interface AddSheetState {
+  /** Lead source slug to attribute the new customer to; undefined → `manual`. */
+  slug?: string
+  name?: string
+}
+
 export function LeadSourcesView() {
   const trpc = useTRPC()
-  const [selectedId, setSelectedId] = useQueryState('id', parseAsString.withDefault(''))
+  const [selectedId, setSelectedId] = useQueryState(
+    'id',
+    parseAsString.withDefault(ALL_PSEUDO_ID),
+  )
   const [newSheetOpen, setNewSheetOpen] = useState(false)
+  const [addSheetState, setAddSheetState] = useState<AddSheetState | null>(null)
 
   const { data: sources, isLoading } = useQuery(
     trpc.leadSourcesRouter.list.queryOptions(),
   )
 
-  // Auto-select the first source when nothing selected and the list arrives.
-  useEffect(() => {
-    if (!selectedId && sources && sources.length > 0) {
-      setSelectedId(sources[0]!.id, { history: 'replace' })
-    }
-  }, [selectedId, sources, setSelectedId])
-
   const hasSources = (sources?.length ?? 0) > 0
+  const isAllSelected = selectedId === ALL_PSEUDO_ID
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Header */}
       <header className="flex items-center justify-between gap-4 border-b border-border/40 px-6 py-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold text-foreground">Lead Sources</h1>
@@ -45,7 +51,6 @@ export function LeadSourcesView() {
         </Button>
       </header>
 
-      {/* Split pane */}
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label="Lead source list"
@@ -54,20 +59,26 @@ export function LeadSourcesView() {
           <LeadSourceList
             sources={sources}
             isLoading={isLoading}
-            selectedId={selectedId || null}
+            selectedId={selectedId}
             onSelect={id => setSelectedId(id, { history: 'push' })}
           />
         </aside>
 
-        <main className="flex min-w-0 flex-[3] flex-col overflow-y-auto">
+        <main className="flex min-w-0 flex-3 flex-col overflow-y-auto">
           {!isLoading && !hasSources
             ? <EmptyState onCreate={() => setNewSheetOpen(true)} />
-            : selectedId && hasSources
-              ? <LeadSourceDetail leadSourceId={selectedId} />
+            : isAllSelected
+              ? (
+                  <AllDetail
+                    sourceCount={sources?.length ?? 0}
+                    onAddCustomer={() => setAddSheetState({})}
+                  />
+                )
               : (
-                  <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                    Select a lead source on the left.
-                  </div>
+                  <SourceDetail
+                    leadSourceId={selectedId}
+                    onAddCustomer={src => setAddSheetState(src)}
+                  />
                 )}
         </main>
       </div>
@@ -76,6 +87,17 @@ export function LeadSourcesView() {
         open={newSheetOpen}
         onOpenChange={setNewSheetOpen}
         onCreated={id => setSelectedId(id, { history: 'push' })}
+      />
+
+      <AddCustomerSheet
+        open={addSheetState !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddSheetState(null)
+          }
+        }}
+        leadSourceSlug={addSheetState?.slug}
+        leadSourceName={addSheetState?.name}
       />
     </div>
   )

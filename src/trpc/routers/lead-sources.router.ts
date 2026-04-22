@@ -176,6 +176,48 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
+  // Aggregate performance across every lead source. Mirrors getStats shape so
+  // the PerformanceStrip renders identically for the "All" pane and per-source
+  // panes. `total` counts every customer (including legacy NULL-source rows);
+  // `range` applies the time window; `signedProposals` is DISTINCT customers
+  // with an approved proposal.
+  getAggregateStats: agentProcedure
+    .input(timeRangeInput)
+    .query(async ({ ctx, input }) => {
+      requireSuperAdmin(ctx.session.user.role)
+
+      const rangeFrom = input.from ? new Date(input.from) : null
+      const rangeTo = input.to ? new Date(input.to) : null
+      const rangeClauses = [
+        rangeFrom ? gte(customers.createdAt, rangeFrom.toISOString()) : undefined,
+        rangeTo ? lte(customers.createdAt, rangeTo.toISOString()) : undefined,
+      ].filter(Boolean)
+
+      const [totalRow] = await db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(customers)
+
+      const rangeQuery = db
+        .select({ count: sql<number>`COUNT(*)::int` })
+        .from(customers)
+      const [rangeRow] = rangeClauses.length > 0
+        ? await rangeQuery.where(and(...rangeClauses))
+        : await rangeQuery
+
+      const [signedRow] = await db
+        .select({ count: countDistinct(customers.id).mapWith(Number) })
+        .from(customers)
+        .innerJoin(meetings, eq(meetings.customerId, customers.id))
+        .innerJoin(proposals, eq(proposals.meetingId, meetings.id))
+        .where(eq(proposals.status, 'approved'))
+
+      return {
+        total: totalRow?.count ?? 0,
+        range: rangeRow?.count ?? 0,
+        signedProposals: signedRow?.count ?? 0,
+      }
+    }),
+
   // Dynamic list of years with at least one customer for any lead source.
   // Used to build time-range chips (2026, 2025, …).
   getYearsWithActivity: agentProcedure
@@ -230,6 +272,44 @@ export const leadSourcesRouter = createTRPCRouter({
           pipeline: customers.pipeline,
         })
         .from(customers)
+        .where(where)
+        .orderBy(desc(customers.createdAt))
+        .limit(input.limit)
+        .offset(input.offset)
+    }),
+
+  // Customers across every lead source (plus legacy NULL-source rows). Used by
+  // the "All" pane. Joins lead_sources so the table can show which source
+  // each customer came from; NULL joins mean "unknown legacy import".
+  getAllCustomers: agentProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      limit: z.number().int().min(1).max(500).default(100),
+      offset: z.number().int().min(0).default(0),
+    }))
+    .query(async ({ ctx, input }) => {
+      requireSuperAdmin(ctx.session.user.role)
+
+      const where = input.search
+        ? or(
+            ilike(customers.name, `%${input.search}%`),
+            ilike(customers.email, `%${input.search}%`),
+          )
+        : undefined
+
+      return db
+        .select({
+          id: customers.id,
+          name: customers.name,
+          email: customers.email,
+          createdAt: customers.createdAt,
+          pipeline: customers.pipeline,
+          leadSourceId: customers.leadSourceId,
+          leadSourceName: leadSourcesTable.name,
+          leadSourceSlug: leadSourcesTable.slug,
+        })
+        .from(customers)
+        .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
         .where(where)
         .orderBy(desc(customers.createdAt))
         .limit(input.limit)
