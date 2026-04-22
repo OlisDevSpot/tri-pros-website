@@ -2,46 +2,34 @@
 
 import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 
-import { useQuery } from '@tanstack/react-query'
-
-import { resolveTimeRange } from '@/features/lead-sources-admin/lib/resolve-time-range'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { cn } from '@/shared/lib/utils'
-import { useTRPC } from '@/trpc/helpers'
 
 interface PerformanceStripProps {
-  leadSourceId: string
+  stats: { total: number, range: number, signedProposals: number } | undefined
   chip: TimeRangeChip
+  isLoading: boolean
+  /** Override the `total` cell's label. Defaults to "All-time leads". */
+  totalLabel?: string
 }
 
-export function PerformanceStrip({ leadSourceId, chip }: PerformanceStripProps) {
-  const trpc = useTRPC()
-  const range = resolveTimeRange(chip)
-
-  const { data, isLoading } = useQuery(
-    trpc.leadSourcesRouter.getStats.queryOptions({
-      id: leadSourceId,
-      from: range.from,
-      to: range.to,
-    }),
-  )
-
+export function PerformanceStrip({ stats, chip, isLoading, totalLabel }: PerformanceStripProps) {
   return (
     <div className="grid grid-cols-3 gap-6">
       <StatCell
-        label="All-time leads"
-        value={data?.total}
+        label={totalLabel ?? 'All-time leads'}
+        value={stats?.total}
         loading={isLoading}
       />
       <StatCell
         label={chip.kind === 'all' ? 'Leads (all time)' : `Leads · ${chip.label}`}
-        value={data?.range}
+        value={stats?.range}
         loading={isLoading}
         emphasis
       />
       <StatCell
         label="Signed proposals"
-        value={data?.signedProposals}
+        value={stats?.signedProposals}
         loading={isLoading}
       />
     </div>

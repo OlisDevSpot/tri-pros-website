@@ -5,6 +5,7 @@ import type { AppRouterOutputs } from '@/trpc/routers/app'
 import { RadioTowerIcon, SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
+import { ALL_PSEUDO_ID } from '@/features/lead-sources-admin/constants/pseudo-ids'
 import { Input } from '@/shared/components/ui/input'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
@@ -15,6 +16,7 @@ type LeadSourceRow = AppRouterOutputs['leadSourcesRouter']['list'][number]
 interface LeadSourceListProps {
   sources: LeadSourceRow[] | undefined
   isLoading: boolean
+  /** `selectedId` may be a uuid or the literal `'all'`. */
   selectedId: string | null
   onSelect: (id: string) => void
 }
@@ -35,6 +37,13 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: Lea
     )
   }, [sources, search])
 
+  const allTotal = useMemo(
+    () => (sources ?? []).reduce((acc, s) => acc + (s.totalLeads ?? 0), 0),
+    [sources],
+  )
+
+  const isAllSelected = selectedId === ALL_PSEUDO_ID
+
   return (
     <div className="flex flex-col gap-3">
       <div className="relative">
@@ -52,6 +61,16 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: Lea
       </div>
 
       <nav aria-label="Lead sources" className="flex flex-col gap-1">
+        {/* Pinned "All" pseudo-row — always at top, not filtered, not searchable. */}
+        <AllRow
+          total={allTotal}
+          isSelected={isAllSelected}
+          onSelect={() => onSelect(ALL_PSEUDO_ID)}
+          disabled={isLoading}
+        />
+
+        <div role="separator" aria-hidden="true" className="mx-1 my-1 h-px bg-border/40" />
+
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)
           : filtered.length === 0
@@ -73,6 +92,41 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect }: Lea
               ))}
       </nav>
     </div>
+  )
+}
+
+interface AllRowProps {
+  total: number
+  isSelected: boolean
+  onSelect: () => void
+  disabled: boolean
+}
+
+function AllRow({ total, isSelected, onSelect, disabled }: AllRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={disabled}
+      aria-current={isSelected ? 'true' : undefined}
+      className={cn(
+        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-colors',
+        isSelected
+          ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
+          : 'hover:bg-muted/60 focus-visible:bg-muted/60',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+        disabled && 'pointer-events-none opacity-50',
+      )}
+    >
+      <span className="flex min-w-0 flex-1 flex-col gap-px overflow-hidden">
+        <span className="truncate text-sm font-medium text-foreground">All</span>
+        <span className="truncate text-xs text-muted-foreground">Every lead source combined</span>
+      </span>
+      <span className="flex flex-col items-end gap-px tabular-nums">
+        <span className="text-sm font-semibold text-foreground">{total}</span>
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Total</span>
+      </span>
+    </button>
   )
 }
 
