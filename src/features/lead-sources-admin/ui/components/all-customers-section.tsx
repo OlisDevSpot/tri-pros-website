@@ -2,36 +2,65 @@
 
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
+import { useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 
-import { DateTimePicker } from '@/shared/components/date-time-picker'
+import { buildCustomerColumns } from '@/features/lead-sources-admin/ui/components/customer-table-columns'
+import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { Input } from '@/shared/components/ui/input'
-import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
-import { CustomerPipelineBadge } from '@/shared/entities/customers/components/customer-pipeline-badge'
-import { formatDateCell } from '@/shared/lib/formatters'
+import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
+import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
+import { useDebounce } from '@/shared/hooks/use-debounce'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-type AllCustomerRow = AppRouterOutputs['leadSourcesRouter']['getAllCustomers'][number]
+type AllCustomerRow = AppRouterOutputs['leadSourcesRouter']['getAllCustomers']['rows'][number]
 
-/**
- * Lightweight cross-source customers table. Same shape as
- * LeadSourceCustomersSection but with an added "Source" column. Will be
- * replaced by the shared DataTable primitive in a follow-up pass.
- */
+const PAGE_SIZE = 15
+
 export function AllCustomersSection() {
   const trpc = useTRPC()
+  const qc = useQueryClient()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
-  const [search, setSearch] = useState('')
+  const { setModal, open: openModal } = useModalStore()
 
-  const { data, isLoading } = useQuery(
-    trpc.leadSourcesRouter.getAllCustomers.queryOptions({
-      search: search.trim() || undefined,
-      limit: 100,
+  const [page, setPage] = useQueryState('ap', parseAsInteger.withDefault(1))
+  const [rawSearch, setRawSearch] = useQueryState('aq', parseAsString.withDefault(''))
+  const search = useDebounce(rawSearch.trim(), 250)
+
+  const offset = (Math.max(page, 1) - 1) * PAGE_SIZE
+  const queryInput = useMemo(
+    () => ({
+      search: search || undefined,
+      limit: PAGE_SIZE,
+      offset,
     }),
+    [search, offset],
   )
+
+  const { data, isLoading, isFetching } = useQuery(
+    trpc.leadSourcesRouter.getAllCustomers.queryOptions(queryInput),
+  )
+
+  // Prefetch the next page so Next-click is instant.
+  useEffect(() => {
+    if (!data) {
+      return
+    }
+    const hasNext = offset + PAGE_SIZE < data.total
+    if (!hasNext) {
+      return
+    }
+    void qc.prefetchQuery(
+      trpc.leadSourcesRouter.getAllCustomers.queryOptions({
+        ...queryInput,
+        offset: offset + PAGE_SIZE,
+      }),
+    )
+  }, [data, offset, queryInput, qc, trpc.leadSourcesRouter.getAllCustomers])
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.updateCreatedAt.mutationOptions({
@@ -44,117 +73,80 @@ export function AllCustomersSection() {
     }),
   )
 
-  const total = data?.length ?? 0
+  const handleViewProfile = useCallback((customerId: string) => {
+    setModal({
+      accessor: 'CustomerProfile',
+      Component: CustomerProfileModal,
+      props: { customerId },
+    })
+    openModal()
+  }, [setModal, openModal])
 
-  const header = useMemo(() => (
-    <div className="flex items-end justify-between gap-4">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          All customers
-        </h3>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {isLoading ? 'Loading…' : `${total} shown`}
-        </span>
-      </div>
-      <Input
-        type="search"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        placeholder="Filter by name or email…"
-        autoComplete="off"
-        spellCheck={false}
-        className="max-w-xs"
-      />
-    </div>
-  ), [isLoading, total, search])
+  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<AllCustomerRow>({
+    onView: entity => handleViewProfile(entity.id),
+  })
 
-  return (
-    <section aria-label="All customers" className="flex flex-col gap-3">
-      {header}
-      {isLoading
-        ? <Skeleton className="h-56 w-full" />
-        : total === 0
-          ? <EmptyState search={search} />
-          : (
-              <div className="overflow-hidden rounded-lg border border-border/60">
-                <table className="w-full text-sm">
-                  <thead className="border-b border-border/60 bg-muted/40">
-                    <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      <th className="px-3 py-2">Name</th>
-                      <th className="px-3 py-2">Email</th>
-                      <th className="px-3 py-2">Source</th>
-                      <th className="px-3 py-2">Pipeline</th>
-                      <th className="px-3 py-2 text-right">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/40">
-                    {data?.map(c => (
-                      <Row
-                        key={c.id}
-                        customer={c}
-                        onUpdateCreatedAt={(date) => {
-                          updateCreatedAt.mutate({ customerId: c.id, createdAt: date.toISOString() })
-                        }}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-    </section>
+  const columns = useMemo(
+    () => buildCustomerColumns<AllCustomerRow>({ includeSource: true }),
+    [],
   )
-}
 
-interface RowProps {
-  customer: AllCustomerRow
-  onUpdateCreatedAt: (date: Date) => void
-}
+  const meta = useMemo(
+    () => ({
+      customerActions: () => actions,
+      onUpdateCreatedAt: (customerId: string, date: Date) =>
+        updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
+    }),
+    [actions, updateCreatedAt],
+  )
 
-function Row({ customer, onUpdateCreatedAt }: RowProps) {
-  const { relative, dayAtTime } = formatDateCell(customer.createdAt)
+  const total = data?.total ?? 0
+  const rows = data?.rows ?? []
+
   return (
-    <tr className="hover:bg-muted/40 motion-safe:transition-colors">
-      <td className="px-3 py-2.5 font-medium text-foreground">{customer.name}</td>
-      <td className="px-3 py-2.5 text-muted-foreground">{customer.email ?? '—'}</td>
-      <td className="px-3 py-2.5 text-xs text-muted-foreground">
-        {customer.leadSourceName ?? 'Unknown'}
-      </td>
-      <td className="px-3 py-2.5">
-        <CustomerPipelineBadge pipeline={customer.pipeline} />
-      </td>
-      <td className="px-3 py-2.5 text-right" onClick={e => e.stopPropagation()}>
-        <DateTimePicker
-          value={new Date(customer.createdAt)}
-          onChange={(date) => {
-            if (date) {
-              onUpdateCreatedAt(date)
+    <section aria-label="All customers" className="flex min-h-96 flex-col gap-3">
+      <DeleteConfirmDialog />
+
+      <div className="flex items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            All customers
+          </h3>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {isLoading ? 'Loading…' : `${total.toLocaleString()} total`}
+          </span>
+        </div>
+        <Input
+          type="search"
+          value={rawSearch}
+          onChange={(e) => {
+            void setRawSearch(e.target.value || null, { history: 'replace' })
+            if (page !== 1) {
+              void setPage(1, { history: 'replace' })
             }
           }}
-          className="ml-auto"
-        >
-          <div className="flex flex-col items-end">
-            <span className="text-sm font-medium leading-tight">{relative}</span>
-            <span className="text-xs text-muted-foreground tabular-nums">{dayAtTime}</span>
-          </div>
-        </DateTimePicker>
-      </td>
-    </tr>
-  )
-}
+          placeholder="Filter by name or email…"
+          autoComplete="off"
+          spellCheck={false}
+          className="max-w-xs"
+        />
+      </div>
 
-function EmptyState({ search }: { search: string }) {
-  return (
-    <div className="rounded-lg border border-dashed border-border/60 px-4 py-8 text-center text-sm text-muted-foreground">
-      {search
-        ? (
-            <>
-              No customers match
-              {' '}
-              <span className="font-medium text-foreground">{`“${search}”`}</span>
-              .
-            </>
-          )
-        : 'No customers yet. Once leads come in through any intake URL, they\u2019ll appear here.'}
-    </div>
+      <DataTable
+        tableId="all-customers"
+        columns={columns}
+        data={rows}
+        meta={meta}
+        entityName="customer"
+        onRowClick={row => handleViewProfile(row.id)}
+        serverPagination={{
+          pageIndex: Math.max(page, 1) - 1,
+          pageSize: PAGE_SIZE,
+          rowCount: total,
+          onPageChange: nextIndex => setPage(nextIndex + 1, { history: 'push' }),
+          isFetching,
+        }}
+      />
+    </section>
   )
 }

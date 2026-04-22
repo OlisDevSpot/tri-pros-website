@@ -49,6 +49,23 @@ export type DataTableFilterConfig
     | DataTableMultiSelectFilter
     | DataTableTimePresetFilter
 
+// -- Server-side pagination control --
+
+/**
+ * Controlled pagination state for server-paged tables. When present, DataTable
+ * switches to `manualPagination` — caller passes the current-page slice as
+ * `data` and reports the global row count via `rowCount`.
+ */
+export interface DataTableServerPagination {
+  pageIndex: number
+  pageSize: number
+  rowCount: number
+  onPageChange: (pageIndex: number) => void
+  onPageSizeChange?: (pageSize: number) => void
+  /** When true, render a muted "Loading…" hint in the pagination bar. */
+  isFetching?: boolean
+}
+
 // -- DataTable props --
 
 export interface DataTableProps<TData, TMeta = unknown> {
@@ -59,6 +76,7 @@ export interface DataTableProps<TData, TMeta = unknown> {
   tableId?: string
   filterConfig?: DataTableFilterConfig[]
   defaultSort?: SortingState
+  /** Client-side page size. Ignored when `serverPagination` is provided. */
   pageSize?: number
   entityName?: string
   rowDataAttribute?: string
@@ -66,4 +84,10 @@ export interface DataTableProps<TData, TMeta = unknown> {
   onRowClick?: (row: TData) => void
   onFilteredCountChange?: (count: number) => void
   onFilteredDataChange?: (data: TData[]) => void
+  /**
+   * Opt into server-side pagination. When set, the caller owns page state and
+   * passes only the current page's rows via `data`. `rowCount` reports the
+   * global total so page-count math stays correct.
+   */
+  serverPagination?: DataTableServerPagination
 }
