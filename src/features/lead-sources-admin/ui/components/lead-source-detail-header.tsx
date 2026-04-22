@@ -3,10 +3,13 @@
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
 import { motion } from 'motion/react'
+import { useId } from 'react'
 
 import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entrance-motion'
 import { EntityActionDropdown } from '@/shared/components/entity-actions/ui/entity-action-dropdown'
+import { Switch } from '@/shared/components/ui/switch'
 import { useLeadSourceActionConfigs } from '@/shared/entities/lead-sources/hooks/use-lead-source-action-configs'
+import { useLeadSourceActions } from '@/shared/entities/lead-sources/hooks/use-lead-source-actions'
 import { cn } from '@/shared/lib/utils'
 
 type LeadSourceRow = AppRouterOutputs['leadSourcesRouter']['getById']
@@ -38,7 +41,7 @@ export function LeadSourceDetailHeader({ source }: { source: LeadSourceRow }) {
           </motion.h2>
         </div>
         <motion.div {...entrance(0.08, 6)} className="flex shrink-0 items-center gap-3">
-          <StatusIndicator isActive={source.isActive} />
+          <ActiveToggle source={source} />
           <EntityActionDropdown entity={source} actions={actions} orientation="horizontal" />
         </motion.div>
       </header>
@@ -47,14 +50,38 @@ export function LeadSourceDetailHeader({ source }: { source: LeadSourceRow }) {
   )
 }
 
-function StatusIndicator({ isActive }: { isActive: boolean }) {
+interface ActiveToggleProps {
+  source: Pick<LeadSourceRow, 'id' | 'isActive'>
+}
+
+function ActiveToggle({ source }: ActiveToggleProps) {
+  const { toggleActive } = useLeadSourceActions()
+  const switchId = useId()
+
+  const pendingForThis = toggleActive.isPending && toggleActive.variables?.id === source.id
+  const displayActive = pendingForThis
+    ? toggleActive.variables?.isActive ?? source.isActive
+    : source.isActive
+
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span
-        aria-hidden="true"
-        className={cn('size-1.5 rounded-full', isActive ? 'bg-emerald-500' : 'bg-muted-foreground/40')}
+    <span className="inline-flex items-center gap-2">
+      <Switch
+        id={switchId}
+        checked={displayActive}
+        disabled={pendingForThis}
+        onCheckedChange={next => toggleActive.mutate({ id: source.id, isActive: next })}
+        aria-label={displayActive ? 'Deactivate source' : 'Activate source'}
+        className="data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-500"
       />
-      {isActive ? 'Active' : 'Inactive'}
+      <label
+        htmlFor={switchId}
+        className={cn(
+          'cursor-pointer select-none text-xs tabular-nums motion-safe:transition-colors',
+          displayActive ? 'text-foreground' : 'text-muted-foreground',
+        )}
+      >
+        {displayActive ? 'Active' : 'Inactive'}
+      </label>
     </span>
   )
 }
