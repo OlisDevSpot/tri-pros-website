@@ -63,16 +63,19 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect, range
       </div>
 
       <nav aria-label="Lead sources" className="flex flex-col gap-1">
-        {/* Pinned "All" pseudo-row — always at top, not filtered, not searchable. */}
-        <AllRow
-          total={allInRange}
-          rangeLabel={rangeLabel}
-          isSelected={isAllSelected}
-          onSelect={() => onSelect(ALL_PSEUDO_ID)}
-          disabled={isLoading}
-        />
+        {/* Pinned "All" pseudo-row — desktop only. On mobile the list itself
+            is the "all" state, so tapping the row would be a no-op. */}
+        <div className="hidden lg:contents">
+          <AllRow
+            total={allInRange}
+            rangeLabel={rangeLabel}
+            isSelected={isAllSelected}
+            onSelect={() => onSelect(ALL_PSEUDO_ID)}
+            disabled={isLoading}
+          />
 
-        <div role="separator" aria-hidden="true" className="mx-1 my-1 h-px bg-border/40" />
+          <div role="separator" aria-hidden="true" className="mx-1 my-1 h-px bg-border/40" />
+        </div>
 
         {isLoading
           ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)

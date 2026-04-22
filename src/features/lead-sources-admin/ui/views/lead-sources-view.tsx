@@ -17,6 +17,7 @@ import { NewLeadSourceSheet } from '@/features/lead-sources-admin/ui/components/
 import { SourceDetail } from '@/features/lead-sources-admin/ui/components/source-detail'
 import { TimeRangeChips } from '@/features/lead-sources-admin/ui/components/time-range-chips'
 import { Button } from '@/shared/components/ui/button'
+import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
 interface AddSheetState {
@@ -84,7 +85,12 @@ export function LeadSourcesView() {
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label="Lead source list"
-          className="flex w-full min-w-0 flex-1 flex-col border-r border-border/40 sm:max-w-xs lg:max-w-sm"
+          className={cn(
+            'min-w-0 flex-1 flex-col border-r border-border/40 sm:max-w-xs lg:max-w-sm',
+            // Mobile drill-down: list shows only when no specific source is selected
+            // (i.e. `id=all`). On lg+ the split pane always shows both panes.
+            isAllSelected ? 'flex' : 'hidden lg:flex',
+          )}
         >
           <div className="min-h-0 flex-1 overflow-y-auto py-4">
             <LeadSourceList
@@ -99,7 +105,7 @@ export function LeadSourcesView() {
             <Button
               variant="outline"
               onClick={() => setNewSheetOpen(true)}
-              className="w-full justify-start gap-2 border-dashed text-muted-foreground motion-safe:transition-colors hover:border-solid hover:bg-muted/60 hover:text-foreground"
+              className="h-11 w-full justify-start gap-2 border-dashed text-muted-foreground motion-safe:transition-colors hover:border-solid hover:bg-muted/60 hover:text-foreground sm:h-9"
             >
               <PlusIcon className="size-4" />
               New lead source
@@ -107,7 +113,13 @@ export function LeadSourcesView() {
           </div>
         </aside>
 
-        <main className="flex min-h-0 min-w-0 flex-3 flex-col">
+        <main
+          className={cn(
+            'min-h-0 min-w-0 flex-3 flex-col',
+            // Mobile: main pane only when a specific source is selected. Desktop shows both.
+            isAllSelected ? 'hidden lg:flex' : 'flex',
+          )}
+        >
           {!isLoading && !hasSources
             ? <EmptyState onCreate={() => setNewSheetOpen(true)} />
             : isAllSelected
@@ -125,6 +137,7 @@ export function LeadSourcesView() {
                     activeChip={activeChip}
                     range={range}
                     onAddCustomer={src => setAddSheetState(src)}
+                    onBack={() => setSelectedId(ALL_PSEUDO_ID, { history: 'push' })}
                   />
                 )}
         </main>

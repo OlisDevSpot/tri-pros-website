@@ -55,7 +55,7 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
           </motion.h2>
         </div>
         <motion.div {...entrance(0.08, 6)} className="shrink-0">
-          <Button size="sm" onClick={onAddCustomer} className="gap-1.5">
+          <Button size="sm" onClick={onAddCustomer} className="h-11 gap-1.5 sm:h-8">
             <PlusIcon className="size-4" />
             Add customer
           </Button>
