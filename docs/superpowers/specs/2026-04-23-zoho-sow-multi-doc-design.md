@@ -200,16 +200,16 @@ Signature blocks on the template's sow-1/sow-2 pages are **unaffected** — we o
 
 ### 6.5 Attaching the PDF
 
-**Hypothesized endpoint** (confirmed at impl time, see §9):
+**Confirmed endpoint** (verified 2026-04-23 via `scripts/verify-add-files-endpoint.ts`):
 ```
-POST https://sign.zoho.com/api/v1/requests/{request_id}
+PUT https://sign.zoho.com/api/v1/requests/{request_id}
 Content-Type: multipart/form-data
 Body:
-  data={JSON, typically empty object}
+  data={"requests": {}}                                              ← required wrapper; empty inner object is fine
   file=<PDF binary, filename: scope-of-work-{proposal.label}.pdf>
 ```
 
-Based on Zoho's `/requests` creation pattern (documented multipart shape) and the `addFilesToRequest` SDK method which wraps an underlying REST call. The exact path will be validated via live test before code lands (§9).
+The `data.requests` wrapper is mandatory — without it, Zoho returns `9008 requests occurs less than minimum occurance of 1`. Passing an empty `{}` inner object accepts the existing request metadata as-is and just adds the file. Response is HTTP 200 with the updated request object echoing the template name.
 
 **New contractService method:**
 
@@ -220,7 +220,7 @@ addFilesToRequest: async (
 ) => Promise<void>
 ```
 
-**Reference-only attached file:** the PDF has no signer action fields of its own. Per Zoho's model, actions are per-envelope not per-file; signatures render only where fields exist. Files without fields become static reference pages in the signed packet. Also validated via live test in §9.
+**Reference-only attached file (confirmed):** the PDF has no signer action fields of its own. Zoho accepts the envelope as-is; the attached file appears as static reference pages ordered after the template doc (`document_order=1` vs template's `document_order=0`). Verified via live test on 2026-04-23.
 
 ## 7. Error handling
 

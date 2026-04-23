@@ -1209,14 +1209,15 @@ In `src/shared/services/contract.service.ts`, inside `createContractService` sco
 async function addFilesToRequest(requestId: string, files: Array<{ name: string, buffer: Buffer, mime: string }>): Promise<void> {
   const auth = await getAuthHeader()
   const form = new FormData()
-  form.append('data', JSON.stringify({}))
+  // Zoho requires the `requests` wrapper in the data field; empty inner
+  // object means "keep existing request metadata, just add the file".
+  // Confirmed via pre-flight Task 0 (see spec §6.5).
+  form.append('data', JSON.stringify({ requests: {} }))
   for (const f of files) {
     form.append('file', new Blob([f.buffer], { type: f.mime }), f.name)
   }
-  // Endpoint confirmed in pre-flight Task 0 — use the exact path recorded
-  // in spec §6.5. If pre-flight confirmed the hypothesized path, this is:
   const res = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
-    method: 'POST',
+    method: 'PUT',
     headers: auth,   // no explicit Content-Type; FormData sets multipart boundary
     body: form,
   })
