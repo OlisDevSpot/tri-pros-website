@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import type { Content } from 'pdfmake/interfaces'
 import assert from 'node:assert/strict'
 import { buildSowDocDefinition } from '@/shared/services/pdf/sow-doc-definition'
 
@@ -43,24 +44,44 @@ const proposal = {
 
 const docDef = buildSowDocDefinition(proposal)
 
-assert.ok(docDef.content, 'has content array')
-assert.ok(Array.isArray(docDef.content), 'content is array')
+assert.ok(Array.isArray(docDef.content), 'content is an array')
+const content: Content[] = docDef.content
 
-const content = docDef.content as unknown as Array<Record<string, unknown>>
-assert.equal(content[0].text, 'Scope of Work', 'first block is doc title')
-assert.ok(String(content[1].text ?? '').includes('Test Proposal'), 'subtitle mentions proposal label')
-assert.ok(String(content[1].text ?? '').includes('Test Customer'), 'subtitle mentions customer')
+function textOf(c: Content): string | undefined {
+  if (typeof c === 'object' && c !== null && 'text' in c && typeof c.text === 'string') {
+    return c.text
+  }
+  return undefined
+}
 
-const itemTitles = content.filter(c => c.style === 'itemTitle')
+function styleOf(c: Content): string | undefined {
+  if (typeof c === 'object' && c !== null && 'style' in c && typeof c.style === 'string') {
+    return c.style
+  }
+  return undefined
+}
+
+function pageBreakOf(c: Content): string | undefined {
+  if (typeof c === 'object' && c !== null && 'pageBreak' in c && typeof c.pageBreak === 'string') {
+    return c.pageBreak
+  }
+  return undefined
+}
+
+assert.equal(textOf(content[0]), 'Scope of Work', 'first block is doc title')
+const subtitle = textOf(content[1]) ?? ''
+assert.ok(subtitle.includes('Test Proposal'), 'subtitle mentions proposal label')
+assert.ok(subtitle.includes('Test Customer'), 'subtitle mentions customer')
+
+const itemTitles = content.filter(c => styleOf(c) === 'itemTitle')
 assert.equal(itemTitles.length, 2, 'two item titles')
-assert.equal(itemTitles[0].pageBreak, undefined, 'first item has no pageBreak')
-assert.equal(itemTitles[1].pageBreak, 'before', 'second item has pageBreak:before')
-assert.ok(String(itemTitles[0].text).includes('Sod installation'), 'first title correct')
-assert.ok(String(itemTitles[1].text).includes('Cabinet refinish'), 'second title correct')
+assert.equal(pageBreakOf(itemTitles[0]), undefined, 'first item has no pageBreak')
+assert.equal(pageBreakOf(itemTitles[1]), 'before', 'second item has pageBreak:before')
+assert.ok((textOf(itemTitles[0]) ?? '').includes('Sod installation'), 'first title correct')
+assert.ok((textOf(itemTitles[1]) ?? '').includes('Cabinet refinish'), 'second title correct')
 
 assert.ok(docDef.styles, 'styles declared')
-const styles = docDef.styles as Record<string, unknown>
-assert.ok(styles.itemTitle, 'itemTitle style')
-assert.ok(styles.h2, 'h2 style')
+assert.ok(docDef.styles?.itemTitle, 'itemTitle style')
+assert.ok(docDef.styles?.h2, 'h2 style')
 
 console.log('✅ buildSowDocDefinition verified')

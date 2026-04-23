@@ -62,8 +62,10 @@ function renderBlock(node: TiptapNode): PdfMakeContent | null {
     default: {
       if (Array.isArray(node.content)) {
         const children = node.content.map(renderBlock).filter((x): x is PdfMakeContent => x !== null)
-        if (children.length === 1) return children[0]
-        if (children.length > 1) return { stack: children }
+        if (children.length === 1)
+          return children[0]
+        if (children.length > 1)
+          return { stack: children }
       }
       return null
     }
@@ -75,8 +77,10 @@ function renderListItem(item: TiptapNode): PdfMakeContent {
     return ''
   }
   const children = item.content.map(renderBlock).filter((x): x is PdfMakeContent => x !== null)
-  if (children.length === 0) return ''
-  if (children.length === 1) return children[0]
+  if (children.length === 0)
+    return ''
+  if (children.length === 1)
+    return children[0]
   return { stack: children }
 }
 
@@ -88,9 +92,12 @@ function renderInline(nodes: TiptapNode[]): TextRun[] {
     if (n.type === 'text') {
       const run: TextRun = { text: n.text ?? '' }
       for (const mark of n.marks ?? []) {
-        if (mark.type === 'bold') run.bold = true
-        if (mark.type === 'italic') run.italics = true
-        if (mark.type === 'underline') run.decoration = 'underline'
+        if (mark.type === 'bold')
+          run.bold = true
+        if (mark.type === 'italic')
+          run.italics = true
+        if (mark.type === 'underline')
+          run.decoration = 'underline'
       }
       runs.push(run)
     }
@@ -106,7 +113,9 @@ function isPlainTextRun(run: TextRun): boolean {
 }
 
 function extractPlaintext(node: TiptapNode): string {
-  if (node.type === 'text') return node.text ?? ''
-  if (!Array.isArray(node.content)) return ''
+  if (node.type === 'text')
+    return node.text ?? ''
+  if (!Array.isArray(node.content))
+    return ''
   return node.content.map(extractPlaintext).join('')
 }
