@@ -1,11 +1,13 @@
 import type { Buffer } from 'node:buffer'
 import type { ZohoActionStatus, ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
+import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 import { pdfService } from '@/shared/services/pdf.service'
 import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
+import { isLongSow } from '@/shared/services/zoho-sign/lib/is-long-sow'
 
 interface ZohoCreateDocResponse {
   requests: {
@@ -116,17 +118,19 @@ function createContractService() {
       throw new Error(`Proposal ${proposalId} not found`)
     }
 
-    // Probe mode so we know whether to pre-generate the PDF.
-    const probe = buildSigningRequest(proposal)
+    // Decide path BEFORE building the request — buildSigningRequest in long
+    // mode requires sowPages, which we only know after generating the PDF.
+    const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
 
-    if (probe.mode === 'short') {
-      const res = await createFromTemplate(probe.templateId, probe.body, false)
+    if (!isLongSow(sowText)) {
+      const { templateId, body } = buildSigningRequest(proposal, { mode: 'short' })
+      const res = await createFromTemplate(templateId, body, false)
       const { requestId, status } = await parseDraftResponse(res)
       await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
       return { requestId, status }
     }
 
-    // Long path: generate SOW PDF, then build the request with accurate page count.
+    // Long path: generate SOW PDF first, then build the request with accurate page count.
     const pdfBuffer = await pdfService.generateSowPdf({ proposalId })
     const sowPages = await countPdfPages(pdfBuffer)
     const { templateId, body } = buildSigningRequest(proposal, { mode: 'long', sowPages })
