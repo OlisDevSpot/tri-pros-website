@@ -10,6 +10,7 @@ import { FormConfigEditor } from '@/features/lead-sources-admin/ui/components/fo
 import { IntakeUrlCard } from '@/features/lead-sources-admin/ui/components/intake-url-card'
 import { LeadSourceCustomersSection } from '@/features/lead-sources-admin/ui/components/lead-source-customers-section'
 import { LeadSourceDetailHeader } from '@/features/lead-sources-admin/ui/components/lead-source-detail-header'
+import { MobileBackButton } from '@/features/lead-sources-admin/ui/components/mobile-back-button'
 import { PerformanceStrip } from '@/features/lead-sources-admin/ui/components/performance-strip'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -24,9 +25,11 @@ interface SourceDetailProps {
   activeChip: TimeRangeChip
   range: { from?: string, to?: string }
   onAddCustomer: (source: { slug: string, name: string }) => void
+  /** Pops back to the list on mobile. Button hidden on lg+. */
+  onBack?: () => void
 }
 
-export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer }: SourceDetailProps) {
+export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, onBack }: SourceDetailProps) {
   const trpc = useTRPC()
   const [tab, setTab] = useQueryState(
     'tab',
@@ -59,6 +62,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer }:
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6 p-6">
+      {onBack && <MobileBackButton label="All sources" onClick={onBack} />}
       <LeadSourceDetailHeader source={source} />
 
       <Tabs
@@ -100,7 +104,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer }:
             <Button
               size="sm"
               onClick={() => onAddCustomer({ slug: source.slug, name: source.name })}
-              className="gap-1.5"
+              className="h-11 gap-1.5 sm:h-8"
             >
               <PlusIcon className="size-4" />
               Add customer
