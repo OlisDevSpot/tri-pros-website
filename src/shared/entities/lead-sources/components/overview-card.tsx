@@ -53,7 +53,7 @@ function Root({ source, isSelected, onClick, children, className }: RootProps) {
         onClick={onClick}
         aria-current={isSelected ? 'true' : undefined}
         className={cn(
-          'group/card flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-[background-color,opacity,box-shadow] motion-safe:duration-200',
+          'group/card flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-[background-color,opacity,box-shadow] motion-safe:duration-200 sm:min-h-0',
           // The one primary-color moment in the list — the selected card.
           isSelected
             ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'

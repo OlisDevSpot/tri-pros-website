@@ -2,8 +2,17 @@ import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 import { ZOHO_SIGN_TEMPLATES } from '../constants'
+import { isLongSow } from './is-long-sow'
+import { packSowText } from './pack-sow-text'
 
-export function buildSigningRequest(proposal: ProposalWithCustomer) {
+interface BuildOptions {
+  /** Explicit path override. Defaults to auto-detection via isLongSow. */
+  mode?: 'short' | 'long'
+  /** Required when mode === 'long'; used in sow-1 pointer text. */
+  sowPages?: number
+}
+
+export function buildSigningRequest(proposal: ProposalWithCustomer, options: BuildOptions = {}) {
   const { customer, projectJSON, fundingJSON } = proposal
   const { data: project } = projectJSON
   const { data: funding } = fundingJSON
@@ -24,8 +33,26 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
   const { templateId, actions: actionIds } = isSenior ? ZOHO_SIGN_TEMPLATES.senior : ZOHO_SIGN_TEMPLATES.base
 
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
-  const sow1 = sowText.slice(0, 2000)
-  const sow2 = sowText.slice(2000, 6000)
+  const mode = options.mode ?? (isLongSow(sowText) ? 'long' : 'short')
+
+  let sow1: string
+  let sow2: string
+  if (mode === 'long') {
+    const pages = options.sowPages
+    if (pages == null) {
+      throw new Error('buildSigningRequest: sowPages required in long mode')
+    }
+    sow1 = `See attached Scope of Work document (${pages} ${pages === 1 ? 'page' : 'pages'}) — full details of the Proposed Scope of Work.`
+    sow2 = ''
+  }
+  else {
+    const packed = packSowText(sowText)
+    if (packed.overflow > 0) {
+      throw new Error(`buildSigningRequest: unexpected overflow (${packed.overflow} chars) on short path — route to long path`)
+    }
+    sow1 = packed.sow1
+    sow2 = packed.sow2
+  }
 
   const validThroughTimeframe = Number(project.validThroughTimeframe.replace(/\D/g, ''))
   const startDate = new Date()
@@ -36,6 +63,7 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
 
   return {
     templateId,
+    mode,
     body: {
       templates: {
         field_data: {
