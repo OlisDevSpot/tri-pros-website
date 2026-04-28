@@ -18,6 +18,15 @@ const nextConfig: NextConfig = {
   // points at the real pdfkit/js dir. outputFileTracingIncludes fixes
   // (2) by force-including the data/ folder so the AFM/ICC files
   // actually ship next to the code that reads them. Both are required.
+  //
+  // Important: pdfkit MUST be a direct dependency in package.json. It's
+  // pulled in transitively by pdfmake, but under pnpm's isolated layout
+  // a transitive dep has no top-level node_modules/<pkg> symlink, and
+  // Next.js's resolver can't see it from the project root — so the
+  // externalization check silently fails and webpack bundles pdfkit
+  // anyway. Promoting it to a direct dep at the version pdfmake wants
+  // (^0.18.0) creates the symlink and lets externalization actually take
+  // effect. pnpm dedupes, so no duplicate pdfkit install.
   // pnpm layout: real files live under .pnpm/pdfkit@<ver>/... — wildcard
   // survives version bumps.
   serverExternalPackages: ['pdfkit'],
