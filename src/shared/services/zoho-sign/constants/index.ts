@@ -52,6 +52,20 @@ export const ZOHO_SIGN_TEMPLATES = {
       homeowner: '563034000000079229',
     },
   },
+  /**
+   * Additional Work Description (upsell-only). Homeowner-signed only;
+   * contractor signer may be added later. Fields (per the inventory):
+   * sent-date, ho-name, ho-address, ho-city-state-zip, ho-phone,
+   * ho-email, sow (single field for short-form SOW inline),
+   * price-adjustment (signed amount — positive for added scope,
+   * negative for credits), start-date, completion-date.
+   */
+  awd: {
+    templateId: '563034000000079284',
+    actions: {
+      homeowner: '563034000000079297',
+    },
+  },
 } as const
 
 /**

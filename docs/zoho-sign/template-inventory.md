@@ -24,8 +24,9 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 - **Action IDs:**
   - contractor: `563034000000046252`
   - homeowner: `563034000000046258`
-- **Status:** existing — needs trim in Zoho UI (drop sow-1 / sow-2 fields once the registry-driven assembler ships in Phase 4)
-- **Fields (current; sow-1/sow-2 will be removed at trim time):**
+- **Status:** trimmed (sow-1/sow-2 removed)
+- **Last verified against Zoho:** 2026-04-28
+- **Fields:**
 
   | Field name | Type | Source |
   |---|---|---|
@@ -39,8 +40,8 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
   | completion-date | text | start-date + `validThroughTimeframe` |
   | tcp | text | `computeFinalTcp(funding)` |
   | deposit | text | `funding.depositAmount` |
-  | sow-1 | text (max 2000) | _legacy — removed at trim_ |
-  | sow-2 | text (max 2000) | _legacy — removed at trim_ |
+  | finance-charge | text | _legacy — not filled by codebase_ |
+  | sp-1, sp-2, sp-3, sp-4 | Formula | _Zoho-computed from `tcp`; do not fill_ |
 
 ---
 
@@ -53,8 +54,9 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 - **Action IDs:**
   - contractor: `563034000000055125`
   - homeowner: `563034000000055136`
-- **Status:** existing — needs trim in Zoho UI (same as main-hi-base)
-- **Fields:** same shape as `main-hi-base`.
+- **Status:** trimmed (sow-1/sow-2 + Text-3/4/5 placeholders removed)
+- **Last verified against Zoho:** 2026-04-28
+- **Fields:** same shape as `main-hi-base` (15 unique field labels, including `finance-charge` legacy + `sp-1..sp-4` formulas).
 
 ---
 
@@ -73,23 +75,27 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 ## awd — Additional Work Description (UPSELL)
 
 - **Source:** zoho-template
-- **Zoho template ID:** TBD — user authoring
+- **Zoho template ID:** `563034000000079284`
+- **Template name in Zoho:** `tpr-additional-work-standalone.pdf`
 - **Applicable scenarios:** upsell
 - **Rule:** required (every upsell)
-- **Action IDs:** TBD
-- **Status:** pending. Once authored, this entry gets concrete IDs and the registry's commented-out AWD block is uncommented.
-- **Expected fields (pending confirmation):**
+- **Action IDs:**
+  - homeowner: `563034000000079297` (Homeowner-only by design — contractor signer may be added later if needed)
+- **Last verified against Zoho:** 2026-04-28
+- **Fields:**
 
   | Field name | Type | Source |
   |---|---|---|
   | ho-name | text | `customer.name` |
-  | original-project-ref | text | TBD (project name, original contract date, etc.) |
-  | new-tcp | text | `computeFinalTcp(funding)` |
-  | new-deposit | text | `funding.depositAmount` |
-  | start-date | text | today + 3 days |
-  | completion-date | text | start-date + `validThroughTimeframe` |
-  | sow-1 | text (max 2000) | inline SOW first half (only when `!isLongSow`) |
-  | sow-2 | text (max 2000) | inline SOW second half (only when `!isLongSow`) |
+  | ho-address | text | `customer.address` |
+  | ho-city-state-zip | text | `${city}, ${state} ${zip}` |
+  | ho-phone | text | `customer.phone` |
+  | ho-email | text | `customer.email` |
+  | sow | text | `sowText` when `!isLongSow`; empty when long (sow-pdf doc carries the content) |
+  | price-adjustment | text | `computeFinalTcp(funding)` — signed amount; positive for added scope, negative for credits/discounts |
+  | sent-date | CustomDate | today (fills via `field_date_data`) |
+  | start-date | CustomDate | today + 3 days (fills via `field_date_data`) |
+  | completion-date | CustomDate | start-date + `validThroughTimeframe` (fills via `field_date_data`) |
 
 ---
 

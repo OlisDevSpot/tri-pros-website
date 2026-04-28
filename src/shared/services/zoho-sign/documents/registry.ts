@@ -123,16 +123,34 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       upsell: { kind: 'required-when', predicate: ctx => ctx.isLongSow },
     },
   },
-  // AWD — Additional Work Description, upsell-only. Pending Zoho authoring.
-  // {
-  //   id: 'awd',
-  //   label: 'Additional Work Description',
-  //   source: { kind: 'zoho-template', zohoTemplateId: 'TBD' },
-  //   applicableScenarios: ['upsell'],
-  //   perScenarioRules: { upsell: { kind: 'required' } },
-  //   fieldMappings: { ... },
-  //   signerActions: { contractor: 'TBD', homeowner: 'TBD' },
-  // },
+  {
+    id: 'awd',
+    label: 'Additional Work Description',
+    source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.awd.templateId },
+    applicableScenarios: ['upsell'],
+    perScenarioRules: {
+      upsell: { kind: 'required' },
+    },
+    fieldMappings: {
+      ...baseHomeownerFieldMappings,
+      // `sow` is a single textfield meant for short-form upsell SOW only.
+      // When isLongSow is true, sow-pdf is also required (separate doc in
+      // the envelope) — leave AWD's sow blank so the page renders cleanly.
+      'sow': ctx => ctx.isLongSow ? '' : ctx.sowText,
+      // Signed dollar adjustment — positive when the addendum adds scope,
+      // negative for credits/discounts. Today: maps to the upsell
+      // proposal's finalTcp (which is the addendum's full amount). If
+      // future requirements need explicit credits, add an override field
+      // on the proposal entity and source from there.
+      'price-adjustment': tcpSrc,
+    },
+    dateFieldMappings: {
+      'sent-date': todaySrc,
+      'start-date': startDateSrc,
+      'completion-date': completionDateSrc,
+    },
+    signerActions: ZOHO_SIGN_TEMPLATES.awd.actions,
+  },
   {
     id: 'senior-ack',
     label: 'Senior citizen acknowledgement',

@@ -70,21 +70,21 @@ const cases: Expectation[] = [
     optional: ['material-order'],
   },
   {
-    name: 'upsell • non-senior • short SOW (sow-pdf forbidden, lives inline in AWD)',
+    name: 'upsell • non-senior • short SOW (AWD required, sow-pdf forbidden — lives inline in AWD.sow)',
     fixture: { scenario: 'upsell', isSenior: false, isLongSow: false },
-    required: [],
+    required: ['awd'],
     optional: ['material-order'],
   },
   {
-    name: 'upsell • non-senior • long SOW (sow-pdf required)',
+    name: 'upsell • non-senior • long SOW (AWD + sow-pdf both required)',
     fixture: { scenario: 'upsell', isSenior: false, isLongSow: true },
-    required: ['sow-pdf'],
+    required: ['awd', 'sow-pdf'],
     optional: ['material-order'],
   },
   {
-    name: 'upsell • senior (senior-ack and esign-waiver still initial-only)',
+    name: 'upsell • senior (AWD required; senior-ack + esign-waiver remain initial-only)',
     fixture: { scenario: 'upsell', isSenior: true, isLongSow: false },
-    required: [],
+    required: ['awd'],
     optional: ['material-order'],
   },
 ]
