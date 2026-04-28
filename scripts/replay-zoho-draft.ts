@@ -55,7 +55,11 @@ async function main() {
     },
   } as unknown as Parameters<typeof buildSigningRequest>[0]
 
-  const { templateId, body } = buildSigningRequest(proposal)
+  // Replay-only: actual production path counts pages from the generated
+  // PDF. For this replay we pass a stand-in page count — the value flows
+  // into the request `notes` field, doesn't affect template selection or
+  // any signed-doc content.
+  const { templateId, body } = buildSigningRequest(proposal, { sowPages: 1 })
   console.log('templateId:', templateId)
 
   const token = await getZohoAccessToken()
