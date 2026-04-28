@@ -4,6 +4,8 @@ import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { pdfService } from '@/shared/services/pdf.service'
 import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
+import { assembleEnvelope } from '@/shared/services/zoho-sign/documents/assemble-envelope'
+import { buildProposalContext } from '@/shared/services/zoho-sign/documents/proposal-context'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
 
@@ -105,20 +107,27 @@ function createContractService() {
   }
 
   /**
-   * Creates a Zoho Sign draft for a proposal. Always generates a SOW PDF
-   * and attaches it to the envelope.
+   * Creates a Zoho Sign draft for a proposal. Two code paths:
    *
-   * The base + senior HI templates were trimmed (sow-1/sow-2 fields
-   * removed) — every signed contract now reads SOW content from the
-   * attached PDF, regardless of length. The previous short/long branch
-   * (inlining short SOWs into sow-1/sow-2) is dead because those fields
-   * no longer exist on the templates; routing through the inline path
-   * would silently lose the SOW content.
+   * - **Registry path** (when `formMetaJSON.envelopeDocumentIds` is set):
+   *   builds a ProposalContext, validates the agent's selection against
+   *   the scenario rules, calls `assembleEnvelope` which posts to
+   *   `/templates/mergesend` (multi-template envelope) and attaches any
+   *   generated PDFs. The envelope's document set comes from the
+   *   registry; recipient/field unification is automatic via Zoho.
    *
-   * Phase 4 of the composable-templating migration will replace this
-   * with a registry-driven assembler that handles upsells via the AWD
-   * template (where short SOW does inline). Until then, every proposal
-   * — initial or upsell — uses base/senior + attached PDF.
+   * - **Legacy path** (when the proposal has no `envelopeDocumentIds`):
+   *   the pre-Phase-4 flow — single-template `createdocument` against
+   *   base or senior tpr-HI plus an attached SOW PDF. Kept for in-flight
+   *   proposals created before the agent UI shipped; they pass through
+   *   without breaking. New proposals (post-Phase-5) will always carry
+   *   an `envelopeDocumentIds` selection and use the registry path.
+   *
+   * Both paths always generate a SOW PDF — the legacy templates were
+   * trimmed in Zoho (sow-1/sow-2 fields removed), so SOW content lives
+   * exclusively in the attached PDF on this path. See the design plan
+   * (.claude/plans/i-just-confirmed-harmonic-pinwheel.md) for the full
+   * migration shape.
    */
   async function createDraft(proposalId: string, ownerKey: string | null) {
     const proposal = await getProposal(proposalId)
@@ -126,6 +135,15 @@ function createContractService() {
       throw new Error(`Proposal ${proposalId} not found`)
     }
 
+    const selection = proposal.formMetaJSON.envelopeDocumentIds ?? []
+    if (selection.length > 0) {
+      const ctx = buildProposalContext(proposal)
+      const { requestId, status } = await assembleEnvelope(ctx)
+      await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
+      return { requestId, status }
+    }
+
+    // Legacy path: pre-Phase-5 proposals without an envelope-document selection.
     const pdfBuffer = await pdfService.generateSowPdf({ proposalId })
     const sowPages = await countPdfPages(pdfBuffer)
     const { templateId, body } = buildSigningRequest(proposal, { sowPages })

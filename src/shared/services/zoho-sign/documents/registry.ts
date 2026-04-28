@@ -26,20 +26,61 @@ const customerAgeSrc: FieldSource = ctx => String(ctx.proposal.customer?.custome
 const tcpSrc: FieldSource = ctx => String(ctx.finalTcp)
 const depositSrc: FieldSource = ctx => String(ctx.proposal.fundingJSON.data.depositAmount)
 
-const startDateSrc: FieldSource = () => {
+// Zoho's CustomDate fields validate against the template's date_format.
+// AWD's start-date / completion-date / original-contract-date are
+// configured as `MMM dd yyyy` (e.g. "Apr 28 2026"). The base / senior
+// templates use plain Textfield dates so they accept any printable
+// string — those keep using toLocaleDateString. Use the *ZohoSrc
+// variants when targeting a CustomDate field.
+const ZOHO_SHORT_DATE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
+function formatZohoShortDate(date: Date): string {
+  const month = ZOHO_SHORT_DATE_MONTHS[date.getMonth()]
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${month} ${day} ${date.getFullYear()}`
+}
+
+const startDateTextSrc: FieldSource = () => {
   const d = new Date()
   d.setDate(d.getDate() + 3)
   return d.toLocaleDateString('en-US')
 }
 
-const completionDateSrc: FieldSource = (ctx) => {
+const completionDateTextSrc: FieldSource = (ctx) => {
   const days = Number(ctx.proposal.projectJSON.data.validThroughTimeframe.replace(/\D/g, ''))
   const d = new Date()
   d.setDate(d.getDate() + 3 + days)
   return d.toLocaleDateString('en-US')
 }
 
-const todaySrc: FieldSource = () => new Date().toLocaleDateString('en-US')
+const startDateZohoSrc: FieldSource = () => {
+  const d = new Date()
+  d.setDate(d.getDate() + 3)
+  return formatZohoShortDate(d)
+}
+
+const completionDateZohoSrc: FieldSource = (ctx) => {
+  const days = Number(ctx.proposal.projectJSON.data.validThroughTimeframe.replace(/\D/g, ''))
+  const d = new Date()
+  d.setDate(d.getDate() + 3 + days)
+  return formatZohoShortDate(d)
+}
+
+// Zoho per-template date format quirk: every template's `sent-date`
+// field is configured with date_format `MM/dd/yyyy` (verified via real
+// mergesend). AWD's `start-date` / `completion-date` /
+// `original-contract-date` use `MMM dd yyyy`. Other templates'
+// start/completion fields are plain Textfield and accept any printable
+// string. Keep this in sync with the inventory artifact.
+const sentDateSrc: FieldSource = () => new Date().toLocaleDateString('en-US')
+
+// AWD's original-contract-date refers to when the PROJECT'S original
+// contract was signed (not the upsell proposal's creation). The true
+// source is project-level data — the project's first proposal's
+// contractSentAt. Until project lookup lands in proposal-context.ts
+// (Phase 4.5 follow-up), we fall back to today as a placeholder so the
+// envelope creates successfully. The agent must edit this field on the
+// draft before sending.
+const originalContractDatePlaceholderSrc: FieldSource = () => formatZohoShortDate(new Date())
 
 const baseHomeownerFieldMappings: Record<string, FieldSource> = {
   'ho-name': customerNameSrc,
@@ -81,12 +122,13 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     fieldMappings: {
       ...baseHomeownerFieldMappings,
       'ho-age': customerAgeSrc,
-      'start-date': startDateSrc,
-      'completion-date': completionDateSrc,
+      'start-date': startDateTextSrc,
+      'completion-date': completionDateTextSrc,
       'tcp': tcpSrc,
       'deposit': depositSrc,
-      // sow-1 / sow-2 stay on the template until the user trims it. Filled
-      // through the legacy build-signing-request.ts path until Phase 4.
+      // sow-1 / sow-2 trimmed in Zoho UI 2026-04-28 — base / senior templates
+      // no longer have those fields. SOW content lives in the attached
+      // sow-pdf doc, not here.
     },
     signerActions: ZOHO_SIGN_TEMPLATES.base.actions,
   },
@@ -101,8 +143,8 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     fieldMappings: {
       ...baseHomeownerFieldMappings,
       'ho-age': customerAgeSrc,
-      'start-date': startDateSrc,
-      'completion-date': completionDateSrc,
+      'start-date': startDateTextSrc,
+      'completion-date': completionDateTextSrc,
       'tcp': tcpSrc,
       'deposit': depositSrc,
     },
@@ -145,9 +187,10 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       'price-adjustment': tcpSrc,
     },
     dateFieldMappings: {
-      'sent-date': todaySrc,
-      'start-date': startDateSrc,
-      'completion-date': completionDateSrc,
+      'sent-date': sentDateSrc,
+      'start-date': startDateZohoSrc,
+      'completion-date': completionDateZohoSrc,
+      'original-contract-date': originalContractDatePlaceholderSrc,
     },
     signerActions: ZOHO_SIGN_TEMPLATES.awd.actions,
   },
@@ -164,7 +207,7 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       'ho-age': customerAgeSrc,
     },
     dateFieldMappings: {
-      'sent-date': todaySrc,
+      'sent-date': sentDateSrc,
     },
     signerActions: ZOHO_SIGN_TEMPLATES.seniorAck.actions,
   },
@@ -180,7 +223,7 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       ...baseHomeownerFieldMappings,
     },
     dateFieldMappings: {
-      'sent-date': todaySrc,
+      'sent-date': sentDateSrc,
     },
     signerActions: ZOHO_SIGN_TEMPLATES.esignWaiver.actions,
   },
@@ -200,7 +243,7 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       // mirror the customer's material list once that data model exists.
     },
     dateFieldMappings: {
-      'sent-date': todaySrc,
+      'sent-date': sentDateSrc,
     },
     signerActions: ZOHO_SIGN_TEMPLATES.materialOrder.actions,
   },
