@@ -1,5 +1,5 @@
 import z from 'zod'
-import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
+import { envelopeDocumentIds, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { homeAreas } from '@/shared/domains/construction/constants/enums'
 
 // SUB-SCHEMAS
@@ -71,6 +71,14 @@ const fundingMetaSchema = sectionMetaSchema.extend({
 // MAIN SCHEMAS
 export const formMetaSectionSchema = z.object({
   pricingMode: z.enum(['total', 'breakdown']),
+  /**
+   * Ordered list of Zoho Sign documents the agent picked for this
+   * proposal's envelope. Captured at draft-config time, consumed by the
+   * envelope assembler. Optional + nullable so existing proposals (created
+   * before this field shipped) fall through to the legacy two-template
+   * path until manually re-saved.
+   */
+  envelopeDocumentIds: z.array(z.enum(envelopeDocumentIds)).nullish(),
 })
 
 export const projectSectionSchema = z.object({
@@ -86,9 +94,7 @@ export const fundingSectionSchema = z.object({
 // --- Proposal Form Schema (composite) ---
 
 export const proposalFormSchema = z.object({
-  meta: z.object({
-    pricingMode: z.enum(['total', 'breakdown']),
-  }),
+  meta: formMetaSectionSchema,
   project: projectSectionSchema,
   funding: fundingSectionSchema,
 })
