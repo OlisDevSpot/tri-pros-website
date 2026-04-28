@@ -1,9 +1,13 @@
 /* eslint-disable no-console */
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
 
+const DEFAULT_TEMPLATE_IDS = ['563034000000046241', '563034000000055081']
+
 async function main() {
   const token = await getZohoAccessToken()
-  for (const tid of ['563034000000046241', '563034000000055081']) {
+  const ids = process.argv.slice(2).filter(Boolean)
+  const templateIds = ids.length > 0 ? ids : DEFAULT_TEMPLATE_IDS
+  for (const tid of templateIds) {
     const r = await fetch(`https://sign.zoho.com/api/v1/templates/${tid}`, {
       headers: { Authorization: `Zoho-oauthtoken ${token}` },
     })
