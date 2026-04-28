@@ -1,13 +1,11 @@
 import type { Buffer } from 'node:buffer'
 import type { ZohoActionStatus, ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
-import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 import { pdfService } from '@/shared/services/pdf.service'
 import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
-import { isLongSow } from '@/shared/services/zoho-sign/lib/is-long-sow'
 
 interface ZohoCreateDocResponse {
   requests: {
@@ -107,10 +105,20 @@ function createContractService() {
   }
 
   /**
-   * Creates a Zoho Sign draft for a proposal. Branches on SOW length:
-   * - short path: single template call, sow-1/sow-2 populated by the packer
-   * - long path: generate SOW PDF → create template draft with pointer text
-   *              in sow-1 → attach PDF via addFilesToRequest → save request ID
+   * Creates a Zoho Sign draft for a proposal. Always generates a SOW PDF
+   * and attaches it to the envelope.
+   *
+   * The base + senior HI templates were trimmed (sow-1/sow-2 fields
+   * removed) — every signed contract now reads SOW content from the
+   * attached PDF, regardless of length. The previous short/long branch
+   * (inlining short SOWs into sow-1/sow-2) is dead because those fields
+   * no longer exist on the templates; routing through the inline path
+   * would silently lose the SOW content.
+   *
+   * Phase 4 of the composable-templating migration will replace this
+   * with a registry-driven assembler that handles upsells via the AWD
+   * template (where short SOW does inline). Until then, every proposal
+   * — initial or upsell — uses base/senior + attached PDF.
    */
   async function createDraft(proposalId: string, ownerKey: string | null) {
     const proposal = await getProposal(proposalId)
@@ -118,22 +126,9 @@ function createContractService() {
       throw new Error(`Proposal ${proposalId} not found`)
     }
 
-    // Decide path BEFORE building the request — buildSigningRequest in long
-    // mode requires sowPages, which we only know after generating the PDF.
-    const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
-
-    if (!isLongSow(sowText)) {
-      const { templateId, body } = buildSigningRequest(proposal, { mode: 'short' })
-      const res = await createFromTemplate(templateId, body, false)
-      const { requestId, status } = await parseDraftResponse(res)
-      await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
-      return { requestId, status }
-    }
-
-    // Long path: generate SOW PDF first, then build the request with accurate page count.
     const pdfBuffer = await pdfService.generateSowPdf({ proposalId })
     const sowPages = await countPdfPages(pdfBuffer)
-    const { templateId, body } = buildSigningRequest(proposal, { mode: 'long', sowPages })
+    const { templateId, body } = buildSigningRequest(proposal, { sowPages })
 
     const createRes = await createFromTemplate(templateId, body, false)
     const { requestId, status } = await parseDraftResponse(createRes)

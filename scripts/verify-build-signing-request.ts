@@ -2,8 +2,7 @@
 import assert from 'node:assert/strict'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
 
-// Short path: tiny SOW content
-const shortProposal = {
+const proposal = {
   customer: {
     customerAge: 40,
     name: 'Test Customer',
@@ -19,7 +18,7 @@ const shortProposal = {
       sow: [{
         contentJSON: JSON.stringify({
           type: 'doc',
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Short scope of work.' }] }],
+          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Scope of work.' }] }],
         }),
         html: '',
         scopes: [],
@@ -34,35 +33,33 @@ const shortProposal = {
   },
 } as unknown as Parameters<typeof buildSigningRequest>[0]
 
-const short = buildSigningRequest(shortProposal)
-assert.equal(short.mode, 'short', 'short SOW routes to short path')
-assert.ok(short.body.templates.field_data.field_text_data['sow-1'].length > 0, 'sow-1 populated')
-assert.equal(short.body.templates.field_data.field_text_data['sow-2'], '', 'sow-2 empty for tiny scope')
-console.log('✅ short path')
+const result = buildSigningRequest(proposal, { sowPages: 3 })
+const fields = result.body.templates.field_data.field_text_data
 
-// Long path: force mode=long, supply sowPages
-const longProposal = {
-  ...shortProposal,
-  projectJSON: {
-    data: {
-      ...shortProposal.projectJSON.data,
-      sow: Array.from({ length: 3 }, () => shortProposal.projectJSON.data.sow[0]),
-    },
-  },
-} as unknown as Parameters<typeof buildSigningRequest>[0]
+// Templates were trimmed: sow-1 / sow-2 must NOT be in field_text_data anymore.
+// Sending unknown labels is silently ignored by Zoho but it's dead weight + a
+// confusing signal in payload-inspection logs.
+assert.equal('sow-1' in fields, false, 'sow-1 must not be sent (template field removed)')
+assert.equal('sow-2' in fields, false, 'sow-2 must not be sent (template field removed)')
 
-const long = buildSigningRequest(longProposal, { mode: 'long', sowPages: 3 })
-assert.equal(long.mode, 'long')
-assert.match(long.body.templates.field_data.field_text_data['sow-1'], /See attached.*3 pages/)
-assert.equal(long.body.templates.field_data.field_text_data['sow-2'], '')
-console.log('✅ long path')
+// Core fields the template actually has.
+assert.equal(fields['ho-name'], 'Test Customer')
+assert.equal(fields['ho-email'], 'test@example.com')
+assert.equal(fields['ho-age'], '40')
+assert.equal(fields['tcp'], '5000')
+assert.equal(fields.deposit, '1000')
 
-// Long mode without sowPages throws
+// Page-count flows into the envelope notes for signer context.
+assert.match(result.body.templates.notes, /3 pages/)
+
+// sowPages is required.
 assert.throws(
-  () => buildSigningRequest(longProposal, { mode: 'long' }),
-  /sowPages required/,
-  'throws when sowPages missing in long mode',
+  () => buildSigningRequest(proposal, undefined as unknown as { sowPages: number }),
+  /Cannot/,
+  'throws when options missing',
 )
-console.log('✅ long mode sowPages guard')
 
-console.log('\n✅ buildSigningRequest branching verified')
+console.log('✅ field_text_data has no sow-1/sow-2')
+console.log('✅ core homeowner + financial fields populated')
+console.log('✅ sowPages page-count surfaced in envelope notes')
+console.log('\n✅ buildSigningRequest verified (post-trim, always-attach-PDF shape)')

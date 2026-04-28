@@ -98,7 +98,9 @@ async function main() {
       },
     } as unknown as Parameters<typeof buildSigningRequest>[0]
 
-    const req = buildSigningRequest(proposal)
+    // Inspection-only: pass a stand-in sowPages — production counts pages
+    // from the generated PDF, but here we only simulate body construction.
+    const req = buildSigningRequest(proposal, { sowPages: 1 })
     console.log('✅ buildSigningRequest SUCCESS')
     console.log('  templateId:        ', req.templateId)
     const ft = req.body.templates.field_data.field_text_data as Record<string, string>
