@@ -1,5 +1,6 @@
 'use client'
 
+import type { EnvelopeDocumentId } from '@/shared/constants/enums'
 import type { ZohoActionStatus, ZohoContractStatus } from '@/shared/services/zoho-sign/types'
 import { useMutation } from '@tanstack/react-query'
 import { CheckCircle, Eye, Loader2, Mail, Minus, RefreshCw, Send, Trash2 } from 'lucide-react'
@@ -14,7 +15,7 @@ import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 import { ACTION_TOOLTIPS } from '../constants/contract-statuses'
 import { useCreditCooldown } from '../hooks/use-credit-cooldown'
-import { CustomerAgeForm } from './customer-age-form'
+import { AgentDraftConfigurationForm } from './agent-draft-configuration-form'
 import { ResendConfirmDialog } from './resend-confirm-dialog'
 
 interface AgentContractViewProps {
@@ -22,6 +23,7 @@ interface AgentContractViewProps {
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
   customerAge: number | null
   customerId: string | null
+  envelopeDocumentIds: readonly EnvelopeDocumentId[] | null
   onSendProposalEmail?: (message: string) => void
   isSendingEmail?: boolean
   proposalStatus?: string
@@ -66,6 +68,7 @@ export function AgentContractView({
   proposalId,
   contractStatus,
   customerAge,
+  envelopeDocumentIds,
   onSendProposalEmail,
   isSendingEmail,
   proposalStatus,
@@ -154,18 +157,23 @@ export function AgentContractView({
             )}
           </div>
 
-          {/* Age gate — must be set before any contract actions */}
-          {customerAge == null && (
-            <CustomerAgeForm proposalId={proposalId} />
+          {/* Draft-config gate — both age AND envelope document selection
+              must be set before any contract actions. The form persists
+              both atomically via configureDraftEnvelope. */}
+          {!contractStatus && (customerAge == null || envelopeDocumentIds == null) && (
+            <AgentDraftConfigurationForm
+              proposalId={proposalId}
+              initialAge={customerAge}
+            />
           )}
 
           {/* State: Draft is being created by background job */}
-          {!contractStatus && isDraftSyncing && customerAge != null && (
+          {!contractStatus && isDraftSyncing && customerAge != null && envelopeDocumentIds != null && (
             <DraftSyncingState />
           )}
 
-          {/* State: No contract yet (age must be set) */}
-          {!contractStatus && !isDraftSyncing && customerAge != null && (
+          {/* State: No contract yet (age + docs must be set) */}
+          {!contractStatus && !isDraftSyncing && customerAge != null && envelopeDocumentIds != null && (
             <NoContractState
               isSent={isSent}
               isSendingEmail={isSendingEmail ?? false}
