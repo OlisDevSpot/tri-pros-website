@@ -15,13 +15,53 @@ import { cn } from '@/shared/lib/utils'
 
 interface PhoneActionProps {
   canEdit?: boolean
+  children?: React.ReactNode
   className?: string
   compact?: boolean
   onEdit?: () => void
   phone: string
 }
 
-export function PhoneAction({ canEdit, className, compact = false, onEdit, phone }: PhoneActionProps) {
+export function PhoneAction({ canEdit, children, className, compact = false, onEdit, phone }: PhoneActionProps) {
+  const menu = (
+    <DropdownMenuContent align="start">
+      <DropdownMenuItem asChild>
+        <a href={`tel:${phone}`}>
+          <PhoneIcon size={14} />
+          Call
+        </a>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <a href={`sms:${phone}`}>
+          <MessageSquareIcon size={14} />
+          Text
+        </a>
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => copyToClipboard(phone, 'Phone')}>
+        <CopyIcon size={14} />
+        Copy
+      </DropdownMenuItem>
+      {canEdit && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onEdit}>
+            <PencilIcon size={14} />
+            Edit
+          </DropdownMenuItem>
+        </>
+      )}
+    </DropdownMenuContent>
+  )
+
+  if (children) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+        {menu}
+      </DropdownMenu>
+    )
+  }
+
   return (
     <span className={cn('flex items-center gap-1', className)}>
       <a
@@ -43,33 +83,7 @@ export function PhoneAction({ canEdit, className, compact = false, onEdit, phone
             <ChevronDownIcon size={12} />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem asChild>
-            <a href={`tel:${phone}`}>
-              <PhoneIcon size={14} />
-              Call
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <a href={`sms:${phone}`}>
-              <MessageSquareIcon size={14} />
-              Text
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => copyToClipboard(phone, 'Phone')}>
-            <CopyIcon size={14} />
-            Copy
-          </DropdownMenuItem>
-          {canEdit && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onEdit}>
-                <PencilIcon size={14} />
-                Edit
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
+        {menu}
       </DropdownMenu>
     </span>
   )

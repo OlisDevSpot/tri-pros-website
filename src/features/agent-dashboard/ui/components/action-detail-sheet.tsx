@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation'
 import { actionTierConfig } from '@/features/agent-dashboard/constants/action-tiers'
 import { followUpCadence } from '@/features/agent-dashboard/constants/follow-up-cadence'
 import { tierColorMap } from '@/features/agent-dashboard/constants/tier-color-map'
+import { EmailAction } from '@/shared/components/contact-actions/ui/email-action'
+import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -70,20 +72,20 @@ export function ActionDetailSheet({ item, onClose }: Props) {
           <div className="flex flex-col gap-2">
             <h4 className="text-sm font-medium">Contact</h4>
             {item.customerPhone && (
-              <Button variant="outline" size="sm" className="justify-start gap-2" asChild>
-                <a href={`tel:${item.customerPhone}`}>
+              <PhoneAction phone={item.customerPhone}>
+                <Button variant="outline" size="sm" className="justify-start gap-2">
                   <PhoneIcon size={14} />
                   {formatAsPhoneNumber(item.customerPhone)}
-                </a>
-              </Button>
+                </Button>
+              </PhoneAction>
             )}
             {item.customerEmail && (
-              <Button variant="outline" size="sm" className="justify-start gap-2" asChild>
-                <a href={`mailto:${item.customerEmail}`}>
+              <EmailAction email={item.customerEmail}>
+                <Button variant="outline" size="sm" className="justify-start gap-2">
                   <MailIcon size={14} />
                   {item.customerEmail}
-                </a>
-              </Button>
+                </Button>
+              </EmailAction>
             )}
             {!item.customerPhone && !item.customerEmail && (
               <p className="text-sm text-muted-foreground">No contact info available</p>

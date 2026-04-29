@@ -2,35 +2,18 @@
 
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
-import {
-  CheckIcon,
-  CopyIcon,
-  ExternalLinkIcon,
-  GlobeIcon,
-  MailIcon,
-  MapPinIcon,
-  PencilIcon,
-  PhoneIcon,
-  PlusIcon,
-  XIcon,
-} from 'lucide-react'
+import { CheckIcon, MailIcon, MapPinIcon, PhoneIcon, PlusIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
 import { InlineEditButton } from '@/shared/components/buttons/inline-edit-button'
+import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
+import { EmailAction } from '@/shared/components/contact-actions/ui/email-action'
+import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { Button } from '@/shared/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
 import { getInitials } from '@/shared/entities/users/lib/get-initials'
-import { copyToClipboard } from '@/shared/lib/clipboard'
 import { formatAsPhoneNumber, formatCustomerAddress } from '@/shared/lib/formatters'
-import { openExternalUrl } from '@/shared/lib/pwa'
 import { cn } from '@/shared/lib/utils'
 import { AddressEditDialog } from './address-edit-dialog'
 
@@ -186,53 +169,15 @@ function AddressBadge({ address, canEdit, onEdit }: AddressBadgeProps) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
-          <MapPinIcon className="size-3.5 shrink-0 text-white/80" />
-          {/* Single-line across all breakpoints — truncation keeps the badge
-              shape consistent with phone/email. On mobile the column stacks
-              badges, so a narrower cap prevents the row from blowing out. */}
-          <span className="max-w-52 truncate sm:max-w-95">{address.singleLine}</span>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuItem
-          onClick={() => {
-            openExternalUrl(
-              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address.singleLine)}`,
-            )
-          }}
-        >
-          <ExternalLinkIcon className="size-3.5" />
-          Open in Google Maps
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => {
-            openExternalUrl(
-              `https://earth.google.com/web/search/${encodeURIComponent(address.singleLine)}`,
-            )
-          }}
-        >
-          <GlobeIcon className="size-3.5" />
-          Open in Google Earth
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => copyToClipboard(address.singleLine, 'Address')}>
-          <CopyIcon className="size-3.5" />
-          Copy address
-        </DropdownMenuItem>
-        {canEdit && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onEdit}>
-              <PencilIcon className="size-3.5" />
-              Edit address
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <AddressAction address={address.singleLine} canEdit={canEdit} onEdit={onEdit}>
+      <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
+        <MapPinIcon className="size-3.5 shrink-0 text-white/80" />
+        {/* Single-line across all breakpoints — truncation keeps the badge
+            shape consistent with phone/email. On mobile the column stacks
+            badges, so a narrower cap prevents the row from blowing out. */}
+        <span className="max-w-52 truncate sm:max-w-95">{address.singleLine}</span>
+      </button>
+    </AddressAction>
   )
 }
 
@@ -262,35 +207,16 @@ function PhoneBadge({ customer, canEdit, editForm, phoneUnlocked }: PhoneBadgePr
 
   if (customer.phone) {
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
-            <PhoneIcon className="size-3.5 shrink-0 text-white/80" />
-            <span>{formatAsPhoneNumber(customer.phone)}</span>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem asChild>
-            <a href={`tel:${customer.phone}`}>
-              <PhoneIcon className="size-3.5" />
-              Call
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => customer.phone && copyToClipboard(customer.phone, 'Phone')}>
-            <CopyIcon className="size-3.5" />
-            Copy phone
-          </DropdownMenuItem>
-          {canEdit && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => editForm.startEditing('phone')}>
-                <PencilIcon className="size-3.5" />
-                Edit phone
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <PhoneAction
+        canEdit={canEdit}
+        onEdit={() => editForm.startEditing('phone')}
+        phone={customer.phone}
+      >
+        <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
+          <PhoneIcon className="size-3.5 shrink-0 text-white/80" />
+          <span>{formatAsPhoneNumber(customer.phone)}</span>
+        </button>
+      </PhoneAction>
     )
   }
 
@@ -334,35 +260,16 @@ function EmailBadge({ customer, canEdit, editForm }: EmailBadgeProps) {
 
   if (customer.email) {
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
-            <MailIcon className="size-3.5 shrink-0 text-white/80" />
-            <span className="max-w-60 truncate">{customer.email}</span>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem asChild>
-            <a href={`mailto:${customer.email}`}>
-              <MailIcon className="size-3.5" />
-              Send email
-            </a>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => customer.email && copyToClipboard(customer.email, 'Email')}>
-            <CopyIcon className="size-3.5" />
-            Copy email
-          </DropdownMenuItem>
-          {canEdit && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => editForm.startEditing('email')}>
-                <PencilIcon className="size-3.5" />
-                Edit email
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <EmailAction
+        canEdit={canEdit}
+        email={customer.email}
+        onEdit={() => editForm.startEditing('email')}
+      >
+        <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
+          <MailIcon className="size-3.5 shrink-0 text-white/80" />
+          <span className="max-w-60 truncate">{customer.email}</span>
+        </button>
+      </EmailAction>
     )
   }
 

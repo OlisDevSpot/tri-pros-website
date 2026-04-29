@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { copyToClipboard } from '@/shared/lib/clipboard'
+import { openExternalUrl } from '@/shared/lib/pwa'
 import { cn } from '@/shared/lib/utils'
 
 interface AddressActionProps {
@@ -42,9 +43,8 @@ export function AddressAction({ address, canEdit, children, className, compact =
       <DropdownMenuContent align="start">
         <DropdownMenuItem
           onClick={() => {
-            window.open(
+            openExternalUrl(
               `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
-              '_blank',
             )
           }}
         >
@@ -53,9 +53,8 @@ export function AddressAction({ address, canEdit, children, className, compact =
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
-            window.open(
+            openExternalUrl(
               `https://earth.google.com/web/search/${encodeURIComponent(address)}`,
-              '_blank',
             )
           }}
         >

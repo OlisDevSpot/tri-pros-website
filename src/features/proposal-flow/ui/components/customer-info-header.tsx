@@ -1,6 +1,9 @@
-import { CircleUserIcon, MailIcon, MapPinIcon, PhoneIcon } from 'lucide-react'
+import { CircleUserIcon } from 'lucide-react'
+import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
+import { EmailAction } from '@/shared/components/contact-actions/ui/email-action'
+import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
 import { Badge } from '@/shared/components/ui/badge'
-import { formatAddress, formatAsPhoneNumber } from '@/shared/lib/formatters'
+import { formatAddress } from '@/shared/lib/formatters'
 
 interface CustomerInfo {
   name: string
@@ -30,22 +33,22 @@ export function CustomerInfoHeader({ customer }: Props) {
           <span className="font-medium">{customer.name}</span>
         </div>
         {customer.phone && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <PhoneIcon className="size-4 shrink-0" />
-            <span>{formatAsPhoneNumber(customer.phone)}</span>
-          </div>
+          <PhoneAction
+            className="text-muted-foreground"
+            phone={customer.phone}
+          />
         )}
         {customer.email && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <MailIcon className="size-4 shrink-0" />
-            <span>{customer.email}</span>
-          </div>
+          <EmailAction
+            className="text-muted-foreground"
+            email={customer.email}
+          />
         )}
         {customer.address && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <MapPinIcon className="size-4 shrink-0" />
-            <span>{formatAddress(customer.address, customer.city, customer.state ?? 'CA', customer.zip)}</span>
-          </div>
+          <AddressAction
+            address={formatAddress(customer.address, customer.city, customer.state ?? 'CA', customer.zip)}
+            className="text-muted-foreground"
+          />
         )}
       </div>
     </div>
