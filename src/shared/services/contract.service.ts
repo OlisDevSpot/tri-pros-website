@@ -320,7 +320,6 @@ function createContractService() {
           actions: {
             role: string
             action_status: string
-            recipient_email: string
           }[]
         }
       }
