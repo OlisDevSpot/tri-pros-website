@@ -4,7 +4,6 @@ import { zohoActionStatuses } from '../types'
 interface RawAction {
   role: string
   action_status: string
-  recipient_email: string
 }
 
 /**
@@ -21,7 +20,7 @@ export function dedupeSignerStatuses(actions: RawAction[]): ZohoSignerStatus[] {
     const status = a.action_status as ZohoActionStatus
     const existing = grouped.get(a.role)
     if (!existing || zohoActionStatuses.indexOf(status) < zohoActionStatuses.indexOf(existing.status)) {
-      grouped.set(a.role, { role: a.role, status, recipientEmail: a.recipient_email })
+      grouped.set(a.role, { role: a.role, status })
     }
   }
   return Array.from(grouped.values())
