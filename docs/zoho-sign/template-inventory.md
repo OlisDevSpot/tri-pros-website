@@ -82,20 +82,23 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 - **Action IDs:**
   - homeowner: `563034000000079297` (Homeowner-only by design — contractor signer may be added later if needed)
 - **Last verified against Zoho:** 2026-04-28
-- **Fields:**
+- **Fields (12 total):**
 
-  | Field name | Type | Source |
-  |---|---|---|
-  | ho-name | text | `customer.name` |
-  | ho-address | text | `customer.address` |
-  | ho-city-state-zip | text | `${city}, ${state} ${zip}` |
-  | ho-phone | text | `customer.phone` |
-  | ho-email | text | `customer.email` |
-  | sow | text | `sowText` when `!isLongSow`; empty when long (sow-pdf doc carries the content) |
-  | price-adjustment | text | `computeFinalTcp(funding)` — signed amount; positive for added scope, negative for credits/discounts |
-  | sent-date | CustomDate | today (fills via `field_date_data`) |
-  | start-date | CustomDate | today + 3 days (fills via `field_date_data`) |
-  | completion-date | CustomDate | start-date + `validThroughTimeframe` (fills via `field_date_data`) |
+  | Field name | Type | Date format | Source |
+  |---|---|---|---|
+  | ho-name | text | — | `customer.name` |
+  | ho-address | text | — | `customer.address` |
+  | ho-city-state-zip | text | — | `${city}, ${state} ${zip}` |
+  | ho-phone | text | — | `customer.phone` |
+  | ho-email | text | — | `customer.email` |
+  | sow | text | — | `sowText` when `!isLongSow`; empty when long (sow-pdf carries the content) |
+  | price-adjustment | text | — | `computeFinalTcp(funding)` — signed amount; positive for added scope, negative for credits |
+  | sent-date | CustomDate | `MM/dd/yyyy` | today |
+  | start-date | CustomDate | `MMM dd yyyy` | today + 3 days |
+  | completion-date | CustomDate | `MMM dd yyyy` | start-date + `validThroughTimeframe` |
+  | original-contract-date | CustomDate | `MMM dd yyyy` | **TODO (Phase 4.5)** — currently a placeholder of today; agent must edit on the draft before sending. Real source is the project's first-contract `contractSentAt`. |
+
+> **Date format quirk:** AWD's `sent-date` accepts `MM/dd/yyyy` while its other CustomDate fields require `MMM dd yyyy`. Sending the wrong format returns HTTP 400 with `code 8033 — Date format is invalid`. The registry uses two distinct field sources (`sentDateSrc` vs `formatZohoShortDate`-based) to handle this.
 
 ---
 

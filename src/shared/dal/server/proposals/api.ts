@@ -59,6 +59,12 @@ export async function getProposal(proposalId: string) {
         zip: customers.zip,
         customerProfileJSON: customers.customerProfileJSON,
       },
+      // The proposal's meeting's projectId. Null = initial scenario
+      // (no project yet — created on proposal approval per the
+      // project-conversion rule). Non-null = upsell on an existing
+      // project. Drives envelope-scenario derivation in
+      // src/shared/services/zoho-sign/documents/proposal-context.ts.
+      meetingProjectId: meetings.projectId,
     })
     .from(proposals)
     .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
