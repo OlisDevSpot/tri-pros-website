@@ -16,14 +16,24 @@ import { isLongSow } from '../lib/is-long-sow'
  * is approved); non-null means upsell on an existing project. The
  * meeting-projectId join lives in the DAL's getProposal so callers
  * don't need to fetch it separately.
+ *
+ * `ageOverride` lets the agent UI preview rule evaluation against an
+ * age the user is currently typing — before that value is persisted to
+ * the customer record. The override only feeds `isSenior`; field
+ * sources still resolve `ho-age` from `customer.customerAge`, so this
+ * never affects the actual values that ship to Zoho.
  */
-export function buildProposalContext(proposal: ProposalWithCustomer): ProposalContext {
+export function buildProposalContext(
+  proposal: ProposalWithCustomer,
+  options: { ageOverride?: number } = {},
+): ProposalContext {
   const scenario: EnvelopeScenario = proposal.meetingProjectId !== null ? 'upsell' : 'initial'
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
+  const ageForSeniorCheck = options.ageOverride ?? proposal.customer?.customerAge
   return {
     proposal,
     scenario,
-    isSenior: isSeniorByAge(proposal.customer?.customerAge),
+    isSenior: isSeniorByAge(ageForSeniorCheck),
     isLongSow: isLongSow(sowText),
     finalTcp: computeFinalTcp(proposal.fundingJSON.data),
     sowText,

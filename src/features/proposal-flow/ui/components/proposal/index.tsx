@@ -101,6 +101,7 @@ export function Proposal() {
                     isAgent={ability.can('update', 'Proposal')}
                     customerAge={customer?.customerAge ?? null}
                     customerId={customer?.id ?? null}
+                    envelopeDocumentIds={proposal.data.formMetaJSON?.envelopeDocumentIds ?? null}
                     proposalStatus={proposal.data.status}
                     proposalSentAt={proposal.data.sentAt}
                     isSendingEmail={sendProposalEmail.isPending}
