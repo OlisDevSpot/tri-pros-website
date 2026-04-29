@@ -16,6 +16,35 @@ interface ZohoCreateDocResponse {
   }
 }
 
+/**
+ * Zoho returns one `actions` entry per (template × signer-role × recipient).
+ * For a multi-template envelope where the homeowner signs N templates,
+ * that's N entries with role=Homeowner and the same email — which both
+ * collides on the React `key` in the UI grid AND looks wrong (one row per
+ * template). Collapse by `(role, recipientEmail)` and pick the lowest
+ * status across the group: the signer hasn't truly progressed past the
+ * least-advanced template, so we surface that.
+ */
+const ACTION_STATUS_RANK: Record<ZohoActionStatus, number> = {
+  NOACTION: 0,
+  UNOPENED: 1,
+  VIEWED: 2,
+  SIGNED: 3,
+}
+
+function dedupeSignerStatuses(actions: { role: string, action_status: string, recipient_email: string }[]) {
+  const grouped = new Map<string, { role: string, status: ZohoActionStatus, recipientEmail: string }>()
+  for (const a of actions) {
+    const key = `${a.role}::${a.recipient_email}`
+    const status = a.action_status as ZohoActionStatus
+    const existing = grouped.get(key)
+    if (!existing || ACTION_STATUS_RANK[status] < ACTION_STATUS_RANK[existing.status]) {
+      grouped.set(key, { role: a.role, status, recipientEmail: a.recipient_email })
+    }
+  }
+  return Array.from(grouped.values())
+}
+
 function createContractService() {
   async function getAuthHeader() {
     const token = await getZohoAccessToken()
@@ -329,11 +358,7 @@ function createContractService() {
       return {
         requestId: req.request_id,
         requestStatus: req.request_status as ZohoRequestStatus,
-        signerStatuses: req.actions.map(a => ({
-          role: a.role,
-          status: a.action_status as ZohoActionStatus,
-          recipientEmail: a.recipient_email,
-        })),
+        signerStatuses: dedupeSignerStatuses(req.actions),
       }
     },
   }
