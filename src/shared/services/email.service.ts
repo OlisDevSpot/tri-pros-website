@@ -2,6 +2,7 @@ import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@
 import { ROOTS } from '@/shared/config/roots'
 import { resendClient } from '@/shared/services/resend/client'
 import { RESEND_FROM, RESEND_LEAD_INBOX } from '@/shared/services/resend/constants'
+import { buildSenderFrom } from '@/shared/services/resend/lib/build-sender-from'
 import { renderGeneralInquiryEmail, renderProposalEmail, renderScheduleConsultationEmail } from '@/shared/services/resend/lib/render-emails'
 
 function createEmailService() {
@@ -13,12 +14,13 @@ function createEmailService() {
       email: string
       message?: string
       replyTo?: string
+      repName?: string
     }) => {
       const proposalUrl = `${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${params.proposalId}?token=${params.token}&utm_source=email`
       const firstName = params.customerName.split(' ')[0] ?? params.customerName
 
       const { data, error } = await resendClient.emails.send({
-        from: RESEND_FROM.default,
+        from: buildSenderFrom(params.repName),
         to: params.email,
         replyTo: params.replyTo,
         subject: `${firstName}, your Tri Pros Remodeling proposal is ready`,
