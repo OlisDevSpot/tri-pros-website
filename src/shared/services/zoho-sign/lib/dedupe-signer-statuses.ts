@@ -19,7 +19,10 @@ interface RawAction {
 export function dedupeSignerStatuses(actions: RawAction[]): ZohoSignerStatus[] {
   const grouped = new Map<string, ZohoSignerStatus>()
   for (const a of actions) {
-    const key = `${a.role}::${a.recipient_email}`
+    // Normalize email so case/whitespace variations from Zoho don't
+    // produce false-distinct keys for the same recipient.
+    const normalizedEmail = (a.recipient_email ?? '').trim().toLowerCase()
+    const key = `${a.role}::${normalizedEmail}`
     const status = a.action_status as ZohoActionStatus
     const existing = grouped.get(key)
     if (!existing || zohoActionStatuses.indexOf(status) < zohoActionStatuses.indexOf(existing.status)) {

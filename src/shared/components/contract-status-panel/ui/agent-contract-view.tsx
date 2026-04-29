@@ -183,9 +183,9 @@ export function AgentContractView({
             <>
               {/* Signer status grid */}
               <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {contractStatus.signerStatuses.map(signer => (
+                {contractStatus.signerStatuses.map((signer, i) => (
                   <div
-                    key={signer.role}
+                    key={`${signer.role}-${signer.recipientEmail || i}`}
                     className={cn(
                       'flex items-center gap-3 rounded-lg border p-3',
                       signer.status === 'SIGNED'
