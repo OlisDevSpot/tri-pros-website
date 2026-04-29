@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { resendClient } from '@/shared/services/resend/client'
+import { RESEND_FROM } from '@/shared/services/resend/constants'
 import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-emails'
 
 function createNotificationService() {
@@ -31,7 +32,7 @@ function createNotificationService() {
       const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
 
       const { error } = await resendClient.emails.send({
-        from: 'Tri Pros System <info@triprosremodeling.com>',
+        from: RESEND_FROM.default,
         to: owner.email,
         subject: `🔔 ${params.customerName} just opened their proposal`,
         react: renderProposalViewedEmail({
