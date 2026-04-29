@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDownIcon, CopyIcon, PencilIcon, PhoneIcon } from 'lucide-react'
+import { ChevronDownIcon, CopyIcon, MessageSquareIcon, PencilIcon, PhoneIcon } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -48,6 +48,12 @@ export function PhoneAction({ canEdit, className, compact = false, onEdit, phone
             <a href={`tel:${phone}`}>
               <PhoneIcon size={14} />
               Call
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href={`sms:${phone}`}>
+              <MessageSquareIcon size={14} />
+              Text
             </a>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => copyToClipboard(phone, 'Phone')}>
