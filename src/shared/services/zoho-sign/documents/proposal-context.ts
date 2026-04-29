@@ -30,6 +30,9 @@ export function buildProposalContext(
   const scenario: EnvelopeScenario = proposal.meetingProjectId !== null ? 'upsell' : 'initial'
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
   const ageForSeniorCheck = options.ageOverride ?? proposal.customer?.customerAge
+  const originalContractDate = proposal.projectFirstContractSentAt
+    ? new Date(proposal.projectFirstContractSentAt)
+    : null
   return {
     proposal,
     scenario,
@@ -37,5 +40,6 @@ export function buildProposalContext(
     isLongSow: isLongSow(sowText),
     finalTcp: computeFinalTcp(proposal.fundingJSON.data),
     sowText,
+    originalContractDate,
   }
 }

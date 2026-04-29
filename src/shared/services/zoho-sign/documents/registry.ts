@@ -74,13 +74,17 @@ const completionDateZohoSrc: FieldSource = (ctx) => {
 const sentDateSrc: FieldSource = () => new Date().toLocaleDateString('en-US')
 
 // AWD's original-contract-date refers to when the PROJECT'S original
-// contract was signed (not the upsell proposal's creation). The true
-// source is project-level data — the project's first proposal's
-// contractSentAt. Until project lookup lands in proposal-context.ts
-// (Phase 4.5 follow-up), we fall back to today as a placeholder so the
-// envelope creates successfully. The agent must edit this field on the
-// draft before sending.
-const originalContractDatePlaceholderSrc: FieldSource = () => formatZohoShortDate(new Date())
+// contract was sent (not the upsell proposal's creation). Sourced from
+// `ctx.originalContractDate` — the earliest contract-sent date across
+// all proposals on all meetings of this proposal's project, populated
+// by getProposal's projectFirstContractSentAt subquery and surfaced
+// through buildProposalContext. Falls back to today only if the value
+// is missing (defensive — shouldn't happen for upsells given the
+// project-creation rule).
+const originalContractDateSrc: FieldSource = (ctx) => {
+  const date = ctx.originalContractDate ?? new Date()
+  return formatZohoShortDate(date)
+}
 
 const baseHomeownerFieldMappings: Record<string, FieldSource> = {
   'ho-name': customerNameSrc,
@@ -190,7 +194,7 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       'sent-date': sentDateSrc,
       'start-date': startDateZohoSrc,
       'completion-date': completionDateZohoSrc,
-      'original-contract-date': originalContractDatePlaceholderSrc,
+      'original-contract-date': originalContractDateSrc,
     },
     signerActions: ZOHO_SIGN_TEMPLATES.awd.actions,
   },
