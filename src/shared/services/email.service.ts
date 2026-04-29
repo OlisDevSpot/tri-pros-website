@@ -23,7 +23,7 @@ function createEmailService() {
         from: buildSenderFrom(params.repName),
         to: params.email,
         replyTo: params.replyTo,
-        subject: `${firstName}, your Tri Pros Remodeling proposal is ready`,
+        subject: `🏠 ${firstName}, your Tri Pros proposal is ready`,
         react: renderProposalEmail({
           proposalUrl,
           customerName: params.customerName,
