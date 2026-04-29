@@ -28,6 +28,7 @@ export const deliveryRouter = createTRPCRouter({
         customerName: input.customerName,
         email: input.email,
         message: input.message,
+        replyTo: user.email,
       })
 
       const proposal = await updateProposal(ownerKey, input.proposalId, {
