@@ -1,16 +1,24 @@
+import { headers } from 'next/headers'
 import { Suspense } from 'react'
 import { ScrollRootProvider } from '@/features/proposal-flow/contexts/scroll-context'
 import { ProposalPageNavbar } from '@/features/proposal-flow/ui/components/navbar/navbar'
 import { ProposalFlowLoadingState } from '@/features/proposal-flow/ui/components/states/loading'
 import { GlobalDialogs } from '@/shared/components/dialogs/modals/global-dialogs'
+import { ProposalSplashScreen } from '@/shared/components/splash-screen/proposal-splash-screen'
+import { auth } from '@/shared/domains/auth/server'
 
 export default async function ProposalFlowLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const reqHeaders = await headers()
+  const session = await auth.api.getSession({ headers: reqHeaders })
+  const isAuthenticated = Boolean(session)
+
   return (
     <>
+      <ProposalSplashScreen isAuthenticated={isAuthenticated} />
       <GlobalDialogs />
       <div
         style={{

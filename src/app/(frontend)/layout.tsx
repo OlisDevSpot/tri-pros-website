@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/shared/components/providers'
-import { PwaSplashScreen } from '@/shared/components/pwa-splash-screen'
+import { PwaSplashScreen } from '@/shared/components/splash-screen/pwa-splash-screen'
 import './globals.css'
 
 const playfair = Playfair_Display({
