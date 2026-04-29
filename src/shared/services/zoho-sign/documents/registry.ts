@@ -1,4 +1,5 @@
 import type { EnvelopeDocument, FieldSource } from './types'
+import { format } from 'date-fns'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { pdfService } from '@/shared/services/pdf.service'
 import { ZOHO_SIGN_TEMPLATES } from '../constants'
@@ -26,64 +27,48 @@ const customerAgeSrc: FieldSource = ctx => String(ctx.proposal.customer?.custome
 const tcpSrc: FieldSource = ctx => String(ctx.finalTcp)
 const depositSrc: FieldSource = ctx => String(ctx.proposal.fundingJSON.data.depositAmount)
 
-// Zoho's CustomDate fields validate against the template's date_format.
-// AWD's start-date / completion-date / original-contract-date are
-// configured as `MMM dd yyyy` (e.g. "Apr 28 2026"). The base / senior
-// templates use plain Textfield dates so they accept any printable
-// string — those keep using toLocaleDateString. Use the *ZohoSrc
-// variants when targeting a CustomDate field.
-const ZOHO_SHORT_DATE_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
-function formatZohoShortDate(date: Date): string {
-  const month = ZOHO_SHORT_DATE_MONTHS[date.getMonth()]
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${month} ${day} ${date.getFullYear()}`
-}
-
+// Zoho per-template date format quirk: AWD's start-date / completion-date /
+// original-contract-date are CustomDate fields with `MMM dd yyyy` validation;
+// every template's sent-date is `MM/dd/yyyy`; base/senior start/completion
+// are plain Textfield (accept any printable string). Use *ZohoSrc variants
+// when targeting AWD CustomDate fields.
 const startDateTextSrc: FieldSource = () => {
   const d = new Date()
   d.setDate(d.getDate() + 3)
-  return d.toLocaleDateString('en-US')
+  return format(d, 'M/d/yyyy')
 }
 
 const completionDateTextSrc: FieldSource = (ctx) => {
   const days = Number(ctx.proposal.projectJSON.data.validThroughTimeframe.replace(/\D/g, ''))
   const d = new Date()
   d.setDate(d.getDate() + 3 + days)
-  return d.toLocaleDateString('en-US')
+  return format(d, 'M/d/yyyy')
 }
 
 const startDateZohoSrc: FieldSource = () => {
   const d = new Date()
   d.setDate(d.getDate() + 3)
-  return formatZohoShortDate(d)
+  return format(d, 'MMM dd yyyy')
 }
 
 const completionDateZohoSrc: FieldSource = (ctx) => {
   const days = Number(ctx.proposal.projectJSON.data.validThroughTimeframe.replace(/\D/g, ''))
   const d = new Date()
   d.setDate(d.getDate() + 3 + days)
-  return formatZohoShortDate(d)
+  return format(d, 'MMM dd yyyy')
 }
 
-// Zoho per-template date format quirk: every template's `sent-date`
-// field is configured with date_format `MM/dd/yyyy` (verified via real
-// mergesend). AWD's `start-date` / `completion-date` /
-// `original-contract-date` use `MMM dd yyyy`. Other templates'
-// start/completion fields are plain Textfield and accept any printable
-// string. Keep this in sync with the inventory artifact.
-const sentDateSrc: FieldSource = () => new Date().toLocaleDateString('en-US')
+const sentDateSrc: FieldSource = () => format(new Date(), 'M/d/yyyy')
 
-// AWD's original-contract-date refers to when the PROJECT'S original
-// contract was sent (not the upsell proposal's creation). Sourced from
-// `ctx.originalContractDate` — the earliest contract-sent date across
-// all proposals on all meetings of this proposal's project, populated
-// by getProposal's projectFirstContractSentAt subquery and surfaced
-// through buildProposalContext. Falls back to today only if the value
-// is missing (defensive — shouldn't happen for upsells given the
-// project-creation rule).
+// AWD-only field — invariant: upsells run on a project that was created
+// when a prior proposal was approved, so `originalContractDate` is always
+// set. Throwing on null surfaces a real data integrity bug instead of
+// silently shipping today's date as the original contract date.
 const originalContractDateSrc: FieldSource = (ctx) => {
-  const date = ctx.originalContractDate ?? new Date()
-  return formatZohoShortDate(date)
+  if (!ctx.originalContractDate) {
+    throw new Error('originalContractDate is null — upsell envelope on a project with no contract-sent proposal')
+  }
+  return format(ctx.originalContractDate, 'MMM dd yyyy')
 }
 
 const baseHomeownerFieldMappings: Record<string, FieldSource> = {

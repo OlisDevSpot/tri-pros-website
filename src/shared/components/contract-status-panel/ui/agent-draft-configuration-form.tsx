@@ -4,52 +4,46 @@ import type { EnvelopeDocumentId } from '@/shared/constants/enums'
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { Check, Loader2, ShieldCheck } from 'lucide-react'
 import { motion } from 'motion/react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
-import { cn } from '@/shared/lib/utils'
+import { useDebounce } from '@/shared/hooks/use-debounce'
 import { useTRPC } from '@/trpc/helpers'
 
 interface AgentDraftConfigurationFormProps {
   proposalId: string
-  /** Customer's currently saved age. Pre-fills the input if present. */
   initialAge: number | null
 }
 
 /**
- * Pre-send draft configuration for the agent. Two stages, single submit:
- *
- *   1. Customer age — drives senior-vs-non-senior agreement variant
- *      and reveals the document selector once valid.
- *   2. Document selector — required docs render as static check rows
- *      (cannot be unchecked), optional docs render as Switches that
- *      default off. List comes from the registry-driven evaluator.
- *
- * Submitting fires `configureDraftEnvelope`, which atomically persists
- * both the age and the selection. The send-proposal flow then picks up
- * the registry path and assembles the envelope from the chosen docs.
+ * Pre-send draft configuration: customer age + envelope document
+ * selection persisted atomically via configureDraftEnvelope. Required
+ * docs render as static rows; optional docs as Switches. Once submitted,
+ * the send-proposal flow picks the registry path and assembles the
+ * multi-template envelope.
  */
 export function AgentDraftConfigurationForm({ proposalId, initialAge }: AgentDraftConfigurationFormProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
 
   const [ageInput, setAgeInput] = useState(initialAge != null ? String(initialAge) : '')
-  // Raw selection — may contain ids that are no longer applicable when
-  // senior status flips. The derived `validSelected` below intersects
-  // against the current evaluation, so stale entries never leak into
-  // either the rendered switches or the submitted payload.
   const [optionalSelected, setOptionalSelected] = useState<Set<EnvelopeDocumentId>>(() => new Set())
 
   const parsedAge = Number.parseInt(ageInput, 10)
   const isAgeValid = !Number.isNaN(parsedAge) && parsedAge >= 18 && parsedAge <= 120
 
+  // Debounce so each keystroke doesn't fire a server roundtrip through
+  // getProposal's joins + subquery — only the senior-status flip at 65
+  // changes the doc list.
+  const debouncedAge = useDebounce(isAgeValid ? parsedAge : undefined, 250)
+
   const evaluation = useQuery(
     trpc.proposalsRouter.contracts.evaluateEnvelopeDocs.queryOptions(
-      { proposalId, ageOverride: isAgeValid ? parsedAge : undefined },
-      { enabled: isAgeValid, placeholderData: keepPreviousData },
+      { proposalId, ageOverride: debouncedAge },
+      { enabled: debouncedAge != null, placeholderData: keepPreviousData },
     ),
   )
 
@@ -65,39 +59,11 @@ export function AgentDraftConfigurationForm({ proposalId, initialAge }: AgentDra
     }),
   )
 
-  const requiredDocs = useMemo(
-    () => evaluation.data?.docs.filter(d => d.status === 'required') ?? [],
-    [evaluation.data],
-  )
-  const optionalDocs = useMemo(
-    () => evaluation.data?.docs.filter(d => d.status === 'optional') ?? [],
-    [evaluation.data],
-  )
-
-  // Derived effective selection — drops any ids that are no longer
-  // optional under the current evaluation (e.g. agent edited age, the
-  // senior branch flipped, a doc switched between optional/forbidden).
-  const validSelected = useMemo<Set<EnvelopeDocumentId>>(() => {
-    const allowed = new Set(optionalDocs.map(d => d.id))
-    const next = new Set<EnvelopeDocumentId>()
-    for (const id of optionalSelected) {
-      if (allowed.has(id)) {
-        next.add(id)
-      }
-    }
-    return next
-  }, [optionalSelected, optionalDocs])
-
-  function handleSubmit() {
-    if (!isAgeValid || !evaluation.data) {
-      return
-    }
-    const selection = [
-      ...requiredDocs.map(d => d.id),
-      ...optionalDocs.filter(d => validSelected.has(d.id)).map(d => d.id),
-    ]
-    submit.mutate({ proposalId, age: parsedAge, envelopeDocumentIds: selection })
-  }
+  const docs = evaluation.data?.docs ?? []
+  const requiredDocs = docs.filter(d => d.status === 'required')
+  const optionalDocs = docs.filter(d => d.status === 'optional')
+  const showDocs = isAgeValid && evaluation.data != null
+  const isPending = submit.isPending
 
   function toggleOptional(id: EnvelopeDocumentId, checked: boolean) {
     setOptionalSelected((prev) => {
@@ -112,8 +78,19 @@ export function AgentDraftConfigurationForm({ proposalId, initialAge }: AgentDra
     })
   }
 
-  const showDocs = isAgeValid && evaluation.data != null
-  const isPending = submit.isPending
+  function handleSubmit() {
+    if (!isAgeValid || !evaluation.data) {
+      return
+    }
+    // Filter optionalSelected against current optionalDocs — drops any
+    // ids that became forbidden when senior status flipped.
+    const allowedOptional = new Set(optionalDocs.map(d => d.id))
+    const selection: EnvelopeDocumentId[] = [
+      ...requiredDocs.map(d => d.id),
+      ...[...optionalSelected].filter(id => allowedOptional.has(id)),
+    ]
+    submit.mutate({ proposalId, age: parsedAge, envelopeDocumentIds: selection })
+  }
 
   return (
     <motion.div
@@ -166,17 +143,31 @@ export function AgentDraftConfigurationForm({ proposalId, initialAge }: AgentDra
             <p className="text-xs font-medium text-muted-foreground">Documents in this envelope</p>
             <div className="mt-2 flex flex-col gap-1.5">
               {requiredDocs.map(doc => (
-                <RequiredRow key={doc.id} label={doc.label} />
+                <div
+                  key={doc.id}
+                  className="flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <Check className="size-4 text-primary" />
+                    <span className="text-sm">{doc.label}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Required</span>
+                </div>
               ))}
               {optionalDocs.map(doc => (
-                <OptionalRow
+                <label
                   key={doc.id}
-                  id={doc.id}
-                  label={doc.label}
-                  checked={validSelected.has(doc.id)}
-                  disabled={isPending}
-                  onChange={checked => toggleOptional(doc.id, checked)}
-                />
+                  htmlFor={`opt-${doc.id}`}
+                  className="flex cursor-pointer items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2 hover:border-border"
+                >
+                  <span className="text-sm">{doc.label}</span>
+                  <Switch
+                    id={`opt-${doc.id}`}
+                    checked={optionalSelected.has(doc.id)}
+                    disabled={isPending}
+                    onCheckedChange={checked => toggleOptional(doc.id, checked)}
+                  />
+                </label>
               ))}
             </div>
           </div>
@@ -199,49 +190,5 @@ export function AgentDraftConfigurationForm({ proposalId, initialAge }: AgentDra
           : 'Confirm & Continue'}
       </Button>
     </motion.div>
-  )
-}
-
-function RequiredRow({ label }: { label: string }) {
-  return (
-    <div className={cn(
-      'flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2',
-    )}
-    >
-      <div className="flex items-center gap-2">
-        <Check className="size-4 text-primary" />
-        <span className="text-sm">{label}</span>
-      </div>
-      <span className="text-xs text-muted-foreground">Required</span>
-    </div>
-  )
-}
-
-function OptionalRow({
-  id,
-  label,
-  checked,
-  disabled,
-  onChange,
-}: {
-  id: EnvelopeDocumentId
-  label: string
-  checked: boolean
-  disabled: boolean
-  onChange: (checked: boolean) => void
-}) {
-  return (
-    <label
-      htmlFor={`opt-${id}`}
-      className="flex cursor-pointer items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2 hover:border-border"
-    >
-      <span className="text-sm">{label}</span>
-      <Switch
-        id={`opt-${id}`}
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={onChange}
-      />
-    </label>
   )
 }

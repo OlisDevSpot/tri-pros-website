@@ -157,9 +157,6 @@ export function AgentContractView({
             )}
           </div>
 
-          {/* Draft-config gate — both age AND envelope document selection
-              must be set before any contract actions. The form persists
-              both atomically via configureDraftEnvelope. */}
           {!contractStatus && (customerAge == null || envelopeDocumentIds == null) && (
             <AgentDraftConfigurationForm
               proposalId={proposalId}
@@ -167,12 +164,10 @@ export function AgentContractView({
             />
           )}
 
-          {/* State: Draft is being created by background job */}
           {!contractStatus && isDraftSyncing && customerAge != null && envelopeDocumentIds != null && (
             <DraftSyncingState />
           )}
 
-          {/* State: No contract yet (age + docs must be set) */}
           {!contractStatus && !isDraftSyncing && customerAge != null && envelopeDocumentIds != null && (
             <NoContractState
               isSent={isSent}

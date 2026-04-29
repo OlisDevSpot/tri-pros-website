@@ -19,14 +19,9 @@ export interface ProposalContext {
   /** Plaintext of the SOW (already computed once for the long/short check). */
   sowText: string
   /**
-   * Date the project's original (initial-sale) agreement was sent —
-   * sourced from the earliest `contractSentAt` across all proposals on
-   * all meetings of this proposal's project. Used by AWD's
-   * `original-contract-date` field on upsell envelopes. Null in the
-   * initial scenario (no project yet) and as a defensive fallback if
-   * the project has no contract-sent proposal yet (shouldn't happen
-   * given the project-creation rule, but assemblers should degrade
-   * gracefully).
+   * Earliest `contractSentAt` across all proposals on all meetings of
+   * this proposal's project. Fills AWD's `original-contract-date`
+   * field on upsell envelopes. Null on initial-sale (no project yet).
    */
   originalContractDate: Date | null
 }
