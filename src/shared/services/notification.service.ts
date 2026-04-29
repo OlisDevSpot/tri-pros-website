@@ -4,6 +4,7 @@ import { user } from '@/shared/db/schema/auth'
 import { resendClient } from '@/shared/services/resend/client'
 import { RESEND_FROM } from '@/shared/services/resend/constants'
 import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-emails'
+import { proposalViewedSubject } from '@/shared/services/resend/lib/subjects'
 
 function createNotificationService() {
   return {
@@ -34,7 +35,7 @@ function createNotificationService() {
       const { error } = await resendClient.emails.send({
         from: RESEND_FROM.default,
         to: owner.email,
-        subject: `🔔 ${params.customerName} just opened their proposal`,
+        subject: proposalViewedSubject(params.customerName),
         react: renderProposalViewedEmail({
           customerName: params.customerName,
           proposalLabel: params.proposalLabel,

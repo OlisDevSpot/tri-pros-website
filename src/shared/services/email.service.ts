@@ -4,6 +4,7 @@ import { resendClient } from '@/shared/services/resend/client'
 import { RESEND_FROM, RESEND_LEAD_INBOX } from '@/shared/services/resend/constants'
 import { buildSenderFrom } from '@/shared/services/resend/lib/build-sender-from'
 import { renderGeneralInquiryEmail, renderProposalEmail, renderScheduleConsultationEmail } from '@/shared/services/resend/lib/render-emails'
+import { consultationScheduledSubject, generalInquirySubject, proposalReadySubject } from '@/shared/services/resend/lib/subjects'
 
 function createEmailService() {
   return {
@@ -23,7 +24,7 @@ function createEmailService() {
         from: buildSenderFrom(params.repName),
         to: params.email,
         replyTo: params.replyTo,
-        subject: `${firstName}, your Tri Pros Remodeling proposal is ready`,
+        subject: proposalReadySubject(firstName),
         react: renderProposalEmail({
           proposalUrl,
           customerName: params.customerName,
@@ -43,7 +44,7 @@ function createEmailService() {
         to: RESEND_LEAD_INBOX,
         from: RESEND_FROM.default,
         replyTo: formData.email,
-        subject: 'Consultation scheduled!',
+        subject: consultationScheduledSubject(),
         react: renderScheduleConsultationEmail(formData),
       })
 
@@ -59,7 +60,7 @@ function createEmailService() {
         to: RESEND_LEAD_INBOX,
         from: RESEND_FROM.default,
         replyTo: formData.email,
-        subject: 'General Inquiry',
+        subject: generalInquirySubject(),
         react: renderGeneralInquiryEmail(formData),
       })
 

@@ -1,4 +1,6 @@
 export const RESEND_BRAND_NAME = 'Tri Pros Remodeling'
+/** Shorter brand form for subject lines and other char-constrained surfaces. */
+export const RESEND_SHORT_BRAND_NAME = 'Tri Pros'
 export const RESEND_SENDER_MAILBOX = 'info@triprosremodeling.com'
 
 export const RESEND_FROM = {
