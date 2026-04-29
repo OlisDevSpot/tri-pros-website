@@ -7,21 +7,10 @@ import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 import { isLongSow } from '../lib/is-long-sow'
 
 /**
- * Builds the snapshot all envelope-document predicates and field
- * sources resolve against. Pure: same input, same output, no I/O. Built
- * once per draft creation; passed through to evaluator + assembler.
- *
- * Scenario is derived from the proposal's meeting's projectId — null
- * means initial sale (a new project will be created if the proposal
- * is approved); non-null means upsell on an existing project. The
- * meeting-projectId join lives in the DAL's getProposal so callers
- * don't need to fetch it separately.
- *
- * `ageOverride` lets the agent UI preview rule evaluation against an
- * age the user is currently typing — before that value is persisted to
- * the customer record. The override only feeds `isSenior`; field
- * sources still resolve `ho-age` from `customer.customerAge`, so this
- * never affects the actual values that ship to Zoho.
+ * Pure snapshot for predicates + field sources. `ageOverride` only
+ * feeds `isSenior` (rules-only) — field sources still resolve `ho-age`
+ * from the saved customer record, so an override never affects values
+ * shipped to Zoho.
  */
 export function buildProposalContext(
   proposal: ProposalWithCustomer,
@@ -30,6 +19,9 @@ export function buildProposalContext(
   const scenario: EnvelopeScenario = proposal.meetingProjectId !== null ? 'upsell' : 'initial'
   const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
   const ageForSeniorCheck = options.ageOverride ?? proposal.customer?.customerAge
+  const originalContractDate = proposal.projectFirstContractSentAt
+    ? new Date(proposal.projectFirstContractSentAt)
+    : null
   return {
     proposal,
     scenario,
@@ -37,5 +29,6 @@ export function buildProposalContext(
     isLongSow: isLongSow(sowText),
     finalTcp: computeFinalTcp(proposal.fundingJSON.data),
     sowText,
+    originalContractDate,
   }
 }

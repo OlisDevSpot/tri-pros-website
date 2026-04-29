@@ -64,6 +64,9 @@ function makeFakeContext(recipientEmail: string): ProposalContext {
     isLongSow: false,
     finalTcp: 7500,
     sowText: 'Phase 4 smoke-test additional work.',
+    // Synthetic original-contract-date 60 days ago — exercises the
+    // Phase 4.5 wiring without needing a real project lookup.
+    originalContractDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
   }
 }
 

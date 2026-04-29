@@ -19,7 +19,6 @@ export type ZohoActionStatus = (typeof zohoActionStatuses)[number]
 export interface ZohoSignerStatus {
   role: string
   status: ZohoActionStatus
-  recipientEmail: string
 }
 
 export interface ZohoContractStatus {

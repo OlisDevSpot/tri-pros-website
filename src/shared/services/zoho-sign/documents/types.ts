@@ -18,6 +18,12 @@ export interface ProposalContext {
   finalTcp: number
   /** Plaintext of the SOW (already computed once for the long/short check). */
   sowText: string
+  /**
+   * Earliest `contractSentAt` across all proposals on all meetings of
+   * this proposal's project. Fills AWD's `original-contract-date`
+   * field on upsell envelopes. Null on initial-sale (no project yet).
+   */
+  originalContractDate: Date | null
 }
 
 /** Resolves a Zoho field's value from the context. Pure function. */

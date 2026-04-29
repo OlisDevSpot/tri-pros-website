@@ -1,5 +1,5 @@
 import type { Buffer } from 'node:buffer'
-import type { ZohoActionStatus, ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
+import type { ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { pdfService } from '@/shared/services/pdf.service'
 import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
@@ -7,6 +7,7 @@ import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
 import { assembleEnvelope } from '@/shared/services/zoho-sign/documents/assemble-envelope'
 import { buildProposalContext } from '@/shared/services/zoho-sign/documents/proposal-context'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
+import { dedupeSignerStatuses } from '@/shared/services/zoho-sign/lib/dedupe-signer-statuses'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
 
 interface ZohoCreateDocResponse {
@@ -14,35 +15,6 @@ interface ZohoCreateDocResponse {
     request_id: string
     request_status: string
   }
-}
-
-/**
- * Zoho returns one `actions` entry per (template × signer-role × recipient).
- * For a multi-template envelope where the homeowner signs N templates,
- * that's N entries with role=Homeowner and the same email — which both
- * collides on the React `key` in the UI grid AND looks wrong (one row per
- * template). Collapse by `(role, recipientEmail)` and pick the lowest
- * status across the group: the signer hasn't truly progressed past the
- * least-advanced template, so we surface that.
- */
-const ACTION_STATUS_RANK: Record<ZohoActionStatus, number> = {
-  NOACTION: 0,
-  UNOPENED: 1,
-  VIEWED: 2,
-  SIGNED: 3,
-}
-
-function dedupeSignerStatuses(actions: { role: string, action_status: string, recipient_email: string }[]) {
-  const grouped = new Map<string, { role: string, status: ZohoActionStatus, recipientEmail: string }>()
-  for (const a of actions) {
-    const key = `${a.role}::${a.recipient_email}`
-    const status = a.action_status as ZohoActionStatus
-    const existing = grouped.get(key)
-    if (!existing || ACTION_STATUS_RANK[status] < ACTION_STATUS_RANK[existing.status]) {
-      grouped.set(key, { role: a.role, status, recipientEmail: a.recipient_email })
-    }
-  }
-  return Array.from(grouped.values())
 }
 
 function createContractService() {
@@ -348,7 +320,6 @@ function createContractService() {
           actions: {
             role: string
             action_status: string
-            recipient_email: string
           }[]
         }
       }

@@ -34,6 +34,7 @@ function makeContext({ scenario, isSenior, isLongSow }: FixtureInput): ProposalC
     isLongSow,
     finalTcp: 50000,
     sowText: '',
+    originalContractDate: null,
   }
 }
 

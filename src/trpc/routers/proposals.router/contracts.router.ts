@@ -94,12 +94,8 @@ export const contractsRouter = createTRPCRouter({
     }),
 
   /**
-   * Returns the live evaluation of which envelope documents are
-   * required/optional for a proposal. Drives the agent draft-config
-   * form. `ageOverride` lets the form preview rule changes against the
-   * age the agent is currently typing — before the value is persisted
-   * via `configureDraftEnvelope`. When omitted, the customer's saved
-   * age is used (or `null`, which yields `isSenior=false`).
+   * Drives the agent draft-config form. `ageOverride` previews
+   * senior-vs-non-senior rule changes against an unsaved age.
    */
   evaluateEnvelopeDocs: agentProcedure
     .input(z.object({
@@ -114,8 +110,6 @@ export const contractsRouter = createTRPCRouter({
 
       const ctx = buildProposalContext(proposal, { ageOverride: input.ageOverride })
       const { required, optional } = evaluateDocuments(ctx)
-
-      // Render in registry order, exclude forbidden, attach labels.
       const requiredSet = new Set(required)
       const optionalSet = new Set(optional)
       const docs = ENVELOPE_DOCUMENTS
@@ -135,15 +129,9 @@ export const contractsRouter = createTRPCRouter({
     }),
 
   /**
-   * Atomically persists the agent's draft configuration:
-   *
-   *   1. customer's age (drives senior-vs-non-senior agreement variant)
-   *   2. proposal's `formMetaJSON.envelopeDocumentIds` selection
-   *
-   * Selection is re-validated server-side against the rules — never
-   * trust the client's filter. After this mutation succeeds, the
-   * existing send-proposal flow + QStash sync-contract-draft job picks
-   * up the registry path and assembles the multi-template envelope.
+   * Atomically persists customer age + proposal envelope-document
+   * selection. Selection is re-validated against the registry rules —
+   * never trust the client's filter alone.
    */
   configureDraftEnvelope: agentProcedure
     .input(z.object({
@@ -160,9 +148,6 @@ export const contractsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
       }
 
-      // Validate selection against the rules using the NEW age — this is
-      // the same evaluator that drives the UI, so any UX-state mismatch
-      // (e.g. agent edited URL) trips here before we persist anything.
       const ctxForValidation = buildProposalContext(proposal, { ageOverride: input.age })
       try {
         validateEnvelopeSelection(ctxForValidation, input.envelopeDocumentIds)
@@ -174,7 +159,6 @@ export const contractsRouter = createTRPCRouter({
         throw err
       }
 
-      // Read existing JSONB blobs to merge (avoid clobbering sibling fields)
       const customerId = proposal.customer.id
       const [existingCustomer] = await db
         .select({ customerProfileJSON: customers.customerProfileJSON })
@@ -186,8 +170,6 @@ export const contractsRouter = createTRPCRouter({
         envelopeDocumentIds: input.envelopeDocumentIds,
       }
 
-      // Single transaction so the proposal's selection never points to
-      // an age that hasn't been written yet (or vice versa).
       await db.transaction(async (tx) => {
         await tx
           .update(customers)

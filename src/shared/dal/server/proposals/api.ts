@@ -1,6 +1,6 @@
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import { randomBytes } from 'node:crypto'
-import { and, count, desc, eq, getTableColumns, max } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, max, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -65,6 +65,19 @@ export async function getProposal(proposalId: string) {
       // project. Drives envelope-scenario derivation in
       // src/shared/services/zoho-sign/documents/proposal-context.ts.
       meetingProjectId: meetings.projectId,
+      // Earliest contract_sent_at across all proposals on all meetings
+      // tied to this proposal's project. Drives AWD's
+      // `original-contract-date` field on upsell envelopes (the date
+      // the project's initial agreement was sent). Null when meeting
+      // has no project (initial scenario) — the field is not used in
+      // initial envelopes anyway.
+      projectFirstContractSentAt: sql<string | null>`(
+        SELECT MIN(p2.contract_sent_at)
+        FROM ${proposals} p2
+        JOIN ${meetings} m2 ON m2.id = p2.meeting_id
+        WHERE m2.project_id = ${meetings.projectId}
+          AND p2.contract_sent_at IS NOT NULL
+      )`,
     })
     .from(proposals)
     .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
