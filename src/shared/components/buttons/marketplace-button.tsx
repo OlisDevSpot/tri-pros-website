@@ -2,20 +2,18 @@
 
 import { SparkleIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { ROOTS } from '@/shared/config/roots'
 import { Button } from '../ui/button'
 
 interface Props {
   asMenuItem?: boolean
   alternateText?: string
-  absolute?: boolean
 }
 
-export function MarketplaceButton({ asMenuItem = false, alternateText, absolute }: Props) {
+export function MarketplaceButton({ asMenuItem = false, alternateText }: Props) {
   const router = useRouter()
 
   function handleClick() {
-    router.push(`${ROOTS.generateUrl('/', { absolute })}`)
+    router.push('/')
   }
 
   return (

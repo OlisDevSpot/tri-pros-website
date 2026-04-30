@@ -3,18 +3,16 @@
 import { BadgeCheckIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/shared/components/ui/button'
-import { ROOTS } from '@/shared/config/roots'
 
 interface Props {
   asMenuItem?: boolean
-  absolute?: boolean
 }
 
-export function BillingButton({ asMenuItem = false, absolute = false }: Props) {
+export function BillingButton({ asMenuItem = false }: Props) {
   const router = useRouter()
 
   function handleClick() {
-    router.push(`${ROOTS.generateUrl('/', { absolute })}`)
+    router.push('/')
   }
 
   return (

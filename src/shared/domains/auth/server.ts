@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { openAPI } from 'better-auth/plugins'
+import { APP_HOSTS } from '@/shared/config/roots'
 import env from '@/shared/config/server-env'
 import { userRoles } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
@@ -12,19 +13,22 @@ export const auth = betterAuth({
     provider: 'pg',
   }),
   trustedOrigins: [
-    env.BETTER_AUTH_URL || '',
-    env.NEXT_PUBLIC_BASE_URL,
-    'https://triprosremodeling.com',
-    'https://www.triprosremodeling.com',
-  ].filter(Boolean),
+    ...APP_HOSTS.dev.map(h => `http://${h}`),
+    ...APP_HOSTS.tunnel.map(h => `https://${h}`),
+    ...APP_HOSTS.prod.map(h => `https://${h}`),
+  ],
   socialProviders: {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
-      redirectURI: `${env.NEXT_PUBLIC_BASE_URL}/api/auth/callback/google`,
+      // redirectURI intentionally omitted — better-auth derives the OAuth
+      // callback URL per-request (see advanced.trustedProxyHeaders + the absent
+      // baseURL below). Each environment (localhost ports, ngrok tunnel, prod)
+      // gets its own correct callback automatically. APP_HOSTS in roots.ts is
+      // the single source of truth — every host in there must also be
+      // registered in the Google Cloud OAuth Client.
       accessType: 'offline',
       prompt: 'select_account consent',
-      // scope is new — first time explicitly configured; adds drive.readonly for Picker
       scope: [
         'openid',
         'email',
@@ -51,7 +55,12 @@ export const auth = betterAuth({
       },
     },
   },
-  baseURL: env.NEXT_PUBLIC_BASE_URL,
+  // baseURL intentionally omitted. better-auth derives the per-request base
+  // URL from x-forwarded-host (when trustedProxyHeaders is enabled, e.g.
+  // ngrok/Vercel) or from request.url (e.g. localhost). This makes OAuth
+  // callbacks correct for every host in APP_HOSTS without env juggling.
+  // When we upgrade better-auth to ≥1.5 we can switch to the explicit
+  // `baseURL: { allowedHosts: [...], fallback }` form for stricter validation.
   secret: env.BETTER_AUTH_SECRET,
   user: {
     additionalFields: {
@@ -94,6 +103,11 @@ export const auth = betterAuth({
     crossSubDomainCookies: {
       enabled: true,
     },
+    // Trust x-forwarded-host / x-forwarded-proto from the proxy in front of us
+    // (ngrok in dev, Vercel in prod). Required for per-request baseURL
+    // derivation — without this, OAuth callbacks would always point at the
+    // upstream host (localhost:3000) and break mobile testing through the tunnel.
+    trustedProxyHeaders: true,
   },
 })
 

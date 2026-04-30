@@ -82,7 +82,7 @@ function buildMeetingDescription(meeting: MeetingForGCal): string {
 
   // Schedule deep link — nuqs params trigger scroll + highlight in schedule view
   if (meeting.scheduledFor) {
-    const scheduleBase = ROOTS.dashboard.schedule({ absolute: true, isProduction: true })
+    const scheduleBase = ROOTS.dashboard.schedule({ absolute: true })
     const scheduleUrl = `${scheduleBase}?highlightMeeting=${meeting.id}&highlightDate=${encodeURIComponent(meeting.scheduledFor)}`
     sections.push(`🔗 View in Schedule: ${scheduleUrl}`)
   }
