@@ -1,8 +1,14 @@
 import { randomBytes } from 'node:crypto'
 import { TRPCError } from '@trpc/server'
-import { and, asc, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import z from 'zod'
 
+import { customerPipelines } from '@/shared/constants/enums/customer-pipelines'
+import { buildFilterWhere } from '@/shared/dal/server/query/filters'
+import { paginate } from '@/shared/dal/server/query/output'
+import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
+import { buildSearchWhere } from '@/shared/dal/server/query/search'
+import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
@@ -208,14 +214,13 @@ export const leadSourcesRouter = createTRPCRouter({
       return rows.map(r => r.year)
     }),
 
-  // Customers sourced from a given lead source. Paginated for future scale.
+  // Customers sourced from a given lead source. Paginated via shared schema.
+  // Filters: `pipeline` (multi-select active|rehash|dead), `createdAt` (date range).
   getCustomers: agentProcedure
-    .input(z.object({
-      id: z.string().uuid(),
-      search: z.string().optional(),
-      limit: z.number().int().min(1).max(500).default(100),
-      offset: z.number().int().min(0).default(0),
-    }))
+    .input(paginatedQueryInput({
+      pipeline: z.array(z.enum(customerPipelines)).optional(),
+      createdAt: dateRangeSchema.optional(),
+    }).extend({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
       const [src] = await db
@@ -228,18 +233,25 @@ export const leadSourcesRouter = createTRPCRouter({
       }
 
       const match = customersMatchingSource(src.id)
-      const where = input.search
-        ? and(
-            match,
-            or(
-              ilike(customers.name, `%${input.search}%`),
-              ilike(customers.email, `%${input.search}%`),
-            ),
-          )
-        : match
+      const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
+      const filterWhere = buildFilterWhere(input.filters, {
+        pipeline: v => (v.length > 0 ? inArray(customers.pipeline, v) : undefined),
+        createdAt: v => and(
+          v.from ? gte(customers.createdAt, v.from) : undefined,
+          v.to ? lte(customers.createdAt, v.to) : undefined,
+        ),
+      })
+      const where = and(match, searchWhere, filterWhere)
 
-      const [rows, total] = await Promise.all([
-        db
+      const orderBy = buildOrderBy(input.sort, {
+        name: customers.name,
+        email: customers.email,
+        createdAt: customers.createdAt,
+        pipeline: customers.pipeline,
+      }, desc(customers.createdAt))
+
+      return paginate({
+        query: () => db
           .select({
             id: customers.id,
             name: customers.name,
@@ -249,36 +261,45 @@ export const leadSourcesRouter = createTRPCRouter({
           })
           .from(customers)
           .where(where)
-          .orderBy(desc(customers.createdAt))
-          .limit(input.limit)
-          .offset(input.offset),
-        db.$count(customers, where),
-      ])
-
-      return { rows, total }
+          .orderBy(...orderBy)
+          .limit(input.pagination.limit)
+          .offset(input.pagination.offset),
+        count: () => db.$count(customers, where),
+      })
     }),
 
   // Customers across every lead source (plus legacy NULL-source rows). Used by
   // the "All" pane. Joins lead_sources so the table can show which source
   // each customer came from; NULL joins mean "unknown legacy import".
+  // Filters: `pipeline` (multi-select), `createdAt` (date range).
   getAllCustomers: agentProcedure
-    .input(z.object({
-      search: z.string().optional(),
-      limit: z.number().int().min(1).max(500).default(100),
-      offset: z.number().int().min(0).default(0),
+    .input(paginatedQueryInput({
+      pipeline: z.array(z.enum(customerPipelines)).optional(),
+      createdAt: dateRangeSchema.optional(),
     }))
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
 
-      const where = input.search
-        ? or(
-            ilike(customers.name, `%${input.search}%`),
-            ilike(customers.email, `%${input.search}%`),
-          )
-        : undefined
+      const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
+      const filterWhere = buildFilterWhere(input.filters, {
+        pipeline: v => (v.length > 0 ? inArray(customers.pipeline, v) : undefined),
+        createdAt: v => and(
+          v.from ? gte(customers.createdAt, v.from) : undefined,
+          v.to ? lte(customers.createdAt, v.to) : undefined,
+        ),
+      })
+      const where = and(searchWhere, filterWhere)
 
-      const [rows, total] = await Promise.all([
-        db
+      const orderBy = buildOrderBy(input.sort, {
+        name: customers.name,
+        email: customers.email,
+        createdAt: customers.createdAt,
+        pipeline: customers.pipeline,
+        leadSourceName: leadSourcesTable.name,
+      }, desc(customers.createdAt))
+
+      return paginate({
+        query: () => db
           .select({
             id: customers.id,
             name: customers.name,
@@ -292,13 +313,11 @@ export const leadSourcesRouter = createTRPCRouter({
           .from(customers)
           .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
           .where(where)
-          .orderBy(desc(customers.createdAt))
-          .limit(input.limit)
-          .offset(input.offset),
-        db.$count(customers, where),
-      ])
-
-      return { rows, total }
+          .orderBy(...orderBy)
+          .limit(input.pagination.limit)
+          .offset(input.pagination.offset),
+        count: () => db.$count(customers, where),
+      })
     }),
 
   create: agentProcedure

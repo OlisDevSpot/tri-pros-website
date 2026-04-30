@@ -4,6 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
 
+import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { CustomerPipelineBadge } from '@/shared/entities/customers/components/customer-pipeline-badge'
@@ -51,7 +52,7 @@ export function buildCustomerColumns<T extends CustomerTableRowBase>(
   const columns: ColumnDef<T>[] = [
     {
       accessorKey: 'name',
-      header: 'Customer',
+      header: ({ column }) => <SortableHeader column={column} label="Customer" />,
       size: 260,
       cell: ({ row }) => (
         <div className="min-w-0 space-y-0.5 p-2">
@@ -68,8 +69,8 @@ export function buildCustomerColumns<T extends CustomerTableRowBase>(
 
   if (options.includeSource) {
     columns.push({
-      id: 'source',
-      header: 'Source',
+      id: 'leadSourceName',
+      header: ({ column }) => <SortableHeader column={column} label="Source" />,
       size: 160,
       accessorFn: (row) => {
         const r = row as unknown as CustomerTableRowWithSource
@@ -96,7 +97,7 @@ export function buildCustomerColumns<T extends CustomerTableRowBase>(
 
   columns.push({
     accessorKey: 'pipeline',
-    header: 'Pipeline',
+    header: ({ column }) => <SortableHeader column={column} label="Pipeline" />,
     size: 120,
     cell: ({ row }) => (
       <div className="p-2">
@@ -107,7 +108,7 @@ export function buildCustomerColumns<T extends CustomerTableRowBase>(
 
   columns.push({
     accessorKey: 'createdAt',
-    header: 'Created',
+    header: ({ column }) => <SortableHeader column={column} label="Created" />,
     size: 180,
     cell: ({ row, table }) => {
       const { relative, dayAtTime } = formatDateCell(row.original.createdAt)

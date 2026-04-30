@@ -92,6 +92,48 @@ tRPC is the primary API layer, used with TanStack React Query. Two procedure typ
 
 The server-side proxy (`src/trpc/server.ts`) is marked `server-only` and uses React `cache()` for request deduplication.
 
+### Query toolkit (pagination + sort + search + filters + page-size)
+
+The query toolkit is **the** way we hit any paginated tRPC procedure — never hand-roll page state, debounced search, sort wiring, filter URL state, or `placeholderData`. Four layers, each replaceable.
+
+**Server primitives** (`src/shared/dal/server/query/`):
+- `paginatedQueryInput(filtersShape)` — Zod composer for procedure inputs. Returns `{ pagination: { limit, offset }, sort?: { sortBy, sortDir }, search?, filters?: { ...consumerShape } }`. Procedures `.extend({ id })` to add business inputs at the top level.
+- `paginate({ query, count })` — runs the page query + count in parallel, returns `PaginatedResult<T> = { rows, total }`.
+- `buildSearchWhere(input.search, [columns])` — `ilike` OR fragment, returns undefined for empty.
+- `buildOrderBy(input.sort, columnMap, fallback)` — whitelisted sort, never throws on bad keys.
+- `buildFilterWhere(input.filters, predicateMap)` — composes per-key Drizzle predicates.
+
+**Client hook** (`src/shared/dal/client/query/`):
+- `usePaginatedQuery(factory, extra, options)` — bundles page + page-size + debounced search + sort + filters into one URL-persisted state machine. Auto-applies `placeholderData: keepPreviousData`. Prefetches next page. Clamps to `pageCount` when total shrinks. Stable-keys `extra` so reference instability doesn't trigger refetches.
+- Options: `paramPrefix`, `pageSize`, `pageSizeOptions`, `searchDebounceMs`, `enabled`, `prefetchNextPage`, `defaultSort`, `filters: FilterDefinition[]`.
+- Filter types (compile-time registry in `filter-parser-registry.ts`): `select | multi-select | date-range | boolean`.
+- Reserved URL key suffixes: `p`, `q`, `sort`, `dir`, `ps`. Filter ids must avoid these.
+
+**UI primitive** (`src/shared/components/query-toolbar/`):
+- `<QueryToolbar pagination={p}>` compound component — context-driven. Slots: `Search`, `Filters`, `Filter` (single by id, with optional render-prop), `ActiveFilterChips`, `PageSize`, `ClearAll`, `Sort` (dropdown variant). Container-agnostic — same toolbar above DataTable, Kanban, or Card grid.
+
+**Container adapters** (`src/shared/components/data-table/lib/`):
+- `toDataTablePagination(p)` — converts to `DataTableServerPagination`.
+- `toDataTableSorting(p, { fallbackVisual })` — converts to `DataTableServerSorting`. DataTable runs in `manualSorting + manualPagination + manualFiltering` mode when these are set; column-header clicks route to `setSort` automatically.
+- New containers (kanban, calendar) get their own adapter — never bypass `usePaginatedQuery`.
+
+**Reference impls:** `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` and `all-customers-section.tsx`. Both wire the full stack: server filters (pipeline multi-select + createdAt date-range), sortable column headers, page-size selector, URL-persisted state with `?src_*` / `?all_*` prefixes.
+
+**Legacy filter scaffolding** (in active use by un-migrated tables, marked `@deprecated`):
+- `DataTableFilterConfig` / `DataTableFilterBar` / `useTableUrlFilters` / `DataTableTimePresetFilter` — for client-side filtering on Activities, Past Meetings, Past Proposals, Projects portfolio, Customer Pipelines. Each migration is a follow-up issue.
+
+### TanStack Query — `placeholderData: keepPreviousData`
+
+For any `useQuery` whose `queryKey` changes in response to user-controlled input (pagination, filter chip, search box, tab selector, date-range picker), pass `placeholderData: keepPreviousData`. Prior data stays visible (with `isPlaceholderData === true`) until the new fetch resolves; without it, the UI unmounts to a skeleton on every key change.
+
+```ts
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+
+useQuery({ ...trpc.x.y.queryOptions(input), placeholderData: keepPreviousData })
+```
+
+`usePaginatedQuery` already applies this. For ad-hoc queries with dynamic keys (modals, drawers with tab state, etc.), opt in explicitly. Do **not** apply when stale data would be misleading (e.g. switching to a different entity in a detail panel — show a skeleton instead).
+
 ### Authentication
 
 **better-auth** with Drizzle adapter (Postgres). Google OAuth is configured. Users signing up with a `@triprosremodeling.com` email are auto-assigned the `agent` role.
@@ -192,6 +234,18 @@ gh project item-edit --project-id PVT_kwHOCqZfGM4BSgDZ \
 6. On merge: GitHub automatically moves to `Done`
 7. When discovering new work: create a new issue, add to project board in `Backlog`
 
+### Parallel Issue Work — `pnpm dispatch`
+
+**Canonical mechanism for working multiple GitHub issues in parallel.** Slot-tracked (max 3), port-assigned (3001-3003), board-aware (auto-moves status). Worktrees are real `git worktree`s in `.worktrees/issue-<#>/` (gitignored) — not directory copies. `.env` is symlinked, `node_modules/` is pnpm-hardlinked into the shared store, so 3 slots ≈ 1× project disk.
+
+- `pnpm dispatch start <#>` — create worktree + branch + deps + auto-generated `CLAUDE.local.md`, move issue to In Progress
+- `pnpm dispatch run <#>` — launch Claude in the slot
+- `pnpm dispatch dev <#>` — start Next.js on the slot's assigned port
+- `pnpm dispatch review <#>` / `pr <#>` / `park <#>` / `cleanup <#>` — full lifecycle
+- `pnpm dispatch loop` — AFK execution engine that picks Ready+`claude`-labeled issues by P0→P3
+- `pnpm dispatch help` — full command surface
+
+See `memory/reference-dispatch-system.md` for the complete reference. Do **not** invent a parallel-work flow — always go through dispatch.
 
 ## WHO WE ARE
 
