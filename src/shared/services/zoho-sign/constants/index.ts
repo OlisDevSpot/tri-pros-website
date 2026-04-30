@@ -77,11 +77,14 @@ export const ZOHO_SIGN_TEMPLATES = {
 export const SOW_FIELD_MAX_CHARS = 2000
 
 /**
- * Threshold (in plaintext chars) above which the signing request routes
- * to the long path (attached SOW PDF) instead of inlining into sow-1/sow-2.
+ * Threshold (in plaintext chars) above which the upsell envelope routes to
+ * an attached SOW PDF instead of inlining into AWD's single `sow` text
+ * field. Drives both `awd.sow` mapping (empty vs filled) and the
+ * `sow-pdf` upsell requirement — must stay consistent across both.
  *
- * Derived: 2 × SOW_FIELD_MAX_CHARS = 4000 theoretical short-path capacity,
- * minus ~10% headroom so a paragraph-boundary break never falls outside
- * the cap. Auditable, not magic.
+ * Calibrated for AWD's single text field (Zoho hard cap 2048; we leave
+ * the same 48-char margin as SOW_FIELD_MAX_CHARS). The legacy 2-field
+ * packing (sow-1 + sow-2 on base/senior templates) supported ~3600 chars
+ * inline; AWD has no second field, so the threshold drops to 2000.
  */
-export const SOW_INLINE_MAX_CHARS = 3600
+export const SOW_INLINE_MAX_CHARS = 2000

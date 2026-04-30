@@ -1,9 +1,9 @@
 import type { Buffer } from 'node:buffer'
 import type { EnvelopeDocument, ProposalContext } from './types'
 import type { EnvelopeDocumentId } from '@/shared/constants/enums'
-import { ZOHO_SIGN_BASE_URL } from '../constants'
+import { SOW_INLINE_MAX_CHARS, ZOHO_SIGN_BASE_URL } from '../constants'
 import { getZohoAccessToken } from '../lib/get-access-token'
-import { validateEnvelopeSelection } from './evaluate'
+import { evaluateDocuments } from './evaluate'
 import { ENVELOPE_DOCUMENTS } from './registry'
 
 interface ZohoMergeSendResponse {
@@ -38,18 +38,45 @@ interface AssembleResult {
  * recipient (verified in Phase 1's smoke tests). Field data is global
  * per envelope: identical labels across templates fill once.
  *
- * Throws on invalid selection (missing required / forbidden present)
- * via validateEnvelopeSelection. On Zoho API failure, attempts cleanup
- * via deleteRequest before rethrowing so the QStash retry isn't stuck
- * with a half-built envelope.
+ * Self-heals against context drift: required docs are determined by
+ * registry rules at assembly time (not by saved selection), so a SOW
+ * that grew past the inline threshold, a threshold change, or any other
+ * predicate flip after the agent saved auto-includes the now-required
+ * docs. The saved selection is treated as the agent's *optional*
+ * preferences — it's intersected with currently-optional docs and
+ * unioned with currently-required docs.
+ *
+ * On Zoho API failure, attempts cleanup via deleteRequest before
+ * rethrowing so the QStash retry isn't stuck with a half-built envelope.
  */
 export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleResult> {
-  const selection = ctx.proposal.formMetaJSON.envelopeDocumentIds ?? []
-  validateEnvelopeSelection(ctx, selection)
+  const savedSelection = new Set(ctx.proposal.formMetaJSON.envelopeDocumentIds ?? [])
+  const evaluation = evaluateDocuments(ctx)
+  const optionalSet = new Set(evaluation.optional)
+
+  // Effective envelope: all currently-required + saved-optionals that are
+  // still applicable. Anything saved that's now forbidden is silently
+  // dropped; anything required but not previously saved is silently added.
+  const effectiveIds = new Set<EnvelopeDocumentId>([
+    ...evaluation.required,
+    ...[...savedSelection].filter(id => optionalSet.has(id)),
+  ])
+
+  const drift = computeDrift(savedSelection, effectiveIds, evaluation)
+  if (drift.added.length > 0 || drift.dropped.length > 0) {
+    console.warn('[zoho-sign] envelope selection drifted from saved — self-healing', {
+      proposalId: ctx.proposal.id,
+      scenario: ctx.scenario,
+      saved: [...savedSelection],
+      effective: [...effectiveIds],
+      added: drift.added,
+      dropped: drift.dropped,
+    })
+  }
 
   // Canonicalize order against the registry — agent-submitted order is
   // ignored; envelope documents render in the registry's declared order.
-  const orderedDocs = ENVELOPE_DOCUMENTS.filter(d => selection.includes(d.id))
+  const orderedDocs = ENVELOPE_DOCUMENTS.filter(d => effectiveIds.has(d.id))
   const templateDocs = orderedDocs.filter(d => d.source.kind === 'zoho-template')
   const pdfDocs = orderedDocs.filter(d => d.source.kind === 'generated-pdf')
 
@@ -64,6 +91,10 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
   // template_ids=[...]&data={...}&is_quicksend=false. See
   // docs/zoho-sign/research-notes.md for the full API shape.
   const mergeBody = buildMergeSendBody(ctx, templateDocs)
+  // Pre-flight diagnostics: prints field lengths + threshold so a stale
+  // dev server (or unexpected text field bloat) is immediately visible
+  // without waiting for Zoho to fail.
+  logMergeSendDiagnostics(ctx, mergeBody)
   const mergeRes = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/templates/mergesend`, {
     method: 'POST',
     headers: {
@@ -73,7 +104,29 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
     body: mergeBody,
   })
   if (!mergeRes.ok) {
-    throw new Error(`Zoho mergesend failed (${mergeRes.status}): ${await mergeRes.text()}`)
+    const responseText = await mergeRes.text()
+    // Log the full request payload alongside the response so we can diagnose
+    // field-validation / action-id / template-id mismatches without re-running.
+    console.error('[zoho-sign] mergesend failed', {
+      status: mergeRes.status,
+      response: responseText,
+      proposalId: ctx.proposal.id,
+      scenario: ctx.scenario,
+      templateIds: templateDocs.flatMap(d => d.source.kind === 'zoho-template' ? [d.source.zohoTemplateId] : []),
+      requestBody: mergeBody,
+    })
+    let zohoCode: number | undefined
+    let zohoMessage: string | undefined
+    try {
+      const parsed = JSON.parse(responseText) as { code?: number, message?: string }
+      zohoCode = parsed.code
+      zohoMessage = parsed.message
+    }
+    catch {}
+    const detail = zohoCode != null
+      ? `code ${zohoCode} — ${zohoMessage ?? responseText}`
+      : responseText
+    throw new Error(`Zoho mergesend failed (${mergeRes.status}): ${detail}`)
   }
   const mergeJson = (await mergeRes.json()) as ZohoMergeSendResponse
   const requestId = mergeJson.requests?.request_id
@@ -224,4 +277,59 @@ async function deleteRequest(token: string, requestId: string): Promise<void> {
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[\\/]/g, '_').replace(/\s+/g, '_').slice(0, 200)
+}
+
+/**
+ * Reports what the assembler self-healed: `added` are docs the rules now
+ * require that the agent's saved selection didn't include; `dropped` are
+ * docs the agent had saved that are no longer applicable (forbidden or
+ * required-when-false). Used purely for warn-logging — the assembler
+ * doesn't act on it; effectiveIds is already correct.
+ */
+function computeDrift(
+  saved: Set<EnvelopeDocumentId>,
+  effective: Set<EnvelopeDocumentId>,
+  evaluation: ReturnType<typeof evaluateDocuments>,
+): { added: EnvelopeDocumentId[], dropped: EnvelopeDocumentId[] } {
+  const added = [...effective].filter(id => !saved.has(id))
+  const forbiddenSet = new Set(evaluation.forbidden)
+  const optionalSet = new Set(evaluation.optional)
+  const dropped = [...saved].filter(id => forbiddenSet.has(id) || (!effective.has(id) && !optionalSet.has(id)))
+  return { added, dropped }
+}
+
+/**
+ * Pre-flight pretty-print of the merge body. Surfaces stale-bundle
+ * issues (threshold mismatch) and unexpected field lengths before Zoho
+ * has a chance to reject them with cryptic codes.
+ */
+function logMergeSendDiagnostics(ctx: ProposalContext, mergeBody: string): void {
+  const params = new URLSearchParams(mergeBody)
+  const dataRaw = params.get('data')
+  if (!dataRaw) {
+    return
+  }
+  try {
+    const parsed = JSON.parse(dataRaw) as {
+      templates?: { field_data?: { field_text_data?: Record<string, string>, field_date_data?: Record<string, string> } }
+    }
+    const textData = parsed.templates?.field_data?.field_text_data ?? {}
+    const dateData = parsed.templates?.field_data?.field_date_data ?? {}
+    const fieldLengths = Object.fromEntries(
+      Object.entries(textData).map(([k, v]) => [k, v.length]),
+    )
+    console.warn('[zoho-sign] mergesend pre-flight', {
+      proposalId: ctx.proposal.id,
+      scenario: ctx.scenario,
+      sowTextLength: ctx.sowText.length,
+      isLongSow: ctx.isLongSow,
+      sowInlineMaxChars: SOW_INLINE_MAX_CHARS,
+      textFieldLengths: fieldLengths,
+      dateFields: dateData,
+      templateIds: params.get('template_ids'),
+    })
+  }
+  catch (err) {
+    console.warn('[zoho-sign] diagnostics parse failed', err)
+  }
 }
