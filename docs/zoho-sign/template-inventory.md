@@ -199,4 +199,5 @@ These appear in the [`envelopeDocumentIds`](../../src/shared/constants/enums/zoh
 | senior-ack | * | TBD |
 | esign-waiver | * | TBD |
 | material-order | * | TBD |
-| awd | * | TBD (post-author) |
+| awd | sow | 2000 (Zoho hard cap 2048; SOW_INLINE_MAX_CHARS drops 48 for margin — single field, no second field to overflow into like sow-1/sow-2) |
+| awd | * (other fields) | TBD |
