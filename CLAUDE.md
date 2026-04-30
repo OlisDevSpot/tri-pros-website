@@ -5,7 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-pnpm dev          # Start dev server (binds to 0.0.0.0:3000)
+pnpm dev          # Start dev server (port from PORT env, defaults to 3000)
+pnpm dev:mobile   # Start dev + ngrok tunnel + QR code (one command)
+pnpm tunnel       # Run only the ngrok tunnel (uses ${PORT:-3000})
 pnpm build        # Build for production
 pnpm lint         # ESLint
 # Database (PostgreSQL via Drizzle)
@@ -15,6 +17,31 @@ pnpm db:seed      # Seed Postgres database
 ```
 
 Package manager: **pnpm**. Path alias: `@/` → `src/`.
+
+## Mobile testing
+
+`pnpm dev:mobile` runs `next dev` + `ngrok` + a QR-code printer concurrently. Scan the QR with your phone camera to load the app over the static ngrok tunnel (`https://destined-emu-bold.ngrok-free.app`). Auth, cookies, and OAuth all work over the tunnel — better-auth derives the per-request base URL from `APP_HOSTS` in `src/shared/config/roots.ts` and uses the matching Google OAuth callback automatically.
+
+**Per-worktree port (parallel dev):** Each worktree picks its own port via `.env.local` (git-ignored, loaded by Next.js after `.env`):
+
+```
+# .env.local in worktree foo
+PORT=3001
+```
+
+Both `pnpm dev` and `pnpm tunnel` honor `PORT`. Multiple worktrees can run dev simultaneously on different ports.
+
+**One tunnel at a time:** The free ngrok plan allows one active tunnel. Whichever worktree runs `pnpm dev:mobile` first holds it; others get a clear ngrok error. Kill the holder, run again in the new worktree.
+
+**Third-party webhooks (Google Calendar push, QStash callbacks, etc.):** These resolve their public URL via `env.NGROK_URL ?? env.NEXT_PUBLIC_BASE_URL`. Whichever worktree holds the tunnel receives the webhooks — even if a different worktree created the subscription. If you're testing webhook flows, hold the tunnel in the worktree you want to receive callbacks.
+
+**Adding a new host (worktree port, subdomain, etc.):**
+1. Add it to `APP_HOSTS` in `src/shared/config/roots.ts` (the single source of truth).
+2. If it needs Google sign-in, register `<host>/api/auth/callback/google` in the Google Cloud OAuth Client.
+
+**DevTools mobile viewport:** Chrome — open DevTools, then `Cmd-Shift-M` (macOS) / `Ctrl-Shift-M` (Win/Linux). Safari — Develop menu → Enter Responsive Design Mode.
+
+**When ngrok isn't enough:** Vercel Preview Deploys give a real HTTPS URL on every PR — use those for testing flows that need real domains (e.g., third-party webhook signatures bound to a public URL).
 
 ## Architecture
 

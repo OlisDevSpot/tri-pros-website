@@ -1,0 +1,251 @@
+# Mobile Dev Testing DX — Stable Tunnel Workflow
+
+**Issue:** [#98](https://github.com/OlisDevSpot/tri-pros-website/issues/98)
+**Date:** 2026-04-29
+**Status:** Design approved, pending implementation plan
+
+## Problem
+
+Mobile dev testing today is brittle. The static ngrok tunnel exists (`pnpm tunnel` → `https://destined-emu-bold.ngrok-free.app`), but:
+
+1. **Auth is broken through the tunnel.** Better-auth hardcodes `baseURL` and the Google OAuth `redirectURI` to `NEXT_PUBLIC_BASE_URL` (`http://localhost:3000` in dev). When the phone hits the tunnel and clicks "Sign in with Google", Google bounces the user back to localhost — unreachable from the phone, and any cookie lands on the wrong domain.
+2. **`NGROK_URL` is not in `trustedOrigins`,** so even if the redirect were correct, CSRF/origin checks would still reject the tunnel.
+3. **No one-command workflow** to start dev + tunnel with a discoverable URL on the phone.
+4. **No documentation** — the `tunnel` script is undocumented.
+
+## Goals
+
+- Auth works from both localhost (any dev port) and the tunnel **simultaneously**, with no env flipping or restart.
+- One command starts dev + tunnel + prints a QR code that points to the tunnel URL.
+- Multiple git worktrees can each run their own `pnpm dev` on a distinct port (3000–3002), and any of them can grab the tunnel on demand.
+- Workflow is documented in `CLAUDE.md` so it's discoverable by future agents and devs.
+- No regressions to production auth or local-only dev (devs who don't use mobile testing should be unaffected).
+
+## Non-goals
+
+- Replacing ngrok with a different tunnel provider.
+- Multiple simultaneous tunnels (free ngrok plan allows only one; upgrading is out of scope).
+- Per-PR Vercel preview tooling beyond a documentation pointer.
+- Automatic ngrok session recovery (listed as a "nice-to-have" in the issue; defer).
+
+## Constraints
+
+- **Free ngrok plan**, single static domain (`destined-emu-bold.ngrok-free.app`), one active tunnel at a time. Switching the tunnel between worktrees is a manual "kill the old one, start the new one" operation.
+- **`.env` is symlinked across all worktrees**, so per-worktree config (e.g., port) cannot live there. We use Next.js's standard `.env.local` for per-worktree overrides.
+
+## Design
+
+### Part 1 — `roots.ts` refactor (the foundation)
+
+`src/shared/config/roots.ts` currently does two jobs: path generation (used correctly across the app, ~95% of calls) and "absolute URL" generation (broken in three places). We sharpen the API into two clear modes and centralize the host registry.
+
+#### Audit findings
+
+`devBaseUrl` and `prodBaseUrl` are **never consumed externally** — only by `generateUrl` internally. We can refactor freely.
+
+The current `absolute: true` semantics mask three real bugs:
+
+1. **`logout-button.tsx:18`** — `router.push(${ROOTS.generateUrl('/', { absolute: true })})`. Pushes `http://localhost:3000/` in dev, breaking from a phone over the tunnel. Should be `router.push('/')`.
+2. **`account-button.tsx:17`** — same antipattern, plus a literal `}` typo: `${ROOTS.generateUrl('/', { absolute })}/profile}`.
+3. **`proposal-email.tsx:123`** — `const base = ROOTS.generateUrl('', { absolute: true })` at module scope. Without `isProduction: true`, dev-rendered emails embed `http://localhost:3000` for the hero/logo image fallbacks. Sister file `email.service.ts:19` correctly uses `isProduction: true` — they disagree.
+
+The pattern: `absolute: true` without `isProduction: true` has no legitimate caller. Every legitimate consumer (emails, GCal events, sitemap, image fallbacks) wants the **canonical production URL** because the URL outlives the request.
+
+#### New `roots.ts` shape
+
+```ts
+// src/shared/config/roots.ts
+
+// Single source of truth for "where does this app live"
+export const APP_HOSTS = {
+  prod:   ['triprosremodeling.com', 'www.triprosremodeling.com'],
+  dev:    ['localhost:3000', 'localhost:3001', 'localhost:3002'],
+  tunnel: ['destined-emu-bold.ngrok-free.app'],
+} as const
+
+const PROD_BASE_URL = `https://${APP_HOSTS.prod[0]}`
+
+interface UrlOptions {
+  absolute?: boolean
+}
+
+function generateUrl(path: string, options?: UrlOptions): string {
+  return options?.absolute ? `${PROD_BASE_URL}${path}` : path
+}
+
+const APP_ROOTS = {
+  authFlow: (options?: UrlOptions) => generateUrl('/auth-flow', options),
+  landing: { /* unchanged tree, signatures use UrlOptions */ },
+  dashboard: { /* ... */ },
+  public: { /* ... */ },
+} as const
+
+export const ROOTS = { ...APP_ROOTS, generateUrl }
+```
+
+**Two clear intents:**
+
+| Intent | API | Output | Use case |
+|---|---|---|---|
+| Path | `ROOTS.dashboard.proposals.byId(id)` | `/dashboard/proposals/abc` | Links, navigation, router.push (~95% of calls) |
+| Canonical absolute URL | `ROOTS.dashboard.proposals.byId(id, { absolute: true })` | `https://triprosremodeling.com/dashboard/proposals/abc` | Emails, GCal events, sitemap, image fallbacks |
+
+**Removed:**
+- `devBaseUrl` and `prodBaseUrl` exposed on ROOTS (only used internally; now collapsed into one `PROD_BASE_URL` constant).
+- `isProduction` option — now redundant because `absolute: true` always means prod.
+
+**Out of scope:** "Current-context absolute URL" (e.g., `intake-url-card.tsx`) keeps using `window.location.origin`. That's the right tool for that job; no need to bake it into `roots.ts`.
+
+#### Caller cleanups (Part 1.5)
+
+Adopting the new API surfaces three bugs and one ergonomics win:
+
+| File | Change | Reason |
+|---|---|---|
+| `email.service.ts:19` | Drop `isProduction: true` | Now redundant — `absolute: true` means prod |
+| `proposal-viewed-email.tsx:97` | Drop `isProduction: true` | Same |
+| `map-to-gcal.ts:85` | Drop `isProduction: true` | Same |
+| `proposal-email.tsx:123` | No code change — bug **silently fixes itself** because `absolute: true` now means prod | Side effect of new semantics |
+| `logout-button.tsx:18` | `router.push('/')` | Drop bogus absolute URL; relative is correct |
+| `account-button.tsx:17` | `router.push('/profile')` | Drop bogus absolute URL + fix typo |
+| `billing-button.tsx:17` | `router.push('/')` | Drop bogus absolute URL |
+| `marketplace-button.tsx:18` | `router.push('/')` | Drop bogus absolute URL |
+
+**Out of scope (deliberate):** `sitemap.ts` and `trpc/helpers.tsx` use `process.env.NEXT_PUBLIC_BASE_URL` directly. That's a *different* concern (runtime SSR fetch URL, not canonical URL). Leave for follow-up.
+
+### Part 1b — Better-auth dynamic baseURL (allowedHosts pattern)
+
+Better-auth's documented pattern for multi-domain deployments is `baseURL: { allowedHosts, fallback, protocol }`. Per request, better-auth resolves the host from `x-forwarded-host` (proxy headers used by ngrok and Vercel) or `request.url` (localhost), validates it against `allowedHosts`, and constructs a request-specific base URL. OAuth callbacks, cookies, and redirects all derive from the resolved host.
+
+This pattern is **only available in better-auth ≥1.5**. We were on 1.4.18, which forced a `trustedProxyHeaders` workaround that the docs explicitly discourage ("Relying on request inference is not recommended. For security and stability, always set `baseURL` explicitly."). The first end-to-end test of the workaround crashed with `baseURL is required when crossSubdomainCookies are enabled` — the 1.4 config validator demands a static `baseURL` whenever `crossSubDomainCookies` is on, regardless of how the URL is later resolved.
+
+**We upgrade better-auth to `^1.6.9`** as part of this issue and adopt the documented pattern. The 1.4→1.6 jump has no breaking changes that affect us: the only schema-level changes are in the API key plugin (we don't use it), and `auth.api.*` signatures are stable.
+
+#### Changes in `src/shared/domains/auth/server.ts`
+
+```ts
+import { APP_HOSTS } from '@/shared/config/roots'
+
+baseURL: {
+  allowedHosts: [...APP_HOSTS.dev, ...APP_HOSTS.tunnel, ...APP_HOSTS.prod],
+  protocol: 'auto',                      // derives from x-forwarded-proto
+  fallback: env.NEXT_PUBLIC_BASE_URL,    // for requests outside the request lifecycle
+},
+socialProviders: {
+  google: {
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    // redirectURI omitted — derived per-request from baseURL
+    accessType: 'offline',
+    prompt: 'select_account consent',
+    scope: [...],
+  },
+},
+advanced: {
+  crossSubDomainCookies: { enabled: true },  // cookie domain auto-derives from request host
+  // trustedProxyHeaders not needed — allowedHosts handles it
+},
+// trustedOrigins not declared explicitly — allowedHosts auto-adds entries
+// (localhost gets both http and https), and the fallback origin is also added.
+```
+
+**Removed:**
+- Hardcoded `redirectURI` on the Google provider.
+- Static `baseURL: env.NEXT_PUBLIC_BASE_URL` (was forcing localhost in dev).
+- Manually constructed `trustedOrigins` array — `allowedHosts` handles it per docs.
+- `advanced.trustedProxyHeaders` — replaced by the `allowedHosts` mechanism.
+
+**Why this works:** All three callback URLs (localhost, ngrok, prod) are registered in the Google Cloud OAuth Client. Better-auth resolves the request host against `allowedHosts`, derives the OAuth callback URL from that, and Google sees a valid registered redirect.
+
+**Cookie domain consideration:** Per docs, when `crossSubDomainCookies` is enabled with dynamic baseURL, the cookie domain auto-derives from the resolved request host. No explicit `domain` override needed for our setup (Vercel canonicalizes www↔apex; localhost and tunnel are independent contexts).
+
+### Part 1c — Next.js `allowedDevOrigins` for tunnel HMR
+
+Next.js logs a "Cross origin request detected from `<tunnel>` to `/_next/*`" warning (and will block in a future major) when HMR/asset requests come in over a different origin than the dev server's local one. Add `allowedDevOrigins: [...APP_HOSTS.tunnel]` to `next.config.ts` so HMR works through the tunnel.
+
+### Part 2 — Port-aware dev + tunnel scripts
+
+#### Per-worktree port via `.env.local`
+
+`.env.local` is git-ignored (`.env*` covers it) and Next.js loads it. Each worktree puts its own `PORT` there:
+
+```
+# .env.local (in each worktree)
+PORT=3001
+```
+
+#### Why we wrap `next dev` and `ngrok` in node scripts
+
+Two cross-cutting issues forced node wrappers instead of inline shell:
+
+1. **Next.js doesn't honor `PORT` from `.env.local` for the dev server bind.** It reads `PORT` from `process.env` *before* dotenv loading; if `PORT` isn't already in the process env, `next dev` defaults to 3000 (and prints "Port 3000 is in use, using available port 3001 instead" if 3000 is taken). Empirically confirmed.
+2. **pnpm/concurrently don't shell-expand `${PORT:-3000}` reliably** across the way our scripts get composed (pnpm runs script lines verbatim in the cases we observed).
+
+Both fixed by reading `.env.local` ourselves in tiny node helpers and passing `--port` / port arg explicitly.
+
+#### New scripts
+
+| Path | Purpose |
+|---|---|
+| `scripts/lib/get-port.mjs` | Shared helper. Returns `Number(process.env.PORT)` if set, else parses `PORT` from `.env.local`, else 3000. |
+| `scripts/dev.mjs` | Spawns `next dev --port <PORT>`, forwards stdio + signals. |
+| `scripts/tunnel.mjs` | Spawns `ngrok http --url=<static-domain> <PORT>`, forwards stdio + signals. |
+| `scripts/print-tunnel-qr.mjs` | Reads `NGROK_URL` from `.env`, waits ~3s, prints the tunnel URL + the resolved local port + an ASCII QR code, then exits. |
+
+#### Updated `package.json` scripts
+
+```json
+"dev": "node scripts/dev.mjs",
+"tunnel": "node scripts/tunnel.mjs",
+"dev:mobile": "concurrently --kill-others-on-fail -n next,tunnel,qr -c blue,magenta,green \"pnpm dev\" \"pnpm tunnel\" \"node scripts/print-tunnel-qr.mjs\""
+```
+
+`--kill-others-on-fail` (not `-k`) is critical: the QR script intentionally exits 0 after printing, and `-k` would kill dev + tunnel on any clean exit. `--kill-others-on-fail` only triggers on non-zero exit, so dev/tunnel stay alive.
+
+The legacy `--hostname 0.0.0.0` is dropped — it was a workaround before the tunnel existed; ngrok handles external access now.
+
+**New devDependencies:**
+- `concurrently` — runs dev + tunnel in parallel with shared signal lifecycle.
+- `qrcode-terminal` — tiny dep, prints ASCII QR to terminal.
+
+**Why not detect the live ngrok URL via the local API?** Because we use a **static** ngrok domain. The URL lives in `.env` as `NGROK_URL`.
+
+**Behavior when another worktree already holds the tunnel:** ngrok exits with a "tunnel session already exists" error. With `--kill-others-on-fail`, that brings down dev too. The user kills the other worktree's tunnel and re-runs `pnpm dev:mobile`.
+
+### Part 3 — Documentation
+
+Add a "Mobile testing" section to `CLAUDE.md` covering:
+- `pnpm dev:mobile` workflow.
+- Per-worktree `.env.local` with `PORT=3001` (or 3002, etc.) for parallel worktree dev.
+- The single-tunnel constraint (free ngrok plan): only one worktree can hold the tunnel at a time.
+- Required env: `NGROK_URL` set to the static ngrok domain (lives in shared `.env`).
+- Note that Google OAuth Client must have all redirect URIs registered (one-time setup, already done).
+- Note that `APP_HOSTS` in `src/shared/config/roots.ts` is the single source of truth for allowed hosts; adding a worktree port or subdomain means editing that file (and registering the callback URL in Google Cloud Console).
+- DevTools shortcut for toggling the device-emulator viewport (Chrome: Cmd-Shift-M after opening DevTools; Safari: Develop menu → Enter Responsive Design Mode).
+- Pointer to Vercel Preview Deploys for cases where ngrok isn't enough.
+
+`README.md` is currently brief — adding a one-paragraph "Mobile testing" pointer there is fine but optional; CLAUDE.md is the source of truth for this codebase.
+
+## Out of scope (defer)
+
+- Detecting stale ngrok session and auto-restarting.
+- Adding `*.vercel.app` to better-auth `allowedHosts` for preview deploys (Vercel previews use unique URLs per deploy and aren't currently used for auth flows; we can add this when needed).
+- Removing legacy `BETTER_AUTH_URL` env entirely (kept optional for future override).
+
+## Risks
+
+- **Header trust:** Better-auth's dynamic baseURL relies on `X-Forwarded-Host`/`Host`. Vercel sets these correctly. Local `next dev` sets `Host` directly. Ngrok forwards them. No proxy-spoofing risk in our deployment topology.
+- **Allowlist drift:** If we add a new domain (e.g., a second tunnel, a new subdomain), we must remember to add it to `APP_HOSTS` in `roots.ts` AND register the callback URL in the Google OAuth Client. Documented in `CLAUDE.md`.
+- **Existing sessions:** Switching `baseURL` from string to object form should not invalidate existing prod sessions because cookie domain logic is unchanged. Worth verifying in dev before merge.
+
+## Success criteria
+
+- ✅ `roots.ts` exports `APP_HOSTS` and a simplified `generateUrl` (path | absolute=prod). `devBaseUrl` and `isProduction` are gone.
+- ✅ Three pre-existing bugs fixed: `proposal-email.tsx` module-level `base` no longer points to localhost; the four button `router.push` calls drop bogus absolute URLs.
+- ✅ `pnpm dev:mobile` starts dev + tunnel and prints a QR pointing at the static tunnel URL.
+- ✅ Multiple worktrees can run `pnpm dev` simultaneously on different ports (3000–3002) by setting `PORT` in each worktree's `.env.local`.
+- ✅ Any worktree can grab the tunnel by running `pnpm dev:mobile`; ngrok will tunnel to that worktree's `PORT`.
+- ✅ Sign-in with Google works through the tunnel from a mobile browser.
+- ✅ Sign-in with Google still works from any localhost dev port on desktop, simultaneously with the tunnel, no restart needed.
+- ✅ Production auth (triprosremodeling.com) unaffected.
+- ✅ Workflow documented in `CLAUDE.md`.

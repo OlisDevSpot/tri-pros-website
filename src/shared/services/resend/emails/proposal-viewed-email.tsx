@@ -94,7 +94,7 @@ interface Props {
   proposalId: string
 }
 
-const base = ROOTS.generateUrl('', { absolute: true, isProduction: true })
+const base = ROOTS.generateUrl('', { absolute: true })
 
 export default function ProposalViewedEmail({
   customerName,
