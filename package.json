@@ -95,7 +95,7 @@
     "@zxcvbn-ts/language-en": "^3.0.2",
     "ably": "^2.21.0",
     "ai": "^6.0.70",
-    "better-auth": "^1.4.5",
+    "better-auth": "^1.6.9",
     "class-variance-authority": "^0.7.1",
     "client-only": "^0.0.1",
     "clsx": "^2.1.1",

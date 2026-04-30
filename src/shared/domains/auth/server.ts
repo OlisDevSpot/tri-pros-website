@@ -12,21 +12,15 @@ export const auth = betterAuth({
     schema,
     provider: 'pg',
   }),
-  trustedOrigins: [
-    ...APP_HOSTS.dev.map(h => `http://${h}`),
-    ...APP_HOSTS.tunnel.map(h => `https://${h}`),
-    ...APP_HOSTS.prod.map(h => `https://${h}`),
-  ],
   socialProviders: {
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
-      // redirectURI intentionally omitted — better-auth derives the OAuth
-      // callback URL per-request (see advanced.trustedProxyHeaders + the absent
-      // baseURL below). Each environment (localhost ports, ngrok tunnel, prod)
-      // gets its own correct callback automatically. APP_HOSTS in roots.ts is
-      // the single source of truth — every host in there must also be
-      // registered in the Google Cloud OAuth Client.
+      // redirectURI omitted — better-auth derives the OAuth callback URL per
+      // request from the baseURL.allowedHosts list below. Each environment
+      // (localhost ports, ngrok tunnel, prod) gets its own correct callback.
+      // APP_HOSTS in roots.ts is the single source of truth — every host in
+      // there must also be registered in the Google Cloud OAuth Client.
       accessType: 'offline',
       prompt: 'select_account consent',
       scope: [
@@ -55,12 +49,19 @@ export const auth = betterAuth({
       },
     },
   },
-  // baseURL intentionally omitted. better-auth derives the per-request base
-  // URL from x-forwarded-host (when trustedProxyHeaders is enabled, e.g.
-  // ngrok/Vercel) or from request.url (e.g. localhost). This makes OAuth
-  // callbacks correct for every host in APP_HOSTS without env juggling.
-  // When we upgrade better-auth to ≥1.5 we can switch to the explicit
-  // `baseURL: { allowedHosts: [...], fallback }` form for stricter validation.
+  // Dynamic baseURL: better-auth picks the per-request origin from the
+  // allowlist below (matched against x-forwarded-host on tunneled/proxied
+  // requests, request.url otherwise). OAuth callbacks, cookies, and redirects
+  // all derive from the resolved host, so localhost (any port), the ngrok
+  // tunnel, and prod each get their own correct URLs without env juggling.
+  // `protocol: 'auto'` derives from x-forwarded-proto; localhost falls back
+  // to http, tunnel/prod to https. allowedHosts entries are auto-added to
+  // trustedOrigins, so we don't duplicate them.
+  baseURL: {
+    allowedHosts: [...APP_HOSTS.dev, ...APP_HOSTS.tunnel, ...APP_HOSTS.prod],
+    protocol: 'auto',
+    fallback: env.NEXT_PUBLIC_BASE_URL,
+  },
   secret: env.BETTER_AUTH_SECRET,
   user: {
     additionalFields: {
@@ -100,14 +101,12 @@ export const auth = betterAuth({
     openAPI(),
   ],
   advanced: {
+    // Cookie domain auto-derives from the resolved request host (per docs).
+    // No `domain` override needed — Vercel canonicalizes www↔apex so each
+    // user only sees one host anyway.
     crossSubDomainCookies: {
       enabled: true,
     },
-    // Trust x-forwarded-host / x-forwarded-proto from the proxy in front of us
-    // (ngrok in dev, Vercel in prod). Required for per-request baseURL
-    // derivation — without this, OAuth callbacks would always point at the
-    // upstream host (localhost:3000) and break mobile testing through the tunnel.
-    trustedProxyHeaders: true,
   },
 })
 

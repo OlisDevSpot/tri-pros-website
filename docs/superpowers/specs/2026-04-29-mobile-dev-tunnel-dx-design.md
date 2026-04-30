@@ -113,56 +113,55 @@ Adopting the new API surfaces three bugs and one ergonomics win:
 
 **Out of scope (deliberate):** `sitemap.ts` and `trpc/helpers.tsx` use `process.env.NEXT_PUBLIC_BASE_URL` directly. That's a *different* concern (runtime SSR fetch URL, not canonical URL). Leave for follow-up.
 
-### Part 1b — Better-auth dynamic baseURL
+### Part 1b — Better-auth dynamic baseURL (allowedHosts pattern)
 
-Better-auth supports per-request base URL derivation. Two flavors:
+Better-auth's documented pattern for multi-domain deployments is `baseURL: { allowedHosts, fallback, protocol }`. Per request, better-auth resolves the host from `x-forwarded-host` (proxy headers used by ngrok and Vercel) or `request.url` (localhost), validates it against `allowedHosts`, and constructs a request-specific base URL. OAuth callbacks, cookies, and redirects all derive from the resolved host.
 
-- **≥1.5:** `baseURL: { allowedHosts: [...], fallback }` — strict allowlist validation.
-- **1.4.x (our installed version, 1.4.18):** `advanced.trustedProxyHeaders: true` + omit `baseURL`. Better-auth derives the URL from `x-forwarded-host` / `x-forwarded-proto` (proxy headers, used by ngrok and Vercel) or falls back to `request.url` (used by direct localhost requests). OAuth callbacks then derive from that base URL automatically.
+This pattern is **only available in better-auth ≥1.5**. We were on 1.4.18, which forced a `trustedProxyHeaders` workaround that the docs explicitly discourage ("Relying on request inference is not recommended. For security and stability, always set `baseURL` explicitly."). The first end-to-end test of the workaround crashed with `baseURL is required when crossSubdomainCookies are enabled` — the 1.4 config validator demands a static `baseURL` whenever `crossSubDomainCookies` is on, regardless of how the URL is later resolved.
 
-We use the 1.4-compatible form now. When better-auth gets upgraded to ≥1.5, we can switch to the explicit `allowedHosts` form for stricter validation.
+**We upgrade better-auth to `^1.6.9`** as part of this issue and adopt the documented pattern. The 1.4→1.6 jump has no breaking changes that affect us: the only schema-level changes are in the API key plugin (we don't use it), and `auth.api.*` signatures are stable.
 
 #### Changes in `src/shared/domains/auth/server.ts`
 
 ```ts
 import { APP_HOSTS } from '@/shared/config/roots'
 
-// baseURL intentionally omitted — derived per-request from proxy headers
-// (ngrok/Vercel) or request.url (localhost). See advanced.trustedProxyHeaders below.
-trustedOrigins: [
-  ...APP_HOSTS.dev.map(h => `http://${h}`),
-  ...APP_HOSTS.tunnel.map(h => `https://${h}`),
-  ...APP_HOSTS.prod.map(h => `https://${h}`),
-],
+baseURL: {
+  allowedHosts: [...APP_HOSTS.dev, ...APP_HOSTS.tunnel, ...APP_HOSTS.prod],
+  protocol: 'auto',                      // derives from x-forwarded-proto
+  fallback: env.NEXT_PUBLIC_BASE_URL,    // for requests outside the request lifecycle
+},
 socialProviders: {
   google: {
     clientId: env.GOOGLE_CLIENT_ID,
     clientSecret: env.GOOGLE_CLIENT_SECRET,
-    // redirectURI omitted — derived from per-request baseURL
+    // redirectURI omitted — derived per-request from baseURL
     accessType: 'offline',
     prompt: 'select_account consent',
-    scope: [...], // preserved from current config
+    scope: [...],
   },
 },
 advanced: {
-  crossSubDomainCookies: { enabled: true },
-  trustedProxyHeaders: true,  // NEW — enables x-forwarded-host derivation
+  crossSubDomainCookies: { enabled: true },  // cookie domain auto-derives from request host
+  // trustedProxyHeaders not needed — allowedHosts handles it
 },
+// trustedOrigins not declared explicitly — allowedHosts auto-adds entries
+// (localhost gets both http and https), and the fallback origin is also added.
 ```
 
 **Removed:**
 - Hardcoded `redirectURI` on the Google provider.
 - Static `baseURL: env.NEXT_PUBLIC_BASE_URL` (was forcing localhost in dev).
-- `BETTER_AUTH_URL` and `NEXT_PUBLIC_BASE_URL` from `trustedOrigins` (subsumed by `APP_HOSTS`-derived list; `BETTER_AUTH_URL` env stays optional for future override).
+- Manually constructed `trustedOrigins` array — `allowedHosts` handles it per docs.
+- `advanced.trustedProxyHeaders` — replaced by the `allowedHosts` mechanism.
 
-**Added:**
-- `advanced.trustedProxyHeaders: true` — required for per-request URL derivation through ngrok and Vercel.
+**Why this works:** All three callback URLs (localhost, ngrok, prod) are registered in the Google Cloud OAuth Client. Better-auth resolves the request host against `allowedHosts`, derives the OAuth callback URL from that, and Google sees a valid registered redirect.
 
-**Server-side `auth.api.*` calls:** All in-tree callers pass `headers` explicitly, and `auth.api.getSession` doesn't require a base URL — it reads the session cookie from headers. No regressions.
+**Cookie domain consideration:** Per docs, when `crossSubDomainCookies` is enabled with dynamic baseURL, the cookie domain auto-derives from the resolved request host. No explicit `domain` override needed for our setup (Vercel canonicalizes www↔apex; localhost and tunnel are independent contexts).
 
-**Why this works:** All three callback URLs (`localhost`, ngrok, prod) are already registered in the Google Cloud OAuth Client (confirmed by the user). Better-auth picks the right one per request.
+### Part 1c — Next.js `allowedDevOrigins` for tunnel HMR
 
-**Cookie domain consideration:** `crossSubDomainCookies` stays enabled. Each host gets its own cookie scope; this is fine because we're not trying to share sessions across environments — each environment is independent.
+Next.js logs a "Cross origin request detected from `<tunnel>` to `/_next/*`" warning (and will block in a future major) when HMR/asset requests come in over a different origin than the dev server's local one. Add `allowedDevOrigins: [...APP_HOSTS.tunnel]` to `next.config.ts` so HMR works through the tunnel.
 
 ### Part 2 — Port-aware dev + tunnel scripts
 
