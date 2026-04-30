@@ -65,18 +65,18 @@ export async function getProposal(proposalId: string) {
       // project. Drives envelope-scenario derivation in
       // src/shared/services/zoho-sign/documents/proposal-context.ts.
       meetingProjectId: meetings.projectId,
-      // Earliest contract_sent_at across all proposals on all meetings
-      // tied to this proposal's project. Drives AWD's
-      // `original-contract-date` field on upsell envelopes (the date
-      // the project's initial agreement was sent). Null when meeting
-      // has no project (initial scenario) — the field is not used in
-      // initial envelopes anyway.
+      // Best-available "original contract date" for this proposal's
+      // project — drives AWD's `original-contract-date` on upsell
+      // envelopes. Falls through `contract_sent_at → approved_at →
+      // created_at` because projects can exist before the original
+      // proposal's contract is sent (project conversion fires on
+      // approval, contract goes out after). Null only when the meeting
+      // has no project (initial scenario, where this field is unused).
       projectFirstContractSentAt: sql<string | null>`(
-        SELECT MIN(p2.contract_sent_at)
+        SELECT COALESCE(MIN(p2.contract_sent_at), MIN(p2.approved_at), MIN(p2.created_at))
         FROM ${proposals} p2
         JOIN ${meetings} m2 ON m2.id = p2.meeting_id
         WHERE m2.project_id = ${meetings.projectId}
-          AND p2.contract_sent_at IS NOT NULL
       )`,
     })
     .from(proposals)

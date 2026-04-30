@@ -60,13 +60,16 @@ const completionDateZohoSrc: FieldSource = (ctx) => {
 
 const sentDateSrc: FieldSource = () => format(new Date(), 'M/d/yyyy')
 
-// AWD-only field — invariant: upsells run on a project that was created
-// when a prior proposal was approved, so `originalContractDate` is always
-// set. Throwing on null surfaces a real data integrity bug instead of
+// AWD-only field. The DAL's projectFirstContractSentAt subquery falls
+// through contract_sent_at → approved_at → created_at, so a non-null
+// value is the norm for upsells. The today-fallback covers the
+// pathological case where the project has zero proposals (data
+// integrity bug) — log it so we notice in production rather than
 // silently shipping today's date as the original contract date.
 const originalContractDateSrc: FieldSource = (ctx) => {
   if (!ctx.originalContractDate) {
-    throw new Error('originalContractDate is null — upsell envelope on a project with no contract-sent proposal')
+    console.warn('originalContractDate is null on upsell envelope — falling back to today; project likely has zero proposals')
+    return format(new Date(), 'MMM dd yyyy')
   }
   return format(ctx.originalContractDate, 'MMM dd yyyy')
 }

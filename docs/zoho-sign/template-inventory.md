@@ -96,7 +96,7 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
   | sent-date | CustomDate | `MM/dd/yyyy` | today |
   | start-date | CustomDate | `MMM dd yyyy` | today + 3 days |
   | completion-date | CustomDate | `MMM dd yyyy` | start-date + `validThroughTimeframe` |
-  | original-contract-date | CustomDate | `MMM dd yyyy` | Project's earliest `contractSentAt` across all proposals on all meetings of this project (joined in `getProposal` as `projectFirstContractSentAt`, surfaced as `ctx.originalContractDate`). Falls back to today defensively when missing. |
+  | original-contract-date | CustomDate | `MMM dd yyyy` | Best-available date for the project's first proposal: `COALESCE(MIN(contract_sent_at), MIN(approved_at), MIN(created_at))` across all proposals on all meetings of this project (joined in `getProposal` as `projectFirstContractSentAt`, surfaced as `ctx.originalContractDate`). Falls back to today + `console.warn` only when the project has zero proposals. |
 
 > **Date format quirk:** AWD's `sent-date` accepts `MM/dd/yyyy` while its other CustomDate fields require `MMM dd yyyy`. Sending the wrong format returns HTTP 400 with `code 8033 — Date format is invalid`. The registry uses two distinct field sources (`sentDateSrc` vs `formatZohoShortDate`-based) to handle this.
 
