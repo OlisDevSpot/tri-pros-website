@@ -21,6 +21,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 
+/**
+ * @deprecated Use `<QueryToolbar>` from `@/shared/components/query-toolbar/ui/query-toolbar`
+ * for new server-paginated tables. This bar is kept for legacy client-side tables that
+ * still consume `DataTableFilterConfig` (Activities, Past Meetings, Past Proposals,
+ * Projects portfolio, Customer Pipelines). See PR #151 cleanup checklist.
+ */
 interface Props<TData> {
   table: Table<TData>
   filters: DataTableFilterConfig[]

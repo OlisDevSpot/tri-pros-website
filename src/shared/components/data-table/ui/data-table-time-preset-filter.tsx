@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * @deprecated Use the `date-range` filter type with `<QueryToolbar>` for
+ * server-side date filtering. See PR #151 cleanup checklist.
+ */
+
 import type { Table } from '@tanstack/react-table'
 import type { DataTableTimePresetFilter as TimePresetFilterConfig } from '@/shared/components/data-table/types'
 
