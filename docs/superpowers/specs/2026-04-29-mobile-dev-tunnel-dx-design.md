@@ -168,34 +168,50 @@ advanced: {
 
 #### Per-worktree port via `.env.local`
 
-Next.js automatically loads `.env.local` after `.env` and `.env.local` is git-ignored by default. Each worktree puts its own `PORT` there:
+`.env.local` is git-ignored (`.env*` covers it) and Next.js loads it. Each worktree puts its own `PORT` there:
 
 ```
 # .env.local (in each worktree)
 PORT=3001
 ```
 
-`next dev` reads `PORT` from env natively — no flag needed. We drop the legacy `--hostname 0.0.0.0` flag from the `dev` script (it was a workaround before the ngrok tunnel existed; ngrok handles external access now).
+#### Why we wrap `next dev` and `ngrok` in node scripts
 
-#### Updated scripts in `package.json`
+Two cross-cutting issues forced node wrappers instead of inline shell:
+
+1. **Next.js doesn't honor `PORT` from `.env.local` for the dev server bind.** It reads `PORT` from `process.env` *before* dotenv loading; if `PORT` isn't already in the process env, `next dev` defaults to 3000 (and prints "Port 3000 is in use, using available port 3001 instead" if 3000 is taken). Empirically confirmed.
+2. **pnpm/concurrently don't shell-expand `${PORT:-3000}` reliably** across the way our scripts get composed (pnpm runs script lines verbatim in the cases we observed).
+
+Both fixed by reading `.env.local` ourselves in tiny node helpers and passing `--port` / port arg explicitly.
+
+#### New scripts
+
+| Path | Purpose |
+|---|---|
+| `scripts/lib/get-port.mjs` | Shared helper. Returns `Number(process.env.PORT)` if set, else parses `PORT` from `.env.local`, else 3000. |
+| `scripts/dev.mjs` | Spawns `next dev --port <PORT>`, forwards stdio + signals. |
+| `scripts/tunnel.mjs` | Spawns `ngrok http --url=<static-domain> <PORT>`, forwards stdio + signals. |
+| `scripts/print-tunnel-qr.mjs` | Reads `NGROK_URL` from `.env`, waits ~3s, prints the tunnel URL + the resolved local port + an ASCII QR code, then exits. |
+
+#### Updated `package.json` scripts
 
 ```json
-"dev": "next dev",
-"tunnel": "ngrok http --url=destined-emu-bold.ngrok-free.app ${PORT:-3000}",
-"dev:mobile": "concurrently -k -n next,tunnel,qr -c blue,magenta,green \"pnpm dev\" \"pnpm tunnel\" \"node scripts/print-tunnel-qr.mjs\""
+"dev": "node scripts/dev.mjs",
+"tunnel": "node scripts/tunnel.mjs",
+"dev:mobile": "concurrently --kill-others-on-fail -n next,tunnel,qr -c blue,magenta,green \"pnpm dev\" \"pnpm tunnel\" \"node scripts/print-tunnel-qr.mjs\""
 ```
 
-Both `dev` and `tunnel` honor `PORT` from env (Next.js reads it for dev; the shell-expanded `${PORT:-3000}` reads it for ngrok). `dev:mobile` ties them together with `concurrently` so Ctrl-C kills both child processes.
+`--kill-others-on-fail` (not `-k`) is critical: the QR script intentionally exits 0 after printing, and `-k` would kill dev + tunnel on any clean exit. `--kill-others-on-fail` only triggers on non-zero exit, so dev/tunnel stay alive.
+
+The legacy `--hostname 0.0.0.0` is dropped — it was a workaround before the tunnel existed; ngrok handles external access now.
 
 **New devDependencies:**
-- `concurrently` — runs dev + tunnel in parallel with shared lifecycle.
+- `concurrently` — runs dev + tunnel in parallel with shared signal lifecycle.
 - `qrcode-terminal` — tiny dep, prints ASCII QR to terminal.
 
-**New file `scripts/print-tunnel-qr.mjs`:** Reads `NGROK_URL` from `.env`, waits ~3s for the tunnel to come up, prints the URL + a QR code, and exits. (It does not poll or restart — keeps the process tree simple.)
+**Why not detect the live ngrok URL via the local API?** Because we use a **static** ngrok domain. The URL lives in `.env` as `NGROK_URL`.
 
-**Why not detect the live ngrok URL via the local API?** Because we use a **static** ngrok domain. The URL is known ahead of time and lives in `.env` as `NGROK_URL`. No discovery needed.
-
-**Behavior when another worktree already holds the tunnel:** ngrok prints a clear error ("tunnel session already exists" or similar). The dev process keeps running locally. The user kills the other worktree's tunnel and re-runs `dev:mobile`. We do not try to be clever about reclaiming the tunnel.
+**Behavior when another worktree already holds the tunnel:** ngrok exits with a "tunnel session already exists" error. With `--kill-others-on-fail`, that brings down dev too. The user kills the other worktree's tunnel and re-runs `pnpm dev:mobile`.
 
 ### Part 3 — Documentation
 

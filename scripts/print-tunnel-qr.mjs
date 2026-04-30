@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
 import qrcode from 'qrcode-terminal'
+import { getPort } from './lib/get-port.mjs'
 
 const TUNNEL_STARTUP_DELAY_MS = 3000
 
@@ -29,9 +30,11 @@ if (!url) {
   process.exit(0)
 }
 
+const port = getPort()
+
 await sleep(TUNNEL_STARTUP_DELAY_MS)
 
 console.log('')
-console.log(`📱 Mobile tunnel: ${url}`)
+console.log(`📱 Mobile tunnel: ${url}  →  http://localhost:${port}`)
 qrcode.generate(url, { small: true })
 console.log('')

@@ -5,8 +5,8 @@
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "scripts": {
-    "dev": "next dev",
-    "dev:mobile": "concurrently -k -n next,tunnel,qr -c blue,magenta,green \"pnpm dev\" \"pnpm tunnel\" \"node scripts/print-tunnel-qr.mjs\"",
+    "dev": "node scripts/dev.mjs",
+    "dev:mobile": "concurrently --kill-others-on-fail -n next,tunnel,qr -c blue,magenta,green \"pnpm dev\" \"pnpm tunnel\" \"node scripts/print-tunnel-qr.mjs\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -31,7 +31,7 @@
     "rebuild:gcal:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "meta": "tsx scripts/meta/index.ts",
     "dispatch": "bash scripts/dispatch.sh",
-    "tunnel": "ngrok http --url=destined-emu-bold.ngrok-free.app ${PORT:-3000}"
+    "tunnel": "node scripts/tunnel.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.25",
