@@ -104,22 +104,24 @@ export function PastMeetingsTable() {
         </QueryToolbar>
       </div>
 
-      <DataTable
-        tableId="past-meetings"
-        data={pagination.rows}
-        columns={columns}
-        meta={meta}
-        getRowClassName={getMeetingRowClassName}
-        entityName="meeting"
-        rowDataAttribute="data-meeting-row"
-        onRowClick={(row) => {
-          if (row.customerId) {
-            handleView(row)
-          }
-        }}
-        serverPagination={toDataTablePagination(pagination)}
-        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
-      />
+      <div className="flex-1 min-h-0">
+        <DataTable
+          tableId="past-meetings"
+          data={pagination.rows}
+          columns={columns}
+          meta={meta}
+          getRowClassName={getMeetingRowClassName}
+          entityName="meeting"
+          rowDataAttribute="data-meeting-row"
+          onRowClick={(row) => {
+            if (row.customerId) {
+              handleView(row)
+            }
+          }}
+          serverPagination={toDataTablePagination(pagination)}
+          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+        />
+      </div>
 
       <ManageParticipantsModal
         meetingIds={assignRepDialog ? [assignRepDialog.meetingId] : []}
