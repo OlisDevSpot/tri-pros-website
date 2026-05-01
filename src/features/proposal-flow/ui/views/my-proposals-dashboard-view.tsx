@@ -8,9 +8,12 @@ import { useTRPC } from '@/trpc/helpers'
 
 export function MyProposalsDashboardView() {
   const trpc = useTRPC()
-  const { data: proposals = [], isLoading } = useQuery(
-    trpc.proposalsRouter.crud.getProposals.queryOptions(),
+  const { data, isLoading } = useQuery(
+    trpc.proposalsRouter.crud.list.queryOptions({
+      pagination: { limit: 50, offset: 0 },
+    }),
   )
+  const proposals = data?.rows ?? []
 
   if (isLoading) {
     return (

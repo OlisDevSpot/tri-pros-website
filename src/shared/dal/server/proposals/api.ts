@@ -1,10 +1,9 @@
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import { randomBytes } from 'node:crypto'
-import { and, count, desc, eq, getTableColumns, max, sql } from 'drizzle-orm'
+import { and, eq, getTableColumns, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
-import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 
 export interface ProposalCustomer {
@@ -106,26 +105,6 @@ export async function getProposal(proposalId: string) {
 }
 
 export type ProposalWithCustomer = NonNullable<Awaited<ReturnType<typeof getProposal>>>
-
-export async function getProposals(userId: string, isOmni = false) {
-  return db
-    .select({
-      ...getTableColumns(proposals),
-      viewCount: count(proposalViews.id),
-      lastViewedAt: max(proposalViews.viewedAt),
-      customerId: customers.id,
-      customerName: customers.name,
-      meetingPipeline: meetings.pipeline,
-      meetingProjectId: meetings.projectId,
-    })
-    .from(proposals)
-    .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
-    .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
-    .leftJoin(customers, eq(customers.id, meetings.customerId))
-    .where(isOmni ? undefined : eq(proposals.ownerId, userId))
-    .groupBy(proposals.id, customers.id, customers.name, meetings.pipeline, meetings.projectId)
-    .orderBy(desc(proposals.createdAt))
-}
 
 export async function updateProposal(userIdOrToken: string | null, proposalId: string, data: Partial<InsertProposalSchema>) {
   const conditions = [eq(proposals.id, proposalId)]
