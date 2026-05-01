@@ -1,27 +1,92 @@
 import { TRPCError } from '@trpc/server'
-import { desc, eq, getTableColumns } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or } from 'drizzle-orm'
 import z from 'zod'
 
 import { activityEntityTypes, activityTypes, gcalSyncableActivityTypes } from '@/shared/constants/enums'
+import { buildFilterWhere } from '@/shared/dal/server/query/filters'
+import { paginate } from '@/shared/dal/server/query/output'
+import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
+import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
 import { activities, user } from '@/shared/db/schema'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 
 export const activitiesRouter = createTRPCRouter({
-  getAll: agentProcedure
-    .query(async ({ ctx }) => {
+  // Server-paginated activities list. Drives the Activities table; the schedule
+  // calendar consumes this with a larger pagination.limit until it pushes a
+  // date-windowed scheduledFor filter through the toolkit.
+  //
+  // Filters (URL-driven via the query toolkit):
+  //   type:        multi-select on activities.type
+  //   entityType:  multi-select on activities.entityType
+  //   scheduledFor: date-range
+  //   ownerId:     multi-select on activities.ownerId
+  //
+  // Search: ilike against activities.title OR activities.description.
+  // Sort whitelist: title, type, scheduledFor, dueAt, createdAt.
+  // Default order: createdAt DESC.
+  list: agentProcedure
+    .input(paginatedQueryInput({
+      type: z.array(z.enum(activityTypes)).optional(),
+      entityType: z.array(z.enum(activityEntityTypes)).optional(),
+      scheduledFor: dateRangeSchema.optional(),
+      ownerId: z.array(z.string().uuid()).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
       const isOmni = ctx.ability.can('manage', 'all')
-      return db
-        .select({
-          ...getTableColumns(activities),
-          ownerName: user.name,
-          ownerImage: user.image,
-        })
-        .from(activities)
-        .leftJoin(user, eq(user.id, activities.ownerId))
-        .where(isOmni ? undefined : eq(activities.ownerId, ctx.session.user.id))
-        .orderBy(desc(activities.createdAt))
+
+      const baseScope = isOmni ? undefined : eq(activities.ownerId, ctx.session.user.id)
+
+      const searchTerm = input.search?.trim()
+      const searchWhere = searchTerm
+        ? or(
+            ilike(activities.title, `%${searchTerm}%`),
+            ilike(activities.description, `%${searchTerm}%`),
+          )
+        : undefined
+
+      const filterWhere = buildFilterWhere(input.filters, {
+        type: v => (v.length > 0 ? inArray(activities.type, v) : undefined),
+        entityType: v => (v.length > 0 ? inArray(activities.entityType, v) : undefined),
+        scheduledFor: v => and(
+          v.from ? gte(activities.scheduledFor, v.from) : undefined,
+          v.to ? lte(activities.scheduledFor, v.to) : undefined,
+        ),
+        ownerId: v => (v.length > 0 ? inArray(activities.ownerId, v) : undefined),
+      })
+
+      const where = and(baseScope, searchWhere, filterWhere)
+
+      const orderBy = buildOrderBy(input.sort, {
+        title: activities.title,
+        type: activities.type,
+        scheduledFor: activities.scheduledFor,
+        dueAt: activities.dueAt,
+        createdAt: activities.createdAt,
+      }, desc(activities.createdAt))
+
+      return paginate({
+        query: () => db
+          .select({
+            ...getTableColumns(activities),
+            ownerName: user.name,
+            ownerImage: user.image,
+          })
+          .from(activities)
+          .leftJoin(user, eq(user.id, activities.ownerId))
+          .where(where)
+          .orderBy(...orderBy)
+          .limit(input.pagination.limit)
+          .offset(input.pagination.offset),
+        count: async () => {
+          const [row] = await db
+            .select({ c: count(activities.id) })
+            .from(activities)
+            .where(where)
+          return row?.c ?? 0
+        },
+      })
     }),
 
   getById: agentProcedure

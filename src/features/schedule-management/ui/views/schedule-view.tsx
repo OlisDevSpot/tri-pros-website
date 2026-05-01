@@ -77,7 +77,10 @@ export function ScheduleView() {
     pagination: { limit: 500, offset: 0 },
   }))
   const meetingRows = meetings.data?.rows
-  const activitiesQuery = useQuery(trpc.scheduleRouter.activities.getAll.queryOptions())
+  const activitiesQuery = useQuery(trpc.scheduleRouter.activities.list.queryOptions({
+    pagination: { limit: 500, offset: 0 },
+  }))
+  const activitiesData = activitiesQuery.data?.rows
   const { updateScheduledFor } = useMeetingActions()
 
   // Scope meetings by pipeline
@@ -93,8 +96,8 @@ export function ScheduleView() {
 
   // Map activities to calendar events for the calendar view
   const activityEvents = useMemo(
-    () => (activitiesQuery.data ?? []).map(activityToCalendarEvent),
-    [activitiesQuery.data],
+    () => (activitiesData ?? []).map(activityToCalendarEvent),
+    [activitiesData],
   )
 
   // View meeting handler
@@ -178,7 +181,7 @@ export function ScheduleView() {
     )
   }
 
-  const hasNoData = scopedMeetings.length === 0 && (activitiesQuery.data ?? []).length === 0
+  const hasNoData = scopedMeetings.length === 0 && (activitiesData ?? []).length === 0
 
   if (hasNoData) {
     return (
@@ -237,11 +240,7 @@ export function ScheduleView() {
             )
           : tableTab === 'meetings'
             ? <PastMeetingsTable />
-            : (
-                <ActivitiesTable
-                  data={activitiesQuery.data ?? []}
-                />
-              )}
+            : <ActivitiesTable />}
       </div>
 
       {/* Assign rep dialog */}

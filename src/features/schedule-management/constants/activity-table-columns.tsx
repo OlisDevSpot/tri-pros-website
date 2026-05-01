@@ -5,7 +5,7 @@ import type { AppRouter } from '@/trpc/routers/app'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { formatDateCell } from '@/shared/lib/formatters'
 
-export type ActivityRow = inferRouterOutputs<AppRouter>['scheduleRouter']['activities']['getAll'][number]
+export type ActivityRow = inferRouterOutputs<AppRouter>['scheduleRouter']['activities']['list']['rows'][number]
 
 export const ACTIVITY_DEFAULT_SORT = [{ id: 'scheduledFor', desc: true }]
 
