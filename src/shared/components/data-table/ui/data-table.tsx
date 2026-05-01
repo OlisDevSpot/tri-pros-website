@@ -77,11 +77,31 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   onFilteredCountChange,
   onFilteredDataChange,
   serverPagination,
+  serverSorting,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
-  const [sorting, setSorting] = useState<SortingState>(defaultSort ?? [])
+  const [internalSorting, setInternalSorting] = useState<SortingState>(defaultSort ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
+  // -- Server sort bridge ---------------------------------------------------
+  // When `serverSorting` is set, present its sort state to TanStack Table
+  // (with fallbackVisual filling in when sortBy is undefined). Column-header
+  // clicks dispatch through `serverSorting.onSortChange` instead of mutating
+  // local state.
+
+  const sorting: SortingState = useMemo(() => {
+    if (!serverSorting) {
+      return internalSorting
+    }
+    if (serverSorting.sortBy) {
+      return [{ id: serverSorting.sortBy, desc: serverSorting.sortDir !== 'asc' }]
+    }
+    if (serverSorting.fallbackVisual) {
+      return [serverSorting.fallbackVisual]
+    }
+    return []
+  }, [serverSorting, internalSorting])
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() =>
     tableId ? loadColumnSizing(tableId) : {},
   )
@@ -228,7 +248,23 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         ? { pagination: { pageIndex: serverPagination.pageIndex, pageSize: serverPagination.pageSize } }
         : {}),
     },
-    onSortingChange: setSorting,
+    onSortingChange: serverSorting
+      ? (updater) => {
+          const next = typeof updater === 'function' ? updater(sorting) : updater
+          const head = next[0]
+          if (!head) {
+            serverSorting.onSortChange(undefined)
+            return
+          }
+          // Don't dispatch when the click matches the fallback visual — that
+          // would write a redundant URL key for the server's natural order.
+          const fallback = serverSorting.fallbackVisual
+          if (fallback && head.id === fallback.id && head.desc === fallback.desc && !serverSorting.sortBy) {
+            return
+          }
+          serverSorting.onSortChange(head.id, head.desc ? 'desc' : 'asc')
+        }
+      : setInternalSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnSizingChange: setColumnSizing,
     onPaginationChange: serverPagination
@@ -250,8 +286,9 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     ...(serverPagination
-      ? { manualPagination: true, rowCount: serverPagination.rowCount }
+      ? { manualPagination: true, manualFiltering: true, rowCount: serverPagination.rowCount }
       : { getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize } } }),
+    ...(serverSorting ? { manualSorting: true } : {}),
     meta: {
       ...meta,
       activeRowId,
@@ -477,7 +514,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
           </Table>
         </div>
 
-        <DataTablePagination table={table} />
+        <DataTablePagination table={table} serverPagination={serverPagination} />
       </div>
     </div>
   )

@@ -38,7 +38,7 @@ interface ParticipantsSlotProps {
   meetingId: string
   variant: 'full' | 'compact'
   /**
-   * Optional pre-fetched summary (from `meetingsRouter.getAll`). When present,
+   * Optional pre-fetched summary (from `meetingsRouter.list`). When present,
    * the compact variant renders its avatar stack from this without hitting
    * `getParticipants` — the detail query runs lazily only when the popover
    * opens. Full variant always fetches detail (needs email for contact actions).

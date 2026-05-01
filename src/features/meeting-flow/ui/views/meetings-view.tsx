@@ -14,7 +14,7 @@ import { motion } from 'motion/react'
 import { useCallback, useMemo, useState } from 'react'
 
 import { meetingsStatConfig } from '@/features/meeting-flow/constants/meetings-stat-config'
-import { PastMeetingsTable } from '@/features/meeting-flow/ui/components/table'
+import { MeetingsTableLegacy } from '@/features/meeting-flow/ui/components/meetings-table-legacy'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { StatBar } from '@/shared/components/stat-bar/ui/stat-bar'
@@ -38,7 +38,7 @@ import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { useTRPC } from '@/trpc/helpers'
 
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
 
 export function MeetingsView() {
   const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.MEETINGS_LAYOUT, 'calendar')
@@ -54,18 +54,21 @@ export function MeetingsView() {
 
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
-  const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
+  const meetings = useQuery(trpc.meetingsRouter.list.queryOptions({
+    pagination: { limit: 500, offset: 0 },
+  }))
+  const meetingRows = meetings.data?.rows
   const { updateScheduledFor } = useMeetingActions()
 
   const scopedData = useMemo(() => {
-    if (!meetings.data || scope === 'all') {
-      return meetings.data
+    if (!meetingRows || scope === 'all') {
+      return meetingRows
     }
-    return meetings.data.filter((m) => {
+    return meetingRows.filter((m) => {
       const derived = deriveMeetingPipeline({ projectId: m.projectId, pipeline: m.pipeline as 'fresh' | 'rehash' | 'dead' })
       return derived === scope
     })
-  }, [meetings.data, scope])
+  }, [meetingRows, scope])
 
   // Edit-meeting dialog state
   const [editMeetingDialog, setEditMeetingDialog] = useState<{
@@ -253,7 +256,7 @@ export function MeetingsView() {
               />
             )
           : (
-              <PastMeetingsTable
+              <MeetingsTableLegacy
                 data={scopedData}
                 onFilteredDataChange={handleFilteredDataChange}
               />

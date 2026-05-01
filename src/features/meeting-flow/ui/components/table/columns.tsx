@@ -15,7 +15,7 @@ import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 
-export type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+export type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
 
 export interface MeetingTableMeta {
   meetingActions: (row: MeetingRow) => EntityActionConfig<MeetingRow>[]

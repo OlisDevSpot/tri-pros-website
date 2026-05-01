@@ -4,7 +4,7 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 import { CalendarDaysIcon, CheckCircleIcon, PlayCircleIcon, SparklesIcon, XCircleIcon } from 'lucide-react'
 
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
 
 export const meetingsStatConfig: StatBarItemConfig<MeetingRow>[] = [
   {

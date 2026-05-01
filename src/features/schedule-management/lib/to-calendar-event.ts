@@ -4,7 +4,7 @@ import type { ScheduleActivityEvent } from '../types'
 
 import type { AppRouter } from '@/trpc/routers/app'
 
-type ActivityRow = inferRouterOutputs<AppRouter>['scheduleRouter']['activities']['getAll'][number]
+type ActivityRow = inferRouterOutputs<AppRouter>['scheduleRouter']['activities']['list']['rows'][number]
 
 export function activityToCalendarEvent(activity: ActivityRow): ScheduleActivityEvent {
   return {

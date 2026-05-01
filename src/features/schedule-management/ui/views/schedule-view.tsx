@@ -36,7 +36,7 @@ import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { useTRPC } from '@/trpc/helpers'
 
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
 
 export function ScheduleView() {
   const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.SCHEDULE_LAYOUT, 'calendar')
@@ -73,25 +73,31 @@ export function ScheduleView() {
 
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
-  const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
-  const activitiesQuery = useQuery(trpc.scheduleRouter.activities.getAll.queryOptions())
+  const meetings = useQuery(trpc.meetingsRouter.list.queryOptions({
+    pagination: { limit: 500, offset: 0 },
+  }))
+  const meetingRows = meetings.data?.rows
+  const activitiesQuery = useQuery(trpc.scheduleRouter.activities.list.queryOptions({
+    pagination: { limit: 500, offset: 0 },
+  }))
+  const activitiesData = activitiesQuery.data?.rows
   const { updateScheduledFor } = useMeetingActions()
 
   // Scope meetings by pipeline
   const scopedMeetings = useMemo(() => {
-    if (!meetings.data || scope === 'all') {
-      return meetings.data
+    if (!meetingRows || scope === 'all') {
+      return meetingRows
     }
-    return meetings.data.filter((m) => {
+    return meetingRows.filter((m) => {
       const derived = deriveMeetingPipeline({ projectId: m.projectId, pipeline: m.pipeline as 'fresh' | 'rehash' | 'dead' })
       return derived === scope
     })
-  }, [meetings.data, scope])
+  }, [meetingRows, scope])
 
   // Map activities to calendar events for the calendar view
   const activityEvents = useMemo(
-    () => (activitiesQuery.data ?? []).map(activityToCalendarEvent),
-    [activitiesQuery.data],
+    () => (activitiesData ?? []).map(activityToCalendarEvent),
+    [activitiesData],
   )
 
   // View meeting handler
@@ -133,15 +139,13 @@ export function ScheduleView() {
   }, [updateScheduledFor])
 
   // Stats data — meetings only
-  const [tableFilteredData, setTableFilteredData] = useState<MeetingRow[] | null>(null)
-  const handleFilteredDataChange = useCallback((data: MeetingRow[]) => setTableFilteredData(data), [])
-
+  // Stats reflect the calendar's visible window (or full scoped set in table mode).
+  // Table-mode in-table filters drive their own server query and don't feed back
+  // into stats — that ties stats to a separate server-side aggregation, queued
+  // as part of the records-page work in #154.
   const statsData = useMemo((): MeetingRow[] => {
     if (!scopedMeetings) {
       return []
-    }
-    if (layout === 'table' && tableTab === 'meetings' && tableFilteredData) {
-      return tableFilteredData
     }
     if (layout === 'calendar' && dateRange) {
       return scopedMeetings.filter((m) => {
@@ -153,7 +157,7 @@ export function ScheduleView() {
       })
     }
     return scopedMeetings
-  }, [layout, dateRange, scopedMeetings, tableFilteredData, tableTab])
+  }, [layout, dateRange, scopedMeetings])
 
   const isLoading = meetings.isLoading || activitiesQuery.isLoading
 
@@ -177,7 +181,7 @@ export function ScheduleView() {
     )
   }
 
-  const hasNoData = scopedMeetings.length === 0 && (activitiesQuery.data ?? []).length === 0
+  const hasNoData = scopedMeetings.length === 0 && (activitiesData ?? []).length === 0
 
   if (hasNoData) {
     return (
@@ -235,17 +239,8 @@ export function ScheduleView() {
               />
             )
           : tableTab === 'meetings'
-            ? (
-                <PastMeetingsTable
-                  data={scopedMeetings}
-                  onFilteredDataChange={handleFilteredDataChange}
-                />
-              )
-            : (
-                <ActivitiesTable
-                  data={activitiesQuery.data ?? []}
-                />
-              )}
+            ? <PastMeetingsTable />
+            : <ActivitiesTable />}
       </div>
 
       {/* Assign rep dialog */}
