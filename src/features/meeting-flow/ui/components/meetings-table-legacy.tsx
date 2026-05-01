@@ -1,50 +1,47 @@
 'use client'
 
-import type { MeetingRow, MeetingTableMeta } from './columns'
+import type { MeetingRow, MeetingTableMeta } from '@/features/meeting-flow/ui/components/table/columns'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components/assign-project-dialog'
-import { MEETING_FILTER_CONFIG, MEETING_PAGE_SIZE_OPTIONS } from '@/features/meeting-flow/constants/meeting-table-filter-config'
+import { meetingTableFilters } from '@/features/meeting-flow/constants/table-filter-config'
 import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-class'
-import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
-import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { getColumns } from '@/features/meeting-flow/ui/components/table/columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
-import { useTRPC } from '@/trpc/helpers'
-
-import { getColumns } from './columns'
 
 const columns = getColumns()
+const defaultSort = [{ id: 'scheduledFor', desc: true }]
 
-export function PastMeetingsTable() {
-  const trpc = useTRPC()
+interface Props {
+  data: MeetingRow[]
+  onFilteredCountChange?: (count: number) => void
+  onFilteredDataChange?: (data: MeetingRow[]) => void
+}
+
+/**
+ * @deprecated Legacy data-prop table used by `meetings-view`'s table-mode
+ * toggle (which shares one fetch with the calendar). Migrate `meetings-view`
+ * to drive both modes through the query toolkit so this component can be
+ * deleted. Tracked in #153.
+ *
+ * For new server-paginated tables use `<PastMeetingsTable />` from
+ * `./table` (toolkit-driven).
+ */
+export function MeetingsTableLegacy({ data, onFilteredCountChange, onFilteredDataChange }: Props) {
   const ability = useAbility()
   const { updateOutcome, updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
 
-  // Dialog state
   const [assignRepDialog, setAssignRepDialog] = useState<{ meetingId: string } | null>(null)
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
-
-  const pagination = usePaginatedQuery<Record<string, never>, MeetingRow>(
-    trpc.meetingsRouter.list.queryOptions,
-    {},
-    {
-      paramPrefix: 'pm',
-      pageSize: 20,
-      pageSizeOptions: MEETING_PAGE_SIZE_OPTIONS,
-      filters: MEETING_FILTER_CONFIG,
-    },
-  )
 
   const handleView = useCallback((entity: MeetingRow) => {
     if (entity.customerId) {
@@ -71,7 +68,7 @@ export function PastMeetingsTable() {
     onAssignProject: handleAssignProject,
   })
 
-  const meta: MeetingTableMeta = useMemo(() => ({
+  const meta: MeetingTableMeta = {
     meetingActions: () => sharedActions,
     onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome }),
     onUpdateScheduledFor: (meetingId: string, date: Date) => updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
@@ -79,36 +76,18 @@ export function PastMeetingsTable() {
       setAssignRepDialog({ meetingId })
     },
     canAssignMeeting: ability.can('assign', 'Meeting'),
-  }), [sharedActions, updateOutcome, updateScheduledFor, ability])
+  }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <>
       <DeleteConfirmDialog />
-
-      <div className="flex shrink-0 flex-col gap-2">
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
-        </span>
-
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.Search placeholder="Search by customer or type…" />
-          <QueryToolbar.Filters />
-          <QueryToolbar.ClearAll />
-          <div className="ml-auto">
-            <QueryToolbar.PageSize />
-          </div>
-        </QueryToolbar>
-
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.ActiveFilterChips />
-        </QueryToolbar>
-      </div>
-
       <DataTable
-        tableId="past-meetings"
-        data={pagination.rows}
+        tableId="meetings"
+        data={data}
         columns={columns}
         meta={meta}
+        filterConfig={meetingTableFilters}
+        defaultSort={defaultSort}
         getRowClassName={getMeetingRowClassName}
         entityName="meeting"
         rowDataAttribute="data-meeting-row"
@@ -117,8 +96,8 @@ export function PastMeetingsTable() {
             handleView(row)
           }
         }}
-        serverPagination={toDataTablePagination(pagination)}
-        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+        onFilteredCountChange={onFilteredCountChange}
+        onFilteredDataChange={onFilteredDataChange}
       />
 
       <ManageParticipantsModal
@@ -132,6 +111,6 @@ export function PastMeetingsTable() {
         open={!!assignProjectMeetingId}
         onOpenChange={open => !open && setAssignProjectMeetingId(null)}
       />
-    </div>
+    </>
   )
 }

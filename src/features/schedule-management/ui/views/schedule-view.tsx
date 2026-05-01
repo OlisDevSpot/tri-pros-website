@@ -13,7 +13,7 @@ import { motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { meetingsStatConfig } from '@/features/meeting-flow/constants/meetings-stat-config'
-import { PastMeetingsTable } from '@/features/meeting-flow/ui/components/table'
+import { MeetingsTableLegacy } from '@/features/meeting-flow/ui/components/meetings-table-legacy'
 import { useScheduleHighlight } from '@/features/schedule-management/hooks/use-schedule-highlight'
 import { useScheduleTableTab } from '@/features/schedule-management/hooks/use-schedule-table-tab'
 import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-calendar-event'
@@ -36,7 +36,7 @@ import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { useTRPC } from '@/trpc/helpers'
 
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
 
 export function ScheduleView() {
   const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.SCHEDULE_LAYOUT, 'calendar')
@@ -73,20 +73,23 @@ export function ScheduleView() {
 
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
-  const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
+  const meetings = useQuery(trpc.meetingsRouter.list.queryOptions({
+    pagination: { limit: 500, offset: 0 },
+  }))
+  const meetingRows = meetings.data?.rows
   const activitiesQuery = useQuery(trpc.scheduleRouter.activities.getAll.queryOptions())
   const { updateScheduledFor } = useMeetingActions()
 
   // Scope meetings by pipeline
   const scopedMeetings = useMemo(() => {
-    if (!meetings.data || scope === 'all') {
-      return meetings.data
+    if (!meetingRows || scope === 'all') {
+      return meetingRows
     }
-    return meetings.data.filter((m) => {
+    return meetingRows.filter((m) => {
       const derived = deriveMeetingPipeline({ projectId: m.projectId, pipeline: m.pipeline as 'fresh' | 'rehash' | 'dead' })
       return derived === scope
     })
-  }, [meetings.data, scope])
+  }, [meetingRows, scope])
 
   // Map activities to calendar events for the calendar view
   const activityEvents = useMemo(
@@ -236,7 +239,7 @@ export function ScheduleView() {
             )
           : tableTab === 'meetings'
             ? (
-                <PastMeetingsTable
+                <MeetingsTableLegacy
                   data={scopedMeetings}
                   onFilteredDataChange={handleFilteredDataChange}
                 />

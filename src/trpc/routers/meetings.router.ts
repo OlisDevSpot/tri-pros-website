@@ -1,10 +1,11 @@
 import type { MediaFile } from '@/shared/db/schema'
 import { TRPCError } from '@trpc/server'
-import { and, count, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import z from 'zod'
 import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-profile'
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
-import { meetingParticipantRoles, meetingTypes } from '@/shared/constants/enums'
+import { meetingOutcomes, meetingParticipantRoles, meetingTypes } from '@/shared/constants/enums'
+import { pipelines } from '@/shared/constants/enums/pipelines'
 import {
   addParticipant,
   countParticipantsByRole,
@@ -16,6 +17,10 @@ import {
   updateParticipantRole,
   userParticipatesInMeeting,
 } from '@/shared/dal/server/meetings/participants'
+import { buildFilterWhere } from '@/shared/dal/server/query/filters'
+import { paginate } from '@/shared/dal/server/query/output'
+import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
+import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
 import { isUniqueViolation } from '@/shared/db/lib/pg-errors'
@@ -29,52 +34,124 @@ import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({
-  // Get all meetings — super-admin sees all, agents see their own.
+  // Paginated meetings list — drives every meetings consumer (calendar,
+  // schedule, past-meetings table, customer profile lists). Super-admin sees
+  // all; agents see meetings they participate in.
+  //
+  // Filters (all URL-driven via the query toolkit):
+  //   outcome:      multi-select on meetings.meetingOutcome
+  //   scheduledFor: date-range on meetings.scheduledFor (calendar pins this
+  //                 to its visible window)
+  //   pipeline:     'projects' | 'fresh' | 'rehash' | 'dead' (derived:
+  //                 'projects' if projectId IS NOT NULL, else meetings.pipeline)
+  //   customerId:   single — scope to one customer (profile modals)
+  //   projectId:    single — scope to one project
+  //
+  // Search: ilike against customers.name OR meetings.meetingType.
+  // Sort whitelist: customerName, scheduledFor, meetingOutcome, createdAt.
+  // Default order: createdAt DESC.
   //
   // Owner + co-owner are resolved via the meetingParticipants junction table
   // (single source of truth) so each row carries the data needed by the
-  // ParticipantPicker / ReadOnlyParticipantSummary as initial cache. This
-  // eliminates the per-row getParticipants fetch on table mount.
-  //
+  // ParticipantPicker / ReadOnlyParticipantSummary as initial cache.
   // Participants are batched in a separate query (rather than role-filtered
-  // LEFT JOINs) so a defensive duplicate row in `meeting_participants` can
-  // never multiply the meetings result via cross-product. The DB-level
-  // partial unique indexes (see meeting-participants schema) prevent
-  // duplicates in the first place; this is belt-and-suspenders.
-  getAll: agentProcedure
-    .query(async ({ ctx }) => {
+  // LEFT JOINs) so a defensive duplicate row can never multiply via
+  // cross-product.
+  list: agentProcedure
+    .input(paginatedQueryInput({
+      outcome: z.array(z.enum(meetingOutcomes)).optional(),
+      scheduledFor: dateRangeSchema.optional(),
+      pipeline: z.enum(pipelines).optional(),
+      customerId: z.string().uuid().optional(),
+      projectId: z.string().uuid().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
       const isOmni = ctx.ability.can('manage', 'all')
 
-      const rows = await db
-        .select({
-          ...getTableColumns(meetings),
-          customerName: customers.name,
-          customerPhone: gatedPhoneSql(isOmni),
-          customerHasSentProposal: hasSentProposalSql(),
-          customerAddress: customers.address,
-          customerCity: customers.city,
-          customerState: customers.state,
-          customerZip: customers.zip,
-          // Legacy fields — still derived from meetings.ownerId for backward
-          // compatibility with consumers that read ownerName/ownerImage directly.
-          ownerName: user.name,
-          ownerImage: user.image,
-          proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
-          hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
-          hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
-        })
-        .from(meetings)
-        .leftJoin(customers, eq(customers.id, meetings.customerId))
-        .leftJoin(user, eq(user.id, meetings.ownerId))
-        .where(isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id))
-        .orderBy(desc(meetings.createdAt))
+      const baseScope = isOmni
+        ? undefined
+        : userParticipatesInMeeting(ctx.session.user.id, meetings.id)
 
-      // Batch-fetch ALL participants (owner + co_owner + helpers) for every
-      // returned meeting. DAL orders by user.id ASC so the resulting array is
-      // a canonical representation — combo keys (e.g. swimlane grouping) and
-      // owner/coOwner pick-first both stay deterministic.
-      const meetingIds = rows.map(r => r.id)
-      const participantRows = await getAllParticipantsForMeetings(meetingIds)
+      const searchTerm = input.search?.trim()
+      const searchWhere = searchTerm
+        ? or(
+            ilike(customers.name, `%${searchTerm}%`),
+            ilike(sql`${meetings.meetingType}::text`, `%${searchTerm}%`),
+          )
+        : undefined
+
+      const filterWhere = buildFilterWhere(input.filters, {
+        outcome: v => (v.length > 0 ? inArray(meetings.meetingOutcome, v) : undefined),
+        scheduledFor: v => and(
+          v.from ? gte(meetings.scheduledFor, v.from) : undefined,
+          v.to ? lte(meetings.scheduledFor, v.to) : undefined,
+        ),
+        pipeline: (v) => {
+          if (v === 'projects') {
+            return sql`${meetings.projectId} IS NOT NULL`
+          }
+          if (v === 'leads') {
+            // No leads pipeline at meeting level; leads are pre-meeting.
+            return sql`FALSE`
+          }
+          return and(
+            sql`${meetings.projectId} IS NULL`,
+            eq(meetings.pipeline, v),
+          )
+        },
+        customerId: v => eq(meetings.customerId, v),
+        projectId: v => eq(meetings.projectId, v),
+      })
+
+      const where = and(baseScope, searchWhere, filterWhere)
+
+      const orderBy = buildOrderBy(input.sort, {
+        customerName: customers.name,
+        scheduledFor: meetings.scheduledFor,
+        meetingOutcome: meetings.meetingOutcome,
+        createdAt: meetings.createdAt,
+      }, desc(meetings.createdAt))
+
+      const result = await paginate({
+        query: () => db
+          .select({
+            ...getTableColumns(meetings),
+            customerName: customers.name,
+            customerPhone: gatedPhoneSql(isOmni),
+            customerHasSentProposal: hasSentProposalSql(),
+            customerAddress: customers.address,
+            customerCity: customers.city,
+            customerState: customers.state,
+            customerZip: customers.zip,
+            // Legacy fields — still derived from meetings.ownerId for backward
+            // compatibility with consumers that read ownerName/ownerImage directly.
+            ownerName: user.name,
+            ownerImage: user.image,
+            proposalCount: sql<number>`(SELECT count(*) FROM proposals p WHERE p.meeting_id = ${meetings.id})`.as('proposal_count'),
+            hasSentProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'sent')`.as('has_sent_proposal'),
+            hasApprovedProposal: sql<boolean>`EXISTS (SELECT 1 FROM proposals p WHERE p.meeting_id = ${meetings.id} AND p.status = 'approved')`.as('has_approved_proposal'),
+          })
+          .from(meetings)
+          .leftJoin(customers, eq(customers.id, meetings.customerId))
+          .leftJoin(user, eq(user.id, meetings.ownerId))
+          .where(where)
+          .orderBy(...orderBy)
+          .limit(input.pagination.limit)
+          .offset(input.pagination.offset),
+        count: async () => {
+          const [row] = await db
+            .select({ c: count(meetings.id) })
+            .from(meetings)
+            .leftJoin(customers, eq(customers.id, meetings.customerId))
+            .where(where)
+          return row?.c ?? 0
+        },
+      })
+
+      const meetingIds = result.rows.map(r => r.id)
+      const participantRows = meetingIds.length > 0
+        ? await getAllParticipantsForMeetings(meetingIds)
+        : []
 
       const participantsByMeeting = new Map<string, typeof participantRows>()
       for (const p of participantRows) {
@@ -87,41 +164,44 @@ export const meetingsRouter = createTRPCRouter({
         }
       }
 
-      return rows.map((row) => {
-        const rowParticipants = participantsByMeeting.get(row.id) ?? []
-        const ownerRow = rowParticipants.find(p => p.role === 'owner')
-        const coOwnerRow = rowParticipants.find(p => p.role === 'co_owner')
+      return {
+        rows: result.rows.map((row) => {
+          const rowParticipants = participantsByMeeting.get(row.id) ?? []
+          const ownerRow = rowParticipants.find(p => p.role === 'owner')
+          const coOwnerRow = rowParticipants.find(p => p.role === 'co_owner')
 
-        return {
-          ...row,
-          participants: rowParticipants.map(p => ({
-            id: p.userId,
-            name: p.userName,
-            image: p.userImage,
-            role: p.role,
-          })),
-          owner: ownerRow
-            ? {
-                id: ownerRow.participantId,
-                userId: ownerRow.userId,
-                role: 'owner' as const,
-                userName: ownerRow.userName,
-                userEmail: ownerRow.userEmail,
-                userImage: ownerRow.userImage,
-              }
-            : null,
-          coOwner: coOwnerRow
-            ? {
-                id: coOwnerRow.participantId,
-                userId: coOwnerRow.userId,
-                role: 'co_owner' as const,
-                userName: coOwnerRow.userName,
-                userEmail: coOwnerRow.userEmail,
-                userImage: coOwnerRow.userImage,
-              }
-            : null,
-        }
-      })
+          return {
+            ...row,
+            participants: rowParticipants.map(p => ({
+              id: p.userId,
+              name: p.userName,
+              image: p.userImage,
+              role: p.role,
+            })),
+            owner: ownerRow
+              ? {
+                  id: ownerRow.participantId,
+                  userId: ownerRow.userId,
+                  role: 'owner' as const,
+                  userName: ownerRow.userName,
+                  userEmail: ownerRow.userEmail,
+                  userImage: ownerRow.userImage,
+                }
+              : null,
+            coOwner: coOwnerRow
+              ? {
+                  id: coOwnerRow.participantId,
+                  userId: coOwnerRow.userId,
+                  role: 'co_owner' as const,
+                  userName: coOwnerRow.userName,
+                  userEmail: coOwnerRow.userEmail,
+                  userImage: coOwnerRow.userImage,
+                }
+              : null,
+          }
+        }),
+        total: result.total,
+      }
     }),
 
   // Create a new meeting record (called when an agent starts a meeting)

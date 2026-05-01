@@ -2,8 +2,12 @@ import { z } from 'zod'
 
 /**
  * Pagination fields. Discrete (offset/limit) — supports jump-to-page UX.
- * The 500 cap is the server-side hard wall; client surfaces should pick a
- * smaller `pageSizeOptions` allowlist (typically [10, 20, 50, 100]).
+ *
+ * The 500 cap is the server-side hard wall. Most consumers stay within the
+ * toolkit's `pageSizeOptions` allowlist (typically [10, 20, 50, 100]).
+ * Calendar/kanban consumers that fetch a date-windowed slice ("all meetings
+ * this week") can use larger pages up to 500 — sufficient for any realistic
+ * single-window render.
  */
 export const paginationFieldsSchema = z.object({
   limit: z.number().int().min(1).max(500).default(20),
