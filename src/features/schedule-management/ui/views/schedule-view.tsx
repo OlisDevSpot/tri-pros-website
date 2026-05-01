@@ -13,7 +13,7 @@ import { motion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { meetingsStatConfig } from '@/features/meeting-flow/constants/meetings-stat-config'
-import { MeetingsTableLegacy } from '@/features/meeting-flow/ui/components/meetings-table-legacy'
+import { PastMeetingsTable } from '@/features/meeting-flow/ui/components/table'
 import { useScheduleHighlight } from '@/features/schedule-management/hooks/use-schedule-highlight'
 import { useScheduleTableTab } from '@/features/schedule-management/hooks/use-schedule-table-tab'
 import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-calendar-event'
@@ -136,15 +136,13 @@ export function ScheduleView() {
   }, [updateScheduledFor])
 
   // Stats data — meetings only
-  const [tableFilteredData, setTableFilteredData] = useState<MeetingRow[] | null>(null)
-  const handleFilteredDataChange = useCallback((data: MeetingRow[]) => setTableFilteredData(data), [])
-
+  // Stats reflect the calendar's visible window (or full scoped set in table mode).
+  // Table-mode in-table filters drive their own server query and don't feed back
+  // into stats — that ties stats to a separate server-side aggregation, queued
+  // as part of the records-page work in #154.
   const statsData = useMemo((): MeetingRow[] => {
     if (!scopedMeetings) {
       return []
-    }
-    if (layout === 'table' && tableTab === 'meetings' && tableFilteredData) {
-      return tableFilteredData
     }
     if (layout === 'calendar' && dateRange) {
       return scopedMeetings.filter((m) => {
@@ -156,7 +154,7 @@ export function ScheduleView() {
       })
     }
     return scopedMeetings
-  }, [layout, dateRange, scopedMeetings, tableFilteredData, tableTab])
+  }, [layout, dateRange, scopedMeetings])
 
   const isLoading = meetings.isLoading || activitiesQuery.isLoading
 
@@ -238,12 +236,7 @@ export function ScheduleView() {
               />
             )
           : tableTab === 'meetings'
-            ? (
-                <MeetingsTableLegacy
-                  data={scopedMeetings}
-                  onFilteredDataChange={handleFilteredDataChange}
-                />
-              )
+            ? <PastMeetingsTable />
             : (
                 <ActivitiesTable
                   data={activitiesQuery.data ?? []}
