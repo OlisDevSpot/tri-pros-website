@@ -12,6 +12,8 @@ import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -31,6 +33,7 @@ function fmtRangeLabel(value: DateRange | undefined, fallback: string): string {
 
 export function DateRangeFilterControl({ definition, value, onChange }: Props) {
   const [open, setOpen] = useState(false)
+  const isMobile = useIsMobile()
 
   const calendarSelected: ReactDayPickerRange | undefined = value
     ? {
@@ -58,6 +61,8 @@ export function DateRangeFilterControl({ definition, value, onChange }: Props) {
     })
   }
 
+  const hasPresets = (definition.presets?.length ?? 0) > 0
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -71,19 +76,20 @@ export function DateRangeFilterControl({ definition, value, onChange }: Props) {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0">
-        {definition.presets && definition.presets.length > 0 && (
-          <div className="flex flex-wrap gap-1 border-b border-border/50 p-2">
-            {definition.presets.map(preset => (
-              <Button
-                key={preset.value}
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePreset(preset.value)}
-              >
-                {preset.label}
-              </Button>
-            ))}
+        {hasPresets && (
+          <div className="flex items-center justify-between gap-2 border-b border-border/50 p-2">
+            <Select onValueChange={handlePreset}>
+              <SelectTrigger size="sm" className="flex-1">
+                <SelectValue placeholder="Quick range…" />
+              </SelectTrigger>
+              <SelectContent>
+                {definition.presets!.map(preset => (
+                  <SelectItem key={preset.value} value={preset.value}>
+                    {preset.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {value && (
               <Button
                 type="button"
@@ -100,7 +106,8 @@ export function DateRangeFilterControl({ definition, value, onChange }: Props) {
           mode="range"
           selected={calendarSelected}
           onSelect={handleCalendarChange}
-          numberOfMonths={2}
+          numberOfMonths={isMobile ? 1 : 2}
+          showOutsideDays={isMobile}
         />
       </PopoverContent>
     </Popover>
