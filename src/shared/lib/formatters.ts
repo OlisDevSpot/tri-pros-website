@@ -60,7 +60,7 @@ export function formatStringAsDate(stringDate: string, options: Intl.DateTimeFor
     month: 'long',
     day: 'numeric',
     year: 'numeric',
-    timeZone: 'PST',
+    timeZone: 'America/Los_Angeles',
     hour: 'numeric',
     minute: 'numeric',
     ...options,
