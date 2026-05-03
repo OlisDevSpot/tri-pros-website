@@ -102,6 +102,8 @@ export function Proposal() {
                     customerAge={customer?.customerAge ?? null}
                     customerId={customer?.id ?? null}
                     envelopeDocumentIds={proposal.data.formMetaJSON?.envelopeDocumentIds ?? null}
+                    proposalKind={proposal.data.kind}
+                    customerName={customer?.name ?? null}
                     proposalStatus={proposal.data.status}
                     proposalSentAt={proposal.data.sentAt}
                     isSendingEmail={sendProposalEmail.isPending}
