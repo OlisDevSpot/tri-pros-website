@@ -22,9 +22,7 @@ export const envelopeDocumentIds = [
 ] as const
 export type EnvelopeDocumentId = (typeof envelopeDocumentIds)[number]
 
-/**
- * Initial: meeting becomes a new project on proposal approval.
- * Upsell: meeting already linked to an existing project (additional work).
- */
-export const envelopeScenarios = ['initial', 'upsell'] as const
-export type EnvelopeScenario = (typeof envelopeScenarios)[number]
+// Envelope routing now keys off `proposal.kind` directly — see
+// `src/shared/constants/enums/proposals.ts` for the canonical enum and
+// `src/shared/services/zoho-sign/documents/registry.ts` for how documents
+// declare their `applicableKinds`.

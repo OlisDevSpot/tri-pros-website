@@ -7,7 +7,7 @@ export interface DocumentEvaluation {
   required: EnvelopeDocumentId[]
   /** Agent toggles via Switch. Default off. */
   optional: EnvelopeDocumentId[]
-  /** Not applicable in this scenario. UI hides. Server rejects if submitted. */
+  /** Not applicable for this kind. UI hides. Server rejects if submitted. */
   forbidden: EnvelopeDocumentId[]
 }
 
@@ -24,11 +24,11 @@ export function evaluateDocuments(ctx: ProposalContext): DocumentEvaluation {
   const forbidden: EnvelopeDocumentId[] = []
 
   for (const doc of ENVELOPE_DOCUMENTS) {
-    if (!doc.applicableScenarios.includes(ctx.scenario)) {
+    if (!doc.applicableKinds.includes(ctx.kind)) {
       forbidden.push(doc.id)
       continue
     }
-    const rule = doc.perScenarioRules[ctx.scenario]
+    const rule = doc.perKindRules[ctx.kind]
     if (!rule) {
       forbidden.push(doc.id)
       continue
@@ -80,7 +80,7 @@ export class EnvelopeSelectionError extends Error {
 }
 
 /**
- * Throws if the agent-submitted selection violates the scenario rules
+ * Throws if the agent-submitted selection violates the per-kind rules
  * (missing a required doc, or includes a forbidden doc). Optional docs
  * may be present or absent freely.
  *

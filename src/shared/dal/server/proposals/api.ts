@@ -5,6 +5,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
+import { deriveProposalKind } from '@/shared/entities/proposals/lib/derive-proposal-kind'
 
 export interface ProposalCustomer {
   id: string
@@ -20,10 +21,24 @@ export interface ProposalCustomer {
 
 export async function createProposal(data: InsertProposalSchema) {
   try {
+    // Server-derived: kind is frozen at insert from the meeting's current
+    // project linkage. Any client-supplied `kind` on `data` is ignored —
+    // see the omit() on insertProposalSchema for the Zod-level guard.
+    let meetingProjectId: string | null = null
+    if (data.meetingId) {
+      const [row] = await db
+        .select({ projectId: meetings.projectId })
+        .from(meetings)
+        .where(eq(meetings.id, data.meetingId))
+      meetingProjectId = row?.projectId ?? null
+    }
+    const kind = deriveProposalKind(meetingProjectId)
+
     const [proposal] = await db
       .insert(proposals)
       .values({
         ...data,
+        kind,
         fundingJSON: {
           ...data.fundingJSON,
           data: {
@@ -58,19 +73,21 @@ export async function getProposal(proposalId: string) {
         zip: customers.zip,
         customerProfileJSON: customers.customerProfileJSON,
       },
-      // The proposal's meeting's projectId. Null = initial scenario
-      // (no project yet — created on proposal approval per the
-      // project-conversion rule). Non-null = upsell on an existing
-      // project. Drives envelope-scenario derivation in
-      // src/shared/services/zoho-sign/documents/proposal-context.ts.
+      // The proposal's meeting's projectId. Null = meeting has no
+      // project yet (one is created when the meeting's initial-sale
+      // proposal is approved). Non-null = meeting is on an existing
+      // project. Note: this is the meeting's *current* projectId —
+      // distinct from `proposal.kind`, which is the kind frozen at
+      // proposal insert. Used by UI surfaces that need project linkage
+      // (e.g., the project-creation gate in PastProposalsTable).
       meetingProjectId: meetings.projectId,
       // Best-available "original contract date" for this proposal's
-      // project — drives AWD's `original-contract-date` on upsell
-      // envelopes. Falls through `contract_sent_at → approved_at →
+      // project — drives AWD's `original-contract-date` on additional-
+      // work envelopes. Falls through `contract_sent_at → approved_at →
       // created_at` because projects can exist before the original
       // proposal's contract is sent (project conversion fires on
       // approval, contract goes out after). Null only when the meeting
-      // has no project (initial scenario, where this field is unused).
+      // has no project (initial-sale, where this field is unused).
       projectFirstContractSentAt: sql<string | null>`(
         SELECT COALESCE(MIN(p2.contract_sent_at), MIN(p2.approved_at), MIN(p2.created_at))
         FROM ${proposals} p2
