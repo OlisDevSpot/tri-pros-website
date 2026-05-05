@@ -5,6 +5,9 @@ import { expand } from 'dotenv-expand'
 
 import z from 'zod'
 
+// Load .env.local first (dispatch worktree overrides), then .env as fallback.
+// dotenv won't overwrite already-set vars, so .env.local wins.
+config({ path: '.env.local' })
 expand(config({ path: '.env' }))
 
 const envSchema = z.object({

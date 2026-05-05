@@ -239,11 +239,18 @@ gh project item-edit --project-id PVT_kwHOCqZfGM4BSgDZ \
 **Canonical mechanism for working multiple GitHub issues in parallel.** Slot-tracked (max 3), port-assigned (3001-3003), board-aware (auto-moves status). Worktrees are real `git worktree`s in `.worktrees/issue-<#>/` (gitignored) — not directory copies. `.env` is symlinked, `node_modules/` is pnpm-hardlinked into the shared store, so 3 slots ≈ 1× project disk.
 
 - `pnpm dispatch start <#>` — create worktree + branch + deps + auto-generated `CLAUDE.local.md`, move issue to In Progress
+  - `--tmux` flag: also opens the slot in a tmux window with claude + dev panes
 - `pnpm dispatch run <#>` — launch Claude in the slot
 - `pnpm dispatch dev <#>` — start Next.js on the slot's assigned port
-- `pnpm dispatch review <#>` / `pr <#>` / `park <#>` / `cleanup <#>` — full lifecycle
+- `pnpm dispatch tmux <#>` — open or focus the slot's tmux window (claude 70% / dev 30% layout)
+- `pnpm dispatch all <#> <#> ...` — start multiple slots and open them all in tmux, then attach
+- `pnpm dispatch review <#>` / `pr <#>` / `park <#>` / `cleanup <#>` — full lifecycle (park/cleanup auto-close the tmux window)
 - `pnpm dispatch loop` — AFK execution engine that picks Ready+`claude`-labeled issues by P0→P3
 - `pnpm dispatch help` — full command surface
+
+**Tmux conventions**: session = repo basename (`tri-pros-website`); window = `WT-<branch-without-type-prefix>` capped at 30 chars (e.g. `WT-23-build-pipeline-page` for issue 23 on branch `feat/23-build-pipeline-page`); layout = `npx claude` (left ~70%) | `PORT=<port> pnpm dev` (right ~30%). The `WT-` prefix distinguishes dispatched slot windows from `main` or ad-hoc shells. `prefix 1`–`9` jumps to windows by index. With `tmux-resurrect` + `tmux-continuum` configured (see `~/.tmux.conf`), session layouts survive WSL/OS restarts; relaunch claude with `claude --continue` after restart to reattach to the prior conversation.
+
+This script is kept in sync with `olis-v3/nextjs/otautomations/scripts/dispatch.sh`. Only the CONFIG block at the top differs — propagate any logic change to both files.
 
 See `memory/reference-dispatch-system.md` for the complete reference. Do **not** invent a parallel-work flow — always go through dispatch.
 
