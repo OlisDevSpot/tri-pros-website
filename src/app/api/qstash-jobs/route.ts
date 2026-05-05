@@ -11,6 +11,7 @@ import { syncContractDraftJob } from '@/shared/services/upstash/jobs/sync-contra
 import { syncCustomersJob } from '@/shared/services/upstash/jobs/sync-customers'
 import { syncQbInvoiceJob } from '@/shared/services/upstash/jobs/sync-qb-invoice'
 import { syncQbPaymentJob } from '@/shared/services/upstash/jobs/sync-qb-payment'
+import { syncZohoSignStatusJob } from '@/shared/services/upstash/jobs/sync-zoho-sign-status'
 
 /** Allow up to 60s for image optimization jobs (default is 10s on Hobby plan) */
 export const maxDuration = 60
@@ -27,6 +28,7 @@ const jobs: Job[] = [
   syncQbInvoiceJob,
   sendViewNotificationJob,
   syncContractDraftJob,
+  syncZohoSignStatusJob,
   syncCalendarsJob,
   initialCalendarSyncJob,
 ]

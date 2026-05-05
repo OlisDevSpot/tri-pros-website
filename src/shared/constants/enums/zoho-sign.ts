@@ -28,3 +28,24 @@ export type EnvelopeDocumentId = (typeof envelopeDocumentIds)[number]
  */
 export const envelopeScenarios = ['initial', 'upsell'] as const
 export type EnvelopeScenario = (typeof envelopeScenarios)[number]
+
+/**
+ * Known webhook operation_type values from Zoho Sign. Zoho's docs and
+ * actual payloads diverge (e.g. docs say `RequestCompleted`, payloads
+ * send `RequestSigningSuccess`). We list all observed values here but
+ * the Zod schema accepts any string — unknown types are tolerated (200)
+ * and filtered by the mapping table in entities/proposals/lib/.
+ */
+export const webhookOperationTypes = [
+  'RequestSubmitted',
+  'RequestViewed',
+  'RequestSigningSuccess',
+  'RequestCompleted',
+  'RequestRejected',
+  'RequestDeclined',
+  'RequestRecalled',
+  'RequestExpired',
+  'RequestReassigned',
+  'RequestDeleted',
+] as const
+export type WebhookOperationType = (typeof webhookOperationTypes)[number]
