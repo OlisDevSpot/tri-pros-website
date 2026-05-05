@@ -61,6 +61,7 @@ A directory is a **Single Unit** (domain/entity/feature) when it has 2+ of these
 | **Meeting** | An in-home consultation between agent and customer. Captures situation + program data as JSONB. | `db/schema/meetings.ts` |
 | **Proposal** | Formal document: scopes, SOWs, pricing, financing. Statuses: `draft → sent → approved → declined`. | `db/schema/proposals.ts` |
 | **Project** | A construction engagement at a specific address. Created at contract signing. Lifecycle: `active → completed → on_hold`. When `isPublic = true`, appears in portfolio/showroom. | `db/schema/projects.ts` |
+| **User** _(forthcoming)_ | An internal staff member's profile entity (distinct from the auth-role concept of the same name — see _Flagged ambiguities_). Acted upon by super-admins via conveniences like text-rep, dispatch-meeting, deactivate. Migration planned in `entities/users/`. | `db/schema/auth.ts` (today) |
 
 ## Construction Hierarchy
 
@@ -87,7 +88,10 @@ Trade (discipline)
 
 | Term | Definition |
 |------|-----------|
-| **TCP** (Total Contract Price) | Total project cost. `startingTcp` = initial quote, `finalTcp` = after incentives. |
+| **Price** | Front-facing financial value — what the customer pays. Examples: `Section Price` (per SOW section), `startingTcp` / `finalTcp` (whole proposal). Visible to homeowner. Stored at `proposal.projectJSON.sow[].financials.sectionPrice` (per section) and `proposal.fundingJSON.data.startingTcp` (proposal level). |
+| **Cost** | Back-facing financial value — what the work costs Tri Pros (materials, labor, fees, overhead). Internal/agent-only. Multi-line per SOW section: each line has `{label, amount, relatedScopeId, notes?}` and ties to a specific selected scope. Stored at `proposal.projectJSON.sow[].financials.costLines`. **Never visible to homeowner.** |
+| **Margin** | Derived: `Price − Cost`. Margin % = `(Margin / Price) × 100`. Computed at SOW-section level and at proposal level (aggregate). Internal/agent-only. Sections missing cost data are excluded from aggregate margin and surfaced as a "missing cost data" warning. |
+| **TCP** (Total Contract Price) | Total proposal price. `startingTcp` = initial quote, `finalTcp` = after incentives. A specific kind of Price. |
 | **Incentive** | Discount, tax-credit, cash-back, or exclusive-offer. Reduces TCP. Types: `discount \| tax-credit \| cash-back \| exclusive-offer \| other`. |
 | **Finance Option** | A loan product (term, APR, provider). Customer selects one per proposal. |
 | **Finance Provider** | Lending company (Tesla, Sunrun, Mosaic, banks). Has many finance options. |
@@ -143,7 +147,10 @@ Trade (discipline)
 | Term | Definition |
 |------|-----------|
 | **Entity View Context** | Any UI surface that renders one or more entities — regardless of presentation format (calendar, kanban, data table, card list, modal). View contexts nest following the ownership chain `Customer > Project > Meeting > Proposal`. Every entity in a view context gets the standardized entity action menu (base actions gated by CASL + optional context-specific actions). |
-| **Entity Action Config Hook** | A `use<Entity>ActionConfigs` React hook that is the **single source of truth** for an entity's available actions. Every view context for that entity calls this hook rather than building actions inline. The hook owns: action list from `*_ACTIONS` constants, mutations (duplicate, delete), `useConfirm` for destructive actions, and returns `{ actions, DeleteConfirmDialog }`. Context-specific handlers (onView, onEdit, onStart) are injected via the hook's `handlers` parameter. |
+| **Entity Action System** | The shared mechanism by which every business entity exposes a uniform `MoreHorizontalIcon` dropdown of permitted actions. Comprises (1) a typed **Entity Spec** per entity, (2) a compile-time **Entity Registry** that maps entity-type to spec, and (3) a single shared `<EntityActionMenu>` consumer entry point. Replaces the legacy per-entity `useXActionConfigs` hooks. CASL-gated. |
+| **Entity Spec** | The per-entity declaration in the Entity Registry. Strict types enforce four **Universal CRUD Slots** (`view`, `edit`, `delete`, `duplicate?`) plus a keyed `customActions` record for entity-unique actions. One spec file per entity at `entities/<entity>/spec.ts`. |
+| **Universal CRUD Slot** | One of the four base action roles every entity must satisfy: `view`, `edit`, `delete` (or its semantic equivalent — User's slot is "Deactivate"), and the optional `duplicate`. Each slot's user-facing label and icon are provided by the entity, allowing role consistency without forced vocabulary (e.g. Meeting's `view` slot renders as "Start" with a play icon). |
+| **Custom Action** _(entity-baked)_ | An entity-unique action declared in the spec's `customActions: Record<string, ...>`. Examples: Meeting's `setOutcome`, Proposal's `shareByEmail`, User's `textRep`. Keyed so `disableActions` and `actionOverrides` can target them by name. Distinct from **call-site custom actions** appended via the `<EntityActionMenu customActions={[...]}>` prop, which are unkeyed and append-only. |
 
 ### View Context Path Notation
 
@@ -215,6 +222,7 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 - **Customer** not "client" or "user" (unless referring to the user role)
 - **Meeting** not "appointment" or "consultation" (those are casual synonyms, not code terms)
 - **Proposal** not "quote" or "estimate"
+- **Price** vs **Cost** — never use interchangeably. **Price** is what the customer pays (front-facing). **Cost** is what the work costs Tri Pros (back-facing, internal). **Margin** is the difference. Use the precise term in code, comments, UI copy, and PRs.
 - **Scope** not "line item" or "service"
 - **Trade** not "contractor type" or "specialty"
 - **SOW** always uppercase. Full form: "Scope of Work"
@@ -226,3 +234,12 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 - **SFH** always uppercase. Full form: "Single Family Home"
 - **Entity View Context** not "entity card" or "entity display" — refers to the full UI surface + its nested entity containers, not a single component
 - **View Context Path** — use `Page/Container/Entity/Nested` notation to reference specific view contexts (e.g., `Profile/Projects/Project/Meeting/Proposal`)
+- **Entity Action System** not "action menu", "more menu", or "kebab menu" — those describe the visual component; the System is the spec/registry/menu trio behind it
+- **Universal CRUD Slot** not "base action" or "default action" — names the four typed slots (`view`/`edit`/`delete`/`duplicate?`) every entity must declare
+
+## Flagged ambiguities
+
+- **"User"** is overloaded. Resolution: **two distinct concepts.**
+  - The **User auth role** (`user` | `homeowner` | `agent` | `super-admin`) is a permission tier — see _User Roles_.
+  - The **User business entity** (forthcoming) is a staff member's profile record acted upon by super-admins — see _Core Entities_.
+  Code in `entities/users/` refers to the entity. Code referencing a session/role refers to the auth concept.
