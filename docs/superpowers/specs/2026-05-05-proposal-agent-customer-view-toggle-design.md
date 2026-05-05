@@ -263,50 +263,140 @@ The toggle is **gated by ability**, then the view-mode hook applies permission i
 
 ## PricingBreakdown — agent mode
 
-The component grows a `viewMode: 'customer' | 'agent'` prop (default `'customer'`). Customer-visible rendering is unchanged. In agent mode, an **Internal Calculation** block is appended below the existing Final Contract Price row.
+### Mental model
 
-### Breakdown pricing mode + agent
+`PricingBreakdown` grows a `viewMode: 'customer' | 'agent'` prop (default `'customer'`). The component now renders **two stacked blocks**, vertically separated:
 
-Internal Calculation block:
+1. **Customer-Facing Breakdown** (top) — the existing component as it renders today. **Unchanged** in both customer and agent view. This is what the homeowner sees and what the page would look like with no toggle.
+2. **Internal Calculation** (below, agent-only) — a brand-new agent-only block, rendered only when `viewMode === 'agent'`. Shows per-section costs and the aggregate margin + multiplier KPIs that drive agent decision-making.
 
-```
-─── Internal Calculation (agent only) ───
-Section            Price      Cost      Margin     Multiplier
-Roof Replacement   $20,000    $10,000   $10,000    2.00x
-Solar              $42,000    $—        $—         —
-Misc               $1,000     —         —          —
-─────────────────────────────────────────
-Total Cost                    $10,000
-Total Margin (vs Final)       $36,000
-Multiplier                    4.60x
+The two blocks are visually distinct: a divider, an `Internal Calculation` header label with a small lock/eye icon and a muted "Visible only to you" sub-label. The internal block is never an extension of the customer rows — it's a separate calculation surface stacked underneath, with its own column structure.
 
-⚠ 1 section is missing cost data — totals are partial.
-```
+In **customer view**, only block 1 renders. In **agent view**, both blocks render. The agent block's per-section row layout depends on pricing mode (next two sections), but the **aggregate footer is identical regardless of pricing mode** — it always uses `finalTcp` and total cost.
 
-- Per-section row shows price (already known), cost (Σ section's cost lines, `—` if empty), margin (`price − cost`, `—` if cost is 0), multiplier (`price / cost`, 2 decimals, `—` if cost is 0).
-- Aggregate row uses **`finalTcp`** (post-discount) for margin and multiplier. Reflects actual profit.
-- Missing-cost-data warning surfaces when any section has empty `costLines`.
-
-### Total pricing mode + agent
-
-Customer top section is unchanged (single "Contract Price" row). Internal Calculation block:
+The shared aggregate footer:
 
 ```
-─── Internal Calculation (agent only) ───
-Roof Replacement cost     $5,870
-Solar cost                $9,800
-─────────────────────────────────────
-Total Cost                $15,670
-Total Margin (vs Final)   $34,330
-Multiplier                3.19x
+Total Cost                  Σ all costLine.amount across all sections
+Total Margin                finalTcp − Total Cost
+Multiplier                  finalTcp ÷ Total Cost      (2 decimals; "—" when Total Cost = 0)
 ```
 
-- Per-section row shows just label + cost. No per-section price exists in total mode, so margin/multiplier columns aren't rendered per-section.
-- Aggregate row is the same KPI as breakdown mode (`finalTcp − totalCost`, `finalTcp / totalCost`).
+`finalTcp` is `computeFinalTcp(funding)` — `startingTcp − Σdiscounts`. Multiplier and margin always reflect the actual money received after discounts. Discount cost-out comes from the agent's profit, not the homeowner's.
 
-### Customer mode
+---
 
-Identical to today. Zero behavior change — only the column count varies on the same component.
+### Walkthrough — one proposal in both pricing modes
+
+Same proposal, two pricing modes, to make the dual rendering concrete.
+
+**Proposal data:**
+- Section A: "Roof Replacement", price $20,000, cost lines: Labor $6,000 + Materials $4,000 = $10,000 cost
+- Section B: "Solar", price $42,000, **no cost lines yet**
+- Funding: `miscPrice` $1,000, one discount incentive ($5,000 friends-and-family)
+
+**Derived numbers:**
+- Σ SOW prices: $62,000
+- Subtotal (in breakdown mode, `startingTcp` synced to Σ + miscPrice): $63,000
+- In total mode, `startingTcp` is whatever the agent typed manually — for this example, also $63,000
+- `finalTcp = $63,000 − $5,000 = $58,000`
+- Total Cost = $10,000 (only Section A has cost lines)
+- Total Margin = $58,000 − $10,000 = $48,000
+- Multiplier = $58,000 ÷ $10,000 = 5.80x
+
+---
+
+### Breakdown pricing mode
+
+**Customer-Facing Breakdown** (block 1 — agent and customer see this):
+
+```
+┌──────────────────────────────────────────┐
+│  Roof Replacement              $20,000   │
+│  Solar                         $42,000   │
+│  Misc                           $1,000   │
+│ ──────────────────────────────────────── │
+│  Subtotal                      $63,000   │
+│ ──────────────────────────────────────── │
+│  Friends & Family             −$5,000    │
+│ ──────────────────────────────────────── │
+│  Final Contract Price          $58,000   │
+└──────────────────────────────────────────┘
+```
+
+**Internal Calculation** (block 2 — agent only, appended below):
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  🔒 Internal Calculation                       Visible only to you   │
+│ ──────────────────────────────────────────────────────────────────── │
+│                       Price      Cost       Margin     Multiplier    │
+│  Roof Replacement     $20,000    $10,000    $10,000    2.00x         │
+│  Solar                $42,000    $—         $—         —             │
+│ ──────────────────────────────────────────────────────────────────── │
+│  Total Cost                      $10,000                             │
+│  Total Margin                    $48,000   (Final Price − Total Cost)│
+│  Multiplier                      5.80x     (Final Price ÷ Total Cost)│
+│ ──────────────────────────────────────────────────────────────────── │
+│  ⚠ 1 section is missing cost data — multiplier reflects partial cost.│
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Per-section rows in breakdown mode have **4 data columns** (Price, Cost, Margin, Multiplier) because we know each section's price. `Misc` is **not** a SOW section and does not appear in this block — it's a funding-level number, already counted in the aggregate `finalTcp`.
+
+`Solar` shows `$—` and `—` for cost-derived columns because no cost lines have been added yet. Its presence in the table makes the missing data visible to the agent.
+
+---
+
+### Total pricing mode
+
+**Customer-Facing Breakdown** (block 1):
+
+```
+┌──────────────────────────────────────────┐
+│  Contract Price                $63,000   │
+│ ──────────────────────────────────────── │
+│  Friends & Family             −$5,000    │
+│ ──────────────────────────────────────── │
+│  Final Contract Price          $58,000   │
+└──────────────────────────────────────────┘
+```
+
+**Internal Calculation** (block 2 — agent only):
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│  🔒 Internal Calculation                       Visible only to you   │
+│ ──────────────────────────────────────────────────────────────────── │
+│                       Cost                                           │
+│  Roof Replacement     $10,000                                        │
+│  Solar                $—                                             │
+│ ──────────────────────────────────────────────────────────────────── │
+│  Total Cost                      $10,000                             │
+│  Total Margin                    $48,000   (Final Price − Total Cost)│
+│  Multiplier                      5.80x     (Final Price ÷ Total Cost)│
+│ ──────────────────────────────────────────────────────────────────── │
+│  ⚠ 1 section is missing cost data — multiplier reflects partial cost.│
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+Per-section rows in total mode have **only 1 data column** (Cost). Per-section margin/multiplier are not computable because there's no per-section price. The aggregate footer is identical to breakdown mode — it never depended on per-section price; it always uses `finalTcp` and `totalCost`.
+
+---
+
+### Customer mode (both pricing modes)
+
+Block 1 only. Block 2 is not rendered. **Zero behavior change** vs. today's component.
+
+---
+
+### Implementation notes for the component
+
+- Single `PricingBreakdown` component takes `viewMode` and `proposalData`. Internally it renders block 1 always, then conditionally renders an `<InternalCalculationBlock>` sub-component when `viewMode === 'agent'`.
+- `InternalCalculationBlock` reads `proposalData.formMetaJSON.pricingMode` to decide its per-section column layout (4-column vs 1-column).
+- Per-section rows are derived from `proposalData.projectJSON.data.sow` — same array the customer block iterates. Sections appear in both blocks in the same order. Section labels match exactly.
+- All number formatting goes through existing `formatAsDollars`. New helper `formatMultiplier(n: number | null): string` returns `'4.60x'` or `'—'`.
+- The "Visible only to you" sub-label uses `text-muted-foreground text-xs`. The header uses a small lock icon (lucide `LockIcon` or `EyeIcon`) to reinforce that this block is internal.
 
 ---
 
@@ -405,10 +495,12 @@ Implementation: wrap `MultiSelect.onValuesChange` in an async handler that diffs
 - [ ] Saving a proposal with a cost line whose `relatedScopeId` doesn't match any selected scope fails Zod validation.
 - [ ] Removing a scope from a SOW section that has cost lines pointing to it shows a confirm dialog. On confirm, those cost lines are removed; on cancel, the scope change is reverted.
 - [ ] Existing proposals (with legacy `sow[].price`) load without error and display correctly. On save, they migrate to the new `financials` shape.
-- [ ] Internal Calculation block (breakdown mode): per-section rows show price/cost/margin/multiplier; aggregate row uses `finalTcp` for margin and multiplier.
-- [ ] Internal Calculation block (total mode): per-section rows show label + cost only; aggregate row uses `finalTcp` for margin and multiplier.
-- [ ] Multiplier renders to 2 decimals with `x` suffix (e.g., `2.04x`); falls back to `—` when cost is 0.
-- [ ] Sections with no cost lines render `—` for cost/margin/multiplier and surface a "missing cost data" warning under the Internal Calculation block.
+- [ ] In customer view (default), `PricingBreakdown` renders only the Customer-Facing Breakdown block — identical to today.
+- [ ] In agent view, `PricingBreakdown` renders the Customer-Facing Breakdown block **followed by** a visually distinct Internal Calculation block. The customer block is unchanged; the internal block is appended below it with its own header ("Internal Calculation") and "Visible only to you" sub-label.
+- [ ] Internal Calculation block in **breakdown** mode: per-section rows have 4 columns (Price, Cost, Margin, Multiplier). Misc is **not** listed as a per-section row. Aggregate footer shows Total Cost, Total Margin (`finalTcp − Total Cost`), Multiplier (`finalTcp ÷ Total Cost`).
+- [ ] Internal Calculation block in **total** mode: per-section rows have 1 column (Cost only). Aggregate footer is identical in shape and math to breakdown mode.
+- [ ] Multiplier renders to 2 decimals with `x` suffix (e.g., `2.04x`); falls back to `—` when Total Cost is 0 or when computing per-section multiplier with no cost data.
+- [ ] Sections with no cost lines render `—` in cost-derived columns and surface a "missing cost data" warning under the Internal Calculation block.
 
 ---
 
