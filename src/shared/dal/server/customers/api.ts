@@ -118,14 +118,6 @@ export async function getCustomers(viewer: CustomersViewer): Promise<CustomerWit
   return db.select(customerSelectWithGate(viewer)).from(customers)
 }
 
-export async function getCustomerByNotionId(notionContactId: string, viewer: CustomersViewer): Promise<CustomerWithPhoneGate | undefined> {
-  const [customer] = await db
-    .select(customerSelectWithGate(viewer))
-    .from(customers)
-    .where(eq(customers.notionContactId, notionContactId))
-  return customer
-}
-
 // ── Full sync ─────────────────────────────────────────────────────────────────
 
 export async function syncAllCustomers(): Promise<{ upserted: number }> {
