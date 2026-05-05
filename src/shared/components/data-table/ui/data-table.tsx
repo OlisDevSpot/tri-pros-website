@@ -14,9 +14,11 @@ import {
 import { PinIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
@@ -342,7 +344,11 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             isAnyColumnResizing && 'cursor-col-resize select-none',
           )}
         >
-          <Table className="table-fixed border-separate border-spacing-0" style={{ width: tableWidth }}>
+          <Table
+            className="table-fixed border-separate border-spacing-0"
+            style={{ width: tableWidth }}
+            aria-busy={!!serverPagination?.isFetching}
+          >
             <TableHeader className="sticky top-0 z-10 bg-background">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
@@ -450,66 +456,84 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             </TableHeader>
 
             <TableBody>
-              {table.getRowModel().rows.length > 0
-                ? table.getRowModel().rows.map((row) => {
-                    const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
-                    const customRowClass = getRowClassName?.(row.original)
-
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
-                        onClick={() => {
-                          if (onRowClick) {
-                            onRowClick(row.original)
-                          }
-                          else if (isMobile) {
-                            setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
-                          }
-                        }}
-                        {...rowProps}
-                      >
-                        {row.getVisibleCells().map((cell, colIdx) => {
-                          if (colIdx === 0 && isFrozen) {
-                            return (
-                              <TableCell
-                                key={cell.id}
-                                className={cn(
-                                  'sticky left-0 z-5 p-0 border-r border-border/50',
-                                  CELL_BORDER,
-                                  'transition-shadow duration-200',
-                                  showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
-                                )}
-                                style={{ borderRightStyle: 'dashed' }}
-                              >
-                                <div className="absolute inset-0 bg-background group-hover:bg-muted/50" />
-                                {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
-                                <div className="relative p-2">
-                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </div>
-                              </TableCell>
-                            )
-                          }
-
-                          return (
-                            <TableCell key={cell.id} className={CELL_BORDER}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          )
-                        })}
-                      </TableRow>
-                    )
-                  })
-                : (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                        No
-                        {' '}
-                        {entityName}
-                        s match your filter.
-                      </TableCell>
+              {(() => {
+                const dataRows = table.getRowModel().rows
+                if (dataRows.length > 0) {
+                  return null
+                }
+                if (serverPagination?.isFetching) {
+                  const visibleCols = table.getVisibleFlatColumns()
+                  return Array.from({ length: 5 }).map((_, rowIdx) => (
+                    // eslint-disable-next-line react/no-array-index-key -- static skeleton list, no reordering
+                    <TableRow key={`skeleton-row-${rowIdx}`} className={cn('border-border/50 hover:bg-transparent', SKELETON_ROW_HEIGHT_CLASS)}>
+                      {visibleCols.map((col, colIdx) => (
+                        <TableCell key={`skeleton-${rowIdx}-${col.id}`} className={CELL_BORDER}>
+                          <Skeleton className={cn('h-3.5', SKELETON_CELL_WIDTHS[colIdx % SKELETON_CELL_WIDTHS.length])} />
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  )}
+                  ))
+                }
+                return (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                      No
+                      {' '}
+                      {entityName}
+                      s match your filter.
+                    </TableCell>
+                  </TableRow>
+                )
+              })()}
+              {table.getRowModel().rows.map((row) => {
+                const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
+                const customRowClass = getRowClassName?.(row.original)
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
+                    onClick={() => {
+                      if (onRowClick) {
+                        onRowClick(row.original)
+                      }
+                      else if (isMobile) {
+                        setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
+                      }
+                    }}
+                    {...rowProps}
+                  >
+                    {row.getVisibleCells().map((cell, colIdx) => {
+                      if (colIdx === 0 && isFrozen) {
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            className={cn(
+                              'sticky left-0 z-5 p-0 border-r border-border/50',
+                              CELL_BORDER,
+                              'transition-shadow duration-200',
+                              showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
+                            )}
+                            style={{ borderRightStyle: 'dashed' }}
+                          >
+                            <div className="absolute inset-0 bg-background group-hover:bg-muted/50" />
+                            {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
+                            <div className="relative p-2">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </div>
+                          </TableCell>
+                        )
+                      }
+
+                      return (
+                        <TableCell key={cell.id} className={CELL_BORDER}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      )
+                    })}
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
