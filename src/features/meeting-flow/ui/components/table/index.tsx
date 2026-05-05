@@ -13,6 +13,8 @@ import { toDataTablePagination } from '@/shared/components/data-table/lib/to-dat
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { RecordsPageHeader } from '@/shared/components/records-page-header'
+import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
@@ -82,46 +84,41 @@ export function PastMeetingsTable() {
   }), [sharedActions, updateOutcome, updateScheduledFor, ability])
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <>
       <DeleteConfirmDialog />
 
-      <div className="flex shrink-0 flex-col gap-2">
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
-        </span>
-
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.Search placeholder="Search by customer or type…" />
-          <QueryToolbar.Filters />
-          <QueryToolbar.ClearAll />
-          <div className="ml-auto">
-            <QueryToolbar.PageSize />
-          </div>
-        </QueryToolbar>
-
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.ActiveFilterChips />
-        </QueryToolbar>
-      </div>
-
-      <div className="flex-1 min-h-0">
-        <DataTable
-          tableId="past-meetings"
-          data={pagination.rows}
-          columns={columns}
-          meta={meta}
-          getRowClassName={getMeetingRowClassName}
-          entityName="meeting"
-          rowDataAttribute="data-meeting-row"
-          onRowClick={(row) => {
-            if (row.customerId) {
-              handleView(row)
-            }
-          }}
-          serverPagination={toDataTablePagination(pagination)}
-          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
-        />
-      </div>
+      <RecordsPageShell
+        header={<RecordsPageHeader title="Past Meetings" pagination={pagination} />}
+        toolbar={(
+          <QueryToolbar pagination={pagination} entityName="meetings">
+            <QueryToolbar.Bar>
+              <QueryToolbar.Search placeholder="Search by customer or type…" />
+              <QueryToolbar.FilterTrigger />
+              <QueryToolbar.PageSize />
+            </QueryToolbar.Bar>
+            <QueryToolbar.ChipRail />
+            <QueryToolbar.LiveStatus />
+          </QueryToolbar>
+        )}
+        table={(
+          <DataTable
+            tableId="past-meetings"
+            data={pagination.rows}
+            columns={columns}
+            meta={meta}
+            getRowClassName={getMeetingRowClassName}
+            entityName="meeting"
+            rowDataAttribute="data-meeting-row"
+            onRowClick={(row) => {
+              if (row.customerId) {
+                handleView(row)
+              }
+            }}
+            serverPagination={toDataTablePagination(pagination)}
+            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          />
+        )}
+      />
 
       <ManageParticipantsModal
         meetingIds={assignRepDialog ? [assignRepDialog.meetingId] : []}
@@ -134,6 +131,6 @@ export function PastMeetingsTable() {
         open={!!assignProjectMeetingId}
         onOpenChange={open => !open && setAssignProjectMeetingId(null)}
       />
-    </div>
+    </>
   )
 }

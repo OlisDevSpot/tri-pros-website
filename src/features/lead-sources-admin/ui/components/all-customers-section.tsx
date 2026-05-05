@@ -80,28 +80,23 @@ export function AllCustomersSection() {
       <DeleteConfirmDialog />
 
       <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex items-end justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              All customers
-            </h3>
-            <span className="text-xs text-muted-foreground tabular-nums">
-              {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
-            </span>
-          </div>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            All customers
+          </h3>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
+          </span>
         </div>
 
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.Search placeholder="Filter by name or email…" />
-          <QueryToolbar.Filters />
-          <QueryToolbar.ClearAll />
-          <div className="ml-auto">
+        <QueryToolbar pagination={pagination} entityName="customers">
+          <QueryToolbar.Bar>
+            <QueryToolbar.Search placeholder="Filter by name or email…" />
+            <QueryToolbar.FilterTrigger />
             <QueryToolbar.PageSize />
-          </div>
-        </QueryToolbar>
-
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.ActiveFilterChips />
+          </QueryToolbar.Bar>
+          <QueryToolbar.ChipRail />
+          <QueryToolbar.LiveStatus />
         </QueryToolbar>
       </div>
 

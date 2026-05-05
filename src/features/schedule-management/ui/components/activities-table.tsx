@@ -10,6 +10,8 @@ import { toDataTablePagination } from '@/shared/components/data-table/lib/to-dat
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { RecordsPageHeader } from '@/shared/components/records-page-header'
+import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -29,27 +31,20 @@ export function ActivitiesTable() {
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="flex shrink-0 flex-col gap-2">
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
-        </span>
-
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.Search placeholder="Search by title or description…" />
-          <QueryToolbar.Filters />
-          <QueryToolbar.ClearAll />
-          <div className="ml-auto">
+    <RecordsPageShell
+      header={<RecordsPageHeader title="Activities" pagination={pagination} />}
+      toolbar={(
+        <QueryToolbar pagination={pagination} entityName="activities">
+          <QueryToolbar.Bar>
+            <QueryToolbar.Search placeholder="Search by title or description…" />
+            <QueryToolbar.FilterTrigger />
             <QueryToolbar.PageSize />
-          </div>
+          </QueryToolbar.Bar>
+          <QueryToolbar.ChipRail />
+          <QueryToolbar.LiveStatus />
         </QueryToolbar>
-
-        <QueryToolbar pagination={pagination}>
-          <QueryToolbar.ActiveFilterChips />
-        </QueryToolbar>
-      </div>
-
-      <div className="flex-1 min-h-0">
+      )}
+      table={(
         <DataTable
           tableId="activities"
           data={pagination.rows}
@@ -58,7 +53,7 @@ export function ActivitiesTable() {
           serverPagination={toDataTablePagination(pagination)}
           serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
         />
-      </div>
-    </div>
+      )}
+    />
   )
 }
