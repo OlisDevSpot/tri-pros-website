@@ -48,6 +48,7 @@ const envSchema = z.object({
   ZOHO_SIGN_CLIENT_ID: z.string().optional(),
   ZOHO_SIGN_CLIENT_SECRET: z.string().optional(),
   ZOHO_SIGN_REFRESH_TOKEN: z.string().optional(),
+  ZOHO_SIGN_WEBHOOK_SECRET: z.string().optional(),
 
   // QUICKBOOKS
   QB_CLIENT_ID: z.string(),

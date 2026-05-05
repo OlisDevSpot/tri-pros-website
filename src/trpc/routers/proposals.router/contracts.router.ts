@@ -37,12 +37,25 @@ export const contractsRouter = createTRPCRouter({
         return null
       }
 
+      const stamps = {
+        contractSentAt: proposal.contractSentAt,
+        contractViewedAt: proposal.contractViewedAt,
+        contractSignedAt: proposal.contractSignedAt,
+        contractDeclinedAt: proposal.contractDeclinedAt,
+      }
+
+      // Webhook is the source of truth for terminal state — skip the live
+      // Zoho call once we've persisted completion or decline.
+      if (proposal.contractSignedAt) {
+        return { requestId: proposal.signingRequestId, requestStatus: 'completed' as const, signerStatuses: [], ...stamps }
+      }
+      if (proposal.contractDeclinedAt) {
+        return { requestId: proposal.signingRequestId, requestStatus: 'declined' as const, signerStatuses: [], ...stamps }
+      }
+
       try {
         const status = await contractService.getSigningStatus(proposal.signingRequestId)
-        return {
-          ...status,
-          contractSentAt: proposal.contractSentAt,
-        }
+        return { ...status, ...stamps }
       }
       catch {
         return null
