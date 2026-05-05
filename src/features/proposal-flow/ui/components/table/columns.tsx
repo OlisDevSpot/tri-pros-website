@@ -6,7 +6,6 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 import { EyeIcon } from 'lucide-react'
 
-import { PROPOSAL_STATUS_COLORS } from '@/features/proposal-flow/constants/status-colors'
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
@@ -14,6 +13,7 @@ import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { proposalStatuses } from '@/shared/constants/enums'
+import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
 import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
