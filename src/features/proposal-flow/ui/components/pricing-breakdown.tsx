@@ -18,14 +18,14 @@ export function PricingBreakdown({ proposalData, viewMode = 'customer' }: Props)
   const finalTcp = computeFinalTcp(proposalData.fundingJSON.data)
 
   return (
-    <div className="space-y-0">
+    <>
       <div className="rounded-xl border border-border/40 overflow-hidden text-sm">
         <div className="px-5 py-4 space-y-2.5">
           {pricingMode === 'breakdown'
             ? (
                 <>
                   {sow.filter(s => (s.financials.sectionPrice ?? 0) > 0).map((section, i) => (
-                    <div key={`${section.title || i}}`} className="flex items-center justify-between">
+                    <div key={i} className="flex items-center justify-between">
                       <span className="text-muted-foreground">{section.title || `Section ${i + 1}`}</span>
                       <span>{formatAsDollars(section.financials.sectionPrice!)}</span>
                     </div>
@@ -118,6 +118,6 @@ export function PricingBreakdown({ proposalData, viewMode = 'customer' }: Props)
       {viewMode === 'agent' && (
         <InternalCalculationBlock proposalData={proposalData} />
       )}
-    </div>
+    </>
   )
 }

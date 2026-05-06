@@ -16,8 +16,11 @@ export interface ProposalCostTotals {
  * profit, so they must be netted in.
  *
  * `totalMultiplier` is null when total cost is 0 (avoids Infinity / NaN).
- * `hasMissingCostData` flags the case where any SOW section has zero
- * cost lines, so the UI can warn that totals are partial.
+ * `hasMissingCostData` flags asymmetric incompleteness — true when SOME
+ * sections have cost lines and some don't (the agent started tracking
+ * but didn't finish). False when no sections have cost lines (haven't
+ * started) or all do (finished). Avoids alert fatigue in total-mode
+ * proposals where cost lines are optional.
  */
 export function computeProposalCostTotals(data: InsertProposalSchema): ProposalCostTotals {
   const finalTcp = computeFinalTcp(data.fundingJSON.data)
@@ -27,9 +30,13 @@ export function computeProposalCostTotals(data: InsertProposalSchema): ProposalC
     0,
   )
 
-  const hasMissingCostData = data.projectJSON.data.sow.some(
+  const hasAnyCostLines = data.projectJSON.data.sow.some(
+    section => section.financials.costLines.length > 0,
+  )
+  const hasAnyMissing = data.projectJSON.data.sow.some(
     section => section.financials.costLines.length === 0,
   )
+  const hasMissingCostData = hasAnyCostLines && hasAnyMissing
 
   return {
     totalCost,

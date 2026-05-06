@@ -53,7 +53,7 @@ export function InternalCalculationBlock({ proposalData }: Props) {
                   const multiplier = computeSectionMultiplier(section)
                   const hasCost = section.financials.costLines.length > 0
                   return (
-                    <Fragment key={`${section.title || i}`}>
+                    <Fragment key={i}>
                       <span className="text-muted-foreground truncate">{section.title || `Section ${i + 1}`}</span>
                       <span className="text-right tabular-nums">
                         {section.financials.sectionPrice == null ? '—' : formatAsDollars(section.financials.sectionPrice)}
@@ -75,7 +75,7 @@ export function InternalCalculationBlock({ proposalData }: Props) {
                   const cost = computeSectionCost(section)
                   const hasCost = section.financials.costLines.length > 0
                   return (
-                    <Fragment key={`${section.title || i}`}>
+                    <Fragment key={i}>
                       <span className="text-muted-foreground truncate">{section.title || `Section ${i + 1}`}</span>
                       <span className="text-right tabular-nums">{hasCost ? formatAsDollars(cost) : '—'}</span>
                     </Fragment>
