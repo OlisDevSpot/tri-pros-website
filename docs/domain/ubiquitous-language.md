@@ -91,6 +91,11 @@ Trade (discipline)
 | **Incentive** | Discount, tax-credit, cash-back, or exclusive-offer. Reduces TCP. Types: `discount \| tax-credit \| cash-back \| exclusive-offer \| other`. |
 | **Finance Option** | A loan product (term, APR, provider). Customer selects one per proposal. |
 | **Finance Provider** | Lending company (Tesla, Sunrun, Mosaic, banks). Has many finance options. |
+| **Price** | Customer-facing dollar amount. What the homeowner sees / pays. Per-section: `sow[].financials.sectionPrice`. Aggregate: `funding.startingTcp`. |
+| **Cost** | Internal dollar amount. What the work costs Tri Pros. Itemized via `sow[].financials.costLines[]`. Never shown to the homeowner. |
+| **Cost Line** | One internal line of cost. Has `label`, `amount`, `relatedScopeId`, optional `notes`. |
+| **Margin** | `Price − Cost`. Computed via `computeSectionMargin` / `computeProposalCostTotals`. Never persisted. Agent-only display. |
+| **Multiplier** | `Price ÷ Cost`, displayed to 2 decimals (`2.04x`). Headline agent KPI. `—` when cost is 0. |
 
 ## Customer Profiling
 
@@ -144,6 +149,7 @@ Trade (discipline)
 |------|-----------|
 | **Entity View Context** | Any UI surface that renders one or more entities — regardless of presentation format (calendar, kanban, data table, card list, modal). View contexts nest following the ownership chain `Customer > Project > Meeting > Proposal`. Every entity in a view context gets the standardized entity action menu (base actions gated by CASL + optional context-specific actions). |
 | **Entity Action Config Hook** | A `use<Entity>ActionConfigs` React hook that is the **single source of truth** for an entity's available actions. Every view context for that entity calls this hook rather than building actions inline. The hook owns: action list from `*_ACTIONS` constants, mutations (duplicate, delete), `useConfirm` for destructive actions, and returns `{ actions, DeleteConfirmDialog }`. Context-specific handlers (onView, onEdit, onStart) are injected via the hook's `handlers` parameter. |
+| **View Mode** | `'customer' \| 'agent'`. URL-persisted via `?view=agent`. Determines whether internal data renders on the proposal-flow display route. Sourced from `useViewMode()` which gates with `ability.can('update', 'Proposal')` — homeowners constructing the param manually still get `'customer'`. |
 
 ### View Context Path Notation
 
@@ -226,3 +232,5 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 - **SFH** always uppercase. Full form: "Single Family Home"
 - **Entity View Context** not "entity card" or "entity display" — refers to the full UI surface + its nested entity containers, not a single component
 - **View Context Path** — use `Page/Container/Entity/Nested` notation to reference specific view contexts (e.g., `Profile/Projects/Project/Meeting/Proposal`)
+- **Price** is customer-facing; **Cost** is internal. Never use "price" to mean what something costs Tri Pros.
+- **Multiplier** is the canonical agent KPI. Format as `Nx` to 2 decimals (e.g., `2.04x`). Use `formatMultiplier` to render — never inline `.toFixed(2)`.
