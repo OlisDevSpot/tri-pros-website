@@ -15,6 +15,13 @@ export function useContractStatus(proposalId: string, token?: string, isSent?: b
       const data = query.state.data
       const requestStatus = data?.requestStatus
 
+      // Webhook persists terminal state — stop polling immediately even if
+      // Zoho's live status hasn't caught up.
+      if (data?.contractSignedAt || data?.contractDeclinedAt) {
+        draftPollCountRef.current = 0
+        return false
+      }
+
       // Once signing is in-progress, fixed 30s polling (existing behavior)
       if (requestStatus === 'inprogress') {
         draftPollCountRef.current = 0

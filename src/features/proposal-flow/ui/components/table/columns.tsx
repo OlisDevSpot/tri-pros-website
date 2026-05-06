@@ -6,15 +6,15 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 import { EyeIcon } from 'lucide-react'
 
-import { PROPOSAL_STATUS_COLORS } from '@/features/proposal-flow/constants/status-colors'
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { proposalStatuses } from '@/shared/constants/enums'
-import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
+import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { formatAsDollars, formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 export type ProposalRow = inferRouterOutputs<AppRouter>['proposalsRouter']['crud']['list']['rows'][number]
@@ -33,22 +33,36 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
       header: ({ column }) => <SortableHeader column={column} label="Proposal" />,
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
+        const { customerName, customerId } = row.original
+        const canOpenProfile = Boolean(customerName && customerId)
 
         return (
           <div className="flex items-center justify-between gap-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="min-w-0 space-y-0.5 max-w-55">
-                  <p className="font-medium leading-none truncate">{row.original.label}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {row.original.customerName ?? '—'}
-                  </p>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="start">
-                {row.original.label}
-              </TooltipContent>
-            </Tooltip>
+            <div className="min-w-0 space-y-0.5 max-w-55">
+              <p className="font-medium leading-none truncate">{row.original.label}</p>
+              {canOpenProfile
+                ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        meta?.onViewProfile(customerId!)
+                      }}
+                      className={cn(
+                        'block max-w-full truncate text-left text-xs text-muted-foreground',
+                        'underline decoration-dotted decoration-muted-foreground/40 underline-offset-[3px]',
+                        'transition-colors hover:text-foreground hover:decoration-foreground/60',
+                        'focus-visible:outline-none focus-visible:text-foreground focus-visible:decoration-foreground/60',
+                        'cursor-pointer',
+                      )}
+                    >
+                      {customerName}
+                    </button>
+                  )
+                : (
+                    <p className="text-xs text-muted-foreground truncate">—</p>
+                  )}
+            </div>
             {meta && (
               <EntityActionMenu
                 entity={row.original}
@@ -62,27 +76,14 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
       },
     },
     {
-      accessorKey: 'customerName',
-      header: 'Customer',
-      cell: ({ row, table }) => {
-        const meta = table.options.meta as ProposalTableMeta | undefined
-        const name = row.original.customerName
-        if (!name) {
-          return <span className="text-muted-foreground">—</span>
-        }
+      id: 'price',
+      header: ({ column }) => <SortableHeader column={column} label="Price" />,
+      cell: ({ row }) => {
+        const finalTcp = computeFinalTcp(row.original.fundingJSON.data)
         return (
-          <button
-            type="button"
-            className="text-sm text-blue-500 hover:underline cursor-pointer truncate max-w-40 block"
-            onClick={(e) => {
-              e.stopPropagation()
-              if (row.original.customerId) {
-                meta?.onViewProfile(row.original.customerId)
-              }
-            }}
-          >
-            {name}
-          </button>
+          <div className="text-right text-sm font-medium tabular-nums pr-3">
+            {finalTcp > 0 ? formatAsDollars(finalTcp) : <span className="text-muted-foreground">—</span>}
+          </div>
         )
       },
     },

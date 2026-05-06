@@ -1,3 +1,4 @@
+import type { ContractEvent } from '@/shared/constants/enums'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
@@ -7,6 +8,19 @@ import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-e
 
 function createNotificationService() {
   return {
+    /**
+     * Stub. Wired from the Zoho Sign webhook job; logs the event so we can
+     * confirm wiring. Real dispatch lands with the notifications overhaul.
+     */
+    notifyContractStatusChange: async (params: {
+      event: ContractEvent
+      proposalOwnerId: string
+      proposalId: string
+      occurredAt: string
+    }) => {
+      console.warn(`[notificationService] notifyContractStatusChange:${params.event} (stub)`, params)
+    },
+
     notifyProposalViewed: async (params: {
       proposalOwnerId: string
       proposalLabel: string

@@ -1,10 +1,12 @@
-import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
+import type { ContractEvent } from '@/shared/constants/enums'
+import type { InsertProposalSchema, Proposal } from '@/shared/db/schema/proposals'
 import { randomBytes } from 'node:crypto'
 import { and, eq, getTableColumns, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
+import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
 
 export interface ProposalCustomer {
   id: string
@@ -126,4 +128,48 @@ export async function updateProposal(userIdOrToken: string | null, proposalId: s
 
 export async function deleteProposal(proposalId: string) {
   await db.delete(proposals).where(eq(proposals.id, proposalId))
+}
+
+/**
+ * Applies a contract-signing event to the proposal carrying `signingRequestId`.
+ * Idempotent per `contractEventIdempotencyPolicy`. Returns the updated row,
+ * or undefined when no proposal matches OR the policy skipped the write
+ * (caller treats both as "no notify").
+ *
+ * Business rules (auto-approve, idempotency mode, target column) live in
+ * `entities/proposals/lib/contract-events.ts` — this function is a thin write.
+ */
+export interface ApplyContractEventInput {
+  signingRequestId: string
+  event: ContractEvent
+  performedAt: string
+}
+
+export async function applyContractEvent(
+  input: ApplyContractEventInput,
+): Promise<Proposal | undefined> {
+  const { signingRequestId, event, performedAt } = input
+
+  const column = contractEventColumn[event]
+  const policy = contractEventIdempotencyPolicy[event]
+  const idempotencyClause = policy === 'write-once'
+    ? sql`${proposals[column]} IS NULL`
+    : sql`(${proposals[column]} IS NULL OR ${proposals[column]} > ${performedAt})`
+
+  const setFields: Record<string, unknown> = { [column]: performedAt }
+  if (shouldAutoApproveOnContractEvent(event)) {
+    setFields.status = 'approved'
+    setFields.approvedAt = sql`COALESCE(${proposals.approvedAt}, ${performedAt})`
+  }
+
+  const [row] = await db
+    .update(proposals)
+    .set(setFields)
+    .where(and(
+      eq(proposals.signingRequestId, signingRequestId),
+      idempotencyClause,
+    ))
+    .returning()
+
+  return row
 }

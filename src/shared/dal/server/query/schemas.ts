@@ -39,6 +39,18 @@ export const dateRangeSchema = z.object({
 export type DateRange = z.infer<typeof dateRangeSchema>
 
 /**
+ * Numeric range, inclusive on both ends. Used by the toolkit's `number-range`
+ * filter type. `undefined` on either side means open-ended on that side
+ * (filter normalizer drops the field), so persisted state stays minimal.
+ */
+export const numberRangeSchema = z.object({
+  min: z.number().optional(),
+  max: z.number().optional(),
+})
+
+export type NumberRange = z.infer<typeof numberRangeSchema>
+
+/**
  * Composer for paginated procedure inputs. Every paginated tRPC procedure
  * should use this so the client `usePaginatedQuery` hook can drive it.
  *

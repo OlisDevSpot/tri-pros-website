@@ -1,9 +1,9 @@
 import type { FilterValue } from '@/shared/dal/client/query/types'
-import type { DateRange } from '@/shared/dal/server/query/schemas'
+import type { DateRange, NumberRange } from '@/shared/dal/server/query/schemas'
 
 import { parseAsArrayOf, parseAsBoolean, parseAsJson, parseAsString } from 'nuqs'
 
-import { dateRangeSchema } from '@/shared/dal/server/query/schemas'
+import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/server/query/schemas'
 
 /**
  * Compile-time registry mapping each `FilterDefinition` type to its URL
@@ -32,6 +32,12 @@ export const filterParserRegistry = {
   'date-range': {
     parser: parseAsJson(dateRangeSchema.parse).withDefault({} as DateRange),
     normalize: (raw: DateRange): FilterValue => (raw.from || raw.to ? raw : undefined),
+  },
+  'number-range': {
+    parser: parseAsJson(numberRangeSchema.parse).withDefault({} as NumberRange),
+    normalize: (raw: NumberRange): FilterValue => (
+      typeof raw.min === 'number' || typeof raw.max === 'number' ? raw : undefined
+    ),
   },
   'boolean': {
     parser: parseAsBoolean.withDefault(false),

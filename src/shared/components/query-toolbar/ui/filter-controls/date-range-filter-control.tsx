@@ -69,10 +69,10 @@ export function DateRangeFilterControl({ definition, value, onChange }: Props) {
         <Button
           variant="outline"
           size="sm"
-          className={cn('w-full justify-start text-left md:w-56', !value && 'text-muted-foreground')}
+          className={cn('w-full justify-start text-left', !value && 'text-muted-foreground')}
         >
           <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-          <span className="truncate">{fmtRangeLabel(value, definition.label)}</span>
+          <span className="truncate">{fmtRangeLabel(value, 'Pick dates')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0">

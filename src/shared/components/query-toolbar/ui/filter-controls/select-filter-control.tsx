@@ -18,8 +18,8 @@ export function SelectFilterControl({ definition, value, onChange }: Props) {
       value={value ?? ALL_VALUE}
       onValueChange={next => onChange(next === ALL_VALUE ? undefined : next)}
     >
-      <SelectTrigger className="w-full md:w-44">
-        <SelectValue placeholder={definition.placeholder ?? definition.label} />
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder={definition.placeholder ?? 'All'} />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value={ALL_VALUE}>All</SelectItem>

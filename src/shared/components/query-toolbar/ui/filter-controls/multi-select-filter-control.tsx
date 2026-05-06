@@ -24,8 +24,8 @@ export function MultiSelectFilterControl({ definition, value, onChange }: Props)
       values={current}
       onValuesChange={next => onChange(next.length > 0 ? next : undefined)}
     >
-      <MultiSelectTrigger className="w-full md:w-56">
-        <MultiSelectValue placeholder={definition.placeholder ?? definition.label} />
+      <MultiSelectTrigger className="w-full">
+        <MultiSelectValue placeholder={definition.placeholder ?? 'Any'} />
       </MultiSelectTrigger>
       <MultiSelectContent search={{ placeholder: `Search ${definition.label.toLowerCase()}…` }}>
         <MultiSelectGroup>

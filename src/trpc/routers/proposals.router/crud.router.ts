@@ -8,7 +8,7 @@ import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
 import { createProposal, deleteProposal, getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
 import { buildFilterWhere } from '@/shared/dal/server/query/filters'
 import { paginate } from '@/shared/dal/server/query/output'
-import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
+import { dateRangeSchema, numberRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
 import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
 import { insertProposalSchema } from '@/shared/db/schema'
@@ -67,14 +67,21 @@ export const crudRouter = createTRPCRouter({
   //   meetingId:  scope to one meeting (meeting overview card list)
   //
   // Search: ilike against proposals.label OR customers.name.
-  // Sort whitelist: createdAt, sentAt, status, label, customerName, viewCount.
+  // Sort whitelist: createdAt, sentAt, status, label, customerName, viewCount, price.
   // Default order: createdAt DESC.
+  //
+  // `price` is derived (matches `computeFinalTcp` in entities/proposals/lib):
+  //   GREATEST(0, startingTcp - SUM(discount-typed incentive amounts))
+  // It's expressed as a raw SQL fragment rather than a stored column so the
+  // single source of truth stays in the helper. Drift is impossible because
+  // the SQL mirrors the helper's formula 1:1.
   list: agentProcedure
     .input(paginatedQueryInput({
       status: z.array(z.enum(proposalStatuses)).optional(),
       createdAt: dateRangeSchema.optional(),
       sentAt: dateRangeSchema.optional(),
       pipeline: z.enum(pipelines).optional(),
+      price: numberRangeSchema.optional(),
       customerId: z.string().uuid().optional(),
       meetingId: z.string().uuid().optional(),
     }))
@@ -91,6 +98,19 @@ export const crudRouter = createTRPCRouter({
             ilike(customers.name, `%${searchTerm}%`),
           )
         : undefined
+
+      // Derived final contract price — mirrors `computeFinalTcp` in
+      // shared/entities/proposals/lib. Used by both the price filter and the
+      // `price` sort key below.
+      const finalTcpExpr = sql<number>`GREATEST(
+        0::numeric,
+        COALESCE((${proposals.fundingJSON}->'data'->>'startingTcp')::numeric, 0)
+        - COALESCE((
+            SELECT SUM((inc->>'amount')::numeric)
+            FROM jsonb_array_elements(${proposals.fundingJSON}->'data'->'incentives') AS inc
+            WHERE inc->>'type' = 'discount'
+          ), 0)
+      )`
 
       const filterWhere = buildFilterWhere(input.filters, {
         status: v => (v.length > 0 ? inArray(proposals.status, v) : undefined),
@@ -114,6 +134,10 @@ export const crudRouter = createTRPCRouter({
             eq(meetings.pipeline, v),
           )
         },
+        price: v => and(
+          typeof v.min === 'number' ? sql`${finalTcpExpr} >= ${v.min}` : undefined,
+          typeof v.max === 'number' ? sql`${finalTcpExpr} <= ${v.max}` : undefined,
+        ),
         customerId: v => eq(customers.id, v),
         meetingId: v => eq(proposals.meetingId, v),
       })
@@ -126,6 +150,7 @@ export const crudRouter = createTRPCRouter({
         status: proposals.status,
         label: proposals.label,
         customerName: customers.name,
+        price: finalTcpExpr,
       }, desc(proposals.createdAt))
 
       return paginate({

@@ -36,6 +36,9 @@ export const proposals = pgTable('proposals', {
 
   sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
   contractSentAt: timestamp('contract_sent_at', { mode: 'string', withTimezone: true }),
+  contractViewedAt: timestamp('contract_viewed_at', { mode: 'string', withTimezone: true }),
+  contractSignedAt: timestamp('contract_signed_at', { mode: 'string', withTimezone: true }),
+  contractDeclinedAt: timestamp('contract_declined_at', { mode: 'string', withTimezone: true }),
   approvedAt: timestamp('approved_at', { mode: 'string', withTimezone: true }),
   createdAt,
   updatedAt,
