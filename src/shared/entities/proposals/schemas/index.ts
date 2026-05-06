@@ -145,10 +145,40 @@ export const fundingSectionSchema = z.object({
 
 // --- Proposal Form Schema (composite) ---
 
-export const proposalFormSchema = z.object({
+const proposalFormShape = z.object({
   meta: formMetaSectionSchema,
   project: projectSectionSchema,
   funding: fundingSectionSchema,
+})
+
+export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) => {
+  const isBreakdown = proposal.meta.pricingMode === 'breakdown'
+
+  proposal.project.data.sow.forEach((section, sectionIndex) => {
+    // 1. Section price required + positive in breakdown mode
+    if (isBreakdown) {
+      const sp = section.financials.sectionPrice
+      if (sp === null || sp <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project', 'data', 'sow', sectionIndex, 'financials', 'sectionPrice'],
+          message: 'Section price is required in breakdown pricing mode',
+        })
+      }
+    }
+
+    // 2. Every cost line's relatedScopeId must match a selected scope
+    const selectedScopeIds = new Set(section.scopes.map(s => s.id))
+    section.financials.costLines.forEach((line, lineIndex) => {
+      if (!selectedScopeIds.has(line.relatedScopeId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project', 'data', 'sow', sectionIndex, 'financials', 'costLines', lineIndex, 'relatedScopeId'],
+          message: 'Related scope must be one of this section\'s selected scopes',
+        })
+      }
+    })
+  })
 })
 
 export type ProposalFormSchema = z.infer<typeof proposalFormSchema>
