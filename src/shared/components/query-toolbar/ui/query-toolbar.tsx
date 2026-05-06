@@ -15,7 +15,6 @@ import { QueryToolbarProvider, useQueryToolbarContext } from '@/shared/component
 import { filterRendererRegistry } from '@/shared/components/query-toolbar/lib/filter-renderer-registry'
 import { formatChipValue } from '@/shared/components/query-toolbar/lib/format-chip-value'
 import { ToolbarInternalProvider, useToolbarInternal } from '@/shared/components/query-toolbar/lib/internal-context'
-import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
@@ -103,6 +102,7 @@ function Bar({ className, children }: BarProps) {
       )}
     >
       {children}
+      <ChipRail placement="inline" />
       <LoadingHairline isLoading={showShimmer} />
     </div>
   )
@@ -458,7 +458,9 @@ function PageSize({ className }: PageSizeProps) {
     return null
   }
   return (
-    <div className={cn('hidden lg:flex items-center gap-1.5 ml-auto', className)}>
+    // `lg:order-last` keeps PageSize at the right edge regardless of where
+    // the auto-injected inline ChipRail sits in source order.
+    <div className={cn('hidden lg:flex items-center gap-1.5 ml-auto lg:order-last', className)}>
       <span className="text-xs text-muted-foreground">Rows</span>
       <Select value={String(pageSize)} onValueChange={v => setPageSize(Number(v))}>
         <SelectTrigger className="h-9 w-17.5" aria-label="Rows per page">
@@ -476,40 +478,6 @@ function PageSize({ className }: PageSizeProps) {
   )
 }
 
-// ── KeyboardHint — desktop teaching micro-copy that lives inside the Bar ──────
-
-/**
- * Muted keyboard-shortcut hint placed between FilterTrigger and PageSize on
- * desktop. Uses `flex-1 justify-center` so it occupies the empty middle of
- * the Bar without taking a separate row of vertical space. Hidden entirely
- * on `<lg` (mobile has no `/` or `F` keyboards) and whenever the user is
- * mid-task (active search or active filter chips) — at that point the hint
- * is noise rather than guidance.
- *
- * Decorative micro-copy, so `aria-hidden`. The keyboard shortcuts
- * themselves are wired up in `useToolbarShortcuts` regardless.
- */
-function KeyboardHint() {
-  const { activeFilterCount, searchInput } = useQueryToolbarContext()
-  const isMidTask = activeFilterCount > 0 || searchInput.length > 0
-  if (isMidTask) {
-    return null
-  }
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'hidden lg:inline-flex flex-1 min-w-0 justify-center',
-        'truncate text-xs text-muted-foreground/70',
-        // Decorative micro-copy — never a tap target.
-        'select-none pointer-events-none',
-      )}
-    >
-      {KEYBOARD_HINT_TEXT}
-    </span>
-  )
-}
-
 // ── ChipRail ───────────────────────────────────────────────────────────────────
 
 interface ActiveChip {
@@ -517,15 +485,24 @@ interface ActiveChip {
   value: NonNullable<FilterValue>
 }
 
-/**
- * Active filter chips. Renders nothing when no chips are active — the row
- * collapses, freeing the vertical space for the table. Keyboard-shortcut
- * teaching now lives in `<KeyboardHint />` inside the Bar instead of
- * reserving a row here.
- *
- * Chip add/remove animates via AnimatePresence (motion-safe only).
- */
-function ChipRail() {
+interface ChipRailProps {
+  /**
+   * Where this rail renders. Consumers don't normally pass this — `<Bar>`
+   * auto-injects the `inline` placement; the standalone `<ChipRail />`
+   * defaults to `block` for the mobile-only row beneath the bar.
+   *
+   *   - 'inline': inside the Bar, `lg+` only. Empty state = keyboard hint
+   *     so the bar never grows a second row.
+   *   - 'block' (default): standalone below the Bar, `<lg` only. Collapses
+   *     to null when empty.
+   *
+   * Both scroll horizontally rather than wrapping; a soft right-edge mask
+   * hints at overflow without a loud scrollbar.
+   */
+  placement?: 'inline' | 'block'
+}
+
+function ChipRail({ placement = 'block' }: ChipRailProps) {
   const { filterDefinitions, filters, setFilter } = useQueryToolbarContext()
 
   const active = useMemo<ActiveChip[]>(() => {
@@ -540,11 +517,34 @@ function ChipRail() {
   }, [filterDefinitions, filters])
 
   if (active.length === 0) {
-    return null
+    if (placement === 'block') {
+      return null
+    }
+    return (
+      <span
+        aria-hidden
+        className={cn(
+          'hidden lg:inline-flex flex-1 min-w-0 justify-center',
+          'truncate text-xs text-muted-foreground/70',
+          'select-none pointer-events-none',
+        )}
+      >
+        {KEYBOARD_HINT_TEXT}
+      </span>
+    )
   }
 
   return (
-    <div className="flex min-h-7 flex-wrap items-center gap-1.5">
+    <div
+      className={cn(
+        'flex min-w-0 items-center gap-1.5 overflow-x-auto touch-pan-x',
+        '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        'mask-[linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]',
+        placement === 'inline'
+          ? 'hidden lg:flex flex-1'
+          : 'flex min-h-7 lg:hidden',
+      )}
+    >
       <AnimatePresence initial={false}>
         {active.map(({ definition, value }) => (
           <motion.div
@@ -554,6 +554,7 @@ function ChipRail() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.92 }}
             transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
+            className="shrink-0"
           >
             <Chip
               definition={definition}
@@ -577,26 +578,35 @@ function Chip({ definition, value, onClear }: ChipProps) {
   const formatted = formatChipValue(definition, value)
   const fullText = `${definition.label}: ${formatted}`
   return (
-    <Badge variant="secondary" className="relative max-w-55 gap-1 pr-1">
-      <span className="truncate text-xs" title={fullText}>
+    <div
+      title={fullText}
+      className={cn(
+        'group/chip inline-flex h-9 max-w-55 items-center gap-1.5 pl-2.5 pr-1',
+        // Outline silhouette mirrors FilterTrigger so chips read as part of
+        // the same control group rather than louder filled siblings.
+        'rounded-md border border-border/70 bg-transparent',
+        'transition-colors hover:border-border hover:bg-foreground/3',
+        'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/40',
+      )}
+    >
+      <span className="min-w-0 truncate text-xs leading-none">
         <span className="text-muted-foreground">{`${definition.label}: `}</span>
-        <span>{formatted}</span>
+        <span className="font-medium text-foreground">{formatted}</span>
       </span>
       <button
         type="button"
         onClick={onClear}
         aria-label={`Clear ${definition.label}`}
         className={cn(
-          'relative z-10 ml-0.5 inline-flex size-4 items-center justify-center rounded touch-manipulation',
-          'hover:bg-background/40',
+          'shrink-0 inline-flex size-6 items-center justify-center rounded-sm touch-manipulation',
+          'text-muted-foreground transition-colors',
+          'hover:bg-foreground/10 hover:text-foreground',
           'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2',
-          // Inflate hit area to ≥32px without enlarging the visual chip.
-          'before:absolute before:-inset-2 before:content-[""]',
         )}
       >
-        <XIcon className="size-3" aria-hidden />
+        <XIcon className="size-3.5" aria-hidden />
       </button>
-    </Badge>
+    </div>
   )
 }
 
@@ -632,7 +642,6 @@ export const QueryToolbar = Object.assign(Root, {
   Bar,
   Search,
   FilterTrigger,
-  KeyboardHint,
   PageSize,
   ChipRail,
   LiveStatus,

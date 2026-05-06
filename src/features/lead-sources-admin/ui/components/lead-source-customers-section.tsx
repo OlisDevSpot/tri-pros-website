@@ -97,7 +97,6 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
           <QueryToolbar.Bar>
             <QueryToolbar.Search placeholder="Filter by name or email…" />
             <QueryToolbar.FilterTrigger />
-            <QueryToolbar.KeyboardHint />
             <QueryToolbar.PageSize />
           </QueryToolbar.Bar>
           <QueryToolbar.ChipRail />
