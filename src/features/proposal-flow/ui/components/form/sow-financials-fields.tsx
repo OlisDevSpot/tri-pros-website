@@ -30,34 +30,53 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
     name: `project.data.sow.${index}.financials.costLines`,
   })
 
-  const [openNotes, setOpenNotes] = useState<Set<number>>(() => new Set())
+  const [openNotes, setOpenNotes] = useState<Set<string>>(() => new Set())
 
   const selectedScopes = useWatch({
     control: form.control,
     name: `project.data.sow.${index}.scopes`,
   })
 
-  const sectionSnapshot = useWatch({
+  // Watch only the financials subtree so TipTap keystrokes (which update
+  // contentJSON/html) don't re-render the cost-line editor.
+  const sectionPrice = useWatch({
     control: form.control,
-    name: `project.data.sow.${index}`,
+    name: `project.data.sow.${index}.financials.sectionPrice`,
+  })
+  const costLines = useWatch({
+    control: form.control,
+    name: `project.data.sow.${index}.financials.costLines`,
   })
 
-  const sectionCost = computeSectionCost(sectionSnapshot)
-  const sectionMargin = computeSectionMargin(sectionSnapshot)
-  const sectionMultiplier = computeSectionMultiplier(sectionSnapshot)
+  const synthSection = { financials: { sectionPrice, costLines } }
+  const sectionCost = computeSectionCost(synthSection)
+  const sectionMargin = computeSectionMargin(synthSection)
+  const sectionMultiplier = computeSectionMultiplier(synthSection)
 
   const canAddCostLine = selectedScopes.length > 0
   const isBreakdown = pricingMode === 'breakdown'
 
-  function toggleNotes(lineIndex: number) {
+  function toggleNotes(fieldId: string) {
     setOpenNotes((prev) => {
       const next = new Set(prev)
-      if (next.has(lineIndex)) {
-        next.delete(lineIndex)
+      if (next.has(fieldId)) {
+        next.delete(fieldId)
       }
       else {
-        next.add(lineIndex)
+        next.add(fieldId)
       }
+      return next
+    })
+  }
+
+  function removeCostLine(lineIndex: number, fieldId: string) {
+    remove(lineIndex)
+    setOpenNotes((prev) => {
+      if (!prev.has(fieldId)) {
+        return prev
+      }
+      const next = new Set(prev)
+      next.delete(fieldId)
       return next
     })
   }
@@ -201,23 +220,23 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
                           size="sm"
                           variant="ghost"
                           className="text-xs"
-                          onClick={() => toggleNotes(lineIndex)}
+                          onClick={() => toggleNotes(field.id)}
                         >
-                          {openNotes.has(lineIndex) ? 'Hide notes' : 'Add notes'}
+                          {openNotes.has(field.id) ? 'Hide notes' : 'Add notes'}
                         </Button>
                         <Button
                           type="button"
                           size="icon"
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => remove(lineIndex)}
+                          onClick={() => removeCostLine(lineIndex, field.id)}
                           aria-label="Remove cost line"
                         >
                           <TrashIcon className="size-4" />
                         </Button>
                       </div>
                     </div>
-                    {openNotes.has(lineIndex) && (
+                    {openNotes.has(field.id) && (
                       <FormField
                         name={`project.data.sow.${index}.financials.costLines.${lineIndex}.notes`}
                         control={form.control}

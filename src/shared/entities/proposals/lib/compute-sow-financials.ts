@@ -1,13 +1,18 @@
 import type { z } from 'zod'
-import type { sowShape } from '@/shared/entities/proposals/schemas'
+import type { sowFinancialsSchema } from '@/shared/entities/proposals/schemas'
 
-type SowSection = z.infer<typeof sowShape>
+type SowFinancials = z.infer<typeof sowFinancialsSchema>
+interface SectionLike {
+  financials: SowFinancials
+}
 
 /**
  * Σ of all cost-line amounts in this section. Returns 0 when there are
- * no cost lines.
+ * no cost lines. Accepts any object with a `financials` field so callers
+ * can pass either a full SowSection or a synthetic minimal projection
+ * (used by the form to avoid over-watching the SOW subtree).
  */
-export function computeSectionCost(section: SowSection): number {
+export function computeSectionCost(section: SectionLike): number {
   return section.financials.costLines.reduce((sum, line) => sum + line.amount, 0)
 }
 
@@ -16,7 +21,7 @@ export function computeSectionCost(section: SowSection): number {
  * `sectionPrice` (total-mode sections) or when there are no cost lines
  * (cost is unknown rather than zero).
  */
-export function computeSectionMargin(section: SowSection): number | null {
+export function computeSectionMargin(section: SectionLike): number | null {
   const price = section.financials.sectionPrice
   if (price == null) {
     return null
@@ -31,7 +36,7 @@ export function computeSectionMargin(section: SowSection): number | null {
  * `sectionPrice ÷ totalCost`. Returns null when sectionPrice is null,
  * cost is 0, or there are no cost lines. Caller formats display.
  */
-export function computeSectionMultiplier(section: SowSection): number | null {
+export function computeSectionMultiplier(section: SectionLike): number | null {
   const price = section.financials.sectionPrice
   if (price == null) {
     return null

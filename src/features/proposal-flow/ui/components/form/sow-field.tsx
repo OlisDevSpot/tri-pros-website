@@ -85,10 +85,15 @@ export function SOWSection({
       }
     }
 
-    const newScopesArray = values.map((scopeId) => {
-      const scopeOfTrade = scopesOfTrade.data?.find(scope => scope.id === scopeId) as ScopeOrAddon
-      return { id: scopeOfTrade.id, label: scopeOfTrade.name }
-    })
+    const newScopesArray = values
+      .map((scopeId) => {
+        const scopeOfTrade = scopesOfTrade.data?.find(scope => scope.id === scopeId)
+        if (!scopeOfTrade) {
+          return null
+        }
+        return { id: scopeOfTrade.id, label: scopeOfTrade.name }
+      })
+      .filter((scope): scope is { id: string, label: string } => scope !== null)
     form.setValue(`project.data.sow.${index}.scopes`, newScopesArray)
     return true
   }
