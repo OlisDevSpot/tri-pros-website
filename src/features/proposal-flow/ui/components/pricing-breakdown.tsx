@@ -17,10 +17,10 @@ export function PricingBreakdown({ proposalData }: { proposalData: InsertProposa
         {pricingMode === 'breakdown'
           ? (
               <>
-                {sow.filter(s => (s.price ?? 0) > 0).map((section, i) => (
+                {sow.filter(s => (s.financials.sectionPrice ?? 0) > 0).map((section, i) => (
                   <div key={`${section.title || i}}`} className="flex items-center justify-between">
                     <span className="text-muted-foreground">{section.title || `Section ${i + 1}`}</span>
-                    <span>{formatAsDollars(section.price!)}</span>
+                    <span>{formatAsDollars(section.financials.sectionPrice!)}</span>
                   </div>
                 ))}
                 {(miscPrice ?? 0) > 0 && (

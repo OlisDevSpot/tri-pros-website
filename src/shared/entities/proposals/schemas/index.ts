@@ -8,14 +8,50 @@ export const constructionItemSchema = z.object({
   id: z.string(),
   label: z.string(),
 })
-export const sowSchema = z.object({
+
+export const costLineSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1, 'Label is required'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  relatedScopeId: z.string().min(1, 'Related scope is required'),
+  notes: z.string().optional(),
+})
+export type CostLine = z.infer<typeof costLineSchema>
+
+export const sowFinancialsSchema = z.object({
+  sectionPrice: z.number().nullable(),
+  costLines: z.array(costLineSchema),
+})
+export type SowFinancials = z.infer<typeof sowFinancialsSchema>
+
+const sowShape = z.object({
   contentJSON: z.string(),
   html: z.string(),
-  price: z.number().optional(),
   scopes: z.array(constructionItemSchema),
   title: z.string(),
   trade: constructionItemSchema,
+  financials: sowFinancialsSchema,
 })
+
+/**
+ * Read-time migration: legacy proposals stored `sow[].price` at the top
+ * level. Map that into the new `financials` shape so existing data loads
+ * without error. Idempotent — once a proposal is saved with the new
+ * shape, the `'financials' in raw` branch short-circuits.
+ */
+export const sowSchema = z.preprocess((raw) => {
+  if (raw && typeof raw === 'object' && !('financials' in raw)) {
+    const { price, ...rest } = raw as { price?: number, [k: string]: unknown }
+    return {
+      ...rest,
+      financials: {
+        sectionPrice: typeof price === 'number' ? price : null,
+        costLines: [],
+      },
+    }
+  }
+  return raw
+}, sowShape)
 
 const discountIncentiveSchema = z.object({
   type: z.literal('discount'),
@@ -45,7 +81,9 @@ const projectDataSchema = z.object({
   projectObjectives: z.array(z.string()),
   homeAreasUpgrades: z.array(homeAreaSchema),
   agreementNotes: z.string().optional(),
-  sow: z.array(sowSchema).min(1, { message: 'At least one scope is required' }),
+  // Uses sowShape (not sowSchema) so the form schema has clean static types
+  // for zodResolver. sowSchema (with preprocess) is used in the DB layer only.
+  sow: z.array(sowShape).min(1, { message: 'At least one scope is required' }),
 })
 
 // `finalTcp` is NOT stored here — it is derived via
@@ -86,6 +124,20 @@ export const projectSectionSchema = z.object({
   meta: sectionMetaSchema,
 })
 
+/**
+ * Migration-aware variant of projectSectionSchema for the DB layer.
+ * Uses sowSchema (with preprocess) so legacy `sow[].price` is migrated
+ * at read time. The form-facing `projectSectionSchema` uses `sowShape`
+ * directly to keep zodResolver types clean.
+ */
+const projectDataMigrationSchema = projectDataSchema.extend({
+  sow: z.array(sowSchema).min(1, { message: 'At least one scope is required' }),
+})
+export const projectSectionMigrationSchema = z.object({
+  data: projectDataMigrationSchema,
+  meta: sectionMetaSchema,
+})
+
 export const fundingSectionSchema = z.object({
   data: fundingDataSchema,
   meta: fundingMetaSchema,
@@ -119,7 +171,10 @@ export const proposalFormBaseDefaultValues: ProposalFormSchema = {
             id: '',
             label: '',
           },
-          price: 0,
+          financials: {
+            sectionPrice: null,
+            costLines: [],
+          },
         },
       ],
       summary: '',

@@ -16,7 +16,7 @@ export function getProposalAggregates(proposal: ProposalFormSchema | InsertPropo
     return acc
   }, 0)
 
-  const totalSOWPriceBreakdown = pricingMode === 'breakdown' ? projectJSON.data.sow.reduce((sum, s) => sum + (s.price ?? 0), 0) : undefined
+  const totalSOWPriceBreakdown = pricingMode === 'breakdown' ? projectJSON.data.sow.reduce((sum, s) => sum + (s.financials.sectionPrice ?? 0), 0) : undefined
 
   return {
     totalSOWPriceBreakdown,

@@ -132,7 +132,7 @@ export function SOWSection({
       {pricingMode === 'breakdown' && (
         <div className="w-full px-3 py-2 sticky top-0 z-10 bg-[color-mix(in_oklch,var(--card)_97%,var(--foreground)_3%)] lg:px-4">
           <FormField
-            name={`project.data.sow.${index}.price`}
+            name={`project.data.sow.${index}.financials.sectionPrice`}
             control={form.control}
             render={({ field }) => (
               <FormItem className="w-40">
@@ -142,8 +142,11 @@ export function SOWSection({
                     {...field}
                     placeholder="$10,000"
                     type="text"
-                    value={String(field.value || '')}
-                    onChange={e => field.onChange(Number(e.target.value || ''))}
+                    value={field.value == null ? '' : String(field.value)}
+                    onChange={(e) => {
+                      const raw = e.target.value
+                      field.onChange(raw === '' ? null : Number(raw))
+                    }}
                   />
                 </FormControl>
                 <FormMessage />

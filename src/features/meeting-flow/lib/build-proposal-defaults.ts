@@ -23,7 +23,10 @@ export function buildProposalDefaults(
       scopes: ts.selectedScopes.map(s => ({ id: s.id, label: s.label })),
       title: '',
       trade: { id: ts.tradeId, label: ts.tradeName },
-      price: 0,
+      financials: {
+        sectionPrice: null,
+        costLines: [],
+      },
     }))
   }
 

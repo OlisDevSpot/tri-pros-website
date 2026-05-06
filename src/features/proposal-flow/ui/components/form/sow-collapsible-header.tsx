@@ -30,7 +30,8 @@ export function SOWCollapsibleHeader({
   const hasTitle = sow.title.trim().length > 0
   const hasTrade = sow.trade.label.trim().length > 0
   const scopeCount = sow.scopes.length
-  const showPrice = pricingMode === 'breakdown' && sow.price != null && sow.price > 0
+  const sectionPrice = sow.financials.sectionPrice
+  const showPrice = pricingMode === 'breakdown' && sectionPrice != null && sectionPrice > 0
   const hasBadges = hasTrade || scopeCount > 0 || showPrice
 
   function handleTitleClick(e: React.MouseEvent) {
@@ -132,7 +133,7 @@ export function SOWCollapsibleHeader({
           {showPrice && (
             <Badge variant="secondary" className="bg-emerald-500/10 text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
               $
-              {sow.price!.toLocaleString()}
+              {sectionPrice!.toLocaleString()}
             </Badge>
           )}
         </div>

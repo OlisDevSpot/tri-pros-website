@@ -57,6 +57,10 @@ export function ProjectFields({ pricingMode }: Props) {
     const duplicate = {
       ...source,
       title: source.title ? `${source.title} (copy)` : '',
+      financials: {
+        sectionPrice: source.financials.sectionPrice,
+        costLines: source.financials.costLines.map(line => ({ ...line, id: crypto.randomUUID() })),
+      },
     }
     insert(index + 1, duplicate)
     setOpenSections((prev) => {
@@ -150,12 +154,15 @@ export function ProjectFields({ pricingMode }: Props) {
                 append({
                   contentJSON: '',
                   html: '',
-                  price: pricingMode === 'breakdown' ? 0 : undefined,
                   scopes: [],
                   title: '',
                   trade: {
                     id: '',
                     label: '',
+                  },
+                  financials: {
+                    sectionPrice: pricingMode === 'breakdown' ? 0 : null,
+                    costLines: [],
                   },
                 })
                 setOpenSections(prev => new Set(prev).add(fields.length))
