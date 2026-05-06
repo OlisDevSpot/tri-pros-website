@@ -139,6 +139,7 @@ export function PastProposalsTable() {
             <QueryToolbar.Bar>
               <QueryToolbar.Search placeholder="Search by label or customer…" />
               <QueryToolbar.FilterTrigger />
+              <QueryToolbar.KeyboardHint />
               <QueryToolbar.PageSize />
             </QueryToolbar.Bar>
             <QueryToolbar.ChipRail />

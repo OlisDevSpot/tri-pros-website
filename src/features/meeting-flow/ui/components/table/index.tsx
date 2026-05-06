@@ -94,6 +94,7 @@ export function PastMeetingsTable() {
             <QueryToolbar.Bar>
               <QueryToolbar.Search placeholder="Search by customer or type…" />
               <QueryToolbar.FilterTrigger />
+              <QueryToolbar.KeyboardHint />
               <QueryToolbar.PageSize />
             </QueryToolbar.Bar>
             <QueryToolbar.ChipRail />

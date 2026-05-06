@@ -38,6 +38,7 @@ export function ActivitiesTable() {
           <QueryToolbar.Bar>
             <QueryToolbar.Search placeholder="Search by title or description…" />
             <QueryToolbar.FilterTrigger />
+            <QueryToolbar.KeyboardHint />
             <QueryToolbar.PageSize />
           </QueryToolbar.Bar>
           <QueryToolbar.ChipRail />

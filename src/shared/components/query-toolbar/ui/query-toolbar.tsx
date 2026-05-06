@@ -476,6 +476,40 @@ function PageSize({ className }: PageSizeProps) {
   )
 }
 
+// ── KeyboardHint — desktop teaching micro-copy that lives inside the Bar ──────
+
+/**
+ * Muted keyboard-shortcut hint placed between FilterTrigger and PageSize on
+ * desktop. Uses `flex-1 justify-center` so it occupies the empty middle of
+ * the Bar without taking a separate row of vertical space. Hidden entirely
+ * on `<lg` (mobile has no `/` or `F` keyboards) and whenever the user is
+ * mid-task (active search or active filter chips) — at that point the hint
+ * is noise rather than guidance.
+ *
+ * Decorative micro-copy, so `aria-hidden`. The keyboard shortcuts
+ * themselves are wired up in `useToolbarShortcuts` regardless.
+ */
+function KeyboardHint() {
+  const { activeFilterCount, searchInput } = useQueryToolbarContext()
+  const isMidTask = activeFilterCount > 0 || searchInput.length > 0
+  if (isMidTask) {
+    return null
+  }
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'hidden lg:inline-flex flex-1 min-w-0 justify-center',
+        'truncate text-xs text-muted-foreground/70',
+        // Decorative micro-copy — never a tap target.
+        'select-none pointer-events-none',
+      )}
+    >
+      {KEYBOARD_HINT_TEXT}
+    </span>
+  )
+}
+
 // ── ChipRail ───────────────────────────────────────────────────────────────────
 
 interface ActiveChip {
@@ -484,10 +518,10 @@ interface ActiveChip {
 }
 
 /**
- * Active filter chips with two empty-state behaviors:
- *   - <lg: collapses to zero height when no chips (saves vertical space).
- *   - >=lg: shows a muted keyboard hint so the row stays a stable height
- *     and teaches `/` and `F` shortcuts.
+ * Active filter chips. Renders nothing when no chips are active — the row
+ * collapses, freeing the vertical space for the table. Keyboard-shortcut
+ * teaching now lives in `<KeyboardHint />` inside the Bar instead of
+ * reserving a row here.
  *
  * Chip add/remove animates via AnimatePresence (motion-safe only).
  */
@@ -506,11 +540,7 @@ function ChipRail() {
   }, [filterDefinitions, filters])
 
   if (active.length === 0) {
-    return (
-      <div className="hidden min-h-7 items-center text-xs text-muted-foreground/70 lg:flex">
-        {KEYBOARD_HINT_TEXT}
-      </div>
-    )
+    return null
   }
 
   return (
@@ -602,6 +632,7 @@ export const QueryToolbar = Object.assign(Root, {
   Bar,
   Search,
   FilterTrigger,
+  KeyboardHint,
   PageSize,
   ChipRail,
   LiveStatus,
