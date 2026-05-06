@@ -2,6 +2,7 @@ import { CalendarIcon, PencilIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import { Logo } from '@/shared/components/logo'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -10,11 +11,13 @@ import { companyInfo } from '@/shared/constants/company'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
+import { ViewModeToggle } from './view-mode-toggle'
 
 export function Heading() {
   const proposal = useCurrentProposal()
   const ability = useAbility()
   const { open: openModal, setModal } = useModalStore()
+  const viewMode = useViewMode()
 
   if (proposal.isLoading) {
     return <div>Loading...</div>
@@ -78,7 +81,8 @@ export function Heading() {
           </p>
         )}
       </div>
-      <div className="flex flex-col lg:flex-row gap-2 lg:gap-6">
+      <div className="flex flex-col lg:flex-row items-center gap-2 lg:gap-6">
+        <ViewModeToggle />
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <CalendarIcon size={20} className="" />
           <p>{formatStringAsDate(proposal.data.createdAt, { hour: undefined, minute: undefined })}</p>
@@ -87,7 +91,7 @@ export function Heading() {
           <Logo variant="icon" className="size-5" />
           <p>{companyInfo.name}</p>
         </div>
-        {ability.can('read', 'Customer') && proposal.data.customer?.id && (
+        {viewMode === 'agent' && ability.can('read', 'Customer') && proposal.data.customer?.id && (
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Button
               variant="outline"
@@ -99,7 +103,7 @@ export function Heading() {
             </Button>
           </div>
         )}
-        {ability.can('update', 'Proposal') && (
+        {viewMode === 'agent' && ability.can('update', 'Proposal') && (
           <div className="flex items-center justify-center gap-2 text-muted-foreground">
             <Button
               variant="outline"
