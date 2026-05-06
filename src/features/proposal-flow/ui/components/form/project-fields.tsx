@@ -161,7 +161,7 @@ export function ProjectFields({ pricingMode }: Props) {
                     label: '',
                   },
                   financials: {
-                    sectionPrice: pricingMode === 'breakdown' ? 0 : null,
+                    sectionPrice: null,
                     costLines: [],
                   },
                 })

@@ -1,7 +1,7 @@
 import type z from 'zod'
-import type { formMetaSectionSchema, fundingSectionSchema, projectSectionSchema, sowSchema } from './schemas'
+import type { formMetaSectionSchema, fundingSectionSchema, projectSectionSchema, sowShape } from './schemas'
 
-export interface SOW extends z.infer<typeof sowSchema> {}
+export interface SOW extends z.infer<typeof sowShape> {}
 
 export interface FormMetaSection extends z.infer<typeof formMetaSectionSchema> {}
 export interface ProjectSection extends z.infer<typeof projectSectionSchema> {}

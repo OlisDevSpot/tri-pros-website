@@ -145,7 +145,7 @@ export function SOWSection({
                     value={field.value == null ? '' : String(field.value)}
                     onChange={(e) => {
                       const raw = e.target.value
-                      field.onChange(raw === '' ? null : Number(raw))
+                      field.onChange(raw.trim() === '' ? null : Number(raw))
                     }}
                   />
                 </FormControl>

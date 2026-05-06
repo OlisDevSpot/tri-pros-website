@@ -61,7 +61,7 @@ export function CreateProposalPopover({ meetings }: Props) {
           validThroughTimeframe: '60 days',
           projectObjectives: [],
           homeAreasUpgrades: [],
-          sow: [{ contentJSON: '', html: '', scopes: [], title: '', trade: { id: '', label: '' } }],
+          sow: [{ contentJSON: '', html: '', scopes: [], title: '', trade: { id: '', label: '' }, financials: { sectionPrice: null, costLines: [] } }],
         },
         meta: { enabled: true },
       },

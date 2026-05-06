@@ -4,7 +4,7 @@ import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/e
 import { relations } from 'drizzle-orm'
 import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { fundingSectionSchema, projectSectionMigrationSchema } from '@/shared/entities/proposals/schemas'
+import { fundingSectionSchema, projectSectionMigrationSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { financeOptions } from './finance-options'
@@ -63,7 +63,7 @@ export const selectProposalSchema = createSelectSchema(proposals, {
 export type Proposal = z.infer<typeof selectProposalSchema>
 
 export const insertProposalSchema = createInsertSchema(proposals, {
-  projectJSON: projectSectionMigrationSchema,
+  projectJSON: projectSectionSchema,
   fundingJSON: fundingSectionSchema,
 }).omit({
   id: true,

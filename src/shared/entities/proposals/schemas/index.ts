@@ -24,7 +24,7 @@ export const sowFinancialsSchema = z.object({
 })
 export type SowFinancials = z.infer<typeof sowFinancialsSchema>
 
-const sowShape = z.object({
+export const sowShape = z.object({
   contentJSON: z.string(),
   html: z.string(),
   scopes: z.array(constructionItemSchema),
