@@ -30,6 +30,12 @@ export function formatChipValue(definition: FilterDefinition, value: FilterValue
       const toStr = range.to ? format(new Date(range.to), 'MMM d') : '…'
       return `${fromStr} → ${toStr}`
     }
+    case 'number-range': {
+      const range = value as { min?: number, max?: number }
+      const fromStr = typeof range.min === 'number' ? definition.formatValue(range.min) : '…'
+      const toStr = typeof range.max === 'number' ? definition.formatValue(range.max) : '…'
+      return `${fromStr} → ${toStr}`
+    }
     case 'boolean':
       return value ? 'Yes' : 'No'
   }

@@ -23,8 +23,9 @@ interface Props<TData> {
  * mobile). Symmetric thumb reach on phones; rows-per-page lives only in the
  * toolbar / mobile filter sheet, not duplicated here.
  *
- * `pb-[env(safe-area-inset-bottom)]` keeps the footer above the iOS home
- * indicator when used in a sticky/full-bleed container.
+ * Safe-area inset handling lives on the app-shell content wrapper (see
+ * dashboard layout) — not here. The pagination sits inside a bordered card
+ * shell, so applying it here would double-pad on iOS.
  */
 export function DataTablePagination<TData>({ table, serverPagination }: Props<TData>) {
   const pageCount = Math.max(table.getPageCount(), 1)
@@ -33,7 +34,7 @@ export function DataTablePagination<TData>({ table, serverPagination }: Props<TD
   return (
     <nav
       aria-label="Pagination"
-      className="grid shrink-0 grid-cols-3 items-stretch border-t border-border/50 pb-[env(safe-area-inset-bottom)]"
+      className="grid shrink-0 grid-cols-3 items-stretch border-t border-border/50"
     >
       <DataTablePaginationButton
         direction="prev"

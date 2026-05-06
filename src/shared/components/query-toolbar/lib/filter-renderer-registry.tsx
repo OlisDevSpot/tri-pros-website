@@ -3,11 +3,12 @@
 import type { ComponentType } from 'react'
 
 import type { FilterDefinition } from '@/shared/dal/client/query/types'
-import type { DateRange } from '@/shared/dal/server/query/schemas'
+import type { DateRange, NumberRange } from '@/shared/dal/server/query/schemas'
 
 import { BooleanFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/boolean-filter-control'
 import { DateRangeFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/date-range-filter-control'
 import { MultiSelectFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/multi-select-filter-control'
+import { NumberRangeFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/number-range-filter-control'
 import { SelectFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/select-filter-control'
 
 /**
@@ -35,6 +36,7 @@ interface FilterRendererRegistry {
   'select': RendererFor<'select', string>
   'multi-select': RendererFor<'multi-select', string[]>
   'date-range': RendererFor<'date-range', DateRange>
+  'number-range': RendererFor<'number-range', NumberRange>
   'boolean': RendererFor<'boolean', boolean>
 }
 
@@ -42,5 +44,6 @@ export const filterRendererRegistry: FilterRendererRegistry = {
   'select': SelectFilterControl,
   'multi-select': MultiSelectFilterControl,
   'date-range': DateRangeFilterControl,
+  'number-range': NumberRangeFilterControl,
   'boolean': BooleanFilterControl,
 }

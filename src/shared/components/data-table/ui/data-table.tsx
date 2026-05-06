@@ -516,7 +516,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                             )}
                             style={{ borderRightStyle: 'dashed' }}
                           >
-                            <div className="absolute inset-0 bg-background group-hover:bg-muted/50" />
+                            <div className="absolute inset-0 bg-background group-hover:bg-muted/50 transition-colors" />
                             {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
                             <div className="relative p-2">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}

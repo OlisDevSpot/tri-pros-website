@@ -380,6 +380,16 @@ function SingleFilterControl({ definition, value, onChange }: SingleFilterContro
         />
       )
     }
+    case 'number-range': {
+      const Render = filterRendererRegistry['number-range']
+      return (
+        <Render
+          definition={definition}
+          value={value as { min?: number, max?: number } | undefined}
+          onChange={v => onChange(v)}
+        />
+      )
+    }
     case 'boolean': {
       const Render = filterRendererRegistry.boolean
       return (

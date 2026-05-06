@@ -1,4 +1,4 @@
-import type { DateRange } from '@/shared/dal/server/query/schemas'
+import type { DateRange, NumberRange } from '@/shared/dal/server/query/schemas'
 
 /**
  * Time-preset descriptor for `date-range` filter type. Click a preset → fill
@@ -53,6 +53,19 @@ export type FilterDefinition
   }
   | {
     id: string
+    type: 'number-range'
+    label: string
+    /** Inclusive lower bound of the slider (e.g. 0). */
+    min: number
+    /** Inclusive upper bound of the slider (e.g. 300_000). */
+    max: number
+    /** Slider step (e.g. 1000 for $1k increments). Defaults to 1. */
+    step?: number
+    /** Format a single value for the popover header and chip rail. */
+    formatValue: (n: number) => string
+  }
+  | {
+    id: string
     type: 'boolean'
     label: string
   }
@@ -65,6 +78,7 @@ export type FilterValue
   = | string
     | string[]
     | DateRange
+    | NumberRange
     | boolean
     | undefined
 
