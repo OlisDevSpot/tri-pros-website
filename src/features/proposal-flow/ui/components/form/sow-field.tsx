@@ -60,7 +60,7 @@ export function SOWSection({
 
   const { open: openModal, close: closeModal, setModal } = useModalStore()
 
-  async function handleScopesChange(values: string[]) {
+  async function handleScopesChange(values: string[]): Promise<boolean> {
     const oldScopes = form.getValues(`project.data.sow.${index}.scopes`)
     const oldIds = new Set(oldScopes.map(s => s.id))
     const newIds = new Set(values)
@@ -78,7 +78,7 @@ export function SOWSection({
       if (orphans.length > 0) {
         const confirmed = await confirmScopeRemoval()
         if (!confirmed) {
-          return
+          return false
         }
         const remaining = costLines.filter(line => !removedIds.includes(line.relatedScopeId))
         form.setValue(`project.data.sow.${index}.financials.costLines`, remaining)
@@ -90,6 +90,23 @@ export function SOWSection({
       return { id: scopeOfTrade.id, label: scopeOfTrade.name }
     })
     form.setValue(`project.data.sow.${index}.scopes`, newScopesArray)
+    return true
+  }
+
+  async function handleTradeChange(val: string) {
+    if (!val) {
+      return
+    }
+    const proceeded = await handleScopesChange([])
+    if (!proceeded) {
+      return
+    }
+    form.setValue(`project.data.sow.${index}.trade.id`, val)
+    form.setValue(
+      `project.data.sow.${index}.trade.label`,
+      allTrades.data?.find(trade => trade.id === val)?.name || '',
+    )
+    getScopesOfTrade(val)
   }
 
   return (
@@ -106,12 +123,7 @@ export function SOWSection({
                 <FormControl className="w-full">
                   <Select
                     value={field.value}
-                    onValueChange={(val) => {
-                      field.onChange(val)
-                      getScopesOfTrade(val)
-                      form.setValue(`project.data.sow.${index}.scopes`, [])
-                      form.setValue(`project.data.sow.${index}.trade.label`, allTrades.data?.find(trade => trade.id === val)?.name || '')
-                    }}
+                    onValueChange={handleTradeChange}
                   >
                     <SelectTrigger {...field} className="w-full bg-transparent dark:bg-transparent border-0">
                       <SelectValue placeholder="Select a trade" />
