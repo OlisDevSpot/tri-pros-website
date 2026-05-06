@@ -360,7 +360,7 @@ export function FundingFields({ pricingMode }: Props) {
         {/* Pricing breakdown helper */}
         {showPricingBreakdown && (
           <div className="w-full">
-            <PricingBreakdown proposalData={formValuesToProposal(form.getValues())} />
+            <PricingBreakdown proposalData={formValuesToProposal(form.getValues())} viewMode="agent" />
           </div>
         )}
       </div>
