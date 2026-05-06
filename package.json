@@ -27,6 +27,8 @@
     "migrate:notes:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notes-to-activities.ts",
     "migrate:notion": "tsx scripts/migrate-notion-contacts.ts",
     "migrate:notion:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notion-contacts.ts",
+    "migrate:proposal-kind": "NODE_ENV=production tsx scripts/migrate-proposal-kind.ts",
+    "migrate:proposal-kind:dev": "tsx scripts/migrate-proposal-kind.ts",
     "rebuild:gcal": "NODE_ENV=production NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "rebuild:gcal:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "meta": "tsx scripts/meta/index.ts",
