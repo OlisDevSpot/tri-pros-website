@@ -4,7 +4,7 @@ import type { EntityActionConfig } from '@/shared/components/entity-actions/type
 import type { ProposalStatus } from '@/shared/constants/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { EyeIcon, PlusIcon } from 'lucide-react'
+import { EyeIcon } from 'lucide-react'
 
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
@@ -44,10 +44,9 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
                 <p className="font-medium leading-none truncate">{row.original.label}</p>
                 {row.original.kind === 'additional-work' && (
                   <Badge
-                    variant="secondary"
-                    className="shrink-0 gap-1 px-1.5 py-0 h-5 text-[10px] font-medium"
+                    variant="outline"
+                    className="shrink-0 gap-0 px-1.5 py-0 h-4.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground border-border/80"
                   >
-                    <PlusIcon className="size-2.5" />
                     Addendum
                   </Badge>
                 )}
