@@ -158,6 +158,28 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
     }
   }
 
+  // Step 3: enforce registry order across templates. mergesend re-sorts
+  // template_ids by template_id ASC (verified via probe-mergesend-order.ts:
+  // sending [awd, materialOrder] OR [materialOrder, awd] both produce
+  // [materialOrder, awd] because materialOrder's id < awd's id). For
+  // additional-work envelopes that include material-order, this lands
+  // material-order at document_order=0 instead of awd. Reorder via the
+  // existing PUT /requests/{id} endpoint with a `requests.document_ids`
+  // array — undocumented but verified working (probe-reorder-thorough.ts
+  // shapes P3/P4/P8). No-op when current order already matches registry.
+  try {
+    await reorderToRegistryOrder(token, requestId, templateDocs, pdfDocs.length)
+  }
+  catch (reorderErr) {
+    // Don't tear down the envelope for a reorder failure — log and continue;
+    // the envelope is still legally valid even if doc order is off.
+    console.warn('[zoho-sign] reorder failed (envelope still valid)', {
+      proposalId: ctx.proposal.id,
+      requestId,
+      error: reorderErr instanceof Error ? reorderErr.message : String(reorderErr),
+    })
+  }
+
   return {
     requestId,
     status: mergeJson.requests?.request_status ?? 'draft',
@@ -248,6 +270,104 @@ function buildMergeSendBody(ctx: ProposalContext, templateDocs: readonly Envelop
   body.set('data', JSON.stringify(data))
   body.set('is_quicksend', 'false')
   return body.toString()
+}
+
+interface ZohoGetResponse {
+  requests?: {
+    template_ids?: string[]
+    document_ids?: { document_id: string, document_order: string, document_name: string }[]
+  }
+}
+
+/**
+ * Reorders the envelope's documents to match the registry's template
+ * order, leaving any attached PDFs at the end in attach order. No-op when
+ * current order already matches.
+ *
+ * Mapping strategy (no name-matching needed):
+ *  - Zoho's mergesend places templates at positions [0..N-1] in
+ *    template_id ASC order. The GET response's `template_ids` array
+ *    is also in template_id ASC, so `template_ids[i]` corresponds to
+ *    `currentDocs[i].document_id` for i < N (verified via
+ *    probe-templates-used.ts).
+ *  - PDFs occupy positions [N..N+M-1] in attach order — the same order
+ *    they appeared in our addFilesToRequest call, which mirrors the
+ *    registry's filtered pdfDocs order.
+ *
+ * The PUT body wraps `document_ids` in `data.requests` (form-urlencoded
+ * multipart `data` field). The endpoint accepts undocumented
+ * `document_ids: [{ document_id, document_order }, ...]` shape that
+ * also accepts other request fields without re-validating them — verified
+ * via probe-reorder-thorough.ts shapes P3/P4/P8.
+ */
+async function reorderToRegistryOrder(
+  token: string,
+  requestId: string,
+  templateDocs: readonly EnvelopeDocument[],
+  numPdfs: number,
+): Promise<void> {
+  // GET current state
+  const getRes = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
+    headers: { Authorization: `Zoho-oauthtoken ${token}` },
+  })
+  if (!getRes.ok) {
+    throw new Error(`Zoho GET request failed (${getRes.status}): ${await getRes.text()}`)
+  }
+  const j = (await getRes.json()) as ZohoGetResponse
+  const currentDocs = (j.requests?.document_ids ?? []).slice().sort(
+    (a, b) => Number(a.document_order) - Number(b.document_order),
+  )
+  const sentTemplateIds = j.requests?.template_ids ?? []
+
+  // Sanity: number of templates returned must match what we sent
+  const numTemplates = sentTemplateIds.length
+  if (currentDocs.length !== numTemplates + numPdfs) {
+    throw new Error(`Document count mismatch — expected ${numTemplates + numPdfs} (${numTemplates} templates + ${numPdfs} PDFs), got ${currentDocs.length}`)
+  }
+
+  // template_id → document_id for templates in their natural (Zoho-sorted) positions
+  const tidToDocId = new Map<string, string>()
+  for (let i = 0; i < numTemplates; i++) {
+    tidToDocId.set(sentTemplateIds[i], currentDocs[i].document_id)
+  }
+
+  // Build desired order: registry-order templates first, then PDFs in their current attach order
+  const desired: { document_id: string, document_order: string }[] = []
+  let order = 0
+  for (const doc of templateDocs) {
+    if (doc.source.kind !== 'zoho-template') {
+      continue
+    }
+    const docId = tidToDocId.get(doc.source.zohoTemplateId)
+    if (!docId) {
+      throw new Error(`No Zoho document found for template_id ${doc.source.zohoTemplateId}`)
+    }
+    desired.push({ document_id: docId, document_order: String(order++) })
+  }
+  for (let i = numTemplates; i < currentDocs.length; i++) {
+    desired.push({ document_id: currentDocs[i].document_id, document_order: String(order++) })
+  }
+
+  // No-op when registry order already matches Zoho's natural sort
+  const currentSerialized = currentDocs.map(d => d.document_id).join(',')
+  const desiredSerialized = desired.map(d => d.document_id).join(',')
+  if (currentSerialized === desiredSerialized) {
+    return
+  }
+
+  const body = new URLSearchParams()
+  body.set('data', JSON.stringify({ requests: { document_ids: desired } }))
+  const res = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Zoho-oauthtoken ${token}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  })
+  if (!res.ok) {
+    throw new Error(`Zoho reorder PUT failed (${res.status}): ${await res.text()}`)
+  }
 }
 
 /** Multipart attach via PUT /requests/{id}. Mirrors contract.service.ts addFilesToRequest. */
