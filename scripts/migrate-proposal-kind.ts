@@ -24,9 +24,28 @@
  *      Because all initial-sale proposals for a project live on one (birthing)
  *      meeting, "per meeting" transitively means "per project".
  *
- * Idempotent — safe to re-run. Once this AND the matching schema-declaration
- * update (Task 2 of the hotfix) have both landed, `pnpm db:push:dev` should
- * report "no changes detected" for the proposals table.
+ * Re-runnable, deterministic given the same input data. Step [3/5] is a
+ * blanket recompute of `kind` for every proposal — re-running on a DB where
+ * runtime writes (new proposals, status changes) have happened since the
+ * last run will overwrite those values with the migration's heuristic. For
+ * the hotfix this is intentional (we want to repair the known-bad state),
+ * but treat it as a one-shot tool, not a recurring maintenance job.
+ *
+ * Once this AND the matching schema-declaration update (Task 2 of the
+ * hotfix) have both landed, `pnpm db:push:dev` should report "no changes
+ * detected" for the proposals table.
+ *
+ * Known limitation — `assignToProject` divergence: when an agent assigns an
+ * already-existing meeting to an existing project (via
+ * `meetingsRouter.assignToProject`), the runtime keeps any proposals
+ * already on that meeting at their frozen `kind = 'initial-sale'` (set at
+ * insert time when `meeting.projectId` was NULL). This migration's
+ * birthing-meeting heuristic would reclassify those proposals to
+ * `additional-work` because the assigned meeting is not the project's
+ * earliest. The spec accepts this divergence — see
+ * `docs/superpowers/specs/2026-05-07-proposal-kind-hotfix-design.md`,
+ * "Known Limitations" section. Verify on prod before running by sampling a
+ * few proposals on assigned meetings; if any are critical, resolve manually.
  *
  * Usage:
  *   pnpm migrate:proposal-kind:dev    # dev DB (default NODE_ENV)
