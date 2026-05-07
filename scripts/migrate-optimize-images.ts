@@ -26,7 +26,7 @@
  * their status to 'pending' in the DB.
  */
 
-import 'dotenv/config'
+import './lib/load-env'
 import { Buffer } from 'node:buffer'
 
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'

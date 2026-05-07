@@ -22,7 +22,7 @@ import { mediaFiles, projects } from '@/shared/db/schema'
  *   npx tsx scripts/match-before-after.ts --dry-run      # preview without saving
  *   npx tsx scripts/match-before-after.ts --project <id> # single project
  */
-import 'dotenv/config'
+import './lib/load-env'
 
 // ---------------------------------------------------------------------------
 // Config

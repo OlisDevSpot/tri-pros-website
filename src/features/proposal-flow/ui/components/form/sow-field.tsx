@@ -23,6 +23,12 @@ import { SOWFinancialsFields } from './sow-financials-fields'
 
 const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
+const INTERACTIVE_SELECTOR = 'input, button, select, textarea, a, [role="button"], [role="option"], [contenteditable="true"], [data-interactive]'
+
+function isInteractive(target: EventTarget) {
+  return !!(target as HTMLElement).closest(INTERACTIVE_SELECTOR)
+}
+
 interface Props {
   index: number
   pricingMode: 'total' | 'breakdown'
@@ -41,6 +47,8 @@ export function SOWSection({
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   const [scopeOpen, setScopeOpen] = useState(true)
   const [financialsOpen, setFinancialsOpen] = useState(true)
+  const [scopeDeadHover, setScopeDeadHover] = useState(false)
+  const [finDeadHover, setFinDeadHover] = useState(false)
   const tiptapRef = useRef<TiptapHandle | null>(null)
 
   const allTrades = useGetAllTrades()
@@ -200,7 +208,20 @@ export function SOWSection({
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={TRANSITION}
-                  className="overflow-hidden"
+                  className={cn(
+                    'overflow-hidden rounded-b-lg transition-colors cursor-pointer',
+                    scopeDeadHover && 'bg-muted/50',
+                  )}
+                  onMouseOver={(e) => {
+                    e.stopPropagation()
+                    setScopeDeadHover(!isInteractive(e.target))
+                  }}
+                  onMouseOut={() => setScopeDeadHover(false)}
+                  onClick={(e) => {
+                    if (!isInteractive(e.target)) {
+                      setScopeOpen(false)
+                    }
+                  }}
                 >
                   <div className="px-3 pb-3 lg:px-4 lg:pb-4">
                     <FormField
@@ -282,7 +303,20 @@ export function SOWSection({
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={TRANSITION}
-                  className="overflow-hidden"
+                  className={cn(
+                    'overflow-hidden rounded-b-lg transition-colors cursor-pointer',
+                    finDeadHover && 'bg-muted/50',
+                  )}
+                  onMouseOver={(e) => {
+                    e.stopPropagation()
+                    setFinDeadHover(!isInteractive(e.target))
+                  }}
+                  onMouseOut={() => setFinDeadHover(false)}
+                  onClick={(e) => {
+                    if (!isInteractive(e.target)) {
+                      setFinancialsOpen(false)
+                    }
+                  }}
                 >
                   <SOWFinancialsFields index={index} pricingMode={pricingMode} />
                 </motion.div>

@@ -11,7 +11,6 @@ import { companyInfo } from '@/shared/constants/company'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
-import { ViewModeToggle } from './view-mode-toggle'
 
 export function Heading() {
   const proposal = useCurrentProposal()
@@ -82,7 +81,6 @@ export function Heading() {
         )}
       </div>
       <div className="flex flex-col lg:flex-row items-center gap-2 lg:gap-6">
-        <ViewModeToggle />
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <CalendarIcon size={20} className="" />
           <p>{formatStringAsDate(proposal.data.createdAt, { hour: undefined, minute: undefined })}</p>

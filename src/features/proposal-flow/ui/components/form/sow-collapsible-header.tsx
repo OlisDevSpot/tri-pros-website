@@ -5,6 +5,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
+import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -132,8 +133,7 @@ export function SOWCollapsibleHeader({
           )}
           {showPrice && (
             <Badge variant="secondary" className="bg-emerald-500/10 text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
-              $
-              {sectionPrice!.toLocaleString()}
+              {formatAsDollars(sectionPrice!)}
             </Badge>
           )}
         </div>

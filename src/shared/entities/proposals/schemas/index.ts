@@ -1,6 +1,7 @@
 import z from 'zod'
 import { envelopeDocumentIds, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { homeAreas } from '@/shared/domains/construction/constants/enums'
+import { createEmptySowSection } from '../lib/create-empty-sow-section'
 
 // SUB-SCHEMAS
 const homeAreaSchema = z.enum(homeAreas)
@@ -18,13 +19,22 @@ export const costLineSchema = z.object({
 })
 export type CostLine = z.infer<typeof costLineSchema>
 
+export const sectionIncentiveSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1, 'Label is required'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  notes: z.string().optional(),
+})
+export type SectionIncentive = z.infer<typeof sectionIncentiveSchema>
+
 export const sowFinancialsSchema = z.object({
   sectionPrice: z.number().nullable(),
   costLines: z.array(costLineSchema),
+  incentives: z.array(sectionIncentiveSchema),
 })
 export type SowFinancials = z.infer<typeof sowFinancialsSchema>
 
-export const sowShape = z.object({
+export const sowSchema = z.object({
   contentJSON: z.string(),
   html: z.string(),
   scopes: z.array(constructionItemSchema),
@@ -32,26 +42,6 @@ export const sowShape = z.object({
   trade: constructionItemSchema,
   financials: sowFinancialsSchema,
 })
-
-/**
- * Read-time migration: legacy proposals stored `sow[].price` at the top
- * level. Map that into the new `financials` shape so existing data loads
- * without error. Idempotent — once a proposal is saved with the new
- * shape, the `'financials' in raw` branch short-circuits.
- */
-export const sowSchema = z.preprocess((raw) => {
-  if (raw && typeof raw === 'object' && !('financials' in raw)) {
-    const { price, ...rest } = raw as { price?: number, [k: string]: unknown }
-    return {
-      ...rest,
-      financials: {
-        sectionPrice: typeof price === 'number' ? price : null,
-        costLines: [],
-      },
-    }
-  }
-  return raw
-}, sowShape)
 
 const discountIncentiveSchema = z.object({
   type: z.literal('discount'),
@@ -81,9 +71,7 @@ const projectDataSchema = z.object({
   projectObjectives: z.array(z.string()),
   homeAreasUpgrades: z.array(homeAreaSchema),
   agreementNotes: z.string().optional(),
-  // Uses sowShape (not sowSchema) so the form schema has clean static types
-  // for zodResolver. sowSchema (with preprocess) is used in the DB layer only.
-  sow: z.array(sowShape).min(1, { message: 'At least one scope is required' }),
+  sow: z.array(sowSchema).min(1, { message: 'At least one scope is required' }),
 })
 
 // `finalTcp` is NOT stored here — it is derived via
@@ -124,20 +112,6 @@ export const projectSectionSchema = z.object({
   meta: sectionMetaSchema,
 })
 
-/**
- * Migration-aware variant of projectSectionSchema for the DB layer.
- * Uses sowSchema (with preprocess) so legacy `sow[].price` is migrated
- * at read time. The form-facing `projectSectionSchema` uses `sowShape`
- * directly to keep zodResolver types clean.
- */
-const projectDataMigrationSchema = projectDataSchema.extend({
-  sow: z.array(sowSchema).min(1, { message: 'At least one scope is required' }),
-})
-export const projectSectionMigrationSchema = z.object({
-  data: projectDataMigrationSchema,
-  meta: sectionMetaSchema,
-})
-
 export const fundingSectionSchema = z.object({
   data: fundingDataSchema,
   meta: fundingMetaSchema,
@@ -145,12 +119,26 @@ export const fundingSectionSchema = z.object({
 
 // --- Proposal Form Schema (composite) ---
 
-const proposalFormShape = z.object({
+/**
+ * Raw object shape — exported so consumers that need ZodObject methods
+ * (`.partial()`, `.pick()`, `.extend()`) can derive from it. The refined
+ * `proposalFormSchema` below is a ZodEffects (because of `superRefine`)
+ * and Zod blocks those derivations on refined schemas. Use `*Shape` for
+ * derivation, `*Schema` for validation.
+ */
+export const proposalFormShape = z.object({
   meta: formMetaSectionSchema,
   project: projectSectionSchema,
   funding: fundingSectionSchema,
 })
 
+/**
+ * Validated form schema — feeds `zodResolver`. Cross-field rules:
+ * - Breakdown mode: every section's `sectionPrice` must be a positive number.
+ * - Every cost line's `relatedScopeId` must reference a scope selected in its section.
+ * Defense-in-depth — the form UI cascade keeps these in sync; the schema
+ * is the safety net at submit time.
+ */
 export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) => {
   const isBreakdown = proposal.meta.pricingMode === 'breakdown'
 
@@ -191,22 +179,7 @@ export const proposalFormBaseDefaultValues: ProposalFormSchema = {
     data: {
       type: 'general-remodeling',
       label: '',
-      sow: [
-        {
-          contentJSON: '',
-          html: '',
-          scopes: [],
-          title: '',
-          trade: {
-            id: '',
-            label: '',
-          },
-          financials: {
-            sectionPrice: null,
-            costLines: [],
-          },
-        },
-      ],
+      sow: [createEmptySowSection()],
       summary: '',
       homeAreasUpgrades: [],
       projectObjectives: [],

@@ -7,6 +7,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { SOWCollapsibleHeader } from './sow-collapsible-header'
 import { SOWSection } from './sow-field'
@@ -60,6 +61,7 @@ export function ProjectFields({ pricingMode }: Props) {
       financials: {
         sectionPrice: source.financials.sectionPrice,
         costLines: source.financials.costLines.map(line => ({ ...line, id: crypto.randomUUID() })),
+        incentives: source.financials.incentives.map(inc => ({ ...inc, id: crypto.randomUUID() })),
       },
     }
     insert(index + 1, duplicate)
@@ -151,20 +153,7 @@ export function ProjectFields({ pricingMode }: Props) {
               size="icon"
               variant="outline"
               onClick={() => {
-                append({
-                  contentJSON: '',
-                  html: '',
-                  scopes: [],
-                  title: '',
-                  trade: {
-                    id: '',
-                    label: '',
-                  },
-                  financials: {
-                    sectionPrice: null,
-                    costLines: [],
-                  },
-                })
+                append(createEmptySowSection())
                 setOpenSections(prev => new Set(prev).add(fields.length))
               }}
             >

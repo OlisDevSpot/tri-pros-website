@@ -1,116 +1,144 @@
+'use client'
+
 import type { InsertProposalSchema } from '@/shared/db/schema'
-import { LockIcon } from 'lucide-react'
-import { Fragment } from 'react'
+import { ChevronsUpDownIcon, LockIcon } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from '@/shared/components/ui/button'
+import { Separator } from '@/shared/components/ui/separator'
+import { SectionFinancialsSummary } from '@/shared/entities/proposals/components/section-financials-summary'
 import { computeProposalCostTotals } from '@/shared/entities/proposals/lib/compute-proposal-cost-totals'
 import {
-  computeSectionCost,
-  computeSectionMargin,
-  computeSectionMultiplier,
   formatMultiplier,
+  getMultiplierTier,
 } from '@/shared/entities/proposals/lib/compute-sow-financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
+import { cn } from '@/shared/lib/utils'
+
+const MULTIPLIER_STYLES: Record<ReturnType<typeof getMultiplierTier>, string> = {
+  danger: 'text-red-600 dark:text-red-400',
+  healthy: 'text-emerald-600 dark:text-emerald-400',
+  excellent: 'text-emerald-600 dark:text-emerald-300 [text-shadow:0_0_12px_oklch(0.7_0.18_155),0_0_4px_oklch(0.7_0.18_155_/_0.4)]',
+  unknown: 'text-muted-foreground',
+}
 
 interface Props {
   proposalData: InsertProposalSchema
 }
 
-/**
- * Agent-only "Internal Calculation" block. Renders below the
- * customer-facing PricingBreakdown when viewMode === 'agent'. Shows
- * per-section cost (and price/margin/multiplier in breakdown mode)
- * plus an aggregate footer with Total Cost, Total Margin, Multiplier
- * computed against finalTcp.
- */
 export function InternalCalculationBlock({ proposalData }: Props) {
+  const [expanded, setExpanded] = useState(false)
   const { pricingMode } = proposalData.formMetaJSON
   const sow = proposalData.projectJSON.data.sow
   const totals = computeProposalCostTotals(proposalData)
-  const isBreakdown = pricingMode === 'breakdown'
+  const totalTier = getMultiplierTier(totals.totalMultiplier)
 
   return (
     <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 overflow-hidden text-sm">
+      {/* Header */}
       <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-destructive/20">
         <div className="flex items-center gap-2">
           <LockIcon className="size-4 text-destructive" />
           <span className="font-semibold">Internal Calculation</span>
         </div>
-        <span className="text-xs text-muted-foreground">Visible only to you</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Visible only to you</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={() => setExpanded(prev => !prev)}
+            aria-label={expanded ? 'Collapse details' : 'Expand details'}
+          >
+            <ChevronsUpDownIcon className="size-4" />
+          </Button>
+        </div>
       </div>
 
-      <div className="px-5 py-4 space-y-2">
-        {isBreakdown
-          ? (
-              <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-6 gap-y-2 items-baseline">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">Section</span>
-                <span className="text-xs uppercase tracking-wide text-muted-foreground text-right">Price</span>
-                <span className="text-xs uppercase tracking-wide text-muted-foreground text-right">Cost</span>
-                <span className="text-xs uppercase tracking-wide text-muted-foreground text-right">Margin</span>
-                <span className="text-xs uppercase tracking-wide text-muted-foreground text-right">Multiplier</span>
-
-                {sow.map((section, i) => {
-                  const cost = computeSectionCost(section)
-                  const margin = computeSectionMargin(section)
-                  const multiplier = computeSectionMultiplier(section)
-                  const hasCost = section.financials.costLines.length > 0
-                  return (
-                    <Fragment key={i}>
-                      <span className="text-muted-foreground truncate">{section.title || `Section ${i + 1}`}</span>
-                      <span className="text-right tabular-nums">
-                        {section.financials.sectionPrice == null ? '—' : formatAsDollars(section.financials.sectionPrice)}
-                      </span>
-                      <span className="text-right tabular-nums">{hasCost ? formatAsDollars(cost) : '—'}</span>
-                      <span className="text-right tabular-nums">{margin == null ? '—' : formatAsDollars(margin)}</span>
-                      <span className="text-right tabular-nums">{formatMultiplier(multiplier)}</span>
-                    </Fragment>
-                  )
-                })}
-              </div>
-            )
-          : (
-              <div className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 items-baseline">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">Section</span>
-                <span className="text-xs uppercase tracking-wide text-muted-foreground text-right">Cost</span>
-
-                {sow.map((section, i) => {
-                  const cost = computeSectionCost(section)
-                  const hasCost = section.financials.costLines.length > 0
-                  return (
-                    <Fragment key={i}>
-                      <span className="text-muted-foreground truncate">{section.title || `Section ${i + 1}`}</span>
-                      <span className="text-right tabular-nums">{hasCost ? formatAsDollars(cost) : '—'}</span>
-                    </Fragment>
-                  )
-                })}
-              </div>
-            )}
+      {/* Per-section financials */}
+      <div className="px-5 py-4 space-y-4">
+        {sow.map((section, i) => (
+          <div key={i}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+              {section.title || `Section ${i + 1}`}
+            </p>
+            <SectionFinancialsSummary
+              financials={section.financials}
+              pricingMode={pricingMode}
+              compact={!expanded}
+            />
+          </div>
+        ))}
       </div>
 
+      {/* Aggregate totals */}
       <div className="border-t border-destructive/20 px-5 py-4 space-y-2">
+        <SummaryRow
+          label="Subtotal"
+          value={formatAsDollars(totals.subtotal)}
+          className="text-emerald-600 dark:text-emerald-400"
+          bold
+        />
+        <SummaryRow
+          label="Total Job Costs"
+          value={`-${formatAsDollars(totals.totalJobCosts)}`}
+          className="text-red-600/90 dark:text-red-400/90"
+        />
+        {totals.totalSectionIncentives > 0 && (
+          <SummaryRow
+            label="Section Incentives"
+            value={`-${formatAsDollars(totals.totalSectionIncentives)}`}
+            className="text-red-600/90 dark:text-red-400/90"
+          />
+        )}
+        {totals.totalGlobalIncentives > 0 && (
+          <SummaryRow
+            label="Global Discounts"
+            value={`-${formatAsDollars(totals.totalGlobalIncentives)}`}
+            className="text-red-600/90 dark:text-red-400/90"
+          />
+        )}
+
+        <Separator />
+
+        <SummaryRow
+          label="Total Margin"
+          value={formatAsDollars(totals.totalMargin)}
+          className="text-emerald-600 dark:text-emerald-400"
+          bold
+        />
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Total Cost</span>
-          <span className="font-medium tabular-nums">{formatAsDollars(totals.totalCost)}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">
-            Total Margin
-            <span className="ml-2 text-xs">(Final Price − Total Cost)</span>
+          <span className="text-muted-foreground font-medium">Multiplier</span>
+          <span className={cn('font-bold tabular-nums', MULTIPLIER_STYLES[totalTier])}>
+            {formatMultiplier(totals.totalMultiplier)}
           </span>
-          <span className="font-medium tabular-nums">{formatAsDollars(totals.totalMargin)}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">
-            Multiplier
-            <span className="ml-2 text-xs">(Final Price ÷ Total Cost)</span>
-          </span>
-          <span className="font-semibold tabular-nums">{formatMultiplier(totals.totalMultiplier)}</span>
         </div>
       </div>
 
       {totals.hasMissingCostData && (
         <div className="border-t border-destructive/20 px-5 py-3 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs">
-          ⚠ One or more sections are missing cost data — multiplier and margin reflect partial cost.
+          One or more sections are missing cost data — multiplier and margin reflect partial cost.
         </div>
       )}
+    </div>
+  )
+}
+
+function SummaryRow({
+  label,
+  value,
+  className,
+  bold,
+}: {
+  label: string
+  value: string
+  className?: string
+  bold?: boolean
+}) {
+  return (
+    <div className={cn('flex items-center justify-between', className)}>
+      <span className={cn(bold && 'font-medium')}>{label}</span>
+      <span className={cn('tabular-nums shrink-0', bold && 'font-medium')}>{value}</span>
     </div>
   )
 }

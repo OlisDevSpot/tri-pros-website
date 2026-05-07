@@ -4,18 +4,13 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
-import {
-  computeSectionCost,
-  computeSectionMargin,
-  computeSectionMultiplier,
-  formatMultiplier,
-} from '@/shared/entities/proposals/lib/compute-sow-financials'
-import { formatAsDollars } from '@/shared/lib/formatters'
+import { SectionFinancialsSummary } from '@/shared/entities/proposals/components/section-financials-summary'
 
 interface Props {
   index: number
@@ -25,9 +20,14 @@ interface Props {
 export function SOWFinancialsFields({ index, pricingMode }: Props) {
   const form = useFormContext<ProposalFormSchema>()
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields: costFields, append: appendCost, remove: removeCost } = useFieldArray({
     control: form.control,
     name: `project.data.sow.${index}.financials.costLines`,
+  })
+
+  const { fields: incentiveFields, append: appendIncentive, remove: removeIncentive } = useFieldArray({
+    control: form.control,
+    name: `project.data.sow.${index}.financials.incentives`,
   })
 
   const [openNotes, setOpenNotes] = useState<Set<string>>(() => new Set())
@@ -37,8 +37,6 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
     name: `project.data.sow.${index}.scopes`,
   })
 
-  // Watch only the financials subtree so TipTap keystrokes (which update
-  // contentJSON/html) don't re-render the cost-line editor.
   const sectionPrice = useWatch({
     control: form.control,
     name: `project.data.sow.${index}.financials.sectionPrice`,
@@ -47,11 +45,12 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
     control: form.control,
     name: `project.data.sow.${index}.financials.costLines`,
   })
+  const incentives = useWatch({
+    control: form.control,
+    name: `project.data.sow.${index}.financials.incentives`,
+  })
 
-  const synthSection = { financials: { sectionPrice, costLines } }
-  const sectionCost = computeSectionCost(synthSection)
-  const sectionMargin = computeSectionMargin(synthSection)
-  const sectionMultiplier = computeSectionMultiplier(synthSection)
+  const watchedFinancials = { sectionPrice, costLines, incentives }
 
   const canAddCostLine = selectedScopes.length > 0
   const isBreakdown = pricingMode === 'breakdown'
@@ -70,7 +69,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
   }
 
   function removeCostLine(lineIndex: number, fieldId: string) {
-    remove(lineIndex)
+    removeCost(lineIndex)
     setOpenNotes((prev) => {
       if (!prev.has(fieldId)) {
         return prev
@@ -83,29 +82,48 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
 
   return (
     <div className="space-y-4 px-3 pb-4 pt-2 lg:px-4 lg:pb-5">
-      {/* Section Price */}
+      {/* Section Price — inline on desktop */}
       <FormField
         name={`project.data.sow.${index}.financials.sectionPrice`}
         control={form.control}
         render={({ field }) => (
-          <FormItem className="w-48">
-            <FormLabel>
-              Section Price
-              {!isBreakdown && (
-                <span className="ml-2 text-xs text-muted-foreground">(disabled in total mode)</span>
-              )}
-            </FormLabel>
+          <FormItem className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-3">
+            <FormLabel className="whitespace-nowrap shrink-0">Section Price</FormLabel>
             <FormControl>
-              <Input
-                type="text"
-                placeholder="$10,000"
-                disabled={!isBreakdown}
-                value={field.value == null ? '' : String(field.value)}
-                onChange={(e) => {
-                  const raw = e.target.value
-                  field.onChange(raw.trim() === '' ? null : Number(raw.replace(/\D/g, '')))
-                }}
-              />
+              {!isBreakdown
+                ? (
+                    <HybridPopoverTooltip
+                      content={(
+                        <div>
+                          <p>Disabled in total pricing mode</p>
+                          <p className="text-xs text-muted-foreground">Change in proposal settings</p>
+                        </div>
+                      )}
+                      side="right"
+                    >
+                      <span className="w-full lg:w-48">
+                        <Input
+                          type="text"
+                          placeholder="$10,000"
+                          disabled
+                          className="pointer-events-none"
+                          value={field.value == null ? '' : String(field.value)}
+                        />
+                      </span>
+                    </HybridPopoverTooltip>
+                  )
+                : (
+                    <Input
+                      type="text"
+                      placeholder="$10,000"
+                      className="w-full lg:w-48"
+                      value={field.value == null ? '' : String(field.value)}
+                      onChange={(e) => {
+                        const raw = e.target.value
+                        field.onChange(raw.trim() === '' ? null : Number(raw.replace(/\D/g, '')))
+                      }}
+                    />
+                  )}
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -127,7 +145,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
               className="gap-1.5"
               disabled={!canAddCostLine}
               onClick={() => {
-                append({
+                appendCost({
                   id: crypto.randomUUID(),
                   label: '',
                   amount: 0,
@@ -142,7 +160,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
           </div>
         </div>
 
-        {fields.length === 0
+        {costFields.length === 0
           ? (
               <p className="py-3 text-center text-xs text-muted-foreground">
                 No cost lines yet
@@ -150,7 +168,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
             )
           : (
               <div className="space-y-3">
-                {fields.map((field, lineIndex) => (
+                {costFields.map((field, lineIndex) => (
                   <div
                     key={field.id}
                     className="rounded-lg border border-border/30 bg-card p-3 space-y-3"
@@ -262,23 +280,97 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
             )}
       </div>
 
-      {/* Derived totals */}
-      <div className="rounded-lg bg-muted/30 px-4 py-3 space-y-1.5 text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Total Cost</span>
-          <span className="font-medium tabular-nums">{formatAsDollars(sectionCost)}</span>
+      {/* Section Incentives */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between border-t border-border/30 pt-3">
+          <h5 className="text-sm font-semibold">Section Incentives</h5>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => {
+              appendIncentive({
+                id: crypto.randomUUID(),
+                label: '',
+                amount: 0,
+                notes: '',
+              })
+            }}
+          >
+            <PlusIcon className="size-4" />
+            Add incentive
+          </Button>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Margin</span>
-          <span className="font-medium tabular-nums">
-            {sectionMargin == null ? '—' : formatAsDollars(sectionMargin)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Multiplier</span>
-          <span className="font-semibold tabular-nums">{formatMultiplier(sectionMultiplier)}</span>
-        </div>
+
+        {incentiveFields.length === 0
+          ? (
+              <p className="py-3 text-center text-xs text-muted-foreground">
+                No section incentives
+              </p>
+            )
+          : (
+              <div className="space-y-3">
+                {incentiveFields.map((field, incIndex) => (
+                  <div
+                    key={field.id}
+                    className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3"
+                  >
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_auto]">
+                      <FormField
+                        name={`project.data.sow.${index}.financials.incentives.${incIndex}.label`}
+                        control={form.control}
+                        render={({ field: incField }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Label</FormLabel>
+                            <FormControl>
+                              <Input {...incField} placeholder="Scope discount" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        name={`project.data.sow.${index}.financials.incentives.${incIndex}.amount`}
+                        control={form.control}
+                        render={({ field: incField }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Amount</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="text"
+                                placeholder="$500"
+                                value={incField.value === 0 ? '' : String(incField.value)}
+                                onChange={(e) => {
+                                  const numeric = Number(e.target.value.replace(/\D/g, ''))
+                                  incField.onChange(numeric)
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => removeIncentive(incIndex)}
+                          aria-label="Remove incentive"
+                        >
+                          <TrashIcon className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
       </div>
+
+      <SectionFinancialsSummary financials={watchedFinancials} pricingMode={pricingMode} />
     </div>
   )
 }

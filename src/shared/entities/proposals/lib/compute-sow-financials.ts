@@ -1,40 +1,57 @@
-import type { z } from 'zod'
-import type { sowFinancialsSchema } from '@/shared/entities/proposals/schemas'
+import type { SowFinancials } from '@/shared/entities/proposals/schemas'
 
-type SowFinancials = z.infer<typeof sowFinancialsSchema>
 interface SectionLike {
   financials: SowFinancials
 }
 
-/**
- * Σ of all cost-line amounts in this section. Returns 0 when there are
- * no cost lines. Accepts any object with a `financials` field so callers
- * can pass either a full SowSection or a synthetic minimal projection
- * (used by the form to avoid over-watching the SOW subtree).
- */
+// — Safe accessors (single source of null-safety for legacy JSONB) ——————————
+
+function costLines(section: SectionLike) {
+  return section.financials.costLines ?? []
+}
+
+function incentives(section: SectionLike) {
+  return section.financials.incentives ?? []
+}
+
+// — Predicates ——————————————————————————————————————————————————————————————
+
+export function hasCostLines(section: SectionLike): boolean {
+  return costLines(section).length > 0
+}
+
+export function hasIncentives(section: SectionLike): boolean {
+  return incentives(section).length > 0
+}
+
+// — Compute helpers —————————————————————————————————————————————————————————
+
 export function computeSectionCost(section: SectionLike): number {
-  return section.financials.costLines.reduce((sum, line) => sum + line.amount, 0)
+  return costLines(section).reduce((sum, line) => sum + line.amount, 0)
+}
+
+export function computeSectionIncentives(section: SectionLike): number {
+  return incentives(section).reduce((sum, inc) => sum + inc.amount, 0)
 }
 
 /**
- * `sectionPrice − totalCost`. Returns null when there is no
- * `sectionPrice` (total-mode sections) or when there are no cost lines
- * (cost is unknown rather than zero).
+ * Price − Cost − Incentives. Returns null when sectionPrice is null
+ * (total-mode) or when there are no cost lines (cost unknown).
  */
 export function computeSectionMargin(section: SectionLike): number | null {
   const price = section.financials.sectionPrice
   if (price == null) {
     return null
   }
-  if (section.financials.costLines.length === 0) {
+  if (!hasCostLines(section)) {
     return null
   }
-  return price - computeSectionCost(section)
+  return price - computeSectionCost(section) - computeSectionIncentives(section)
 }
 
 /**
- * `sectionPrice ÷ totalCost`. Returns null when sectionPrice is null,
- * cost is 0, or there are no cost lines. Caller formats display.
+ * Price ÷ Cost. Returns null when sectionPrice is null, cost is 0,
+ * or there are no cost lines.
  */
 export function computeSectionMultiplier(section: SectionLike): number | null {
   const price = section.financials.sectionPrice
@@ -48,13 +65,33 @@ export function computeSectionMultiplier(section: SectionLike): number | null {
   return price / cost
 }
 
-/**
- * Format a multiplier for display: 2 decimals, "x" suffix, "—" for null.
- * Used by the agent-only Internal Calculation block.
- */
 export function formatMultiplier(value: number | null): string {
   if (value == null) {
     return '—'
   }
   return `${value.toFixed(2)}x`
+}
+
+// — Multiplier tier (drives color in UI) ——————————————————————————————————
+
+export type MultiplierTier = 'danger' | 'healthy' | 'excellent' | 'unknown'
+
+/**
+ * Classifies a multiplier for color treatment:
+ * - `danger`:    < 2× — below break-even safety margin
+ * - `healthy`:   2×–3× — standard residential remodeling range
+ * - `excellent`: ≥ 3× — strong margin, deserves visual celebration
+ * - `unknown`:   null (no data)
+ */
+export function getMultiplierTier(value: number | null): MultiplierTier {
+  if (value == null) {
+    return 'unknown'
+  }
+  if (value < 2) {
+    return 'danger'
+  }
+  if (value >= 3) {
+    return 'excellent'
+  }
+  return 'healthy'
 }
