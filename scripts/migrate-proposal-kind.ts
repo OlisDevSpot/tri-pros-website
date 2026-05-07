@@ -1,21 +1,30 @@
 /* eslint-disable no-console */
 /**
- * One-time migration for issue #92: proposal.kind classification.
+ * Re-runnable schema-plus-data migration for proposal.kind (issue #92, hotfix
+ * to #168).
  *
- *   1. CREATE TYPE proposal_kind
- *   2. ALTER TABLE proposals ADD COLUMN kind ... DEFAULT 'initial-sale'
- *   3. Backfill: per project, the earliest meeting (by scheduled_for, tie-break
- *      created_at) with its earliest-created proposal is initial-sale; every
- *      other proposal is additional-work.
- *   4. CREATE UNIQUE INDEX (meeting_id) WHERE kind = 'initial-sale'
+ * What it does, in a single transaction:
+ *   1. Ensure `proposal_kind` enum + `proposals.kind` column exist (idempotent —
+ *      no-op on already-migrated DBs, required for prod first-run).
+ *   2. Drop the old partial unique index `proposals_one_initial_sale_per_meeting_idx`
+ *      if present. Its invariant ("one initial-sale per meeting") was wrong —
+ *      a meeting can legitimately have multiple sent/draft initial-sale
+ *      attempts (the agent iterating on an offer).
+ *   3. Recompute `kind` for every proposal using the corrected rule:
+ *        - meeting has no project       → initial-sale
+ *        - meeting is the earliest meeting (by created_at) linked to its
+ *          project ("birthing meeting") → initial-sale (all proposals on it,
+ *          regardless of status)
+ *        - otherwise                    → additional-work
+ *   4. Pre-flight: assert no meeting has 2+ approved initial-sale proposals
+ *      (would block the new index and indicates dirty data).
+ *   5. Add the new partial unique index
+ *      `proposals_one_approved_initial_sale_per_meeting_idx` —
+ *      `(meeting_id) WHERE kind = 'initial-sale' AND status = 'approved'`.
+ *      Because all initial-sale proposals for a project live on one (birthing)
+ *      meeting, "per meeting" transitively means "per project".
  *
- * Why this exists separately from `db:push:dev` / `db:push`:
- * the schema declares the partial unique index alongside the column, but a
- * straight push would set every existing row to the default 'initial-sale'
- * and then fail the index on any meeting that has 2+ proposals. Running this
- * migration first orders the steps correctly inside a single transaction.
- *
- * Idempotent — safe to re-run. After this completes, drizzle-kit push should
+ * Idempotent — safe to re-run. After this completes, `pnpm db:push:dev` should
  * report "no changes detected" for the proposals table.
  *
  * Usage:
@@ -27,76 +36,83 @@ import { sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 
 async function main() {
-  console.log(`NODE_ENV=${process.env.NODE_ENV ?? 'undefined'} → ${process.env.NODE_ENV === 'production' ? 'PROD' : 'DEV'} DB`)
+  const isProd = process.env.NODE_ENV === 'production'
+  console.log(`NODE_ENV=${process.env.NODE_ENV ?? 'undefined'} → ${isProd ? 'PROD' : 'DEV'} DB`)
 
   await db.transaction(async (tx) => {
-    console.log('\n[1/4] Creating proposal_kind enum...')
+    console.log('\n[1/5] Ensuring proposal_kind enum + kind column exist...')
     await tx.execute(sql`
       DO $$ BEGIN
         CREATE TYPE proposal_kind AS ENUM ('initial-sale', 'additional-work');
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$;
     `)
-
-    console.log('[2/4] Adding kind column...')
     await tx.execute(sql`
       ALTER TABLE proposals
         ADD COLUMN IF NOT EXISTS kind proposal_kind NOT NULL DEFAULT 'initial-sale'
     `)
 
-    console.log('[3/4] Backfilling kind...')
+    console.log('[2/5] Dropping old index proposals_one_initial_sale_per_meeting_idx (if present)...')
     await tx.execute(sql`
-      WITH ranked AS (
-        SELECT
-          p.id,
-          DENSE_RANK() OVER (
-            PARTITION BY m.project_id
-            ORDER BY m.scheduled_for ASC NULLS LAST, m.created_at ASC
-          ) AS meeting_rank,
-          ROW_NUMBER() OVER (
-            PARTITION BY p.meeting_id
-            ORDER BY p.created_at ASC
-          ) AS proposal_rank
-        FROM proposals p
-        LEFT JOIN meetings m ON m.id = p.meeting_id
+      DROP INDEX IF EXISTS proposals_one_initial_sale_per_meeting_idx
+    `)
+
+    console.log('[3/5] Recomputing kind for all existing proposals...')
+    await tx.execute(sql`
+      WITH birthing_meetings AS (
+        SELECT DISTINCT ON (m.project_id) m.project_id, m.id AS meeting_id
+        FROM meetings m
+        WHERE m.project_id IS NOT NULL
+        ORDER BY m.project_id, m.created_at ASC
       )
       UPDATE proposals p
       SET kind = CASE
-        WHEN r.meeting_rank = 1 AND r.proposal_rank = 1 THEN 'initial-sale'::proposal_kind
-        ELSE 'additional-work'::proposal_kind
+        WHEN m.project_id IS NULL          THEN 'initial-sale'::proposal_kind
+        WHEN m.id = bm.meeting_id          THEN 'initial-sale'::proposal_kind
+        ELSE                                    'additional-work'::proposal_kind
       END
-      FROM ranked r
-      WHERE r.id = p.id
+      FROM meetings m
+      LEFT JOIN birthing_meetings bm ON bm.project_id = m.project_id
+      WHERE p.meeting_id = m.id
     `)
 
-    const counts = await tx.execute(sql`
+    const totals = await tx.execute(sql`
       SELECT kind, COUNT(*)::int AS count
       FROM proposals
       GROUP BY kind
       ORDER BY kind
     `)
-    console.log('       Counts by kind:', counts.rows)
+    console.log('       Totals by kind:', totals.rows)
 
-    // Pre-flight check before adding the partial unique index — guarantees
-    // we abort the transaction before a CREATE INDEX failure rolls everything
-    // back with a less-helpful error message.
+    const cross = await tx.execute(sql`
+      SELECT kind, status, COUNT(*)::int AS count
+      FROM proposals
+      GROUP BY kind, status
+      ORDER BY kind, status
+    `)
+    console.log('       Cross-tab kind × status:', cross.rows)
+
+    console.log('[4/5] Pre-flight: checking for meetings with 2+ approved initial-sale proposals...')
     const dupes = await tx.execute(sql`
       SELECT meeting_id, COUNT(*)::int AS c
       FROM proposals
-      WHERE kind = 'initial-sale'
+      WHERE kind = 'initial-sale' AND status = 'approved'
       GROUP BY meeting_id
       HAVING COUNT(*) > 1
     `)
     if (dupes.rows.length > 0) {
-      console.error('       Backfill anomaly: meetings with >1 initial-sale:', dupes.rows)
-      throw new Error('Backfill produced duplicate initial-sale per meeting — aborting before index creation. Investigate the data and re-run.')
+      console.error('       Anomaly: meetings with 2+ approved initial-sales:', dupes.rows)
+      throw new Error(
+        'Found meetings with multiple approved initial-sale proposals. '
+        + 'Resolve manually (un-approve the duplicates) before adding the unique index.',
+      )
     }
 
-    console.log('[4/4] Creating partial unique index proposals_one_initial_sale_per_meeting_idx...')
+    console.log('[5/5] Creating proposals_one_approved_initial_sale_per_meeting_idx...')
     await tx.execute(sql`
-      CREATE UNIQUE INDEX IF NOT EXISTS proposals_one_initial_sale_per_meeting_idx
+      CREATE UNIQUE INDEX IF NOT EXISTS proposals_one_approved_initial_sale_per_meeting_idx
       ON proposals (meeting_id)
-      WHERE kind = 'initial-sale'
+      WHERE kind = 'initial-sale' AND status = 'approved'
     `)
 
     console.log('\n[done] Migration committed.')
