@@ -90,7 +90,9 @@ Trade (discipline)
 |------|-----------|
 | **Price** | Front-facing financial value — what the customer pays. Examples: `Section Price` (per SOW section), `startingTcp` / `finalTcp` (whole proposal). Visible to homeowner. Stored at `proposal.projectJSON.sow[].financials.sectionPrice` (per section) and `proposal.fundingJSON.data.startingTcp` (proposal level). |
 | **Cost** | Back-facing financial value — what the work costs Tri Pros (materials, labor, fees, overhead). Internal/agent-only. Multi-line per SOW section: each line has `{label, amount, relatedScopeId, notes?}` and ties to a specific selected scope. Stored at `proposal.projectJSON.sow[].financials.costLines`. **Never visible to homeowner.** |
-| **Margin** | Derived: `Price − Cost`. Margin % = `(Margin / Price) × 100`. Computed at SOW-section level and at proposal level (aggregate). Internal/agent-only. Sections missing cost data are excluded from aggregate margin and surfaced as a "missing cost data" warning. |
+| **Cost Line** | One internal line of cost. Has `label`, `amount`, `relatedScopeId`, optional `notes`. Lives in `sow[].financials.costLines[]`. |
+| **Margin** | Derived: `Price − Cost`. Margin % = `(Margin / Price) × 100`. Computed at SOW-section level and at proposal level (aggregate) via `computeSectionMargin` / `computeProposalCostTotals`. Never persisted. Internal/agent-only. Sections missing cost data are excluded from aggregate margin and surfaced as a "missing cost data" warning. |
+| **Multiplier** | Derived: `Price ÷ Cost`, displayed to 2 decimals (`2.04x`). Headline agent KPI. `—` when cost is 0. Format via `formatMultiplier` — never inline `.toFixed(2)`. |
 | **TCP** (Total Contract Price) | Total proposal price. `startingTcp` = initial quote, `finalTcp` = after incentives. A specific kind of Price. |
 | **Incentive** | Discount, tax-credit, cash-back, or exclusive-offer. Reduces TCP. Types: `discount \| tax-credit \| cash-back \| exclusive-offer \| other`. |
 | **Finance Option** | A loan product (term, APR, provider). Customer selects one per proposal. |
@@ -151,6 +153,7 @@ Trade (discipline)
 | **Entity Spec** | The per-entity declaration in the Entity Registry. Strict types enforce four **Universal CRUD Slots** (`view`, `edit`, `delete`, `duplicate?`) plus a keyed `customActions` record for entity-unique actions. One spec file per entity at `entities/<entity>/spec.ts`. |
 | **Universal CRUD Slot** | One of the four base action roles every entity must satisfy: `view`, `edit`, `delete` (or its semantic equivalent — User's slot is "Deactivate"), and the optional `duplicate`. Each slot's user-facing label and icon are provided by the entity, allowing role consistency without forced vocabulary (e.g. Meeting's `view` slot renders as "Start" with a play icon). |
 | **Custom Action** _(entity-baked)_ | An entity-unique action declared in the spec's `customActions: Record<string, ...>`. Examples: Meeting's `setOutcome`, Proposal's `shareByEmail`, User's `textRep`. Keyed so `disableActions` and `actionOverrides` can target them by name. Distinct from **call-site custom actions** appended via the `<EntityActionMenu customActions={[...]}>` prop, which are unkeyed and append-only. |
+| **View Mode** | `'customer' \| 'agent'`. URL-persisted via `?view=agent`. Determines whether internal data renders on the proposal-flow display route. Sourced from `useViewMode()` which gates with `ability.can('update', 'Proposal')` — homeowners constructing the param manually still get `'customer'`. |
 
 ### View Context Path Notation
 
@@ -234,6 +237,7 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 - **SFH** always uppercase. Full form: "Single Family Home"
 - **Entity View Context** not "entity card" or "entity display" — refers to the full UI surface + its nested entity containers, not a single component
 - **View Context Path** — use `Page/Container/Entity/Nested` notation to reference specific view contexts (e.g., `Profile/Projects/Project/Meeting/Proposal`)
+- **Multiplier** is the canonical agent KPI. Format as `Nx` to 2 decimals (e.g., `2.04x`). Use `formatMultiplier` to render — never inline `.toFixed(2)`.
 - **Entity Action System** not "action menu", "more menu", or "kebab menu" — those describe the visual component; the System is the spec/registry/menu trio behind it
 - **Universal CRUD Slot** not "base action" or "default action" — names the four typed slots (`view`/`edit`/`delete`/`duplicate?`) every entity must declare
 

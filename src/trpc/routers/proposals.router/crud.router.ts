@@ -17,6 +17,7 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 
 export const crudRouter = createTRPCRouter({
@@ -211,13 +212,12 @@ export const crudRouter = createTRPCRouter({
           const data = (projectJSON.data ?? {}) as Record<string, unknown>
 
           if (!data.sow) {
-            const sowFromSelections = tradeSelections.map(entry => ({
-              trade: { id: entry.tradeId, label: entry.tradeName },
-              scopes: entry.selectedScopes,
-              title: '',
-              contentJSON: '',
-              html: '',
-            }))
+            const sowFromSelections = tradeSelections.map(entry =>
+              createEmptySowSection({
+                trade: { id: entry.tradeId, label: entry.tradeName },
+                scopes: entry.selectedScopes,
+              }),
+            )
 
             input = {
               ...rawInput,
@@ -228,7 +228,7 @@ export const crudRouter = createTRPCRouter({
                   sow: sowFromSelections,
                 },
               },
-            } as typeof rawInput
+            } as unknown as typeof rawInput
           }
         }
 

@@ -2,6 +2,7 @@ import type { Customer, Meeting } from '@/shared/db/schema'
 import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
 import { getProgramByAccessor } from '@/features/meeting-flow/constants/programs'
 import { computeDealFinalTcp } from '@/shared/entities/meetings/lib/compute-deal-derived'
+import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
 import { proposalFormBaseDefaultValues } from '@/shared/entities/proposals/schemas'
 
 export function buildProposalDefaults(
@@ -17,14 +18,12 @@ export function buildProposalDefaults(
 
   // Map trade selections → SOW entries
   if (flowState.tradeSelections && flowState.tradeSelections.length > 0) {
-    defaults.project.data.sow = flowState.tradeSelections.map(ts => ({
-      contentJSON: '',
-      html: '',
-      scopes: ts.selectedScopes.map(s => ({ id: s.id, label: s.label })),
-      title: '',
-      trade: { id: ts.tradeId, label: ts.tradeName },
-      price: 0,
-    }))
+    defaults.project.data.sow = flowState.tradeSelections.map(ts =>
+      createEmptySowSection({
+        scopes: ts.selectedScopes.map(s => ({ id: s.id, label: s.label })),
+        trade: { id: ts.tradeId, label: ts.tradeName },
+      }),
+    )
   }
 
   // Map deal structure → funding

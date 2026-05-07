@@ -1,6 +1,7 @@
 import z from 'zod'
 import { envelopeDocumentIds, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 import { homeAreas } from '@/shared/domains/construction/constants/enums'
+import { createEmptySowSection } from '../lib/create-empty-sow-section'
 
 // SUB-SCHEMAS
 const homeAreaSchema = z.enum(homeAreas)
@@ -8,13 +9,38 @@ export const constructionItemSchema = z.object({
   id: z.string(),
   label: z.string(),
 })
+
+export const costLineSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1, 'Label is required'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  relatedScopeId: z.string().min(1, 'Related scope is required'),
+  notes: z.string().optional(),
+})
+export type CostLine = z.infer<typeof costLineSchema>
+
+export const sectionIncentiveSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1, 'Label is required'),
+  amount: z.number().positive('Amount must be greater than 0'),
+  notes: z.string().optional(),
+})
+export type SectionIncentive = z.infer<typeof sectionIncentiveSchema>
+
+export const sowFinancialsSchema = z.object({
+  sectionPrice: z.number().nullable(),
+  costLines: z.array(costLineSchema),
+  incentives: z.array(sectionIncentiveSchema),
+})
+export type SowFinancials = z.infer<typeof sowFinancialsSchema>
+
 export const sowSchema = z.object({
   contentJSON: z.string(),
   html: z.string(),
-  price: z.number().optional(),
   scopes: z.array(constructionItemSchema),
   title: z.string(),
   trade: constructionItemSchema,
+  financials: sowFinancialsSchema,
 })
 
 const discountIncentiveSchema = z.object({
@@ -93,10 +119,54 @@ export const fundingSectionSchema = z.object({
 
 // --- Proposal Form Schema (composite) ---
 
-export const proposalFormSchema = z.object({
+/**
+ * Raw object shape — exported so consumers that need ZodObject methods
+ * (`.partial()`, `.pick()`, `.extend()`) can derive from it. The refined
+ * `proposalFormSchema` below is a ZodEffects (because of `superRefine`)
+ * and Zod blocks those derivations on refined schemas. Use `*Shape` for
+ * derivation, `*Schema` for validation.
+ */
+export const proposalFormShape = z.object({
   meta: formMetaSectionSchema,
   project: projectSectionSchema,
   funding: fundingSectionSchema,
+})
+
+/**
+ * Validated form schema — feeds `zodResolver`. Cross-field rules:
+ * - Breakdown mode: every section's `sectionPrice` must be a positive number.
+ * - Every cost line's `relatedScopeId` must reference a scope selected in its section.
+ * Defense-in-depth — the form UI cascade keeps these in sync; the schema
+ * is the safety net at submit time.
+ */
+export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) => {
+  const isBreakdown = proposal.meta.pricingMode === 'breakdown'
+
+  proposal.project.data.sow.forEach((section, sectionIndex) => {
+    // 1. Section price required + positive in breakdown mode
+    if (isBreakdown) {
+      const sp = section.financials.sectionPrice
+      if (sp === null || sp <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project', 'data', 'sow', sectionIndex, 'financials', 'sectionPrice'],
+          message: 'Section price is required in breakdown pricing mode',
+        })
+      }
+    }
+
+    // 2. Every cost line's relatedScopeId must match a selected scope
+    const selectedScopeIds = new Set(section.scopes.map(s => s.id))
+    section.financials.costLines.forEach((line, lineIndex) => {
+      if (!selectedScopeIds.has(line.relatedScopeId)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['project', 'data', 'sow', sectionIndex, 'financials', 'costLines', lineIndex, 'relatedScopeId'],
+          message: 'Related scope must be one of this section\'s selected scopes',
+        })
+      }
+    })
+  })
 })
 
 export type ProposalFormSchema = z.infer<typeof proposalFormSchema>
@@ -109,19 +179,7 @@ export const proposalFormBaseDefaultValues: ProposalFormSchema = {
     data: {
       type: 'general-remodeling',
       label: '',
-      sow: [
-        {
-          contentJSON: '',
-          html: '',
-          scopes: [],
-          title: '',
-          trade: {
-            id: '',
-            label: '',
-          },
-          price: 0,
-        },
-      ],
+      sow: [createEmptySowSection()],
       summary: '',
       homeAreasUpgrades: [],
       projectObjectives: [],

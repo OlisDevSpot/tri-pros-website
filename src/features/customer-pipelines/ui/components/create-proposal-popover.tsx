@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ROOTS } from '@/shared/config/roots'
 import { useSession } from '@/shared/domains/auth/client'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -61,7 +62,7 @@ export function CreateProposalPopover({ meetings }: Props) {
           validThroughTimeframe: '60 days',
           projectObjectives: [],
           homeAreasUpgrades: [],
-          sow: [{ contentJSON: '', html: '', scopes: [], title: '', trade: { id: '', label: '' } }],
+          sow: [createEmptySowSection()],
         },
         meta: { enabled: true },
       },

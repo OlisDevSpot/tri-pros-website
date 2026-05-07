@@ -1,5 +1,5 @@
 import z from 'zod'
-import { proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import { proposalFormShape } from '@/features/proposal-flow/schemas/form-schema'
 import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai-summary'
 import { baseProcedure, createTRPCRouter } from '../../init'
 
@@ -7,7 +7,12 @@ export const aiRouter = createTRPCRouter({
   dispatchProjectSummaryJob: baseProcedure
     .input(z.object({
       proposalId: z.string(),
-      proposalFormValues: proposalFormSchema.strict().partial(),
+      // Uses the raw shape (not `proposalFormSchema`) because the refined
+      // schema is a ZodEffects and blocks `.partial()`. AI summary accepts
+      // any in-progress form snapshot, so the cross-field refinements
+      // (sectionPrice in breakdown mode, scope-id consistency) intentionally
+      // don't apply here.
+      proposalFormValues: z.strictObject(proposalFormShape.shape).partial(),
     }))
     .mutation(async ({ input }) => {
       await generateAISummaryJob.dispatch({
