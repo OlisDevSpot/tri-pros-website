@@ -48,15 +48,17 @@ export const proposals = pgTable('proposals', {
   createdAt,
   updatedAt,
 }, table => [
-  // At most one initial-sale per meeting. Combined with the immutability
-  // of `kind` and the server-side derivation rule
-  // (kind = meeting.projectId IS NULL ? 'initial-sale' : 'additional-work'),
-  // this transitively enforces "1 initial-sale per project" — a project's
-  // first meeting can yield exactly one initial-sale proposal, and
-  // projects only exist on initial-sale approval.
-  uniqueIndex('proposals_one_initial_sale_per_meeting_idx')
+  // At most one APPROVED initial-sale per meeting. Because the runtime
+  // derivation freezes kind from `meeting.projectId` at insert time, all
+  // initial-sale proposals for a single project live on the project's
+  // birthing meeting (the earliest meeting linked to it). So per-meeting
+  // uniqueness on (kind='initial-sale', status='approved') transitively
+  // enforces "at most one approved initial-sale per project" — the real
+  // business invariant. Many sent/draft initial-sales on the birthing
+  // meeting (the agent iterating on an offer) coexist freely.
+  uniqueIndex('proposals_one_approved_initial_sale_per_meeting_idx')
     .on(table.meetingId)
-    .where(sql`kind = 'initial-sale'`),
+    .where(sql`kind = 'initial-sale' AND status = 'approved'`),
 ])
 
 export const proposalsRelations = relations(proposals, ({ one }) => ({
