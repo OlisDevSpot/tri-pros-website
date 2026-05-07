@@ -74,6 +74,9 @@ const envSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string(),
   UPSTASH_REDIS_REST_TOKEN: z.string(),
 
+  // BINA (GoHighLevel webhook)
+  BINA_WEBHOOK_SECRET: z.string().optional(),
+
   // ABLY
   ABLY_API_KEY: z.string(),
 })

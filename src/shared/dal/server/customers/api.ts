@@ -4,6 +4,7 @@ import type { Contact } from '@/shared/services/notion/lib/contacts/schema'
 import { eq, getTableColumns } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
+import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
@@ -98,6 +99,45 @@ export async function findOrCreateCustomerFromHomeowner(data: HomeownerData): Pr
       state: data.state ?? null,
       zip: data.zip ?? '',
       syncedAt: new Date().toISOString(),
+    })
+    .returning()
+
+  return customer
+}
+
+// ── Webhook-based create (lead source by slug) ────────────────────────────────
+
+interface WebhookCustomerData {
+  name: string
+  phone: string
+  email?: string | null
+  city: string
+  zip: string
+  state?: string | null
+  leadSourceSlug: string
+}
+
+export async function createCustomerFromWebhook(data: WebhookCustomerData): Promise<Customer> {
+  const { leadSourceSlug, ...customerData } = data
+
+  // Resolve lead source slug → id
+  const [leadSource] = await db
+    .select({ id: leadSourcesTable.id })
+    .from(leadSourcesTable)
+    .where(eq(leadSourcesTable.slug, leadSourceSlug))
+    .limit(1)
+
+  if (!leadSource) {
+    throw new Error(`Lead source "${leadSourceSlug}" not found`)
+  }
+
+  const [customer] = await db
+    .insert(customers)
+    .values({
+      ...customerData,
+      email: customerData.email ?? null,
+      state: customerData.state ?? 'CA',
+      leadSourceId: leadSource.id,
     })
     .returning()
 
