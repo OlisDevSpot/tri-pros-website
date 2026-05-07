@@ -6,7 +6,7 @@ import { PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 
-import { PROJECT_FILTER_CONFIG, PROJECT_PAGE_SIZE_OPTIONS } from '@/features/project-management/constants/project-table-filter-config'
+import { PROJECT_FILTER_CONFIG } from '@/features/project-management/constants/project-table-filter-config'
 import { ProjectDetailSheet } from '@/features/project-management/ui/components/project-detail-sheet'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
@@ -16,6 +16,7 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 import { useProjectActions } from '@/shared/entities/projects/hooks/use-project-actions'
@@ -43,7 +44,7 @@ export function PortfolioProjectsTable() {
     {
       paramPrefix: 'pj',
       pageSize: 20,
-      pageSizeOptions: PROJECT_PAGE_SIZE_OPTIONS,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: PROJECT_FILTER_CONFIG,
     },
   )
@@ -79,13 +80,7 @@ export function PortfolioProjectsTable() {
         )}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="projects">
-            <QueryToolbar.Bar>
-              <QueryToolbar.Search placeholder="Search by title or city…" />
-              <QueryToolbar.FilterTrigger />
-              <QueryToolbar.PageSize />
-            </QueryToolbar.Bar>
-            <QueryToolbar.ChipRail />
-            <QueryToolbar.LiveStatus />
+            <QueryToolbar.Standard searchPlaceholder="Search by title or city…" />
           </QueryToolbar>
         )}
         table={(

@@ -636,6 +636,32 @@ function LiveStatus() {
   )
 }
 
+// ── Standard preset ────────────────────────────────────────────────────────────
+
+interface StandardProps {
+  searchPlaceholder?: string
+}
+
+/**
+ * Canonical records-page composition: Bar with Search + FilterTrigger +
+ * PageSize, followed by ChipRail and LiveStatus. Use this for any
+ * records-style table; reach for the atomic slots only when a layout
+ * deviates (split bar, extra slot, custom slot order).
+ */
+function Standard({ searchPlaceholder }: StandardProps) {
+  return (
+    <>
+      <Bar>
+        <Search placeholder={searchPlaceholder} />
+        <FilterTrigger />
+        <PageSize />
+      </Bar>
+      <ChipRail />
+      <LiveStatus />
+    </>
+  )
+}
+
 // ── Compound export ────────────────────────────────────────────────────────────
 
 export const QueryToolbar = Object.assign(Root, {
@@ -645,4 +671,5 @@ export const QueryToolbar = Object.assign(Root, {
   PageSize,
   ChipRail,
   LiveStatus,
+  Standard,
 })

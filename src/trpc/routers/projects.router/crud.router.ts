@@ -2,9 +2,8 @@ import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or } f
 import { z } from 'zod'
 import { getProjectForEdit } from '@/features/project-management/dal/server/get-project-for-edit'
 import { createProject, deleteProject, getAllProjects, updateProject } from '@/features/project-management/dal/server/manage-project'
-import { projectStatuses } from '@/shared/constants/enums'
+import { projectStatuses, projectVisibilities } from '@/shared/constants/enums'
 import { buildFilterWhere } from '@/shared/dal/server/query/filters'
-import { paginate } from '@/shared/dal/server/query/output'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
 import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
@@ -18,24 +17,13 @@ export const crudRouter = createTRPCRouter({
       return getAllProjects()
     }),
 
-  // Server-paginated projects list. Drives the /dashboard/projects records page.
-  //
-  // Filters (URL-driven via the query toolkit):
-  //   status:      multi-select on projects.status
-  //   visibility:  'public' | 'draft' (mapped to projects.isPublic)
-  //   completedAt: date-range on projects.completedAt
-  //   createdAt:   date-range on projects.createdAt
-  //
-  // Search: ilike against projects.title OR projects.city.
-  // Sort whitelist: title, city, status, isPublic, completedAt, createdAt.
-  // Default order: createdAt DESC.
-  //
-  // Each row carries `scopeIds` (aggregated from x_projectScopes) so the row
-  // detail sheet stays compatible with the existing project shape.
+  // Server-paginated projects list for /dashboard/projects.
+  // Each row carries `scopeIds` (aggregated from x_projectScopes) so the
+  // detail sheet can resolve trade names without a per-row fetch.
   list: agentProcedure
     .input(paginatedQueryInput({
       status: z.array(z.enum(projectStatuses)).optional(),
-      visibility: z.enum(['public', 'draft']).optional(),
+      visibility: z.enum(projectVisibilities).optional(),
       completedAt: dateRangeSchema.optional(),
       createdAt: dateRangeSchema.optional(),
     }))
@@ -72,33 +60,35 @@ export const crudRouter = createTRPCRouter({
         createdAt: projects.createdAt,
       }, desc(projects.createdAt))
 
-      const result = await paginate({
-        query: () => db
-          .select(getTableColumns(projects))
+      // Page query resolves first; count + scopes overlap in flight.
+      // Scopes only depend on the page's projectIds, not the count, so
+      // serializing scopes behind `paginate()` would waste a round-trip.
+      const rows = await db
+        .select(getTableColumns(projects))
+        .from(projects)
+        .where(where)
+        .orderBy(...orderBy)
+        .limit(input.pagination.limit)
+        .offset(input.pagination.offset)
+
+      const projectIds = rows.map(r => r.id)
+
+      const [total, scopeRows] = await Promise.all([
+        db
+          .select({ c: count(projects.id) })
           .from(projects)
           .where(where)
-          .orderBy(...orderBy)
-          .limit(input.pagination.limit)
-          .offset(input.pagination.offset),
-        count: async () => {
-          const [row] = await db
-            .select({ c: count(projects.id) })
-            .from(projects)
-            .where(where)
-          return row?.c ?? 0
-        },
-      })
-
-      const projectIds = result.rows.map(r => r.id)
-      const scopeRows = projectIds.length > 0
-        ? await db
-            .select({
-              projectId: x_projectScopes.projectId,
-              scopeId: x_projectScopes.scopeId,
-            })
-            .from(x_projectScopes)
-            .where(inArray(x_projectScopes.projectId, projectIds))
-        : []
+          .then(r => r[0]?.c ?? 0),
+        projectIds.length > 0
+          ? db
+              .select({
+                projectId: x_projectScopes.projectId,
+                scopeId: x_projectScopes.scopeId,
+              })
+              .from(x_projectScopes)
+              .where(inArray(x_projectScopes.projectId, projectIds))
+          : Promise.resolve([] as { projectId: string, scopeId: string }[]),
+      ])
 
       const scopesByProject = new Map<string, string[]>()
       for (const row of scopeRows) {
@@ -112,11 +102,11 @@ export const crudRouter = createTRPCRouter({
       }
 
       return {
-        rows: result.rows.map(project => ({
+        rows: rows.map(project => ({
           ...project,
           scopeIds: scopesByProject.get(project.id) ?? [],
         })),
-        total: result.total,
+        total,
       }
     }),
 

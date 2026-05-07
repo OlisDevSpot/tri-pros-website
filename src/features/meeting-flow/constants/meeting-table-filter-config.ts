@@ -1,19 +1,12 @@
 import type { FilterDefinition } from '@/shared/dal/client/query/types'
 
-import {
-  TIME_PRESET_LAST_WEEK,
-  TIME_PRESET_THIS_MONTH,
-  TIME_PRESET_THIS_WEEK,
-  TIME_PRESET_THIS_YEAR,
-  TIME_PRESET_TODAY,
-  TIME_PRESET_YEAR_TO_DATE,
-} from '@/shared/components/data-table/constants/time-filter-presets'
+import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 
 /**
- * Filter config for the meetings tables (past-meetings + meetings-view table
- * mode). Ids match `meetingsRouter.list`'s `filters` shape on the server.
+ * Filter config for the meetings table. Ids match `meetingsRouter.list`'s
+ * `filters` shape on the server.
  */
 export const MEETING_FILTER_CONFIG = [
   {
@@ -29,14 +22,7 @@ export const MEETING_FILTER_CONFIG = [
     id: 'scheduledFor',
     type: 'date-range',
     label: 'Scheduled',
-    presets: [
-      TIME_PRESET_TODAY,
-      TIME_PRESET_THIS_WEEK,
-      TIME_PRESET_LAST_WEEK,
-      TIME_PRESET_THIS_MONTH,
-      TIME_PRESET_YEAR_TO_DATE,
-      TIME_PRESET_THIS_YEAR,
-    ],
+    presets: DEFAULT_TIME_PRESETS,
   },
   {
     id: 'pipeline',
@@ -50,5 +36,3 @@ export const MEETING_FILTER_CONFIG = [
     ],
   },
 ] as const satisfies readonly FilterDefinition[]
-
-export const MEETING_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const

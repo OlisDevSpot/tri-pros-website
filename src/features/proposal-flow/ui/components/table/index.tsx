@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
-import { PROPOSAL_FILTER_CONFIG, PROPOSAL_PAGE_SIZE_OPTIONS } from '@/features/proposal-flow/constants/proposal-table-filter-config'
+import { PROPOSAL_FILTER_CONFIG } from '@/features/proposal-flow/constants/proposal-table-filter-config'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
@@ -16,6 +16,7 @@ import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 import { useProposalActions } from '@/shared/entities/proposals/hooks/use-proposal-actions'
@@ -45,7 +46,7 @@ export function PastProposalsTable() {
     {
       paramPrefix: 'pp',
       pageSize: 20,
-      pageSizeOptions: PROPOSAL_PAGE_SIZE_OPTIONS,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: PROPOSAL_FILTER_CONFIG,
     },
   )
@@ -142,13 +143,7 @@ export function PastProposalsTable() {
         header={<RecordsPageHeader title="Proposals" pagination={pagination} />}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="proposals">
-            <QueryToolbar.Bar>
-              <QueryToolbar.Search placeholder="Search by label or customer…" />
-              <QueryToolbar.FilterTrigger />
-              <QueryToolbar.PageSize />
-            </QueryToolbar.Bar>
-            <QueryToolbar.ChipRail />
-            <QueryToolbar.LiveStatus />
+            <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" />
           </QueryToolbar>
         )}
         table={(

@@ -7,7 +7,7 @@ import { useCallback, useMemo, useState } from 'react'
 
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components/assign-project-dialog'
-import { MEETING_FILTER_CONFIG, MEETING_PAGE_SIZE_OPTIONS } from '@/features/meeting-flow/constants/meeting-table-filter-config'
+import { MEETING_FILTER_CONFIG } from '@/features/meeting-flow/constants/meeting-table-filter-config'
 import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-class'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
@@ -15,6 +15,7 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
@@ -43,7 +44,7 @@ export function PastMeetingsTable() {
     {
       paramPrefix: 'pm',
       pageSize: 20,
-      pageSizeOptions: MEETING_PAGE_SIZE_OPTIONS,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: MEETING_FILTER_CONFIG,
     },
   )
@@ -91,13 +92,7 @@ export function PastMeetingsTable() {
         header={<RecordsPageHeader title="Meetings" pagination={pagination} />}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="meetings">
-            <QueryToolbar.Bar>
-              <QueryToolbar.Search placeholder="Search by customer or type…" />
-              <QueryToolbar.FilterTrigger />
-              <QueryToolbar.PageSize />
-            </QueryToolbar.Bar>
-            <QueryToolbar.ChipRail />
-            <QueryToolbar.LiveStatus />
+            <QueryToolbar.Standard searchPlaceholder="Search by customer or type…" />
           </QueryToolbar>
         )}
         table={(
