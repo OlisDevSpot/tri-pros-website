@@ -4,13 +4,14 @@ import type { EntityActionConfig } from '@/shared/components/entity-actions/type
 import type { ProposalStatus } from '@/shared/constants/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { EyeIcon } from 'lucide-react'
+import { EyeIcon, PlusIcon } from 'lucide-react'
 
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
+import { Badge } from '@/shared/components/ui/badge'
 import { proposalStatuses } from '@/shared/constants/enums'
 import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
@@ -39,7 +40,18 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
         return (
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 space-y-0.5 max-w-55">
-              <p className="font-medium leading-none truncate">{row.original.label}</p>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="font-medium leading-none truncate">{row.original.label}</p>
+                {row.original.kind === 'additional-work' && (
+                  <Badge
+                    variant="secondary"
+                    className="shrink-0 gap-1 px-1.5 py-0 h-5 text-[10px] font-medium"
+                  >
+                    <PlusIcon className="size-2.5" />
+                    Addendum
+                  </Badge>
+                )}
+              </div>
               {canOpenProfile
                 ? (
                     <button
