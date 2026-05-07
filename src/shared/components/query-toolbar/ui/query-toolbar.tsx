@@ -2,9 +2,10 @@
 
 import type { ReactNode } from 'react'
 
+import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
 import type { FilterDefinition, FilterValue, PaginatedQueryResult } from '@/shared/dal/client/query/types'
 
-import { SlidersHorizontal, XIcon } from 'lucide-react'
+import { Columns3Icon, SlidersHorizontal, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 
@@ -16,6 +17,7 @@ import { filterRendererRegistry } from '@/shared/components/query-toolbar/lib/fi
 import { formatChipValue } from '@/shared/components/query-toolbar/lib/format-chip-value'
 import { ToolbarInternalProvider, useToolbarInternal } from '@/shared/components/query-toolbar/lib/internal-context'
 import { Button } from '@/shared/components/ui/button'
+import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Input } from '@/shared/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
@@ -204,6 +206,136 @@ function FilterTrigger() {
         <PopoverBody />
       </PopoverContent>
     </Popover>
+  )
+}
+
+// ── ColumnsTrigger ─────────────────────────────────────────────────────────────
+
+interface ColumnsTriggerProps {
+  visibility: UseColumnVisibilityResult
+}
+
+/**
+ * Visible-columns affordance. Mirrors `<FilterTrigger>` exactly: 44×44 Sheet
+ * trigger on `<lg`, text+icon Popover on `lg+`, with active state when any
+ * column is hidden. Pair with `useColumnVisibility(tableId, columns)` so
+ * choices persist across browser sessions.
+ */
+function ColumnsTrigger({ visibility }: ColumnsTriggerProps) {
+  const { toggleableColumns, hiddenCount, setColumnVisible, resetVisibility } = visibility
+  const [open, setOpen] = useState(false)
+  const isBelowLg = useIsBelowLg()
+
+  if (toggleableColumns.length === 0) {
+    return null
+  }
+
+  const visibleLabel = hiddenCount > 0 ? `Columns · ${hiddenCount}` : 'Columns'
+  const ariaLabel = hiddenCount > 0 ? `Columns, ${hiddenCount} hidden` : 'Columns'
+  const triggerClassName = cn(
+    'h-11 w-11 lg:h-9 lg:w-auto px-0 lg:px-3 font-normal gap-1.5 touch-manipulation',
+    hiddenCount > 0 && 'border-foreground/60 text-foreground',
+  )
+
+  const triggerInner = (
+    <>
+      <span className="sr-only lg:not-sr-only">{visibleLabel}</span>
+      <Columns3Icon className="size-4 opacity-80" aria-hidden />
+    </>
+  )
+
+  if (isBelowLg) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button type="button" variant="outline" className={triggerClassName} aria-label={ariaLabel}>
+            {triggerInner}
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="flex max-h-[85svh] flex-col gap-0 p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Toggle columns</SheetTitle>
+          </SheetHeader>
+          <SheetDragHandle />
+          <ColumnsBody
+            toggleableColumns={toggleableColumns}
+            hiddenCount={hiddenCount}
+            onToggle={setColumnVisible}
+            onReset={resetVisibility}
+          />
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className={triggerClassName} aria-label={ariaLabel}>
+          {triggerInner}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-0">
+        <ColumnsBody
+          toggleableColumns={toggleableColumns}
+          hiddenCount={hiddenCount}
+          onToggle={setColumnVisible}
+          onReset={resetVisibility}
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+interface ColumnsBodyProps {
+  toggleableColumns: UseColumnVisibilityResult['toggleableColumns']
+  hiddenCount: number
+  onToggle: (id: string, visible: boolean) => void
+  onReset: () => void
+}
+
+function ColumnsBody({ toggleableColumns, hiddenCount, onToggle, onReset }: ColumnsBodyProps) {
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between border-b border-foreground/10 px-4 py-2.5">
+        <span className="text-xs font-semibold tracking-wide text-foreground">
+          Columns
+        </span>
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={onReset}
+            className={cn(
+              'rounded text-xs text-muted-foreground transition-colors',
+              'hover:text-foreground',
+              'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2',
+            )}
+          >
+            Reset
+          </button>
+        )}
+      </div>
+      <ul className="flex flex-col py-1">
+        {toggleableColumns.map(col => (
+          <li key={col.id}>
+            <label
+              className={cn(
+                'flex items-center gap-2.5 px-4 py-2 text-sm transition-colors',
+                col.locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-foreground/5',
+              )}
+            >
+              <Checkbox
+                checked={col.visible}
+                disabled={col.locked}
+                onCheckedChange={checked => onToggle(col.id, checked === true)}
+                aria-label={`Toggle ${col.displayName}`}
+              />
+              <span className="flex-1 text-foreground">{col.displayName}</span>
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -640,20 +772,23 @@ function LiveStatus() {
 
 interface StandardProps {
   searchPlaceholder?: string
+  /** When provided, `<ColumnsTrigger>` is auto-injected next to filters. */
+  visibility?: UseColumnVisibilityResult
 }
 
 /**
  * Canonical records-page composition: Bar with Search + FilterTrigger +
- * PageSize, followed by ChipRail and LiveStatus. Use this for any
- * records-style table; reach for the atomic slots only when a layout
- * deviates (split bar, extra slot, custom slot order).
+ * (optional) ColumnsTrigger + PageSize, followed by ChipRail and LiveStatus.
+ * Use this for any records-style table; reach for the atomic slots only when
+ * a layout deviates (split bar, extra slot, custom slot order).
  */
-function Standard({ searchPlaceholder }: StandardProps) {
+function Standard({ searchPlaceholder, visibility }: StandardProps) {
   return (
     <>
       <Bar>
         <Search placeholder={searchPlaceholder} />
         <FilterTrigger />
+        {visibility && <ColumnsTrigger visibility={visibility} />}
         <PageSize />
       </Bar>
       <ChipRail />
@@ -668,6 +803,7 @@ export const QueryToolbar = Object.assign(Root, {
   Bar,
   Search,
   FilterTrigger,
+  ColumnsTrigger,
   PageSize,
   ChipRail,
   LiveStatus,

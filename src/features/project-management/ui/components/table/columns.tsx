@@ -37,6 +37,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
     {
       accessorKey: 'city',
       header: ({ column }) => <SortableHeader column={column} label="Location" />,
+      meta: { displayName: 'Location' },
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground truncate max-w-40 block">
           {row.original.state
@@ -48,6 +49,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
     {
       accessorKey: 'isPublic',
       header: ({ column }) => <SortableHeader column={column} label="Visibility" />,
+      meta: { displayName: 'Visibility' },
       cell: ({ row }) => (
         <Badge
           className={cn(
@@ -64,12 +66,14 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
     {
       accessorKey: 'completedAt',
       header: ({ column }) => <SortableHeader column={column} label="Completed" />,
+      meta: { displayName: 'Completed' },
       cell: ({ row }) => <DateCell dateString={row.original.completedAt} />,
       sortingFn: 'datetime',
     },
     {
       accessorKey: 'createdAt',
       header: ({ column }) => <SortableHeader column={column} label="Created" />,
+      meta: { displayName: 'Created' },
       cell: ({ row }) => <DateCell dateString={row.original.createdAt} />,
       sortingFn: 'datetime',
     },

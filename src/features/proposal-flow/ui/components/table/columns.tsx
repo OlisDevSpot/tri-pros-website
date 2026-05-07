@@ -83,6 +83,7 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
     {
       id: 'price',
       header: ({ column }) => <SortableHeader column={column} label="Price" />,
+      meta: { displayName: 'Price' },
       cell: ({ row }) => {
         const finalTcp = computeFinalTcp(row.original.fundingJSON.data)
         return (
@@ -95,6 +96,7 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
     {
       accessorKey: 'status',
       header: 'Status',
+      meta: { displayName: 'Status' },
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
         return (
@@ -110,6 +112,7 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
     {
       accessorKey: 'createdAt',
       header: ({ column }) => <SortableHeader column={column} label="Created" />,
+      meta: { displayName: 'Created' },
       cell: ({ row, table }) => {
         const meta = table.options.meta as ProposalTableMeta | undefined
         const { relative, dayAtTime } = formatDateCell(row.original.createdAt)
@@ -137,12 +140,14 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
     {
       accessorKey: 'sentAt',
       header: ({ column }) => <SortableHeader column={column} label="Sent" />,
+      meta: { displayName: 'Sent' },
       cell: ({ row }) => <DateCell dateString={row.original.sentAt} />,
       sortingFn: 'datetime',
     },
     {
       accessorKey: 'viewCount',
       header: ({ column }) => <SortableHeader column={column} label="Seen" icon={EyeIcon} />,
+      meta: { displayName: 'Seen' },
       cell: ({ row }) => {
         const views = row.original.viewCount
         const lastViewed = row.original.lastViewedAt

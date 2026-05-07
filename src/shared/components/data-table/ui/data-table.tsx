@@ -80,6 +80,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   onFilteredDataChange,
   serverPagination,
   serverSorting,
+  columnVisibility: controlledColumnVisibility,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
@@ -168,7 +169,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
 
   // -- Column visibility ----------------------------------------------------
 
-  const columnVisibility = useMemo<VisibilityState>(() => {
+  const fallbackColumnVisibility = useMemo<VisibilityState>(() => {
     const visibility: VisibilityState = {}
     for (const col of columns) {
       const key = 'accessorKey' in col ? col.accessorKey as string : undefined
@@ -178,6 +179,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
     return visibility
   }, [columns])
+
+  const columnVisibility = controlledColumnVisibility ?? fallbackColumnVisibility
 
   // -- Time-preset filter machinery -----------------------------------------
 

@@ -48,6 +48,7 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
     {
       accessorKey: 'meetingOutcome',
       header: 'Outcome',
+      meta: { displayName: 'Outcome' },
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
         return (
@@ -69,6 +70,7 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
     {
       accessorKey: 'ownerName',
       header: 'Rep',
+      meta: { displayName: 'Rep' },
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
         // Owner + co-owner come from the table query (joined via the
@@ -106,6 +108,7 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
     {
       accessorKey: 'scheduledFor',
       header: ({ column }) => <SortableHeader column={column} label="Scheduled For" />,
+      meta: { displayName: 'Scheduled For' },
       cell: ({ row, table }) => {
         const meta = table.options.meta as MeetingTableMeta | undefined
         const dateStr = row.original.scheduledFor

@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
@@ -69,6 +70,8 @@ export function CustomersTable() {
     [],
   )
 
+  const visibility = useColumnVisibility('customers', columns)
+
   const meta = useMemo(
     () => ({
       customerActions: () => actions,
@@ -86,7 +89,7 @@ export function CustomersTable() {
         header={<RecordsPageHeader title="Customers" pagination={pagination} />}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="customers">
-            <QueryToolbar.Standard searchPlaceholder="Search by name or email…" />
+            <QueryToolbar.Standard searchPlaceholder="Search by name or email…" visibility={visibility} />
           </QueryToolbar>
         )}
         table={(
@@ -100,6 +103,7 @@ export function CustomersTable() {
             onRowClick={row => handleViewProfile(row.id)}
             serverPagination={toDataTablePagination(pagination)}
             serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            columnVisibility={visibility.columnVisibility}
           />
         )}
       />

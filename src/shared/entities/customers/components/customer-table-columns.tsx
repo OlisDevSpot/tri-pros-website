@@ -66,6 +66,7 @@ export function buildCustomerColumns<T extends CustomerTableRowBase>(
     columns.push({
       id: 'leadSourceName',
       header: ({ column }) => <SortableHeader column={column} label="Source" />,
+      meta: { displayName: 'Source' },
       size: 160,
       accessorFn: (row) => {
         const r = row as unknown as CustomerTableRowWithSource
@@ -93,6 +94,7 @@ export function buildCustomerColumns<T extends CustomerTableRowBase>(
   columns.push({
     accessorKey: 'pipeline',
     header: ({ column }) => <SortableHeader column={column} label="Pipeline" />,
+    meta: { displayName: 'Pipeline' },
     size: 120,
     cell: ({ row }) => <CustomerPipelineBadge pipeline={row.original.pipeline} />,
   })
@@ -100,6 +102,7 @@ export function buildCustomerColumns<T extends CustomerTableRowBase>(
   columns.push({
     accessorKey: 'createdAt',
     header: ({ column }) => <SortableHeader column={column} label="Created" />,
+    meta: { displayName: 'Created' },
     size: 180,
     cell: ({ row, table }) => {
       const { relative, dayAtTime } = formatDateCell(row.original.createdAt)

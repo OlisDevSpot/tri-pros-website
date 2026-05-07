@@ -11,6 +11,7 @@ import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/
 import { PROPOSAL_FILTER_CONFIG } from '@/features/proposal-flow/constants/proposal-table-filter-config'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
@@ -39,6 +40,7 @@ export function PastProposalsTable() {
   const { updateProposal } = useProposalActions()
   const { open: openModal, setModal } = useModalStore()
   const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
+  const visibility = useColumnVisibility('proposals', columns)
 
   const pagination = usePaginatedQuery<Record<string, never>, ProposalRow>(
     trpc.proposalsRouter.crud.list.queryOptions,
@@ -143,7 +145,7 @@ export function PastProposalsTable() {
         header={<RecordsPageHeader title="Proposals" pagination={pagination} />}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="proposals">
-            <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" />
+            <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" visibility={visibility} />
           </QueryToolbar>
         )}
         table={(
@@ -156,6 +158,7 @@ export function PastProposalsTable() {
             rowDataAttribute="data-proposal-row"
             serverPagination={toDataTablePagination(pagination)}
             serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            columnVisibility={visibility.columnVisibility}
           />
         )}
       />

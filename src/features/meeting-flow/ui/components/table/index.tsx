@@ -11,6 +11,7 @@ import { MEETING_FILTER_CONFIG } from '@/features/meeting-flow/constants/meeting
 import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-class'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
@@ -33,6 +34,7 @@ export function PastMeetingsTable() {
   const ability = useAbility()
   const { updateOutcome, updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
+  const visibility = useColumnVisibility('past-meetings', columns)
 
   // Dialog state
   const [assignRepDialog, setAssignRepDialog] = useState<{ meetingId: string } | null>(null)
@@ -92,7 +94,7 @@ export function PastMeetingsTable() {
         header={<RecordsPageHeader title="Meetings" pagination={pagination} />}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="meetings">
-            <QueryToolbar.Standard searchPlaceholder="Search by customer or type…" />
+            <QueryToolbar.Standard searchPlaceholder="Search by customer or type…" visibility={visibility} />
           </QueryToolbar>
         )}
         table={(
@@ -111,6 +113,7 @@ export function PastMeetingsTable() {
             }}
             serverPagination={toDataTablePagination(pagination)}
             serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            columnVisibility={visibility.columnVisibility}
           />
         )}
       />

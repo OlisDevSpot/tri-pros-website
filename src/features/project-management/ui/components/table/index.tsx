@@ -10,6 +10,7 @@ import { PROJECT_FILTER_CONFIG } from '@/features/project-management/constants/p
 import { ProjectDetailSheet } from '@/features/project-management/ui/components/project-detail-sheet'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
@@ -37,6 +38,7 @@ export function PortfolioProjectsTable() {
     title: 'Delete project',
     message: 'This will permanently delete this project and all its media. This cannot be undone.',
   })
+  const visibility = useColumnVisibility('projects', columns)
 
   const pagination = usePaginatedQuery<Record<string, never>, ProjectRow>(
     trpc.projectsRouter.crud.list.queryOptions,
@@ -80,7 +82,7 @@ export function PortfolioProjectsTable() {
         )}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="projects">
-            <QueryToolbar.Standard searchPlaceholder="Search by title or city…" />
+            <QueryToolbar.Standard searchPlaceholder="Search by title or city…" visibility={visibility} />
           </QueryToolbar>
         )}
         table={(
@@ -94,6 +96,7 @@ export function PortfolioProjectsTable() {
             onRowClick={handleRowClick}
             serverPagination={toDataTablePagination(pagination)}
             serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            columnVisibility={visibility.columnVisibility}
           />
         )}
       />
