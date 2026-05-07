@@ -1,55 +1,120 @@
 'use client'
 
 import type { ProjectRow, ProjectTableMeta } from './columns'
-import type { DataTableFilterConfig, DataTableMultiSelectFilter } from '@/shared/components/data-table/types'
 
-import { useMemo } from 'react'
+import { PlusIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useMemo, useState } from 'react'
 
-import { portfolioTableFilters } from '@/features/project-management/constants/table-filter-config'
+import { PROJECT_FILTER_CONFIG, PROJECT_PAGE_SIZE_OPTIONS } from '@/features/project-management/constants/project-table-filter-config'
+import { ProjectDetailSheet } from '@/features/project-management/ui/components/project-detail-sheet'
+import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
+import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { RecordsPageHeader } from '@/shared/components/records-page-header'
+import { RecordsPageShell } from '@/shared/components/records-page-shell'
+import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
+import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
+import { useProjectActions } from '@/shared/entities/projects/hooks/use-project-actions'
+import { useConfirm } from '@/shared/hooks/use-confirm'
+import { useTRPC } from '@/trpc/helpers'
 
 import { getColumns } from './columns'
 
-const defaultSort = [{ id: 'createdAt', desc: true }]
+const columns = getColumns()
 
-interface Props {
-  data: ProjectRow[]
-  tradeFilter?: DataTableMultiSelectFilter
-  onFilteredCountChange?: (count: number) => void
-  onRowClick?: (row: ProjectRow) => void
-}
+export function PortfolioProjectsTable() {
+  const trpc = useTRPC()
+  const router = useRouter()
+  const { deleteProject } = useProjectActions()
+  const [selectedProject, setSelectedProject] = useState<ProjectRow | null>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [DeleteConfirmDialog, confirmDelete] = useConfirm({
+    title: 'Delete project',
+    message: 'This will permanently delete this project and all its media. This cannot be undone.',
+  })
 
-export function PortfolioProjectsTable({ data, tradeFilter, onFilteredCountChange, onRowClick }: Props) {
-  const { actions: sharedActions, DeleteConfirmDialog } = useProjectActionConfigs<ProjectRow>()
+  const pagination = usePaginatedQuery<Record<string, never>, ProjectRow>(
+    trpc.projectsRouter.crud.list.queryOptions,
+    {},
+    {
+      paramPrefix: 'pj',
+      pageSize: 20,
+      pageSizeOptions: PROJECT_PAGE_SIZE_OPTIONS,
+      filters: PROJECT_FILTER_CONFIG,
+    },
+  )
 
-  const meta: ProjectTableMeta = {
+  const handleRowClick = useCallback((project: ProjectRow) => {
+    setSelectedProject(project)
+    setIsSheetOpen(true)
+  }, [])
+
+  const { actions: sharedActions, DeleteConfirmDialog: ActionDeleteDialog } = useProjectActionConfigs<ProjectRow>()
+
+  const meta: ProjectTableMeta = useMemo(() => ({
     projectActions: () => sharedActions,
-  }
-
-  const columns = useMemo(() => getColumns(), [])
-
-  const filterConfig = useMemo<DataTableFilterConfig[]>(() => {
-    if (!tradeFilter) {
-      return portfolioTableFilters
-    }
-    return [...portfolioTableFilters, tradeFilter]
-  }, [tradeFilter])
+  }), [sharedActions])
 
   return (
     <>
+      <ActionDeleteDialog />
       <DeleteConfirmDialog />
-      <DataTable
-        tableId="projects"
-        data={data}
-        columns={columns}
-        meta={meta}
-        filterConfig={filterConfig}
-        defaultSort={defaultSort}
-        entityName="project"
-        rowDataAttribute="data-project-row"
-        onFilteredCountChange={onFilteredCountChange}
-        onRowClick={onRowClick}
+
+      <RecordsPageShell
+        header={(
+          <RecordsPageHeader
+            title="Projects"
+            pagination={pagination}
+            actions={(
+              <Button size="sm" onClick={() => router.push(ROOTS.dashboard.projects.new())}>
+                <PlusIcon className="mr-2 h-4 w-4" />
+                New Project
+              </Button>
+            )}
+          />
+        )}
+        toolbar={(
+          <QueryToolbar pagination={pagination} entityName="projects">
+            <QueryToolbar.Bar>
+              <QueryToolbar.Search placeholder="Search by title or city…" />
+              <QueryToolbar.FilterTrigger />
+              <QueryToolbar.PageSize />
+            </QueryToolbar.Bar>
+            <QueryToolbar.ChipRail />
+            <QueryToolbar.LiveStatus />
+          </QueryToolbar>
+        )}
+        table={(
+          <DataTable
+            tableId="projects"
+            data={pagination.rows}
+            columns={columns}
+            meta={meta}
+            entityName="project"
+            rowDataAttribute="data-project-row"
+            onRowClick={handleRowClick}
+            serverPagination={toDataTablePagination(pagination)}
+            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          />
+        )}
+      />
+
+      <ProjectDetailSheet
+        project={selectedProject}
+        isOpen={isSheetOpen}
+        close={() => setIsSheetOpen(false)}
+        onDelete={selectedProject
+          ? async () => {
+            const ok = await confirmDelete()
+            if (ok) {
+              deleteProject.mutate({ id: selectedProject.id })
+            }
+          }
+          : undefined}
       />
     </>
   )

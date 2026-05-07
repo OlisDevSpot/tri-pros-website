@@ -10,9 +10,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { cn } from '@/shared/lib/utils'
 
-export type ProjectRow = inferRouterOutputs<AppRouter>['projectsRouter']['crud']['getAll'][number] & {
-  tradeNames: string[]
-}
+export type ProjectRow = inferRouterOutputs<AppRouter>['projectsRouter']['crud']['list']['rows'][number]
 
 export interface ProjectTableMeta {
   projectActions: (row: ProjectRow) => EntityActionConfig<ProjectRow>[]
@@ -57,7 +55,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
     },
     {
       accessorKey: 'city',
-      header: 'Location',
+      header: ({ column }) => <SortableHeader column={column} label="Location" />,
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground truncate max-w-40 block">
           {row.original.state
@@ -68,7 +66,7 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
     },
     {
       accessorKey: 'isPublic',
-      header: 'Status',
+      header: ({ column }) => <SortableHeader column={column} label="Visibility" />,
       cell: ({ row }) => (
         <Badge
           className={cn(
@@ -81,13 +79,10 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
           {row.original.isPublic ? 'Public' : 'Draft'}
         </Badge>
       ),
-      filterFn: (row, _columnId, filterValue) => {
-        return String(row.original.isPublic) === filterValue
-      },
     },
     {
       accessorKey: 'completedAt',
-      header: 'Completed',
+      header: ({ column }) => <SortableHeader column={column} label="Completed" />,
       cell: ({ row }) => <DateCell dateString={row.original.completedAt} />,
       sortingFn: 'datetime',
     },
@@ -96,20 +91,6 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
       header: ({ column }) => <SortableHeader column={column} label="Created" />,
       cell: ({ row }) => <DateCell dateString={row.original.createdAt} />,
       sortingFn: 'datetime',
-    },
-    {
-      accessorKey: 'tradeNames',
-      header: () => null,
-      cell: () => null,
-      enableHiding: true,
-      filterFn: (row, _columnId, filterValue: string[]) => {
-        if (!filterValue || filterValue.length === 0) {
-          return true
-        }
-        const rowTrades = row.original.tradeNames
-        return filterValue.some(trade => rowTrades.includes(trade))
-      },
-      meta: { hidden: true },
     },
   ]
 }

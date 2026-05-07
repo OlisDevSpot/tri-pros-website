@@ -2,12 +2,15 @@
 
 import type { ProjectRow } from './table/columns'
 
+import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { useMemo } from 'react'
 import { BaseSheet } from '@/shared/components/dialogs/sheets/base-sheet'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { cn } from '@/shared/lib/utils'
+import { useTRPC } from '@/trpc/helpers'
 
 interface ProjectDetailSheetProps {
   project: ProjectRow | null
@@ -18,6 +21,38 @@ interface ProjectDetailSheetProps {
 
 export function ProjectDetailSheet({ project, isOpen, close, onDelete }: ProjectDetailSheetProps) {
   const router = useRouter()
+  const trpc = useTRPC()
+
+  const { data: allTrades = [] } = useQuery({
+    ...trpc.notionRouter.trades.getAll.queryOptions(),
+    enabled: isOpen && !!project,
+  })
+  const { data: allScopes = [] } = useQuery({
+    ...trpc.notionRouter.scopes.getAll.queryOptions(),
+    enabled: isOpen && !!project,
+  })
+
+  const tradeNames = useMemo(() => {
+    if (!project || project.scopeIds.length === 0 || allScopes.length === 0 || allTrades.length === 0) {
+      return [] as string[]
+    }
+    const scopeToTrade = new Map<string, string>()
+    for (const scope of allScopes) {
+      scopeToTrade.set(scope.id, scope.relatedTrade)
+    }
+    const tradeNameMap = new Map<string, string>()
+    for (const trade of allTrades) {
+      tradeNameMap.set(trade.id, trade.name)
+    }
+    const tradeIds = new Set<string>()
+    for (const scopeId of project.scopeIds) {
+      const tradeId = scopeToTrade.get(scopeId)
+      if (tradeId) {
+        tradeIds.add(tradeId)
+      }
+    }
+    return [...tradeIds].map(id => tradeNameMap.get(id)).filter(Boolean) as string[]
+  }, [project, allScopes, allTrades])
 
   const location = project
     ? (project.state ? `${project.city}, ${project.state}` : project.city)
@@ -62,11 +97,11 @@ export function ProjectDetailSheet({ project, isOpen, close, onDelete }: Project
           )}
 
           {/* Trade names */}
-          {project.tradeNames.length > 0 && (
+          {tradeNames.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Trades</p>
               <div className="flex flex-wrap gap-1.5">
-                {project.tradeNames.map(name => (
+                {tradeNames.map(name => (
                   <Badge key={name} variant="outline" className="text-xs">
                     {name}
                   </Badge>

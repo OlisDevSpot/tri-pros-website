@@ -3,7 +3,6 @@
 import { motion } from 'motion/react'
 
 import { PastMeetingsTable } from '@/features/meeting-flow/ui/components/table'
-import { Card, CardContent } from '@/shared/components/ui/card'
 
 export function PastMeetingsView() {
   return (
@@ -12,13 +11,11 @@ export function PastMeetingsView() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 30 }}
       transition={{ delay: 0.25, duration: 0.25 }}
-      className="w-full h-full flex flex-col"
+      className="w-full h-full flex flex-col overflow-hidden"
     >
-      <Card className="h-full w-full flex flex-col lg:p-6 border-0 lg:border bg-transparent lg:bg-card">
-        <CardContent className="grow min-h-0 overflow-hidden px-0">
-          <PastMeetingsTable />
-        </CardContent>
-      </Card>
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <PastMeetingsTable />
+      </div>
     </motion.div>
   )
 }

@@ -1,1 +1,1 @@
-export { MeetingsView } from './meetings-view'
+export { PastMeetingsView } from './past-meetings-view'

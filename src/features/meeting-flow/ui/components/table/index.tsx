@@ -88,7 +88,7 @@ export function PastMeetingsTable() {
       <DeleteConfirmDialog />
 
       <RecordsPageShell
-        header={<RecordsPageHeader title="Past Meetings" pagination={pagination} />}
+        header={<RecordsPageHeader title="Meetings" pagination={pagination} />}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="meetings">
             <QueryToolbar.Bar>

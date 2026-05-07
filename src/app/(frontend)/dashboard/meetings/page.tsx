@@ -1,5 +1,9 @@
-import { redirect } from 'next/navigation'
+import { PastMeetingsView } from '@/features/meeting-flow/ui/views'
+import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 
-export default function MeetingsPage() {
-  redirect('/dashboard/schedule')
+export const dynamic = 'force-dynamic'
+
+export default async function MeetingsPage() {
+  await protectDashboardPage()
+  return <PastMeetingsView />
 }
