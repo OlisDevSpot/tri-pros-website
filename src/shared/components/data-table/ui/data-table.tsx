@@ -137,35 +137,46 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
   }, [])
 
-  // -- Persist column sizes (debounced) -------------------------------------
-
+  // -- Persist column sizes -------------------------------------------------
+  // Write synchronously on every change. The previous debounced version
+  // dropped writes when the user reloaded or navigated away within 300ms of
+  // the last drag tick (cleanup cancelled the pending timer), and silently
+  // skipped persisting an "all-reset" state because of an empty-map guard.
+  // localStorage.setItem on a tiny object is ~sub-millisecond — running it
+  // per drag tick is fine and removes both failure modes.
   useEffect(() => {
-    if (!tableId || Object.keys(columnSizing).length === 0) {
+    if (!tableId) {
       return
     }
-    const timer = setTimeout(() => {
-      try {
+    try {
+      if (Object.keys(columnSizing).length === 0) {
+        localStorage.removeItem(`${COL_SIZE_KEY}:${tableId}`)
+      }
+      else {
         localStorage.setItem(`${COL_SIZE_KEY}:${tableId}`, JSON.stringify(columnSizing))
       }
-      catch { /* localStorage unavailable */ }
-    }, 300)
-    return () => clearTimeout(timer)
+    }
+    catch { /* localStorage unavailable */ }
   }, [tableId, columnSizing])
 
   // -- Persist frozen state -------------------------------------------------
+  // Side-effect lives in an effect, not inside the setState updater — React
+  // may call setState updaters multiple times (StrictMode, concurrent
+  // renders), and writing to localStorage from there would fire spurious
+  // duplicate writes.
+  useEffect(() => {
+    if (!tableId) {
+      return
+    }
+    try {
+      localStorage.setItem(`${FROZEN_KEY}:${tableId}`, String(isFrozen))
+    }
+    catch { /* localStorage unavailable */ }
+  }, [tableId, isFrozen])
 
   const toggleFrozen = useCallback(() => {
-    setIsFrozen((prev) => {
-      const next = !prev
-      if (tableId) {
-        try {
-          localStorage.setItem(`${FROZEN_KEY}:${tableId}`, String(next))
-        }
-        catch { /* localStorage unavailable */ }
-      }
-      return next
-    })
-  }, [tableId])
+    setIsFrozen(prev => !prev)
+  }, [])
 
   // -- Column visibility ----------------------------------------------------
 
