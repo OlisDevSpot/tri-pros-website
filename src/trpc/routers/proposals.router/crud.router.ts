@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server'
 import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 import { ROOTS } from '@/shared/config/roots'
-import { proposalStatuses } from '@/shared/constants/enums'
+import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
 import { createProposal, deleteProposal, getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
@@ -79,6 +79,7 @@ export const crudRouter = createTRPCRouter({
   list: agentProcedure
     .input(paginatedQueryInput({
       status: z.array(z.enum(proposalStatuses)).optional(),
+      kind: z.array(z.enum(proposalKinds)).optional(),
       createdAt: dateRangeSchema.optional(),
       sentAt: dateRangeSchema.optional(),
       pipeline: z.enum(pipelines).optional(),
@@ -115,6 +116,7 @@ export const crudRouter = createTRPCRouter({
 
       const filterWhere = buildFilterWhere(input.filters, {
         status: v => (v.length > 0 ? inArray(proposals.status, v) : undefined),
+        kind: v => (v.length > 0 ? inArray(proposals.kind, v) : undefined),
         createdAt: v => and(
           v.from ? gte(proposals.createdAt, v.from) : undefined,
           v.to ? lte(proposals.createdAt, v.to) : undefined,
