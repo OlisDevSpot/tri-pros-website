@@ -6,15 +6,16 @@ import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 
-import { CUSTOMER_FILTER_CONFIG, CUSTOMER_PAGE_SIZE_OPTIONS } from '@/features/lead-sources-admin/constants/customer-filter-config'
-import { buildCustomerColumns } from '@/features/lead-sources-admin/ui/components/customer-table-columns'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { buildCustomerColumns } from '@/shared/entities/customers/components/customer-table-columns'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
+import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
@@ -36,7 +37,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     {
       paramPrefix: 'src',
       pageSize: 20,
-      pageSizeOptions: CUSTOMER_PAGE_SIZE_OPTIONS,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: CUSTOMER_FILTER_CONFIG,
     },
   )

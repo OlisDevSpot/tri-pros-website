@@ -75,7 +75,7 @@ export function getSidebarNav(ability: AppAbility): SidebarNavConfig {
       href: ROOTS.dashboard.customers.root(),
       icon: UsersRoundIcon,
       label: 'Customers',
-      enabled: false,
+      enabled: ability.can('read', 'Customer'),
     },
     {
       href: ROOTS.dashboard.meetings.root(),

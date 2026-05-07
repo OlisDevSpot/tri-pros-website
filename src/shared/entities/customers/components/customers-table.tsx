@@ -10,6 +10,8 @@ import { toDataTablePagination } from '@/shared/components/data-table/lib/to-dat
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { RecordsPageHeader } from '@/shared/components/records-page-header'
+import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
@@ -20,18 +22,18 @@ import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-type AllCustomerRow = AppRouterOutputs['customersRouter']['list']['rows'][number]
+type CustomerRow = AppRouterOutputs['customersRouter']['list']['rows'][number]
 
-export function AllCustomersSection() {
+export function CustomersTable() {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<Record<string, never>, AllCustomerRow>(
+  const pagination = usePaginatedQuery<Record<string, never>, CustomerRow>(
     trpc.customersRouter.list.queryOptions,
     {},
     {
-      paramPrefix: 'all',
+      paramPrefix: 'pc',
       pageSize: 20,
       pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: CUSTOMER_FILTER_CONFIG,
@@ -58,12 +60,12 @@ export function AllCustomersSection() {
     openModal()
   }, [setModal, openModal])
 
-  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<AllCustomerRow>({
+  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerRow>({
     onView: entity => handleViewProfile(entity.id),
   })
 
   const columns = useMemo(
-    () => buildCustomerColumns<AllCustomerRow>({ includeSource: true }),
+    () => buildCustomerColumns<CustomerRow>({ includeSource: true }),
     [],
   )
 
@@ -77,40 +79,30 @@ export function AllCustomersSection() {
   )
 
   return (
-    <section aria-label="All customers" className="flex min-h-0 flex-1 flex-col gap-3">
+    <>
       <DeleteConfirmDialog />
 
-      <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            All customers
-          </h3>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
-          </span>
-        </div>
-
-        <QueryToolbar pagination={pagination} entityName="customers">
-          <QueryToolbar.Bar>
-            <QueryToolbar.Search placeholder="Filter by name or email…" />
-            <QueryToolbar.FilterTrigger />
-            <QueryToolbar.PageSize />
-          </QueryToolbar.Bar>
-          <QueryToolbar.ChipRail />
-          <QueryToolbar.LiveStatus />
-        </QueryToolbar>
-      </div>
-
-      <DataTable
-        tableId="all-customers"
-        columns={columns}
-        data={pagination.rows}
-        meta={meta}
-        entityName="customer"
-        onRowClick={row => handleViewProfile(row.id)}
-        serverPagination={toDataTablePagination(pagination)}
-        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+      <RecordsPageShell
+        header={<RecordsPageHeader title="Customers" pagination={pagination} />}
+        toolbar={(
+          <QueryToolbar pagination={pagination} entityName="customers">
+            <QueryToolbar.Standard searchPlaceholder="Search by name or email…" />
+          </QueryToolbar>
+        )}
+        table={(
+          <DataTable
+            tableId="customers"
+            data={pagination.rows}
+            columns={columns}
+            meta={meta}
+            entityName="customer"
+            rowDataAttribute="data-customer-row"
+            onRowClick={row => handleViewProfile(row.id)}
+            serverPagination={toDataTablePagination(pagination)}
+            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          />
+        )}
       />
-    </section>
+    </>
   )
 }
