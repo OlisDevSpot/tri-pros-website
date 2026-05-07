@@ -44,6 +44,15 @@ export const PROPOSAL_FILTER_CONFIG = [
     })),
   },
   {
+    id: 'kind',
+    type: 'multi-select',
+    label: 'Kind',
+    options: [
+      { label: 'Initial sale', value: 'initial-sale' },
+      { label: 'Additional work', value: 'additional-work' },
+    ],
+  },
+  {
     id: 'createdAt',
     type: 'date-range',
     label: 'Created',
