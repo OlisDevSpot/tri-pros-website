@@ -11,7 +11,7 @@ import { SortableHeader } from '@/shared/components/data-table/ui/sortable-heade
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
+import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { proposalStatuses } from '@/shared/constants/enums'
 import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
@@ -43,19 +43,14 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
               <div className="flex items-center gap-1.5 min-w-0">
                 <p className="font-medium leading-none truncate">{row.original.label}</p>
                 {row.original.kind === 'additional-work' && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        className="inline-flex shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-inset ring-border/60 size-3.5"
-                        aria-label="Addendum"
-                      >
-                        <PlusIcon className="size-2.5" strokeWidth={2.5} />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
-                      Addendum — additional work on an existing project
-                    </TooltipContent>
-                  </Tooltip>
+                  <HybridPopoverTooltip content="Addendum">
+                    <span
+                      className="inline-flex shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-inset ring-border/60 size-3.5"
+                      aria-label="Addendum"
+                    >
+                      <PlusIcon className="size-2.5" strokeWidth={2.5} />
+                    </span>
+                  </HybridPopoverTooltip>
                 )}
               </div>
               {canOpenProfile
