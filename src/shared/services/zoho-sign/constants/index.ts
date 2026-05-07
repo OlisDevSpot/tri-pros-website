@@ -88,3 +88,6 @@ export const SOW_FIELD_MAX_CHARS = 2000
  * inline; AWD has no second field, so the threshold drops to 2000.
  */
 export const SOW_INLINE_MAX_CHARS = 2000
+
+/** Header name Zoho Sign sends the HMAC-SHA256 digest in (per their Developer Settings UI). */
+export const WEBHOOK_SIGNATURE_HEADER = 'x-zs-webhook-signature'

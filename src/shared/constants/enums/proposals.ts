@@ -27,3 +27,6 @@ export type ValidThroughTimeframe = (typeof validThroughTimeframes)[number]
 
 export const viewSources = ['email', 'sms', 'direct', 'unknown'] as const
 export type ViewSource = (typeof viewSources)[number]
+
+export const contractEvents = ['viewed', 'completed', 'declined'] as const
+export type ContractEvent = (typeof contractEvents)[number]

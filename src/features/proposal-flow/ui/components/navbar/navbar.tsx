@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
+import { ViewModeToggleMobile } from '@/features/proposal-flow/ui/components/proposal/view-mode-toggle'
 import { Logo } from '@/shared/components/logo'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { ROOTS } from '@/shared/config/roots'
@@ -28,7 +29,7 @@ export function ProposalPageNavbar() {
 
   const viewerRole = hasMounted && ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
   const proposalSteps = generateProposalSteps(viewerRole)
-  const backHref = hasMounted && ability.can('access', 'Dashboard') ? ROOTS.dashboard.root : '/'
+  const backHref = hasMounted && ability.can('access', 'Dashboard') ? ROOTS.dashboard.proposals.root() : '/'
 
   const { rootEl } = useScrollRoot()
   const activeSectionId = useActiveSection(proposalSteps.map(step => step.accessor), { rootEl })
@@ -67,7 +68,8 @@ export function ProposalPageNavbar() {
             ))
           )
         : (
-            <div className="h-full w-full flex items-center justify-center px-4">
+            <div className="h-full w-full flex items-center justify-center gap-2 px-4">
+              <ViewModeToggleMobile />
               <Select
                 value={activeSectionId}
                 onValueChange={(val) => {

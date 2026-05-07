@@ -6,6 +6,13 @@
 # lifecycle from dispatch → monitor → review → PR → cleanup.
 #
 # Usage:  ./scripts/dispatch.sh <command> [args]
+#
+# ─── SYNC NOTICE ──────────────────────────────────────────────────────────────
+# This script is kept in sync between:
+#   - olis-v3/nextjs/tri-pros-website/scripts/dispatch.sh   (this file)
+#   - olis-v3/nextjs/otautomations/scripts/dispatch.sh
+# Only the CONFIG block below should differ between the two copies. Any logic,
+# helper, or command change must be propagated to both files.
 # ──────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -21,8 +28,16 @@ MAX_SLOTS=3
 # GitHub Projects board IDs
 PROJECT_ID="PVT_kwHOCqZfGM4BSgDZ"
 STATUS_FIELD_ID="PVTSSF_lAHOCqZfGM4BSgDZzhAA_t4"
+STATUS_READY="9a551858"
 STATUS_IN_PROGRESS="8a3f5937"
 STATUS_IN_REVIEW="e461e967"
+
+# Neon DB branching (isolates dev DB per worktree)
+# Reads from .env so the script works without hardcoding secrets.
+NEON_API_KEY=$(grep '^NEON_API_KEY=' "${REPO_ROOT}/.env" 2>/dev/null | cut -d= -f2-)
+NEON_PROJECT_ID=$(grep '^NEON_PROJECT_ID=' "${REPO_ROOT}/.env" 2>/dev/null | cut -d= -f2-)
+NEON_DEV_BRANCH_ID="br-small-sun-afns8axo"   # "development" branch — parent for worktree forks
+NEON_API="https://console.neon.tech/api/v2"
 
 # Colors
 RED='\033[0;31m'
@@ -127,12 +142,213 @@ for i in data:
 "
 }
 
+# ── Neon DB Branch Helpers ────────────────────────────────────────────────────
+
+neon_enabled() {
+  [[ -n "${NEON_API_KEY}" && -n "${NEON_PROJECT_ID}" ]]
+}
+
+# Create a Neon branch for a worktree. Prints the connection URI.
+# Args: <issue_num>
+neon_create_branch() {
+  local issue_num="$1"
+  local branch_name="wt/issue-${issue_num}"
+
+  if ! neon_enabled; then
+    warn "Neon API key or project ID not set — skipping DB branch isolation."
+    warn "All worktrees will share DATABASE_DEV_URL. Risk of schema drift!"
+    return 1
+  fi
+
+  # Check if branch already exists (e.g. resuming a parked issue)
+  local existing
+  existing=$(curl -sf \
+    -H "Authorization: Bearer ${NEON_API_KEY}" \
+    "${NEON_API}/projects/${NEON_PROJECT_ID}/branches" \
+    | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for b in data.get('branches', []):
+    if b['name'] == '${branch_name}':
+        print(b['id'])
+        break
+" 2>/dev/null || true)
+
+  if [[ -n "$existing" ]]; then
+    log "Reusing existing Neon branch: ${branch_name} (${existing})"
+    # Get connection string for existing branch
+    local conn_uri
+    conn_uri=$(curl -sf \
+      -H "Authorization: Bearer ${NEON_API_KEY}" \
+      "${NEON_API}/projects/${NEON_PROJECT_ID}/connection_uri?branch_id=${existing}&database_name=neondb&role_name=neondb_owner&pooled=true" \
+      | python3 -c "import json,sys; print(json.load(sys.stdin).get('uri',''))" 2>/dev/null || true)
+    if [[ -n "$conn_uri" ]]; then
+      echo "$conn_uri"
+      return 0
+    fi
+    warn "Could not get connection string for existing branch — creating fresh."
+    # Delete the broken one and fall through to create
+    curl -sf -X DELETE \
+      -H "Authorization: Bearer ${NEON_API_KEY}" \
+      "${NEON_API}/projects/${NEON_PROJECT_ID}/branches/${existing}" >/dev/null 2>&1 || true
+  fi
+
+  # Create new branch forked from dev
+  local response
+  response=$(curl -sf -X POST \
+    -H "Authorization: Bearer ${NEON_API_KEY}" \
+    -H "Content-Type: application/json" \
+    -d "{\"branch\": {\"name\": \"${branch_name}\", \"parent_id\": \"${NEON_DEV_BRANCH_ID}\"}, \"endpoints\": [{\"type\": \"read_write\"}]}" \
+    "${NEON_API}/projects/${NEON_PROJECT_ID}/branches" 2>/dev/null) || {
+    warn "Failed to create Neon branch. Falling back to shared DATABASE_DEV_URL."
+    return 1
+  }
+
+  local conn_uri
+  conn_uri=$(echo "$response" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+uris = data.get('connection_uris', [])
+if uris:
+    print(uris[0].get('connection_uri', ''))
+" 2>/dev/null || true)
+
+  if [[ -z "$conn_uri" ]]; then
+    warn "Neon branch created but no connection URI returned. Falling back to shared DATABASE_DEV_URL."
+    return 1
+  fi
+
+  echo "$conn_uri"
+}
+
+# Delete a Neon branch for a worktree.
+# Args: <issue_num>
+neon_delete_branch() {
+  local issue_num="$1"
+  local branch_name="wt/issue-${issue_num}"
+
+  if ! neon_enabled; then return 0; fi
+
+  # Find the branch ID by name
+  local branch_id
+  branch_id=$(curl -sf \
+    -H "Authorization: Bearer ${NEON_API_KEY}" \
+    "${NEON_API}/projects/${NEON_PROJECT_ID}/branches" \
+    | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for b in data.get('branches', []):
+    if b['name'] == '${branch_name}':
+        print(b['id'])
+        break
+" 2>/dev/null || true)
+
+  if [[ -z "$branch_id" ]]; then
+    return 0  # Already deleted or never created
+  fi
+
+  curl -sf -X DELETE \
+    -H "Authorization: Bearer ${NEON_API_KEY}" \
+    "${NEON_API}/projects/${NEON_PROJECT_ID}/branches/${branch_id}" >/dev/null 2>&1 && \
+    log "Deleted Neon branch: ${branch_name}" || \
+    warn "Could not delete Neon branch ${branch_name} — clean up manually at console.neon.tech"
+}
+
+# List all wt/* Neon branches (for diagnostics and cleanup)
+neon_list_branches() {
+  if ! neon_enabled; then
+    error "Neon API key or project ID not set in .env"
+    return 1
+  fi
+
+  curl -sf \
+    -H "Authorization: Bearer ${NEON_API_KEY}" \
+    "${NEON_API}/projects/${NEON_PROJECT_ID}/branches" \
+    | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+wt_branches = [b for b in data.get('branches', []) if b['name'].startswith('wt/')]
+if not wt_branches:
+    print('  No worktree branches found.')
+    sys.exit(0)
+for b in wt_branches:
+    print(f\"  {b['name']:<25}  {b['id']}  created={b['created_at'][:10]}\")
+"
+}
+
+# Delete all wt/* Neon branches that don't correspond to an active dispatch slot
+neon_prune_branches() {
+  if ! neon_enabled; then
+    error "Neon API key or project ID not set in .env"
+    return 1
+  fi
+
+  DISPATCH_LOG_FOR_PY="${DISPATCH_LOG}" python3 -c "
+import json, subprocess, sys, os
+
+# Load active dispatch slots
+log_path = os.environ['DISPATCH_LOG_FOR_PY']
+try:
+    with open(log_path) as f:
+        slots = json.load(f)
+except:
+    slots = []
+active_issues = {s['issue'] for s in slots}
+
+# List Neon branches
+raw = subprocess.check_output([
+    'curl', '-sf',
+    '-H', 'Authorization: Bearer ${NEON_API_KEY}',
+    '${NEON_API}/projects/${NEON_PROJECT_ID}/branches'
+], text=True)
+branches = json.loads(raw).get('branches', [])
+wt_branches = [b for b in branches if b['name'].startswith('wt/')]
+
+if not wt_branches:
+    print('  No worktree branches to prune.')
+    sys.exit(0)
+
+orphans = []
+for b in wt_branches:
+    # Extract issue number from 'wt/issue-42'
+    try:
+        num = int(b['name'].split('-', 1)[1])
+    except:
+        num = -1
+    if num not in active_issues:
+        orphans.append(b)
+
+if not orphans:
+    print('  All worktree branches are active. Nothing to prune.')
+    sys.exit(0)
+
+print(f'  Found {len(orphans)} orphaned branch(es):')
+for b in orphans:
+    print(f'    {b[\"name\"]}  ({b[\"id\"]})')
+
+for b in orphans:
+    try:
+        subprocess.check_output([
+            'curl', '-sf', '-X', 'DELETE',
+            '-H', 'Authorization: Bearer ${NEON_API_KEY}',
+            '${NEON_API}/projects/${NEON_PROJECT_ID}/branches/' + b['id']
+        ], text=True)
+        print(f'    ✓ Deleted {b[\"name\"]}')
+    except:
+        print(f'    ✗ Failed to delete {b[\"name\"]}')
+"
+}
+
+# ── GitHub Helpers ────────────────────────────────────────────────────────────
+
 # Get the GitHub Projects item ID for an issue
 get_project_item_id() {
   local issue_num="$1"
+  local repo_owner="${REPO%/*}"
+  local repo_name="${REPO#*/}"
   gh api graphql -f query="
     {
-      repository(owner: \"OlisDevSpot\", name: \"tri-pros-website\") {
+      repository(owner: \"${repo_owner}\", name: \"${repo_name}\") {
         issue(number: ${issue_num}) {
           projectItems(first: 5) {
             nodes { id }
@@ -157,7 +373,7 @@ move_issue() {
   if [[ -z "$item_id" ]]; then
     # Issue not on board yet — add it first
     log "Adding #${issue_num} to project board..."
-    gh project item-add "${PROJECT_NUMBER}" --owner OlisDevSpot \
+    gh project item-add "${PROJECT_NUMBER}" --owner "${REPO%/*}" \
       --url "https://github.com/${REPO}/issues/${issue_num}" 2>/dev/null || {
       warn "Could not add issue #${issue_num} to board"
       return 1
@@ -189,15 +405,118 @@ json_body() {
   echo "$json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('body') or 'No body provided.')"
 }
 
+# ── Tmux Helpers ──────────────────────────────────────────────────────────────
+# tmux is OPTIONAL. These helpers no-op gracefully when tmux isn't installed,
+# and never abort the script. Hard tmux failures surface as warnings.
+
+tmux_session_name() { basename "${REPO_ROOT}"; }
+
+# Window name: "WT-<branch-without-prefix>" capped at 30 chars.
+# Example: branch "feat/8-fix-date-filter" → window "WT-8-fix-date-filter".
+# Falls back to "WT-<num>" if the slot isn't in the dispatch log yet.
+tmux_window_name() {
+  local issue_num="$1"
+  local branch
+  branch=$(dispatch_field "$issue_num" "branch" 2>/dev/null || echo "")
+  if [[ -n "$branch" ]]; then
+    echo "WT-${branch#*/}" | cut -c1-30
+  else
+    echo "WT-${issue_num}"
+  fi
+}
+
+tmux_has_session() { tmux has-session -t "=$1" 2>/dev/null; }
+
+tmux_has_window() {
+  local session="$1" window="$2"
+  tmux list-windows -t "=${session}" -F '#{window_name}' 2>/dev/null \
+    | grep -Fxq "${window}"
+}
+
+ensure_tmux_session() {
+  local session="$1"
+  if ! tmux_has_session "$session"; then
+    tmux new-session -d -s "$session" -c "${REPO_ROOT}"
+    tmux rename-window -t "${session}:0" "main" 2>/dev/null || true
+  fi
+}
+
+# Open a slot in a tmux window. Idempotent — focuses existing window if present.
+# Args: <issue_num> [no-attach]
+# When called outside tmux without no-attach, this REPLACES the current shell
+# with `tmux attach` (via exec). When called inside tmux, it selects the window.
+open_slot_in_tmux() {
+  local issue_num="$1"
+  local mode="${2:-attach}"
+
+  if ! command -v tmux >/dev/null 2>&1; then
+    error "tmux is not installed. Run: sudo apt install tmux"
+    return 1
+  fi
+
+  local wt_path port
+  wt_path=$(worktree_path "$issue_num")
+  port=$(dispatch_field "$issue_num" "port")
+
+  local session window
+  session=$(tmux_session_name)
+  window=$(tmux_window_name "$issue_num")
+
+  ensure_tmux_session "$session"
+
+  if tmux_has_window "$session" "$window"; then
+    log "Focusing existing tmux window ${BOLD}${session}:${window}${NC}"
+    if [[ -n "${TMUX:-}" ]]; then
+      tmux select-window -t "${session}:${window}" 2>/dev/null || true
+    fi
+  else
+    log "Creating tmux window ${BOLD}${session}:${window}${NC} (claude + dev:${port})"
+    # Window: starts in worktree, claude in left pane (~70%), dev server right (~30%)
+    tmux new-window -t "$session" -n "$window" -c "$wt_path"
+    tmux send-keys -t "${session}:${window}" "npx claude" C-m
+    tmux split-window -t "${session}:${window}" -h -l 30% -c "$wt_path"
+    tmux send-keys -t "${session}:${window}" "PORT=${port} pnpm dev" C-m
+    tmux select-pane -t "${session}:${window}" -L 2>/dev/null || true
+  fi
+
+  if [[ -z "${TMUX:-}" && "$mode" == "attach" ]]; then
+    log "Attaching to tmux session..."
+    exec tmux attach -t "$session" \; select-window -t "${session}:${window}"
+  fi
+}
+
+# Returns 0 if the slot has a live tmux window, 1 otherwise. Silent.
+slot_has_tmux_window() {
+  local issue_num="$1"
+  command -v tmux >/dev/null 2>&1 || return 1
+  local session window
+  session=$(tmux_session_name)
+  window=$(tmux_window_name "$issue_num")
+  tmux_has_window "$session" "$window"
+}
+
+# Close the tmux window for a slot if it exists. Used by park/cleanup.
+close_slot_tmux_window() {
+  local issue_num="$1"
+  command -v tmux >/dev/null 2>&1 || return 0
+  local session window
+  session=$(tmux_session_name)
+  window=$(tmux_window_name "$issue_num")
+  if tmux_has_window "$session" "$window"; then
+    log "Closing tmux window ${session}:${window}"
+    tmux kill-window -t "${session}:${window}" 2>/dev/null || true
+  fi
+}
+
 # ── Loop Helpers ─────────────────────────────────────────────────────────────
 
 # Find the next Ready + claude-labeled issue that isn't blocked.
 # Returns "number|title" or empty string if none found.
 find_next_ready_issue() {
-  python3 << 'PYEOF'
-import json, subprocess, sys
+  REPO_FOR_PY="${REPO}" python3 << 'PYEOF'
+import os, json, subprocess, sys
 
-REPO = "OlisDevSpot/tri-pros-website"
+REPO = os.environ["REPO_FOR_PY"]
 
 # 1. Get open issues with claude label (small, bounded set)
 try:
@@ -315,6 +634,9 @@ loop_cleanup() {
   # Delete branch (it's been pushed for the PR)
   git -C "${REPO_ROOT}" branch -D "${branch}" 2>/dev/null || true
 
+  # Delete Neon DB branch
+  neon_delete_branch "$issue_num"
+
   # Remove from dispatch log
   unlog_dispatch "$issue_num"
 }
@@ -322,10 +644,17 @@ loop_cleanup() {
 # ── Commands ──────────────────────────────────────────────────────────────────
 
 cmd_start() {
-  local issue_num="${1:-}"
+  local issue_num="" use_tmux=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --tmux) use_tmux=true; shift ;;
+      *)      issue_num="$1"; shift ;;
+    esac
+  done
 
   if [[ -z "$issue_num" ]]; then
-    error "Usage: dispatch start <issue-number>"
+    error "Usage: dispatch start <issue-number> [--tmux]"
     echo ""
     echo "Available issues:"
     gh issue list --repo "${REPO}" --state open --limit 15 \
@@ -405,6 +734,30 @@ cmd_start() {
   if [[ -f "${REPO_ROOT}/.env" ]]; then
     ln -sf "${REPO_ROOT}/.env" "${wt_path}/.env"
     log "Linked .env"
+  fi
+
+  # Step 2.5: Create isolated Neon DB branch for this worktree
+  local neon_conn_uri=""
+  if neon_enabled; then
+    log "Creating isolated Neon DB branch for issue #${issue_num}..."
+    neon_conn_uri=$(neon_create_branch "$issue_num" 2>/dev/null || true)
+    if [[ -n "$neon_conn_uri" ]]; then
+      # Write per-worktree .env.local (loaded by Next.js AFTER .env, overrides DATABASE_DEV_URL)
+      cat > "${wt_path}/.env.local" << ENVLOCAL_EOF
+# Auto-generated by dispatch — isolated Neon DB branch for issue #${issue_num}
+# This file is NOT symlinked and NOT committed. It overrides .env values.
+PORT=${port}
+DATABASE_DEV_URL=${neon_conn_uri}
+ENVLOCAL_EOF
+      success "Neon branch created — db:push:dev is safe in this worktree"
+    else
+      # Fallback: at least write PORT to .env.local
+      echo "PORT=${port}" > "${wt_path}/.env.local"
+      warn "Neon branch failed — worktree shares DATABASE_DEV_URL with main. Be careful with db:push:dev!"
+    fi
+  else
+    echo "PORT=${port}" > "${wt_path}/.env.local"
+    warn "Neon not configured — worktree shares DATABASE_DEV_URL with main."
   fi
 
   # Step 3: Install dependencies
@@ -511,6 +864,10 @@ AGENT_EOF
   echo -e "  ${DIM}Claude will auto-read DISPATCH.md for its assignment.${NC}"
   echo -e "  ${DIM}Dev server port: ${port}${NC}"
   echo ""
+
+  if [[ "$use_tmux" == "true" ]]; then
+    open_slot_in_tmux "$issue_num"
+  fi
 }
 
 cmd_status() {
@@ -550,6 +907,11 @@ for i in data:
     echo -e "  ${DIM}latest:${NC}  ${last_commit}"
     echo -e "  ${DIM}path:${NC}    ${wt_path}"
     echo -e "  ${DIM}since:${NC}   ${dispatched}"
+    if slot_has_tmux_window "$issue"; then
+      echo -e "  ${DIM}tmux:${NC}    ${GREEN}$(tmux_session_name):$(tmux_window_name "$issue")${NC} ${DIM}(live)${NC}"
+    else
+      echo -e "  ${DIM}tmux:${NC}    ${DIM}(no window)${NC}"
+    fi
     echo ""
   done
 
@@ -742,6 +1104,9 @@ cmd_park() {
   # Remove from dispatch log to free the slot
   unlog_dispatch "$issue_num"
 
+  # Close the slot's tmux window if present
+  close_slot_tmux_window "$issue_num"
+
   local remaining
   remaining=$(pyjq "print(len(data))")
 
@@ -803,8 +1168,14 @@ cmd_cleanup() {
     log "Deleted branch ${branch}"
   fi
 
+  # Delete Neon DB branch
+  neon_delete_branch "$issue_num"
+
   # Remove from log
   unlog_dispatch "$issue_num"
+
+  # Close the slot's tmux window if present
+  close_slot_tmux_window "$issue_num"
 
   local remaining
   remaining=$(pyjq "print(len(data))")
@@ -814,17 +1185,27 @@ cmd_cleanup() {
 cmd_list() {
   ensure_dispatch_dir
 
+  # Detect terminal width so titles only truncate when they actually overflow.
+  local term_cols
+  term_cols=$(tput cols 2>/dev/null || echo 100)
+  local divider_width=$(( term_cols > 80 ? 80 : term_cols - 4 ))
+  (( divider_width < 20 )) && divider_width=20
+
   echo ""
   echo -e "${BOLD}  AVAILABLE ISSUES${NC}"
-  echo -e "  $( printf '─%.0s' {1..50} )"
+  echo -e "  $( printf '─%.0s' $(seq 1 "${divider_width}") )"
   echo ""
 
   # Fetch issues and format cleanly with python3
   gh issue list --repo "${REPO}" --state open --limit 20 \
-    --json number,title,labels | python3 -c "
-import json, sys
+    --json number,title,labels | TERM_COLS="${term_cols}" python3 -c "
+import json, os, sys
 
 data = json.load(sys.stdin)
+# Prefix is '  #NNNN ' (8 chars). Reserve 2-char right margin.
+cols = int(os.environ.get('TERM_COLS', '100'))
+title_budget = max(40, cols - 8 - 2)
+
 # Group by priority
 p_order = {'P0': 0, 'P1': 1, 'P2': 2, 'P3': 3}
 
@@ -858,9 +1239,9 @@ for issue in sorted(data, key=lambda i: (
     if has_claude: tags.append(f'{green}agent{reset}')
     tag_str = '  '.join(tags)
 
-    # Truncate title to 48 chars
-    if len(title) > 48:
-        title = title[:45] + '...'
+    # Only truncate when the title would actually overflow the terminal
+    if len(title) > title_budget:
+        title = title[:title_budget - 3] + '...'
 
     print(f'  {green}#{num:<4}{reset} {bold}{title}{reset}')
     print(f'        {tag_str}')
@@ -889,30 +1270,32 @@ cmd_run() {
     exit 1
   fi
 
-  local wt_path
+  local wt_path title
   wt_path=$(worktree_path "$issue_num")
-  local title
   title=$(dispatch_field "$issue_num" "title")
-
-  local tab_title="🤖 #${issue_num} Claude"
 
   log "Launching Claude for issue #${issue_num}: ${BOLD}${title}${NC}"
   echo -e "  ${DIM}Claude will auto-load CLAUDE.local.md with your assignment.${NC}"
   echo ""
 
-  # Capture the real TTY device before backgrounding — background subshells lose /dev/tty.
-  local my_tty
-  my_tty=$(tty)
-
-  # Keep the shell alive to re-assert the terminal title every 2s via background loop.
-  # Claude Code overrides the title on launch, so we fight back.
   cd "${wt_path}"
-  set_terminal_title "${tab_title}" "${my_tty}"
-  (while true; do set_terminal_title "${tab_title}" "${my_tty}"; sleep 2; done) &
-  local title_pid=$!
-  trap "kill ${title_pid} 2>/dev/null" EXIT
-  npx claude
-  kill "${title_pid}" 2>/dev/null
+
+  if [[ -n "${TMUX:-}" ]]; then
+    # Inside tmux: rename the window for clarity, no OS title-bar fight needed
+    tmux rename-window "$(tmux_window_name "$issue_num")" 2>/dev/null || true
+    npx claude
+  else
+    # Outside tmux: keep fighting Claude Code over the terminal title
+    local tab_title="🤖 #${issue_num} Claude"
+    local my_tty
+    my_tty=$(tty)
+    set_terminal_title "${tab_title}" "${my_tty}"
+    (while true; do set_terminal_title "${tab_title}" "${my_tty}"; sleep 2; done) &
+    local title_pid=$!
+    trap "kill ${title_pid} 2>/dev/null" EXIT
+    npx claude
+    kill "${title_pid}" 2>/dev/null
+  fi
 }
 
 cmd_dev() {
@@ -930,32 +1313,97 @@ cmd_dev() {
     exit 1
   fi
 
-  local wt_path
+  local wt_path port title
   wt_path=$(worktree_path "$issue_num")
-  local port
   port=$(dispatch_field "$issue_num" "port")
-  local title
   title=$(dispatch_field "$issue_num" "title")
-
-  local tab_title="🌐 #${issue_num} :${port}"
-
-  # Capture the real TTY device before backgrounding — background subshells lose /dev/tty.
-  local my_tty
-  my_tty=$(tty)
-
-  set_terminal_title "${tab_title}" "${my_tty}"
 
   log "Starting dev server for #${issue_num}: ${BOLD}${title}${NC}"
   echo -e "  ${DIM}Port: ${port}  |  URL: http://localhost:${port}${NC}"
   echo ""
 
-  # Use PORT env var — pnpm's '--' passthrough mangles --port into a path
   cd "${wt_path}"
-  (while true; do set_terminal_title "${tab_title}" "${my_tty}"; sleep 2; done) &
-  local title_pid=$!
-  trap "kill ${title_pid} 2>/dev/null" EXIT
-  PORT="${port}" pnpm dev
-  kill "${title_pid}" 2>/dev/null
+
+  if [[ -n "${TMUX:-}" ]]; then
+    # Inside tmux: window name handles identification; just run.
+    PORT="${port}" pnpm dev
+  else
+    local tab_title="🌐 #${issue_num} :${port}"
+    local my_tty
+    my_tty=$(tty)
+    set_terminal_title "${tab_title}" "${my_tty}"
+    (while true; do set_terminal_title "${tab_title}" "${my_tty}"; sleep 2; done) &
+    local title_pid=$!
+    trap "kill ${title_pid} 2>/dev/null" EXIT
+    PORT="${port}" pnpm dev
+    kill "${title_pid}" 2>/dev/null
+  fi
+}
+
+cmd_tmux() {
+  local issue_num="${1:-}"
+
+  if [[ -z "$issue_num" ]]; then
+    error "Usage: dispatch tmux <issue-number>"
+    exit 1
+  fi
+  issue_num="${issue_num#\#}"
+  ensure_dispatch_dir
+
+  if ! is_dispatched "$issue_num"; then
+    error "Issue #${issue_num} is not dispatched. Run 'dispatch start ${issue_num}' first."
+    exit 1
+  fi
+
+  open_slot_in_tmux "$issue_num"
+}
+
+cmd_all() {
+  if [[ $# -eq 0 ]]; then
+    error "Usage: dispatch all <issue-#> [issue-#] [...]"
+    echo ""
+    echo "  Starts a slot for each issue, opens each in a tmux window,"
+    echo "  then attaches the session (only if you're outside tmux already)."
+    exit 1
+  fi
+
+  ensure_dispatch_dir
+
+  local started=()
+  for arg in "$@"; do
+    local n="${arg#\#}"
+    if is_dispatched "$n"; then
+      warn "Issue #${n} already dispatched — will just open in tmux."
+      started+=("$n")
+      continue
+    fi
+    if cmd_start "$n"; then
+      started+=("$n")
+    else
+      warn "Failed to start #${n} — skipping."
+    fi
+  done
+
+  if [[ ${#started[@]} -eq 0 ]]; then
+    error "No slots created."
+    exit 1
+  fi
+
+  # Create all tmux windows without attaching mid-loop
+  local n
+  for n in "${started[@]}"; do
+    open_slot_in_tmux "$n" "no-attach"
+  done
+
+  if [[ -z "${TMUX:-}" ]]; then
+    local session first_window
+    session=$(tmux_session_name)
+    first_window=$(tmux_window_name "${started[0]}")
+    log "Attaching to tmux session..."
+    exec tmux attach -t "$session" \; select-window -t "${session}:${first_window}"
+  else
+    success "Created ${#started[@]} tmux window(s) in '$(tmux_session_name)'."
+  fi
 }
 
 cmd_diff() {
@@ -1255,7 +1703,7 @@ FEEDBACK_EOF
   new_issue_num=$(echo "$new_issue_url" | grep -oE '[0-9]+$')
 
   if [[ -n "$new_issue_num" ]]; then
-    gh project item-add "${PROJECT_NUMBER}" --owner OlisDevSpot \
+    gh project item-add "${PROJECT_NUMBER}" --owner "${REPO%/*}" \
       --url "https://github.com/${REPO}/issues/${new_issue_num}" 2>/dev/null || true
   fi
 
@@ -1296,7 +1744,7 @@ cmd_ready() {
     if [[ -z "$item_id" ]]; then
       # Issue not on board yet — add it first
       log "Adding #${issue_num} to project board..."
-      gh project item-add "${PROJECT_NUMBER}" --owner OlisDevSpot \
+      gh project item-add "${PROJECT_NUMBER}" --owner "${REPO%/*}" \
         --url "https://github.com/${REPO}/issues/${issue_num}" 2>/dev/null || {
         warn "Could not add #${issue_num} to board — skipping."
         failed=$((failed + 1))
@@ -1312,12 +1760,11 @@ cmd_ready() {
       continue
     fi
 
-    # Move to Ready (option ID from CLAUDE.md)
-    local READY_STATUS="9a551858"
+    # Move to Ready (option ID from constants block at top of file)
     gh project item-edit --project-id "${PROJECT_ID}" \
       --id "$item_id" \
       --field-id "${STATUS_FIELD_ID}" \
-      --single-select-option-id "$READY_STATUS" 2>/dev/null && {
+      --single-select-option-id "${STATUS_READY}" 2>/dev/null && {
       success "#${issue_num}  ${issue_title}  → ${BOLD}Ready${NC}"
       moved=$((moved + 1))
     } || {
@@ -1338,13 +1785,20 @@ cmd_help() {
   echo -e "${BOLD}MANUAL WORKFLOW${NC}  (one issue at a time, you drive)"
   echo ""
   echo -e "  ${GREEN}start${NC} <issue-#>     Create a slot: worktree + branch + deps + instructions"
+  echo -e "    ${DIM}--tmux${NC}              ...and immediately open it in a tmux window"
   echo -e "  ${GREEN}run${NC} <issue-#>       Launch Claude interactively in the slot"
   echo -e "  ${GREEN}dev${NC} <issue-#>       Start Next.js dev server on the slot's port"
   echo -e "  ${GREEN}review${NC} <issue-#>    Run lint + build, show diff summary"
   echo -e "  ${GREEN}qa${NC} <issue-#>        Generate a QA testing checklist from the diff"
   echo -e "  ${GREEN}pr${NC} <issue-#>        Push branch, create PR, move to In Review"
-  echo -e "  ${GREEN}park${NC} <issue-#>      Free the slot, keep the branch (blocked/paused)"
-  echo -e "  ${GREEN}cleanup${NC} <issue-#>   Remove worktree and free the slot"
+  echo -e "  ${GREEN}park${NC} <issue-#>      Free the slot, keep the branch (auto-closes tmux window)"
+  echo -e "  ${GREEN}cleanup${NC} <issue-#>   Remove worktree, free the slot (auto-closes tmux window)"
+  echo ""
+  echo -e "${BOLD}TMUX WORKFLOW${NC}  (parallel slots in one terminal session)"
+  echo ""
+  echo -e "  ${GREEN}tmux${NC} <issue-#>      Open or focus the slot's tmux window (claude + dev panes)"
+  echo -e "  ${GREEN}all${NC} <#> [# ...]     Start slots and open them all in tmux, then attach"
+  echo -e "    ${DIM}Session = repo name. Window = i<#>. Layout = claude (70%) | dev (30%).${NC}"
   echo ""
   echo -e "${BOLD}AUTOMATED LOOP${NC}  (AFK execution, Claude drives)"
   echo ""
@@ -1353,6 +1807,13 @@ cmd_help() {
   echo -e "    ${DIM}--max N${NC}            Max issues to process (default: 10)"
   echo -e "    ${DIM}--timeout N${NC}        Seconds per issue (default: 900)"
   echo -e "  ${GREEN}feedback${NC} <#> <msg>  Create a feedback issue linked to source issue"
+  echo ""
+  echo -e "${BOLD}DATABASE ISOLATION${NC}  (Neon branch per worktree)"
+  echo ""
+  echo -e "  ${GREEN}neon-status${NC}         List all wt/* Neon branches"
+  echo -e "  ${GREEN}neon-prune${NC}          Delete orphaned Neon branches (not in active slots)"
+  echo -e "    ${DIM}Branches auto-created on start, auto-deleted on cleanup.${NC}"
+  echo -e "    ${DIM}Park keeps the branch alive for resume. Prune cleans up leftovers.${NC}"
   echo ""
   echo -e "${BOLD}INFO${NC}"
   echo ""
@@ -1387,6 +1848,8 @@ main() {
     start)    cmd_start "$@" ;;
     run)      cmd_run "$@" ;;
     dev)      cmd_dev "$@" ;;
+    tmux|t)   cmd_tmux "$@" ;;
+    all)      cmd_all "$@" ;;
     status|s) cmd_status "$@" ;;
     review)   cmd_review "$@" ;;
     diff)     cmd_diff "$@" ;;
@@ -1397,6 +1860,8 @@ main() {
     loop)     cmd_loop "$@" ;;
     qa)       cmd_qa "$@" ;;
     feedback) cmd_feedback "$@" ;;
+    neon-status) neon_list_branches ;;
+    neon-prune)  neon_prune_branches ;;
     list|ls)  cmd_list "$@" ;;
     help|-h)  cmd_help "$@" ;;
     *)

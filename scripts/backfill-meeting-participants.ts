@@ -12,7 +12,7 @@
  * Usage:
  *   pnpm tsx scripts/backfill-meeting-participants.ts
  */
-import 'dotenv/config'
+import './lib/load-env'
 import { sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 

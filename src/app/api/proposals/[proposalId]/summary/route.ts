@@ -75,8 +75,8 @@ export async function GET(
     if (section.scopes.length > 0) {
       lines.push(`**Scopes:** ${section.scopes.map(s => s.label).join(', ')}`)
     }
-    if (pricingMode === 'breakdown' && section.price) {
-      lines.push(`**Section Price:** ${formatAsDollars(section.price)}`)
+    if (pricingMode === 'breakdown' && section.financials.sectionPrice) {
+      lines.push(`**Section Price:** ${formatAsDollars(section.financials.sectionPrice)}`)
     }
     if (section.html) {
       lines.push(stripHtml(section.html))
@@ -87,8 +87,8 @@ export async function GET(
   lines.push('## Pricing')
   if (pricingMode === 'breakdown') {
     for (const section of proj.sow) {
-      if ((section.price ?? 0) > 0) {
-        lines.push(`- ${section.title}: ${formatAsDollars(section.price!)}`)
+      if ((section.financials.sectionPrice ?? 0) > 0) {
+        lines.push(`- ${section.title}: ${formatAsDollars(section.financials.sectionPrice!)}`)
       }
     }
     if ((fund.miscPrice ?? 0) > 0) {

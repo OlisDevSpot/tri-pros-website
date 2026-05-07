@@ -1,4 +1,6 @@
-export const PROPOSAL_STATUS_COLORS: Record<string, string> = {
+import type { Proposal } from '@/shared/db/schema'
+
+export const PROPOSAL_STATUS_COLORS: Record<Proposal['status'], string> = {
   draft: 'bg-slate-500/10 text-slate-600',
   sent: 'bg-orange-500/10 text-orange-600',
   approved: 'bg-green-500/10 text-green-600',
