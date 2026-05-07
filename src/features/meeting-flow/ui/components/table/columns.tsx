@@ -4,11 +4,10 @@ import type { EntityActionConfig } from '@/shared/components/entity-actions/type
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { AppRouter } from '@/trpc/routers/app'
 
+import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { meetingOutcomes } from '@/shared/constants/enums'
 import { getOutcomeDisabledChecker } from '@/shared/domains/pipelines/lib/get-disabled-outcomes'
 import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities/meetings/components/participant-picker'
@@ -36,31 +35,13 @@ export function getColumns(): ColumnDef<MeetingRow>[] {
         const meetingLabel = selectedProgram ?? row.original.meetingType
 
         return (
-          <div className="flex items-center justify-between gap-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="min-w-0 space-y-0.5 max-w-55">
-                  <p className="font-medium leading-none truncate">
-                    {row.original.customerName ?? '—'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{meetingLabel}</p>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="start">
-                {row.original.customerName ?? 'No customer'}
-                {' — '}
-                {meetingLabel}
-              </TooltipContent>
-            </Tooltip>
-            {meta && (
-              <EntityActionMenu
-                entity={row.original}
-                actions={meta.meetingActions(row.original)}
-                mode="compact"
-                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-              />
-            )}
-          </div>
+          <PrimaryCell
+            entity={row.original}
+            actions={meta?.meetingActions(row.original)}
+            title={row.original.customerName ?? '—'}
+            subtitle={meetingLabel}
+            tooltipContent={`${row.original.customerName ?? 'No customer'} — ${meetingLabel}`}
+          />
         )
       },
     },

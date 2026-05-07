@@ -4,10 +4,9 @@ import type { EntityActionConfig } from '@/shared/components/entity-actions/type
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
+import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { cn } from '@/shared/lib/utils'
 
 export type ProjectRow = inferRouterOutputs<AppRouter>['projectsRouter']['crud']['list']['rows'][number]
@@ -25,31 +24,13 @@ export function getColumns(): ColumnDef<ProjectRow>[] {
         const meta = table.options.meta as ProjectTableMeta | undefined
 
         return (
-          <div className="flex items-center justify-between gap-4">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="min-w-0 space-y-0.5 max-w-55">
-                  <p className="font-medium leading-none truncate">{row.original.title}</p>
-                  {row.original.description && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {row.original.description}
-                    </p>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="start">
-                {row.original.title}
-              </TooltipContent>
-            </Tooltip>
-            {meta && (
-              <EntityActionMenu
-                entity={row.original}
-                actions={meta.projectActions(row.original)}
-                mode="compact"
-                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-              />
-            )}
-          </div>
+          <PrimaryCell
+            entity={row.original}
+            actions={meta?.projectActions(row.original)}
+            title={row.original.title}
+            subtitle={row.original.description ?? undefined}
+            tooltipContent={row.original.title}
+          />
         )
       },
     },

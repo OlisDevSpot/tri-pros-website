@@ -7,10 +7,10 @@ import type { AppRouter } from '@/trpc/routers/app'
 import { EyeIcon, PlusIcon } from 'lucide-react'
 
 import { DateCell } from '@/shared/components/data-table/ui/date-cell'
+import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
 import { SortableHeader } from '@/shared/components/data-table/ui/sortable-header'
 import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
-import { EntityActionMenu } from '@/shared/components/entity-actions/ui/entity-action-menu'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { proposalStatuses } from '@/shared/constants/enums'
 import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
@@ -38,14 +38,16 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
         const canOpenProfile = Boolean(customerName && customerId)
 
         return (
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 space-y-0.5 max-w-55">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <p className="font-medium leading-none truncate">{row.original.label}</p>
+          <PrimaryCell
+            entity={row.original}
+            actions={meta?.proposalActions(row.original)}
+            title={(
+              <div className="flex min-w-0 items-center gap-1.5">
+                <p className="truncate text-sm font-medium leading-tight text-foreground">{row.original.label}</p>
                 {row.original.kind === 'additional-work' && (
                   <HybridPopoverTooltip content="Addendum">
                     <span
-                      className="inline-flex shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-inset ring-border/60 size-3.5"
+                      className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-full bg-muted/60 text-muted-foreground ring-1 ring-inset ring-border/60"
                       aria-label="Addendum"
                     >
                       <PlusIcon className="size-2.5" strokeWidth={2.5} />
@@ -53,38 +55,28 @@ export function getColumns(): ColumnDef<ProposalRow>[] {
                   </HybridPopoverTooltip>
                 )}
               </div>
-              {canOpenProfile
-                ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        meta?.onViewProfile(customerId!)
-                      }}
-                      className={cn(
-                        'block max-w-full truncate text-left text-xs text-muted-foreground',
-                        'underline decoration-dotted decoration-muted-foreground/40 underline-offset-[3px]',
-                        'transition-colors hover:text-foreground hover:decoration-foreground/60',
-                        'focus-visible:outline-none focus-visible:text-foreground focus-visible:decoration-foreground/60',
-                        'cursor-pointer',
-                      )}
-                    >
-                      {customerName}
-                    </button>
-                  )
-                : (
-                    <p className="text-xs text-muted-foreground truncate">—</p>
-                  )}
-            </div>
-            {meta && (
-              <EntityActionMenu
-                entity={row.original}
-                actions={meta.proposalActions(row.original)}
-                mode="compact"
-                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-              />
             )}
-          </div>
+            subtitle={canOpenProfile
+              ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      meta?.onViewProfile(customerId!)
+                    }}
+                    className={cn(
+                      'block max-w-full truncate text-left text-xs text-muted-foreground',
+                      'underline decoration-dotted decoration-muted-foreground/40 underline-offset-[3px]',
+                      'transition-colors hover:text-foreground hover:decoration-foreground/60',
+                      'focus-visible:text-foreground focus-visible:decoration-foreground/60 focus-visible:outline-none',
+                      'cursor-pointer',
+                    )}
+                  >
+                    {customerName}
+                  </button>
+                )
+              : '—'}
+          />
         )
       },
     },
