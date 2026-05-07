@@ -24,14 +24,15 @@
  *      Because all initial-sale proposals for a project live on one (birthing)
  *      meeting, "per meeting" transitively means "per project".
  *
- * Idempotent — safe to re-run. After this completes, `pnpm db:push:dev` should
+ * Idempotent — safe to re-run. Once this AND the matching schema-declaration
+ * update (Task 2 of the hotfix) have both landed, `pnpm db:push:dev` should
  * report "no changes detected" for the proposals table.
  *
  * Usage:
  *   pnpm migrate:proposal-kind:dev    # dev DB (default NODE_ENV)
  *   pnpm migrate:proposal-kind        # prod DB (sets NODE_ENV=production)
  */
-import 'dotenv/config'
+import './lib/load-env'
 import { sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 
@@ -63,17 +64,25 @@ async function main() {
         SELECT DISTINCT ON (m.project_id) m.project_id, m.id AS meeting_id
         FROM meetings m
         WHERE m.project_id IS NOT NULL
-        ORDER BY m.project_id, m.created_at ASC
+        ORDER BY m.project_id, m.created_at ASC, m.id
+      ),
+      new_kinds AS (
+        SELECT
+          p.id,
+          CASE
+            WHEN p.meeting_id IS NULL          THEN 'initial-sale'::proposal_kind
+            WHEN m.project_id IS NULL          THEN 'initial-sale'::proposal_kind
+            WHEN m.id = bm.meeting_id          THEN 'initial-sale'::proposal_kind
+            ELSE                                    'additional-work'::proposal_kind
+          END AS new_kind
+        FROM proposals p
+        LEFT JOIN meetings m ON m.id = p.meeting_id
+        LEFT JOIN birthing_meetings bm ON bm.project_id = m.project_id
       )
       UPDATE proposals p
-      SET kind = CASE
-        WHEN m.project_id IS NULL          THEN 'initial-sale'::proposal_kind
-        WHEN m.id = bm.meeting_id          THEN 'initial-sale'::proposal_kind
-        ELSE                                    'additional-work'::proposal_kind
-      END
-      FROM meetings m
-      LEFT JOIN birthing_meetings bm ON bm.project_id = m.project_id
-      WHERE p.meeting_id = m.id
+      SET kind = nk.new_kind
+      FROM new_kinds nk
+      WHERE p.id = nk.id
     `)
 
     const totals = await tx.execute(sql`
