@@ -62,13 +62,13 @@ const sentDateSrc: FieldSource = () => format(new Date(), 'M/d/yyyy')
 
 // AWD-only field. The DAL's projectFirstContractSentAt subquery falls
 // through contract_sent_at → approved_at → created_at, so a non-null
-// value is the norm for upsells. The today-fallback covers the
-// pathological case where the project has zero proposals (data
-// integrity bug) — log it so we notice in production rather than
+// value is the norm for additional-work proposals. The today-fallback
+// covers the pathological case where the project has zero proposals
+// (data integrity bug) — log it so we notice in production rather than
 // silently shipping today's date as the original contract date.
 const originalContractDateSrc: FieldSource = (ctx) => {
   if (!ctx.originalContractDate) {
-    console.warn('originalContractDate is null on upsell envelope — falling back to today; project likely has zero proposals')
+    console.warn('originalContractDate is null on additional-work envelope — falling back to today; project likely has zero proposals')
     return format(new Date(), 'MMM dd yyyy')
   }
   return format(ctx.originalContractDate, 'MMM dd yyyy')
@@ -93,10 +93,10 @@ const baseHomeownerFieldMappings: Record<string, FieldSource> = {
 // per-template signer action IDs are versioned alongside the rest of
 // the integration's constants.
 //
-// AWD (Additional Work Description) is upsell-only; pending user
-// authoring it in Zoho. Future docs (credit-card-auth, finance-doc,
-// finance-ack) appear in the enum but not yet in this registry —
-// they're placeholders for incremental rollout.
+// AWD (Additional Work Description) is additional-work-only. Future
+// docs (credit-card-auth, finance-doc, finance-ack) appear in the enum
+// but not yet in this registry — they're placeholders for incremental
+// rollout.
 //
 // Fill `dateFieldMappings` for `sent-date` (CustomDate type — Zoho
 // requires fields of type Date to fill via field_date_data, not
@@ -107,9 +107,9 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     id: 'main-hi-base',
     label: 'Main HI agreement (non-senior)',
     source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.base.templateId },
-    applicableScenarios: ['initial'],
-    perScenarioRules: {
-      initial: { kind: 'required-when', predicate: ctx => !ctx.isSenior },
+    applicableKinds: ['initial-sale'],
+    perKindRules: {
+      'initial-sale': { kind: 'required-when', predicate: ctx => !ctx.isSenior },
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,
@@ -128,9 +128,9 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     id: 'main-hi-senior',
     label: 'Main HI agreement (senior)',
     source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.senior.templateId },
-    applicableScenarios: ['initial'],
-    perScenarioRules: {
-      initial: { kind: 'required-when', predicate: ctx => ctx.isSenior },
+    applicableKinds: ['initial-sale'],
+    perKindRules: {
+      'initial-sale': { kind: 'required-when', predicate: ctx => ctx.isSenior },
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,
@@ -149,33 +149,34 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
       kind: 'generated-pdf',
       generator: ctx => pdfService.generateSowPdf({ proposalId: ctx.proposal.id }),
     },
-    applicableScenarios: ['initial', 'upsell'],
-    perScenarioRules: {
-      // Initial: always generate the PDF (drops the short/long branch).
-      initial: { kind: 'required' },
-      // Upsell: only when SOW is too long to fit inline in AWD's sow-1/sow-2.
-      upsell: { kind: 'required-when', predicate: ctx => ctx.isLongSow },
+    applicableKinds: ['initial-sale', 'additional-work'],
+    perKindRules: {
+      // Initial-sale: always generate the PDF (drops the short/long branch).
+      'initial-sale': { kind: 'required' },
+      // Additional-work: only when SOW is too long to fit inline in AWD's sow field.
+      'additional-work': { kind: 'required-when', predicate: ctx => ctx.isLongSow },
     },
   },
   {
     id: 'awd',
     label: 'Additional Work Description',
     source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.awd.templateId },
-    applicableScenarios: ['upsell'],
-    perScenarioRules: {
-      upsell: { kind: 'required' },
+    applicableKinds: ['additional-work'],
+    perKindRules: {
+      'additional-work': { kind: 'required' },
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,
-      // `sow` is a single textfield meant for short-form upsell SOW only.
-      // When isLongSow is true, sow-pdf is also required (separate doc in
-      // the envelope) — leave AWD's sow blank so the page renders cleanly.
+      // `sow` is a single textfield meant for short-form additional-work
+      // SOW only. When isLongSow is true, sow-pdf is also required
+      // (separate doc in the envelope) — leave AWD's sow blank so the
+      // page renders cleanly.
       'sow': ctx => ctx.isLongSow ? '' : ctx.sowText,
       // Signed dollar adjustment — positive when the addendum adds scope,
-      // negative for credits/discounts. Today: maps to the upsell
-      // proposal's finalTcp (which is the addendum's full amount). If
-      // future requirements need explicit credits, add an override field
-      // on the proposal entity and source from there.
+      // negative for credits/discounts. Today: maps to the additional-
+      // work proposal's finalTcp (which is the addendum's full amount).
+      // If future requirements need explicit credits, add an override
+      // field on the proposal entity and source from there.
       'price-adjustment': tcpSrc,
     },
     dateFieldMappings: {
@@ -190,9 +191,9 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     id: 'senior-ack',
     label: 'Senior citizen acknowledgement',
     source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.seniorAck.templateId },
-    applicableScenarios: ['initial'],
-    perScenarioRules: {
-      initial: { kind: 'required-when', predicate: ctx => ctx.isSenior },
+    applicableKinds: ['initial-sale'],
+    perKindRules: {
+      'initial-sale': { kind: 'required-when', predicate: ctx => ctx.isSenior },
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,
@@ -207,9 +208,9 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     id: 'esign-waiver',
     label: 'E-sign waiver',
     source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.esignWaiver.templateId },
-    applicableScenarios: ['initial'],
-    perScenarioRules: {
-      initial: { kind: 'required' },
+    applicableKinds: ['initial-sale'],
+    perKindRules: {
+      'initial-sale': { kind: 'required' },
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,
@@ -223,10 +224,10 @@ export const ENVELOPE_DOCUMENTS: readonly EnvelopeDocument[] = [
     id: 'material-order',
     label: 'Material order',
     source: { kind: 'zoho-template', zohoTemplateId: ZOHO_SIGN_TEMPLATES.materialOrder.templateId },
-    applicableScenarios: ['initial', 'upsell'],
-    perScenarioRules: {
-      initial: { kind: 'optional' },
-      upsell: { kind: 'optional' },
+    applicableKinds: ['initial-sale', 'additional-work'],
+    perKindRules: {
+      'initial-sale': { kind: 'optional' },
+      'additional-work': { kind: 'optional' },
     },
     fieldMappings: {
       ...baseHomeownerFieldMappings,

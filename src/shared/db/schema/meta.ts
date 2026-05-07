@@ -11,6 +11,7 @@ import {
   meetingTypes,
   projectStatuses,
   projectTypes,
+  proposalKinds,
   proposalStatuses,
   userRoles,
   viewSources,
@@ -41,6 +42,7 @@ export const meetingTypeEnum = pgEnum('meeting_type', meetingTypes)
 
 // PROPOSALS
 export const proposalStatusEnum = pgEnum('proposal_status', proposalStatuses)
+export const proposalKindEnum = pgEnum('proposal_kind', proposalKinds)
 
 // CUSTOMER PIPELINES
 export const customerPipelineEnum = pgEnum('customer_pipeline', customerPipelines)

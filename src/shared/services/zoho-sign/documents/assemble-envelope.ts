@@ -66,7 +66,7 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
   if (drift.added.length > 0 || drift.dropped.length > 0) {
     console.warn('[zoho-sign] envelope selection drifted from saved — self-healing', {
       proposalId: ctx.proposal.id,
-      scenario: ctx.scenario,
+      kind: ctx.kind,
       saved: [...savedSelection],
       effective: [...effectiveIds],
       added: drift.added,
@@ -111,7 +111,7 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
       status: mergeRes.status,
       response: responseText,
       proposalId: ctx.proposal.id,
-      scenario: ctx.scenario,
+      kind: ctx.kind,
       templateIds: templateDocs.flatMap(d => d.source.kind === 'zoho-template' ? [d.source.zohoTemplateId] : []),
       requestBody: mergeBody,
     })
@@ -320,7 +320,7 @@ function logMergeSendDiagnostics(ctx: ProposalContext, mergeBody: string): void 
     )
     console.warn('[zoho-sign] mergesend pre-flight', {
       proposalId: ctx.proposal.id,
-      scenario: ctx.scenario,
+      kind: ctx.kind,
       sowTextLength: ctx.sowText.length,
       isLongSow: ctx.isLongSow,
       sowInlineMaxChars: SOW_INLINE_MAX_CHARS,

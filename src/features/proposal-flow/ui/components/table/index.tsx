@@ -70,7 +70,13 @@ export function PastProposalsTable() {
         return
       }
 
-      // If the meeting already has a project, just approve — no new project needed
+      // Skip the create-project modal when a project already exists on the
+      // meeting. This intentionally checks `meetingProjectId` (current
+      // meeting state) rather than `proposal.kind` (frozen at insert): an
+      // initial-sale proposal that was previously approved, then later
+      // unapproved/re-approved, still has its project — opening the modal
+      // again would attempt a duplicate. Kind alone can't distinguish
+      // first-approval-of-initial-sale from re-approval-of-initial-sale.
       if (row.meetingProjectId) {
         updateProposal.mutate(
           { proposalId: id, data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() } },

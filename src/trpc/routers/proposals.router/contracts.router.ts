@@ -134,7 +134,7 @@ export const contractsRouter = createTRPCRouter({
         }))
 
       return {
-        scenario: ctx.scenario,
+        kind: ctx.kind,
         isSenior: ctx.isSenior,
         isLongSow: ctx.isLongSow,
         docs,

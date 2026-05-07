@@ -1,17 +1,21 @@
 import type { Buffer } from 'node:buffer'
-import type { EnvelopeDocumentId, EnvelopeScenario } from '@/shared/constants/enums'
+import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
 import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
 
 /**
  * Snapshot of everything an envelope assembler needs to fill fields and
- * evaluate scenario rules. Built once per draft creation by
+ * evaluate per-kind rules. Built once per draft creation by
  * `buildProposalContext` (see `proposal-context.ts`). Predicates and
  * field sources receive this and return values — never read globals or
  * issue queries themselves.
  */
 export interface ProposalContext {
   proposal: ProposalWithCustomer
-  scenario: EnvelopeScenario
+  /**
+   * Mirror of `proposal.kind` — kept on the context so predicates and
+   * field sources don't have to reach through `proposal` to read it.
+   */
+  kind: ProposalKind
   isSenior: boolean
   isLongSow: boolean
   /** Total contract price after incentives. */
@@ -21,7 +25,7 @@ export interface ProposalContext {
   /**
    * Earliest `contractSentAt` across all proposals on all meetings of
    * this proposal's project. Fills AWD's `original-contract-date`
-   * field on upsell envelopes. Null on initial-sale (no project yet).
+   * field on additional-work envelopes. Null on initial-sale (no project yet).
    */
   originalContractDate: Date | null
 }
@@ -30,10 +34,10 @@ export interface ProposalContext {
 export type FieldSource = (ctx: ProposalContext) => string
 
 /**
- * Per-scenario rule for a document. Predicates fire against the same
+ * Per-kind rule for a document. Predicates fire against the same
  * `ProposalContext` the field sources see.
  *
- * - `required`: always required when scenario is applicable.
+ * - `required`: always required when this kind is applicable.
  * - `required-when`: required only when predicate returns true; otherwise forbidden.
  * - `optional`: agent toggles via UI, default off.
  * - `forbidden-when`: explicitly forbidden when predicate is true; otherwise optional.
@@ -69,10 +73,10 @@ export interface EnvelopeDocument {
   /** Human-readable label for the agent UI. */
   label: string
   source: DocumentSource
-  /** Scenarios where this document can ever appear. */
-  applicableScenarios: readonly EnvelopeScenario[]
-  /** Rule per applicable scenario — keys must be a subset of applicableScenarios. */
-  perScenarioRules: Partial<Record<EnvelopeScenario, DocumentRule>>
+  /** Proposal kinds where this document can ever appear. */
+  applicableKinds: readonly ProposalKind[]
+  /** Rule per applicable kind — keys must be a subset of applicableKinds. */
+  perKindRules: Partial<Record<ProposalKind, DocumentRule>>
   /** Zoho field-name → value resolver. Only present for `zoho-template` sources. */
   fieldMappings?: Record<string, FieldSource>
   /** Zoho field-name → value resolver for date fields (CustomDate type). */

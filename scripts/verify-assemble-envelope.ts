@@ -13,14 +13,15 @@ import type { ProposalContext } from '@/shared/services/zoho-sign/documents/type
 import { assembleEnvelope } from '@/shared/services/zoho-sign/documents/assemble-envelope'
 
 function makeFakeContext(recipientEmail: string): ProposalContext {
-  // Upsell + short SOW + non-senior is the smallest envelope that
-  // exercises the registry-driven path: required = [awd], no
-  // sow-pdf (forbidden when !isLongSow on upsell). Avoids the SOW
-  // PDF generator's DB hit, so the smoke test runs without a real
+  // Additional-work + short SOW + non-senior is the smallest envelope
+  // that exercises the registry-driven path: required = [awd], no
+  // sow-pdf (forbidden when !isLongSow on additional-work). Avoids the
+  // SOW PDF generator's DB hit, so the smoke test runs without a real
   // proposal row.
   const proposal = {
     id: 'fake-proposal-phase-4-smoke-test',
     label: 'Phase 4 smoke test',
+    kind: 'additional-work',
     formMetaJSON: {
       pricingMode: 'total',
       envelopeDocumentIds: ['awd'],
@@ -59,7 +60,7 @@ function makeFakeContext(recipientEmail: string): ProposalContext {
 
   return {
     proposal,
-    scenario: 'upsell',
+    kind: 'additional-work',
     isSenior: false,
     isLongSow: false,
     finalTcp: 7500,
@@ -79,7 +80,7 @@ async function main() {
 
   const ctx = makeFakeContext(recipientEmail)
   console.log('=== assembleEnvelope smoke test ===')
-  console.log(`scenario: ${ctx.scenario}`)
+  console.log(`kind: ${ctx.kind}`)
   console.log(`docs: ${ctx.proposal.formMetaJSON.envelopeDocumentIds?.join(', ')}`)
   console.log(`recipient: ${recipientEmail}`)
   console.log()

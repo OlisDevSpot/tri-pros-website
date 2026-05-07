@@ -2,14 +2,14 @@
 /**
  * Pure-function verification of the document evaluator. No I/O, no DB,
  * no Zoho. Builds fixture ProposalContexts covering every interesting
- * scenario × senior × SOW-length combo, runs evaluateDocuments + the
+ * kind × senior × SOW-length combo, runs evaluateDocuments + the
  * validator, and asserts the partition matches the design plan's
- * locked-in scenario rules.
+ * locked-in per-kind rules.
  *
  * Until this codebase has a test framework, this script IS the test.
  * Run: pnpm tsx scripts/verify-evaluate-documents.ts
  */
-import type { EnvelopeDocumentId } from '@/shared/constants/enums'
+import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
 import type { ProposalContext } from '@/shared/services/zoho-sign/documents/types'
 import {
   EnvelopeSelectionError,
@@ -18,18 +18,18 @@ import {
 } from '@/shared/services/zoho-sign/documents/evaluate'
 
 interface FixtureInput {
-  scenario: 'initial' | 'upsell'
+  kind: ProposalKind
   isSenior: boolean
   isLongSow: boolean
 }
 
-function makeContext({ scenario, isSenior, isLongSow }: FixtureInput): ProposalContext {
+function makeContext({ kind, isSenior, isLongSow }: FixtureInput): ProposalContext {
   // Only the four derived fields below matter for the evaluator's
   // predicates today. The proposal/customer fields aren't read, so we
   // cast a minimal stub through unknown to keep the fixture small.
   return {
     proposal: {} as ProposalContext['proposal'],
-    scenario,
+    kind,
     isSenior,
     isLongSow,
     finalTcp: 50000,
@@ -47,44 +47,44 @@ interface Expectation {
 
 const cases: Expectation[] = [
   {
-    name: 'initial • non-senior • short SOW',
-    fixture: { scenario: 'initial', isSenior: false, isLongSow: false },
+    name: 'initial-sale • non-senior • short SOW',
+    fixture: { kind: 'initial-sale', isSenior: false, isLongSow: false },
     required: ['main-hi-base', 'sow-pdf', 'esign-waiver'],
     optional: ['material-order'],
   },
   {
-    name: 'initial • non-senior • long SOW',
-    fixture: { scenario: 'initial', isSenior: false, isLongSow: true },
+    name: 'initial-sale • non-senior • long SOW',
+    fixture: { kind: 'initial-sale', isSenior: false, isLongSow: true },
     required: ['main-hi-base', 'sow-pdf', 'esign-waiver'],
     optional: ['material-order'],
   },
   {
-    name: 'initial • senior • short SOW',
-    fixture: { scenario: 'initial', isSenior: true, isLongSow: false },
+    name: 'initial-sale • senior • short SOW',
+    fixture: { kind: 'initial-sale', isSenior: true, isLongSow: false },
     required: ['main-hi-senior', 'sow-pdf', 'senior-ack', 'esign-waiver'],
     optional: ['material-order'],
   },
   {
-    name: 'initial • senior • long SOW',
-    fixture: { scenario: 'initial', isSenior: true, isLongSow: true },
+    name: 'initial-sale • senior • long SOW',
+    fixture: { kind: 'initial-sale', isSenior: true, isLongSow: true },
     required: ['main-hi-senior', 'sow-pdf', 'senior-ack', 'esign-waiver'],
     optional: ['material-order'],
   },
   {
-    name: 'upsell • non-senior • short SOW (AWD required, sow-pdf forbidden — lives inline in AWD.sow)',
-    fixture: { scenario: 'upsell', isSenior: false, isLongSow: false },
+    name: 'additional-work • non-senior • short SOW (AWD required, sow-pdf forbidden — lives inline in AWD.sow)',
+    fixture: { kind: 'additional-work', isSenior: false, isLongSow: false },
     required: ['awd'],
     optional: ['material-order'],
   },
   {
-    name: 'upsell • non-senior • long SOW (AWD + sow-pdf both required)',
-    fixture: { scenario: 'upsell', isSenior: false, isLongSow: true },
+    name: 'additional-work • non-senior • long SOW (AWD + sow-pdf both required)',
+    fixture: { kind: 'additional-work', isSenior: false, isLongSow: true },
     required: ['awd', 'sow-pdf'],
     optional: ['material-order'],
   },
   {
-    name: 'upsell • senior (AWD required; senior-ack + esign-waiver remain initial-only)',
-    fixture: { scenario: 'upsell', isSenior: true, isLongSow: false },
+    name: 'additional-work • senior (AWD required; senior-ack + esign-waiver remain initial-sale-only)',
+    fixture: { kind: 'additional-work', isSenior: true, isLongSow: false },
     required: ['awd'],
     optional: ['material-order'],
   },
@@ -122,9 +122,9 @@ for (const c of cases) {
 
 console.log('\n=== validateEnvelopeSelection guards ===\n')
 
-// Case A: senior initial, missing senior-ack → EnvelopeSelectionError
+// Case A: senior initial-sale, missing senior-ack → EnvelopeSelectionError
 {
-  const ctx = makeContext({ scenario: 'initial', isSenior: true, isLongSow: false })
+  const ctx = makeContext({ kind: 'initial-sale', isSenior: true, isLongSow: false })
   let threw: unknown
   try {
     validateEnvelopeSelection(ctx, ['main-hi-senior', 'sow-pdf', 'esign-waiver'])
@@ -133,16 +133,16 @@ console.log('\n=== validateEnvelopeSelection guards ===\n')
     threw = e
   }
   const isExpectedError = threw instanceof EnvelopeSelectionError && threw.missing.includes('senior-ack')
-  console.log(`${isExpectedError ? '✅' : '❌'} senior initial without senior-ack → throws (missing: senior-ack)`)
+  console.log(`${isExpectedError ? '✅' : '❌'} senior initial-sale without senior-ack → throws (missing: senior-ack)`)
   if (!isExpectedError) {
     failures++
     console.log(`   got: ${threw instanceof Error ? threw.message : String(threw)}`)
   }
 }
 
-// Case B: non-senior initial, includes senior-ack → EnvelopeSelectionError
+// Case B: non-senior initial-sale, includes senior-ack → EnvelopeSelectionError
 {
-  const ctx = makeContext({ scenario: 'initial', isSenior: false, isLongSow: false })
+  const ctx = makeContext({ kind: 'initial-sale', isSenior: false, isLongSow: false })
   let threw: unknown
   try {
     validateEnvelopeSelection(ctx, ['main-hi-base', 'sow-pdf', 'esign-waiver', 'senior-ack'])
@@ -151,16 +151,16 @@ console.log('\n=== validateEnvelopeSelection guards ===\n')
     threw = e
   }
   const isExpectedError = threw instanceof EnvelopeSelectionError && threw.banned.includes('senior-ack')
-  console.log(`${isExpectedError ? '✅' : '❌'} non-senior initial with senior-ack → throws (banned: senior-ack)`)
+  console.log(`${isExpectedError ? '✅' : '❌'} non-senior initial-sale with senior-ack → throws (banned: senior-ack)`)
   if (!isExpectedError) {
     failures++
     console.log(`   got: ${threw instanceof Error ? threw.message : String(threw)}`)
   }
 }
 
-// Case C: valid senior initial selection → no throw
+// Case C: valid senior initial-sale selection → no throw
 {
-  const ctx = makeContext({ scenario: 'initial', isSenior: true, isLongSow: false })
+  const ctx = makeContext({ kind: 'initial-sale', isSenior: true, isLongSow: false })
   let threw: unknown
   try {
     validateEnvelopeSelection(ctx, ['main-hi-senior', 'sow-pdf', 'senior-ack', 'esign-waiver'])
@@ -168,7 +168,7 @@ console.log('\n=== validateEnvelopeSelection guards ===\n')
   catch (e) {
     threw = e
   }
-  console.log(`${threw == null ? '✅' : '❌'} senior initial with full required set → does not throw`)
+  console.log(`${threw == null ? '✅' : '❌'} senior initial-sale with full required set → does not throw`)
   if (threw != null) {
     failures++
     console.log(`   got: ${threw instanceof Error ? threw.message : String(threw)}`)
@@ -177,7 +177,7 @@ console.log('\n=== validateEnvelopeSelection guards ===\n')
 
 // Case D: optional toggled on (material-order) is fine
 {
-  const ctx = makeContext({ scenario: 'initial', isSenior: false, isLongSow: false })
+  const ctx = makeContext({ kind: 'initial-sale', isSenior: false, isLongSow: false })
   let threw: unknown
   try {
     validateEnvelopeSelection(ctx, ['main-hi-base', 'sow-pdf', 'esign-waiver', 'material-order'])
@@ -185,7 +185,7 @@ console.log('\n=== validateEnvelopeSelection guards ===\n')
   catch (e) {
     threw = e
   }
-  console.log(`${threw == null ? '✅' : '❌'} non-senior initial with material-order toggled on → does not throw`)
+  console.log(`${threw == null ? '✅' : '❌'} non-senior initial-sale with material-order toggled on → does not throw`)
   if (threw != null) {
     failures++
     console.log(`   got: ${threw instanceof Error ? threw.message : String(threw)}`)
