@@ -237,11 +237,16 @@ export const leadSourcesRouter = createTRPCRouter({
 
   // Customers sourced from a given lead source. Paginated via shared schema.
   // Filters: `pipeline` (multi-select active|rehash|dead), `createdAt` (date range).
+  // Top-level `segment` narrows results to 'all' | 'active' | 'signed' | 'dead'
+  // without exposing the control in the QueryToolbar filter row.
   getCustomers: agentProcedure
     .input(paginatedQueryInput({
       pipeline: z.array(z.enum(customerPipelines)).optional(),
       createdAt: dateRangeSchema.optional(),
-    }).extend({ id: z.string().uuid() }))
+    }).extend({
+      id: z.string().uuid(),
+      segment: z.enum(['all', 'active', 'signed', 'dead']).optional(),
+    }))
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
       const [src] = await db
@@ -262,7 +267,8 @@ export const leadSourcesRouter = createTRPCRouter({
           v.to ? lte(customers.createdAt, v.to) : undefined,
         ),
       })
-      const where = and(match, searchWhere, filterWhere)
+      const segmentWhere = buildSegmentWhere(input.segment)
+      const where = and(match, searchWhere, filterWhere, segmentWhere)
 
       const orderBy = buildOrderBy(input.sort, {
         name: customers.name,
