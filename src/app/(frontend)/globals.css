@@ -10,6 +10,21 @@
   --card-foreground: oklch(0.2781 0.0296 256.848);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2781 0.0296 256.848);
+  /* Frosted-glass surface: keeps the popover token's hue/lightness intact and
+     drops alpha so the page beneath bleeds through the backdrop-filter blur.
+     Light mode is mostly white at 78% alpha — enough surface presence to read
+     as a panel, enough transparency to see soft motion of content behind. */
+  --popover-glass: oklch(from var(--popover) l c h / 0.78);
+  /* Top-edge sheen — mimics the way real glass catches a hint of light at its
+     upper rim. Fades to transparent by 35% down the panel so it never reads
+     as a hard band. */
+  --popover-glass-overlay: linear-gradient(180deg, oklch(1 0 0 / 0.4) 0%, transparent 35%);
+  /* Four-layer shadow: top-inset highlight (the lit rim), 1px outer hairline
+     for edge definition, close drop for proximity, far drop for elevation.
+     Light-mode drops are softer because the page is bright. */
+  --popover-glass-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.7), inset 0 0 0 1px oklch(0 0 0 / 0.06), 0 20px 40px -12px oklch(0 0 0 / 0.18),
+    0 6px 16px -8px oklch(0 0 0 / 0.1);
   --primary: oklch(0.6231 0.188 259.8145);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.6231 0.188 259.8145);
@@ -62,6 +77,20 @@
   --card-foreground: oklch(0.9683 0.0069 247.8956);
   --popover: oklch(26.778% 0.03273 261.675);
   --popover-foreground: oklch(0.9683 0.0069 247.8956);
+  /* Dark glass: keep the popover token's blue cast (no foreground lift). At
+     50% alpha, the card hue beneath bleeds through, so the surface reads as
+     "the same color, sharper" — which is what real glass over a dark surface
+     looks like. The shadow + sheen carry the lift, not a brighter base. */
+  --popover-glass: oklch(from var(--popover) l c h / 0.5);
+  /* Top-edge sheen — a faint white wash that fades by 40% down the panel.
+     This is the single most-recognizable detail in macOS Big Sur menus. */
+  --popover-glass-overlay: linear-gradient(180deg, oklch(1 0 0 / 0.075) 0%, transparent 40%);
+  /* Four-layer shadow: top-inset rim (the lit edge), 1px white hairline for
+     definition against dark page, close drop for proximity, far drop for
+     elevation. Dark-mode drops are deeper because the page absorbs them. */
+  --popover-glass-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 0.09), inset 0 0 0 1px oklch(1 0 0 / 0.06), 0 24px 48px -12px oklch(0 0 0 / 0.6),
+    0 8px 24px -8px oklch(0 0 0 / 0.4);
   --primary: oklch(0.6231 0.188 259.8145);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.6231 0.188 259.8145);
@@ -156,6 +185,20 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+
+  /* Toolbar loading shimmer — a 1px-tall foreground/40 segment translating */
+  /* left→right under the bottom edge of `<QueryToolbar.Bar>` while a */
+  /* paginated query is in flight. Compositor-only (transform). */
+  --animate-toolbar-shimmer: toolbar-shimmer 1.6s linear infinite;
+
+  @keyframes toolbar-shimmer {
+    from {
+      transform: translateX(-200%);
+    }
+    to {
+      transform: translateX(400%);
+    }
+  }
 }
 
 @layer base {

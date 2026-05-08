@@ -1,4 +1,4 @@
-import type { ColumnDef, SortingState } from '@tanstack/react-table'
+import type { ColumnDef, SortingState, VisibilityState } from '@tanstack/react-table'
 
 // -- Date range shape used by time-preset filter --
 
@@ -43,6 +43,12 @@ export interface DataTableMultiSelectFilter extends DataTableFilterBase {
   options: readonly { label: string, value: string }[]
 }
 
+/**
+ * @deprecated Use `<QueryToolbar>` + `usePaginatedQuery` for new tables. This
+ * client-side filter config is still supported for legacy paths that haven't
+ * been migrated yet (Activities, Past Meetings, Past Proposals, Projects,
+ * Customer Pipelines). Each migration is queued as a follow-up issue.
+ */
 export type DataTableFilterConfig
   = DataTableSearchFilter
     | DataTableSelectFilter
@@ -55,6 +61,8 @@ export type DataTableFilterConfig
  * Controlled pagination state for server-paged tables. When present, DataTable
  * switches to `manualPagination` — caller passes the current-page slice as
  * `data` and reports the global row count via `rowCount`.
+ *
+ * Built by `toDataTablePagination(p)` from a `usePaginatedQuery` result.
  */
 export interface DataTableServerPagination {
   pageIndex: number
@@ -62,8 +70,32 @@ export interface DataTableServerPagination {
   rowCount: number
   onPageChange: (pageIndex: number) => void
   onPageSizeChange?: (pageSize: number) => void
+  /** When provided, the pagination footer renders a page-size selector. */
+  pageSizeOptions?: readonly number[]
   /** When true, render a muted "Loading…" hint in the pagination bar. */
   isFetching?: boolean
+}
+
+// -- Server-side sort control --
+
+/**
+ * Controlled sort state for server-sorted tables. When present, DataTable
+ * switches to `manualSorting` — caller drives the order, and column-header
+ * clicks emit `onSortChange` events that the caller routes back to its
+ * server query.
+ *
+ * `fallbackVisual` is used to populate the visible sort indicator when the
+ * server is using its natural fallback order (no explicit `sortBy`); the
+ * URL state stays clean while the column header still shows the down-arrow.
+ *
+ * Built by `toDataTableSorting(p, opts)` from a `usePaginatedQuery` result.
+ */
+export interface DataTableServerSorting {
+  sortBy: string | undefined
+  sortDir: 'asc' | 'desc' | undefined
+  onSortChange: (sortBy: string | undefined, sortDir?: 'asc' | 'desc') => void
+  /** Visual default when `sortBy` is undefined; matches the server fallback. */
+  fallbackVisual?: { id: string, desc: boolean }
 }
 
 // -- DataTable props --
@@ -90,4 +122,18 @@ export interface DataTableProps<TData, TMeta = unknown> {
    * global total so page-count math stays correct.
    */
   serverPagination?: DataTableServerPagination
+  /**
+   * Opt into server-side sorting. When set, DataTable runs in `manualSorting`
+   * mode — column-header clicks emit `onSortChange` events instead of doing
+   * client-side sort. Pair with `serverPagination` for fully server-controlled
+   * tables.
+   */
+  serverSorting?: DataTableServerSorting
+  /**
+   * Controlled column visibility. When set, this map drives TanStack Table's
+   * visibility state — pair with `useColumnVisibility(tableId, columns)` to
+   * persist user toggles to localStorage. When omitted, DataTable falls back
+   * to static `meta.hidden` only.
+   */
+  columnVisibility?: VisibilityState
 }

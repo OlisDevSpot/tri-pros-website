@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { ChevronDownIcon, TrashIcon } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
+import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 type Incentive = ProposalFormSchema['funding']['data']['incentives'][number]
@@ -33,8 +34,8 @@ export function IncentiveCollapsibleHeader({
           </span>
           {hasAmount && (
             <Badge variant="secondary" className="bg-emerald-500/10 text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
-              -$
-              {incentive.amount.toLocaleString()}
+              -
+              {formatAsDollars(incentive.amount)}
             </Badge>
           )}
           {hasOffer && (

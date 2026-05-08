@@ -5,6 +5,9 @@ import { expand } from 'dotenv-expand'
 
 import z from 'zod'
 
+// Load .env.local first (dispatch worktree overrides), then .env as fallback.
+// dotenv won't overwrite already-set vars, so .env.local wins.
+config({ path: '.env.local' })
 expand(config({ path: '.env' }))
 
 const envSchema = z.object({
@@ -45,6 +48,7 @@ const envSchema = z.object({
   ZOHO_SIGN_CLIENT_ID: z.string().optional(),
   ZOHO_SIGN_CLIENT_SECRET: z.string().optional(),
   ZOHO_SIGN_REFRESH_TOKEN: z.string().optional(),
+  ZOHO_SIGN_WEBHOOK_SECRET: z.string().optional(),
 
   // QUICKBOOKS
   QB_CLIENT_ID: z.string(),
@@ -69,6 +73,9 @@ const envSchema = z.object({
   QSTASH_NEXT_SIGNING_KEY: z.string(),
   UPSTASH_REDIS_REST_URL: z.string(),
   UPSTASH_REDIS_REST_TOKEN: z.string(),
+
+  // BINA (GoHighLevel webhook)
+  BINA_WEBHOOK_SECRET: z.string().optional(),
 
   // ABLY
   ABLY_API_KEY: z.string(),

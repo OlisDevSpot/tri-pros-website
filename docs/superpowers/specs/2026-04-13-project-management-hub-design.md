@@ -1015,3 +1015,74 @@ src/features/project-management/ui/views/create-project-view.tsx  # Replaced by 
 - **Stale addendum alerts** — future widget.
 - **Related portfolio projects (#64)** — unchanged; separate spec.
 - **Bulk image move bug (#41)** — unchanged; separate PR.
+
+---
+
+## Addendum (2026-05-03) — Zoho Sign webhook foundation (issue #75)
+
+This spec assumed throughout §6.2.2, §6.6, §7, and §11 that a Zoho Sign
+webhook handler already exists. It did not. Issue #75 ships the **proposal-
+contract** webhook foundation; the addendum/change-order extension is
+designed in but not implemented as part of #75.
+
+### What ships in #75
+
+- `POST /api/webhooks/zoho-sign` — HMAC-verified receiver (secret in
+  `ZOHO_SIGN_WEBHOOK_SECRET`).
+- A QStash job `sync-zoho-sign-status` that handles five operation types:
+  `RequestRecipientViewed`, `RequestCompleted`, `RequestRejected`,
+  `RequestRecalled`, `RequestExpired`.
+- Three new columns on `proposals`: `contract_viewed_at`,
+  `contract_signed_at`, `contract_declined_at`.
+- Auto status promotion: `RequestCompleted` flips
+  `proposals.status → 'approved'` and stamps `approvedAt` if not already
+  set. This matches the trigger semantics for project conversion (the
+  existing manual approval path stays intact for proposals signed in person
+  or pre-webhook).
+- Notification stubs (`notifyContractSigned`, `notifyContractDeclined`)
+  that log events. Real dispatch lands with the upcoming notifications
+  overhaul.
+
+### What this spec still owns (deferred to PM-hub implementation)
+
+The webhook handler in #75 looks up by `proposals.signingRequestId` only.
+A webhook event whose `request_id` does not match any proposal is dropped
+with a warn-log. When the PM hub is built, that handler grows a second
+lookup branch:
+
+```
+findProposalBySigningRequestId(request_id)        // existing
+  ?? findMediaFileByZohoEnvelopeId(request_id)    // new (PM hub)
+```
+
+The PM-hub PR adds:
+1. A new DAL function `findMediaFileByZohoEnvelopeId` reading
+   `media_files.tags.zohoEnvelopeId`.
+2. A second QStash branch in `sync-zoho-sign-status.ts` that, on
+   `RequestCompleted`:
+   - downloads the signed PDF and replaces the `media_files` row,
+   - applies scope deltas to `x_projectScopes`,
+   - recalculates contract value,
+   - logs an `activities` audit entry,
+   - publishes the Ably realtime event described in §7.2.
+3. Decline branch behavior described in §7.4 (no scope changes, status
+   flips on the `media_files` row).
+
+### Why split this way
+
+Shipping the proposal-contract path unblocks contract-signed visibility
+across the whole app **today**, without waiting on the PM-hub PR. The PM-
+hub PR adds a parallel lookup branch, not a parallel route, so there's no
+duplication and no rewrite. The webhook URL and secret remain stable
+across both phases.
+
+### Edge cases to revisit when PM-hub lands
+
+- **Two `request_id`s collide across `proposals` and `media_files`** —
+  shouldn't happen (Zoho IDs are globally unique), but if a future migration
+  copies IDs, the dual-lookup must be deterministic. The PM-hub PR adds
+  proposal-first lookup ordering and an explicit assertion that exactly
+  one of the two finds a hit.
+- **Stale addendum recalls** — when an agent recalls an addendum we
+  haven't built UI for yet, the webhook arrives with no matching
+  `media_files` row. PM-hub PR keeps the warn-log behavior from #75.

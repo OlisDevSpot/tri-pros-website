@@ -9,6 +9,7 @@ import { customizableSections, generateProposalSteps } from '@/features/proposal
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useSendProposalEmail } from '@/features/proposal-flow/dal/client/mutations/use-send-proposal-email'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
+import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/hooks'
@@ -24,6 +25,7 @@ export function Proposal() {
   const trpc = useTRPC()
   const recordView = useMutation(trpc.proposalsRouter.delivery.recordView.mutationOptions())
   const ability = useAbility()
+  const viewMode = useViewMode()
   const hasRecorded = useRef(false)
 
   useEffect(() => {
@@ -98,9 +100,12 @@ export function Proposal() {
                     proposalId={params.proposalId}
                     token={token ?? undefined}
                     variant="full"
-                    isAgent={ability.can('update', 'Proposal')}
+                    isAgent={viewMode === 'agent'}
                     customerAge={customer?.customerAge ?? null}
                     customerId={customer?.id ?? null}
+                    envelopeDocumentIds={proposal.data.formMetaJSON?.envelopeDocumentIds ?? null}
+                    proposalKind={proposal.data.kind}
+                    customerName={customer?.name ?? null}
                     proposalStatus={proposal.data.status}
                     proposalSentAt={proposal.data.sentAt}
                     isSendingEmail={sendProposalEmail.isPending}

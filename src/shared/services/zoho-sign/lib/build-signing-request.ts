@@ -1,9 +1,18 @@
 import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
-import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
+import { cslbEarliestStartDate } from '@/shared/entities/proposals/lib/cslb-start-date'
 import { ZOHO_SIGN_TEMPLATES } from '../constants'
 
-export function buildSigningRequest(proposal: ProposalWithCustomer) {
+interface BuildOptions {
+  /**
+   * Page count of the attached SOW PDF. Required — the request body's
+   * notes field references it so signers can confirm at-a-glance the
+   * envelope's SOW pagination matches what they reviewed.
+   */
+  sowPages: number
+}
+
+export function buildSigningRequest(proposal: ProposalWithCustomer, { sowPages }: BuildOptions) {
   const { customer, projectJSON, fundingJSON } = proposal
   const { data: project } = projectJSON
   const { data: funding } = fundingJSON
@@ -23,16 +32,13 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
   const isSenior = customer.customerAge >= 65
   const { templateId, actions: actionIds } = isSenior ? ZOHO_SIGN_TEMPLATES.senior : ZOHO_SIGN_TEMPLATES.base
 
-  const sowText = sowToPlaintext(proposal.projectJSON.data.sow ?? [])
-  const sow1 = sowText.slice(0, 2000)
-  const sow2 = sowText.slice(2000, 6000)
-
+  // Start date must respect the buyer's CSLB right of rescission window
+  // (3 business days / 5 for seniors per AB 2471). See
+  // `cslb-start-date.ts` for the statutory rationale.
   const validThroughTimeframe = Number(project.validThroughTimeframe.replace(/\D/g, ''))
-  const startDate = new Date()
-  const completionDate = new Date()
-  const daysToAdd = 3
-  startDate.setDate(startDate.getDate() + daysToAdd)
-  completionDate.setDate(startDate.getDate() + validThroughTimeframe)
+  const startDate = cslbEarliestStartDate(new Date(), isSenior)
+  const completionDate = new Date(startDate)
+  completionDate.setDate(completionDate.getDate() + validThroughTimeframe)
 
   return {
     templateId,
@@ -45,8 +51,6 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
             'ho-age': String(customer.customerAge),
             'start-date': startDate.toLocaleDateString(),
             'completion-date': completionDate.toLocaleDateString(),
-            'sow-1': sow1,
-            'sow-2': sow2,
             'tcp': String(computeFinalTcp(funding)),
             'deposit': String(funding.depositAmount),
             'ho-address': customerAddress,
@@ -75,7 +79,7 @@ export function buildSigningRequest(proposal: ProposalWithCustomer) {
             verification_type: 'EMAIL',
           },
         ],
-        notes: '',
+        notes: `Scope of Work attached as a separate document (${sowPages} ${sowPages === 1 ? 'page' : 'pages'}).`,
       },
     },
   }

@@ -1,8 +1,9 @@
 'use client'
 
+import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
 import type { ZohoActionStatus, ZohoContractStatus } from '@/shared/services/zoho-sign/types'
 import { useMutation } from '@tanstack/react-query'
-import { CheckCircle, Eye, Loader2, Mail, Minus, RefreshCw, Send, Trash2 } from 'lucide-react'
+import { CheckCircle, Eye, FileText, Loader2, Mail, Minus, PlusCircle, RefreshCw, Send, Sparkles, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
@@ -11,10 +12,11 @@ import { Textarea } from '@/shared/components/ui/textarea'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { formatDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+import { ENVELOPE_DOCUMENT_LABELS } from '@/shared/services/zoho-sign/documents/labels'
 import { useTRPC } from '@/trpc/helpers'
 import { ACTION_TOOLTIPS } from '../constants/contract-statuses'
 import { useCreditCooldown } from '../hooks/use-credit-cooldown'
-import { CustomerAgeForm } from './customer-age-form'
+import { AgentDraftConfigurationForm } from './agent-draft-configuration-form'
 import { ResendConfirmDialog } from './resend-confirm-dialog'
 
 interface AgentContractViewProps {
@@ -22,6 +24,9 @@ interface AgentContractViewProps {
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
   customerAge: number | null
   customerId: string | null
+  envelopeDocumentIds: readonly EnvelopeDocumentId[] | null
+  proposalKind?: ProposalKind
+  customerName?: string | null
   onSendProposalEmail?: (message: string) => void
   isSendingEmail?: boolean
   proposalStatus?: string
@@ -66,6 +71,9 @@ export function AgentContractView({
   proposalId,
   contractStatus,
   customerAge,
+  envelopeDocumentIds,
+  proposalKind,
+  customerName,
   onSendProposalEmail,
   isSendingEmail,
   proposalStatus,
@@ -154,18 +162,18 @@ export function AgentContractView({
             )}
           </div>
 
-          {/* Age gate — must be set before any contract actions */}
-          {customerAge == null && (
-            <CustomerAgeForm proposalId={proposalId} />
+          {!contractStatus && (customerAge == null || envelopeDocumentIds == null) && (
+            <AgentDraftConfigurationForm
+              proposalId={proposalId}
+              initialAge={customerAge}
+            />
           )}
 
-          {/* State: Draft is being created by background job */}
-          {!contractStatus && isDraftSyncing && customerAge != null && (
+          {!contractStatus && isDraftSyncing && customerAge != null && envelopeDocumentIds != null && (
             <DraftSyncingState />
           )}
 
-          {/* State: No contract yet (age must be set) */}
-          {!contractStatus && !isDraftSyncing && customerAge != null && (
+          {!contractStatus && !isDraftSyncing && customerAge != null && envelopeDocumentIds != null && (
             <NoContractState
               isSent={isSent}
               isSendingEmail={isSendingEmail ?? false}
@@ -216,6 +224,17 @@ export function AgentContractView({
                   {' '}
                   {formatDate(contractStatus.contractSentAt)}
                 </p>
+              )}
+
+              {/* Pre-send review — only shown while the envelope is still a draft.
+                  Read-only summary so the agent can confirm what's about to go out
+                  before clicking "Send for Signing". */}
+              {requestStatus === 'draft' && proposalKind && envelopeDocumentIds && (
+                <PreSendReview
+                  proposalKind={proposalKind}
+                  customerName={customerName ?? null}
+                  envelopeDocumentIds={envelopeDocumentIds}
+                />
               )}
 
               {/* Action buttons — contextual to current state */}
@@ -307,6 +326,62 @@ function NoContractState(props: {
         <Send className="mr-2 size-4" />
         Send Proposal Link
       </Button>
+    </div>
+  )
+}
+
+function PreSendReview({
+  proposalKind,
+  customerName,
+  envelopeDocumentIds,
+}: {
+  proposalKind: ProposalKind
+  customerName: string | null
+  envelopeDocumentIds: readonly EnvelopeDocumentId[]
+}) {
+  const isInitialSale = proposalKind === 'initial-sale'
+  const KindIcon = isInitialSale ? Sparkles : PlusCircle
+  const kindLabel = isInitialSale ? 'Initial sale' : 'Additional work'
+  const reason = isInitialSale
+    ? customerName
+      ? `First proposal for ${customerName} — a project will be created when this is approved.`
+      : 'First proposal on this customer — a project will be created when this is approved.'
+    : customerName
+      ? `Adding scope to ${customerName}'s existing project.`
+      : 'Adding scope to an existing project.'
+
+  return (
+    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+      <div className="flex items-start gap-2.5">
+        <KindIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2">
+            <p className="text-sm font-medium text-foreground">
+              {kindLabel}
+            </p>
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+              {proposalKind}
+            </span>
+          </div>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            {reason}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 border-t border-primary/15 pt-3">
+        <p className="text-xs font-medium text-muted-foreground">
+          Documents in this envelope
+        </p>
+        <ul className="mt-1.5 flex flex-col gap-1">
+          {envelopeDocumentIds.map(id => (
+            <li key={id} className="flex items-center gap-2 text-sm">
+              <FileText className="size-3.5 shrink-0 text-muted-foreground" />
+              <span>{ENVELOPE_DOCUMENT_LABELS[id] ?? id}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   )
 }

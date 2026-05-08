@@ -1,12 +1,17 @@
 import { TRPCError } from '@trpc/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
-import { desc, eq, ilike, or } from 'drizzle-orm'
+import { and, desc, eq, gte, ilike, inArray, lte, or } from 'drizzle-orm'
 import z from 'zod'
 import env from '@/shared/config/server-env'
-import { intakeModes } from '@/shared/constants/enums'
-import { getCustomer, getCustomerByNotionId, getCustomers, syncAllCustomers } from '@/shared/dal/server/customers/api'
+import { customerPipelines, intakeModes } from '@/shared/constants/enums'
+import { getCustomer, getCustomers } from '@/shared/dal/server/customers/api'
 import { addParticipant } from '@/shared/dal/server/meetings/participants'
+import { buildFilterWhere } from '@/shared/dal/server/query/filters'
+import { paginate } from '@/shared/dal/server/query/output'
+import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
+import { buildSearchWhere } from '@/shared/dal/server/query/search'
+import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
@@ -37,20 +42,61 @@ export const customersRouter = createTRPCRouter({
       return getCustomers({ isSuperAdmin })
     }),
 
+  // Server-paginated customers list. Drives /dashboard/customers and the
+  // lead-sources-admin "All customers" pane. Each row carries its joined
+  // leadSource (name + slug); NULL joins mean "unknown legacy import".
+  list: agentProcedure
+    .input(paginatedQueryInput({
+      pipeline: z.array(z.enum(customerPipelines)).optional(),
+      createdAt: dateRangeSchema.optional(),
+    }))
+    .query(async ({ input }) => {
+      const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
+      const filterWhere = buildFilterWhere(input.filters, {
+        pipeline: v => (v.length > 0 ? inArray(customers.pipeline, v) : undefined),
+        createdAt: v => and(
+          v.from ? gte(customers.createdAt, v.from) : undefined,
+          v.to ? lte(customers.createdAt, v.to) : undefined,
+        ),
+      })
+      const where = and(searchWhere, filterWhere)
+
+      const orderBy = buildOrderBy(input.sort, {
+        name: customers.name,
+        email: customers.email,
+        createdAt: customers.createdAt,
+        pipeline: customers.pipeline,
+        leadSourceName: leadSourcesTable.name,
+      }, desc(customers.createdAt))
+
+      return paginate({
+        query: () => db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            createdAt: customers.createdAt,
+            pipeline: customers.pipeline,
+            leadSourceId: customers.leadSourceId,
+            leadSourceName: leadSourcesTable.name,
+            leadSourceSlug: leadSourcesTable.slug,
+          })
+          .from(customers)
+          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
+          .where(where)
+          .orderBy(...orderBy)
+          .limit(input.pagination.limit)
+          .offset(input.pagination.offset),
+        count: () => db.$count(customers, where),
+      })
+    }),
+
   // Fetch a single customer by internal UUID
   getById: agentProcedure
     .input(z.object({ customerId: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
       const isSuperAdmin = ctx.ability.can('manage', 'all')
       return getCustomer(input.customerId, { isSuperAdmin })
-    }),
-
-  // Fetch a single customer by Notion contact ID
-  getByNotionId: agentProcedure
-    .input(z.object({ notionContactId: z.string() }))
-    .query(async ({ input, ctx }) => {
-      const isSuperAdmin = ctx.ability.can('manage', 'all')
-      return getCustomerByNotionId(input.notionContactId, { isSuperAdmin })
     }),
 
   // Search customers by name (agents) or name + phone (super-admins). Phone
@@ -268,23 +314,6 @@ export const customersRouter = createTRPCRouter({
         .returning()
 
       return note
-    }),
-
-  // Fetch notes for a customer — any agent
-  getNotes: agentProcedure
-    .input(z.object({ customerId: z.string().uuid() }))
-    .query(async ({ input }) => {
-      return db
-        .select()
-        .from(customerNotes)
-        .where(eq(customerNotes.customerId, input.customerId))
-        .orderBy(desc(customerNotes.createdAt))
-    }),
-
-  // Pull all Notion contacts and upsert into the customers table
-  syncFromNotion: agentProcedure
-    .mutation(async () => {
-      return syncAllCustomers()
     }),
 
   // Public intake form submission — creates customer + optional note

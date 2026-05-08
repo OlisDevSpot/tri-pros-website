@@ -2,7 +2,6 @@
 
 import { LogOutIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { ROOTS } from '@/shared/config/roots'
 import { signOut } from '@/shared/domains/auth/client'
 import { Button } from '../ui/button'
 
@@ -15,7 +14,7 @@ export function LogoutButton({ asMenuItem = false }: Props) {
 
   async function handleLogout() {
     await signOut()
-    router.push(`${ROOTS.generateUrl('/', ({ absolute: true }))}`)
+    router.push('/')
   }
 
   return (

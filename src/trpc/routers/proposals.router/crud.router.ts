@@ -1,13 +1,23 @@
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 import { ROOTS } from '@/shared/config/roots'
+import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
+import { pipelines } from '@/shared/constants/enums/pipelines'
 import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
-import { createProposal, deleteProposal, getProposal, getProposals, updateProposal } from '@/shared/dal/server/proposals/api'
+import { createProposal, deleteProposal, getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
+import { buildFilterWhere } from '@/shared/dal/server/query/filters'
+import { paginate } from '@/shared/dal/server/query/output'
+import { dateRangeSchema, numberRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
+import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
 import { insertProposalSchema } from '@/shared/db/schema'
+import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
+import { proposalViews } from '@/shared/db/schema/proposal-views'
+import { proposals } from '@/shared/db/schema/proposals'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 
 export const crudRouter = createTRPCRouter({
@@ -43,14 +53,141 @@ export const crudRouter = createTRPCRouter({
       return proposal
     }),
 
-  getProposals: agentProcedure
-    .query(async ({ ctx }) => {
+  // Server-paginated proposals list. Drives the Past Proposals table and the
+  // dashboard-widget recent-proposals strip. Super-admins see all proposals;
+  // agents see ones they own.
+  //
+  // Filters (URL-driven via the query toolkit):
+  //   status:     multi-select on proposals.status
+  //   createdAt:  date-range on proposals.createdAt
+  //   sentAt:     date-range on proposals.sentAt
+  //   pipeline:   'projects' | 'fresh' | 'rehash' | 'dead' (derived from
+  //               meetings.projectId IS NOT NULL → 'projects', else
+  //               meetings.pipeline)
+  //   customerId: scope to one customer (profile modal)
+  //   meetingId:  scope to one meeting (meeting overview card list)
+  //
+  // Search: ilike against proposals.label OR customers.name.
+  // Sort whitelist: createdAt, sentAt, status, label, customerName, viewCount, price.
+  // Default order: createdAt DESC.
+  //
+  // `price` is derived (matches `computeFinalTcp` in entities/proposals/lib):
+  //   GREATEST(0, startingTcp - SUM(discount-typed incentive amounts))
+  // It's expressed as a raw SQL fragment rather than a stored column so the
+  // single source of truth stays in the helper. Drift is impossible because
+  // the SQL mirrors the helper's formula 1:1.
+  list: agentProcedure
+    .input(paginatedQueryInput({
+      status: z.array(z.enum(proposalStatuses)).optional(),
+      kind: z.array(z.enum(proposalKinds)).optional(),
+      createdAt: dateRangeSchema.optional(),
+      sentAt: dateRangeSchema.optional(),
+      pipeline: z.enum(pipelines).optional(),
+      price: numberRangeSchema.optional(),
+      customerId: z.string().uuid().optional(),
+      meetingId: z.string().uuid().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
       const { user } = ctx.session
       const isOmni = ctx.ability.can('manage', 'all')
 
-      const proposals = await getProposals(user.id, isOmni)
+      const baseScope = isOmni ? undefined : eq(proposals.ownerId, user.id)
 
-      return proposals
+      const searchTerm = input.search?.trim()
+      const searchWhere = searchTerm
+        ? or(
+            ilike(proposals.label, `%${searchTerm}%`),
+            ilike(customers.name, `%${searchTerm}%`),
+          )
+        : undefined
+
+      // Derived final contract price — mirrors `computeFinalTcp` in
+      // shared/entities/proposals/lib. Used by both the price filter and the
+      // `price` sort key below.
+      const finalTcpExpr = sql<number>`GREATEST(
+        0::numeric,
+        COALESCE((${proposals.fundingJSON}->'data'->>'startingTcp')::numeric, 0)
+        - COALESCE((
+            SELECT SUM((inc->>'amount')::numeric)
+            FROM jsonb_array_elements(${proposals.fundingJSON}->'data'->'incentives') AS inc
+            WHERE inc->>'type' = 'discount'
+          ), 0)
+      )`
+
+      const filterWhere = buildFilterWhere(input.filters, {
+        status: v => (v.length > 0 ? inArray(proposals.status, v) : undefined),
+        kind: v => (v.length > 0 ? inArray(proposals.kind, v) : undefined),
+        createdAt: v => and(
+          v.from ? gte(proposals.createdAt, v.from) : undefined,
+          v.to ? lte(proposals.createdAt, v.to) : undefined,
+        ),
+        sentAt: v => and(
+          v.from ? gte(proposals.sentAt, v.from) : undefined,
+          v.to ? lte(proposals.sentAt, v.to) : undefined,
+        ),
+        pipeline: (v) => {
+          if (v === 'projects') {
+            return sql`${meetings.projectId} IS NOT NULL`
+          }
+          if (v === 'leads') {
+            return sql`FALSE`
+          }
+          return and(
+            sql`${meetings.projectId} IS NULL`,
+            eq(meetings.pipeline, v),
+          )
+        },
+        price: v => and(
+          typeof v.min === 'number' ? sql`${finalTcpExpr} >= ${v.min}` : undefined,
+          typeof v.max === 'number' ? sql`${finalTcpExpr} <= ${v.max}` : undefined,
+        ),
+        customerId: v => eq(customers.id, v),
+        meetingId: v => eq(proposals.meetingId, v),
+      })
+
+      const where = and(baseScope, searchWhere, filterWhere)
+
+      const orderBy = buildOrderBy(input.sort, {
+        createdAt: proposals.createdAt,
+        sentAt: proposals.sentAt,
+        status: proposals.status,
+        label: proposals.label,
+        customerName: customers.name,
+        price: finalTcpExpr,
+      }, desc(proposals.createdAt))
+
+      return paginate({
+        query: () => db
+          .select({
+            ...getTableColumns(proposals),
+            viewCount: count(proposalViews.id),
+            lastViewedAt: max(proposalViews.viewedAt),
+            customerId: customers.id,
+            customerName: customers.name,
+            meetingPipeline: meetings.pipeline,
+            meetingProjectId: meetings.projectId,
+          })
+          .from(proposals)
+          .leftJoin(proposalViews, eq(proposalViews.proposalId, proposals.id))
+          .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+          .leftJoin(customers, eq(customers.id, meetings.customerId))
+          .where(where)
+          .groupBy(proposals.id, customers.id, customers.name, meetings.pipeline, meetings.projectId)
+          .orderBy(...orderBy)
+          .limit(input.pagination.limit)
+          .offset(input.pagination.offset),
+        // Count proposals matching where — joins to meetings/customers are
+        // 1:1 (FK), so count(proposals.id) is distinct without DISTINCT.
+        count: async () => {
+          const [row] = await db
+            .select({ c: count(proposals.id) })
+            .from(proposals)
+            .leftJoin(meetings, eq(meetings.id, proposals.meetingId))
+            .leftJoin(customers, eq(customers.id, meetings.customerId))
+            .where(where)
+          return row?.c ?? 0
+        },
+      })
     }),
 
   createProposal: agentProcedure
@@ -77,13 +214,12 @@ export const crudRouter = createTRPCRouter({
           const data = (projectJSON.data ?? {}) as Record<string, unknown>
 
           if (!data.sow) {
-            const sowFromSelections = tradeSelections.map(entry => ({
-              trade: { id: entry.tradeId, label: entry.tradeName },
-              scopes: entry.selectedScopes,
-              title: '',
-              contentJSON: '',
-              html: '',
-            }))
+            const sowFromSelections = tradeSelections.map(entry =>
+              createEmptySowSection({
+                trade: { id: entry.tradeId, label: entry.tradeName },
+                scopes: entry.selectedScopes,
+              }),
+            )
 
             input = {
               ...rawInput,
@@ -94,7 +230,7 @@ export const crudRouter = createTRPCRouter({
                   sow: sowFromSelections,
                 },
               },
-            } as typeof rawInput
+            } as unknown as typeof rawInput
           }
         }
 

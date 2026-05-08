@@ -84,16 +84,16 @@ export function SidebarUserButton({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem className="p-0 cursor-pointer">
-                <MarketplaceButton asMenuItem alternateText="Upgrade to Pro" absolute />
+                <MarketplaceButton asMenuItem alternateText="Upgrade to Pro" />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem className="p-0 cursor-pointer">
-                <AccountButton asMenuItem absolute />
+                <AccountButton asMenuItem />
               </DropdownMenuItem>
               <DropdownMenuItem className="p-0 cursor-pointer">
-                <BillingButton asMenuItem absolute />
+                <BillingButton asMenuItem />
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

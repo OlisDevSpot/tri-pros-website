@@ -1,3 +1,5 @@
+'use client'
+
 import * as React from 'react'
 import {
   Popover,
@@ -7,7 +9,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/shared/components/ui/tooltip'
 
@@ -36,6 +37,13 @@ interface Props {
   side?: 'top' | 'right' | 'bottom' | 'left'
 }
 
+/**
+ * Tooltip on pointer devices, real Popover on touch — same frosted-glass
+ * surface either way. Use this whenever the trigger needs to surface
+ * information on phones/tablets, not only on hover. For desktop-only
+ * tooltips, use the base `Tooltip` from `@/shared/components/ui/tooltip`
+ * directly — it shares the same surface treatment.
+ */
 export function HybridPopoverTooltip({ children, content, side = 'top' }: Props) {
   const isTouch = useCoarsePointer()
 
@@ -43,7 +51,7 @@ export function HybridPopoverTooltip({ children, content, side = 'top' }: Props)
     return (
       <Popover>
         <PopoverTrigger asChild>{children}</PopoverTrigger>
-        <PopoverContent side={side} className="max-w-xs text-sm">
+        <PopoverContent side={side} className="max-w-xs w-fit text-sm">
           {content}
         </PopoverContent>
       </Popover>
@@ -51,13 +59,11 @@ export function HybridPopoverTooltip({ children, content, side = 'top' }: Props)
   }
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent side={side} className="max-w-xs text-sm">
-          {content}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side}>
+        {content}
+      </TooltipContent>
+    </Tooltip>
   )
 }

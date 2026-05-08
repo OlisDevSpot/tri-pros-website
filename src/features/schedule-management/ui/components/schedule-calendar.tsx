@@ -20,7 +20,7 @@ import { ScheduleCalendarDot } from './schedule-calendar-dot'
 import { ScheduleTodayView } from './schedule-today-view'
 import { ScheduleWeekView } from './schedule-week-view'
 
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
 
 interface ScheduleCalendarProps {
   data: MeetingRow[]

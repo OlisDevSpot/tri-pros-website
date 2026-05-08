@@ -21,6 +21,7 @@ function PopoverContent({
   className,
   align = 'center',
   sideOffset = 4,
+  style,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Content>) {
   return (
@@ -29,12 +30,27 @@ function PopoverContent({
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}
+        {...props}
         className={cn(
-          'text-popover-foreground backdrop-blur-xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border border-border/50 p-4 shadow-lg outline-hidden',
+          'z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md p-4 text-popover-foreground outline-hidden',
+          'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
           className,
         )}
-        style={{ backgroundColor: 'oklch(from var(--popover) l c h / 0.8)', ...props.style }}
-        {...props}
+        // Frosted-glass surface assembled inline so every layer (sheen,
+        // backdrop-filter, four-stop shadow) lands on the same composite
+        // layer as Floating UI's `transform: translate3d(...)`. Tailwind's
+        // `backdrop-blur-*` emits backdrop-filter via a chain of CSS vars
+        // that Chrome's compositor drops when the element is portal-rendered
+        // AND 3D-transformed; inline style avoids that. Tokens are defined
+        // per-theme in globals.css (`--popover-glass*`).
+        style={{
+          backgroundColor: 'var(--popover-glass)',
+          backgroundImage: 'var(--popover-glass-overlay)',
+          backdropFilter: 'blur(32px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(32px) saturate(180%)',
+          boxShadow: 'var(--popover-glass-shadow)',
+          ...style,
+        }}
       />
     </PopoverPrimitive.Portal>
   )

@@ -12,6 +12,9 @@ export function ContractStatusPanel({
   isAgent,
   customerAge,
   customerId,
+  envelopeDocumentIds,
+  proposalKind,
+  customerName,
   onSendProposalEmail,
   isSendingEmail,
   proposalStatus,
@@ -36,6 +39,9 @@ export function ContractStatusPanel({
         contractStatus={contractStatus ?? null}
         customerAge={customerAge ?? null}
         customerId={customerId ?? null}
+        envelopeDocumentIds={envelopeDocumentIds ?? null}
+        proposalKind={proposalKind}
+        customerName={customerName ?? null}
         onSendProposalEmail={onSendProposalEmail}
         isSendingEmail={isSendingEmail}
         proposalStatus={proposalStatus}

@@ -4,20 +4,16 @@ import type { inferRouterOutputs } from '@trpc/server'
 
 import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
-import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 import type { PipelineScope } from '@/shared/domains/pipelines/ui/pipeline-scope-toggle'
 import type { AppRouter } from '@/trpc/routers/app'
 
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { meetingsStatConfig } from '@/features/meeting-flow/constants/meetings-stat-config'
-import { PastMeetingsTable } from '@/features/meeting-flow/ui/components/table'
 import { useScheduleHighlight } from '@/features/schedule-management/hooks/use-schedule-highlight'
-import { useScheduleTableTab } from '@/features/schedule-management/hooks/use-schedule-table-tab'
 import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-calendar-event'
-import { ActivitiesTable } from '@/features/schedule-management/ui/components/activities-table'
 import { ActivityForm } from '@/features/schedule-management/ui/components/activity-form'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
@@ -36,20 +32,18 @@ import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { useTRPC } from '@/trpc/helpers'
 
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['getAll'][number]
+type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
 
 export function ScheduleView() {
-  const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.SCHEDULE_LAYOUT, 'calendar')
   const [dateRange, setDateRange] = useState<{ from: Date, to: Date } | null>(null)
   const [calendarView, setCalendarView] = useState<CalendarViewType>('week')
   const [showSaturday, setShowSaturday] = useState(false)
   const activePipeline = getStoredPipeline()
   const [scope, setScope] = usePersistedState<PipelineScope>(STORAGE_KEYS.SCHEDULE_SCOPE, 'all')
-  const { tab: tableTab, setTab: setTableTab } = useScheduleTableTab()
   const [activityFormOpen, setActivityFormOpen] = useState(false)
 
   // Highlight support: when navigating from "View in Schedule" action
-  const { highlightMeetingId, highlightDate, isHighlighted, highlightRef } = useScheduleHighlight()
+  const { highlightDate, isHighlighted, highlightRef } = useScheduleHighlight()
   const highlightInitialDate = useMemo(() => {
     if (!highlightDate) {
       return undefined
@@ -58,40 +52,37 @@ export function ScheduleView() {
     return Number.isNaN(parsed.getTime()) ? undefined : parsed
   }, [highlightDate])
 
-  // Force calendar layout when navigating with highlight
-  useEffect(() => {
-    if (highlightMeetingId && layout !== 'calendar') {
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setLayout('calendar')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const handleToggleSaturday = useCallback(() => {
     setShowSaturday(prev => !prev)
   }, [])
 
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
-  const meetings = useQuery(trpc.meetingsRouter.getAll.queryOptions())
-  const activitiesQuery = useQuery(trpc.scheduleRouter.activities.getAll.queryOptions())
+  const meetings = useQuery(trpc.meetingsRouter.list.queryOptions({
+    pagination: { limit: 500, offset: 0 },
+  }))
+  const meetingRows = meetings.data?.rows
+  const activitiesQuery = useQuery(trpc.scheduleRouter.activities.list.queryOptions({
+    pagination: { limit: 500, offset: 0 },
+  }))
+  const activitiesData = activitiesQuery.data?.rows
   const { updateScheduledFor } = useMeetingActions()
 
   // Scope meetings by pipeline
   const scopedMeetings = useMemo(() => {
-    if (!meetings.data || scope === 'all') {
-      return meetings.data
+    if (!meetingRows || scope === 'all') {
+      return meetingRows
     }
-    return meetings.data.filter((m) => {
+    return meetingRows.filter((m) => {
       const derived = deriveMeetingPipeline({ projectId: m.projectId, pipeline: m.pipeline as 'fresh' | 'rehash' | 'dead' })
       return derived === scope
     })
-  }, [meetings.data, scope])
+  }, [meetingRows, scope])
 
   // Map activities to calendar events for the calendar view
   const activityEvents = useMemo(
-    () => (activitiesQuery.data ?? []).map(activityToCalendarEvent),
-    [activitiesQuery.data],
+    () => (activitiesData ?? []).map(activityToCalendarEvent),
+    [activitiesData],
   )
 
   // View meeting handler
@@ -132,18 +123,13 @@ export function ScheduleView() {
     updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() })
   }, [updateScheduledFor])
 
-  // Stats data — meetings only
-  const [tableFilteredData, setTableFilteredData] = useState<MeetingRow[] | null>(null)
-  const handleFilteredDataChange = useCallback((data: MeetingRow[]) => setTableFilteredData(data), [])
-
+  // Stats reflect the calendar's currently visible window. The schedule page
+  // is calendar-only — entity records (meetings table) live at /dashboard/meetings.
   const statsData = useMemo((): MeetingRow[] => {
     if (!scopedMeetings) {
       return []
     }
-    if (layout === 'table' && tableTab === 'meetings' && tableFilteredData) {
-      return tableFilteredData
-    }
-    if (layout === 'calendar' && dateRange) {
+    if (dateRange) {
       return scopedMeetings.filter((m) => {
         if (!m.scheduledFor) {
           return false
@@ -153,7 +139,7 @@ export function ScheduleView() {
       })
     }
     return scopedMeetings
-  }, [layout, dateRange, scopedMeetings, tableFilteredData, tableTab])
+  }, [dateRange, scopedMeetings])
 
   const isLoading = meetings.isLoading || activitiesQuery.isLoading
 
@@ -177,7 +163,7 @@ export function ScheduleView() {
     )
   }
 
-  const hasNoData = scopedMeetings.length === 0 && (activitiesQuery.data ?? []).length === 0
+  const hasNoData = scopedMeetings.length === 0 && (activitiesData ?? []).length === 0
 
   if (hasNoData) {
     return (
@@ -200,8 +186,6 @@ export function ScheduleView() {
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
         <StatBar items={meetingsStatConfig} data={statsData} />
         <ScheduleControlsBar
-          layout={layout}
-          onLayoutChange={setLayout}
           scope={scope}
           onScopeChange={setScope}
           activePipeline={activePipeline}
@@ -209,43 +193,26 @@ export function ScheduleView() {
           onCalendarViewChange={setCalendarView}
           showSaturday={showSaturday}
           onToggleSaturday={handleToggleSaturday}
-          tableTab={tableTab}
-          onTableTabChange={setTableTab}
           onNewActivity={() => setActivityFormOpen(true)}
         />
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        {layout === 'calendar'
-          ? (
-              <ScheduleCalendar
-                data={scopedMeetings}
-                actions={meetingActions}
-                additionalEvents={activityEvents}
-                onAssignOwner={handleAssignOwner}
-                onDateRangeChange={setDateRange}
-                onUpdateScheduledFor={handleUpdateScheduledFor}
-                activeView={calendarView}
-                onViewChange={setCalendarView}
-                showSaturday={showSaturday}
-                onToggleSaturday={handleToggleSaturday}
-                initialDate={highlightInitialDate}
-                isHighlighted={isHighlighted}
-                highlightRef={highlightRef}
-              />
-            )
-          : tableTab === 'meetings'
-            ? (
-                <PastMeetingsTable
-                  data={scopedMeetings}
-                  onFilteredDataChange={handleFilteredDataChange}
-                />
-              )
-            : (
-                <ActivitiesTable
-                  data={activitiesQuery.data ?? []}
-                />
-              )}
+        <ScheduleCalendar
+          data={scopedMeetings}
+          actions={meetingActions}
+          additionalEvents={activityEvents}
+          onAssignOwner={handleAssignOwner}
+          onDateRangeChange={setDateRange}
+          onUpdateScheduledFor={handleUpdateScheduledFor}
+          activeView={calendarView}
+          onViewChange={setCalendarView}
+          showSaturday={showSaturday}
+          onToggleSaturday={handleToggleSaturday}
+          initialDate={highlightInitialDate}
+          isHighlighted={isHighlighted}
+          highlightRef={highlightRef}
+        />
       </div>
 
       {/* Assign rep dialog */}

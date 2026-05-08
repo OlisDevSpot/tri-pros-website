@@ -1,11 +1,26 @@
+import type { ContractEvent } from '@/shared/constants/enums'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { resendClient } from '@/shared/services/resend/client'
+import { RESEND_FROM } from '@/shared/services/resend/constants'
 import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-emails'
 
 function createNotificationService() {
   return {
+    /**
+     * Stub. Wired from the Zoho Sign webhook job; logs the event so we can
+     * confirm wiring. Real dispatch lands with the notifications overhaul.
+     */
+    notifyContractStatusChange: async (params: {
+      event: ContractEvent
+      proposalOwnerId: string
+      proposalId: string
+      occurredAt: string
+    }) => {
+      console.warn(`[notificationService] notifyContractStatusChange:${params.event} (stub)`, params)
+    },
+
     notifyProposalViewed: async (params: {
       proposalOwnerId: string
       proposalLabel: string
@@ -31,7 +46,7 @@ function createNotificationService() {
       const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
 
       const { error } = await resendClient.emails.send({
-        from: 'Tri Pros System <info@triprosremodeling.com>',
+        from: RESEND_FROM.default,
         to: owner.email,
         subject: `🔔 ${params.customerName} just opened their proposal`,
         react: renderProposalViewedEmail({

@@ -1,15 +1,15 @@
 import type z from 'zod'
 import type { ProposalStatus } from '@/shared/constants/enums'
 import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
-import { relations } from 'drizzle-orm'
-import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { relations, sql } from 'drizzle-orm'
+import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { financeOptions } from './finance-options'
 import { meetings } from './meetings'
-import { proposalStatusEnum } from './meta'
+import { proposalKindEnum, proposalStatusEnum } from './meta'
 
 export type { ProposalStatus }
 
@@ -17,6 +17,11 @@ export const proposals = pgTable('proposals', {
   id,
   label,
   status: proposalStatusEnum('status').notNull().default('draft'),
+  // Frozen at insert: 'initial-sale' if the proposal's meeting has no
+  // project yet, 'additional-work' if it does. See createProposal DAL for
+  // the derivation. Drives Zoho envelope assembly + project-creation
+  // gating in the proposal table.
+  kind: proposalKindEnum('kind').notNull().default('initial-sale'),
   ownerId: text('owner_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
@@ -36,10 +41,25 @@ export const proposals = pgTable('proposals', {
 
   sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
   contractSentAt: timestamp('contract_sent_at', { mode: 'string', withTimezone: true }),
+  contractViewedAt: timestamp('contract_viewed_at', { mode: 'string', withTimezone: true }),
+  contractSignedAt: timestamp('contract_signed_at', { mode: 'string', withTimezone: true }),
+  contractDeclinedAt: timestamp('contract_declined_at', { mode: 'string', withTimezone: true }),
   approvedAt: timestamp('approved_at', { mode: 'string', withTimezone: true }),
   createdAt,
   updatedAt,
-})
+}, table => [
+  // At most one APPROVED initial-sale per meeting. Because the runtime
+  // derivation freezes kind from `meeting.projectId` at insert time, all
+  // initial-sale proposals for a single project live on the project's
+  // birthing meeting (the earliest meeting linked to it). So per-meeting
+  // uniqueness on (kind='initial-sale', status='approved') transitively
+  // enforces "at most one approved initial-sale per project" — the real
+  // business invariant. Many sent/draft initial-sales on the birthing
+  // meeting (the agent iterating on an offer) coexist freely.
+  uniqueIndex('proposals_one_approved_initial_sale_per_meeting_idx')
+    .on(table.meetingId)
+    .where(sql`kind = 'initial-sale' AND status = 'approved'`),
+])
 
 export const proposalsRelations = relations(proposals, ({ one }) => ({
   owner: one(user, {
@@ -69,6 +89,9 @@ export const insertProposalSchema = createInsertSchema(proposals, {
   id: true,
   token: true,
   updatedAt: true,
+  // `kind` is server-derived (see createProposal DAL) — never accepted from
+  // clients. Frozen at insert; updateProposal must not change it either.
+  kind: true,
 })
 
 export type InsertProposalSchema = z.infer<typeof insertProposalSchema>

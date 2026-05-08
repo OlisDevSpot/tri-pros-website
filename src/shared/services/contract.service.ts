@@ -1,7 +1,13 @@
-import type { ZohoActionStatus, ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
+import type { Buffer } from 'node:buffer'
+import type { ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
 import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
+import { pdfService } from '@/shared/services/pdf.service'
+import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
+import { assembleEnvelope } from '@/shared/services/zoho-sign/documents/assemble-envelope'
+import { buildProposalContext } from '@/shared/services/zoho-sign/documents/proposal-context'
 import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
+import { dedupeSignerStatuses } from '@/shared/services/zoho-sign/lib/dedupe-signer-statuses'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
 
 interface ZohoCreateDocResponse {
@@ -48,32 +54,6 @@ function createContractService() {
     )
   }
 
-  async function createDraft(proposalId: string, ownerKey: string | null) {
-    const proposal = await getProposal(proposalId)
-    if (!proposal) {
-      throw new Error(`Proposal ${proposalId} not found`)
-    }
-
-    const { templateId, body } = buildSigningRequest(proposal)
-
-    const res = await createFromTemplate(templateId, body, false)
-
-    if (!res.ok) {
-      const errorText = await res.text()
-      throw new Error(`Zoho Sign create draft failed: ${errorText}`)
-    }
-
-    const data = await res.json() as ZohoCreateDocResponse
-    const requestId = data.requests.request_id
-
-    if (!requestId) {
-      throw new Error('Zoho Sign returned no request_id')
-    }
-
-    await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
-    return { requestId, status: data.requests.request_status }
-  }
-
   /** Deletes a draft or recalls+deletes an in-progress request. Zoho uses PUT, not DELETE. */
   async function deleteRequest(requestId: string) {
     const res = await jsonRequest(`/requests/${requestId}/delete`, {
@@ -81,6 +61,112 @@ function createContractService() {
       body: JSON.stringify({ recall_inprogress: true }),
     })
     return res.ok
+  }
+
+  /**
+   * Attaches one or more files to an existing draft signing request.
+   * Zoho requires the `requests` wrapper in the multipart `data` field;
+   * an empty inner object means "keep the existing request metadata as-is,
+   * just add the file(s)". Confirmed via live test on 2026-04-23.
+   * See spec §6.5.
+   */
+  async function addFilesToRequest(requestId: string, files: Array<{ name: string, buffer: Buffer, mime: string }>): Promise<void> {
+    const auth = await getAuthHeader()
+    const form = new FormData()
+    form.append('data', JSON.stringify({ requests: {} }))
+    for (const f of files) {
+      form.append('file', new Blob([new Uint8Array(f.buffer)], { type: f.mime }), f.name)
+    }
+    const res = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
+      method: 'PUT',
+      headers: auth, // no explicit Content-Type; FormData sets multipart boundary
+      body: form,
+    })
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error(`Zoho addFilesToRequest failed (${res.status}): ${errorText}`)
+    }
+  }
+
+  function sanitizeFilename(name: string): string {
+    return name
+      .replace(/[\\/]/g, '_')
+      .replace(/\s+/g, '_')
+      .slice(0, 200)
+  }
+
+  async function parseDraftResponse(res: Response): Promise<{ requestId: string, status: string }> {
+    if (!res.ok) {
+      throw new Error(`Zoho Sign create draft failed: ${await res.text()}`)
+    }
+    const data = await res.json() as ZohoCreateDocResponse
+    const requestId = data.requests.request_id
+    if (!requestId) {
+      throw new Error('Zoho Sign returned no request_id')
+    }
+    return { requestId, status: data.requests.request_status }
+  }
+
+  /**
+   * Creates a Zoho Sign draft for a proposal. Two code paths:
+   *
+   * - **Registry path** (when `formMetaJSON.envelopeDocumentIds` is set):
+   *   builds a ProposalContext, validates the agent's selection against
+   *   the scenario rules, calls `assembleEnvelope` which posts to
+   *   `/templates/mergesend` (multi-template envelope) and attaches any
+   *   generated PDFs. The envelope's document set comes from the
+   *   registry; recipient/field unification is automatic via Zoho.
+   *
+   * - **Legacy path** (when the proposal has no `envelopeDocumentIds`):
+   *   the pre-Phase-4 flow — single-template `createdocument` against
+   *   base or senior tpr-HI plus an attached SOW PDF. Kept for in-flight
+   *   proposals created before the agent UI shipped; they pass through
+   *   without breaking. New proposals (post-Phase-5) will always carry
+   *   an `envelopeDocumentIds` selection and use the registry path.
+   *
+   * Both paths always generate a SOW PDF — the legacy templates were
+   * trimmed in Zoho (sow-1/sow-2 fields removed), so SOW content lives
+   * exclusively in the attached PDF on this path. See the design plan
+   * (.claude/plans/i-just-confirmed-harmonic-pinwheel.md) for the full
+   * migration shape.
+   */
+  async function createDraft(proposalId: string, ownerKey: string | null) {
+    const proposal = await getProposal(proposalId)
+    if (!proposal) {
+      throw new Error(`Proposal ${proposalId} not found`)
+    }
+
+    const selection = proposal.formMetaJSON.envelopeDocumentIds ?? []
+    if (selection.length > 0) {
+      const ctx = buildProposalContext(proposal)
+      const { requestId, status } = await assembleEnvelope(ctx)
+      await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
+      return { requestId, status }
+    }
+
+    // Legacy path: pre-Phase-5 proposals without an envelope-document selection.
+    const pdfBuffer = await pdfService.generateSowPdf({ proposalId })
+    const sowPages = await countPdfPages(pdfBuffer)
+    const { templateId, body } = buildSigningRequest(proposal, { sowPages })
+
+    const createRes = await createFromTemplate(templateId, body, false)
+    const { requestId, status } = await parseDraftResponse(createRes)
+
+    try {
+      await addFilesToRequest(requestId, [{
+        name: sanitizeFilename(`scope-of-work-${proposal.label || proposalId}.pdf`),
+        buffer: pdfBuffer,
+        mime: 'application/pdf',
+      }])
+    }
+    catch (attachErr) {
+      // Draft exists but attachment failed — clean up so next retry doesn't inherit a half-built envelope.
+      await deleteRequest(requestId).catch(() => {})
+      throw attachErr
+    }
+
+    await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
+    return { requestId, status }
   }
 
   return {
@@ -234,7 +320,6 @@ function createContractService() {
           actions: {
             role: string
             action_status: string
-            recipient_email: string
           }[]
         }
       }
@@ -244,11 +329,7 @@ function createContractService() {
       return {
         requestId: req.request_id,
         requestStatus: req.request_status as ZohoRequestStatus,
-        signerStatuses: req.actions.map(a => ({
-          role: a.role,
-          status: a.action_status as ZohoActionStatus,
-          recipientEmail: a.recipient_email,
-        })),
+        signerStatuses: dedupeSignerStatuses(req.actions),
       }
     },
   }

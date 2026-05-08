@@ -14,9 +14,11 @@ import {
 import { PinIcon } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/components/data-table/constants/skeleton-widths'
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
@@ -77,25 +79,60 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   onFilteredCountChange,
   onFilteredDataChange,
   serverPagination,
+  serverSorting,
+  columnVisibility: controlledColumnVisibility,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
-  const [sorting, setSorting] = useState<SortingState>(defaultSort ?? [])
+  const [internalSorting, setInternalSorting] = useState<SortingState>(defaultSort ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  // localStorage is read post-mount to avoid SSR/CSR hydration mismatch on
-  // table+column widths. Initial render uses defaults (matches server),
-  // useEffect rehydrates persisted sizing on the client.
+
+  // -- Server sort bridge ---------------------------------------------------
+  // When `serverSorting` is set, present its sort state to TanStack Table
+  // (with fallbackVisual filling in when sortBy is undefined). Column-header
+  // clicks dispatch through `serverSorting.onSortChange` instead of mutating
+  // local state.
+
+  const sorting: SortingState = useMemo(() => {
+    if (!serverSorting) {
+      return internalSorting
+    }
+    if (serverSorting.sortBy) {
+      return [{ id: serverSorting.sortBy, desc: serverSorting.sortDir !== 'asc' }]
+    }
+    if (serverSorting.fallbackVisual) {
+      return [serverSorting.fallbackVisual]
+    }
+    return []
+  }, [serverSorting, internalSorting])
+  // Default state matches SSR. Hydration from localStorage happens in the
+  // effect below — reading during `useState` init renders server-side with
+  // defaults but tries to apply saved values during hydration, and React 18
+  // refuses to patch layout-affecting attribute mismatches like column
+  // widths ("This won't be patched up"). Saved values then never reach the
+  // DOM. `isFrozen` uses a `null` sentinel for the pre-hydration value so
+  // the persist effect can tell "not yet loaded" from "user chose true".
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
-  const [isFrozen, setIsFrozen] = useState(true)
+  const [isFrozen, setIsFrozen] = useState<boolean | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
 
+  // Hydrate from localStorage after mount. The setState calls below are
+  // the intentional double-render — server and client both first render
+  // with defaults so hydration matches, then this effect updates state to
+  // saved values for the next render.
   useEffect(() => {
     if (!tableId) {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- hydration sentinel
+      setIsFrozen(true)
       return
     }
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- localStorage hydration
     setColumnSizing(loadColumnSizing(tableId))
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- localStorage hydration
     setIsFrozen(loadFrozen(tableId))
   }, [tableId])
+
+  const isFrozenEffective = isFrozen ?? true
 
   // -- Container width + scroll tracking ------------------------------------
 
@@ -124,7 +161,17 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   }, [])
 
   // -- Persist column sizes (debounced) -------------------------------------
+  // 300ms debounce keeps localStorage off the drag hot-path. The unmount
+  // flush below catches the case where the timer is cancelled before it
+  // fires — typically when the user reloads or navigates within 300ms of
+  // the last drag tick, which used to silently lose the resize.
+  const latestColumnSizing = useRef(columnSizing)
+  latestColumnSizing.current = columnSizing
 
+  // Skip the empty state — that covers both the pre-hydration default and
+  // the "user reset all columns" case. Both should NOT overwrite saved
+  // widths (the first would wipe them on mount; users who genuinely want a
+  // clean slate can clear localStorage).
   useEffect(() => {
     if (!tableId || Object.keys(columnSizing).length === 0) {
       return
@@ -138,24 +185,43 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     return () => clearTimeout(timer)
   }, [tableId, columnSizing])
 
+  // Synchronous flush on unmount. Reads via ref so we capture the latest
+  // sizing — the value closed over by the debounced effect would be stale
+  // by the time this cleanup runs. Same empty-state guard.
+  useEffect(() => () => {
+    if (!tableId) {
+      return
+    }
+    const sizing = latestColumnSizing.current
+    if (Object.keys(sizing).length === 0) {
+      return
+    }
+    try {
+      localStorage.setItem(`${COL_SIZE_KEY}:${tableId}`, JSON.stringify(sizing))
+    }
+    catch { /* localStorage unavailable */ }
+  }, [tableId])
+
   // -- Persist frozen state -------------------------------------------------
+  // Skip the `null` sentinel — that's the pre-hydration value and writing
+  // it would clobber the user's saved choice with the default `true`.
+  useEffect(() => {
+    if (!tableId || isFrozen === null) {
+      return
+    }
+    try {
+      localStorage.setItem(`${FROZEN_KEY}:${tableId}`, String(isFrozen))
+    }
+    catch { /* localStorage unavailable */ }
+  }, [tableId, isFrozen])
 
   const toggleFrozen = useCallback(() => {
-    setIsFrozen((prev) => {
-      const next = !prev
-      if (tableId) {
-        try {
-          localStorage.setItem(`${FROZEN_KEY}:${tableId}`, String(next))
-        }
-        catch { /* localStorage unavailable */ }
-      }
-      return next
-    })
-  }, [tableId])
+    setIsFrozen(prev => !(prev ?? true))
+  }, [])
 
   // -- Column visibility ----------------------------------------------------
 
-  const columnVisibility = useMemo<VisibilityState>(() => {
+  const fallbackColumnVisibility = useMemo<VisibilityState>(() => {
     const visibility: VisibilityState = {}
     for (const col of columns) {
       const key = 'accessorKey' in col ? col.accessorKey as string : undefined
@@ -165,6 +231,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
     return visibility
   }, [columns])
+
+  const columnVisibility = controlledColumnVisibility ?? fallbackColumnVisibility
 
   // -- Time-preset filter machinery -----------------------------------------
 
@@ -237,7 +305,23 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
         ? { pagination: { pageIndex: serverPagination.pageIndex, pageSize: serverPagination.pageSize } }
         : {}),
     },
-    onSortingChange: setSorting,
+    onSortingChange: serverSorting
+      ? (updater) => {
+          const next = typeof updater === 'function' ? updater(sorting) : updater
+          const head = next[0]
+          if (!head) {
+            serverSorting.onSortChange(undefined)
+            return
+          }
+          // Don't dispatch when the click matches the fallback visual — that
+          // would write a redundant URL key for the server's natural order.
+          const fallback = serverSorting.fallbackVisual
+          if (fallback && head.id === fallback.id && head.desc === fallback.desc && !serverSorting.sortBy) {
+            return
+          }
+          serverSorting.onSortChange(head.id, head.desc ? 'desc' : 'asc')
+        }
+      : setInternalSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnSizingChange: setColumnSizing,
     onPaginationChange: serverPagination
@@ -259,8 +343,9 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     ...(serverPagination
-      ? { manualPagination: true, rowCount: serverPagination.rowCount }
+      ? { manualPagination: true, manualFiltering: true, rowCount: serverPagination.rowCount }
       : { getPaginationRowModel: getPaginationRowModel(), initialState: { pagination: { pageSize } } }),
+    ...(serverSorting ? { manualSorting: true } : {}),
     meta: {
       ...meta,
       activeRowId,
@@ -279,7 +364,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const lastColExtra = needsOverflow ? 0 : effectiveContainer - totalDeclaredWidth
 
   // Frozen column shows shadow only when scrolled horizontally
-  const showFrozenShadow = isFrozen && isScrolled
+  const showFrozenShadow = isFrozenEffective && isScrolled
 
   // -- Filtered-data callbacks ----------------------------------------------
 
@@ -314,7 +399,11 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             isAnyColumnResizing && 'cursor-col-resize select-none',
           )}
         >
-          <Table className="table-fixed border-separate border-spacing-0" style={{ width: tableWidth }}>
+          <Table
+            className="table-fixed border-separate border-spacing-0"
+            style={{ width: tableWidth }}
+            aria-busy={!!serverPagination?.isFetching}
+          >
             <TableHeader className="sticky top-0 z-10 bg-background">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-border/50">
@@ -330,7 +419,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         className={cn(
                           'group/th relative',
                           CELL_BORDER,
-                          isFirstCol && isFrozen && cn(
+                          isFirstCol && isFrozenEffective && cn(
                             'sticky left-0 z-30 bg-background border-r border-border/50',
                             'transition-shadow duration-200',
                             showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
@@ -338,7 +427,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         )}
                         style={{
                           width: colWidth,
-                          ...(isFirstCol && isFrozen ? { borderRightStyle: 'dashed' as const } : undefined),
+                          ...(isFirstCol && isFrozenEffective ? { borderRightStyle: 'dashed' as const } : undefined),
                         }}
                       >
                         {/* Header content — first col gets a pin toggle */}
@@ -357,12 +446,12 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                                     toggleFrozen()
                                   }}
                                   className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-muted"
-                                  title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
+                                  title={isFrozenEffective ? 'Unfreeze column' : 'Freeze column'}
                                 >
                                   <PinIcon
                                     className={cn(
                                       'h-3 w-3 rotate-45 transition-colors',
-                                      isFrozen
+                                      isFrozenEffective
                                         ? 'fill-foreground text-foreground'
                                         : 'text-muted-foreground/50',
                                     )}
@@ -422,71 +511,89 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
             </TableHeader>
 
             <TableBody>
-              {table.getRowModel().rows.length > 0
-                ? table.getRowModel().rows.map((row) => {
-                    const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
-                    const customRowClass = getRowClassName?.(row.original)
-
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
-                        onClick={() => {
-                          if (onRowClick) {
-                            onRowClick(row.original)
-                          }
-                          else if (isMobile) {
-                            setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
-                          }
-                        }}
-                        {...rowProps}
-                      >
-                        {row.getVisibleCells().map((cell, colIdx) => {
-                          if (colIdx === 0 && isFrozen) {
-                            return (
-                              <TableCell
-                                key={cell.id}
-                                className={cn(
-                                  'sticky left-0 z-5 p-0 border-r border-border/50',
-                                  CELL_BORDER,
-                                  'transition-shadow duration-200',
-                                  showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
-                                )}
-                                style={{ borderRightStyle: 'dashed' }}
-                              >
-                                <div className="absolute inset-0 bg-background group-hover:bg-muted/50" />
-                                {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
-                                <div className="relative p-2">
-                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </div>
-                              </TableCell>
-                            )
-                          }
-
-                          return (
-                            <TableCell key={cell.id} className={CELL_BORDER}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          )
-                        })}
-                      </TableRow>
-                    )
-                  })
-                : (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                        No
-                        {' '}
-                        {entityName}
-                        s match your filter.
-                      </TableCell>
+              {(() => {
+                const dataRows = table.getRowModel().rows
+                if (dataRows.length > 0) {
+                  return null
+                }
+                if (serverPagination?.isFetching) {
+                  const visibleCols = table.getVisibleFlatColumns()
+                  return Array.from({ length: 5 }).map((_, rowIdx) => (
+                    // eslint-disable-next-line react/no-array-index-key -- static skeleton list, no reordering
+                    <TableRow key={`skeleton-row-${rowIdx}`} className={cn('border-border/50 hover:bg-transparent', SKELETON_ROW_HEIGHT_CLASS)}>
+                      {visibleCols.map((col, colIdx) => (
+                        <TableCell key={`skeleton-${rowIdx}-${col.id}`} className={CELL_BORDER}>
+                          <Skeleton className={cn('h-3.5', SKELETON_CELL_WIDTHS[colIdx % SKELETON_CELL_WIDTHS.length])} />
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  )}
+                  ))
+                }
+                return (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                      No
+                      {' '}
+                      {entityName}
+                      s match your filter.
+                    </TableCell>
+                  </TableRow>
+                )
+              })()}
+              {table.getRowModel().rows.map((row) => {
+                const rowProps: Record<string, unknown> = { [rowDataAttribute]: true }
+                const customRowClass = getRowClassName?.(row.original)
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={`group cursor-pointer border-border/50${customRowClass ? ` ${customRowClass}` : ''}`}
+                    onClick={() => {
+                      if (onRowClick) {
+                        onRowClick(row.original)
+                      }
+                      else if (isMobile) {
+                        setActiveRowId(prev => prev === row.original.id ? null : row.original.id)
+                      }
+                    }}
+                    {...rowProps}
+                  >
+                    {row.getVisibleCells().map((cell, colIdx) => {
+                      if (colIdx === 0 && isFrozenEffective) {
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            className={cn(
+                              'sticky left-0 z-5 p-0 border-r border-border/50',
+                              CELL_BORDER,
+                              'transition-shadow duration-200',
+                              showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
+                            )}
+                            style={{ borderRightStyle: 'dashed' }}
+                          >
+                            <div className="absolute inset-0 bg-background group-hover:bg-muted/50 transition-colors" />
+                            {customRowClass && <div className={cn('absolute inset-0', customRowClass)} />}
+                            <div className="relative p-2">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </div>
+                          </TableCell>
+                        )
+                      }
+
+                      return (
+                        <TableCell key={cell.id} className={CELL_BORDER}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      )
+                    })}
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
 
-        <DataTablePagination table={table} />
+        <DataTablePagination table={table} serverPagination={serverPagination} />
       </div>
     </div>
   )

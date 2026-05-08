@@ -1,25 +1,28 @@
 'use client'
 
-import type { AppRouterOutputs } from '@/trpc/routers/app'
+import type { CustomerTableMeta, CustomerTableRow } from '@/shared/entities/customers/lib/columns-registry'
+import { useMutation } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { parseAsInteger, parseAsString, useQueryState } from 'nuqs'
-import { useCallback, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
-
-import { buildCustomerColumns } from '@/features/lead-sources-admin/ui/components/customer-table-columns'
+import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
+import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { Input } from '@/shared/components/ui/input'
+import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
+import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
+import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
-import { useDebounce } from '@/shared/hooks/use-debounce'
+
+import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-type CustomerRow = AppRouterOutputs['leadSourcesRouter']['getCustomers']['rows'][number]
-
-const PAGE_SIZE = 15
+const SHOW_COLUMNS = ['name', 'pipeline', 'createdAt'] as const
 
 interface LeadSourceCustomersSectionProps {
   leadSourceId: string
@@ -27,45 +30,19 @@ interface LeadSourceCustomersSectionProps {
 
 export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomersSectionProps) {
   const trpc = useTRPC()
-  const qc = useQueryClient()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const [page, setPage] = useQueryState('sp', parseAsInteger.withDefault(1))
-  const [rawSearch, setRawSearch] = useQueryState('sq', parseAsString.withDefault(''))
-  const search = useDebounce(rawSearch.trim(), 250)
-
-  const offset = (Math.max(page, 1) - 1) * PAGE_SIZE
-  const queryInput = useMemo(
-    () => ({
-      id: leadSourceId,
-      search: search || undefined,
-      limit: PAGE_SIZE,
-      offset,
-    }),
-    [leadSourceId, search, offset],
+  const pagination = usePaginatedQuery<{ id: string }, CustomerTableRow>(
+    trpc.leadSourcesRouter.getCustomers.queryOptions,
+    { id: leadSourceId },
+    {
+      paramPrefix: 'src',
+      pageSize: 20,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
+      filters: CUSTOMER_FILTER_CONFIG,
+    },
   )
-
-  const { data, isLoading, isFetching } = useQuery(
-    trpc.leadSourcesRouter.getCustomers.queryOptions(queryInput),
-  )
-
-  // Prefetch the next page so Next-click is instant.
-  useEffect(() => {
-    if (!data) {
-      return
-    }
-    const hasNext = offset + PAGE_SIZE < data.total
-    if (!hasNext) {
-      return
-    }
-    void qc.prefetchQuery(
-      trpc.leadSourcesRouter.getCustomers.queryOptions({
-        ...queryInput,
-        offset: offset + PAGE_SIZE,
-      }),
-    )
-  }, [data, offset, queryInput, qc, trpc.leadSourcesRouter.getCustomers])
 
   const updateCreatedAt = useMutation(
     trpc.customersRouter.updateCreatedAt.mutationOptions({
@@ -87,23 +64,21 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     openModal()
   }, [setModal, openModal])
 
-  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerRow>({
+  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: entity => handleViewProfile(entity.id),
   })
 
-  const columns = useMemo(() => buildCustomerColumns<CustomerRow>(), [])
+  const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
+  const visibility = useColumnVisibility('lead-source-customers', columns)
 
-  const meta = useMemo(
+  const meta = useMemo<CustomerTableMeta>(
     () => ({
       customerActions: () => actions,
-      onUpdateCreatedAt: (customerId: string, date: Date) =>
+      onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
     }),
     [actions, updateCreatedAt],
   )
-
-  const total = data?.total ?? 0
-  const rows = data?.rows ?? []
 
   return (
     <section
@@ -112,45 +87,38 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     >
       <DeleteConfirmDialog />
 
-      <div className="flex shrink-0 items-end justify-between gap-4">
-        <div className="flex flex-col gap-1">
+      <div className="flex shrink-0 flex-col gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
           <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Customers from this source
           </h3>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {isLoading ? 'Loading…' : `${total.toLocaleString()} total`}
+            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
           </span>
         </div>
-        <Input
-          type="search"
-          value={rawSearch}
-          onChange={(e) => {
-            void setRawSearch(e.target.value || null, { history: 'replace' })
-            if (page !== 1) {
-              void setPage(1, { history: 'replace' })
-            }
-          }}
-          placeholder="Filter by name or email…"
-          autoComplete="off"
-          spellCheck={false}
-          className="max-w-xs"
-        />
+
+        <QueryToolbar pagination={pagination} entityName="customers">
+          <QueryToolbar.Bar>
+            <QueryToolbar.Search placeholder="Filter by name or email…" />
+            <QueryToolbar.FilterTrigger />
+            <QueryToolbar.ColumnsTrigger visibility={visibility} />
+            <QueryToolbar.PageSize />
+          </QueryToolbar.Bar>
+          <QueryToolbar.ChipRail />
+          <QueryToolbar.LiveStatus />
+        </QueryToolbar>
       </div>
 
       <DataTable
         tableId="lead-source-customers"
         columns={columns}
-        data={rows}
+        data={pagination.rows}
         meta={meta}
         entityName="customer"
         onRowClick={row => handleViewProfile(row.id)}
-        serverPagination={{
-          pageIndex: Math.max(page, 1) - 1,
-          pageSize: PAGE_SIZE,
-          rowCount: total,
-          onPageChange: nextIndex => setPage(nextIndex + 1, { history: 'push' }),
-          isFetching,
-        }}
+        serverPagination={toDataTablePagination(pagination)}
+        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+        columnVisibility={visibility.columnVisibility}
       />
     </section>
   )

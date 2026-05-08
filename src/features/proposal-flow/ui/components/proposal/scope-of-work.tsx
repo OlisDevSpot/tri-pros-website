@@ -82,9 +82,9 @@ export function ScopeOfWork() {
                         )}
                       </div>
                     </div>
-                    {pricingMode === 'breakdown' && (section.price ?? 0) > 0 && (
+                    {pricingMode === 'breakdown' && (section.financials.sectionPrice ?? 0) > 0 && (
                       <span className="text-sm font-semibold tabular-nums text-foreground/80 shrink-0">
-                        {fmt(section.price!)}
+                        {fmt(section.financials.sectionPrice!)}
                       </span>
                     )}
                   </div>

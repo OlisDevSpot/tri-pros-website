@@ -1,29 +1,33 @@
 'use client'
 
-import type { ProposalRow, ProposalTableMeta } from './columns'
 import type { ProposalStatus } from '@/shared/constants/enums'
 
-import { useCallback, useState } from 'react'
-import { toast } from 'sonner'
+import type { ProposalRow, ProposalTableMeta } from '@/shared/entities/proposals/lib/columns-registry'
+import { useCallback, useMemo, useState } from 'react'
 
+import { toast } from 'sonner'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
-import { proposalTableFilters } from '@/features/proposal-flow/constants/table-filter-config'
+import { PROPOSAL_FILTER_CONFIG } from '@/features/proposal-flow/constants/proposal-table-filter-config'
+import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
+import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { RecordsPageHeader } from '@/shared/components/records-page-header'
+import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
+import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
+
 import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 import { useProposalActions } from '@/shared/entities/proposals/hooks/use-proposal-actions'
+import { PROPOSAL_COLUMNS } from '@/shared/entities/proposals/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
+import { useTRPC } from '@/trpc/helpers'
 
-import { getColumns } from './columns'
-
-const columns = getColumns()
-const defaultSort = [{ id: 'createdAt', desc: true }]
-
-interface Props {
-  data: ProposalRow[]
-  onFilteredCountChange?: (count: number) => void
-}
+const SHOW_COLUMNS = ['label', 'price', 'status', 'createdAt', 'sentAt', 'viewCount'] as const
 
 interface ProjectPrompt {
   proposalId: string
@@ -32,10 +36,22 @@ interface ProjectPrompt {
   meetingId: string
 }
 
-export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
+export function PastProposalsTable() {
+  const trpc = useTRPC()
   const { updateProposal } = useProposalActions()
   const { open: openModal, setModal } = useModalStore()
   const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
+
+  const pagination = usePaginatedQuery<Record<string, never>, ProposalRow>(
+    trpc.proposalsRouter.crud.list.queryOptions,
+    {},
+    {
+      paramPrefix: 'pp',
+      pageSize: 20,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
+      filters: PROPOSAL_FILTER_CONFIG,
+    },
+  )
 
   const handleView = useCallback((entity: ProposalRow) => {
     window.open(`${ROOTS.public.proposals()}/proposal/${entity.id}`, '_blank')
@@ -52,12 +68,18 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
 
   const handleStatusChange = useCallback((id: string, status: ProposalStatus) => {
     if (status === 'approved') {
-      const row = data.find(p => p.id === id)
+      const row = pagination.rows.find(p => p.id === id)
       if (!row?.meetingId || !row.customerId) {
         return
       }
 
-      // If the meeting already has a project, just approve — no new project needed
+      // Skip the create-project modal when a project already exists on the
+      // meeting. This intentionally checks `meetingProjectId` (current
+      // meeting state) rather than `proposal.kind` (frozen at insert): an
+      // initial-sale proposal that was previously approved, then later
+      // unapproved/re-approved, still has its project — opening the modal
+      // again would attempt a duplicate. Kind alone can't distinguish
+      // first-approval-of-initial-sale from re-approval-of-initial-sale.
       if (row.meetingProjectId) {
         updateProposal.mutate(
           { proposalId: id, data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() } },
@@ -80,7 +102,7 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
       { proposalId: id, data: { status } },
       { onSuccess: () => toast.success('Status updated') },
     )
-  }, [data, updateProposal])
+  }, [pagination.rows, updateProposal])
 
   const handleProjectCreated = useCallback((selectedProposalId: string, projectId?: string) => {
     updateProposal.mutate({
@@ -102,33 +124,48 @@ export function PastProposalsTable({ data, onFilteredCountChange }: Props) {
     }
   }, [updateProposal])
 
-  const meta: ProposalTableMeta = {
+  const columns = useEntityColumns(PROPOSAL_COLUMNS, { show: SHOW_COLUMNS })
+  const visibility = useColumnVisibility('proposals', columns)
+
+  const meta = useMemo<ProposalTableMeta>(() => ({
     proposalActions: () => sharedActions,
     onUpdateStatus: handleStatusChange,
-    onUpdateCreatedAt: (id: string, date: Date) => updateProposal.mutate(
+    onUpdateCreatedAt: (id, date) => updateProposal.mutate(
       { proposalId: id, data: { createdAt: date.toISOString() } },
       { onSuccess: () => toast.success('Created date updated') },
     ),
-    onViewProfile: (customerId: string) => {
+    onViewProfile: (customerId) => {
       setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
       openModal()
     },
-  }
+  }), [sharedActions, handleStatusChange, updateProposal, setModal, openModal])
 
   return (
     <>
       <DeleteConfirmDialog />
-      <DataTable
-        tableId="proposals"
-        data={data}
-        columns={columns}
-        meta={meta}
-        filterConfig={proposalTableFilters}
-        defaultSort={defaultSort}
-        entityName="proposal"
-        rowDataAttribute="data-proposal-row"
-        onFilteredCountChange={onFilteredCountChange}
+
+      <RecordsPageShell
+        header={<RecordsPageHeader title="Proposals" pagination={pagination} />}
+        toolbar={(
+          <QueryToolbar pagination={pagination} entityName="proposals">
+            <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" visibility={visibility} />
+          </QueryToolbar>
+        )}
+        table={(
+          <DataTable
+            tableId="proposals"
+            data={pagination.rows}
+            columns={columns}
+            meta={meta}
+            entityName="proposal"
+            rowDataAttribute="data-proposal-row"
+            serverPagination={toDataTablePagination(pagination)}
+            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            columnVisibility={visibility.columnVisibility}
+          />
+        )}
       />
+
       {projectPrompt && (
         <CreateProjectModal
           isOpen

@@ -18,7 +18,7 @@ interface ProposalEntity {
 }
 
 function buildShareableUrl(proposalId: string, token: string | null, utmSource: 'email' | 'sms'): string {
-  const base = `${ROOTS.public.proposals({ absolute: true, isProduction: true })}/proposal/${proposalId}`
+  const base = `${ROOTS.public.proposals({ absolute: true })}/proposal/${proposalId}`
   const params = new URLSearchParams()
   if (token) {
     params.set('token', token)

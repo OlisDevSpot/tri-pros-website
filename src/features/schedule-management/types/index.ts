@@ -49,5 +49,3 @@ export interface ScheduleActivityEvent extends CalendarEvent {
 }
 
 export type ScheduleCalendarEvent = ScheduleMeetingEvent | ScheduleActivityEvent
-
-export type ScheduleTableTab = 'meetings' | 'activities'
