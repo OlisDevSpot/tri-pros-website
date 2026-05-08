@@ -49,7 +49,7 @@ export function FormConfigEditor({ leadSourceId, initial }: FormConfigEditorProp
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <section className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Form configuration
@@ -132,7 +132,7 @@ export function FormConfigEditor({ leadSourceId, initial }: FormConfigEditorProp
           </>
         )}
       </div>
-    </div>
+    </section>
   )
 }
 

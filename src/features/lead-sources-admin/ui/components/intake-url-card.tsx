@@ -50,7 +50,7 @@ export function IntakeUrlCard({ leadSourceId, slug, token }: IntakeUrlCardProps)
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2">
       <RotateConfirmDialog />
       <div className="flex items-center justify-between">
         <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -103,6 +103,6 @@ export function IntakeUrlCard({ leadSourceId, slug, token }: IntakeUrlCardProps)
               )}
         </Button>
       </div>
-    </div>
+    </section>
   )
 }
