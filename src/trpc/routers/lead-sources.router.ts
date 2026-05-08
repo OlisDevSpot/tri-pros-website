@@ -269,10 +269,6 @@ export const leadSourcesRouter = createTRPCRouter({
       }, desc(customers.createdAt))
 
       return paginate({
-        // Source fields are joined so the row carries the same shape as
-        // `customersRouter.list` — the shared `LeadSourceCell` then renders
-        // an editable picker. Reassigning here removes the row from the
-        // list (it no longer matches `match`), which is the desired UX.
         query: () => db
           .select({
             id: customers.id,
@@ -280,12 +276,8 @@ export const leadSourcesRouter = createTRPCRouter({
             email: customers.email,
             createdAt: customers.createdAt,
             pipeline: customers.pipeline,
-            leadSourceId: customers.leadSourceId,
-            leadSourceName: leadSourcesTable.name,
-            leadSourceSlug: leadSourcesTable.slug,
           })
           .from(customers)
-          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
           .where(where)
           .orderBy(...orderBy)
           .limit(input.pagination.limit)
