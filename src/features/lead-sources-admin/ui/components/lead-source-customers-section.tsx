@@ -1,6 +1,7 @@
 'use client'
 
 import type { CustomerTableMeta, CustomerTableRow } from '@/shared/entities/customers/lib/columns-registry'
+import type { CustomerSegment } from '@/shared/entities/lead-sources/lib/segment-sql'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 
@@ -22,20 +23,21 @@ import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-regist
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-const SHOW_COLUMNS = ['name', 'pipeline', 'createdAt'] as const
+const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
 interface LeadSourceCustomersSectionProps {
   leadSourceId: string
+  segment?: CustomerSegment
 }
 
-export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomersSectionProps) {
+export function LeadSourceCustomersSection({ leadSourceId, segment }: LeadSourceCustomersSectionProps) {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<{ id: string }, CustomerTableRow>(
+  const pagination = usePaginatedQuery<{ id: string, segment: CustomerSegment | undefined }, CustomerTableRow>(
     trpc.leadSourcesRouter.getCustomers.queryOptions,
-    { id: leadSourceId },
+    { id: leadSourceId, segment },
     {
       paramPrefix: 'src',
       pageSize: 20,
@@ -48,6 +50,19 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     trpc.customersRouter.updateCreatedAt.mutationOptions({
       onSuccess: () => {
         toast.success('Created date updated')
+        invalidateCustomer()
+        invalidateLeadSource()
+      },
+      onError: err => toast.error(err.message),
+    }),
+  )
+
+  const updateLeadSource = useMutation(
+    trpc.customersRouter.updateLeadSource.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(data.leadSourceName
+          ? `Source set to ${data.leadSourceName}`
+          : 'Lead source updated')
         invalidateCustomer()
         invalidateLeadSource()
       },
@@ -76,8 +91,10 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
       customerActions: () => actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
+      onUpdateLeadSource: (customerId, leadSourceId) =>
+        updateLeadSource.mutate({ customerId, leadSourceId }),
     }),
-    [actions, updateCreatedAt],
+    [actions, updateCreatedAt, updateLeadSource],
   )
 
   return (
@@ -93,7 +110,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
             Customers from this source
           </h3>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
+            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} ${segmentCaption(segment)}`}
           </span>
         </div>
 
@@ -122,4 +139,13 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
       />
     </section>
   )
+}
+
+function segmentCaption(segment: CustomerSegment | undefined): string {
+  switch (segment) {
+    case 'active': return 'active'
+    case 'signed': return 'signed'
+    case 'dead': return 'dead'
+    default: return 'total'
+  }
 }
