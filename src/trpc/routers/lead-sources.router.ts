@@ -15,7 +15,7 @@ import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
-import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
+import { buildSegmentWhere, customerSegments } from '@/shared/entities/lead-sources/lib/segment-sql'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
@@ -245,7 +245,7 @@ export const leadSourcesRouter = createTRPCRouter({
       createdAt: dateRangeSchema.optional(),
     }).extend({
       id: z.string().uuid(),
-      segment: z.enum(['all', 'active', 'signed', 'dead']).optional(),
+      segment: z.enum(customerSegments).optional(),
     }))
     .query(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
