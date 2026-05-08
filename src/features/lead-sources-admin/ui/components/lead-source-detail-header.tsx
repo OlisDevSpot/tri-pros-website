@@ -42,7 +42,12 @@ export function LeadSourceDetailHeader({ source }: { source: LeadSourceRow }) {
         </div>
         <motion.div {...entrance(0.08, 6)} className="flex shrink-0 items-center gap-3">
           <ActiveToggle source={source} />
-          <EntityActionDropdown entity={source} actions={actions} orientation="horizontal" />
+          <EntityActionDropdown
+            entity={source}
+            actions={actions}
+            orientation="horizontal"
+            triggerClassName="h-11 w-11 sm:h-6 sm:w-6"
+          />
         </motion.div>
       </header>
       <DeleteConfirmDialog />
