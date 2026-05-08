@@ -128,9 +128,6 @@ function Stat({ value, label, className }: StatProps) {
 }
 
 // ── Actions (reserved slot — consumer renders EntityActions here) ────────────
-//
-// Padded-left so the cluster reads as a separate concept from the stat. Tight
-// internal gap so the icon buttons feel like one unit, not two floating glyphs.
 
 function Actions({ children, className }: { children: ReactNode, className?: string }) {
   return (
