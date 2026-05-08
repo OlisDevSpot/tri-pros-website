@@ -26,7 +26,7 @@ Current panel (the red rectangle in the user's screenshot) leaks attention to th
 | Tab structure | `Customers (default) / Analytics / Settings`, plus an always-on KPI strip *above* the tabs |
 | KPI strip metrics | `$totalSales` headline, `{signed} of {total} signed` and `{range} in the last {window}` as twin subtitles. **Conversion % dropped.** |
 | Total sales formula | Reuse `computeProjectValue` (sum of `approved` proposal values) where each proposal value comes from `computeFinalTcp(fundingJSON.data)`. **No new aggregation logic.** |
-| Active toggle | Stays interactive in the header (compact, not jumbo). Only `Archive` and `Delete` move to Settings → Danger zone. |
+| Active toggle | Moves entirely to Settings → Danger zone. The header shows a read-only `● Active` / `○ Inactive` indicator (no Switch, no kebab item). |
 | Customers default | Pill segmented control (`All / Active / Signed / Dead`) above the table. **`Active` is the default segment**, persisted via `?seg=`. |
 | Settings tab | Four sub-sections: Identity (name + slug), Intake URL, Form configuration, Danger zone (Archive / Delete) |
 | Tab styling | Underline-active style with count badge on Customers — so tabs read as navigation, not as another filter row |
@@ -60,11 +60,11 @@ Current panel (the red rectangle in the user's screenshot) leaks attention to th
 
 ### Header — `LeadSourceDetailHeader`
 
-Per the April 22 spec, the masthead (eyebrow + display name + status pill + kebab) is already correct in production. This spec keeps it as-is **except**:
+Per the April 22 spec, the masthead (eyebrow + display name + status indicator + kebab) is already correct in production. This spec keeps the masthead **as-is**:
 
-- The `Active` indicator becomes an actual interactive `<Switch>`, sized compact (`size-sm` if the design system has it; otherwise the existing `Switch` with `data-[state=checked]:bg-emerald-500` to keep the dot semantic). Touch target hit area must remain ≥44×44 via `hitSlop`-equivalent padding wrapper.
-- Kebab menu items: `Deactivate` (mirrors the toggle for keyboard/SR users), `Archive` (jumps to Settings → Danger zone with the section scrolled into view).
-- Delete is **not** in the kebab. It's only in Danger zone, behind a typed confirmation.
+- `Active` indicator stays a read-only display: 6px emerald dot + `Active` text (or `bg-muted-foreground/40` dot + `Inactive`). No Switch in the header.
+- Kebab menu shrinks to navigational shortcuts only — items: `Settings` (jumps to Settings tab + scrolls Identity into view), `Pause intake` (jumps to Settings → Danger zone with that row focused), `Archive` (jumps to Settings → Danger zone with that row focused). The kebab does not mutate state directly; it routes to the Danger zone where mutations live.
+- Delete is **not** in the kebab. It lives only in Danger zone, behind a typed confirmation.
 
 ### KPI strip — replaces `PerformanceStrip` body
 
@@ -162,10 +162,11 @@ Composes 4 sub-sections, separated by `border-t border-border/40 pt-6 mt-6`. Eac
 
 **Section 4 — Danger zone** (new component: `danger-zone.tsx`)
 - Container: `border border-destructive/40 rounded-lg p-4`
-- 2 rows (not 3 — Active toggle stays in header):
-  - **Archive** — sets `archivedAt` timestamp. Lead source disappears from the picker but data is preserved. Right button: outline destructive, `Archive`.
+- 3 rows:
+  - **Pause intake** — toggles `isActive`. Reversible. Description copy: "Stops new submissions to this source's intake URL. Existing customers stay attached." Right control: a `<Switch>`. (This row uses `border-border/40` rather than `border-destructive/20` between rows for the pause/archive boundary, since pause is reversible — see styling note below.)
+  - **Archive** — sets `archivedAt` timestamp. Lead source disappears from the picker but data is preserved. Right button: outline destructive, `Archive`. Confirmation dialog: "Archive QuoteMe? It will be hidden from the lead-source picker. You can restore it from settings."
   - **Delete** — only enabled if customer count = 0. Otherwise the button is disabled with tooltip "Reassign or archive — N customers still attached." Right button: solid destructive, `Delete…`. Click opens typed-confirmation dialog ("Type `quoteme` to confirm").
-- Per row: `flex items-center justify-between py-3` + `border-t border-destructive/20` between rows.
+- Per row: `flex items-center justify-between py-3`. Row dividers: `border-t border-destructive/20` between Archive and Delete; `border-t border-border/40` between Pause and Archive (the lighter divider signals that Pause is reversible/non-destructive).
 
 ### Analytics tab — placeholder
 
@@ -275,7 +276,7 @@ Per `feedback-participant-invalidation.md` pattern — invalidate at the surface
 |---|---|
 | `updateLeadSource` (name/slug/formConfig) | `getById`, `lead-source-list` |
 | `rotateToken` | `getById` |
-| `setActive` (header switch) | `getById`, `lead-source-list` |
+| `setActive` (Danger zone Pause toggle) | `getById`, `lead-source-list` |
 | `archiveLeadSource` | `getById`, `lead-source-list` (which now filters `archivedAt IS NULL`) |
 | `deleteLeadSource` | `getById`, `lead-source-list`; navigate to `/dashboard/lead-sources` (no detail to show) |
 | `addCustomerToLeadSource` (existing) | `getStats`, `getStatusCounts`, `getCustomers` |
@@ -310,7 +311,7 @@ No motion on tab content (it would compete with the entrance). All motion respec
 
 | Component | Status | Change |
 |---|---|---|
-| `LeadSourceDetailHeader` | modified | Active becomes interactive Switch; kebab adds Deactivate/Archive items |
+| `LeadSourceDetailHeader` | modified | Active stays read-only indicator; kebab restricted to navigational shortcuts (Settings, Pause intake, Archive — all jump to Settings tab) |
 | `PerformanceStrip` | modified | New body (dollar-led hero), absorbs range chips, accepts `totalSales` + chip props |
 | `IntakeUrlCard` | modified | Drop inner uppercase heading (parent provides it) |
 | `FormConfigEditor` | modified | Drop inner heading (parent provides it) |
