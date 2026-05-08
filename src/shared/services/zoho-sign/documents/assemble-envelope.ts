@@ -231,19 +231,12 @@ function buildMergeSendBody(ctx: ProposalContext, templateDocs: readonly Envelop
       })
     }
     if (doc.signerActions?.homeowner) {
-      // signing_order must mirror the template's stored order: tpr-HI / tpr-HI-senior
-      // place the homeowner field at order=2 (after contractor=1); the ancillary
-      // single-signer templates (senior-ack, esign-waiver, material-order, awd) place
-      // the homeowner field at order=1. Sending the wrong order leaves the homeowner
-      // FIELDS bound to whatever recipient holds that template-stored order — which
-      // for ancillary templates was info@ (the order=1 contractor on tpr-HI) before this fix.
-      const homeownerOrder = doc.signerActions.contractor ? 2 : 1
       actions.push({
         recipient_name: customerName,
         recipient_email: customerEmail,
         action_id: doc.signerActions.homeowner,
         action_type: 'SIGN',
-        signing_order: homeownerOrder,
+        signing_order: 2,
         role: 'Homeowner',
         verify_recipient: true,
         verification_type: 'EMAIL',
