@@ -5,9 +5,9 @@ import { and, eq, inArray, sql } from 'drizzle-orm'
 import { customers } from '@/shared/db/schema/customers'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 
-export type CustomerSegment = 'all' | 'active' | 'signed' | 'dead'
-
 export const customerSegments = ['all', 'active', 'signed', 'dead'] as const
+
+export type CustomerSegment = (typeof customerSegments)[number]
 
 /**
  * SQL predicate for the 4-state customer segmentation used by the lead-source
