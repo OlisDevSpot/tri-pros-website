@@ -87,6 +87,7 @@ const createInput = z.object({
 const updateInput = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(120).optional(),
+  slug: z.string().min(1).max(64).optional(),
   formConfigJSON: leadSourceFormConfigSchema.optional(),
   isActive: z.boolean().optional(),
 })
@@ -339,10 +340,37 @@ export const leadSourcesRouter = createTRPCRouter({
     .input(updateInput)
     .mutation(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
-      const { id, ...rest } = input
+      const { id, slug, ...rest } = input
+
+      const patch: Record<string, unknown> = { ...rest }
+
+      if (slug !== undefined) {
+        // Reject malformed input — only canonical kebab-case is accepted.
+        if (slugify(slug) !== slug) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Use lowercase letters, numbers, and hyphens only.',
+          })
+        }
+        // Reject duplicates against any other source.
+        const [existing] = await db
+          .select({ id: leadSourcesTable.id })
+          .from(leadSourcesTable)
+          .where(and(eq(leadSourcesTable.slug, slug), sql`${leadSourcesTable.id} <> ${id}`))
+          .limit(1)
+        if (existing) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'That slug is already in use.',
+          })
+        }
+        patch.slug = slug
+        patch.token = generateToken()
+      }
+
       const [updated] = await db
         .update(leadSourcesTable)
-        .set(rest)
+        .set(patch)
         .where(eq(leadSourcesTable.id, id))
         .returning()
       if (!updated) {
