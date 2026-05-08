@@ -15,6 +15,7 @@ import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposals } from '@/shared/db/schema/proposals'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
+import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
@@ -286,6 +287,30 @@ export const leadSourcesRouter = createTRPCRouter({
           .offset(input.pagination.offset),
         count: () => db.$count(customers, where),
       })
+    }),
+
+  getStatusCounts: agentProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      requireSuperAdmin(ctx.session.user.role)
+      const [src] = await db
+        .select({ id: leadSourcesTable.id })
+        .from(leadSourcesTable)
+        .where(eq(leadSourcesTable.id, input.id))
+        .limit(1)
+      if (!src) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
+      }
+
+      const match = customersMatchingSource(src.id)
+      const [all, active, signed, dead] = await Promise.all([
+        db.$count(customers, match),
+        db.$count(customers, and(match, buildSegmentWhere('active'))),
+        db.$count(customers, and(match, buildSegmentWhere('signed'))),
+        db.$count(customers, and(match, buildSegmentWhere('dead'))),
+      ])
+
+      return { all, active, signed, dead }
     }),
 
   create: agentProcedure
