@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { TRPCError } from '@trpc/server'
-import { and, asc, desc, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { customerPipelines } from '@/shared/constants/enums/customer-pipelines'
@@ -129,7 +129,10 @@ export const leadSourcesRouter = createTRPCRouter({
         })
         .from(leadSourcesTable)
         .leftJoin(customers, eq(customers.leadSourceId, leadSourcesTable.id))
-        .where(includeInactive ? undefined : eq(leadSourcesTable.isActive, true))
+        .where(and(
+          isNull(leadSourcesTable.archivedAt),
+          includeInactive ? undefined : eq(leadSourcesTable.isActive, true),
+        ))
         .groupBy(leadSourcesTable.id)
         .orderBy(desc(leadSourcesTable.isActive), asc(leadSourcesTable.name))
 
@@ -408,6 +411,21 @@ export const leadSourcesRouter = createTRPCRouter({
       return updated
     }),
 
+  archive: agentProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      requireSuperAdmin(ctx.session.user.role)
+      const [updated] = await db
+        .update(leadSourcesTable)
+        .set({ archivedAt: new Date().toISOString() })
+        .where(eq(leadSourcesTable.id, input.id))
+        .returning()
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
+      }
+      return updated
+    }),
+
   duplicate: agentProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
@@ -442,6 +460,13 @@ export const leadSourcesRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       requireSuperAdmin(ctx.session.user.role)
+      const attachedCount = await db.$count(customers, customersMatchingSource(input.id))
+      if (attachedCount > 0) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: `${attachedCount} ${attachedCount === 1 ? 'customer is' : 'customers are'} still attached. Reassign or archive instead.`,
+        })
+      }
       await db.delete(leadSourcesTable).where(eq(leadSourcesTable.id, input.id))
       return { success: true as const }
     }),
