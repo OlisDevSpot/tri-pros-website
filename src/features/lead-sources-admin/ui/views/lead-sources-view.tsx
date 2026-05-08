@@ -64,14 +64,14 @@ export function LeadSourcesView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex flex-col gap-1 border-b border-border/40 px-6 py-4">
+      <header className="flex flex-col gap-1 border-b border-border/40 px-4 py-4 sm:px-6">
         <h1 className="text-xl font-semibold text-foreground">Lead Sources</h1>
         <p className="text-xs text-muted-foreground">
           Performance tracking and intake configuration for every lead channel.
         </p>
       </header>
 
-      <div className="flex items-center justify-between gap-4 border-b border-border/40 px-6 py-3">
+      <div className="flex items-center justify-between gap-4 border-b border-border/40 px-4 py-3 sm:px-6">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Time range
         </span>
@@ -92,13 +92,15 @@ export function LeadSourcesView() {
             isAllSelected ? 'flex' : 'hidden lg:flex',
           )}
         >
-          <div className="min-h-0 flex-1 overflow-y-auto py-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-1 py-4 sm:px-3">
             <LeadSourceList
               sources={sources}
               isLoading={isLoading}
               selectedId={selectedId}
               onSelect={id => setSelectedId(id, { history: 'push' })}
               rangeLabel={activeChip.label}
+              onAddCustomer={src => setAddSheetState(src)}
+              onView={id => setSelectedId(id, { history: 'push' })}
             />
           </div>
           <div className="shrink-0 border-t border-border/40 p-3">

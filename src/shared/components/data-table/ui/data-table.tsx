@@ -82,11 +82,20 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
   const [sorting, setSorting] = useState<SortingState>(defaultSort ?? [])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() =>
-    tableId ? loadColumnSizing(tableId) : {},
-  )
-  const [isFrozen, setIsFrozen] = useState(() => tableId ? loadFrozen(tableId) : true)
+  // localStorage is read post-mount to avoid SSR/CSR hydration mismatch on
+  // table+column widths. Initial render uses defaults (matches server),
+  // useEffect rehydrates persisted sizing on the client.
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
+  const [isFrozen, setIsFrozen] = useState(true)
   const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    if (!tableId) {
+      return
+    }
+    setColumnSizing(loadColumnSizing(tableId))
+    setIsFrozen(loadFrozen(tableId))
+  }, [tableId])
 
   // -- Container width + scroll tracking ------------------------------------
 

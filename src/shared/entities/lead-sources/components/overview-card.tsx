@@ -128,11 +128,14 @@ function Stat({ value, label, className }: StatProps) {
 }
 
 // ── Actions (reserved slot — consumer renders EntityActions here) ────────────
+//
+// Padded-left so the cluster reads as a separate concept from the stat. Tight
+// internal gap so the icon buttons feel like one unit, not two floating glyphs.
 
 function Actions({ children, className }: { children: ReactNode, className?: string }) {
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center', className)}
+      className={cn('inline-flex shrink-0 items-center gap-0 pl-1', className)}
       onClick={e => e.stopPropagation()}
     >
       {children}

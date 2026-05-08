@@ -61,7 +61,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
   const source = sourceQuery.data
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-6 p-6">
+    <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
       {onBack && <MobileBackButton label="All sources" onClick={onBack} />}
       <LeadSourceDetailHeader source={source} />
 
@@ -77,7 +77,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
 
         <TabsContent
           value="overview"
-          className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto pt-4"
+          className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pt-4 sm:gap-6"
         >
           <section aria-label="Performance">
             <PerformanceStrip
@@ -87,11 +87,11 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
             />
           </section>
 
-          <section aria-label="Intake URL" className="flex flex-col gap-3 border-t border-border/40 pt-6">
+          <section aria-label="Intake URL" className="flex flex-col gap-3 border-t border-border/40 pt-4 sm:pt-5">
             <IntakeUrlCard leadSourceId={source.id} slug={source.slug} token={source.token} />
           </section>
 
-          <section aria-label="Form configuration" className="flex flex-col gap-4 border-t border-border/40 pt-6">
+          <section aria-label="Form configuration" className="flex flex-col gap-4 border-t border-border/40 pt-4 sm:pt-5">
             <FormConfigEditor leadSourceId={source.id} initial={source.formConfigJSON} />
           </section>
         </TabsContent>
