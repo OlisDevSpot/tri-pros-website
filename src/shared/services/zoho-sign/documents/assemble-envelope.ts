@@ -247,6 +247,7 @@ function buildMergeSendBody(ctx: ProposalContext, templateDocs: readonly Envelop
 
   const data = {
     templates: {
+      request_name: buildEnvelopeName(ctx),
       field_data: {
         field_text_data: textData,
         field_boolean_data: {},
@@ -263,6 +264,26 @@ function buildMergeSendBody(ctx: ProposalContext, templateDocs: readonly Envelop
   body.set('data', JSON.stringify(data))
   body.set('is_quicksend', 'false')
   return body.toString()
+}
+
+/**
+ * Builds a human-readable envelope name for office agents browsing
+ * the Zoho Sign dashboard. Default (no override) would be the first
+ * merged template's name ("tpr-HI"), which is unhelpful when scanning
+ * dozens of customer agreements at once.
+ *
+ * Format: "{customer} — {kind label}[ — {proposal label}]"
+ *  - "Patricia Zanders — Initial Sale Agreement"
+ *  - "Patricia Zanders — Additional Work Addendum — Bathroom Add-on"
+ */
+function buildEnvelopeName(ctx: ProposalContext): string {
+  const customer = ctx.proposal.customer?.name?.trim() || '(Unknown Customer)'
+  const kindLabel = ctx.kind === 'initial-sale'
+    ? 'Initial Sale Agreement'
+    : 'Additional Work Addendum'
+  const proposalLabel = ctx.proposal.label?.trim()
+  const suffix = proposalLabel ? ` — ${proposalLabel}` : ''
+  return `${customer} — ${kindLabel}${suffix}`
 }
 
 interface ZohoGetResponse {

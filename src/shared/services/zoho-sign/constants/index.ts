@@ -89,12 +89,14 @@ export const SOW_FIELD_MAX_CHARS = 2000
  * field. Drives both `awd.sow` mapping (empty vs filled) and the
  * `sow-pdf` upsell requirement — must stay consistent across both.
  *
- * Calibrated for AWD's single text field (Zoho hard cap 2048; we leave
- * the same 48-char margin as SOW_FIELD_MAX_CHARS). The legacy 2-field
- * packing (sow-1 + sow-2 on base/senior templates) supported ~3600 chars
- * inline; AWD has no second field, so the threshold drops to 2000.
+ * Calibrated to **visual fit**, not Zoho's hard cap. AWD's `sow` text
+ * field accepts up to 2048 chars, but the field box on the rendered
+ * page only displays ~18 lines before content overflows / truncates
+ * visually. 600 chars (~10–12 lines at typical line widths) leaves
+ * comfortable headroom; anything longer routes to the attached SOW PDF
+ * where pagination handles overflow gracefully.
  */
-export const SOW_INLINE_MAX_CHARS = 2000
+export const SOW_INLINE_MAX_CHARS = 600
 
 /** Header name Zoho Sign sends the HMAC-SHA256 digest in (per their Developer Settings UI). */
 export const WEBHOOK_SIGNATURE_HEADER = 'x-zs-webhook-signature'
