@@ -1,6 +1,7 @@
 import type { EnvelopeDocument, FieldSource } from './types'
 import { format } from 'date-fns'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { cslbEarliestStartDate } from '@/shared/entities/proposals/lib/cslb-start-date'
 import { pdfService } from '@/shared/services/pdf.service'
 import { ZOHO_SIGN_TEMPLATES } from '../constants'
 
@@ -32,29 +33,30 @@ const depositSrc: FieldSource = ctx => String(ctx.proposal.fundingJSON.data.depo
 // every template's sent-date is `MM/dd/yyyy`; base/senior start/completion
 // are plain Textfield (accept any printable string). Use *ZohoSrc variants
 // when targeting AWD CustomDate fields.
-const startDateTextSrc: FieldSource = () => {
-  const d = new Date()
-  d.setDate(d.getDate() + 3)
-  return format(d, 'M/d/yyyy')
+//
+// Start date = earliest LEGAL start under CSLB, factoring the buyer's
+// 3- or 5-business-day right of rescission per Cal. Civil Code §1689.6/.7.
+// `cslbEarliestStartDate` is the canonical helper; do not replace with a
+// naive "today + N calendar days" calculation.
+const startDateTextSrc: FieldSource = (ctx) => {
+  return format(cslbEarliestStartDate(new Date(), ctx.isSenior), 'M/d/yyyy')
 }
 
 const completionDateTextSrc: FieldSource = (ctx) => {
   const days = Number(ctx.proposal.projectJSON.data.validThroughTimeframe.replace(/\D/g, ''))
-  const d = new Date()
-  d.setDate(d.getDate() + 3 + days)
+  const d = cslbEarliestStartDate(new Date(), ctx.isSenior)
+  d.setDate(d.getDate() + days)
   return format(d, 'M/d/yyyy')
 }
 
-const startDateZohoSrc: FieldSource = () => {
-  const d = new Date()
-  d.setDate(d.getDate() + 3)
-  return format(d, 'MMM dd yyyy')
+const startDateZohoSrc: FieldSource = (ctx) => {
+  return format(cslbEarliestStartDate(new Date(), ctx.isSenior), 'MMM dd yyyy')
 }
 
 const completionDateZohoSrc: FieldSource = (ctx) => {
   const days = Number(ctx.proposal.projectJSON.data.validThroughTimeframe.replace(/\D/g, ''))
-  const d = new Date()
-  d.setDate(d.getDate() + 3 + days)
+  const d = cslbEarliestStartDate(new Date(), ctx.isSenior)
+  d.setDate(d.getDate() + days)
   return format(d, 'MMM dd yyyy')
 }
 

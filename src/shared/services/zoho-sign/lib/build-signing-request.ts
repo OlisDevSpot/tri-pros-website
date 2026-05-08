@@ -1,5 +1,6 @@
 import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { cslbEarliestStartDate } from '@/shared/entities/proposals/lib/cslb-start-date'
 import { ZOHO_SIGN_TEMPLATES } from '../constants'
 
 interface BuildOptions {
@@ -31,12 +32,13 @@ export function buildSigningRequest(proposal: ProposalWithCustomer, { sowPages }
   const isSenior = customer.customerAge >= 65
   const { templateId, actions: actionIds } = isSenior ? ZOHO_SIGN_TEMPLATES.senior : ZOHO_SIGN_TEMPLATES.base
 
+  // Start date must respect the buyer's CSLB right of rescission window
+  // (3 business days / 5 for seniors per AB 2471). See
+  // `cslb-start-date.ts` for the statutory rationale.
   const validThroughTimeframe = Number(project.validThroughTimeframe.replace(/\D/g, ''))
-  const startDate = new Date()
-  const completionDate = new Date()
-  const daysToAdd = 3
-  startDate.setDate(startDate.getDate() + daysToAdd)
-  completionDate.setDate(startDate.getDate() + validThroughTimeframe)
+  const startDate = cslbEarliestStartDate(new Date(), isSenior)
+  const completionDate = new Date(startDate)
+  completionDate.setDate(completionDate.getDate() + validThroughTimeframe)
 
   return {
     templateId,
