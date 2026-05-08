@@ -192,6 +192,8 @@ export const leadSourcesRouter = createTRPCRouter({
       }
       totalSales = Math.round(totalSales)
 
+      // totalSales is lifetime by design (Phase 1) — the time-range filter
+      // scopes `range` only. Range-scoped revenue can land in Phase 2.
       return { total, range, signedCustomers, totalSales }
     }),
 
