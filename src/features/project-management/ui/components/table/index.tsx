@@ -1,16 +1,16 @@
 'use client'
 
-import type { ProjectRow, ProjectTableMeta } from './columns'
-
+import type { ProjectRow, ProjectTableMeta } from '@/shared/entities/projects/lib/columns-registry'
 import { PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
 
+import { useCallback, useMemo, useState } from 'react'
 import { PROJECT_FILTER_CONFIG } from '@/features/project-management/constants/project-table-filter-config'
 import { ProjectDetailSheet } from '@/features/project-management/ui/components/project-detail-sheet'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
@@ -21,12 +21,12 @@ import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/def
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 import { useProjectActions } from '@/shared/entities/projects/hooks/use-project-actions'
+
+import { PROJECT_COLUMNS } from '@/shared/entities/projects/lib/columns-registry'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useTRPC } from '@/trpc/helpers'
 
-import { getColumns } from './columns'
-
-const columns = getColumns()
+const SHOW_COLUMNS = ['title', 'city', 'isPublic', 'completedAt', 'createdAt'] as const
 
 export function PortfolioProjectsTable() {
   const trpc = useTRPC()
@@ -38,7 +38,6 @@ export function PortfolioProjectsTable() {
     title: 'Delete project',
     message: 'This will permanently delete this project and all its media. This cannot be undone.',
   })
-  const visibility = useColumnVisibility('projects', columns)
 
   const pagination = usePaginatedQuery<Record<string, never>, ProjectRow>(
     trpc.projectsRouter.crud.list.queryOptions,
@@ -58,7 +57,10 @@ export function PortfolioProjectsTable() {
 
   const { actions: sharedActions, DeleteConfirmDialog: ActionDeleteDialog } = useProjectActionConfigs<ProjectRow>()
 
-  const meta: ProjectTableMeta = useMemo(() => ({
+  const columns = useEntityColumns(PROJECT_COLUMNS, { show: SHOW_COLUMNS })
+  const visibility = useColumnVisibility('projects', columns)
+
+  const meta = useMemo<ProjectTableMeta>(() => ({
     projectActions: () => sharedActions,
   }), [sharedActions])
 

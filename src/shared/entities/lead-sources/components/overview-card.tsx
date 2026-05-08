@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import { createContext, useContext, useMemo } from 'react'
+import { createContext, use, useMemo } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
@@ -24,7 +24,7 @@ interface ContextValue {
 const Ctx = createContext<ContextValue | null>(null)
 
 function useCard(): ContextValue {
-  const v = useContext(Ctx)
+  const v = use(Ctx)
   if (!v) {
     throw new Error('LeadSourceOverviewCard subcomponent used outside of root')
   }

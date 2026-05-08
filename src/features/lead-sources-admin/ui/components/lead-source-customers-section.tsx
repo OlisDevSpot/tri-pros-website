@@ -1,26 +1,28 @@
 'use client'
 
-import type { AppRouterOutputs } from '@/trpc/routers/app'
-
+import type { CustomerTableMeta, CustomerTableRow } from '@/shared/entities/customers/lib/columns-registry'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
 
+import { toast } from 'sonner'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
-import { buildCustomerColumns } from '@/shared/entities/customers/components/customer-table-columns'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
+
+import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-type CustomerRow = AppRouterOutputs['leadSourcesRouter']['getCustomers']['rows'][number]
+const SHOW_COLUMNS = ['name', 'pipeline', 'createdAt'] as const
 
 interface LeadSourceCustomersSectionProps {
   leadSourceId: string
@@ -31,7 +33,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<{ id: string }, CustomerRow>(
+  const pagination = usePaginatedQuery<{ id: string }, CustomerTableRow>(
     trpc.leadSourcesRouter.getCustomers.queryOptions,
     { id: leadSourceId },
     {
@@ -62,16 +64,17 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     openModal()
   }, [setModal, openModal])
 
-  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerRow>({
+  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: entity => handleViewProfile(entity.id),
   })
 
-  const columns = useMemo(() => buildCustomerColumns<CustomerRow>(), [])
+  const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
+  const visibility = useColumnVisibility('lead-source-customers', columns)
 
-  const meta = useMemo(
+  const meta = useMemo<CustomerTableMeta>(
     () => ({
       customerActions: () => actions,
-      onUpdateCreatedAt: (customerId: string, date: Date) =>
+      onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
     }),
     [actions, updateCreatedAt],
@@ -98,6 +101,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
           <QueryToolbar.Bar>
             <QueryToolbar.Search placeholder="Filter by name or email…" />
             <QueryToolbar.FilterTrigger />
+            <QueryToolbar.ColumnsTrigger visibility={visibility} />
             <QueryToolbar.PageSize />
           </QueryToolbar.Bar>
           <QueryToolbar.ChipRail />
@@ -114,6 +118,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
         onRowClick={row => handleViewProfile(row.id)}
         serverPagination={toDataTablePagination(pagination)}
         serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+        columnVisibility={visibility.columnVisibility}
       />
     </section>
   )

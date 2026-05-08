@@ -1,14 +1,14 @@
 'use client'
 
-import type { AppRouterOutputs } from '@/trpc/routers/app'
-
+import type { CustomerTableMeta, CustomerTableRow } from '@/shared/entities/customers/lib/columns-registry'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
 
+import { toast } from 'sonner'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
@@ -16,21 +16,22 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
-import { buildCustomerColumns } from '@/shared/entities/customers/components/customer-table-columns'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
+
+import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-type CustomerRow = AppRouterOutputs['customersRouter']['list']['rows'][number]
+const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
 export function CustomersTable() {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<Record<string, never>, CustomerRow>(
+  const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
     trpc.customersRouter.list.queryOptions,
     {},
     {
@@ -61,21 +62,17 @@ export function CustomersTable() {
     openModal()
   }, [setModal, openModal])
 
-  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerRow>({
+  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: entity => handleViewProfile(entity.id),
   })
 
-  const columns = useMemo(
-    () => buildCustomerColumns<CustomerRow>({ includeSource: true }),
-    [],
-  )
-
+  const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
   const visibility = useColumnVisibility('customers', columns)
 
-  const meta = useMemo(
+  const meta = useMemo<CustomerTableMeta>(
     () => ({
       customerActions: () => actions,
-      onUpdateCreatedAt: (customerId: string, date: Date) =>
+      onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
     }),
     [actions, updateCreatedAt],

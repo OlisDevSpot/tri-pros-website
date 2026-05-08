@@ -1,10 +1,10 @@
 'use client'
 
-import type { MeetingRow, MeetingTableMeta } from './columns'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 
-import { useCallback, useMemo, useState } from 'react'
+import type { MeetingRow, MeetingTableMeta } from '@/shared/entities/meetings/lib/columns-registry'
 
+import { useCallback, useMemo, useState } from 'react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components/assign-project-dialog'
 import { MEETING_FILTER_CONFIG } from '@/features/meeting-flow/constants/meeting-table-filter-config'
@@ -12,6 +12,7 @@ import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
@@ -22,21 +23,19 @@ import { useAbility } from '@/shared/domains/permissions/hooks'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
+
+import { MEETING_COLUMNS } from '@/shared/entities/meetings/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-import { getColumns } from './columns'
-
-const columns = getColumns()
+const SHOW_COLUMNS = ['customerName', 'meetingOutcome', 'ownerName', 'scheduledFor'] as const
 
 export function PastMeetingsTable() {
   const trpc = useTRPC()
   const ability = useAbility()
   const { updateOutcome, updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
-  const visibility = useColumnVisibility('past-meetings', columns)
 
-  // Dialog state
   const [assignRepDialog, setAssignRepDialog] = useState<{ meetingId: string } | null>(null)
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
 
@@ -76,11 +75,16 @@ export function PastMeetingsTable() {
     onAssignProject: handleAssignProject,
   })
 
-  const meta: MeetingTableMeta = useMemo(() => ({
+  const columns = useEntityColumns(MEETING_COLUMNS, { show: SHOW_COLUMNS })
+  const visibility = useColumnVisibility('past-meetings', columns)
+
+  const meta = useMemo<MeetingTableMeta>(() => ({
     meetingActions: () => sharedActions,
-    onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome }),
-    onUpdateScheduledFor: (meetingId: string, date: Date) => updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
-    onAssignRep: (meetingId: string, _currentOwnerId: string) => {
+    onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) =>
+      updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome }),
+    onUpdateScheduledFor: (meetingId: string, date: Date) =>
+      updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
+    onAssignRep: (meetingId: string) => {
       setAssignRepDialog({ meetingId })
     },
     canAssignMeeting: ability.can('assign', 'Meeting'),

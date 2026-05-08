@@ -1,6 +1,6 @@
 'use client'
 
-import type { ProjectRow } from './table/columns'
+import type { ProjectRow } from '@/shared/entities/projects/lib/columns-registry'
 
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'

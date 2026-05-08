@@ -10,8 +10,10 @@ import { cn } from '@/shared/lib/utils'
 interface RecordsPageHeaderProps {
   /** Heading text — the entity name in plural form (e.g. "Proposals"). */
   title: string
-  /** Pagination result from `usePaginatedQuery`. The header reads `total`
-   *  and `isLoading` from it to render the count badge. */
+  /**
+   * Pagination result from `usePaginatedQuery`. The header reads `total`
+   *  and `isLoading` from it to render the count badge.
+   */
   pagination: PaginatedQueryResult<unknown>
   /** Heading level for semantics; visual size stays the same. Defaults to h2. */
   as?: 'h1' | 'h2' | 'h3'
