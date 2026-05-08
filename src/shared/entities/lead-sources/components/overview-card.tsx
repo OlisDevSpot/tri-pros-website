@@ -120,7 +120,7 @@ interface StatProps {
 
 function Stat({ value, label, className }: StatProps) {
   return (
-    <div className={cn('flex flex-col items-end gap-px tabular-nums', className)}>
+    <div className={cn('flex items-baseline gap-1 tabular-nums', className)}>
       <span className="text-sm font-semibold text-foreground">{value ?? 0}</span>
       <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
     </div>
