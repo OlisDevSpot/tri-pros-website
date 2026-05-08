@@ -12,8 +12,11 @@ import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { meetings } from '@/shared/db/schema/meetings'
+import { proposals } from '@/shared/db/schema/proposals'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
@@ -168,13 +171,28 @@ export const leadSourcesRouter = createTRPCRouter({
         ? and(baseMatch, ...rangeClauses)
         : baseMatch
 
-      const [total, range, signedCustomers] = await Promise.all([
+      const [total, range, signedCustomers, approvedProposals] = await Promise.all([
         db.$count(customers, baseMatch),
         db.$count(customers, rangeWhere),
         db.$count(customers, and(baseMatch, isSignedCustomerSql())),
+        // Approved proposals belonging to customers from this lead source.
+        // Hydrate fundingJSON only — no SQL-side TCP extraction. Aggregate via
+        // computeFinalTcp + computeProjectValue semantics (sum approved values).
+        db
+          .select({ fundingJSON: proposals.fundingJSON })
+          .from(proposals)
+          .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
+          .innerJoin(customers, eq(customers.id, meetings.customerId))
+          .where(and(eq(customers.leadSourceId, src.id), eq(proposals.status, 'approved'))),
       ])
 
-      return { total, range, signedCustomers }
+      let totalSales = 0
+      for (const p of approvedProposals) {
+        totalSales += computeFinalTcp(p.fundingJSON.data)
+      }
+      totalSales = Math.round(totalSales)
+
+      return { total, range, signedCustomers, totalSales }
     }),
 
   // Aggregate performance across every lead source. Mirrors getStats shape so
@@ -251,6 +269,10 @@ export const leadSourcesRouter = createTRPCRouter({
       }, desc(customers.createdAt))
 
       return paginate({
+        // Source fields are joined so the row carries the same shape as
+        // `customersRouter.list` — the shared `LeadSourceCell` then renders
+        // an editable picker. Reassigning here removes the row from the
+        // list (it no longer matches `match`), which is the desired UX.
         query: () => db
           .select({
             id: customers.id,
@@ -258,8 +280,12 @@ export const leadSourcesRouter = createTRPCRouter({
             email: customers.email,
             createdAt: customers.createdAt,
             pipeline: customers.pipeline,
+            leadSourceId: customers.leadSourceId,
+            leadSourceName: leadSourcesTable.name,
+            leadSourceSlug: leadSourcesTable.slug,
           })
           .from(customers)
+          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
           .where(where)
           .orderBy(...orderBy)
           .limit(input.pagination.limit)
