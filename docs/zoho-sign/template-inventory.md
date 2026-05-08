@@ -80,8 +80,8 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 - **Applicable scenarios:** upsell
 - **Rule:** required (every upsell)
 - **Action IDs:**
-  - homeowner: `563034000000079297` (Homeowner-only by design — contractor signer may be added later if needed)
-- **Last verified against Zoho:** 2026-04-28
+  - homeowner: `563034000000079297` (Homeowner-only by design — placeholder at template signing_order=**2** so Signature binding aligns with the rest of the envelope; see [signer-binding note](#signer-binding-note) below)
+- **Last verified against Zoho:** 2026-05-07
 - **Fields (12 total):**
 
   | Field name | Type | Date format | Source |
@@ -110,8 +110,8 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 - **Applicable scenarios:** initial
 - **Rule:** required when `isSenior`
 - **Action IDs:**
-  - homeowner: `563034000000079160` (Homeowner-only — no Contractor signer)
-- **Last verified against Zoho:** 2026-04-28
+  - homeowner: `563034000000079160` (Homeowner-only, placeholder at template signing_order=**2** — see [signer-binding note](#signer-binding-note) below)
+- **Last verified against Zoho:** 2026-05-07
 - **Fields:**
 
   | Field name | Type | Source |
@@ -134,8 +134,8 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 - **Applicable scenarios:** initial
 - **Rule:** required (every initial-sale envelope)
 - **Action IDs:**
-  - homeowner: `563034000000079195` (Homeowner-only)
-- **Last verified against Zoho:** 2026-04-28
+  - homeowner: `563034000000079195` (Homeowner-only, placeholder at template signing_order=**2** — see [signer-binding note](#signer-binding-note) below)
+- **Last verified against Zoho:** 2026-05-07
 - **Fields:**
 
   | Field name | Type | Source |
@@ -157,8 +157,8 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
 - **Applicable scenarios:** initial, upsell
 - **Rule:** optional (agent toggles per-proposal at draft-config time)
 - **Action IDs:**
-  - homeowner: `563034000000079229` (Homeowner-only)
-- **Last verified against Zoho:** 2026-04-28
+  - homeowner: `563034000000079229` (Homeowner-only, placeholder at template signing_order=**2** — see [signer-binding note](#signer-binding-note) below)
+- **Last verified against Zoho:** 2026-05-07
 - **Single line-item caveat:** `order-id`, `product-label`, `product-quantity` are flat single fields — today's template supports exactly one material item per envelope. Multi-item support requires either redesigning the template (e.g. `product-label-2`, etc.) or adding multiple material-order documents to the envelope (Zoho allows duplicate templates within one envelope).
 - **Fields:**
 
@@ -173,6 +173,41 @@ API capabilities + recipient unification: see [research-notes.md](./research-not
   | order-id | text | not yet mapped (TBD) |
   | product-label | text | not yet mapped (TBD) |
   | product-quantity | text | not yet mapped (TBD) |
+
+---
+
+<a id="signer-binding-note"></a>
+
+## Signer-binding note (signing_order=2 convention for ancillary templates)
+
+Mergesend binds Signature/Initial/Sign-date fields to recipients by the FIELD's
+template-stored `signing_order` at envelope creation, NOT by the `action_id` we
+attach a recipient to. When two templates' fields share the same template-stored
+order, Zoho consolidates the order slot to a single recipient (first email seen
+in the action payload wins) — and any field at that slot binds to that recipient.
+
+Because `tpr-HI` / `tpr-HI-senior` reserve order=1 for the Contractor and order=2
+for the Homeowner, every ancillary template's lone Homeowner placeholder must
+sit at template-stored `signing_order=2`. Otherwise the Homeowner Signature on
+the ancillary template binds to whoever holds order=1 in the merged envelope,
+which is `info@triprosremodeling.com` (the Contractor). Verified via probes;
+the `action.signing_order` we send in the API payload does not override this.
+
+**To verify after editing any template in Zoho UI:**
+
+```
+pnpm tsx scripts/zoho-template-actions.ts <templateId>
+```
+
+Expected output for an ancillary template:
+```
+=== Template <id> (...) — 1 actions ===
+  action_id=... role=Homeowner type=SIGN order=2 recipient=
+                                       ^^^^^^^
+                            must be 2 for binding to align
+```
+
+If `order=1` shows up, the field-binding bug returns.
 
 ---
 

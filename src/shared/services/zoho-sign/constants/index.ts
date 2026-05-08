@@ -16,8 +16,15 @@ export const ZOHO_SIGN_SCOPES = 'ZohoSign.documents.ALL,ZohoSign.templates.ALL'
  * trimmed in Zoho UI to just the agreement portion (sow-1/sow-2 fields
  * removed) — the template IDs stay valid through the trim.
  *
- * The ancillary templates (seniorAck, esignWaiver, materialOrder) are
- * homeowner-signed only — no Contractor signer placement.
+ * **Homeowner placement convention:** every template — including the
+ * single-signer ancillary ones (seniorAck, esignWaiver, materialOrder,
+ * awd) — places the Homeowner placeholder at template-stored
+ * signing_order=2. Mergesend binds Signature fields to recipients by the
+ * FIELD's template-stored signing_order at envelope creation, so this
+ * convention guarantees customer@ (sent at action.signing_order=2)
+ * actually owns those Signature fields when info@ (Contractor on tpr-HI)
+ * occupies order=1. Verify with `pnpm tsx scripts/zoho-template-actions.ts
+ * <templateId>` after any template edit — Homeowner must report `order=2`.
  */
 export const ZOHO_SIGN_TEMPLATES = {
   base: {

@@ -67,14 +67,17 @@ Each entry in the `actions` array:
 ## Template-level action IDs (current inventory)
 
 ```
-tpr-HI                (563034000000046241)  Contractor=...46252  Homeowner=...46258
-tpr-HI-senior         (563034000000055081)  Contractor=...55125  Homeowner=...55136
-tpr-senior-ack        (563034000000079147)  Homeowner=...79160   (no Contractor)
-tpr-esign-waiver      (563034000000079183)  Homeowner=...79195   (no Contractor)
-tpr-material-order    (563034000000079219)  Homeowner=...79229   (no Contractor)
+tpr-HI                (563034000000046241)  Contractor=...46252 (order=1)  Homeowner=...46258 (order=2)
+tpr-HI-senior         (563034000000055081)  Contractor=...55125 (order=1)  Homeowner=...55136 (order=2)
+tpr-senior-ack        (563034000000079147)  Homeowner=...79160 (order=2)   (no Contractor)
+tpr-esign-waiver      (563034000000079183)  Homeowner=...79195 (order=2)   (no Contractor)
+tpr-material-order    (563034000000079219)  Homeowner=...79229 (order=2)   (no Contractor)
+tpr-additional-work   (563034000000079284)  Homeowner=...79297 (order=2)   (no Contractor)
 ```
 
-Ancillary templates (senior-ack, esign-waiver, material-order) are homeowner-signed only — no contractor signer placement. The contractor only signs the main HI agreement.
+Ancillary templates (senior-ack, esign-waiver, material-order, awd) are homeowner-signed only — no contractor signer placement. The contractor only signs the main HI agreement.
+
+**Why every Homeowner placeholder sits at signing_order=2** (even on single-signer templates): mergesend binds Signature/Initial/Sign-date fields to recipients by the FIELD's template-stored signing_order, NOT by action_id. With Contractor at order=1 on `tpr-HI` and `tpr-HI-senior`, any other template's Homeowner field stored at order=1 would bind to `info@triprosremodeling.com` instead of the customer when merged. See `docs/zoho-sign/template-inventory.md#signer-binding-note` for details and verification steps.
 
 ## Field caps and types — known gaps
 
