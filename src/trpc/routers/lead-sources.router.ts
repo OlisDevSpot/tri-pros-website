@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { TRPCError } from '@trpc/server'
-import { and, asc, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, lte, ne, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { customerPipelines } from '@/shared/constants/enums/customer-pipelines'
@@ -342,7 +342,7 @@ export const leadSourcesRouter = createTRPCRouter({
       requireSuperAdmin(ctx.session.user.role)
       const { id, slug, ...rest } = input
 
-      const patch: Record<string, unknown> = { ...rest }
+      const patch: Partial<typeof leadSourcesTable.$inferInsert> = { ...rest }
 
       if (slug !== undefined) {
         // Reject malformed input — only canonical kebab-case is accepted.
@@ -352,20 +352,34 @@ export const leadSourcesRouter = createTRPCRouter({
             message: 'Use lowercase letters, numbers, and hyphens only.',
           })
         }
-        // Reject duplicates against any other source.
-        const [existing] = await db
-          .select({ id: leadSourcesTable.id })
+
+        // Read current slug so a no-op save (UI echoes the existing slug)
+        // does not silently rotate the token and break live intake URLs.
+        const [current] = await db
+          .select({ slug: leadSourcesTable.slug })
           .from(leadSourcesTable)
-          .where(and(eq(leadSourcesTable.slug, slug), sql`${leadSourcesTable.id} <> ${id}`))
+          .where(eq(leadSourcesTable.id, id))
           .limit(1)
-        if (existing) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'That slug is already in use.',
-          })
+        if (!current) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
         }
-        patch.slug = slug
-        patch.token = generateToken()
+
+        if (slug !== current.slug) {
+          // Reject duplicates against any other source.
+          const [existing] = await db
+            .select({ id: leadSourcesTable.id })
+            .from(leadSourcesTable)
+            .where(and(eq(leadSourcesTable.slug, slug), ne(leadSourcesTable.id, id)))
+            .limit(1)
+          if (existing) {
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message: 'That slug is already in use.',
+            })
+          }
+          patch.slug = slug
+          patch.token = generateToken()
+        }
       }
 
       const [updated] = await db
