@@ -114,22 +114,24 @@ export function LeadSourceList({
                     label={rangeLabel}
                   />
                   <LeadSourceOverviewCard.Actions>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onAddCustomer({ slug: source.slug, name: source.name })}
-                      aria-label={`Add customer to ${source.name}`}
-                      className="size-7 shrink-0 text-foreground"
-                    >
-                      <PlusIcon className="size-4" />
-                    </Button>
-                    <EntityActionDropdown
-                      entity={source}
-                      actions={actions}
-                      orientation="horizontal"
-                      triggerClassName="size-7 text-foreground"
-                    />
+                    <div className="flex items-center gap-px rounded-md border border-border/50 p-0.5">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onAddCustomer({ slug: source.slug, name: source.name })}
+                        aria-label={`Add customer to ${source.name}`}
+                        className="size-6 shrink-0 text-foreground"
+                      >
+                        <PlusIcon className="size-3.5" />
+                      </Button>
+                      <EntityActionDropdown
+                        entity={source}
+                        actions={actions}
+                        orientation="horizontal"
+                        triggerClassName="size-6 text-foreground"
+                      />
+                    </div>
                   </LeadSourceOverviewCard.Actions>
                 </LeadSourceOverviewCard>
               ))}

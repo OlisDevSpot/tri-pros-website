@@ -120,7 +120,7 @@ interface StatProps {
 
 function Stat({ value, label, className }: StatProps) {
   return (
-    <div className={cn('flex items-baseline gap-1 tabular-nums', className)}>
+    <div className={cn('flex flex-col items-end gap-px tabular-nums', className)}>
       <span className="text-sm font-semibold text-foreground">{value ?? 0}</span>
       <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
     </div>
@@ -135,7 +135,7 @@ function Stat({ value, label, className }: StatProps) {
 function Actions({ children, className }: { children: ReactNode, className?: string }) {
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center gap-px pl-1', className)}
+      className={cn('inline-flex shrink-0 items-center', className)}
       onClick={e => e.stopPropagation()}
     >
       {children}
