@@ -216,33 +216,41 @@ getStatusCounts: agentProcedure
   })
 ```
 
-**Status definitions** — grounded in the verified schema (`customers.pipelineStage` is `text('pipeline_stage')` and the `customerPipelines` enum is `['active', 'rehash', 'dead']`):
+**Status definitions** — grounded in the canonical helper `isSignedCustomerSql()` ([src/shared/entities/customers/lib/signed-customer-sql.ts](src/shared/entities/customers/lib/signed-customer-sql.ts)) and the `customerPipelines` enum (`['active', 'rehash', 'dead']`):
 
 - `all` — every customer attached to this lead source (no filter)
-- `signed` — has ≥1 proposal with `status='approved'`. Pipeline-stage agnostic.
-- `dead` — `pipelineStage = 'dead'` AND has no approved proposal (a customer with an approved proposal counts as `signed` even if later marked dead).
-- `active` — `pipelineStage IN ('active', 'rehash')` AND has no approved proposal.
+- `signed` — `isSignedCustomerSql() = true` (has ≥1 project — the canonical signal). Pipeline-stage agnostic.
+- `dead` — `customers.pipeline = 'dead'` AND `NOT isSignedCustomerSql()` (a signed customer stays in Signed even if pipeline later flips to dead).
+- `active` — `customers.pipeline IN ('active', 'rehash')` AND `NOT isSignedCustomerSql()`.
 
-Counts must satisfy the invariant: `active + signed + dead === all` (no double-count, no orphans).
+Counts must satisfy the invariant: `active + signed + dead === all` (no double-count, no orphans). Implementation must reuse `isSignedCustomerSql()` rather than recompute project-existence inline.
+
+The customers schema column is `customers.pipeline` (verified at `lead-sources.router.ts:221, 238, 250` — the existing filter calls it `pipeline`, not `pipelineStage`). The plan uses `customers.pipeline`.
 
 ### `getCustomers` — modify
 
-Add optional `status` input: `z.enum(['active','signed','dead']).optional()`. Filter the query accordingly. Defaults to no filter when omitted (the All segment).
+The existing procedure (`lead-sources.router.ts:219-269`) uses `paginatedQueryInput` with a `pipeline` filter (multi-select) and a `createdAt` date-range filter. Add a new top-level `segment` filter key alongside `pipeline`, accepting `z.enum(['all','active','signed','dead']).optional()`.
 
-### `updateLeadSource` — extend
+The `segment` filter compiles to a SQL predicate combining `customers.pipeline` and `isSignedCustomerSql()` per the status definitions above. When omitted, no segment filter applies (equivalent to `all`).
 
-Already exists for `formConfigJSON`. Extend to accept optional `name` and `slug`. Slug change must:
-- Validate uniqueness (return `CONFLICT` on collision).
-- Rotate the token in the same transaction (so the old URL stops working immediately, matching the dialog promise).
-- Validate kebab-case via existing slug schema.
+The pre-existing `pipeline` filter stays in place for advanced filter UIs that want to filter by pipeline without segment semantics — the new `segment` is a higher-level shortcut.
 
-### `archiveLeadSource` — new
+### `update` — extend
 
-Sets `archivedAt = now()`. Idempotent. Returns the updated row. Lead source list query must filter `archivedAt IS NULL` going forward (verify in `lead-source-list.tsx`).
+Already exists for `name`, `formConfigJSON`, `isActive` (`lead-sources.router.ts:287-301`). Extend the input schema to accept optional `slug`. Slug change must:
+- Validate it matches the kebab-case shape produced by the existing `slugify()` helper at `lead-sources.router.ts:28-35` — accept the input only if `slugify(slug) === slug`. Otherwise throw `BAD_REQUEST` with "Use lowercase letters, numbers, and hyphens only."
+- Validate uniqueness against existing rows. On collision return `CONFLICT` with "That slug is already in use."
+- Rotate the token in the same `UPDATE` (so the old URL stops working immediately, matching the dialog promise). The single statement updates `slug`, `token`, `updatedAt`.
 
-### `deleteLeadSource` — new
+The existing `toggleActive` mutation in `useLeadSourceActions` (`use-lead-source-actions.ts:33-41`) already reuses this `update` procedure under the hood. The plan reuses `toggleActive` from the Danger zone.
 
-Hard delete. Server-side guard: throw if customers exist (`PRECONDITION_FAILED`). Client must surface this as a toast.
+### `archive` — new
+
+Sets `archivedAt = now()`. Idempotent. Returns the updated row. The existing `list` procedure (`lead-sources.router.ts:97`) must filter `archivedAt IS NULL` going forward — added as part of this work.
+
+### `delete` — modify
+
+The existing `delete` procedure (`lead-sources.router.ts:348-354`) hard-deletes without checking for customers. Add a server-side guard: count customers where `leadSourceId = input.id`; if `> 0`, throw `PRECONDITION_FAILED` with "N customers still attached. Reassign or archive instead." Otherwise proceed with delete. Client must surface this as a toast.
 
 ### Schema changes
 
@@ -277,8 +285,8 @@ Per `feedback-participant-invalidation.md` pattern — invalidate at the surface
 | `updateLeadSource` (name/slug/formConfig) | `getById`, `lead-source-list` |
 | `rotateToken` | `getById` |
 | `setActive` (Danger zone Pause toggle) | `getById`, `lead-source-list` |
-| `archiveLeadSource` | `getById`, `lead-source-list` (which now filters `archivedAt IS NULL`) |
-| `deleteLeadSource` | `getById`, `lead-source-list`; navigate to `/dashboard/lead-sources` (no detail to show) |
+| `archive` | `getById`, `list` (which now filters `archivedAt IS NULL`); navigate back to `/dashboard/lead-sources` |
+| `delete` | `getById`, `list`; navigate to `/dashboard/lead-sources` (no detail to show) |
 | `addCustomerToLeadSource` (existing) | `getStats`, `getStatusCounts`, `getCustomers` |
 
 ## Loading, empty, error states
