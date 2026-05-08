@@ -135,7 +135,7 @@ function Stat({ value, label, className }: StatProps) {
 function Actions({ children, className }: { children: ReactNode, className?: string }) {
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center gap-0 pl-1', className)}
+      className={cn('inline-flex shrink-0 items-center gap-px pl-1', className)}
       onClick={e => e.stopPropagation()}
     >
       {children}

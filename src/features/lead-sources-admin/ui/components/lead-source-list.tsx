@@ -120,7 +120,7 @@ export function LeadSourceList({
                       size="icon"
                       onClick={() => onAddCustomer({ slug: source.slug, name: source.name })}
                       aria-label={`Add customer to ${source.name}`}
-                      className="h-11 w-11 shrink-0 text-foreground sm:h-8 sm:w-8"
+                      className="size-7 shrink-0 text-foreground"
                     >
                       <PlusIcon className="size-4" />
                     </Button>
@@ -128,7 +128,7 @@ export function LeadSourceList({
                       entity={source}
                       actions={actions}
                       orientation="horizontal"
-                      triggerClassName="h-11 w-11 text-foreground sm:h-8 sm:w-8"
+                      triggerClassName="size-7 text-foreground"
                     />
                   </LeadSourceOverviewCard.Actions>
                 </LeadSourceOverviewCard>
