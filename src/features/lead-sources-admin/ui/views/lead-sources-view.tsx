@@ -2,7 +2,7 @@
 
 import type { TimeRangeKey } from '@/features/lead-sources-admin/constants/time-ranges'
 
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PlusIcon, RadioTowerIcon } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useMemo, useState } from 'react'
@@ -52,12 +52,16 @@ export function LeadSourcesView() {
   const activeChip = chips.find(c => c.key === rangeKey) ?? chips[0]!
   const range = useMemo(() => resolveTimeRange(activeChip), [activeChip.key])
 
-  const { data: sources, isLoading } = useQuery(
-    trpc.leadSourcesRouter.list.queryOptions({
+  const { data: sources, isLoading } = useQuery({
+    ...trpc.leadSourcesRouter.list.queryOptions({
       from: range.from,
       to: range.to,
     }),
-  )
+    // Switching the time chip changes the queryKey — without this, the whole
+    // list flashes to a skeleton. With keepPreviousData, the rows stay
+    // mounted and just the counts re-fetch.
+    placeholderData: keepPreviousData,
+  })
 
   const hasSources = (sources?.length ?? 0) > 0
   const isAllSelected = selectedId === ALL_PSEUDO_ID

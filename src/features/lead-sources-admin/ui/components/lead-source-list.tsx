@@ -114,7 +114,7 @@ export function LeadSourceList({
                     label={rangeLabel}
                   />
                   <LeadSourceOverviewCard.Actions>
-                    <div className="flex items-center gap-px rounded-md border border-border/50 p-0.5">
+                    <div className="flex items-center gap-px rounded-md border border-border/50 p-1">
                       <Button
                         type="button"
                         variant="ghost"

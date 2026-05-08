@@ -2,7 +2,7 @@
 
 import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { parseAsStringEnum, useQueryState } from 'nuqs'
 
@@ -40,13 +40,14 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
     trpc.leadSourcesRouter.getById.queryOptions({ id: leadSourceId }),
   )
 
-  const statsQuery = useQuery(
-    trpc.leadSourcesRouter.getStats.queryOptions({
+  const statsQuery = useQuery({
+    ...trpc.leadSourcesRouter.getStats.queryOptions({
       id: leadSourceId,
       from: range.from,
       to: range.to,
     }),
-  )
+    placeholderData: keepPreviousData,
+  })
 
   if (sourceQuery.isLoading || !sourceQuery.data) {
     return (

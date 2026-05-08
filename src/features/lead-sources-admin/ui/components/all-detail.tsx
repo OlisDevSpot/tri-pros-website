@@ -2,7 +2,7 @@
 
 import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 
@@ -28,12 +28,13 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
   const trpc = useTRPC()
   const entrance = useEntranceMotion()
 
-  const statsQuery = useQuery(
-    trpc.leadSourcesRouter.getAggregateStats.queryOptions({
+  const statsQuery = useQuery({
+    ...trpc.leadSourcesRouter.getAggregateStats.queryOptions({
       from: range.from,
       to: range.to,
     }),
-  )
+    placeholderData: keepPreviousData,
+  })
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 p-4 sm:gap-6 sm:p-6">
