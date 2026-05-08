@@ -268,58 +268,6 @@ export const leadSourcesRouter = createTRPCRouter({
       })
     }),
 
-  // Customers across every lead source (plus legacy NULL-source rows). Used by
-  // the "All" pane. Joins lead_sources so the table can show which source
-  // each customer came from; NULL joins mean "unknown legacy import".
-  // Filters: `pipeline` (multi-select), `createdAt` (date range).
-  getAllCustomers: agentProcedure
-    .input(paginatedQueryInput({
-      pipeline: z.array(z.enum(customerPipelines)).optional(),
-      createdAt: dateRangeSchema.optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
-
-      const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
-      const filterWhere = buildFilterWhere(input.filters, {
-        pipeline: v => (v.length > 0 ? inArray(customers.pipeline, v) : undefined),
-        createdAt: v => and(
-          v.from ? gte(customers.createdAt, v.from) : undefined,
-          v.to ? lte(customers.createdAt, v.to) : undefined,
-        ),
-      })
-      const where = and(searchWhere, filterWhere)
-
-      const orderBy = buildOrderBy(input.sort, {
-        name: customers.name,
-        email: customers.email,
-        createdAt: customers.createdAt,
-        pipeline: customers.pipeline,
-        leadSourceName: leadSourcesTable.name,
-      }, desc(customers.createdAt))
-
-      return paginate({
-        query: () => db
-          .select({
-            id: customers.id,
-            name: customers.name,
-            email: customers.email,
-            createdAt: customers.createdAt,
-            pipeline: customers.pipeline,
-            leadSourceId: customers.leadSourceId,
-            leadSourceName: leadSourcesTable.name,
-            leadSourceSlug: leadSourcesTable.slug,
-          })
-          .from(customers)
-          .leftJoin(leadSourcesTable, eq(leadSourcesTable.id, customers.leadSourceId))
-          .where(where)
-          .orderBy(...orderBy)
-          .limit(input.pagination.limit)
-          .offset(input.pagination.offset),
-        count: () => db.$count(customers, where),
-      })
-    }),
-
   create: agentProcedure
     .input(createInput)
     .mutation(async ({ ctx, input }) => {

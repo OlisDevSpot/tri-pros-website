@@ -1,38 +1,41 @@
 'use client'
 
-import type { AppRouterOutputs } from '@/trpc/routers/app'
-
+import type { CustomerTableMeta, CustomerTableRow } from '@/shared/entities/customers/lib/columns-registry'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
 
-import { CUSTOMER_FILTER_CONFIG, CUSTOMER_PAGE_SIZE_OPTIONS } from '@/features/lead-sources-admin/constants/customer-filter-config'
-import { buildCustomerColumns } from '@/features/lead-sources-admin/ui/components/customer-table-columns'
+import { toast } from 'sonner'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
+import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
+
+import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-type AllCustomerRow = AppRouterOutputs['leadSourcesRouter']['getAllCustomers']['rows'][number]
+const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
 export function AllCustomersSection() {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<Record<string, never>, AllCustomerRow>(
-    trpc.leadSourcesRouter.getAllCustomers.queryOptions,
+  const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
+    trpc.customersRouter.list.queryOptions,
     {},
     {
       paramPrefix: 'all',
       pageSize: 20,
-      pageSizeOptions: CUSTOMER_PAGE_SIZE_OPTIONS,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: CUSTOMER_FILTER_CONFIG,
     },
   )
@@ -57,19 +60,17 @@ export function AllCustomersSection() {
     openModal()
   }, [setModal, openModal])
 
-  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<AllCustomerRow>({
+  const { actions, DeleteConfirmDialog } = useCustomerActionConfigs<CustomerTableRow>({
     onView: entity => handleViewProfile(entity.id),
   })
 
-  const columns = useMemo(
-    () => buildCustomerColumns<AllCustomerRow>({ includeSource: true }),
-    [],
-  )
+  const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
+  const visibility = useColumnVisibility('all-customers', columns)
 
-  const meta = useMemo(
+  const meta = useMemo<CustomerTableMeta>(
     () => ({
       customerActions: () => actions,
-      onUpdateCreatedAt: (customerId: string, date: Date) =>
+      onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
     }),
     [actions, updateCreatedAt],
@@ -93,6 +94,7 @@ export function AllCustomersSection() {
           <QueryToolbar.Bar>
             <QueryToolbar.Search placeholder="Filter by name or email…" />
             <QueryToolbar.FilterTrigger />
+            <QueryToolbar.ColumnsTrigger visibility={visibility} />
             <QueryToolbar.PageSize />
           </QueryToolbar.Bar>
           <QueryToolbar.ChipRail />
@@ -109,6 +111,7 @@ export function AllCustomersSection() {
         onRowClick={row => handleViewProfile(row.id)}
         serverPagination={toDataTablePagination(pagination)}
         serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+        columnVisibility={visibility.columnVisibility}
       />
     </section>
   )

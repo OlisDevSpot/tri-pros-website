@@ -38,6 +38,10 @@ export type FreshProposalStage = (typeof freshProposalStages)[number]
 export const projectStatuses = ['active', 'completed', 'on_hold'] as const
 export type ProjectStatus = (typeof projectStatuses)[number]
 
+/** Public-facing visibility of a portfolio project (maps to projects.isPublic). */
+export const projectVisibilities = ['public', 'draft'] as const
+export type ProjectVisibility = (typeof projectVisibilities)[number]
+
 /** Project management pipeline stages */
 export const projectPipelineStages = [
   'signed',

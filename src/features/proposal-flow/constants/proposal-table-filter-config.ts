@@ -1,13 +1,6 @@
 import type { FilterDefinition } from '@/shared/dal/client/query/types'
 
-import {
-  TIME_PRESET_LAST_WEEK,
-  TIME_PRESET_THIS_MONTH,
-  TIME_PRESET_THIS_WEEK,
-  TIME_PRESET_THIS_YEAR,
-  TIME_PRESET_TODAY,
-  TIME_PRESET_YEAR_TO_DATE,
-} from '@/shared/components/data-table/constants/time-filter-presets'
+import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
 import { proposalStatuses } from '@/shared/constants/enums'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
@@ -19,15 +12,6 @@ import { formatAsDollars } from '@/shared/lib/formatters'
 const PROPOSAL_PRICE_MIN = 0
 const PROPOSAL_PRICE_MAX = 300_000
 const PROPOSAL_PRICE_STEP = 1_000
-
-const DEFAULT_PRESETS = [
-  TIME_PRESET_TODAY,
-  TIME_PRESET_THIS_WEEK,
-  TIME_PRESET_LAST_WEEK,
-  TIME_PRESET_THIS_MONTH,
-  TIME_PRESET_YEAR_TO_DATE,
-  TIME_PRESET_THIS_YEAR,
-]
 
 /**
  * Filter config for the proposals table. Ids match `proposalsRouter.crud.list`'s
@@ -56,13 +40,13 @@ export const PROPOSAL_FILTER_CONFIG = [
     id: 'createdAt',
     type: 'date-range',
     label: 'Created',
-    presets: DEFAULT_PRESETS,
+    presets: DEFAULT_TIME_PRESETS,
   },
   {
     id: 'sentAt',
     type: 'date-range',
     label: 'Sent',
-    presets: DEFAULT_PRESETS,
+    presets: DEFAULT_TIME_PRESETS,
   },
   {
     id: 'pipeline',
@@ -85,5 +69,3 @@ export const PROPOSAL_FILTER_CONFIG = [
     formatValue: formatAsDollars,
   },
 ] as const satisfies readonly FilterDefinition[]
-
-export const PROPOSAL_PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const

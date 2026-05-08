@@ -1,7 +1,6 @@
 'use client'
 
 import type { CustomerPipelineItem } from '@/features/customer-pipelines/types'
-import type { DataViewType } from '@/shared/components/data-view-type-toggle'
 
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -11,28 +10,23 @@ import { pipelineConfigs } from '@/features/customer-pipelines/constants/pipelin
 import { groupCustomersByStage } from '@/features/customer-pipelines/lib/group-customers-by-stage'
 import { CustomerKanbanCard } from '@/features/customer-pipelines/ui/components/customer-kanban-card'
 import { CustomerPipelineMetricsBar } from '@/features/customer-pipelines/ui/components/customer-pipeline-metrics-bar'
-import { CustomerPipelineTable } from '@/features/customer-pipelines/ui/components/customer-pipeline-table'
 import { PipelineSelect } from '@/features/customer-pipelines/ui/components/pipeline-select'
-import { DataViewTypeToggle } from '@/shared/components/data-view-type-toggle'
 import { useKanbanColumnFilter } from '@/shared/components/kanban/hooks/use-kanban-column-filter'
 import { KanbanBoard } from '@/shared/components/kanban/ui/kanban-board'
 import { KanbanColumnFilter } from '@/shared/components/kanban/ui/kanban-column-filter'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { usePipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CreateMeetingModal } from '@/shared/entities/meetings/components/create-meeting-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
-import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CustomerPipelineView() {
-  const [layout, setLayout] = usePersistedState<DataViewType>(STORAGE_KEYS.PIPELINE_LAYOUT, 'kanban')
   const { pipeline, setPipeline } = usePipeline()
   const [createMeetingForCustomer, setCreateMeetingForCustomer] = useState<{ id: string, name: string } | null>(null)
   const [assignRepTarget, setAssignRepTarget] = useState<{ meetingIds: string[] } | null>(null)
@@ -173,17 +167,14 @@ export function CustomerPipelineView() {
         <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
-          {layout === 'kanban' && (
-            <KanbanColumnFilter
-              stages={config.stageConfig}
-              visibleStages={columnFilter.visibleStages}
-              alwaysVisible={columnFilter.alwaysVisible}
-              onToggleStage={columnFilter.handleToggleStage}
-              onShowAll={columnFilter.handleShowAll}
-              onHideAll={columnFilter.handleHideAll}
-            />
-          )}
-          <DataViewTypeToggle value={layout} onChange={setLayout} />
+          <KanbanColumnFilter
+            stages={config.stageConfig}
+            visibleStages={columnFilter.visibleStages}
+            alwaysVisible={columnFilter.alwaysVisible}
+            onToggleStage={columnFilter.handleToggleStage}
+            onShowAll={columnFilter.handleShowAll}
+            onHideAll={columnFilter.handleHideAll}
+          />
         </div>
       </div>
 
@@ -198,31 +189,21 @@ export function CustomerPipelineView() {
                 />
               </div>
             )
-          : layout === 'table'
-            ? (
-                <div className="h-full overflow-y-auto">
-                  <CustomerPipelineTable
-                    data={pipelineQuery.data}
-                    onRowClick={item => handleViewProfile(item.id)}
-                    onViewProfile={handleViewProfile}
-                  />
-                </div>
-              )
-            : (
-                <KanbanBoard<CustomerPipelineItem>
-                  stageConfig={columnFilter.filteredStageConfig}
-                  groupedItems={groupCustomersByStage(pipelineQuery.data, config.stages)}
-                  allowedTransitions={config.allowedTransitions}
-                  blockedMessages={config.blockedMessages}
-                  onMoveItem={handleMoveItem}
-                  onBlockedTransition={handleBlockedTransition}
-                  collapsedStages={pipeline === 'fresh' ? ['declined'] : []}
-                  showColumnValues
-                  getItemValue={getItemValue}
-                  renderCard={renderCard}
-                  className="mobile-bleed-right"
-                />
-              )}
+          : (
+              <KanbanBoard<CustomerPipelineItem>
+                stageConfig={columnFilter.filteredStageConfig}
+                groupedItems={groupCustomersByStage(pipelineQuery.data, config.stages)}
+                allowedTransitions={config.allowedTransitions}
+                blockedMessages={config.blockedMessages}
+                onMoveItem={handleMoveItem}
+                onBlockedTransition={handleBlockedTransition}
+                collapsedStages={pipeline === 'fresh' ? ['declined'] : []}
+                showColumnValues
+                getItemValue={getItemValue}
+                renderCard={renderCard}
+                className="mobile-bleed-right"
+              />
+            )}
       </div>
       {createMeetingForCustomer && (
         <CreateMeetingModal

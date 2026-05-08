@@ -1,4 +1,4 @@
-import type { ColumnDef, SortingState } from '@tanstack/react-table'
+import type { ColumnDef, SortingState, VisibilityState } from '@tanstack/react-table'
 
 // -- Date range shape used by time-preset filter --
 
@@ -129,4 +129,11 @@ export interface DataTableProps<TData, TMeta = unknown> {
    * tables.
    */
   serverSorting?: DataTableServerSorting
+  /**
+   * Controlled column visibility. When set, this map drives TanStack Table's
+   * visibility state — pair with `useColumnVisibility(tableId, columns)` to
+   * persist user toggles to localStorage. When omitted, DataTable falls back
+   * to static `meta.hidden` only.
+   */
+  columnVisibility?: VisibilityState
 }

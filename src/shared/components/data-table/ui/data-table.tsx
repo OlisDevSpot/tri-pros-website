@@ -80,6 +80,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   onFilteredDataChange,
   serverPagination,
   serverSorting,
+  columnVisibility: controlledColumnVisibility,
 }: Props<TData, TMeta>) {
   const isMobile = useIsMobile()
   const [activeRowId, setActiveRowId] = useState<string | null>(null)
@@ -104,11 +105,34 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
     return []
   }, [serverSorting, internalSorting])
-  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() =>
-    tableId ? loadColumnSizing(tableId) : {},
-  )
-  const [isFrozen, setIsFrozen] = useState(() => tableId ? loadFrozen(tableId) : true)
+  // Default state matches SSR. Hydration from localStorage happens in the
+  // effect below — reading during `useState` init renders server-side with
+  // defaults but tries to apply saved values during hydration, and React 18
+  // refuses to patch layout-affecting attribute mismatches like column
+  // widths ("This won't be patched up"). Saved values then never reach the
+  // DOM. `isFrozen` uses a `null` sentinel for the pre-hydration value so
+  // the persist effect can tell "not yet loaded" from "user chose true".
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({})
+  const [isFrozen, setIsFrozen] = useState<boolean | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
+
+  // Hydrate from localStorage after mount. The setState calls below are
+  // the intentional double-render — server and client both first render
+  // with defaults so hydration matches, then this effect updates state to
+  // saved values for the next render.
+  useEffect(() => {
+    if (!tableId) {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- hydration sentinel
+      setIsFrozen(true)
+      return
+    }
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- localStorage hydration
+    setColumnSizing(loadColumnSizing(tableId))
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- localStorage hydration
+    setIsFrozen(loadFrozen(tableId))
+  }, [tableId])
+
+  const isFrozenEffective = isFrozen ?? true
 
   // -- Container width + scroll tracking ------------------------------------
 
@@ -137,7 +161,17 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   }, [])
 
   // -- Persist column sizes (debounced) -------------------------------------
+  // 300ms debounce keeps localStorage off the drag hot-path. The unmount
+  // flush below catches the case where the timer is cancelled before it
+  // fires — typically when the user reloads or navigates within 300ms of
+  // the last drag tick, which used to silently lose the resize.
+  const latestColumnSizing = useRef(columnSizing)
+  latestColumnSizing.current = columnSizing
 
+  // Skip the empty state — that covers both the pre-hydration default and
+  // the "user reset all columns" case. Both should NOT overwrite saved
+  // widths (the first would wipe them on mount; users who genuinely want a
+  // clean slate can clear localStorage).
   useEffect(() => {
     if (!tableId || Object.keys(columnSizing).length === 0) {
       return
@@ -151,24 +185,43 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     return () => clearTimeout(timer)
   }, [tableId, columnSizing])
 
+  // Synchronous flush on unmount. Reads via ref so we capture the latest
+  // sizing — the value closed over by the debounced effect would be stale
+  // by the time this cleanup runs. Same empty-state guard.
+  useEffect(() => () => {
+    if (!tableId) {
+      return
+    }
+    const sizing = latestColumnSizing.current
+    if (Object.keys(sizing).length === 0) {
+      return
+    }
+    try {
+      localStorage.setItem(`${COL_SIZE_KEY}:${tableId}`, JSON.stringify(sizing))
+    }
+    catch { /* localStorage unavailable */ }
+  }, [tableId])
+
   // -- Persist frozen state -------------------------------------------------
+  // Skip the `null` sentinel — that's the pre-hydration value and writing
+  // it would clobber the user's saved choice with the default `true`.
+  useEffect(() => {
+    if (!tableId || isFrozen === null) {
+      return
+    }
+    try {
+      localStorage.setItem(`${FROZEN_KEY}:${tableId}`, String(isFrozen))
+    }
+    catch { /* localStorage unavailable */ }
+  }, [tableId, isFrozen])
 
   const toggleFrozen = useCallback(() => {
-    setIsFrozen((prev) => {
-      const next = !prev
-      if (tableId) {
-        try {
-          localStorage.setItem(`${FROZEN_KEY}:${tableId}`, String(next))
-        }
-        catch { /* localStorage unavailable */ }
-      }
-      return next
-    })
-  }, [tableId])
+    setIsFrozen(prev => !(prev ?? true))
+  }, [])
 
   // -- Column visibility ----------------------------------------------------
 
-  const columnVisibility = useMemo<VisibilityState>(() => {
+  const fallbackColumnVisibility = useMemo<VisibilityState>(() => {
     const visibility: VisibilityState = {}
     for (const col of columns) {
       const key = 'accessorKey' in col ? col.accessorKey as string : undefined
@@ -178,6 +231,8 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
     }
     return visibility
   }, [columns])
+
+  const columnVisibility = controlledColumnVisibility ?? fallbackColumnVisibility
 
   // -- Time-preset filter machinery -----------------------------------------
 
@@ -309,7 +364,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
   const lastColExtra = needsOverflow ? 0 : effectiveContainer - totalDeclaredWidth
 
   // Frozen column shows shadow only when scrolled horizontally
-  const showFrozenShadow = isFrozen && isScrolled
+  const showFrozenShadow = isFrozenEffective && isScrolled
 
   // -- Filtered-data callbacks ----------------------------------------------
 
@@ -364,7 +419,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         className={cn(
                           'group/th relative',
                           CELL_BORDER,
-                          isFirstCol && isFrozen && cn(
+                          isFirstCol && isFrozenEffective && cn(
                             'sticky left-0 z-30 bg-background border-r border-border/50',
                             'transition-shadow duration-200',
                             showFrozenShadow && 'shadow-[4px_0_8px_0_rgba(0,0,0,0.3)]',
@@ -372,7 +427,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                         )}
                         style={{
                           width: colWidth,
-                          ...(isFirstCol && isFrozen ? { borderRightStyle: 'dashed' as const } : undefined),
+                          ...(isFirstCol && isFrozenEffective ? { borderRightStyle: 'dashed' as const } : undefined),
                         }}
                       >
                         {/* Header content — first col gets a pin toggle */}
@@ -391,12 +446,12 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                                     toggleFrozen()
                                   }}
                                   className="shrink-0 cursor-pointer rounded p-0.5 hover:bg-muted"
-                                  title={isFrozen ? 'Unfreeze column' : 'Freeze column'}
+                                  title={isFrozenEffective ? 'Unfreeze column' : 'Freeze column'}
                                 >
                                   <PinIcon
                                     className={cn(
                                       'h-3 w-3 rotate-45 transition-colors',
-                                      isFrozen
+                                      isFrozenEffective
                                         ? 'fill-foreground text-foreground'
                                         : 'text-muted-foreground/50',
                                     )}
@@ -504,7 +559,7 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                     {...rowProps}
                   >
                     {row.getVisibleCells().map((cell, colIdx) => {
-                      if (colIdx === 0 && isFrozen) {
+                      if (colIdx === 0 && isFrozenEffective) {
                         return (
                           <TableCell
                             key={cell.id}

@@ -1,30 +1,33 @@
 'use client'
 
-import type { ProposalRow, ProposalTableMeta } from './columns'
 import type { ProposalStatus } from '@/shared/constants/enums'
 
+import type { ProposalRow, ProposalTableMeta } from '@/shared/entities/proposals/lib/columns-registry'
 import { useCallback, useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
+import { toast } from 'sonner'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
-import { PROPOSAL_FILTER_CONFIG, PROPOSAL_PAGE_SIZE_OPTIONS } from '@/features/proposal-flow/constants/proposal-table-filter-config'
+import { PROPOSAL_FILTER_CONFIG } from '@/features/proposal-flow/constants/proposal-table-filter-config'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
+
 import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 import { useProposalActions } from '@/shared/entities/proposals/hooks/use-proposal-actions'
+import { PROPOSAL_COLUMNS } from '@/shared/entities/proposals/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-import { getColumns } from './columns'
-
-const columns = getColumns()
+const SHOW_COLUMNS = ['label', 'price', 'status', 'createdAt', 'sentAt', 'viewCount'] as const
 
 interface ProjectPrompt {
   proposalId: string
@@ -45,7 +48,7 @@ export function PastProposalsTable() {
     {
       paramPrefix: 'pp',
       pageSize: 20,
-      pageSizeOptions: PROPOSAL_PAGE_SIZE_OPTIONS,
+      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: PROPOSAL_FILTER_CONFIG,
     },
   )
@@ -121,14 +124,17 @@ export function PastProposalsTable() {
     }
   }, [updateProposal])
 
-  const meta: ProposalTableMeta = useMemo(() => ({
+  const columns = useEntityColumns(PROPOSAL_COLUMNS, { show: SHOW_COLUMNS })
+  const visibility = useColumnVisibility('proposals', columns)
+
+  const meta = useMemo<ProposalTableMeta>(() => ({
     proposalActions: () => sharedActions,
     onUpdateStatus: handleStatusChange,
-    onUpdateCreatedAt: (id: string, date: Date) => updateProposal.mutate(
+    onUpdateCreatedAt: (id, date) => updateProposal.mutate(
       { proposalId: id, data: { createdAt: date.toISOString() } },
       { onSuccess: () => toast.success('Created date updated') },
     ),
-    onViewProfile: (customerId: string) => {
+    onViewProfile: (customerId) => {
       setModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props: { customerId } })
       openModal()
     },
@@ -142,13 +148,7 @@ export function PastProposalsTable() {
         header={<RecordsPageHeader title="Proposals" pagination={pagination} />}
         toolbar={(
           <QueryToolbar pagination={pagination} entityName="proposals">
-            <QueryToolbar.Bar>
-              <QueryToolbar.Search placeholder="Search by label or customer…" />
-              <QueryToolbar.FilterTrigger />
-              <QueryToolbar.PageSize />
-            </QueryToolbar.Bar>
-            <QueryToolbar.ChipRail />
-            <QueryToolbar.LiveStatus />
+            <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" visibility={visibility} />
           </QueryToolbar>
         )}
         table={(
@@ -161,6 +161,7 @@ export function PastProposalsTable() {
             rowDataAttribute="data-proposal-row"
             serverPagination={toDataTablePagination(pagination)}
             serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            columnVisibility={visibility.columnVisibility}
           />
         )}
       />

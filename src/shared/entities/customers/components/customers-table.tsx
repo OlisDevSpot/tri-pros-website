@@ -11,6 +11,8 @@ import { useColumnVisibility } from '@/shared/components/data-table/lib/use-colu
 import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { RecordsPageHeader } from '@/shared/components/records-page-header'
+import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
 import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
 import { useInvalidation } from '@/shared/dal/client/use-invalidation'
@@ -22,22 +24,18 @@ import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-regist
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-const SHOW_COLUMNS = ['name', 'pipeline', 'createdAt'] as const
+const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
-interface LeadSourceCustomersSectionProps {
-  leadSourceId: string
-}
-
-export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomersSectionProps) {
+export function CustomersTable() {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<{ id: string }, CustomerTableRow>(
-    trpc.leadSourcesRouter.getCustomers.queryOptions,
-    { id: leadSourceId },
+  const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
+    trpc.customersRouter.list.queryOptions,
+    {},
     {
-      paramPrefix: 'src',
+      paramPrefix: 'pc',
       pageSize: 20,
       pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
       filters: CUSTOMER_FILTER_CONFIG,
@@ -69,7 +67,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   })
 
   const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
-  const visibility = useColumnVisibility('lead-source-customers', columns)
+  const visibility = useColumnVisibility('customers', columns)
 
   const meta = useMemo<CustomerTableMeta>(
     () => ({
@@ -81,45 +79,31 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   )
 
   return (
-    <section
-      aria-label="Customers from this lead source"
-      className="flex min-h-0 flex-1 flex-col gap-3"
-    >
+    <>
       <DeleteConfirmDialog />
 
-      <div className="flex shrink-0 flex-col gap-2">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Customers from this source
-          </h3>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
-          </span>
-        </div>
-
-        <QueryToolbar pagination={pagination} entityName="customers">
-          <QueryToolbar.Bar>
-            <QueryToolbar.Search placeholder="Filter by name or email…" />
-            <QueryToolbar.FilterTrigger />
-            <QueryToolbar.ColumnsTrigger visibility={visibility} />
-            <QueryToolbar.PageSize />
-          </QueryToolbar.Bar>
-          <QueryToolbar.ChipRail />
-          <QueryToolbar.LiveStatus />
-        </QueryToolbar>
-      </div>
-
-      <DataTable
-        tableId="lead-source-customers"
-        columns={columns}
-        data={pagination.rows}
-        meta={meta}
-        entityName="customer"
-        onRowClick={row => handleViewProfile(row.id)}
-        serverPagination={toDataTablePagination(pagination)}
-        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
-        columnVisibility={visibility.columnVisibility}
+      <RecordsPageShell
+        header={<RecordsPageHeader title="Customers" pagination={pagination} />}
+        toolbar={(
+          <QueryToolbar pagination={pagination} entityName="customers">
+            <QueryToolbar.Standard searchPlaceholder="Search by name or email…" visibility={visibility} />
+          </QueryToolbar>
+        )}
+        table={(
+          <DataTable
+            tableId="customers"
+            data={pagination.rows}
+            columns={columns}
+            meta={meta}
+            entityName="customer"
+            rowDataAttribute="data-customer-row"
+            onRowClick={row => handleViewProfile(row.id)}
+            serverPagination={toDataTablePagination(pagination)}
+            serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+            columnVisibility={visibility.columnVisibility}
+          />
+        )}
       />
-    </section>
+    </>
   )
 }

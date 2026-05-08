@@ -120,7 +120,7 @@ The query toolkit is **the** way we hit any paginated tRPC procedure — never h
 **Reference impls:** `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` and `all-customers-section.tsx`. Both wire the full stack: server filters (pipeline multi-select + createdAt date-range), sortable column headers, page-size selector, URL-persisted state with `?src_*` / `?all_*` prefixes.
 
 **Legacy filter scaffolding** (in active use by un-migrated tables, marked `@deprecated`):
-- `DataTableFilterConfig` / `DataTableFilterBar` / `useTableUrlFilters` / `DataTableTimePresetFilter` — for client-side filtering on Activities, Past Meetings, Past Proposals, Projects portfolio, Customer Pipelines. Each migration is a follow-up issue.
+- `DataTableFilterConfig` / `DataTableFilterBar` / `useTableUrlFilters` / `DataTableTimePresetFilter` — for client-side filtering on the Activities table. Records pages (Meetings, Proposals, Projects) and Customer Pipelines have been migrated to the toolkit. Each remaining migration is a follow-up issue.
 
 ### TanStack Query — `placeholderData: keepPreviousData`
 

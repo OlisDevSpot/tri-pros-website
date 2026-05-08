@@ -9,9 +9,11 @@ interface RecordsPageShellProps {
   header: ReactNode
   /** Toolbar (typically `<QueryToolbar>` with its slot composition). */
   toolbar: ReactNode
-  /** Data view (typically `<DataTable />`). The shell wraps it in a
+  /**
+   * Data view (typically `<DataTable />`). The shell wraps it in a
    *  `flex-1 min-h-0` cell so it fills the remaining vertical space and
-   *  scrolls correctly inside the parent's flex column. */
+   *  scrolls correctly inside the parent's flex column.
+   */
   table: ReactNode
   className?: string
 }
