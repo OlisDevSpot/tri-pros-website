@@ -23,7 +23,7 @@ import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-regist
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
+const SHOW_COLUMNS = ['name', 'pipeline', 'createdAt'] as const
 
 interface LeadSourceCustomersSectionProps {
   leadSourceId: string
@@ -57,19 +57,6 @@ export function LeadSourceCustomersSection({ leadSourceId, segment }: LeadSource
     }),
   )
 
-  const updateLeadSource = useMutation(
-    trpc.customersRouter.updateLeadSource.mutationOptions({
-      onSuccess: (data) => {
-        toast.success(data.leadSourceName
-          ? `Source set to ${data.leadSourceName}`
-          : 'Lead source updated')
-        invalidateCustomer()
-        invalidateLeadSource()
-      },
-      onError: err => toast.error(err.message),
-    }),
-  )
-
   const handleViewProfile = useCallback((customerId: string) => {
     setModal({
       accessor: 'CustomerProfile',
@@ -91,10 +78,8 @@ export function LeadSourceCustomersSection({ leadSourceId, segment }: LeadSource
       customerActions: () => actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
-      onUpdateLeadSource: (customerId, leadSourceId) =>
-        updateLeadSource.mutate({ customerId, leadSourceId }),
     }),
-    [actions, updateCreatedAt, updateLeadSource],
+    [actions, updateCreatedAt],
   )
 
   return (
