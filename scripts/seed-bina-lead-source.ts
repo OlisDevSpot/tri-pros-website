@@ -4,12 +4,11 @@
  */
 import '@/shared/config/server-env'
 
-import { randomBytes } from 'node:crypto'
-
 import { eq } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema'
+import { generateToken } from '@/shared/lib/generate-token'
 
 async function main() {
   const existing = await db.query.leadSourcesTable.findFirst({
@@ -24,7 +23,7 @@ async function main() {
   const [created] = await db.insert(leadSourcesTable).values({
     name: 'Bina',
     slug: 'bina',
-    token: randomBytes(16).toString('hex'),
+    token: generateToken(),
     formConfigJSON: {
       mode: 'customer_only',
       showEmail: true,

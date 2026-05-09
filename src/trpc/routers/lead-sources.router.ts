@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto'
 import { TRPCError } from '@trpc/server'
 import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
 import z from 'zod'
@@ -19,6 +18,8 @@ import { customerSegments } from '@/shared/entities/lead-sources/constants/custo
 import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { generateToken } from '@/shared/lib/generate-token'
+import { slugify } from '@/shared/lib/slugify'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
@@ -30,17 +31,8 @@ function requireSuperAdmin(role: string): void {
   }
 }
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 64)
-}
-
 async function generateUniqueSlug(base: string): Promise<string> {
-  const root = slugify(base) || 'source'
+  const root = slugify(base, { maxLen: 64 }) || 'source'
   for (let i = 0; i < 50; i++) {
     const candidate = i === 0 ? root : `${root}-${i + 1}`
     const [existing] = await db
@@ -53,10 +45,6 @@ async function generateUniqueSlug(base: string): Promise<string> {
     }
   }
   throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not generate unique slug.' })
-}
-
-function generateToken(): string {
-  return randomBytes(16).toString('hex')
 }
 
 // Match customers to a lead source by FK. Callers pass the lead_sources.id.
@@ -358,7 +346,7 @@ export const leadSourcesRouter = createTRPCRouter({
 
       if (slug !== undefined) {
         // Reject malformed input — only canonical kebab-case is accepted.
-        if (slugify(slug) !== slug) {
+        if (slugify(slug, { maxLen: 64 }) !== slug) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Use lowercase letters, numbers, and hyphens only.',
