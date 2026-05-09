@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+import { DangerZoneRow } from '@/features/lead-sources-admin/ui/components/danger-zone-row'
 import { Button } from '@/shared/components/ui/button'
 import {
   Dialog,
@@ -69,7 +70,7 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
       <div className="flex flex-col rounded-lg border border-destructive/40">
         <ArchiveConfirmDialog />
 
-        <Row
+        <DangerZoneRow
           title="Pause intake"
           description="Stops new submissions to this source's intake URL. Existing customers stay attached."
         >
@@ -80,11 +81,11 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
             aria-label={isActive ? 'Pause intake' : 'Resume intake'}
             className="data-[state=checked]:bg-emerald-500"
           />
-        </Row>
+        </DangerZoneRow>
 
         <div className="border-t border-border/40" aria-hidden="true" />
 
-        <Row
+        <DangerZoneRow
           title="Archive"
           description="Hide from the lead-source list. Data is preserved and can be restored."
         >
@@ -97,11 +98,11 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
           >
             {archiveLeadSource.isPending ? 'Archiving…' : 'Archive'}
           </Button>
-        </Row>
+        </DangerZoneRow>
 
         <div className="border-t border-destructive/20" aria-hidden="true" />
 
-        <Row
+        <DangerZoneRow
           title="Delete"
           description={
             canDelete
@@ -117,7 +118,7 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
           >
             Delete…
           </Button>
-        </Row>
+        </DangerZoneRow>
       </div>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
@@ -154,25 +155,5 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
         </DialogContent>
       </Dialog>
     </section>
-  )
-}
-
-function Row({
-  title,
-  description,
-  children,
-}: {
-  title: string
-  description: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 px-4 py-3.5">
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
   )
 }
