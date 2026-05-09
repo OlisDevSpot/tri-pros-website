@@ -1,10 +1,12 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { Customer } from '@/shared/db/schema/customers'
 import type { Contact } from '@/shared/services/notion/lib/contacts/schema'
-import { eq, getTableColumns } from 'drizzle-orm'
+import { eq, getTableColumns, inArray } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { meetings } from '@/shared/db/schema/meetings'
+import { proposals } from '@/shared/db/schema/proposals'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
@@ -156,6 +158,31 @@ export async function getCustomer(customerId: string, viewer: CustomersViewer): 
 
 export async function getCustomers(viewer: CustomersViewer): Promise<CustomerWithPhoneGate[]> {
   return db.select(customerSelectWithGate(viewer)).from(customers)
+}
+
+// ── Hard delete ───────────────────────────────────────────────────────────────
+
+// Permanent customer delete. The schema sets `meetings.customerId` and
+// `proposals.meetingId` to NULL on parent delete (would orphan rows that show
+// up in lists with no owner), so we manually delete proposals → meetings
+// before the customer. The customer row itself cascades to `customer_notes`
+// and `projects` via the schema FKs.
+export async function deleteCustomer(customerId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    const customerMeetings = await tx
+      .select({ id: meetings.id })
+      .from(meetings)
+      .where(eq(meetings.customerId, customerId))
+
+    const meetingIds = customerMeetings.map(m => m.id)
+
+    if (meetingIds.length > 0) {
+      await tx.delete(proposals).where(inArray(proposals.meetingId, meetingIds))
+      await tx.delete(meetings).where(inArray(meetings.id, meetingIds))
+    }
+
+    await tx.delete(customers).where(eq(customers.id, customerId))
+  })
 }
 
 // ── Full sync ─────────────────────────────────────────────────────────────────

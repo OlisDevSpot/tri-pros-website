@@ -5,6 +5,7 @@ import { useMemo } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
 import { CUSTOMER_ACTIONS } from '@/shared/entities/customers/constants/actions'
+import { useCustomerActions } from '@/shared/entities/customers/hooks/use-customer-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
 interface CustomerEntity {
@@ -14,11 +15,15 @@ interface CustomerEntity {
 /**
  * Optional handler overrides. Every action is always present — if a handler
  * is omitted, the default behaviour (navigate to pipelines) is used.
+ *
+ * `onDeleted` fires after a successful delete mutation so callers in modals /
+ * profile pages can close themselves or navigate away.
  */
 interface CustomerActionOverrides<T extends CustomerEntity> {
   onView?: (entity: T) => void
   onEdit?: (entity: T) => void
   onScheduleMeeting?: (entity: T) => void
+  onDeleted?: (entity: T) => void
 }
 
 interface CustomerActionConfigsResult<T extends CustomerEntity> {
@@ -33,6 +38,7 @@ function defaultNavigate() {
 export function useCustomerActionConfigs<T extends CustomerEntity>(
   overrides: CustomerActionOverrides<T> = {},
 ): CustomerActionConfigsResult<T> {
+  const { deleteCustomer } = useCustomerActions()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete customer',
     message: 'This will permanently delete this customer and all associated data. This cannot be undone.',
@@ -53,14 +59,19 @@ export function useCustomerActionConfigs<T extends CustomerEntity>(
     },
     {
       action: CUSTOMER_ACTIONS.delete,
-      onAction: async () => {
+      onAction: async (entity: T) => {
         const ok = await confirmDelete()
-        if (ok) {
-          // TODO: Wire up when deleteCustomer tRPC procedure is implemented
+        if (!ok) {
+          return
         }
+        deleteCustomer.mutate(
+          { customerId: entity.id },
+          { onSuccess: () => overrides.onDeleted?.(entity) },
+        )
       },
+      isLoading: deleteCustomer.isPending,
     },
-  ], [overrides.onView, overrides.onEdit, overrides.onScheduleMeeting, confirmDelete])
+  ], [overrides, confirmDelete, deleteCustomer])
 
   return { actions, DeleteConfirmDialog }
 }

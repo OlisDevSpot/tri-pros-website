@@ -6,7 +6,7 @@ import z from 'zod'
 import env from '@/shared/config/server-env'
 import { intakeModes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
-import { getCustomer, getCustomers } from '@/shared/dal/server/customers/api'
+import { deleteCustomer, getCustomer, getCustomers } from '@/shared/dal/server/customers/api'
 import { addParticipant } from '@/shared/dal/server/meetings/participants'
 import { buildFilterWhere } from '@/shared/dal/server/query/filters'
 import { paginate } from '@/shared/dal/server/query/output'
@@ -353,6 +353,19 @@ export const customersRouter = createTRPCRouter({
         .where(eq(customers.id, input.customerId))
 
       return geocoded
+    }),
+
+  // Permanently delete a customer + their meetings, proposals, notes, and
+  // projects. CASL-gated to `delete Customer` — only super-admin (`manage all`)
+  // currently has this permission. UI must confirm before invoking.
+  delete: agentProcedure
+    .input(z.object({ customerId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.ability.cannot('delete', 'Customer')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to delete customers.' })
+      }
+      await deleteCustomer(input.customerId)
+      return { success: true as const }
     }),
 
   // Add a note to a customer — any agent
