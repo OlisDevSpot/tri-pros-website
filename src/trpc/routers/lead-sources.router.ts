@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server'
+import { differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachWeekOfInterval, max as maxDate, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
 import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
 import z from 'zod'
 
@@ -12,6 +13,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
+import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
@@ -59,6 +61,55 @@ function customerCreatedAtInRange(from?: string, to?: string) {
     from ? gte(customers.createdAt, from) : undefined,
     to ? lte(customers.createdAt, to) : undefined,
   ].filter(Boolean)
+}
+
+type Bucket = 'day' | 'week' | 'month'
+
+// Pick the trend-chart bucket size from the resolved date range.
+// Matches the spec's "≤14 day, ≤95 week, else month" thresholds.
+function selectBucket(from?: string, to?: string): Bucket {
+  if (!from || !to) {
+    return 'month'
+  }
+  const days = Math.abs(differenceInCalendarDays(new Date(to), new Date(from)))
+  if (days <= 14) {
+    return 'day'
+  }
+  if (days <= 95) {
+    return 'week'
+  }
+  return 'month'
+}
+
+// Truncate a JS Date to the start of its bucket (matches Postgres date_trunc).
+function truncateToBucket(d: Date, bucket: Bucket): Date {
+  switch (bucket) {
+    case 'day':
+      return startOfDay(d)
+    case 'week':
+      // Postgres date_trunc('week', …) snaps to Monday (ISO week start).
+      return startOfWeek(d, { weekStartsOn: 1 })
+    case 'month':
+      return startOfMonth(d)
+  }
+}
+
+// Enumerate every bucket between `from` and `to` (inclusive) so the trend
+// series can be backfilled with zeros for empty buckets.
+function enumerateBuckets(from: Date, to: Date, bucket: Bucket): Date[] {
+  const start = truncateToBucket(from, bucket)
+  const end = truncateToBucket(to, bucket)
+  if (end < start) {
+    return [start]
+  }
+  switch (bucket) {
+    case 'day':
+      return eachDayOfInterval({ start, end })
+    case 'week':
+      return eachWeekOfInterval({ start, end }, { weekStartsOn: 1 })
+    case 'month':
+      return eachMonthOfInterval({ start, end })
+  }
 }
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
@@ -318,6 +369,207 @@ export const leadSourcesRouter = createTRPCRouter({
       ])
 
       return { all, active, signed, dead }
+    }),
+
+  // Funnel + trend for the Analytics tab. One round-trip — both visualizations
+  // share the same (lead-source, range) scope. Trend buckets are picked
+  // server-side so axis labels and tooltips stay consistent across renders.
+  getAnalytics: agentProcedure
+    .input(z.object({
+      id: z.string().uuid(),
+      from: z.string().datetime().optional(),
+      to: z.string().datetime().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      requireSuperAdmin(ctx.session.user.role)
+      const [src] = await db
+        .select({ id: leadSourcesTable.id })
+        .from(leadSourcesTable)
+        .where(eq(leadSourcesTable.id, input.id))
+        .limit(1)
+      if (!src) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
+      }
+
+      const baseMatch = customersMatchingSource(src.id)
+
+      // Resolve the trend's lower bound up front. When the chip is "all" we
+      // need a concrete window so bucket selection + backfill have something
+      // to work with — the lower bound becomes the source's first lead.
+      let resolvedFrom = input.from
+      const resolvedTo = input.to ?? new Date().toISOString()
+      if (!resolvedFrom) {
+        const [{ minCreatedAt } = { minCreatedAt: null }] = await db
+          .select({ minCreatedAt: sql<string | null>`MIN(${customers.createdAt})` })
+          .from(customers)
+          .where(baseMatch)
+        resolvedFrom = minCreatedAt ?? resolvedTo
+      }
+
+      const bucket = selectBucket(resolvedFrom, resolvedTo)
+
+      // Customer-creation range predicates (both funnel + trend leads use this).
+      const customerRange = customerCreatedAtInRange(input.from, input.to)
+      const leadsWhere = and(baseMatch, ...customerRange)
+
+      // Range predicates for the event-side filters (meetings.scheduledFor,
+      // proposals.createdAt, projects.createdAt). Each is filtered to the
+      // chip's window so a customer who booked a meeting outside the range
+      // does not contribute to that step.
+      const meetingRangeWhere = and(
+        input.from ? gte(meetings.scheduledFor, input.from) : undefined,
+        input.to ? lte(meetings.scheduledFor, input.to) : undefined,
+      )
+      const proposalRangeWhere = and(
+        input.from ? gte(proposals.createdAt, input.from) : undefined,
+        input.to ? lte(proposals.createdAt, input.to) : undefined,
+      )
+      const projectRangeWhere = and(
+        input.from ? gte(projects.createdAt, input.from) : undefined,
+        input.to ? lte(projects.createdAt, input.to) : undefined,
+      )
+
+      // ── Funnel ────────────────────────────────────────────────────────────
+      // Each step narrows `leadsWhere` with an EXISTS-style `inArray`
+      // subquery against the relevant event table. Drizzle has no `exists`
+      // helper today, so subquery + inArray is the idiomatic alternative
+      // (compiles to `WHERE … AND customers.id IN (SELECT … FROM …)`).
+      const [leadsCount, meetingsBookedCount, proposalsSentCount, signedCount] = await Promise.all([
+        db.$count(customers, leadsWhere),
+        db.$count(
+          customers,
+          and(
+            leadsWhere,
+            inArray(
+              customers.id,
+              db
+                .selectDistinct({ id: meetings.customerId })
+                .from(meetings)
+                .where(meetingRangeWhere),
+            ),
+          ),
+        ),
+        db.$count(
+          customers,
+          and(
+            leadsWhere,
+            inArray(
+              customers.id,
+              db
+                .selectDistinct({ id: meetings.customerId })
+                .from(meetings)
+                .innerJoin(proposals, eq(proposals.meetingId, meetings.id))
+                .where(and(
+                  inArray(proposals.status, ['sent', 'approved']),
+                  proposalRangeWhere,
+                )),
+            ),
+          ),
+        ),
+        db.$count(
+          customers,
+          and(
+            leadsWhere,
+            inArray(
+              customers.id,
+              db
+                .selectDistinct({ id: projects.customerId })
+                .from(projects)
+                .where(projectRangeWhere),
+            ),
+          ),
+        ),
+      ])
+
+      // ── Trend (3 parallel queries → JS union) ─────────────────────────────
+      const bucketLeads = sql<string>`date_trunc(${bucket}, ${customers.createdAt})`
+      const bucketMeetings = sql<string>`date_trunc(${bucket}, ${meetings.scheduledFor})`
+      const bucketProjects = sql<string>`date_trunc(${bucket}, ${projects.createdAt})`
+
+      const [leadsByBucket, meetingsByBucket, signedByBucket] = await Promise.all([
+        db
+          .select({
+            bucketStart: bucketLeads,
+            count: sql<number>`COUNT(DISTINCT ${customers.id})::int`,
+          })
+          .from(customers)
+          .where(leadsWhere)
+          .groupBy(bucketLeads),
+        db
+          .select({
+            bucketStart: bucketMeetings,
+            count: sql<number>`COUNT(DISTINCT ${meetings.customerId})::int`,
+          })
+          .from(meetings)
+          .innerJoin(customers, eq(customers.id, meetings.customerId))
+          .where(and(baseMatch, meetingRangeWhere))
+          .groupBy(bucketMeetings),
+        db
+          .select({
+            bucketStart: bucketProjects,
+            count: sql<number>`COUNT(DISTINCT ${projects.customerId})::int`,
+          })
+          .from(projects)
+          .innerJoin(customers, eq(customers.id, projects.customerId))
+          .where(and(baseMatch, projectRangeWhere))
+          .groupBy(bucketProjects),
+      ])
+
+      // Union the three series by bucket-start. Backfill missing buckets with
+      // zeros so the trend chart renders a continuous x-axis.
+      interface TrendRow {
+        bucketStart: string
+        leads: number
+        meetings: number
+        signed: number
+      }
+      const trendMap = new Map<string, TrendRow>()
+
+      // Determine the actual span of buckets to render. Use the resolved
+      // window if available, otherwise widen to cover any observed data.
+      const observedDates: Date[] = []
+      for (const r of [...leadsByBucket, ...meetingsByBucket, ...signedByBucket]) {
+        if (r.bucketStart) {
+          observedDates.push(new Date(r.bucketStart))
+        }
+      }
+      const fromDate = new Date(resolvedFrom)
+      const toDate = new Date(resolvedTo)
+      const lowerBound = observedDates.length > 0
+        ? truncateToBucket(observedDates.reduce((a, b) => (a < b ? a : b), fromDate), bucket)
+        : truncateToBucket(fromDate, bucket)
+      const upperBound = truncateToBucket(maxDate([toDate, ...observedDates]), bucket)
+
+      for (const date of enumerateBuckets(lowerBound, upperBound, bucket)) {
+        const key = date.toISOString()
+        trendMap.set(key, { bucketStart: key, leads: 0, meetings: 0, signed: 0 })
+      }
+
+      function bumpSeries(rows: Array<{ bucketStart: string, count: number }>, key: keyof Omit<TrendRow, 'bucketStart'>): void {
+        for (const row of rows) {
+          const truncated = truncateToBucket(new Date(row.bucketStart), bucket).toISOString()
+          const existing = trendMap.get(truncated) ?? { bucketStart: truncated, leads: 0, meetings: 0, signed: 0 }
+          existing[key] = row.count
+          trendMap.set(truncated, existing)
+        }
+      }
+
+      bumpSeries(leadsByBucket, 'leads')
+      bumpSeries(meetingsByBucket, 'meetings')
+      bumpSeries(signedByBucket, 'signed')
+
+      const trend = Array.from(trendMap.values()).sort((a, b) => a.bucketStart.localeCompare(b.bucketStart))
+
+      return {
+        funnel: {
+          leads: leadsCount,
+          meetingsBooked: meetingsBookedCount,
+          proposalsSent: proposalsSentCount,
+          signed: signedCount,
+        },
+        trend,
+        bucket,
+      }
     }),
 
   create: agentProcedure

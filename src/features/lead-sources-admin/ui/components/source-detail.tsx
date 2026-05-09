@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation'
 import { parseAsStringEnum, useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 
-import { LeadSourceAnalyticsPlaceholder } from '@/features/lead-sources-admin/ui/components/lead-source-analytics-placeholder'
+import { LeadSourceAnalyticsPanel } from '@/features/lead-sources-admin/ui/components/lead-source-analytics-panel'
 import { LeadSourceCustomersSection } from '@/features/lead-sources-admin/ui/components/lead-source-customers-section'
 import { LeadSourceDetailHeader } from '@/features/lead-sources-admin/ui/components/lead-source-detail-header'
 import { LeadSourcePerformanceStrip } from '@/features/lead-sources-admin/ui/components/lead-source-performance-strip'
@@ -135,7 +135,12 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
         </TabsContent>
 
         <TabsContent value="analytics" className="flex min-h-0 flex-1 flex-col">
-          <LeadSourceAnalyticsPlaceholder />
+          <LeadSourceAnalyticsPanel
+            leadSourceId={leadSourceId}
+            chip={activeChip}
+            from={range.from}
+            to={range.to}
+          />
         </TabsContent>
 
         <TabsContent value="settings" className="flex min-h-0 flex-1 flex-col overflow-y-auto">
