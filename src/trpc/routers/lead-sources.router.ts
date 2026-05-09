@@ -3,7 +3,7 @@ import { differenceInCalendarDays, eachDayOfInterval, eachMonthOfInterval, eachW
 import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm'
 import z from 'zod'
 
-import { customerPipelines } from '@/shared/constants/enums/customer-pipelines'
+import { pipelines } from '@/shared/constants/enums/pipelines'
 import { buildFilterWhere } from '@/shared/dal/server/query/filters'
 import { paginate } from '@/shared/dal/server/query/output'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
@@ -15,6 +15,7 @@ import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
@@ -280,12 +281,13 @@ export const leadSourcesRouter = createTRPCRouter({
     }),
 
   // Customers sourced from a given lead source. Paginated via shared schema.
-  // Filters: `pipeline` (multi-select active|rehash|dead), `createdAt` (date range).
-  // Top-level `segment` narrows results to 'all' | 'active' | 'signed' | 'dead'
-  // without exposing the control in the QueryToolbar filter row.
+  // Filters: `pipeline` (multi-select against the derived 5-bucket
+  // `pipelines` enum), `createdAt` (date range). Top-level `segment` narrows
+  // results to 'all' | 'active' | 'signed' | 'dead' without exposing the
+  // control in the QueryToolbar filter row.
   getCustomers: agentProcedure
     .input(paginatedQueryInput({
-      pipeline: z.array(z.enum(customerPipelines)).optional(),
+      pipeline: z.array(z.enum(pipelines)).optional(),
       createdAt: dateRangeSchema.optional(),
     }).extend({
       id: z.string().uuid(),
@@ -305,7 +307,7 @@ export const leadSourcesRouter = createTRPCRouter({
       const match = customersMatchingSource(src.id)
       const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
       const filterWhere = buildFilterWhere(input.filters, {
-        pipeline: v => (v.length > 0 ? inArray(customers.pipeline, v) : undefined),
+        pipeline: v => derivedPipelineWhere(v),
         createdAt: v => and(
           v.from ? gte(customers.createdAt, v.from) : undefined,
           v.to ? lte(customers.createdAt, v.to) : undefined,
@@ -314,11 +316,13 @@ export const leadSourcesRouter = createTRPCRouter({
       const segmentWhere = buildSegmentWhere(input.segment)
       const where = and(match, searchWhere, filterWhere, segmentWhere)
 
+      // Pipeline omitted from the sort whitelist for the same reason as
+      // `customersRouter.list`: the visible value is derived, sorting on
+      // the underlying 3-bucket DB column would surprise.
       const orderBy = buildOrderBy(input.sort, {
         name: customers.name,
         email: customers.email,
         createdAt: customers.createdAt,
-        pipeline: customers.pipeline,
       }, desc(customers.createdAt))
 
       return paginate({
@@ -332,7 +336,7 @@ export const leadSourcesRouter = createTRPCRouter({
             name: customers.name,
             email: customers.email,
             createdAt: customers.createdAt,
-            pipeline: customers.pipeline,
+            pipeline: derivedPipelineSql(),
             leadSourceId: customers.leadSourceId,
             leadSourceName: leadSourcesTable.name,
             leadSourceSlug: leadSourcesTable.slug,
@@ -531,6 +535,150 @@ export const leadSourcesRouter = createTRPCRouter({
 
       // Determine the actual span of buckets to render. Use the resolved
       // window if available, otherwise widen to cover any observed data.
+      const observedDates: Date[] = []
+      for (const r of [...leadsByBucket, ...meetingsByBucket, ...signedByBucket]) {
+        if (r.bucketStart) {
+          observedDates.push(new Date(r.bucketStart))
+        }
+      }
+      const fromDate = new Date(resolvedFrom)
+      const toDate = new Date(resolvedTo)
+      const lowerBound = observedDates.length > 0
+        ? truncateToBucket(observedDates.reduce((a, b) => (a < b ? a : b), fromDate), bucket)
+        : truncateToBucket(fromDate, bucket)
+      const upperBound = truncateToBucket(maxDate([toDate, ...observedDates]), bucket)
+
+      for (const date of enumerateBuckets(lowerBound, upperBound, bucket)) {
+        const key = date.toISOString()
+        trendMap.set(key, { bucketStart: key, leads: 0, meetings: 0, signed: 0 })
+      }
+
+      function bumpSeries(rows: Array<{ bucketStart: string, count: number }>, key: keyof Omit<TrendRow, 'bucketStart'>): void {
+        for (const row of rows) {
+          const truncated = truncateToBucket(new Date(row.bucketStart), bucket).toISOString()
+          const existing = trendMap.get(truncated) ?? { bucketStart: truncated, leads: 0, meetings: 0, signed: 0 }
+          existing[key] = row.count
+          trendMap.set(truncated, existing)
+        }
+      }
+
+      bumpSeries(leadsByBucket, 'leads')
+      bumpSeries(meetingsByBucket, 'meetings')
+      bumpSeries(signedByBucket, 'signed')
+
+      const trend = Array.from(trendMap.values()).sort((a, b) => a.bucketStart.localeCompare(b.bucketStart))
+
+      return {
+        funnel: {
+          leads: leadsCount,
+          meetingsBooked: meetingsBookedCount,
+          proposalsSent: proposalsSentCount,
+          signed: signedCount,
+        },
+        trend,
+        bucket,
+      }
+    }),
+
+  // Aggregate analytics across ALL customers (no lead-source filter). Mirrors
+  // getAnalytics shape so the same client AnalyticsContent can render either.
+  getAggregateAnalytics: agentProcedure
+    .input(timeRangeInput)
+    .query(async ({ ctx, input }) => {
+      requireSuperAdmin(ctx.session.user.role)
+
+      let resolvedFrom = input.from
+      const resolvedTo = input.to ?? new Date().toISOString()
+      if (!resolvedFrom) {
+        const [{ minCreatedAt } = { minCreatedAt: null }] = await db
+          .select({ minCreatedAt: sql<string | null>`MIN(${customers.createdAt})` })
+          .from(customers)
+        resolvedFrom = minCreatedAt ?? resolvedTo
+      }
+
+      const bucket = selectBucket(resolvedFrom, resolvedTo)
+
+      const customerRange = customerCreatedAtInRange(input.from, input.to)
+      const leadsWhere = customerRange.length > 0 ? and(...customerRange) : undefined
+
+      const meetingRangeWhere = and(
+        input.from ? gte(meetings.scheduledFor, input.from) : undefined,
+        input.to ? lte(meetings.scheduledFor, input.to) : undefined,
+      )
+      const proposalRangeWhere = and(
+        input.from ? gte(proposals.createdAt, input.from) : undefined,
+        input.to ? lte(proposals.createdAt, input.to) : undefined,
+      )
+      const projectRangeWhere = and(
+        input.from ? gte(projects.createdAt, input.from) : undefined,
+        input.to ? lte(projects.createdAt, input.to) : undefined,
+      )
+
+      const [leadsCount, meetingsBookedCount, proposalsSentCount, signedCount] = await Promise.all([
+        db.$count(customers, leadsWhere),
+        db.$count(
+          customers,
+          and(
+            leadsWhere,
+            inArray(
+              customers.id,
+              db.selectDistinct({ id: meetings.customerId }).from(meetings).where(meetingRangeWhere),
+            ),
+          ),
+        ),
+        db.$count(
+          customers,
+          and(
+            leadsWhere,
+            inArray(
+              customers.id,
+              db.selectDistinct({ id: meetings.customerId })
+                .from(meetings)
+                .innerJoin(proposals, eq(proposals.meetingId, meetings.id))
+                .where(and(inArray(proposals.status, ['sent', 'approved']), proposalRangeWhere)),
+            ),
+          ),
+        ),
+        db.$count(
+          customers,
+          and(
+            leadsWhere,
+            inArray(
+              customers.id,
+              db.selectDistinct({ id: projects.customerId }).from(projects).where(projectRangeWhere),
+            ),
+          ),
+        ),
+      ])
+
+      const bucketLiteral = sql.raw(`'${bucket}'`)
+      const bucketLeads = sql<string>`date_trunc(${bucketLiteral}, ${customers.createdAt})`
+      const bucketMeetings = sql<string>`date_trunc(${bucketLiteral}, ${meetings.scheduledFor})`
+      const bucketProjects = sql<string>`date_trunc(${bucketLiteral}, ${projects.createdAt})`
+
+      const [leadsByBucket, meetingsByBucket, signedByBucket] = await Promise.all([
+        db.select({
+          bucketStart: bucketLeads,
+          count: sql<number>`COUNT(DISTINCT ${customers.id})::int`,
+        }).from(customers).where(leadsWhere).groupBy(bucketLeads),
+        db.select({
+          bucketStart: bucketMeetings,
+          count: sql<number>`COUNT(DISTINCT ${meetings.customerId})::int`,
+        }).from(meetings).where(meetingRangeWhere).groupBy(bucketMeetings),
+        db.select({
+          bucketStart: bucketProjects,
+          count: sql<number>`COUNT(DISTINCT ${projects.customerId})::int`,
+        }).from(projects).where(projectRangeWhere).groupBy(bucketProjects),
+      ])
+
+      interface TrendRow {
+        bucketStart: string
+        leads: number
+        meetings: number
+        signed: number
+      }
+      const trendMap = new Map<string, TrendRow>()
+
       const observedDates: Date[] = []
       for (const r of [...leadsByBucket, ...meetingsByBucket, ...signedByBucket]) {
         if (r.bucketStart) {
