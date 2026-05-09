@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerSegment } from '@/shared/entities/lead-sources/lib/segment-sql'
+import type { CustomerSegment } from '@/shared/entities/lead-sources/constants/customer-segments'
 
 import { useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
@@ -9,7 +9,7 @@ import { parseAsStringEnum, useQueryState } from 'nuqs'
 import { CustomerStatusSegments } from '@/features/lead-sources-admin/ui/components/customer-status-segments'
 import { LeadSourceCustomersSection } from '@/features/lead-sources-admin/ui/components/lead-source-customers-section'
 import { Button } from '@/shared/components/ui/button'
-import { customerSegments } from '@/shared/entities/lead-sources/lib/segment-sql'
+import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { useTRPC } from '@/trpc/helpers'
 
 interface LeadSourceCustomersPanelProps {

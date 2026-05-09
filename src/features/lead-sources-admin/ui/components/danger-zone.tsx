@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -58,9 +57,6 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
       onSuccess: () => {
         setDeleteOpen(false)
         router.push('/dashboard/lead-sources')
-      },
-      onError: (err) => {
-        toast.error(err.message || 'Failed to delete')
       },
     })
   }

@@ -25,7 +25,10 @@ export function IdentityEditor({ leadSourceId, initialName, initialSlug }: Ident
   })
 
   useEffect(() => {
+    // Intentional: re-sync local form state when the displayed source changes.
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
     setName(initialName)
+    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
     setSlug(initialSlug)
   }, [initialName, initialSlug, leadSourceId])
 

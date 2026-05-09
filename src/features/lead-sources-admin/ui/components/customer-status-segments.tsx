@@ -1,6 +1,6 @@
 'use client'
 
-import type { CustomerSegment } from '@/shared/entities/lead-sources/lib/segment-sql'
+import type { CustomerSegment } from '@/shared/entities/lead-sources/constants/customer-segments'
 
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'

@@ -1,7 +1,7 @@
 'use client'
 
 import type { CustomerTableMeta, CustomerTableRow } from '@/shared/entities/customers/lib/columns-registry'
-import type { CustomerSegment } from '@/shared/entities/lead-sources/lib/segment-sql'
+import type { CustomerSegment } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 

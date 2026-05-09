@@ -48,6 +48,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
   // land on the new default tab.
   useEffect(() => {
     if (searchParams?.get('tab') === 'overview') {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect -- setTab is from nuqs useQueryState, not React useState
       void setTab('customers', { history: 'replace' })
     }
   }, [searchParams, setTab])
