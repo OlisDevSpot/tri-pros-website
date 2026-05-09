@@ -61,14 +61,15 @@ These are not up for debate. If a future requirement forces a change, document t
 
 ## GitHub issues
 
-Tracking issues for each migration phase live on the project board. See spec §11 for the phased breakdown. Each issue:
+- Epic: [#178](https://github.com/OlisDevSpot/tri-pros-website/issues/178)
+- [#179 — Phase 0 Scaffolding](https://github.com/OlisDevSpot/tri-pros-website/issues/179)
+- [#180 — Phase 1 Meeting parity](https://github.com/OlisDevSpot/tri-pros-website/issues/180)
+- [#181 — Phase 2 Customers + Proposals + Projects](https://github.com/OlisDevSpot/tri-pros-website/issues/181)
+- [#182 — Phase 3 Lists](https://github.com/OlisDevSpot/tri-pros-website/issues/182)
+- [#183 — Phase 4 Presence](https://github.com/OlisDevSpot/tri-pros-website/issues/183)
+- [#184 — Phase 5 Notifications + Reactor](https://github.com/OlisDevSpot/tri-pros-website/issues/184)
 
-- Has `claude` label (agent-eligible)
-- Linked to this spec via the issue body
-- Lives on the GitHub Projects board in `Backlog`
-- Will move to `Ready` when prioritized
-
-If issues haven't been created yet at pickup time, create them from the phases in spec §11 before starting work.
+All labeled `area:infrastructure`, `area:integrations`, `P2`, `claude`. Live on the GitHub Projects board in `Backlog`. Move to `Ready` when prioritized.
 
 ---
 
