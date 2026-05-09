@@ -27,6 +27,7 @@ export function LeadSourceSettingsPanel({ source }: LeadSourceSettingsPanelProps
   return (
     <div className="flex flex-col gap-6">
       <IdentityEditor
+        key={source.id}
         leadSourceId={source.id}
         initialName={source.name}
         initialSlug={source.slug}

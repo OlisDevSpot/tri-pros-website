@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
@@ -23,14 +23,6 @@ export function IdentityEditor({ leadSourceId, initialName, initialSlug }: Ident
     title: 'Change slug?',
     message: 'This rotates the intake URL. The current URL stops working immediately. Continue?',
   })
-
-  useEffect(() => {
-    // Intentional: re-sync local form state when the displayed source changes.
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setName(initialName)
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setSlug(initialSlug)
-  }, [initialName, initialSlug, leadSourceId])
 
   const isDirty = name !== initialName || slug !== initialSlug
 
