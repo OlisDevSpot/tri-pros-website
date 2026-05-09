@@ -2,7 +2,8 @@
 
 import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useSearchParams } from 'next/navigation'
 import { parseAsStringEnum, useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 
@@ -16,6 +17,11 @@ import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
+
+const TAB_TRIGGER_CLS = cn(
+  'rounded-none border-b-2 border-transparent bg-transparent px-2 py-3 text-sm font-medium text-muted-foreground shadow-none',
+  'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none',
+)
 
 const SOURCE_TABS = ['customers', 'analytics', 'settings'] as const
 type SourceTab = (typeof SOURCE_TABS)[number]
@@ -36,26 +42,28 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
     parseAsStringEnum([...SOURCE_TABS]).withDefault('customers'),
   )
 
+  const searchParams = useSearchParams()
+
   // Backward compat: redirect ?tab=overview to ?tab=customers so old bookmarks
   // land on the new default tab.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('tab') === 'overview') {
+    if (searchParams?.get('tab') === 'overview') {
       void setTab('customers', { history: 'replace' })
     }
-  }, [setTab])
+  }, [searchParams, setTab])
 
   const sourceQuery = useQuery(
     trpc.leadSourcesRouter.getById.queryOptions({ id: leadSourceId }),
   )
 
-  const statsQuery = useQuery(
-    trpc.leadSourcesRouter.getStats.queryOptions({
+  const statsQuery = useQuery({
+    ...trpc.leadSourcesRouter.getStats.queryOptions({
       id: leadSourceId,
       from: range.from,
       to: range.to,
     }),
-  )
+    placeholderData: keepPreviousData,
+  })
 
   const countsQuery = useQuery(
     trpc.leadSourcesRouter.getStatusCounts.queryOptions({ id: leadSourceId }),
@@ -103,10 +111,7 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
         >
           <TabsTrigger
             value="customers"
-            className={cn(
-              'rounded-none border-b-2 border-transparent bg-transparent px-2 py-3 text-sm font-medium text-muted-foreground shadow-none',
-              'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none',
-            )}
+            className={TAB_TRIGGER_CLS}
           >
             Customers
             {customerCountLabel != null && (
@@ -117,19 +122,13 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
           </TabsTrigger>
           <TabsTrigger
             value="analytics"
-            className={cn(
-              'rounded-none border-b-2 border-transparent bg-transparent px-2 py-3 text-sm font-medium text-muted-foreground shadow-none',
-              'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none',
-            )}
+            className={TAB_TRIGGER_CLS}
           >
             Analytics
           </TabsTrigger>
           <TabsTrigger
             value="settings"
-            className={cn(
-              'rounded-none border-b-2 border-transparent bg-transparent px-2 py-3 text-sm font-medium text-muted-foreground shadow-none',
-              'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none',
-            )}
+            className={TAB_TRIGGER_CLS}
           >
             Settings
           </TabsTrigger>
