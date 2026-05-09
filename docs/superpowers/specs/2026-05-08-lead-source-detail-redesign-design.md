@@ -66,9 +66,9 @@ Per the April 22 spec, the masthead (eyebrow + display name + status indicator +
 - Kebab menu shrinks to navigational shortcuts only — items: `Settings` (jumps to Settings tab + scrolls Identity into view), `Pause intake` (jumps to Settings → Danger zone with that row focused), `Archive` (jumps to Settings → Danger zone with that row focused). The kebab does not mutate state directly; it routes to the Danger zone where mutations live.
 - Delete is **not** in the kebab. It lives only in Danger zone, behind a typed confirmation.
 
-### KPI strip — replaces `PerformanceStrip` body
+### KPI strip — new component `LeadSourcePerformanceStrip`
 
-Same component, same file (`src/features/lead-sources-admin/ui/components/performance-strip.tsx`). Body rewritten.
+The existing `PerformanceStrip` is shared between `source-detail.tsx` and `all-detail.tsx`. Since the All pane is out of scope for Phase 1 (and its aggregate KPIs differ from a per-source dollar-led hero), we **keep `performance-strip.tsx` unchanged** and create a dedicated `lead-source-performance-strip.tsx` for the per-source view. They will reconverge in Phase 2 if it makes sense.
 
 **Layout (desktop):**
 ```
@@ -89,9 +89,10 @@ $275,000                                       ← text-3xl font-semibold tracki
 - Subtitle skeleton: `h-4 w-72`
 - Skeletons match final dimensions to avoid CLS (Quick Reference §3 `image-dimension`/`content-jumping`).
 
-**Component API change:**
-- `PerformanceStrip` props: `{ stats: { total: number; range: number; signedCustomers: number; totalSales: number }; chip: TimeRangeChip; isLoading: boolean; }`
-- The output field is already named `signedCustomers` (verified at `lead-sources.router.ts:171,177,193,199`) — counting customers with at least one approved proposal. No rename needed.
+**New component API:**
+- `LeadSourcePerformanceStrip` props: `{ stats: { total: number; range: number; signedCustomers: number; totalSales: number } | undefined; chip: TimeRangeChip; isLoading: boolean; }`
+- The `signedCustomers` field on `getStats` (verified at `lead-sources.router.ts:171,177,193,199`) counts customers with at least one project (canonical via `isSignedCustomerSql`).
+- Existing `PerformanceStrip` is untouched (still serves `all-detail.tsx`).
 
 **Subtitle composition:**
 - `{signed} of {total} signed` — when `chip.kind === 'all'`, omit the second clause and middot.
@@ -320,7 +321,8 @@ No motion on tab content (it would compete with the entrance). All motion respec
 | Component | Status | Change |
 |---|---|---|
 | `LeadSourceDetailHeader` | modified | Active stays read-only indicator; kebab restricted to navigational shortcuts (Settings, Pause intake, Archive — all jump to Settings tab) |
-| `PerformanceStrip` | modified | New body (dollar-led hero), absorbs range chips, accepts `totalSales` + chip props |
+| `PerformanceStrip` | unchanged | Still used by `all-detail.tsx` |
+| `LeadSourcePerformanceStrip` | new | Dollar-led hero for per-source view, accepts `totalSales` + chip props |
 | `IntakeUrlCard` | modified | Drop inner uppercase heading (parent provides it) |
 | `FormConfigEditor` | modified | Drop inner heading (parent provides it) |
 | `LeadSourceCustomersSection` | modified | New `status?` prop |

@@ -102,17 +102,22 @@ export function AllCustomersSection() {
         </QueryToolbar>
       </div>
 
-      <DataTable
-        tableId="all-customers"
-        columns={columns}
-        data={pagination.rows}
-        meta={meta}
-        entityName="customer"
-        onRowClick={row => handleViewProfile(row.id)}
-        serverPagination={toDataTablePagination(pagination)}
-        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
-        columnVisibility={visibility.columnVisibility}
-      />
+      {/* See note in lead-source-customers-section.tsx — `min-h-0 flex-1`
+          wrapper is what lets DataTable's internal `h-full` resolve so the
+          pagination bar pins to the bottom and the rows scroll. */}
+      <div className="min-h-0 flex-1">
+        <DataTable
+          tableId="all-customers"
+          columns={columns}
+          data={pagination.rows}
+          meta={meta}
+          entityName="customer"
+          onRowClick={row => handleViewProfile(row.id)}
+          serverPagination={toDataTablePagination(pagination)}
+          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          columnVisibility={visibility.columnVisibility}
+        />
+      </div>
     </section>
   )
 }

@@ -41,6 +41,7 @@ export function useInvalidation() {
   // Dashboard: always router-level (any entity change refreshes all dashboard queries)
 
   function invalidateCustomer() {
+    void qc.invalidateQueries(trpc.customersRouter.pathFilter())
     void qc.invalidateQueries(trpc.customerPipelinesRouter.pathFilter())
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
   }

@@ -1,7 +1,6 @@
 'use client'
 
 import type { CustomerTableMeta, CustomerTableRow } from '@/shared/entities/customers/lib/columns-registry'
-import type { CustomerSegment } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 
@@ -27,17 +26,16 @@ const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as cons
 
 interface LeadSourceCustomersSectionProps {
   leadSourceId: string
-  segment?: CustomerSegment
 }
 
-export function LeadSourceCustomersSection({ leadSourceId, segment }: LeadSourceCustomersSectionProps) {
+export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomersSectionProps) {
   const trpc = useTRPC()
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
   const { setModal, open: openModal } = useModalStore()
 
-  const pagination = usePaginatedQuery<{ id: string, segment: CustomerSegment | undefined }, CustomerTableRow>(
+  const pagination = usePaginatedQuery<{ id: string }, CustomerTableRow>(
     trpc.leadSourcesRouter.getCustomers.queryOptions,
-    { id: leadSourceId, segment },
+    { id: leadSourceId },
     {
       paramPrefix: 'src',
       pageSize: 20,
@@ -110,7 +108,7 @@ export function LeadSourceCustomersSection({ leadSourceId, segment }: LeadSource
             Customers from this source
           </h3>
           <span className="text-xs text-muted-foreground tabular-nums">
-            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} ${segmentCaption(segment)}`}
+            {pagination.isLoading ? 'Loading…' : `${pagination.total.toLocaleString()} total`}
           </span>
         </div>
 
@@ -126,26 +124,25 @@ export function LeadSourceCustomersSection({ leadSourceId, segment }: LeadSource
         </QueryToolbar>
       </div>
 
-      <DataTable
-        tableId="lead-source-customers"
-        columns={columns}
-        data={pagination.rows}
-        meta={meta}
-        entityName="customer"
-        onRowClick={row => handleViewProfile(row.id)}
-        serverPagination={toDataTablePagination(pagination)}
-        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
-        columnVisibility={visibility.columnVisibility}
-      />
+      {/*
+        The wrapping `min-h-0 flex-1` cell is what lets the DataTable's
+        internal `h-full` resolve and pin its pagination bar at the bottom
+        while the row body scrolls — same pattern as `RecordsPageShell`
+        on the customers page.
+      */}
+      <div className="min-h-0 flex-1">
+        <DataTable
+          tableId="lead-source-customers"
+          columns={columns}
+          data={pagination.rows}
+          meta={meta}
+          entityName="customer"
+          onRowClick={row => handleViewProfile(row.id)}
+          serverPagination={toDataTablePagination(pagination)}
+          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          columnVisibility={visibility.columnVisibility}
+        />
+      </div>
     </section>
   )
-}
-
-function segmentCaption(segment: CustomerSegment | undefined): string {
-  switch (segment) {
-    case 'active': return 'active'
-    case 'signed': return 'signed'
-    case 'dead': return 'dead'
-    default: return 'total'
-  }
 }
