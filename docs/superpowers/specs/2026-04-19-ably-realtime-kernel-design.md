@@ -3,7 +3,8 @@
 **Status:** Design approved. Implementation deferred. Pick up in a future session.
 **Date:** 2026-04-19
 **Owner:** Oliver
-**Tracking issue:** _[to be filled in once GitHub issues are created]_
+**Tracking epic:** [#178](https://github.com/OlisDevSpot/tri-pros-website/issues/178)
+**Phase issues:** [#179](https://github.com/OlisDevSpot/tri-pros-website/issues/179) (P0 scaffolding) · [#180](https://github.com/OlisDevSpot/tri-pros-website/issues/180) (P1 meeting parity) · [#181](https://github.com/OlisDevSpot/tri-pros-website/issues/181) (P2 customers/proposals/projects) · [#182](https://github.com/OlisDevSpot/tri-pros-website/issues/182) (P3 lists) · [#183](https://github.com/OlisDevSpot/tri-pros-website/issues/183) (P4 presence) · [#184](https://github.com/OlisDevSpot/tri-pros-website/issues/184) (P5 notifications + reactor)
 
 ---
 
@@ -782,12 +783,12 @@ Zero runtime cost when the env flag is off (component returns null, tree-shaken)
 
 | Phase | Scope | Outcome | Issue |
 |-------|-------|---------|-------|
-| **0. Scaffolding** | Rename `services/upstash/` → `services/ably/`, env var changes, token endpoint, registry skeleton, helpers | Existing meeting sync still works on migrated code path | TBD |
-| **1. Meeting parity** | Migrate `meetings.router.ts` publish calls + `useMeetingSync` to kernel | Zero behavior change, new patterns proven | TBD |
-| **2. Customers + Proposals + Projects** | Add to registry + publish calls in their routers + `useEntitySync` in their detail views | Entity-level sync live for all four core domains | TBD |
-| **3. Lists** | `customer-pipeline` + `dashboard` list channels + `useListSync` integrations | Pipeline + dashboard go live | TBD |
-| **4. Presence** | `usePresence` in meeting-flow + customer profile + proposal detail; presence avatar UI | "Who's viewing" indicators | TBD |
-| **5. Notifications + Reactor** | User notification bus + presence audit webhook + `<RealtimeDebugger />` | Full platform | TBD |
+| **0. Scaffolding** | Rename `services/upstash/` → `services/ably/`, env var changes, token endpoint, registry skeleton, helpers | Existing meeting sync still works on migrated code path | [#179](https://github.com/OlisDevSpot/tri-pros-website/issues/179) |
+| **1. Meeting parity** | Migrate `meetings.router.ts` publish calls + `useMeetingSync` to kernel | Zero behavior change, new patterns proven | [#180](https://github.com/OlisDevSpot/tri-pros-website/issues/180) |
+| **2. Customers + Proposals + Projects** | Add to registry + publish calls in their routers + `useEntitySync` in their detail views | Entity-level sync live for all four core domains | [#181](https://github.com/OlisDevSpot/tri-pros-website/issues/181) |
+| **3. Lists** | `customer-pipeline` + `dashboard` list channels + `useListSync` integrations | Pipeline + dashboard go live | [#182](https://github.com/OlisDevSpot/tri-pros-website/issues/182) |
+| **4. Presence** | `usePresence` in meeting-flow + customer profile + proposal detail; presence avatar UI | "Who's viewing" indicators | [#183](https://github.com/OlisDevSpot/tri-pros-website/issues/183) |
+| **5. Notifications + Reactor** | User notification bus + presence audit webhook + `<RealtimeDebugger />` | Full platform | [#184](https://github.com/OlisDevSpot/tri-pros-website/issues/184) |
 
 ### Explicit guardrail per phase
 
