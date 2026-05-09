@@ -69,6 +69,8 @@ export function CustomersTable() {
   const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
   const visibility = useColumnVisibility('customers', columns)
 
+  // Lead-source edit is wired by the cell itself (CASL-gated, default
+  // mutation + invalidation) — no `onUpdateLeadSource` needed here.
   const meta = useMemo<CustomerTableMeta>(
     () => ({
       customerActions: () => actions,

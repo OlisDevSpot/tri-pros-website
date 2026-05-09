@@ -60,6 +60,16 @@ export function useLeadSourceActions() {
     }),
   )
 
+  const archiveLeadSource = useMutation(
+    trpc.leadSourcesRouter.archive.mutationOptions({
+      onSuccess: () => {
+        invalidateLeadSource()
+        toast.success('Lead source archived')
+      },
+      onError: err => toast.error(err.message || 'Failed to archive'),
+    }),
+  )
+
   const deleteLeadSource = useMutation(
     trpc.leadSourcesRouter.delete.mutationOptions({
       onSuccess: () => {
@@ -76,6 +86,7 @@ export function useLeadSourceActions() {
     toggleActive,
     rotateToken,
     duplicateLeadSource,
+    archiveLeadSource,
     deleteLeadSource,
   }
 }

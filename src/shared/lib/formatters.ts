@@ -78,6 +78,17 @@ export function numberToUSD(number: number) {
   }).format(number)
 }
 
+/**
+ * Formats a number as a thousands-separated count (e.g. 1234 → "1,234").
+ * Returns "0" for null/undefined so callers can render KPI strips without guards.
+ */
+export function formatAsCount(value: number | undefined | null): string {
+  if (value == null) {
+    return '0'
+  }
+  return new Intl.NumberFormat('en-US').format(value)
+}
+
 export function formatAsDollars(value: number) {
   return value.toLocaleString('en-US', {
     style: 'currency',

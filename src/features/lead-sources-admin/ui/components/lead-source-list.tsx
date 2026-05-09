@@ -2,13 +2,16 @@
 
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { RadioTowerIcon, SearchIcon } from 'lucide-react'
+import { PlusIcon, RadioTowerIcon, SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { ALL_PSEUDO_ID } from '@/features/lead-sources-admin/constants/pseudo-ids'
+import { EntityActionDropdown } from '@/shared/components/entity-actions/ui/entity-action-dropdown'
+import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
+import { useLeadSourceActionConfigs } from '@/shared/entities/lead-sources/hooks/use-lead-source-action-configs'
 import { cn } from '@/shared/lib/utils'
 
 type LeadSourceRow = AppRouterOutputs['leadSourcesRouter']['list'][number]
@@ -21,9 +24,25 @@ interface LeadSourceListProps {
   onSelect: (id: string) => void
   /** Label for the range-scoped stat column (mirrors the global time picker). */
   rangeLabel: string
+  /** Open the add-customer sheet pre-attributed to the given source. */
+  onAddCustomer: (source: { slug: string, name: string }) => void
+  /** Navigate to the source detail (uses the same selection nuqs param). */
+  onView: (id: string) => void
 }
 
-export function LeadSourceList({ sources, isLoading, selectedId, onSelect, rangeLabel }: LeadSourceListProps) {
+export function LeadSourceList({
+  sources,
+  isLoading,
+  selectedId,
+  onSelect,
+  rangeLabel,
+  onAddCustomer,
+  onView,
+}: LeadSourceListProps) {
+  const { actions, DeleteConfirmDialog } = useLeadSourceActionConfigs<LeadSourceRow>({
+    onView: src => onView(src.id),
+  })
+
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
@@ -94,9 +113,30 @@ export function LeadSourceList({ sources, isLoading, selectedId, onSelect, range
                     value={source.leadsInRange}
                     label={rangeLabel}
                   />
+                  <LeadSourceOverviewCard.Actions>
+                    <div className="flex items-center gap-px rounded-md border border-border/50 p-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onAddCustomer({ slug: source.slug, name: source.name })}
+                        aria-label={`Add customer to ${source.name}`}
+                        className="size-6 shrink-0 text-foreground"
+                      >
+                        <PlusIcon className="size-3.5" />
+                      </Button>
+                      <EntityActionDropdown
+                        entity={source}
+                        actions={actions}
+                        orientation="horizontal"
+                        triggerClassName="size-6 text-foreground"
+                      />
+                    </div>
+                  </LeadSourceOverviewCard.Actions>
                 </LeadSourceOverviewCard>
               ))}
       </nav>
+      <DeleteConfirmDialog />
     </div>
   )
 }

@@ -3,9 +3,9 @@
 import type { IntakeMode } from '@/shared/constants/enums'
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 
-import { IntakeFormView } from '@/features/intake/ui/views/intake-form-view'
 import { Label } from '@/shared/components/ui/label'
 import {
   Sheet,
@@ -14,7 +14,42 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/shared/components/ui/sheet'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Switch } from '@/shared/components/ui/switch'
+
+// The intake form pulls in the Google Maps APIProvider, react-hook-form,
+// scope/trade data fetches, and address autocomplete. Mounting it on the
+// main thread blocks the Sheet's open/close animation. Dynamic-import +
+// skeleton fallback makes the Sheet feel instantaneous even though the
+// underlying form is async-loaded.
+const IntakeFormView = dynamic(
+  () => import('@/features/intake/ui/views/intake-form-view').then(m => m.IntakeFormView),
+  {
+    ssr: false,
+    loading: () => <IntakeFormSkeleton />,
+  },
+)
+
+function IntakeFormSkeleton() {
+  return (
+    <div className="flex flex-col gap-6 pt-4" aria-label="Loading form">
+      <FieldSkeleton />
+      <FieldSkeleton />
+      <FieldSkeleton />
+      <FieldSkeleton tall />
+      <Skeleton className="mt-2 h-12 w-full" />
+    </div>
+  )
+}
+
+function FieldSkeleton({ tall }: { tall?: boolean }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Skeleton className="h-3.5 w-24" />
+      <Skeleton className={tall ? 'h-20 w-full' : 'h-10 w-full'} />
+    </div>
+  )
+}
 
 /**
  * Super-admin config: every optional field is visible so the super-admin

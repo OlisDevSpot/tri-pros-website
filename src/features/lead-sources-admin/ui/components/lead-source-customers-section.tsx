@@ -22,7 +22,7 @@ import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-regist
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
 
-const SHOW_COLUMNS = ['name', 'pipeline', 'createdAt'] as const
+const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
 interface LeadSourceCustomersSectionProps {
   leadSourceId: string
@@ -71,6 +71,11 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
   const visibility = useColumnVisibility('lead-source-customers', columns)
 
+  // Lead-source edit is wired by the cell itself (CASL-gated, default
+  // mutation + invalidation). Reassigning a row here removes it from the
+  // list (no longer matches `customersMatchingSource`) — that drop is
+  // covered by the default invalidation hitting both customer + lead-source
+  // query trees, so no override is needed.
   const meta = useMemo<CustomerTableMeta>(
     () => ({
       customerActions: () => actions,
@@ -109,17 +114,25 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
         </QueryToolbar>
       </div>
 
-      <DataTable
-        tableId="lead-source-customers"
-        columns={columns}
-        data={pagination.rows}
-        meta={meta}
-        entityName="customer"
-        onRowClick={row => handleViewProfile(row.id)}
-        serverPagination={toDataTablePagination(pagination)}
-        serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
-        columnVisibility={visibility.columnVisibility}
-      />
+      {/*
+        The wrapping `min-h-0 flex-1` cell is what lets the DataTable's
+        internal `h-full` resolve and pin its pagination bar at the bottom
+        while the row body scrolls — same pattern as `RecordsPageShell`
+        on the customers page.
+      */}
+      <div className="min-h-0 flex-1">
+        <DataTable
+          tableId="lead-source-customers"
+          columns={columns}
+          data={pagination.rows}
+          meta={meta}
+          entityName="customer"
+          onRowClick={row => handleViewProfile(row.id)}
+          serverPagination={toDataTablePagination(pagination)}
+          serverSorting={toDataTableSorting(pagination, { fallbackVisual: { id: 'createdAt', desc: true } })}
+          columnVisibility={visibility.columnVisibility}
+        />
+      </div>
     </section>
   )
 }

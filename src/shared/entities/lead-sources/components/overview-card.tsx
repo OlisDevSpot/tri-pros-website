@@ -44,16 +44,32 @@ interface RootProps {
 
 function Root({ source, isSelected, onClick, children, className }: RootProps) {
   const value = useMemo<ContextValue>(() => ({ source }), [source])
-  const Tag = onClick ? 'button' : 'div'
 
+  // Rendered as a div with role="button" rather than a real <button>. The
+  // Actions slot contains nested <button>s (add-customer, kebab) which would
+  // be invalid HTML inside a <button>. The target===currentTarget guard
+  // ensures Enter/Space pressed on inner controls doesn't double-fire.
   return (
     <Ctx.Provider value={value}>
-      <Tag
-        type={onClick ? 'button' : undefined}
+      <div
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
         onClick={onClick}
+        onKeyDown={onClick
+          ? (e) => {
+              if (e.target !== e.currentTarget) {
+                return
+              }
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onClick()
+              }
+            }
+          : undefined}
         aria-current={isSelected ? 'true' : undefined}
         className={cn(
           'group/card flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left motion-safe:transition-[background-color,opacity,box-shadow] motion-safe:duration-200 sm:min-h-0',
+          onClick && 'cursor-pointer',
           // The one primary-color moment in the list — the selected card.
           isSelected
             ? 'bg-primary/5 ring-1 ring-inset ring-primary/15'
@@ -64,7 +80,7 @@ function Root({ source, isSelected, onClick, children, className }: RootProps) {
         )}
       >
         {children}
-      </Tag>
+      </div>
     </Ctx.Provider>
   )
 }

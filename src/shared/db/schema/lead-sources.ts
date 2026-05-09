@@ -1,6 +1,6 @@
 import type z from 'zod'
 import type { LeadSourceFormConfig } from '@/shared/entities/lead-sources/schemas'
-import { boolean, jsonb, pgTable, text } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
@@ -12,6 +12,7 @@ export const leadSourcesTable = pgTable('lead_sources', {
   token: text('token').notNull().unique(),
   formConfigJSON: jsonb('form_config_json').$type<LeadSourceFormConfig>().notNull(),
   isActive: boolean('is_active').notNull().default(true),
+  archivedAt: timestamp('archived_at', { mode: 'string', withTimezone: true }),
   createdAt,
   updatedAt,
 })

@@ -2,15 +2,22 @@
 
 import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time-ranges'
 
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { parseAsStringEnum, useQueryState } from 'nuqs'
 
 import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entrance-motion'
+import { AllAnalyticsPanel } from '@/features/lead-sources-admin/ui/components/all-analytics-panel'
 import { AllCustomersSection } from '@/features/lead-sources-admin/ui/components/all-customers-section'
 import { PerformanceStrip } from '@/features/lead-sources-admin/ui/components/performance-strip'
+import { SourceTabTrigger } from '@/features/lead-sources-admin/ui/components/source-tab-trigger'
 import { Button } from '@/shared/components/ui/button'
+import { Tabs, TabsContent, TabsList } from '@/shared/components/ui/tabs'
 import { useTRPC } from '@/trpc/helpers'
+
+const ALL_TABS = ['customers', 'analytics'] as const
+type AllTab = (typeof ALL_TABS)[number]
 
 interface AllDetailProps {
   sourceCount: number
@@ -20,23 +27,33 @@ interface AllDetailProps {
 }
 
 /**
- * Aggregate pane shown when the "All" pseudo-row is selected. Receives the
- * globally-selected time range from the view so the performance strip reacts
- * to the same chip as the left-col stats.
+ * Aggregate pane shown when the "All" pseudo-row is selected. Mirrors the
+ * per-source detail layout (header → metric strip + tabs row → tab content)
+ * minus the Settings tab and source-mutation actions, since "All" is not a
+ * real lead source. URL state for `?tab` is shared with source-detail; the
+ * enum parser falls back to 'customers' when an invalid value (e.g.
+ * 'settings') is carried over from a per-source view.
  */
 export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: AllDetailProps) {
   const trpc = useTRPC()
   const entrance = useEntranceMotion()
+  const [tab, setTab] = useQueryState(
+    'tab',
+    parseAsStringEnum([...ALL_TABS]).withDefault('customers'),
+  )
 
-  const statsQuery = useQuery(
-    trpc.leadSourcesRouter.getAggregateStats.queryOptions({
+  const statsQuery = useQuery({
+    ...trpc.leadSourcesRouter.getAggregateStats.queryOptions({
       from: range.from,
       to: range.to,
     }),
-  )
+    placeholderData: keepPreviousData,
+  })
+
+  const customerCountLabel = statsQuery.data?.total
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-8 p-6">
+    <div className="flex h-full min-h-0 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-5 sm:pt-5">
       <header className="flex shrink-0 items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-1">
           <motion.p
@@ -45,7 +62,7 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
           >
             Lead sources
             <span aria-hidden="true" className="mx-2 opacity-40">·</span>
-            Aggregate
+            {`Aggregate · ${sourceCount} ${sourceCount === 1 ? 'source' : 'sources'}`}
           </motion.p>
           <motion.h2
             {...entrance(0.04, 6)}
@@ -62,24 +79,44 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
         </motion.div>
       </header>
 
-      <section aria-label="Aggregate performance" className="flex shrink-0 flex-col gap-3 border-t border-border/40 pt-6">
-        <PerformanceStrip
-          stats={statsQuery.data}
-          chip={activeChip}
-          isLoading={statsQuery.isLoading}
-        />
-        <p className="text-xs text-muted-foreground tabular-nums">
-          Aggregate across
-          {' '}
-          {sourceCount}
-          {' '}
-          {sourceCount === 1 ? 'source' : 'sources'}
-        </p>
-      </section>
+      <Tabs
+        value={tab}
+        onValueChange={v => setTab(v as AllTab, { history: 'replace' })}
+        className="flex min-h-0 flex-1 flex-col gap-4"
+      >
+        <div className="flex shrink-0 flex-col items-stretch gap-3 border-b border-border/40 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <section aria-label="Aggregate performance" className="pb-1 sm:pb-0">
+            <PerformanceStrip
+              stats={statsQuery.data}
+              chip={activeChip}
+              isLoading={statsQuery.isLoading}
+            />
+          </section>
+          <TabsList
+            className="-mb-px h-auto justify-start gap-4 self-start overflow-x-auto rounded-none bg-transparent p-0 sm:self-end"
+          >
+            <SourceTabTrigger value="customers">
+              Customers
+              {customerCountLabel != null && (
+                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                  {customerCountLabel}
+                </span>
+              )}
+            </SourceTabTrigger>
+            <SourceTabTrigger value="analytics">
+              Analytics
+            </SourceTabTrigger>
+          </TabsList>
+        </div>
 
-      <section aria-label="All customers" className="flex min-h-0 flex-1 flex-col border-t border-border/40 pt-6">
-        <AllCustomersSection />
-      </section>
+        <TabsContent value="customers" className="flex min-h-0 flex-1 flex-col">
+          <AllCustomersSection />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="flex min-h-0 flex-1 flex-col">
+          <AllAnalyticsPanel chip={activeChip} from={range.from} to={range.to} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
