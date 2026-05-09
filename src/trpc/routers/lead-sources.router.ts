@@ -482,9 +482,13 @@ export const leadSourcesRouter = createTRPCRouter({
       ])
 
       // ── Trend (3 parallel queries → JS union) ─────────────────────────────
-      const bucketLeads = sql<string>`date_trunc(${bucket}, ${customers.createdAt})`
-      const bucketMeetings = sql<string>`date_trunc(${bucket}, ${meetings.scheduledFor})`
-      const bucketProjects = sql<string>`date_trunc(${bucket}, ${projects.createdAt})`
+      // date_trunc requires the bucket name as a literal, not a bind parameter:
+      // a bound $1 in SELECT and $3 in GROUP BY are not equated by the planner.
+      // `bucket` is whitelisted to 'day' | 'week' | 'month' so sql.raw is safe.
+      const bucketLiteral = sql.raw(`'${bucket}'`)
+      const bucketLeads = sql<string>`date_trunc(${bucketLiteral}, ${customers.createdAt})`
+      const bucketMeetings = sql<string>`date_trunc(${bucketLiteral}, ${meetings.scheduledFor})`
+      const bucketProjects = sql<string>`date_trunc(${bucketLiteral}, ${projects.createdAt})`
 
       const [leadsByBucket, meetingsByBucket, signedByBucket] = await Promise.all([
         db
