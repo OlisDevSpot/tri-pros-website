@@ -8,8 +8,7 @@ import { ErrorState } from '@/shared/components/states/error-state'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
 
-import { LeadSourceFunnel } from './lead-source-funnel'
-import { LeadSourceTrendChart } from './lead-source-trend-chart'
+import { AnalyticsContent } from './analytics-content'
 
 interface Props {
   leadSourceId: string
@@ -26,7 +25,12 @@ export function LeadSourceAnalyticsPanel({ leadSourceId, chip, from, to }: Props
   })
 
   if (analyticsQuery.isError) {
-    return <ErrorState title="Couldn't load analytics" description="Refresh the page or pick a different time range." />
+    return (
+      <ErrorState
+        title="Couldn't load analytics"
+        description="Please try refreshing or selecting a different time range."
+      />
+    )
   }
 
   if (!analyticsQuery.data) {
@@ -34,30 +38,33 @@ export function LeadSourceAnalyticsPanel({ leadSourceId, chip, from, to }: Props
   }
 
   return (
-    <div className="space-y-6">
-      <LeadSourceFunnel funnel={analyticsQuery.data.funnel} chip={chip} />
-      <LeadSourceTrendChart trend={analyticsQuery.data.trend} bucket={analyticsQuery.data.bucket} chip={chip} />
-    </div>
+    <AnalyticsContent
+      funnel={analyticsQuery.data.funnel}
+      trend={analyticsQuery.data.trend}
+      bucket={analyticsQuery.data.bucket}
+      chip={chip}
+    />
   )
 }
 
 function AnalyticsSkeleton() {
   return (
     <div className="space-y-6" aria-label="Loading analytics">
-      <div className="space-y-1">
-        <Skeleton className="mb-3 h-4 w-40" />
+      <div className="space-y-1.5">
+        <Skeleton className="mb-2 h-3 w-32" />
         {Array.from({ length: 4 }).map((_, i) => (
           // eslint-disable-next-line react/no-array-index-key
-          <div key={i} className="grid grid-cols-[8rem_1fr_3rem] items-center gap-3">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-4 w-10" />
+          <div key={i} className="grid grid-cols-[6rem_1fr_3rem_3rem] items-center gap-3">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-1.5 w-full rounded-full" />
+            <Skeleton className="h-3 w-8" />
+            <Skeleton className="h-3 w-8" />
           </div>
         ))}
       </div>
       <div>
-        <Skeleton className="mb-3 h-4 w-48" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="mb-2 h-3 w-40" />
+        <Skeleton className="h-56 w-full" />
       </div>
     </div>
   )
