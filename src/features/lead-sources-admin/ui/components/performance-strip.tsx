@@ -8,6 +8,7 @@ import { motion } from 'motion/react'
 
 import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entrance-motion'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { formatAsCount } from '@/shared/lib/formatters'
 
 interface PerformanceStripProps {
   stats: { total: number, range: number, signedCustomers: number } | undefined
@@ -48,12 +49,12 @@ export function PerformanceStrip({ stats, chip, isLoading }: PerformanceStripPro
       <div className="flex flex-col gap-1">
         <motion.p {...entrance(0)} className="flex items-baseline gap-2">
           <span className="text-3xl font-semibold tabular-nums text-foreground">
-            {formatCount(signedCustomers)}
+            {formatAsCount(signedCustomers)}
           </span>
           <span className="text-base text-muted-foreground">
             of
             {' '}
-            <span className="tabular-nums">{formatCount(total)}</span>
+            <span className="tabular-nums">{formatAsCount(total)}</span>
             {' '}
             signed
           </span>
@@ -79,7 +80,7 @@ export function PerformanceStrip({ stats, chip, isLoading }: PerformanceStripPro
 function renderRangePhrase(chip: TimeRangeChip, count: number): ReactNode {
   const value = (
     <span className="text-base font-medium text-foreground tabular-nums">
-      {formatCount(count)}
+      {formatAsCount(count)}
     </span>
   )
 
@@ -123,11 +124,4 @@ function renderRangePhrase(chip: TimeRangeChip, count: number): ReactNode {
       {chip.label}
     </>
   )
-}
-
-function formatCount(n: number | undefined): string {
-  if (n == null) {
-    return '0'
-  }
-  return new Intl.NumberFormat('en-US').format(n)
 }

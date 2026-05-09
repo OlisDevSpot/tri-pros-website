@@ -4,9 +4,10 @@ import type { TimeRangeChip } from '@/features/lead-sources-admin/constants/time
 
 import { motion } from 'motion/react'
 
+import { formatTimeRangeClause } from '@/features/lead-sources-admin/lib/format-time-range-clause'
 import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entrance-motion'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { formatAsDollars } from '@/shared/lib/formatters'
+import { formatAsCount, formatAsDollars } from '@/shared/lib/formatters'
 
 interface LeadSourcePerformanceStripProps {
   stats: { total: number, range: number, signedCustomers: number, totalSales: number } | undefined
@@ -55,39 +56,22 @@ export function LeadSourcePerformanceStrip({ stats, chip, isLoading }: LeadSourc
         {formatAsDollars(totalSales)}
       </motion.p>
       <motion.p {...entrance(0.08)} className="text-sm text-muted-foreground">
-        <span className="tabular-nums">{formatCount(signedCustomers)}</span>
+        <span className="tabular-nums">{formatAsCount(signedCustomers)}</span>
         {' '}
         of
         {' '}
-        <span className="tabular-nums">{formatCount(total)}</span>
+        <span className="tabular-nums">{formatAsCount(total)}</span>
         {' '}
         signed
         {showRange && (
           <>
             <span aria-hidden="true" className="mx-2 opacity-40">·</span>
-            <span className="tabular-nums">{formatCount(range)}</span>
+            <span className="tabular-nums">{formatAsCount(range)}</span>
             {' '}
-            {renderRangeClause(chip)}
+            {formatTimeRangeClause(chip)}
           </>
         )}
       </motion.p>
     </div>
   )
-}
-
-function renderRangeClause(chip: TimeRangeChip): string {
-  if (chip.key === 'this-month') {
-    return 'this month'
-  }
-  if (chip.kind === 'rolling' && chip.days != null) {
-    return `in the last ${chip.days} days`
-  }
-  if (chip.kind === 'year' && chip.year != null) {
-    return `in ${chip.year}`
-  }
-  return chip.label
-}
-
-function formatCount(n: number): string {
-  return new Intl.NumberFormat('en-US').format(n)
 }
