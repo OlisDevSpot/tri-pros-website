@@ -2,8 +2,9 @@
 
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { ArchiveIcon, MoreHorizontalIcon, PauseIcon, SettingsIcon } from 'lucide-react'
+import { ArchiveIcon, MoreHorizontalIcon, PauseIcon, PlayIcon, PlusIcon, SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
+import { useRouter } from 'next/navigation'
 
 import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entrance-motion'
 import { Button } from '@/shared/components/ui/button'
@@ -13,6 +14,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
+import { useLeadSourceActions } from '@/shared/entities/lead-sources/hooks/use-lead-source-actions'
+import { useConfirm } from '@/shared/hooks/use-confirm'
 import { cn } from '@/shared/lib/utils'
 
 type LeadSourceRow = AppRouterOutputs['leadSourcesRouter']['getById']
@@ -20,13 +23,35 @@ type LeadSourceRow = AppRouterOutputs['leadSourcesRouter']['getById']
 interface LeadSourceDetailHeaderProps {
   source: LeadSourceRow
   onJumpToSettings: () => void
+  onAddCustomer: () => void
 }
 
-export function LeadSourceDetailHeader({ source, onJumpToSettings }: LeadSourceDetailHeaderProps) {
+export function LeadSourceDetailHeader({ source, onJumpToSettings, onAddCustomer }: LeadSourceDetailHeaderProps) {
   const entrance = useEntranceMotion()
+  const router = useRouter()
+  const { toggleActive, archiveLeadSource } = useLeadSourceActions()
+  const [ArchiveConfirmDialog, confirmArchive] = useConfirm({
+    title: 'Archive this lead source?',
+    message: 'It will be hidden from the lead-source list. Existing customers stay attached.',
+  })
+
+  const onTogglePause = () => {
+    toggleActive.mutate({ id: source.id, isActive: !source.isActive })
+  }
+
+  const onArchive = async () => {
+    const ok = await confirmArchive()
+    if (!ok) {
+      return
+    }
+    archiveLeadSource.mutate({ id: source.id }, {
+      onSuccess: () => router.push('/dashboard/lead-sources'),
+    })
+  }
 
   return (
-    <header className="flex items-start justify-between gap-4">
+    <header className="flex items-start justify-between gap-3">
+      <ArchiveConfirmDialog />
       <div className="flex min-w-0 flex-col gap-1">
         <motion.p
           {...entrance(0, 6)}
@@ -46,14 +71,23 @@ export function LeadSourceDetailHeader({ source, onJumpToSettings }: LeadSourceD
           {source.name}
         </motion.h2>
       </div>
-      <motion.div {...entrance(0.08, 6)} className="flex shrink-0 items-center gap-3">
+      <motion.div {...entrance(0.08, 6)} className="flex shrink-0 items-center gap-2 sm:gap-3">
         <ActiveIndicator isActive={source.isActive} />
+        <Button
+          size="sm"
+          onClick={onAddCustomer}
+          className="size-11 px-0 sm:h-9 sm:w-auto sm:gap-1.5 sm:px-4"
+          aria-label="Add customer"
+        >
+          <PlusIcon className="size-4" aria-hidden="true" />
+          <span className="hidden sm:inline">Add customer</span>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="h-11 w-11 sm:h-8 sm:w-8"
+              className="size-11 sm:size-9"
               aria-label="Lead source actions"
             >
               <MoreHorizontalIcon className="size-4" />
@@ -64,11 +98,11 @@ export function LeadSourceDetailHeader({ source, onJumpToSettings }: LeadSourceD
               <SettingsIcon className="size-4" />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onJumpToSettings}>
-              <PauseIcon className="size-4" />
-              Pause intake
+            <DropdownMenuItem onSelect={onTogglePause} disabled={toggleActive.isPending}>
+              {source.isActive ? <PauseIcon className="size-4" /> : <PlayIcon className="size-4" />}
+              {source.isActive ? 'Pause intake' : 'Resume intake'}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onJumpToSettings}>
+            <DropdownMenuItem onSelect={onArchive} disabled={archiveLeadSource.isPending}>
               <ArchiveIcon className="size-4" />
               Archive…
             </DropdownMenuItem>
@@ -89,7 +123,7 @@ function ActiveIndicator({ isActive }: { isActive: boolean }) {
           isActive ? 'bg-emerald-500' : 'bg-muted-foreground/40',
         )}
       />
-      <span className={cn('text-xs', isActive ? 'text-foreground' : 'text-muted-foreground')}>
+      <span className={cn('hidden text-xs sm:inline', isActive ? 'text-foreground' : 'text-muted-foreground')}>
         {isActive ? 'Active' : 'Inactive'}
       </span>
     </span>

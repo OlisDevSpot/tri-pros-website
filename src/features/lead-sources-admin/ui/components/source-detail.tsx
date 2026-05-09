@@ -8,20 +8,15 @@ import { parseAsStringEnum, useQueryState } from 'nuqs'
 import { useEffect } from 'react'
 
 import { LeadSourceAnalyticsPlaceholder } from '@/features/lead-sources-admin/ui/components/lead-source-analytics-placeholder'
-import { LeadSourceCustomersPanel } from '@/features/lead-sources-admin/ui/components/lead-source-customers-panel'
+import { LeadSourceCustomersSection } from '@/features/lead-sources-admin/ui/components/lead-source-customers-section'
 import { LeadSourceDetailHeader } from '@/features/lead-sources-admin/ui/components/lead-source-detail-header'
 import { LeadSourcePerformanceStrip } from '@/features/lead-sources-admin/ui/components/lead-source-performance-strip'
 import { LeadSourceSettingsPanel } from '@/features/lead-sources-admin/ui/components/lead-source-settings-panel'
 import { MobileBackButton } from '@/features/lead-sources-admin/ui/components/mobile-back-button'
+import { SourceTabTrigger } from '@/features/lead-sources-admin/ui/components/source-tab-trigger'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { cn } from '@/shared/lib/utils'
+import { Tabs, TabsContent, TabsList } from '@/shared/components/ui/tabs'
 import { useTRPC } from '@/trpc/helpers'
-
-const TAB_TRIGGER_CLS = cn(
-  'rounded-none border-b-2 border-transparent bg-transparent px-2 py-3 text-sm font-medium text-muted-foreground shadow-none',
-  'data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none',
-)
 
 const SOURCE_TABS = ['customers', 'analytics', 'settings'] as const
 type SourceTab = (typeof SOURCE_TABS)[number]
@@ -66,13 +61,14 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
     placeholderData: keepPreviousData,
   })
 
-  const countsQuery = useQuery(
-    trpc.leadSourcesRouter.getStatusCounts.queryOptions({ id: leadSourceId }),
-  )
+  const countsQuery = useQuery({
+    ...trpc.leadSourcesRouter.getStatusCounts.queryOptions({ id: leadSourceId }),
+    placeholderData: keepPreviousData,
+  })
 
   if (sourceQuery.isLoading || !sourceQuery.data) {
     return (
-      <div className="flex flex-col gap-6 p-4 sm:p-6">
+      <div className="flex flex-col gap-6 px-4 pt-4 sm:px-5 sm:pt-5">
         <Skeleton className="h-10 w-64" />
         <Skeleton className="h-9 w-40" />
         <Skeleton className="h-4 w-72" />
@@ -85,61 +81,57 @@ export function SourceDetail({ leadSourceId, activeChip, range, onAddCustomer, o
   const customerCountLabel = countsQuery.data?.all
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:gap-6 sm:p-6">
+    <div className="flex h-full min-h-0 flex-col gap-4 px-4 pt-4 sm:gap-5 sm:px-5 sm:pt-5">
       {onBack && <MobileBackButton label="All sources" onClick={onBack} />}
       <LeadSourceDetailHeader
         source={source}
         onJumpToSettings={() => setTab('settings', { history: 'push' })}
+        onAddCustomer={() => onAddCustomer({ slug: source.slug, name: source.name })}
       />
-
-      <section aria-label="Performance">
-        <LeadSourcePerformanceStrip
-          stats={statsQuery.data}
-          chip={activeChip}
-          isLoading={statsQuery.isLoading}
-        />
-      </section>
 
       <Tabs
         value={tab}
         onValueChange={v => setTab(v as SourceTab, { history: 'replace' })}
         className="flex min-h-0 flex-1 flex-col gap-4"
       >
-        <TabsList
-          className={cn(
-            'h-auto w-full justify-start gap-4 rounded-none border-b border-border/40 bg-transparent p-0',
-          )}
-        >
-          <TabsTrigger
-            value="customers"
-            className={TAB_TRIGGER_CLS}
+        {/*
+          Single row pairing the headline metric (focal point) with the tab
+          switcher. items-end + a shared `border-b border-border/40` keeps the
+          tabs underline aligned with the divider that runs full-width on
+          desktop. `-mb-px` on TabsList lets the active trigger's `border-b-2`
+          cover the divider precisely. On mobile the row stacks (metric
+          on top, tabs below) and the divider is owned by the wrapper.
+        */}
+        <div className="flex shrink-0 flex-col items-stretch gap-3 border-b border-border/40 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+          <section aria-label="Performance" className="pb-1 sm:pb-0">
+            <LeadSourcePerformanceStrip
+              stats={statsQuery.data}
+              chip={activeChip}
+              isLoading={statsQuery.isLoading}
+            />
+          </section>
+          <TabsList
+            className="-mb-px h-auto justify-start gap-4 self-start overflow-x-auto rounded-none bg-transparent p-0 sm:self-end"
           >
-            Customers
-            {customerCountLabel != null && (
-              <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
-                {customerCountLabel}
-              </span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger
-            value="analytics"
-            className={TAB_TRIGGER_CLS}
-          >
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger
-            value="settings"
-            className={TAB_TRIGGER_CLS}
-          >
-            Settings
-          </TabsTrigger>
-        </TabsList>
+            <SourceTabTrigger value="customers">
+              Customers
+              {customerCountLabel != null && (
+                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums text-muted-foreground">
+                  {customerCountLabel}
+                </span>
+              )}
+            </SourceTabTrigger>
+            <SourceTabTrigger value="analytics">
+              Analytics
+            </SourceTabTrigger>
+            <SourceTabTrigger value="settings">
+              Settings
+            </SourceTabTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="customers" className="flex min-h-0 flex-1 flex-col">
-          <LeadSourceCustomersPanel
-            leadSourceId={source.id}
-            onAddCustomer={() => onAddCustomer({ slug: source.slug, name: source.name })}
-          />
+          <LeadSourceCustomersSection leadSourceId={source.id} />
         </TabsContent>
 
         <TabsContent value="analytics" className="flex min-h-0 flex-1 flex-col">
