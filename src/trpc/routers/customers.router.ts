@@ -1,10 +1,11 @@
 import { TRPCError } from '@trpc/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
-import { and, desc, eq, gte, ilike, inArray, lte, or } from 'drizzle-orm'
+import { and, desc, eq, gte, ilike, lte, or } from 'drizzle-orm'
 import z from 'zod'
 import env from '@/shared/config/server-env'
-import { customerPipelines, intakeModes } from '@/shared/constants/enums'
+import { intakeModes } from '@/shared/constants/enums'
+import { pipelines } from '@/shared/constants/enums/pipelines'
 import { getCustomer, getCustomers } from '@/shared/dal/server/customers/api'
 import { addParticipant } from '@/shared/dal/server/meetings/participants'
 import { buildFilterWhere } from '@/shared/dal/server/query/filters'
@@ -18,6 +19,7 @@ import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
+import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { geocodeAddress } from '@/shared/services/google-maps/geocode'
@@ -45,15 +47,17 @@ export const customersRouter = createTRPCRouter({
   // Server-paginated customers list. Drives /dashboard/customers and the
   // lead-sources-admin "All customers" pane. Each row carries its joined
   // leadSource (name + slug); NULL joins mean "unknown legacy import".
+  // The `pipeline` field is the derived 5-bucket classification — the
+  // physical 3-bucket DB column is exploded via `derivedPipelineSql`.
   list: agentProcedure
     .input(paginatedQueryInput({
-      pipeline: z.array(z.enum(customerPipelines)).optional(),
+      pipeline: z.array(z.enum(pipelines)).optional(),
       createdAt: dateRangeSchema.optional(),
     }))
     .query(async ({ input }) => {
       const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
       const filterWhere = buildFilterWhere(input.filters, {
-        pipeline: v => (v.length > 0 ? inArray(customers.pipeline, v) : undefined),
+        pipeline: v => derivedPipelineWhere(v),
         createdAt: v => and(
           v.from ? gte(customers.createdAt, v.from) : undefined,
           v.to ? lte(customers.createdAt, v.to) : undefined,
@@ -61,11 +65,13 @@ export const customersRouter = createTRPCRouter({
       })
       const where = and(searchWhere, filterWhere)
 
+      // Pipeline is intentionally not sortable — the registry omits the
+      // header click affordance because the visible value is derived,
+      // and ordering by the underlying 3-bucket column would surprise.
       const orderBy = buildOrderBy(input.sort, {
         name: customers.name,
         email: customers.email,
         createdAt: customers.createdAt,
-        pipeline: customers.pipeline,
         leadSourceName: leadSourcesTable.name,
       }, desc(customers.createdAt))
 
@@ -76,7 +82,7 @@ export const customersRouter = createTRPCRouter({
             name: customers.name,
             email: customers.email,
             createdAt: customers.createdAt,
-            pipeline: customers.pipeline,
+            pipeline: derivedPipelineSql(),
             leadSourceId: customers.leadSourceId,
             leadSourceName: leadSourcesTable.name,
             leadSourceSlug: leadSourcesTable.slug,
@@ -161,8 +167,8 @@ export const customersRouter = createTRPCRouter({
       createdAt: z.string().datetime(),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (ctx.session.user.role !== 'super-admin') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can edit the created date.' })
+      if (ctx.ability.cannot('update', 'Customer', 'createdAt')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to edit the created date.' })
       }
 
       const [updated] = await db
@@ -178,7 +184,60 @@ export const customersRouter = createTRPCRouter({
       return updated
     }),
 
-  // Update top-level contact fields — super-admin only
+  // Reassign a customer's lead source — super-admin only. The leadSourceId
+  // column drives every lead-source attribution stat (totals, signed counts,
+  // per-source customer lists), so changing it must invalidate both
+  // customer and lead-source query trees on the client.
+  updateLeadSource: agentProcedure
+    .input(z.object({
+      customerId: z.string().uuid(),
+      leadSourceId: z.string().uuid(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.ability.cannot('update', 'Customer', 'leadSourceId')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to change the lead source.' })
+      }
+
+      const [target] = await db
+        .select({ id: leadSourcesTable.id })
+        .from(leadSourcesTable)
+        .where(eq(leadSourcesTable.id, input.leadSourceId))
+        .limit(1)
+      if (!target) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found' })
+      }
+
+      const [updated] = await db
+        .update(customers)
+        .set({ leadSourceId: input.leadSourceId })
+        .where(eq(customers.id, input.customerId))
+        .returning({ id: customers.id, leadSourceId: customers.leadSourceId })
+
+      if (!updated) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+
+      const [joined] = await db
+        .select({
+          name: leadSourcesTable.name,
+          slug: leadSourcesTable.slug,
+        })
+        .from(leadSourcesTable)
+        .where(eq(leadSourcesTable.id, input.leadSourceId))
+        .limit(1)
+
+      return {
+        id: updated.id,
+        leadSourceId: updated.leadSourceId,
+        leadSourceName: joined?.name ?? null,
+        leadSourceSlug: joined?.slug ?? null,
+      }
+    }),
+
+  // Update top-level contact fields — gated per-field via CASL so the
+  // permission boundary stays in `abilities.ts`. Today only super-admin
+  // (`manage all`) passes; agents are field-restricted to JSONB profile
+  // blobs and so cannot touch any of these top-level columns.
   updateCustomerContact: agentProcedure
     .input(z.object({
       customerId: z.string().uuid(),
@@ -191,14 +250,13 @@ export const customersRouter = createTRPCRouter({
       zip: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      if (ctx.session.user.role !== 'super-admin') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only super-admins can edit contact fields' })
-      }
-
       const { customerId, ...fields } = input
       const updateData: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(fields)) {
         if (value !== undefined) {
+          if (ctx.ability.cannot('update', 'Customer', key)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: `You do not have permission to update ${key}.` })
+          }
           updateData[key] = value
         }
       }

@@ -55,19 +55,6 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     }),
   )
 
-  const updateLeadSource = useMutation(
-    trpc.customersRouter.updateLeadSource.mutationOptions({
-      onSuccess: (data) => {
-        toast.success(data.leadSourceName
-          ? `Source set to ${data.leadSourceName}`
-          : 'Lead source updated')
-        invalidateCustomer()
-        invalidateLeadSource()
-      },
-      onError: err => toast.error(err.message),
-    }),
-  )
-
   const handleViewProfile = useCallback((customerId: string) => {
     setModal({
       accessor: 'CustomerProfile',
@@ -84,15 +71,18 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
   const visibility = useColumnVisibility('lead-source-customers', columns)
 
+  // Lead-source edit is wired by the cell itself (CASL-gated, default
+  // mutation + invalidation). Reassigning a row here removes it from the
+  // list (no longer matches `customersMatchingSource`) — that drop is
+  // covered by the default invalidation hitting both customer + lead-source
+  // query trees, so no override is needed.
   const meta = useMemo<CustomerTableMeta>(
     () => ({
       customerActions: () => actions,
       onUpdateCreatedAt: (customerId, date) =>
         updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
-      onUpdateLeadSource: (customerId, leadSourceId) =>
-        updateLeadSource.mutate({ customerId, leadSourceId }),
     }),
-    [actions, updateCreatedAt, updateLeadSource],
+    [actions, updateCreatedAt],
   )
 
   return (
