@@ -2,6 +2,8 @@
 
 import type { inferRouterOutputs } from '@trpc/server'
 
+import type { ReactNode } from 'react'
+
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { EntityActionConfig } from '@/shared/components/entity-actions/types'
@@ -39,6 +41,8 @@ interface ScheduleCalendarProps {
   isHighlighted?: (meetingId: string) => boolean
   /** Ref callback factory for highlighted meetings (for scroll-into-view) */
   highlightRef?: (meetingId: string) => React.RefCallback<HTMLDivElement>
+  /** Right-aligned controls rendered inside the calendar header strip */
+  controlsRight?: ReactNode
 }
 
 export function ScheduleCalendar({
@@ -53,6 +57,7 @@ export function ScheduleCalendar({
   initialDate,
   isHighlighted,
   highlightRef,
+  controlsRight,
 }: ScheduleCalendarProps) {
   const [currentDate, setCurrentDate] = useState(() => initialDate ?? new Date())
   const events = useMemo(() => {
@@ -115,6 +120,7 @@ export function ScheduleCalendar({
         currentDate={currentDate}
         activeView={activeView}
         onDateChange={setCurrentDate}
+        rightSlot={controlsRight}
       />
 
       <div className="w-full flex-1 min-h-0 overflow-hidden">

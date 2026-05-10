@@ -1,23 +1,18 @@
 'use client'
 
-import type { inferRouterOutputs } from '@trpc/server'
-
 import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 import type { PipelineScope } from '@/shared/domains/pipelines/ui/pipeline-scope-toggle'
-import type { AppRouter } from '@/trpc/routers/app'
 
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useCallback, useMemo, useState } from 'react'
 
-import { meetingsStatConfig } from '@/features/meeting-flow/constants/meetings-stat-config'
 import { useScheduleHighlight } from '@/features/schedule-management/hooks/use-schedule-highlight'
 import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-calendar-event'
 import { ActivityForm } from '@/features/schedule-management/ui/components/activity-form'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
-import { StatBar } from '@/shared/components/stat-bar/ui/stat-bar'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
@@ -32,10 +27,7 @@ import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { useTRPC } from '@/trpc/helpers'
 
-type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['list']['rows'][number]
-
 export function ScheduleView() {
-  const [dateRange, setDateRange] = useState<{ from: Date, to: Date } | null>(null)
   const [calendarView, setCalendarView] = useState<CalendarViewType>('week')
   const [showSaturday, setShowSaturday] = useState(false)
   const activePipeline = getStoredPipeline()
@@ -123,24 +115,6 @@ export function ScheduleView() {
     updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() })
   }, [updateScheduledFor])
 
-  // Stats reflect the calendar's currently visible window. The schedule page
-  // is calendar-only — entity records (meetings table) live at /dashboard/meetings.
-  const statsData = useMemo((): MeetingRow[] => {
-    if (!scopedMeetings) {
-      return []
-    }
-    if (dateRange) {
-      return scopedMeetings.filter((m) => {
-        if (!m.scheduledFor) {
-          return false
-        }
-        const d = new Date(m.scheduledFor)
-        return d >= dateRange.from && d <= dateRange.to
-      })
-    }
-    return scopedMeetings
-  }, [dateRange, scopedMeetings])
-
   const isLoading = meetings.isLoading || activitiesQuery.isLoading
 
   if (isLoading) {
@@ -181,29 +155,14 @@ export function ScheduleView() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 30 }}
       transition={{ delay: 0.25, duration: 0.25 }}
-      className="w-full h-full flex flex-col gap-4 overflow-hidden"
+      className="w-full h-full flex flex-col overflow-hidden"
     >
-      <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between">
-        <StatBar items={meetingsStatConfig} data={statsData} />
-        <ScheduleControlsBar
-          scope={scope}
-          onScopeChange={setScope}
-          activePipeline={activePipeline}
-          calendarView={calendarView}
-          onCalendarViewChange={setCalendarView}
-          showSaturday={showSaturday}
-          onToggleSaturday={handleToggleSaturday}
-          onNewActivity={() => setActivityFormOpen(true)}
-        />
-      </div>
-
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScheduleCalendar
           data={scopedMeetings}
           actions={meetingActions}
           additionalEvents={activityEvents}
           onAssignOwner={handleAssignOwner}
-          onDateRangeChange={setDateRange}
           onUpdateScheduledFor={handleUpdateScheduledFor}
           activeView={calendarView}
           onViewChange={setCalendarView}
@@ -212,6 +171,18 @@ export function ScheduleView() {
           initialDate={highlightInitialDate}
           isHighlighted={isHighlighted}
           highlightRef={highlightRef}
+          controlsRight={(
+            <ScheduleControlsBar
+              scope={scope}
+              onScopeChange={setScope}
+              activePipeline={activePipeline}
+              calendarView={calendarView}
+              onCalendarViewChange={setCalendarView}
+              showSaturday={showSaturday}
+              onToggleSaturday={handleToggleSaturday}
+              onNewActivity={() => setActivityFormOpen(true)}
+            />
+          )}
         />
       </div>
 
