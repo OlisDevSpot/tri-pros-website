@@ -19,6 +19,7 @@ import {
 } from 'date-fns'
 
 const FORMAT_STRING = 'MM/dd/yy'
+const WEEK_STARTS_ON = 1 // Monday
 
 export interface CalendarCell {
   day: number
@@ -36,8 +37,8 @@ export function getRangeText(view: CalendarViewType, date: Date): string {
       return `${format(start, FORMAT_STRING)} - ${format(end, FORMAT_STRING)}`
     }
     case 'week': {
-      const start = startOfWeek(date)
-      const end = endOfWeek(date)
+      const start = startOfWeek(date, { weekStartsOn: WEEK_STARTS_ON })
+      const end = endOfWeek(date, { weekStartsOn: WEEK_STARTS_ON })
       return `${format(start, FORMAT_STRING)} - ${format(end, FORMAT_STRING)}`
     }
   }
@@ -67,7 +68,10 @@ export function getDateRange(
     case 'month':
       return { from: startOfMonth(date), to: endOfMonth(date) }
     case 'week':
-      return { from: startOfWeek(date), to: endOfWeek(date) }
+      return {
+        from: startOfWeek(date, { weekStartsOn: WEEK_STARTS_ON }),
+        to: endOfWeek(date, { weekStartsOn: WEEK_STARTS_ON }),
+      }
   }
 }
 
@@ -105,7 +109,7 @@ export function getCalendarCells(selectedDate: Date): CalendarCell[] {
 }
 
 export function getWeekDays(date: Date, hiddenDays: number[] = []): Date[] {
-  const weekStart = startOfWeek(date)
+  const weekStart = startOfWeek(date, { weekStartsOn: WEEK_STARTS_ON })
   const allDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   return allDays.filter(day => !hiddenDays.includes(day.getDay()))
 }

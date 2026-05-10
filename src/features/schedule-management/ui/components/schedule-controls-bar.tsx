@@ -72,7 +72,7 @@ export function ScheduleControlsBar({
               <FilterIcon size={14} />
               <span className="hidden sm:inline">Days</span>
               <Badge variant="secondary" className="px-1.5 text-[10px]">
-                {showSaturday ? '7' : '6'}
+                {showSaturday ? '6' : '5'}
               </Badge>
             </Button>
           </PopoverTrigger>

@@ -1,6 +1,6 @@
 import type { ActivityType, MeetingOutcome } from '@/shared/constants/enums'
 
-export const DEFAULT_HIDDEN_DAYS = [6] // Saturday
+export const DEFAULT_HIDDEN_DAYS = [0] // Sunday (Mon-start weeks)
 
 export const STATUS_BG_TINTS: Partial<Record<MeetingOutcome, string>> = {
   not_set: 'bg-zinc-500/5 border-zinc-500/20',
