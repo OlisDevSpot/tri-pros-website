@@ -37,10 +37,16 @@ export function ParticipantPickerTrigger({
 
   const isCompact = variant === 'compact'
 
-  const stackUsers = [
-    owner && { id: owner.userId, name: owner.name, image: owner.image },
-    coOwner && { id: coOwner.userId, name: coOwner.name, image: coOwner.image },
-  ].filter((u): u is { id: string, name: string, image: string | null } => u !== null)
+  // Build the avatar stack imperatively — the prior `[owner && {...}, coOwner && {...}].filter(u => u !== null)`
+  // form leaked `undefined` entries when owner/coOwner came from `.find()` (returns undefined, not null),
+  // crashing StackSlot on the next `.map(user => key={user.id})`.
+  const stackUsers: Array<{ id: string, name: string, image: string | null }> = []
+  if (owner) {
+    stackUsers.push({ id: owner.userId, name: owner.name, image: owner.image })
+  }
+  if (coOwner) {
+    stackUsers.push({ id: coOwner.userId, name: coOwner.name, image: coOwner.image })
+  }
 
   return (
     <Button

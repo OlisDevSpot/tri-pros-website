@@ -86,10 +86,16 @@ export function ReadOnlyParticipantSummary({
       ? `${ownerName ?? '—'} + ${coOwnerName ?? 'Unknown'}`
       : (ownerName ?? '—')
 
-  const stackUsers = [
-    owner && { id: owner.userId, name: ownerName ?? 'Unknown', image: owner.userImage },
-    coOwner && { id: coOwner.userId, name: coOwnerName ?? 'Unknown', image: coOwner.userImage },
-  ].filter((u): u is { id: string, name: string, image: string | null } => u !== null)
+  // Build the avatar stack imperatively — the prior `[owner && {...}, coOwner && {...}].filter(u => u !== null)`
+  // form leaked `undefined` entries when `.find()` returned undefined (not null),
+  // crashing StackSlot on the next `.map(user => key={user.id})`.
+  const stackUsers: Array<{ id: string, name: string, image: string | null }> = []
+  if (owner) {
+    stackUsers.push({ id: owner.userId, name: ownerName ?? 'Unknown', image: owner.userImage })
+  }
+  if (coOwner) {
+    stackUsers.push({ id: coOwner.userId, name: coOwnerName ?? 'Unknown', image: coOwner.userImage })
+  }
 
   return (
     <div
