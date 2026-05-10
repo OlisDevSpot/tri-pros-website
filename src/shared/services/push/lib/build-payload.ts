@@ -1,4 +1,4 @@
-import env from '@/shared/config/server-env'
+import { getPublicBaseUrl } from '@/shared/config/public-url'
 import { DECLARATIVE_WEB_PUSH_FORMAT } from './constants'
 
 export interface PushPayloadInput {
@@ -77,15 +77,11 @@ export function buildPushPayload(input: PushPayloadInput): DeclarativeWebPushPay
 
 // Resolve `/customers/123` -> `https://app.example.com/customers/123`. iOS
 // only routes the deep link into the standalone PWA when the navigate URL
-// matches the origin the PWA was installed FROM. NGROK_URL takes precedence
-// during tunnel testing so dev pushes deep-link into the ngrok-installed
-// PWA instead of bouncing the user to Safari at the prod origin. This
-// matches the codebase pattern for any "public URL for external callbacks"
-// (see scheduling.service.ts, upstash/lib/create-job.ts).
+// matches the origin the PWA was installed FROM, which is why we resolve
+// against `getPublicBaseUrl()` (NGROK_URL in dev, prod URL in prod).
 function resolveNavigateUrl(navigate: string): string {
   if (/^https?:\/\//i.test(navigate)) {
     return navigate
   }
-  const baseUrl = env.NGROK_URL ?? env.NEXT_PUBLIC_BASE_URL
-  return new URL(navigate, baseUrl).href
+  return new URL(navigate, getPublicBaseUrl()).href
 }
