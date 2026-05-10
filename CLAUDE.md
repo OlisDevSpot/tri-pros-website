@@ -11,9 +11,12 @@ pnpm tunnel       # Run only the ngrok tunnel (uses ${PORT:-3000})
 pnpm build        # Build for production
 pnpm lint         # ESLint
 # Database (PostgreSQL via Drizzle)
-pnpm db:push      # Push schema changes to Postgres
+pnpm db:push      # Push schema changes to Postgres (PROD — prefer db:push:dev for dev work)
 pnpm db:reset     # Reset Postgres database
 pnpm db:seed      # Seed Postgres database
+# Push notifications
+pnpm push:test --to <email> --title "..." [--body "..."] [--navigate /path]
+                  # Fire a push at any user via web-push (verifies VAPID + delivery + deep-link)
 ```
 
 Package manager: **pnpm**. Path alias: `@/` → `src/`.
@@ -146,8 +149,11 @@ Validated at startup with Zod — the app will exit with a clear error if requir
 
 - `src/shared/config/server-env.ts` — All server-side env vars (DATABASE_URL, BETTER_AUTH_SECRET, third-party API keys, etc.)
 - `src/shared/config/client-env.ts` — Only `NEXT_PUBLIC_*` vars
+- `src/shared/config/public-url.ts` — `getPublicBaseUrl()` server-only helper returning `env.NGROK_URL ?? env.NEXT_PUBLIC_BASE_URL`. Use this for ANY external-facing absolute URL (push notification `navigate`, webhook callbacks, qstash callback URLs, GCal watch URL). Never hand-roll the `?? NEXT_PUBLIC_BASE_URL` fallback.
 
-Env file: `.env` at project root. See `server-env.ts` for the full list of required variables (Resend, DocuSign, Notion, Cloudflare R2, Upstash QStash).
+Env file: `.env` at project root. See `server-env.ts` for the full list of required variables (Resend, DocuSign, Notion, Cloudflare R2, Upstash QStash, Web Push VAPID).
+
+**Web Push VAPID** — `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` are all optional in env validation; push features no-op gracefully when missing. Generate ONCE with `node scripts/generate-vapid-keys.mjs` and **never rotate** — every existing subscription is bound to the public key. Same keys in dev + prod (the `NEXT_PUBLIC_*` one is inlined into the client bundle at build time, so it must be set before any prod build).
 
 ### Key Integrations
 
@@ -160,6 +166,7 @@ Env file: `.env` at project root. See `server-env.ts` for the full list of requi
 - ~~**Pipedrive**~~ — LEGACY, do not use
 - **Google Maps** — via `@vis.gl/react-google-maps`
 - **AI (Vercel AI SDK + OpenAI)** — Project summary generation
+- **Web Push (Declarative Web Push)** — iOS PWA + desktop browser push notifications. `web-push` library; payload format `{web_push: 8030, notification: {title, body, navigate, ...}}`. Service worker at `public/sw.js`; manifest scope MUST stay `/` for deep links to route into the standalone PWA. Add new notification types in `src/shared/services/notification.service.ts` calling `sendPushToUser(userId, {title, body, navigate})`. See memory `pattern-push-notifications.md`.
 
 ### UI
 
