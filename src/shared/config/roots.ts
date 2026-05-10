@@ -53,6 +53,23 @@ const APP_ROOTS = {
       root: (options?: UrlOptions) => generateUrl('/dashboard/customers', options),
     },
     schedule: (options?: UrlOptions) => generateUrl('/dashboard/schedule', options),
+    /**
+     * Schedule URL with the nuqs params that trigger scroll + highlight in
+     * use-schedule-highlight.ts. Single source of truth — used by the
+     * "View in Schedule" entity action, GCal event descriptions, and push
+     * notifications. If the param shape ever changes, change here only.
+     */
+    scheduleWithMeetingHighlight: (
+      meetingId: string,
+      scheduledFor?: string | null,
+      options?: UrlOptions,
+    ) => {
+      const search = new URLSearchParams({ highlightMeeting: meetingId })
+      if (scheduledFor) {
+        search.set('highlightDate', scheduledFor)
+      }
+      return generateUrl(`/dashboard/schedule?${search.toString()}`, options)
+    },
     settings: (options?: UrlOptions) => generateUrl('/dashboard/settings', options),
     leadSources: (options?: UrlOptions) => generateUrl('/dashboard/lead-sources', options),
     team: (options?: UrlOptions) => generateUrl('/dashboard/team', options),

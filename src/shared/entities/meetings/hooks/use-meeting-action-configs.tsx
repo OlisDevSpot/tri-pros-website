@@ -63,11 +63,7 @@ function defaultNavigate(entity: { id: string }) {
 }
 
 function defaultViewSchedule(entity: { id: string, scheduledFor?: string | null }) {
-  const params = new URLSearchParams({ highlightMeeting: entity.id })
-  if (entity.scheduledFor) {
-    params.set('highlightDate', entity.scheduledFor)
-  }
-  window.location.href = `${ROOTS.dashboard.schedule()}?${params.toString()}`
+  window.location.href = ROOTS.dashboard.scheduleWithMeetingHighlight(entity.id, entity.scheduledFor)
 }
 
 function defaultCreateProposal(entity: { id: string }) {

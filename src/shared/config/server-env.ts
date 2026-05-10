@@ -79,6 +79,17 @@ const envSchema = z.object({
 
   // ABLY
   ABLY_API_KEY: z.string(),
+
+  // WEB PUSH (VAPID)
+  // Generate with `node scripts/generate-vapid-keys.mjs`. The public key is
+  // exposed to the client via NEXT_PUBLIC_*; the private key signs JWT auth
+  // headers to push services and must stay server-only. The subject is a
+  // contact URL/email Apple/Google can reach you at if the keys misbehave.
+  // ALL three are optional so existing dev environments don't fail validation
+  // — push features no-op gracefully when missing.
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional(),
 })
 
 export type env = z.infer<typeof envSchema>

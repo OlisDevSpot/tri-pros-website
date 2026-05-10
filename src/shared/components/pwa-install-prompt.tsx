@@ -3,30 +3,17 @@
 import { X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
+import { isIOSDevice, isStandalonePWA } from '@/shared/lib/pwa'
 
 const DISMISS_KEY = 'pwa-install-dismissed'
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 function isIOSSafari(): boolean {
-  if (typeof navigator === 'undefined') {
+  if (!isIOSDevice()) {
     return false
   }
   const ua = navigator.userAgent
-  return (
-    (/iPhone|iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
-    && /Safari/.test(ua)
-    && !/CriOS|FxiOS/.test(ua)
-  )
-}
-
-function isStandalone(): boolean {
-  if (typeof window === 'undefined') {
-    return false
-  }
-  return (
-    window.matchMedia('(display-mode: standalone)').matches
-    || ('standalone' in navigator && (navigator as { standalone?: boolean }).standalone === true)
-  )
+  return /Safari/.test(ua) && !/CriOS|FxiOS/.test(ua)
 }
 
 function isDismissed(): boolean {
@@ -70,7 +57,7 @@ export function PwaInstallPrompt() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    if (isStandalone() || isDismissed() || !isIOSSafari()) {
+    if (isStandalonePWA() || isDismissed() || !isIOSSafari()) {
       return
     }
     const timer = setTimeout(() => {
@@ -104,7 +91,7 @@ export function PwaInstallPrompt() {
           </button>
 
           <p className="pr-6 text-sm font-medium text-foreground">
-            Install Tri Pros
+            Install Tri Pros for push notifications
           </p>
           <p className="mt-1.5 text-xs leading-relaxed text-foreground/60">
             Tap
@@ -116,6 +103,7 @@ export function PwaInstallPrompt() {
             <span className="font-medium text-foreground/80">
               &quot;Add to Home Screen&quot;
             </span>
+            . You can enable notifications from the dashboard once installed.
           </p>
         </motion.div>
       )}

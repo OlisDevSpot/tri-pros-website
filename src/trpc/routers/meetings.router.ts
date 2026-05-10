@@ -29,6 +29,7 @@ import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pip
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
+import { notificationService } from '@/shared/services/notification.service'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
@@ -528,6 +529,16 @@ export const meetingsRouter = createTRPCRouter({
         if (role === 'owner') {
           await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))
         }
+
+        // Fire-and-forget push to the new participant. Skip self-additions
+        // (admin assigning themselves) — Linear/Asana/Slack semantics: you
+        // don't notify yourself about your own actions. We don't await so
+        // a slow push service never blocks the mutation response.
+        if (userId !== ctx.session.user.id) {
+          void notificationService
+            .notifyMeetingParticipantAdded({ meetingId, participantUserId: userId })
+            .catch(err => console.warn('[push] notifyMeetingParticipantAdded failed:', err))
+        }
       }
 
       if (action === 'remove') {
@@ -596,6 +607,17 @@ export const meetingsRouter = createTRPCRouter({
                 throw new TRPCError({ code: 'CONFLICT', message: 'Meeting already has an owner.' })
               }
               throw err
+            }
+
+            // Brand-new participant added via change_role → owner. Same
+            // self-skip rule as the 'add' branch above. We deliberately
+            // don't notify on the in-place promotion path (existingRow
+            // branch above) — that user is already on the meeting and
+            // would just see a noisy "you were added" for a role bump.
+            if (userId !== ctx.session.user.id) {
+              void notificationService
+                .notifyMeetingParticipantAdded({ meetingId, participantUserId: userId })
+                .catch(err => console.warn('[push] notifyMeetingParticipantAdded failed:', err))
             }
           }
           await db.update(meetings).set({ ownerId: userId }).where(eq(meetings.id, meetingId))

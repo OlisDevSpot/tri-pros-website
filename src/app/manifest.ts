@@ -5,6 +5,11 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Tri Pros Remodeling',
     short_name: 'TPR',
     start_url: '/dashboard',
+    // Scope MUST be "/" for declarative web push deep links to open the
+    // standalone PWA. Without this, scope defaults to the directory of
+    // start_url (/dashboard/), and pushes with `navigate: "/customers/123"`
+    // open in Safari instead of routing into the installed app.
+    scope: '/',
     display: 'standalone',
     background_color: '#09090b',
     theme_color: '#03AFED',

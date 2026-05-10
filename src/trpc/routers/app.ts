@@ -12,6 +12,7 @@ import { meetingsRouter } from './meetings.router'
 import { notionRouter } from './notion.router'
 import { projectsRouter } from './projects.router'
 import { proposalsRouter } from './proposals.router'
+import { pushRouter } from './push.router'
 import { scheduleRouter } from './schedule.router'
 
 export const appRouter = createTRPCRouter({
@@ -28,6 +29,7 @@ export const appRouter = createTRPCRouter({
   customerPipelinesRouter,
   proposalsRouter,
   projectsRouter,
+  pushRouter,
   scheduleRouter,
 })
 

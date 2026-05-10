@@ -8,6 +8,21 @@
  */
 
 /**
+ * Coarse iOS detection. Used to gate "must install PWA first" UX —
+ * iOS only delivers web push to standalone PWAs, never to Safari tabs.
+ * SSR-safe.
+ */
+export function isIOSDevice(): boolean {
+  if (typeof navigator === 'undefined') {
+    return false
+  }
+  return (
+    /iPhone|iPad|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
+}
+
+/**
  * True when the app is running as an installed PWA in standalone mode.
  *
  * Checks both the CSS media query (Android / desktop Chrome) and the

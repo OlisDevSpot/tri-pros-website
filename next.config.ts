@@ -40,6 +40,24 @@ const nextConfig: NextConfig = {
       './node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/data/**/*',
     ],
   },
+  // Service worker headers. Browsers cache /sw.js by default and skip the
+  // update check unless the response says otherwise — without no-cache,
+  // SW changes don't ship until users hard-refresh, which iOS PWA users
+  // can't easily do. The Service-Worker-Allowed header is defensive: it
+  // lets the SW control the entire origin even if it were ever served
+  // from a sub-path (today it's at root, where no header is needed).
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

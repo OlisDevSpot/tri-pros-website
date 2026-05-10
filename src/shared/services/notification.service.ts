@@ -1,7 +1,11 @@
 import type { ContractEvent } from '@/shared/constants/enums'
 import { eq } from 'drizzle-orm'
+import { ROOTS } from '@/shared/config/roots'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
+import { customers } from '@/shared/db/schema/customers'
+import { meetings } from '@/shared/db/schema/meetings'
+import { sendPushToUser } from '@/shared/services/push/send'
 import { resendClient } from '@/shared/services/resend/client'
 import { RESEND_FROM } from '@/shared/services/resend/constants'
 import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-emails'
@@ -60,6 +64,64 @@ function createNotificationService() {
 
       if (error) {
         console.error(`[notificationService] Failed to notify proposal viewed:`, error)
+      }
+    },
+
+    // Fires when an internal user is added/promoted as a participant on a
+    // meeting they didn't create. Push deep-links to the same URL as the
+    // "View in Schedule" entity action (use-meeting-action-configs.tsx) so
+    // tapping the notification lands them at the meeting on the schedule
+    // page with the row highlighted.
+    //
+    // Caller is responsible for skipping self-additions. We don't have the
+    // actor on this signature on purpose — the call site already knows
+    // whether `participantUserId === ctx.session.user.id` and can short-
+    // circuit before calling us, which avoids leaking actor concerns into
+    // the notification layer.
+    notifyMeetingParticipantAdded: async (params: {
+      meetingId: string
+      participantUserId: string
+    }) => {
+      const [meeting] = await db
+        .select({
+          id: meetings.id,
+          scheduledFor: meetings.scheduledFor,
+          customerName: customers.name,
+        })
+        .from(meetings)
+        .leftJoin(customers, eq(customers.id, meetings.customerId))
+        .where(eq(meetings.id, params.meetingId))
+        .limit(1)
+
+      if (!meeting) {
+        console.warn(`[notificationService] notifyMeetingParticipantAdded: meeting ${params.meetingId} not found`)
+        return
+      }
+
+      const navigate = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, meeting.scheduledFor)
+
+      const customerLabel = meeting.customerName ? ` for ${meeting.customerName}` : ''
+      const title = `You've been added to a meeting${customerLabel}`
+      const body = meeting.scheduledFor
+        ? new Date(meeting.scheduledFor).toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: 'America/Los_Angeles',
+          })
+        : 'Tap to view'
+
+      const result = await sendPushToUser(params.participantUserId, {
+        title,
+        body,
+        navigate,
+        urgency: 'high',
+      })
+
+      if (result.failed > 0 || result.errors.length > 0) {
+        console.warn(`[notificationService] notifyMeetingParticipantAdded partial failure:`, result)
       }
     },
   }
