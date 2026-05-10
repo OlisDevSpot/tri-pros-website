@@ -32,12 +32,37 @@ export function ScheduleWeekView({
   const gridMinWidth = colCount * DAY_MIN_WIDTH_PX
   const scrollRef = useRef<HTMLDivElement>(null)
   const todayColRef = useRef<HTMLDivElement>(null)
+  const mondayColRef = useRef<HTMLDivElement>(null)
+  const fridayColRef = useRef<HTMLDivElement>(null)
+  const prevDateRef = useRef<Date | null>(null)
 
-  // Scroll today's column into view when currentDate lands on today
+  // Snap the horizontal viewport on week navigation for continuity:
+  // - Today landing in the week wins (covers initial mount + "Today" button)
+  // - Forward (next week)  → align Monday at the start of the viewport
+  // - Backward (prev week) → align Friday at the end of the viewport
   useEffect(() => {
-    if (todayColRef.current && scrollRef.current) {
+    const prev = prevDateRef.current
+    prevDateRef.current = currentDate
+
+    if (todayColRef.current) {
       todayColRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+      return
     }
+
+    if (!prev) {
+      return
+    }
+
+    const direction = currentDate.getTime() > prev.getTime() ? 'forward' : 'backward'
+    const target = direction === 'forward' ? mondayColRef.current : fridayColRef.current
+    if (!target) {
+      return
+    }
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: direction === 'forward' ? 'start' : 'end',
+    })
   }, [currentDate])
 
   return (
@@ -84,10 +109,19 @@ export function ScheduleWeekView({
               (a, b) => parseISO(a.startAt).getTime() - parseISO(b.startAt).getTime(),
             )
 
+            const dow = day.getDay()
+            const colRef = isToday(day)
+              ? todayColRef
+              : dow === 1
+                ? mondayColRef
+                : dow === 5
+                  ? fridayColRef
+                  : undefined
+
             return (
               <div
                 key={day.toISOString()}
-                ref={isToday(day) ? todayColRef : undefined}
+                ref={colRef}
                 className={cn(
                   'flex flex-col gap-1.5 overflow-y-auto border-r p-1.5 last:border-r-0',
                   isToday(day) && 'bg-primary/5',
