@@ -1,7 +1,8 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
+import type { SQL } from 'drizzle-orm'
 import type { Customer } from '@/shared/db/schema/customers'
 import type { Contact } from '@/shared/services/notion/lib/contacts/schema'
-import { eq, getTableColumns, inArray } from 'drizzle-orm'
+import { and, eq, getTableColumns, inArray } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
@@ -10,14 +11,26 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/notion/lib/contacts/adapter'
+import { userCanSeeCustomer } from './visibility'
 
 export type { Customer }
 
 export type CustomerWithPhoneGate = Customer & { hasSentProposal: boolean }
 
-/** Viewer context for phone-gating decisions in the customers DAL. */
+// Viewer context for the customers DAL. Carries both:
+//   - userId:        for agent-scoped row visibility (via userCanSeeCustomer)
+//   - isSuperAdmin:  bypasses scoping AND ungates the phone column
+// Every customers read must pass a viewer; non-omni viewers can only see
+// customers they participate in via the meetings/meeting_participants bridge.
 export interface CustomersViewer {
+  userId: string
   isSuperAdmin: boolean
+}
+
+function customerVisibilityWhere(viewer: CustomersViewer): SQL | undefined {
+  return viewer.isSuperAdmin
+    ? undefined
+    : userCanSeeCustomer(viewer.userId, customers.id)
 }
 
 function customerSelectWithGate(viewer: CustomersViewer) {
@@ -152,12 +165,15 @@ export async function getCustomer(customerId: string, viewer: CustomersViewer): 
   const [customer] = await db
     .select(customerSelectWithGate(viewer))
     .from(customers)
-    .where(eq(customers.id, customerId))
+    .where(and(eq(customers.id, customerId), customerVisibilityWhere(viewer)))
   return customer
 }
 
 export async function getCustomers(viewer: CustomersViewer): Promise<CustomerWithPhoneGate[]> {
-  return db.select(customerSelectWithGate(viewer)).from(customers)
+  return db
+    .select(customerSelectWithGate(viewer))
+    .from(customers)
+    .where(customerVisibilityWhere(viewer))
 }
 
 // ── Hard delete ───────────────────────────────────────────────────────────────

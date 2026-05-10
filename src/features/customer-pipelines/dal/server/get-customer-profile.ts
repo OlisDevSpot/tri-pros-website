@@ -2,8 +2,9 @@ import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProjec
 import type { CustomersViewer } from '@/shared/dal/server/customers/api'
 
 import { TRPCError } from '@trpc/server'
-import { count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
+import { userCanSeeCustomer } from '@/shared/dal/server/customers/visibility'
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
@@ -24,7 +25,10 @@ export async function getCustomerProfile(customerId: string, viewer: CustomersVi
       hasSentProposal: hasSentProposalSql(),
     })
     .from(customers)
-    .where(eq(customers.id, customerId))
+    .where(and(
+      eq(customers.id, customerId),
+      viewer.isSuperAdmin ? undefined : userCanSeeCustomer(viewer.userId, customers.id),
+    ))
 
   if (!customer) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })

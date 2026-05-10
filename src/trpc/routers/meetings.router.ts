@@ -341,7 +341,10 @@ export const meetingsRouter = createTRPCRouter({
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
         .leftJoin(user, eq(user.id, meetings.ownerId))
-        .where(eq(meetings.id, input.id))
+        .where(and(
+          eq(meetings.id, input.id),
+          isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id),
+        ))
 
       if (!row) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
@@ -729,7 +732,8 @@ export const meetingsRouter = createTRPCRouter({
   // Build a customer persona profile by joining customer/meeting JSONB with Notion pain points
   getPersonaProfile: agentProcedure
     .input(z.object({ meetingId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
       const [row] = await db
         .select({
           ...getTableColumns(meetings),
@@ -737,7 +741,10 @@ export const meetingsRouter = createTRPCRouter({
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
-        .where(eq(meetings.id, input.meetingId))
+        .where(and(
+          eq(meetings.id, input.meetingId),
+          isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id),
+        ))
 
       if (!row) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Meeting not found' })
@@ -759,12 +766,16 @@ export const meetingsRouter = createTRPCRouter({
   // Get projects belonging to a meeting's customer (for "assign to project" dialog)
   getCustomerProjects: agentProcedure
     .input(z.object({ meetingId: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
       // Find the customer for this meeting, then get their projects
       const [meeting] = await db
         .select({ customerId: meetings.customerId })
         .from(meetings)
-        .where(eq(meetings.id, input.meetingId))
+        .where(and(
+          eq(meetings.id, input.meetingId),
+          isOmni ? undefined : userParticipatesInMeeting(ctx.session.user.id, meetings.id),
+        ))
 
       if (!meeting?.customerId) {
         return { projects: [], proposals: [] }

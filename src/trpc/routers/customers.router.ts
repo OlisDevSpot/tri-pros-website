@@ -7,6 +7,7 @@ import env from '@/shared/config/server-env'
 import { intakeModes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { deleteCustomer, getCustomer, getCustomers } from '@/shared/dal/server/customers/api'
+import { userCanSeeCustomer } from '@/shared/dal/server/customers/visibility'
 import { addParticipant } from '@/shared/dal/server/meetings/participants'
 import { buildFilterWhere } from '@/shared/dal/server/query/filters'
 import { paginate } from '@/shared/dal/server/query/output'
@@ -41,7 +42,7 @@ export const customersRouter = createTRPCRouter({
   getAll: agentProcedure
     .query(async ({ ctx }) => {
       const isSuperAdmin = ctx.ability.can('manage', 'all')
-      return getCustomers({ isSuperAdmin })
+      return getCustomers({ userId: ctx.session.user.id, isSuperAdmin })
     }),
 
   // Server-paginated customers list. Drives /dashboard/customers and the
@@ -54,7 +55,11 @@ export const customersRouter = createTRPCRouter({
       pipeline: z.array(z.enum(pipelines)).optional(),
       createdAt: dateRangeSchema.optional(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+      const visibilityWhere = isOmni
+        ? undefined
+        : userCanSeeCustomer(ctx.session.user.id, customers.id)
       const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
       const filterWhere = buildFilterWhere(input.filters, {
         pipeline: v => derivedPipelineWhere(v),
@@ -63,7 +68,7 @@ export const customersRouter = createTRPCRouter({
           v.to ? lte(customers.createdAt, v.to) : undefined,
         ),
       })
-      const where = and(searchWhere, filterWhere)
+      const where = and(visibilityWhere, searchWhere, filterWhere)
 
       // Pipeline is intentionally not sortable — the registry omits the
       // header click affordance because the visible value is derived,
@@ -102,7 +107,7 @@ export const customersRouter = createTRPCRouter({
     .input(z.object({ customerId: z.string().uuid() }))
     .query(async ({ input, ctx }) => {
       const isSuperAdmin = ctx.ability.can('manage', 'all')
-      return getCustomer(input.customerId, { isSuperAdmin })
+      return getCustomer(input.customerId, { userId: ctx.session.user.id, isSuperAdmin })
     }),
 
   // Search customers by name (agents) or name + phone (super-admins). Phone
@@ -115,9 +120,12 @@ export const customersRouter = createTRPCRouter({
       const q = `%${input.query}%`
       // Super-admins can also match by phone — agents cannot (they'd leak
       // which customers exist at which numbers).
-      const where = isSuperAdmin
+      const textWhere = isSuperAdmin
         ? or(ilike(customers.name, q), ilike(customers.phone, q))
         : ilike(customers.name, q)
+      const visibilityWhere = isSuperAdmin
+        ? undefined
+        : userCanSeeCustomer(ctx.session.user.id, customers.id)
       return db
         .select({
           id: customers.id,
@@ -127,7 +135,7 @@ export const customersRouter = createTRPCRouter({
           address: customers.address,
         })
         .from(customers)
-        .where(where)
+        .where(and(textWhere, visibilityWhere))
         .limit(10)
     }),
 
