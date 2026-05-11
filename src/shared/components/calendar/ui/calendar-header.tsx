@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 
 import { formatDate } from 'date-fns'
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
+import { CalendarDaysIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 import { getRangeText, navigateDate } from '@/shared/components/calendar/lib/calendar-helpers'
 import { Button } from '@/shared/components/ui/button'
@@ -14,7 +14,7 @@ interface Props {
   currentDate: Date
   activeView: CalendarViewType
   onDateChange: (date: Date) => void
-  /** Right-aligned controls (filters, view switcher, actions, etc.) */
+  /** Right-aligned controls (settings, actions, etc.) */
   rightSlot?: ReactNode
 }
 
@@ -40,8 +40,8 @@ export function CalendarHeader({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-3 py-2">
-      <div className="flex min-w-0 items-center gap-2">
+    <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         <div className="flex items-center">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrevious} aria-label="Previous">
             <ChevronLeftIcon className="h-4 w-4" />
@@ -51,8 +51,16 @@ export function CalendarHeader({
           </Button>
         </div>
 
-        <Button variant="outline" size="sm" className="h-8" onClick={handleToday}>
-          Today
+        {/* Today button: icon-only on mobile, label on >=sm */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 px-2 sm:px-3"
+          onClick={handleToday}
+          aria-label="Go to today"
+        >
+          <CalendarDaysIcon className="size-4 sm:hidden" aria-hidden />
+          <span className="hidden sm:inline">Today</span>
         </Button>
 
         {/* Desktop/tablet: inline date info */}
@@ -69,7 +77,7 @@ export function CalendarHeader({
       </div>
 
       {rightSlot && (
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {rightSlot}
         </div>
       )}

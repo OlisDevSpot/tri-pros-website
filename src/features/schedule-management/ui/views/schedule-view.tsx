@@ -2,7 +2,6 @@
 
 import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
-import type { PipelineScope } from '@/shared/domains/pipelines/ui/pipeline-scope-toggle'
 
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'motion/react'
@@ -16,22 +15,16 @@ import { ScheduleControlsBar } from '@/features/schedule-management/ui/component
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
-import { STORAGE_KEYS } from '@/shared/constants/storage-keys'
-import { getStoredPipeline } from '@/shared/domains/pipelines/hooks/pipeline-context'
-import { deriveMeetingPipeline } from '@/shared/domains/pipelines/lib/derive-meeting-pipeline'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
 import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-actions'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
-import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 import { useTRPC } from '@/trpc/helpers'
 
 export function ScheduleView() {
   const [calendarView, setCalendarView] = useState<CalendarViewType>('week')
   const [showSaturday, setShowSaturday] = useState(false)
-  const activePipeline = getStoredPipeline()
-  const [scope, setScope] = usePersistedState<PipelineScope>(STORAGE_KEYS.SCHEDULE_SCOPE, 'all')
   const [activityFormOpen, setActivityFormOpen] = useState(false)
 
   // Highlight support: when navigating from "View in Schedule" action
@@ -59,17 +52,6 @@ export function ScheduleView() {
   }))
   const activitiesData = activitiesQuery.data?.rows
   const { updateScheduledFor } = useMeetingActions()
-
-  // Scope meetings by pipeline
-  const scopedMeetings = useMemo(() => {
-    if (!meetingRows || scope === 'all') {
-      return meetingRows
-    }
-    return meetingRows.filter((m) => {
-      const derived = deriveMeetingPipeline({ projectId: m.projectId, pipeline: m.pipeline as 'fresh' | 'rehash' | 'dead' })
-      return derived === scope
-    })
-  }, [meetingRows, scope])
 
   // Map activities to calendar events for the calendar view
   const activityEvents = useMemo(
@@ -127,7 +109,7 @@ export function ScheduleView() {
     )
   }
 
-  if (!scopedMeetings) {
+  if (!meetingRows) {
     return (
       <ErrorState
         title="Error: Could not load schedule"
@@ -137,13 +119,13 @@ export function ScheduleView() {
     )
   }
 
-  const hasNoData = scopedMeetings.length === 0 && (activitiesData ?? []).length === 0
+  const hasNoData = meetingRows.length === 0 && (activitiesData ?? []).length === 0
 
   if (hasNoData) {
     return (
       <EmptyState
         title="No Schedule Items"
-        description={scope !== 'all' ? 'No items in this pipeline. Switch to \'All\' to see everything.' : 'Create a new meeting or activity to get started'}
+        description="Create a new meeting or activity to get started"
         className="bg-card"
       />
     )
@@ -159,7 +141,7 @@ export function ScheduleView() {
     >
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScheduleCalendar
-          data={scopedMeetings}
+          data={meetingRows}
           actions={meetingActions}
           additionalEvents={activityEvents}
           onAssignOwner={handleAssignOwner}
@@ -173,9 +155,6 @@ export function ScheduleView() {
           highlightRef={highlightRef}
           controlsRight={(
             <ScheduleControlsBar
-              scope={scope}
-              onScopeChange={setScope}
-              activePipeline={activePipeline}
               calendarView={calendarView}
               onCalendarViewChange={setCalendarView}
               showSaturday={showSaturday}
