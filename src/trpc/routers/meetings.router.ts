@@ -248,6 +248,18 @@ export const meetingsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id, ...rest } = input
 
+      // Capture old scheduledFor BEFORE the update so we can notify
+      // participants if it actually changed. Only worth the extra SELECT
+      // when scheduledFor is part of this update.
+      const scheduledForChangeRequested = 'scheduledFor' in rest
+      const oldScheduledFor = scheduledForChangeRequested
+        ? (await db
+            .select({ scheduledFor: meetings.scheduledFor })
+            .from(meetings)
+            .where(eq(meetings.id, id))
+            .limit(1))[0]?.scheduledFor ?? null
+        : null
+
       const [updated] = await db
         .update(meetings)
         .set(rest)
@@ -276,6 +288,19 @@ export const meetingsRouter = createTRPCRouter({
         await schedulingService
           .pushToGCal(ctx.session.user.id, 'meeting', id)
           .catch(err => console.error(`[meetings.update] GCal push failed for ${id}:`, err))
+      }
+
+      // Push notify other participants when scheduledFor actually changed.
+      // Fire-and-forget so push latency never blocks the mutation response.
+      if (scheduledForChangeRequested && oldScheduledFor !== updated.scheduledFor) {
+        void notificationService
+          .notifyMeetingScheduledTimeChanged({
+            meetingId: id,
+            oldScheduledFor,
+            newScheduledFor: updated.scheduledFor,
+            excludeUserId: ctx.session.user.id,
+          })
+          .catch(err => console.warn('[push] notifyMeetingScheduledTimeChanged failed:', err))
       }
 
       // Publish realtime event for cross-device sync

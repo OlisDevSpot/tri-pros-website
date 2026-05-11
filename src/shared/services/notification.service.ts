@@ -1,14 +1,40 @@
 import type { ContractEvent } from '@/shared/constants/enums'
-import { eq } from 'drizzle-orm'
+import { and, eq, ne } from 'drizzle-orm'
 import { ROOTS } from '@/shared/config/roots'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
+import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
-import { sendPushToUser } from '@/shared/services/push/send'
+import { sendPushToUser, sendPushToUsers } from '@/shared/services/push/send'
 import { resendClient } from '@/shared/services/resend/client'
 import { RESEND_FROM } from '@/shared/services/resend/constants'
 import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-emails'
+
+// iOS lock-screen titles truncate around 30-40 chars. Front-load the event
+// type + customer identity so the truncated form still tells the user what
+// the notification is about. Format: "<EventType> | <Customer>".
+//
+// Customer label includes the street address when available because two
+// agents may have multiple meetings with similarly-named customers — the
+// address disambiguates without forcing the user to open the notification.
+function buildCustomerLabel(customer: { name: string | null, address: string | null }): string {
+  const name = customer.name ?? 'Unknown customer'
+  return customer.address ? `${name}, ${customer.address}` : name
+}
+
+const PT_DATE_FMT: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/Los_Angeles',
+}
+
+function formatScheduledTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', PT_DATE_FMT)
+}
 
 function createNotificationService() {
   return {
@@ -33,14 +59,6 @@ function createNotificationService() {
       viewedAt: string
       source: string
     }) => {
-      const [owner] = await db
-        .select({ email: user.email })
-        .from(user)
-        .where(eq(user.id, params.proposalOwnerId))
-      if (!owner?.email) {
-        return
-      }
-
       const sourceLabels: Record<string, string> = {
         email: 'Opened from email link',
         sms: 'Opened from SMS link',
@@ -48,6 +66,34 @@ function createNotificationService() {
         unknown: 'Opened directly',
       }
       const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
+
+      // Push (always sent when owner has an active subscription).
+      const pushResult = await sendPushToUser(params.proposalOwnerId, {
+        title: `Proposal Viewed | ${params.customerName}`,
+        body: `${sourceLabel} • ${formatScheduledTime(params.viewedAt)}`,
+        navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
+        urgency: 'high',
+      })
+      if (pushResult.failed > 0 || pushResult.errors.length > 0) {
+        console.warn(`[notificationService] notifyProposalViewed push partial failure:`, pushResult)
+      }
+
+      // Email — gated by a per-user preference that doesn't exist yet.
+      // Default OFF until the user-settings UI lands (GitHub issue #188).
+      // When the setting ships, replace the constant with
+      // `await getUserEmailPref(params.proposalOwnerId, 'proposalViewed')`.
+      const userOptedInToProposalViewedEmail = false
+      if (!userOptedInToProposalViewedEmail) {
+        return
+      }
+
+      const [owner] = await db
+        .select({ email: user.email })
+        .from(user)
+        .where(eq(user.id, params.proposalOwnerId))
+      if (!owner?.email) {
+        return
+      }
 
       const { error } = await resendClient.emails.send({
         from: RESEND_FROM.default,
@@ -69,15 +115,13 @@ function createNotificationService() {
 
     // Fires when an internal user is added/promoted as a participant on a
     // meeting they didn't create. Push deep-links to the same URL as the
-    // "View in Schedule" entity action (use-meeting-action-configs.tsx) so
-    // tapping the notification lands them at the meeting on the schedule
-    // page with the row highlighted.
+    // "View in Schedule" entity action so tapping the notification lands
+    // them at the meeting on the schedule page with the row highlighted.
     //
     // Caller is responsible for skipping self-additions. We don't have the
     // actor on this signature on purpose — the call site already knows
     // whether `participantUserId === ctx.session.user.id` and can short-
-    // circuit before calling us, which avoids leaking actor concerns into
-    // the notification layer.
+    // circuit before calling us.
     notifyMeetingParticipantAdded: async (params: {
       meetingId: string
       participantUserId: string
@@ -87,6 +131,7 @@ function createNotificationService() {
           id: meetings.id,
           scheduledFor: meetings.scheduledFor,
           customerName: customers.name,
+          customerAddress: customers.address,
         })
         .from(meetings)
         .leftJoin(customers, eq(customers.id, meetings.customerId))
@@ -99,19 +144,8 @@ function createNotificationService() {
       }
 
       const navigate = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, meeting.scheduledFor)
-
-      const customerLabel = meeting.customerName ? ` for ${meeting.customerName}` : ''
-      const title = `You've been added to a meeting${customerLabel}`
-      const body = meeting.scheduledFor
-        ? new Date(meeting.scheduledFor).toLocaleString('en-US', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZone: 'America/Los_Angeles',
-          })
-        : 'Tap to view'
+      const title = `New Meeting | ${buildCustomerLabel({ name: meeting.customerName, address: meeting.customerAddress })}`
+      const body = meeting.scheduledFor ? formatScheduledTime(meeting.scheduledFor) : 'Tap to view'
 
       const result = await sendPushToUser(params.participantUserId, {
         title,
@@ -122,6 +156,82 @@ function createNotificationService() {
 
       if (result.failed > 0 || result.errors.length > 0) {
         console.warn(`[notificationService] notifyMeetingParticipantAdded partial failure:`, result)
+      }
+    },
+
+    // Fires when a meeting's scheduledFor is changed (rescheduled, newly
+    // scheduled, or unscheduled). Sent to every participant EXCEPT the
+    // actor — so if the owner moves their own meeting, the co-owner gets
+    // pinged but the owner does not. Skip is enforced inside this function
+    // (vs at the call site like the participant-added path) because the
+    // recipients are derived here and the actor is the only signal the
+    // caller has to suppress.
+    notifyMeetingScheduledTimeChanged: async (params: {
+      meetingId: string
+      newScheduledFor: string | null
+      oldScheduledFor: string | null
+      excludeUserId: string
+    }) => {
+      const [meeting] = await db
+        .select({
+          id: meetings.id,
+          customerName: customers.name,
+          customerAddress: customers.address,
+        })
+        .from(meetings)
+        .leftJoin(customers, eq(customers.id, meetings.customerId))
+        .where(eq(meetings.id, params.meetingId))
+        .limit(1)
+
+      if (!meeting) {
+        console.warn(`[notificationService] notifyMeetingScheduledTimeChanged: meeting ${params.meetingId} not found`)
+        return
+      }
+
+      const recipients = await db
+        .select({ userId: meetingParticipants.userId })
+        .from(meetingParticipants)
+        .where(and(
+          eq(meetingParticipants.meetingId, params.meetingId),
+          ne(meetingParticipants.userId, params.excludeUserId),
+        ))
+
+      if (recipients.length === 0) {
+        return
+      }
+
+      const navigate = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, params.newScheduledFor)
+      const customerLabel = buildCustomerLabel({ name: meeting.customerName, address: meeting.customerAddress })
+
+      // Body shape depends on the kind of change:
+      //   set → set : "Mon May 12 2:30 PM → Tue May 13 3:00 PM"
+      //   null → set: "Now Tue May 13 3:00 PM"
+      //   set → null: "No longer scheduled"
+      let body: string
+      if (params.newScheduledFor && params.oldScheduledFor) {
+        body = `${formatScheduledTime(params.oldScheduledFor)} → ${formatScheduledTime(params.newScheduledFor)}`
+      }
+      else if (params.newScheduledFor) {
+        body = `Now ${formatScheduledTime(params.newScheduledFor)}`
+      }
+      else {
+        body = 'No longer scheduled'
+      }
+
+      const title = `Time Changed | ${customerLabel}`
+
+      const result = await sendPushToUsers(
+        recipients.map(r => r.userId),
+        {
+          title,
+          body,
+          navigate,
+          urgency: 'high',
+        },
+      )
+
+      if (result.failed > 0 || result.errors.length > 0) {
+        console.warn(`[notificationService] notifyMeetingScheduledTimeChanged partial failure:`, result)
       }
     },
   }
