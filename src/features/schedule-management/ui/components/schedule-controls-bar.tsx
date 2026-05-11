@@ -35,8 +35,9 @@ export function ScheduleControlsBar({
   onToggleSaturday,
   onNewActivity,
 }: ScheduleControlsBarProps) {
-  // Count non-default filter values so users see at-a-glance state
-  const activeFilterCount = (showSaturday ? 1 : 0)
+  // Count non-default filter values so users see at-a-glance state.
+  // Default is "Saturday visible" — toggling it OFF is the non-default state.
+  const activeFilterCount = (showSaturday ? 0 : 1)
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">

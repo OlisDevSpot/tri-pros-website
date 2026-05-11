@@ -48,3 +48,6 @@ next-env.d.ts
 # Git worktrees
 .worktrees/
 .superpowers/
+
+# Local MCP overrides (holds project-scoped API tokens — never commit)
+.mcp.local.json
