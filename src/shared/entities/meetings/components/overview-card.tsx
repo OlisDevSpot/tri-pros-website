@@ -133,6 +133,19 @@ function MeetingOverviewCardRoot({
     // its own click handler (e.g. customer-kanban-card opens the customer
     // profile modal). The meeting card owns its own "View Meeting" click.
     e.stopPropagation()
+
+    // Reject clicks that originate inside a portaled descendant (Radix Dialog,
+    // Popover, etc.). React synthetic events bubble through the React tree
+    // regardless of DOM placement, so a click inside `<ParticipantsSlot>`'s
+    // own ManageParticipantsModal — rendered as a child of this card — would
+    // otherwise bubble here and open the customer profile on every participant
+    // add/remove. The DOM `contains` check is the source of truth: portaled
+    // content lives elsewhere in the DOM, so it fails this check.
+    const target = e.target as Node | null
+    if (target && !e.currentTarget.contains(target)) {
+      return
+    }
+
     openProfile()
   }, [openProfile])
 
