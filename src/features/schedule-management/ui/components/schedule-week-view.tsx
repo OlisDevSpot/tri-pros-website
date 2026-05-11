@@ -32,13 +32,13 @@ export function ScheduleWeekView({
   const gridMinWidth = colCount * DAY_MIN_WIDTH_PX
   const scrollRef = useRef<HTMLDivElement>(null)
   const todayColRef = useRef<HTMLDivElement>(null)
-  const mondayColRef = useRef<HTMLDivElement>(null)
+  const sundayColRef = useRef<HTMLDivElement>(null)
   const fridayColRef = useRef<HTMLDivElement>(null)
   const prevDateRef = useRef<Date | null>(null)
 
   // Snap the horizontal viewport on week navigation for continuity:
   // - Today landing in the week wins (covers initial mount + "Today" button)
-  // - Forward (next week)  → align Monday at the start of the viewport
+  // - Forward (next week)  → align Sunday at the start of the viewport
   // - Backward (prev week) → align Friday at the end of the viewport
   useEffect(() => {
     const prev = prevDateRef.current
@@ -54,7 +54,7 @@ export function ScheduleWeekView({
     }
 
     const direction = currentDate.getTime() > prev.getTime() ? 'forward' : 'backward'
-    const target = direction === 'forward' ? mondayColRef.current : fridayColRef.current
+    const target = direction === 'forward' ? sundayColRef.current : fridayColRef.current
     if (!target) {
       return
     }
@@ -112,8 +112,8 @@ export function ScheduleWeekView({
             const dow = day.getDay()
             const colRef = isToday(day)
               ? todayColRef
-              : dow === 1
-                ? mondayColRef
+              : dow === 0
+                ? sundayColRef
                 : dow === 5
                   ? fridayColRef
                   : undefined
