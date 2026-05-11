@@ -29,7 +29,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 export function ScheduleView() {
   const [calendarView, setCalendarView] = useState<CalendarViewType>('week')
-  const [showSaturday, setShowSaturday] = useState(true)
+  const [showSaturday, setShowSaturday] = useState(false)
   const activePipeline = getStoredPipeline()
   const [scope, setScope] = usePersistedState<PipelineScope>(STORAGE_KEYS.SCHEDULE_SCOPE, 'all')
   const [activityFormOpen, setActivityFormOpen] = useState(false)
