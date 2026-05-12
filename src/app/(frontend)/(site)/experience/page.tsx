@@ -2,15 +2,11 @@ import type { Metadata } from 'next'
 import { ExperienceView } from '@/features/landing/ui/views/experience-view'
 
 export const metadata: Metadata = {
-  title: 'Experience',
+  title: 'The Tri Pros Experience',
   description:
-    'Experience Tri Pros Remodeling - Your Trusted Luxury Construction Partner for Over 25 Years',
+    'White-glove residential construction in Southern California. A dedicated project lead, fixed-price contracts, and transparent communication on every build.',
 }
 
 export default function ExperiencePage() {
-  return (
-    <main className="min-h-screen pb-20">
-      <ExperienceView />
-    </main>
-  )
+  return <ExperienceView />
 }
