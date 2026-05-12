@@ -35,12 +35,17 @@ export function FounderStory({
           flipOrder && 'lg:order-2',
         )}
       >
+        {/*
+          object-top anchors the crop to the upper edge so the face stays in
+          view regardless of source aspect ratio — works for today's tall
+          portraits and tomorrow's square / wider headshots without code changes.
+        */}
         <Image
           src={founderImgSrc}
           alt={`${founderName} — founder portrait`}
           fill
           sizes="(min-width: 1024px) 50vw, 100vw"
-          className="object-cover grayscale-[35%] motion-safe:transition-all motion-safe:duration-700 group-hover:grayscale-0 motion-safe:group-hover:scale-[1.02]"
+          className="object-cover object-top grayscale-35 motion-safe:transition-all motion-safe:duration-700 group-hover:grayscale-0 motion-safe:group-hover:scale-[1.02]"
         />
         {/* Soft top-to-bottom gradient so the name plate is readable on any image */}
         <div className="absolute inset-0 bg-linear-to-t from-background/85 via-background/10 to-transparent" aria-hidden />
