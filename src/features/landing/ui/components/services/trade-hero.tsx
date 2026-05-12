@@ -59,7 +59,7 @@ export function TradeHero({
       <div className="absolute inset-0 bg-background/45" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.1)_0%,rgba(0,0,0,0.5)_100%)]" />
 
-      <div className="relative z-10 container pb-16 pt-[calc(var(--navbar-height)+32px)] text-center text-foreground">
+      <div className="relative z-10 container pb-16 pt-[calc(var(--navbar-bottom,var(--navbar-height,80px))+32px)] text-center text-foreground">
         {/* Breadcrumb */}
         <motion.nav
           aria-label="Breadcrumb"
