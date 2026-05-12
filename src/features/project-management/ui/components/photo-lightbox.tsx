@@ -69,10 +69,10 @@ export function PhotoLightbox({ photos, currentIndex, onClose, onNavigate }: Pro
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-60 flex flex-col bg-background/95"
       >
-        {/* Top bar — pushed below navbar on mobile */}
+        {/* Top bar — pushed below navbar on mobile, picks up safe-area-inset-top in PWA via --navbar-bottom */}
         <div
           className="flex shrink-0 items-center justify-between px-4 py-3"
-          style={{ paddingTop: 'calc(var(--navbar-height, 80px) + 12px)' }}
+          style={{ paddingTop: 'calc(var(--navbar-bottom, var(--navbar-height, 80px)) + 12px)' }}
         >
           <span className="text-sm text-foreground/60">
             {currentIndex + 1}

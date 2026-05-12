@@ -64,7 +64,7 @@ export function ExperienceHero() {
           variants={STAGGER_CONTAINER}
           initial="hidden"
           animate="visible"
-          className="w-full lg:w-[45%] flex flex-col items-center text-center lg:items-start lg:text-left space-y-7 lg:space-y-10 py-24 lg:py-0"
+          className="w-full lg:w-[45%] flex flex-col items-center text-center lg:items-start lg:text-left space-y-7 lg:space-y-10 pt-[calc(var(--navbar-bottom,var(--navbar-height,80px))+16px)] pb-24 lg:py-0"
         >
           <motion.div variants={STAGGER_CHILD}>
             <EditorialEyebrow>The Tri Pros Experience</EditorialEyebrow>

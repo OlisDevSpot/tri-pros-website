@@ -72,7 +72,14 @@ function SheetContent({
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
+        {/*
+          Containing block for `position:absolute` is the SheetContent's
+          padding-box edge — which sits BEHIND `safe-area-inset-top` in iOS
+          PWA. So a plain `top-4` lands the X under the status bar/notch.
+          `top-[max(1rem,env(safe-area-inset-top))]` keeps the 16px gap in
+          regular browsers and lifts the X past the inset in PWA.
+        */}
+        <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-[max(1rem,env(safe-area-inset-top))] right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none">
           <XIcon className="size-4" />
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>
