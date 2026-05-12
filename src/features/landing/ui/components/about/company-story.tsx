@@ -33,6 +33,17 @@ export function CompanyStory() {
           founderName="Sean Phil"
           founderImgSrc="/company/employees/sean-headshot.jpeg"
           isInView={isInView}
+          Quote={() => (
+            <div className="bg-card rounded-lg p-6 border border-border/40 border-l-4 border-l-secondary shadow-md">
+              <blockquote className="font-script text-xl text-foreground italic">
+                &ldquo;We don&apos;t just build structures; we craft legacies
+                that families will cherish for generations.&rdquo;
+              </blockquote>
+              <cite className="text-sm text-foreground/80 mt-2 block">
+                — Sean Phil, Founder
+              </cite>
+            </div>
+          )}
         >
           <div className="space-y-4">
             <p className="text-primary">
@@ -50,33 +61,6 @@ export function CompanyStory() {
               That’s the foundation behind Tri Pros Remodeling. Different uniform, different mission — but the same commitment to showing up, doing the job right, and taking care of people every step of the way.
             </p>
           </div>
-        </FounderStory>
-        <FounderStory
-          founderName='Ophir "Oliver" Porat'
-          flipOrder
-          founderImgSrc="/company/employees/ophir-full-body.jpg"
-          isInView={isInView}
-          Quote={() => (
-            <div className="bg-card rounded-lg p-6 border border-border/40 border-l-4 border-l-secondary shadow-md">
-              <blockquote className="font-script text-xl text-foreground italic">
-                &ldquo;We don&apos;t just build structures; we craft legacies
-                that families will cherish for generations.&rdquo;
-              </blockquote>
-              <cite className="text-sm text-foreground/80 mt-2 block">
-                — Oliver Porat, Founder
-              </cite>
-            </div>
-          )}
-        >
-          <p>
-            My name is Ophir, but most people know me as Oliver. From an early age I grew up with construction all around me. My dad was a contractor and a fearless home-DIYer, the kind of person who couldn’t walk past a wall without wondering how to improve it. I spent my childhood watching him turn sketches into structures, problems into plans, and raw materials into something that felt solid and meaningful.
-          </p>
-          <p>
-            Once I was old enough to pick up real tools, I was hooked. Seeing what could be created with today’s materials and technology pulled me in completely. I realized this wasn’t just a hobby or a family habit—it was a craft worth dedicating myself to.
-          </p>
-          <p>
-            Those early lessons shaped everything I do now. At Tri Pros Remodeling, I carry that same respect for the work forward, aiming for results that are honest, durable, and thoughtfully built. I’m not here to impress with flash—I’m here to deliver work you can rely on for years to come.
-          </p>
         </FounderStory>
 
         {/* Mission Statement */}

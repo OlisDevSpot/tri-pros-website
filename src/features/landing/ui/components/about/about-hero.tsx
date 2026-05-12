@@ -49,10 +49,10 @@ export function AboutHero() {
                 {' '}
                 {companyInfo.yearFounded}
                 {' '}
-                by childhood friends Sean Phil & Ophir "Oliver" Porat, our company has
-                been built on a foundation of unwavering commitment to quality,
-                innovation, and client satisfaction. Today, we are focused on bringing
-                innovative additions to the construction industry.
+                by Sean Phil, our company has been built on a foundation of
+                unwavering commitment to quality, innovation, and client
+                satisfaction. Today, we are focused on bringing innovative
+                additions to the construction industry.
               </motion.p>
 
               <motion.div

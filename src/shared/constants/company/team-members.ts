@@ -1,20 +1,8 @@
 export const teamMembers = [
   {
-    name: 'Oliver Porat',
-    position: 'Co-Founder',
-    bio: 'Master craftsman with over 35 years of experience. Oliver co-founded Tri Pros Remodeling along with Sean Phil with a vision to create architectural masterpieces that stand the test of time.',
-    specializations: [
-      'Luxury Construction',
-      'Project Leadership',
-      'Quality Assurance',
-    ],
-    image: '/company/employees/ophir-headshot.jpeg',
-    email: 'oliver@triprosremodeling.com',
-  },
-  {
     name: 'Sean Phil',
-    position: 'Co-Founder',
-    bio: 'Second-generation leader bringing modern innovation to traditional craftsmanship. Michael oversees all construction operations and client relationships.',
+    position: 'Founder',
+    bio: 'Founder of Tri Pros Remodeling. Sean brings discipline from his service in the Israeli Special Forces and decades of construction leadership to deliver projects that are honest, dependable, and built to last.',
     specializations: [
       'Luxury Construction',
       'Project Leadership',
@@ -65,5 +53,17 @@ export const teamMembers = [
     ],
     image: '/company-info/david-headshot.jpeg',
     email: 'tal@triprosremodeling.com',
+  },
+  {
+    name: 'Bar Abudi',
+    position: 'Sales Manager',
+    bio: 'Over a decade of experience managing construction services and projects, with deep in-home expertise guiding homeowners through every stage of their remodel.',
+    specializations: [
+      'In-Home Sales',
+      'Customer Relations',
+      'Project Consulting',
+    ],
+    image: '/company/employees/man-headshot.jpeg',
+    email: 'bar@triprosremodeling.com',
   },
 ]
