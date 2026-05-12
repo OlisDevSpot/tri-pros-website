@@ -1,25 +1,27 @@
-import { TopSpacer } from '@/shared/components/top-spacer'
-import { ViewportHero } from '@/shared/components/viewport-hero'
-import { ProcessOverview } from '../components/about/process-overview'
-import { ExperienceFeatures } from '../components/experience/features'
+import { getPublicProjects } from '@/features/landing/dal/server/projects'
+import { FeaturedProjects } from '../components/experience/featured-projects'
+import { ExperienceHero } from '../components/experience/hero'
+import { InquirySection } from '../components/experience/inquiry-section'
+import { ServicesGrid } from '../components/experience/services-grid'
+import { StatsRow } from '../components/experience/stats-row'
+import { StudioStory } from '../components/experience/studio-story'
+import { Voices } from '../components/experience/voices'
 
-export function ExperienceView() {
+export async function ExperienceView() {
+  const projects = await getPublicProjects()
+  const featuredProjects = projects.slice(0, 3)
+
   return (
-    <main className="min-h-screen container">
-      <ViewportHero>
-        <TopSpacer>
-          <div className="flex flex-col lg:flex-row gap-12 items-start lg:items-center h-full">
-            <h1 className="text-4xl lg:text-7xl">
-              &ldquo;Transparency in every step, customer-first approach, and a skilled team to bring your vision to life.&rdquo;
-            </h1>
-            <p>
-              At Tri Pros Remodeling, our background fuels the way we approach every project. We’re committed to delivering true white-glove service—personalized, attentive, and consistently high-quality. You’ll work with a dedicated representative who oversees each step, making the entire experience smooth, clear, and free of stress.
-            </p>
-          </div>
-        </TopSpacer>
-      </ViewportHero>
-      <ExperienceFeatures />
-      <ProcessOverview />
-    </main>
+    <>
+      <ExperienceHero />
+      {featuredProjects.length > 0
+        ? <FeaturedProjects projects={featuredProjects} />
+        : null}
+      <StudioStory />
+      <Voices />
+      <StatsRow />
+      <ServicesGrid />
+      <InquirySection />
+    </>
   )
 }
