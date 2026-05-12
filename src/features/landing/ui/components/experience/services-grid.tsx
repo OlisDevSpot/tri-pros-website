@@ -14,7 +14,7 @@ export function ServicesGrid() {
   return (
     <section ref={ref} className="py-20 lg:py-32">
       <div className="container">
-        <SectionHeading eyebrow="Our Services">
+        <SectionHeading eyebrow="Our Services" chapter="04">
           Four disciplines, one
           {' '}
           <em className="italic text-primary">standard</em>

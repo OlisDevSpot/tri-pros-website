@@ -8,6 +8,7 @@ import { useRef } from 'react'
 import { SECTION_ENTRANCE, STAGGER_CHILD, STAGGER_CONTAINER, VIEWPORT_MARGIN } from '@/features/landing/constants/experience-motion'
 import { ROOTS } from '@/shared/config/roots'
 import { teamInfo } from '@/shared/constants/company/team-info'
+import { DrawnUnderline } from './drawn-underline'
 import { EditorialEyebrow } from './editorial-eyebrow'
 
 export function StudioStory() {
@@ -26,14 +27,21 @@ export function StudioStory() {
             animate={isInView ? 'visible' : 'hidden'}
             className="lg:col-span-5 lg:col-start-1 order-first"
           >
-            <div className="relative aspect-[4/5] w-full max-w-md lg:max-w-none mx-auto overflow-hidden">
+            <div className="relative aspect-[4/5] w-full max-w-sm mx-auto lg:max-w-none overflow-hidden">
               <Image
                 src={`/${founder.image}`}
                 alt={`${founder.name}, Co-founder of Tri Pros Remodeling`}
                 fill
                 sizes="(max-width: 1024px) 100vw, 40vw"
-                className="object-cover grayscale-[0.15]"
+                className="object-cover grayscale-[0.2] contrast-[1.05]"
               />
+              {/* Vertical rotated brand label */}
+              <span
+                aria-hidden
+                className="hidden lg:block absolute -right-12 top-1/2 -translate-y-1/2 rotate-90 origin-center font-serif italic text-sm tracking-[0.5em] uppercase text-muted-foreground/50 whitespace-nowrap"
+              >
+                Co-founder · Oliver Porat
+              </span>
             </div>
           </motion.div>
 
@@ -41,10 +49,10 @@ export function StudioStory() {
             variants={STAGGER_CONTAINER}
             initial="hidden"
             animate={isInView ? 'visible' : 'hidden'}
-            className="lg:col-span-6 lg:col-start-7 space-y-7"
+            className="lg:col-span-6 lg:col-start-7 flex flex-col items-center text-center space-y-7 lg:items-start lg:text-left"
           >
             <motion.div variants={STAGGER_CHILD}>
-              <EditorialEyebrow>Our Studio</EditorialEyebrow>
+              <EditorialEyebrow chapter="02">Our Studio</EditorialEyebrow>
             </motion.div>
 
             <motion.h2
@@ -77,7 +85,7 @@ export function StudioStory() {
                 href={ROOTS.landing.about()}
                 className="group inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
               >
-                Learn More About Our Studio
+                <DrawnUnderline>Learn More About Our Studio</DrawnUnderline>
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </motion.div>

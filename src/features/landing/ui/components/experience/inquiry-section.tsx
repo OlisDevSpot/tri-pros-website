@@ -19,9 +19,9 @@ export function InquirySection() {
           variants={SECTION_ENTRANCE}
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
-          className="text-center mb-12 lg:mb-16 space-y-5 flex flex-col items-center"
+          className="mb-12 lg:mb-16 space-y-5 flex flex-col items-center text-center"
         >
-          <EditorialEyebrow>Start the Conversation</EditorialEyebrow>
+          <EditorialEyebrow chapter="05">Start the Conversation</EditorialEyebrow>
           <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.01em] text-foreground max-w-3xl">
             Let&apos;s build something
             {' '}
@@ -63,7 +63,7 @@ export function InquirySection() {
                     target="_blank"
                     rel="noreferrer"
                     aria-label={`Tri Pros on ${s.name}`}
-                    className="text-muted-foreground hover:text-primary transition-colors"
+                    className="text-muted-foreground hover:text-primary transition-colors hover:-translate-y-0.5 duration-300 inline-flex"
                   >
                     <Icon className="size-5" />
                   </a>

@@ -5,6 +5,7 @@ import { useRef } from 'react'
 import { SECTION_ENTRANCE, VIEWPORT_MARGIN } from '@/features/landing/constants/experience-motion'
 import { stats } from '@/shared/constants/company/stats'
 import { AccreditationsStrip } from './accreditations-strip'
+import { CountUpStat } from './count-up-stat'
 import { EditorialEyebrow } from './editorial-eyebrow'
 
 export function StatsRow() {
@@ -19,16 +20,17 @@ export function StatsRow() {
           initial="hidden"
           animate={isInView ? 'visible' : 'hidden'}
         >
-          <div className="text-center mb-12 lg:mb-16 flex justify-center">
-            <EditorialEyebrow>Trusted. Insured. Accredited.</EditorialEyebrow>
+          <div className="mb-12 lg:mb-16 flex justify-center">
+            <EditorialEyebrow chapter="03">Trusted. Insured. Accredited.</EditorialEyebrow>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-foreground/10 border-y border-foreground/10">
             {stats.map(stat => (
               <div key={stat.label} className="px-4 py-10 lg:py-12 text-center">
-                <div className="font-serif text-5xl lg:text-7xl leading-none text-foreground mb-3 tracking-[-0.02em]">
-                  {stat.number}
-                </div>
+                <CountUpStat
+                  value={stat.number}
+                  className="block font-serif text-5xl lg:text-7xl leading-none text-foreground mb-3 tracking-[-0.02em] tabular-nums"
+                />
                 <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
                   {stat.label}
                 </div>
