@@ -62,4 +62,20 @@ export const DRAW_X: Variants = {
   },
 }
 
+export const SLIDE_CONTENT_STAGGER: Variants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.06 },
+  },
+}
+
+export const SLIDE_CONTENT_CHILD: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.25, 0.1, 0.25, 1] },
+  },
+}
+
 export const VIEWPORT_MARGIN = '-80px'

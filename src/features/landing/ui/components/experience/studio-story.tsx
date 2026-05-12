@@ -2,10 +2,10 @@
 
 import { ArrowRight } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import { SECTION_ENTRANCE, STAGGER_CHILD, STAGGER_CONTAINER, VIEWPORT_MARGIN } from '@/features/landing/constants/experience-motion'
+import { STAGGER_CHILD, STAGGER_CONTAINER, VIEWPORT_MARGIN } from '@/features/landing/constants/experience-motion'
+import { FounderStory } from '@/features/landing/ui/components/about/founder-story'
 import { ROOTS } from '@/shared/config/roots'
 import { teamInfo } from '@/shared/constants/company/team-info'
 import { DrawnUnderline } from './drawn-underline'
@@ -19,79 +19,74 @@ export function StudioStory() {
   return (
     <section ref={ref} className="py-20 lg:py-32">
       <div className="container">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 xl:gap-24 items-center">
-
-          <motion.div
-            variants={SECTION_ENTRANCE}
-            initial="hidden"
-            animate={isInView ? 'visible' : 'hidden'}
-            className="lg:col-span-5 lg:col-start-1 order-first"
-          >
-            <div className="relative aspect-[4/5] w-full max-w-sm mx-auto lg:max-w-none overflow-hidden">
-              <Image
-                src={`/${founder.image}`}
-                alt={`${founder.name}, Co-founder of Tri Pros Remodeling`}
-                fill
-                sizes="(max-width: 1024px) 100vw, 40vw"
-                className="object-cover grayscale-[0.2] contrast-[1.05]"
-              />
-              {/* Vertical rotated brand label */}
-              <span
-                aria-hidden
-                className="hidden lg:block absolute -right-12 top-1/2 -translate-y-1/2 rotate-90 origin-center font-serif italic text-sm tracking-[0.5em] uppercase text-muted-foreground/50 whitespace-nowrap"
-              >
-                Co-founder · Oliver Porat
-              </span>
-            </div>
+        <motion.div
+          variants={STAGGER_CONTAINER}
+          initial="hidden"
+          animate={isInView ? 'visible' : 'hidden'}
+          className="flex flex-col items-center text-center lg:items-start lg:text-left mb-12 lg:mb-16"
+        >
+          <motion.div variants={STAGGER_CHILD}>
+            <EditorialEyebrow chapter="02">Our Studio</EditorialEyebrow>
           </motion.div>
 
-          <motion.div
-            variants={STAGGER_CONTAINER}
-            initial="hidden"
-            animate={isInView ? 'visible' : 'hidden'}
-            className="lg:col-span-6 lg:col-start-7 flex flex-col items-center text-center space-y-7 lg:items-start lg:text-left"
+          <motion.h2
+            variants={STAGGER_CHILD}
+            className="mt-5 font-serif text-3xl sm:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.01em] text-foreground"
           >
-            <motion.div variants={STAGGER_CHILD}>
-              <EditorialEyebrow chapter="02">Our Studio</EditorialEyebrow>
-            </motion.div>
+            Built by people who treat your home like
+            {' '}
+            <em className="italic text-primary">their own</em>
+            .
+          </motion.h2>
+        </motion.div>
 
-            <motion.h2
-              variants={STAGGER_CHILD}
-              className="font-serif text-3xl sm:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.01em] text-foreground"
-            >
-              Built by people who treat your home like
-              {' '}
-              <em className="italic text-primary">their own</em>
-              .
-            </motion.h2>
-
-            <motion.div
-              variants={STAGGER_CHILD}
-              className="space-y-5 text-base lg:text-lg leading-[1.75] text-muted-foreground max-w-[58ch]"
-            >
-              <p>
-                Tri Pros was founded by Oliver Porat and Sean Phil — two licensed contractors with over twenty years of construction experience between them, and a shared belief that the industry needed to grow up.
-              </p>
-              <p>
-                Today our
+        <FounderStory
+          founderName={founder.name}
+          founderImgSrc={`/${founder.image}`}
+          isInView={isInView}
+          mobileTextFirst
+          Quote={() => (
+            <figure className="relative pl-6 border-l-2 border-primary/40">
+              <blockquote className="font-serif italic text-lg sm:text-xl text-foreground/90 leading-snug">
+                &ldquo;We don&apos;t just build structures; we craft legacies
+                that families will cherish for generations.&rdquo;
+              </blockquote>
+              <figcaption className="text-sm text-muted-foreground mt-3">
+                —
                 {' '}
-                {teamInfo.numEmployees}
-                -person team carries that same standard into every project: NARI-certified craftsmanship, BPI-trained efficiency, and a level of communication you&apos;d expect from a concierge — not a contractor.
-              </p>
-            </motion.div>
+                {founder.name}
+                , Founder
+              </figcaption>
+            </figure>
+          )}
+        >
+          <p>
+            {founder.name}
+            {' '}
+            founded Tri Pros Remodeling with a simple conviction: homeowners deserve a contractor who communicates clearly, delivers on promises, and treats every project like it&apos;s their own home.
+          </p>
+          <p>
+            Today our
+            {' '}
+            {teamInfo.numEmployees}
+            -person team carries that same standard into every project: NARI-certified craftsmanship, BPI-trained efficiency, and a level of communication you&apos;d expect from a concierge — not a contractor.
+          </p>
+        </FounderStory>
 
-            <motion.div variants={STAGGER_CHILD}>
-              <Link
-                href={ROOTS.landing.about()}
-                className="group inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
-              >
-                <DrawnUnderline>Learn More About Our Studio</DrawnUnderline>
-                <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </motion.div>
-          </motion.div>
-
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-10 flex justify-center lg:justify-start"
+        >
+          <Link
+            href={ROOTS.landing.about()}
+            className="group inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+          >
+            <DrawnUnderline>Learn More About Our Studio</DrawnUnderline>
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </motion.div>
       </div>
     </section>
   )

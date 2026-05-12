@@ -11,6 +11,8 @@ interface Props {
   founderImgSrc: string
   children: React.ReactNode
   flipOrder?: boolean
+  /** When true, text column renders before portrait on all breakpoints (mobile included). */
+  mobileTextFirst?: boolean
   isInView: boolean
   Quote?: () => React.ReactNode
 }
@@ -18,6 +20,7 @@ interface Props {
 export function FounderStory({
   founderName,
   flipOrder = false,
+  mobileTextFirst = false,
   children,
   founderImgSrc,
   isInView,
@@ -32,7 +35,7 @@ export function FounderStory({
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
           'relative h-80 sm:h-96 lg:h-full min-h-full overflow-hidden rounded-2xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 group',
-          flipOrder && 'lg:order-2',
+          mobileTextFirst ? 'order-2' : flipOrder && 'lg:order-2',
         )}
       >
         {/*
@@ -75,7 +78,7 @@ export function FounderStory({
         initial={{ opacity: 0, x: flipOrder ? -40 : 40 }}
         animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: flipOrder ? -40 : 40 }}
         transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-        className={cn('flex flex-col justify-center gap-6', flipOrder && 'lg:order-1')}
+        className={cn('flex flex-col justify-center gap-6', mobileTextFirst ? 'order-1' : flipOrder && 'lg:order-1')}
       >
         <div className="space-y-4 text-foreground/85 leading-relaxed">
           <TextWithLine text="The Founder&apos;s Vision" />
