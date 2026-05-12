@@ -1,14 +1,12 @@
 import type { PublicProject } from '@/shared/entities/projects/types'
-import { testimonials } from '@/shared/constants/company/testimonials'
 
 export interface ProjectStorySlide {
-  kind: 'project' | 'testimonial'
-  imageUrl: string | null
+  imageUrl: string
   imageAlt: string
   quote: string
   homeowner: string
   meta: string
-  href: string | null
+  href: string
 }
 
 function formatCompletedAt(iso: string | null): string {
@@ -22,49 +20,37 @@ function formatCompletedAt(iso: string | null): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
-function projectToSlide(row: PublicProject): ProjectStorySlide {
+function projectToSlide(row: PublicProject): ProjectStorySlide | null {
   const { project, heroImage } = row
+  if (!project.homeownerQuote || !heroImage?.url || !project.accessor) {
+    return null
+  }
   const location = [project.city, project.state].filter(Boolean).join(', ')
   const completed = formatCompletedAt(project.completedAt)
   const metaParts = [project.title, location, completed && `Completed ${completed}`].filter(Boolean)
 
   return {
-    kind: 'project',
-    imageUrl: heroImage?.url ?? null,
+    imageUrl: heroImage.url,
     imageAlt: project.title,
-    quote: project.homeownerQuote ?? project.description ?? '',
-    homeowner: project.homeownerName ?? '',
+    quote: project.homeownerQuote,
+    homeowner: project.homeownerName ?? 'Tri Pros Homeowner',
     meta: metaParts.join(' · '),
-    href: project.accessor ? `/portfolio/projects/${project.accessor}` : null,
-  }
-}
-
-function testimonialToSlide(t: (typeof testimonials)[number]): ProjectStorySlide {
-  return {
-    kind: 'testimonial',
-    imageUrl: t.image,
-    imageAlt: `${t.name}, ${t.project}`,
-    quote: t.text,
-    homeowner: t.name,
-    meta: [t.project, t.location].filter(Boolean).join(' · '),
-    href: null,
+    href: `/portfolio/projects/${project.accessor}`,
   }
 }
 
 /**
- * Compose the Project Stories carousel slides.
+ * Build slides for the Project Stories carousel.
  *
- * Priority: real public projects with homeowner quotes first (real-world
- * images + real proof). Fills out with hardcoded testimonials so the section
- * is always populated. Capped at 8 slides total.
+ * STRICT: real DB projects only. Each project must have a hero image, a
+ * homeowner quote, and an accessor (URL slug). If no projects meet those
+ * conditions, the carousel section is hidden entirely — we do not fall back
+ * to fake/seeded testimonial data. Sorted newest-first by completedAt.
  */
 export function buildProjectStorySlides(projects: PublicProject[]): ProjectStorySlide[] {
-  const projectSlides = projects
-    .filter(row => row.project.homeownerQuote && row.heroImage?.url)
+  return projects
     .sort((a, b) => (b.project.completedAt ?? '').localeCompare(a.project.completedAt ?? ''))
     .map(projectToSlide)
-
-  const testimonialSlides = testimonials.map(testimonialToSlide)
-
-  return [...projectSlides, ...testimonialSlides].slice(0, 8)
+    .filter((slide): slide is ProjectStorySlide => slide !== null)
+    .slice(0, 8)
 }
