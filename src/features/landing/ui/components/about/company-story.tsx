@@ -1,29 +1,56 @@
 'use client'
 
+import { Compass, Gem, Target } from 'lucide-react'
 import { motion, useInView } from 'motion/react'
-
 import { useRef } from 'react'
 import { FounderStory } from './founder-story'
+
+const FADE_UP_VISIBLE = { opacity: 1, y: 0 }
+const FADE_UP_HIDDEN = { opacity: 0, y: 30 }
+const REVEAL_EASE = [0.22, 1, 0.36, 1] as const
+
+const pillars = [
+  {
+    icon: Target,
+    title: 'Vision',
+    description:
+      'To be the premier luxury construction company, setting the standard for quality and innovation in Southern California.',
+  },
+  {
+    icon: Gem,
+    title: 'Values',
+    description:
+      'Integrity, excellence, innovation, and an unwavering commitment to client satisfaction at every step.',
+  },
+  {
+    icon: Compass,
+    title: 'Purpose',
+    description:
+      'Creating lasting legacies through exceptional craftsmanship and deeply personalized service.',
+  },
+]
 
 export function CompanyStory() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <section
-      ref={ref}
-      className="py-20 lg:py-32"
-    >
-      <div className="container space-y-24">
+    <section ref={ref} className="py-20 lg:py-32">
+      <div className="container space-y-24 lg:space-y-32">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          initial={FADE_UP_HIDDEN}
+          animate={isInView ? FADE_UP_VISIBLE : FADE_UP_HIDDEN}
+          transition={{ duration: 0.7, ease: REVEAL_EASE }}
+          className="text-center max-w-4xl mx-auto"
         >
-          <h2 className=" text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
-            The Journey Behind Becoming Tri Pros Remodeling - A Story of
+          <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-secondary font-semibold mb-5">
+            <span className="h-px w-8 bg-secondary/70" aria-hidden />
+            The Journey
+            <span className="h-px w-8 bg-secondary/70" aria-hidden />
+          </span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground leading-tight">
+            How Tri Pros Remodeling Came to Be — A Story of
             {' '}
             <span className="text-secondary">Drive & Dedication</span>
           </h2>
@@ -33,118 +60,82 @@ export function CompanyStory() {
           founderName="Sean Phil"
           founderImgSrc="/company/employees/sean-headshot.jpeg"
           isInView={isInView}
-        >
-          <div className="space-y-4">
-            <p className="text-primary">
-              My name is Sean, and I learned responsibility long before construction entered my life. My time in the Israeli Special Forces taught me what it means to stay calm under pressure and to rely on the people beside you. Later, working with U.S. Marines and American veterans showed me a different kind of strength — the quiet kind that comes from honesty, grit, and following through.
-            </p>
-          </div>
-          <div className="space-y-4">
-            <p>
-              When my military career ended, I focused on building a stable life for my family. There’s nothing glamorous about raising kids and keeping a home running, but it teaches you a lot about patience, integrity, and doing what needs to be done. That’s what pushed me toward construction. It felt grounded, real, and aligned with the values I wanted to live by.
-            </p>
-            <p>
-              As I learned the trade, I saw how often families were let down by unfinished work, broken promises, and unnecessary stress. After helping my own relatives fix a nightmare remodel, it became clear to me that people deserved better. If they trusted me with their home, I owed them clear communication, dependable work, and the kind of follow-through I was raised on.
-            </p>
-            <p>
-              That’s the foundation behind Tri Pros Remodeling. Different uniform, different mission — but the same commitment to showing up, doing the job right, and taking care of people every step of the way.
-            </p>
-          </div>
-        </FounderStory>
-        <FounderStory
-          founderName='Ophir "Oliver" Porat'
-          flipOrder
-          founderImgSrc="/company/employees/ophir-full-body.jpg"
-          isInView={isInView}
           Quote={() => (
-            <div className="bg-card rounded-lg p-6 border border-border/40 border-l-4 border-l-secondary shadow-md">
-              <blockquote className="font-script text-xl text-foreground italic">
+            <figure className="relative pl-6 border-l-2 border-secondary/60">
+              <blockquote className="font-script text-xl sm:text-2xl text-foreground italic leading-snug">
                 &ldquo;We don&apos;t just build structures; we craft legacies
                 that families will cherish for generations.&rdquo;
               </blockquote>
-              <cite className="text-sm text-foreground/80 mt-2 block">
-                — Oliver Porat, Founder
-              </cite>
-            </div>
+              <figcaption className="text-sm text-muted-foreground mt-3">
+                — Sean Phil, Founder
+              </figcaption>
+            </figure>
           )}
         >
-          <p>
-            My name is Ophir, but most people know me as Oliver. From an early age I grew up with construction all around me. My dad was a contractor and a fearless home-DIYer, the kind of person who couldn’t walk past a wall without wondering how to improve it. I spent my childhood watching him turn sketches into structures, problems into plans, and raw materials into something that felt solid and meaningful.
+          <p className="text-primary">
+            My name is Sean, and I learned responsibility long before construction entered my life. My time in the Israeli Special Forces taught me what it means to stay calm under pressure and to rely on the people beside you. Later, working with U.S. Marines and American veterans showed me a different kind of strength — the quiet kind that comes from honesty, grit, and following through.
           </p>
           <p>
-            Once I was old enough to pick up real tools, I was hooked. Seeing what could be created with today’s materials and technology pulled me in completely. I realized this wasn’t just a hobby or a family habit—it was a craft worth dedicating myself to.
+            When my military career ended, I focused on building a stable life for my family. There&apos;s nothing glamorous about raising kids and keeping a home running, but it teaches you a lot about patience, integrity, and doing what needs to be done. That&apos;s what pushed me toward construction. It felt grounded, real, and aligned with the values I wanted to live by.
           </p>
           <p>
-            Those early lessons shaped everything I do now. At Tri Pros Remodeling, I carry that same respect for the work forward, aiming for results that are honest, durable, and thoughtfully built. I’m not here to impress with flash—I’m here to deliver work you can rely on for years to come.
+            As I learned the trade, I saw how often families were let down by unfinished work, broken promises, and unnecessary stress. After helping my own relatives fix a nightmare remodel, it became clear to me that people deserved better. If they trusted me with their home, I owed them clear communication, dependable work, and the kind of follow-through I was raised on.
+          </p>
+          <p>
+            That&apos;s the foundation behind Tri Pros Remodeling. Different uniform, different mission — but the same commitment to showing up, doing the job right, and taking care of people every step of the way.
           </p>
         </FounderStory>
 
-        {/* Mission Statement */}
+        {/* Mission Statement — architectural strip, no nested cards or emoji */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="bg-linear-to-br from-primary/5 to-secondary/5 rounded-2xl p-8 lg:p-12 text-center"
+          initial={FADE_UP_HIDDEN}
+          animate={isInView ? FADE_UP_VISIBLE : FADE_UP_HIDDEN}
+          transition={{ duration: 0.8, delay: 0.2, ease: REVEAL_EASE }}
+          className="relative isolate overflow-hidden rounded-2xl border border-border/60 bg-linear-to-br from-primary/5 via-background to-secondary/5 px-6 py-12 sm:px-10 sm:py-16 lg:px-16 lg:py-20"
         >
-          <h3 className=" text-2xl lg:text-3xl font-bold text-foreground mb-6">
-            Our Mission
-          </h3>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-4xl mx-auto mb-8">
-            At Tri Pros Remodeling, we are committed to transforming
-            architectural visions into extraordinary realities. We believe that
-            exceptional construction goes beyond building; it&apos;s about
-            creating spaces where life&apos;s most precious moments unfold,
-            where businesses thrive, and where communities flourish.
-          </p>
+          {/* Decorative ambient glow */}
+          <div
+            className="absolute -top-32 -right-32 size-80 rounded-full bg-secondary/15 blur-3xl pointer-events-none -z-10"
+            aria-hidden
+          />
+          <div
+            className="absolute -bottom-32 -left-32 size-80 rounded-full bg-primary/15 blur-3xl pointer-events-none -z-10"
+            aria-hidden
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🎯</span>
-              </div>
-              <h4 className="font-semibold text-foreground mb-2">Vision</h4>
-              <p className="text-sm text-muted-foreground">
-                To be the premier luxury construction company, setting the
-                standard for quality and innovation.
-              </p>
-            </motion.div>
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <span className="inline-block text-xs uppercase tracking-[0.22em] text-secondary font-semibold mb-4">
+              Our Mission
+            </span>
+            <p className="text-xl sm:text-2xl text-foreground leading-relaxed font-medium">
+              We transform architectural visions into extraordinary realities —
+              creating spaces where life&apos;s most precious moments unfold,
+              where businesses thrive, and where communities flourish.
+            </p>
+          </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ duration: 0.6, delay: 0.8 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">💎</span>
-              </div>
-              <h4 className="font-semibold text-foreground mb-2">Values</h4>
-              <p className="text-sm text-muted-foreground">
-                Integrity, excellence, innovation, and unwavering commitment to
-                client satisfaction.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ duration: 0.6, delay: 1 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🚀</span>
-              </div>
-              <h4 className="font-semibold text-foreground mb-2">Purpose</h4>
-              <p className="text-sm text-muted-foreground">
-                Creating lasting legacies through exceptional craftsmanship and
-                personalized service.
-              </p>
-            </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border/60 rounded-xl overflow-hidden border border-border/60">
+            {pillars.map((pillar, i) => (
+              <motion.div
+                key={pillar.title}
+                initial={FADE_UP_HIDDEN}
+                animate={isInView ? FADE_UP_VISIBLE : FADE_UP_HIDDEN}
+                transition={{ duration: 0.6, delay: 0.3 + i * 0.1, ease: REVEAL_EASE }}
+                className="bg-background/80 backdrop-blur-sm px-6 py-8 flex flex-col items-start gap-4"
+              >
+                <span className="inline-flex items-center justify-center size-11 rounded-lg bg-secondary/15 text-secondary">
+                  <pillar.icon className="size-5" aria-hidden />
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground mb-2">
+                    {pillar.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {pillar.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
       </div>
