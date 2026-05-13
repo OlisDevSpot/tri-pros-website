@@ -55,9 +55,16 @@ const RESIZE_OPTS = { withoutEnlargement: true }
 const INITIAL_QUALITY = 72
 const FALLBACK_QUALITY = 55
 
+// EXIF Orientation values 5..8 swap stored width/height vs. visual.
+const ORIENTATION_SWAPS_DIMENSIONS = new Set([5, 6, 7, 8])
+
 /**
  * Resize + compress to WebP. If output exceeds the size limit,
  * re-encode at a lower quality to stay within budget.
+ *
+ * .rotate() with no args applies EXIF Orientation to pixel data and strips
+ * the tag — required because WebP output strips metadata, so without this
+ * iPhone photos (Orientation=6) render sideways in the browser.
  */
 async function resizeWithBudget(
   input: Buffer,
@@ -65,6 +72,7 @@ async function resizeWithBudget(
   maxBytes: number,
 ): Promise<Buffer> {
   const first = await sharp(input)
+    .rotate()
     .resize(width, undefined, RESIZE_OPTS)
     .webp({ quality: INITIAL_QUALITY })
     .toBuffer()
@@ -75,6 +83,7 @@ async function resizeWithBudget(
 
   // Over budget — re-encode at lower quality
   return sharp(input)
+    .rotate()
     .resize(width, undefined, RESIZE_OPTS)
     .webp({ quality: FALLBACK_QUALITY })
     .toBuffer()
@@ -93,7 +102,11 @@ async function resizeWithBudget(
  */
 export async function processImageVariants(originalBuffer: Buffer): Promise<ProcessImageResult> {
   const metadata = await sharp(originalBuffer).metadata()
-  const originalWidth = metadata.width ?? 0
+  // For images with EXIF Orientation 5..8 the stored width/height are swapped
+  // from the visual dimensions. Threshold checks must compare against the
+  // visual width — the width the browser actually renders after orientation.
+  const swapsDimensions = ORIENTATION_SWAPS_DIMENSIONS.has(metadata.orientation ?? 1)
+  const originalWidth = (swapsDimensions ? metadata.height : metadata.width) ?? 0
   const originalSize = originalBuffer.byteLength
 
   const decisions: VariantDecision[] = []
@@ -142,7 +155,7 @@ export async function processImageVariants(originalBuffer: Buffer): Promise<Proc
   }
 
   // Always generate blur placeholder
-  const blur = await sharp(originalBuffer).resize(20).webp({ quality: 20 }).toBuffer()
+  const blur = await sharp(originalBuffer).rotate().resize(20).webp({ quality: 20 }).toBuffer()
 
   return {
     variants,
