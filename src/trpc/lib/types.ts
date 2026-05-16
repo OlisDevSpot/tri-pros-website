@@ -5,16 +5,13 @@
 // See ADR-0002 (docs/adr/0002-entity-server-system.md) for design rationale
 // and the Phase 1a spec (docs/superpowers/specs/...) for scope and policy.
 
-import type { MongoAbility } from '@casl/ability'
 import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type z from 'zod'
 
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
-import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
-
-export type AppAbility = MongoAbility<[AppAction, AppSubject]>
+import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
 
 /**
  * Canonical CRUD slot names. Used by the L1 `exclude` option and by
