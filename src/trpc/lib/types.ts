@@ -124,7 +124,7 @@ export interface CrudHandlers<TTable extends PgTable> {
   list: (ctx: AgentCtx, input: ListInput) => Promise<PaginatedResult<Row<TTable>>>
   getById: (ctx: AgentCtx, input: { id: string }) => Promise<Row<TTable> | undefined>
   create: (ctx: AgentCtx, input: Insert<TTable>) => Promise<Row<TTable>>
-  update: (ctx: AgentCtx, input: { id: string, data: Update<TTable> }) => Promise<Row<TTable> | undefined>
+  update: (ctx: AgentCtx, input: { id: string, data: Update<TTable> }) => Promise<Row<TTable>>
   delete: (ctx: AgentCtx, input: { id: string }) => Promise<void>
   duplicate: (ctx: AgentCtx, input: { id: string }) => Promise<Row<TTable>>
 }

@@ -156,7 +156,7 @@ async function updateImpl<TTable extends PgTable>(
   pkColumn: PgColumn,
   ctx: AgentCtx,
   input: { id: string, data: Update<TTable> },
-): Promise<Row<TTable> | undefined> {
+): Promise<Row<TTable>> {
   const validated = spec.schemas.update.parse(input.data) as Update<TTable>
   const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
   const [row] = await db
@@ -164,7 +164,13 @@ async function updateImpl<TTable extends PgTable>(
     .set(validated as Record<string, unknown>)
     .where(where)
     .returning()
-  return row as Row<TTable> | undefined
+  if (!row) {
+    // Could be: row doesn't exist, or visibility scope excluded it. L1
+    // maps NotFound to 404 — caller can't tell the two cases apart, which
+    // is intentional (don't leak existence to unauthorized callers).
+    throw new Error('NotFound')
+  }
+  return row as Row<TTable>
 }
 
 // ── delete ───────────────────────────────────────────────────────────────
