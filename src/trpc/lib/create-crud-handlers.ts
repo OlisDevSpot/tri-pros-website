@@ -10,12 +10,12 @@ import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type { Insert, Row, Update } from '@/shared/db/types'
 import type {
+  AuthedContext,
   CrudHandlers,
   EntityServerSpec,
   ListInput,
   PaginatedResult,
   PkField,
-  ScopedContext,
 } from '@/trpc/types'
 
 import { and, asc, desc, eq } from 'drizzle-orm'
@@ -53,7 +53,7 @@ export function createCrudHandlers<TTable extends PgTable>(
 
 async function listImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
-  ctx: ScopedContext,
+  ctx: AuthedContext,
   input: ListInput,
 ): Promise<PaginatedResult<Row<TTable>>> {
   const visibilityWhere = ctx.scope ?? undefined
@@ -88,7 +88,7 @@ async function listImpl<TTable extends PgTable>(
 async function getByIdImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
-  ctx: ScopedContext,
+  ctx: AuthedContext,
   input: { id: PkField<TTable> },
 ): Promise<Row<TTable> | undefined> {
   const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
@@ -109,7 +109,7 @@ async function getByIdImpl<TTable extends PgTable>(
 
 async function createImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
-  _ctx: ScopedContext,
+  _ctx: AuthedContext,
   input: Insert<TTable>,
 ): Promise<Row<TTable>> {
   const validated = spec.schemas.insert.parse(input) as Insert<TTable>
@@ -135,7 +135,7 @@ async function createImpl<TTable extends PgTable>(
 async function updateImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
-  ctx: ScopedContext,
+  ctx: AuthedContext,
   input: { id: PkField<TTable>, data: Update<TTable> },
 ): Promise<Row<TTable>> {
   const validated = spec.schemas.update.parse(input.data) as Update<TTable>
@@ -159,7 +159,7 @@ async function updateImpl<TTable extends PgTable>(
 async function deleteImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
-  ctx: ScopedContext,
+  ctx: AuthedContext,
   input: { id: PkField<TTable> },
 ): Promise<void> {
   const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
@@ -184,7 +184,7 @@ async function deleteImpl<TTable extends PgTable>(
 async function duplicateImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
-  ctx: ScopedContext,
+  ctx: AuthedContext,
   input: { id: PkField<TTable> },
 ): Promise<Row<TTable>> {
   const source = await getByIdImpl(spec, pkColumn, ctx, input)

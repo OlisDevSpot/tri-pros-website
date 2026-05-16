@@ -7,12 +7,12 @@
 //   - Omni callers (CASL `manage all`)  → scope = null   (L0 skips scoping)
 //   - Non-omni callers                   → scope = spec.visibility(userId)
 
-import type { AuthedContext, EntityServerSpec, ScopedContext } from '@/trpc/types'
+import type { AuthedContext, EntityServerSpec } from '@/trpc/types'
 
 export function buildAgentCtx(
   ctx: AuthedContext,
   spec: EntityServerSpec,
-): ScopedContext {
+): AuthedContext {
   const isOmni = ctx.ability.can('manage', 'all')
   return {
     ...ctx,

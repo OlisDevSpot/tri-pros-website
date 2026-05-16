@@ -38,10 +38,6 @@ export interface BaseTRPCContext {
 export type AuthedContext = BaseTRPCContext & {
   session: BetterAuthSession
   ability: AppAbility
-}
-
-/** Context after entity-level scope resolution — all fields resolved. */
-export type ScopedContext = AuthedContext & {
   scope: SQL | null
 }
 
@@ -111,10 +107,10 @@ export interface PaginatedResult<T> {
 }
 
 export interface CrudHandlers<TTable extends PgTable> {
-  list: (ctx: ScopedContext, input: ListInput) => Promise<PaginatedResult<Row<TTable>>>
-  getById: (ctx: ScopedContext, input: { id: PkField<TTable> }) => Promise<Row<TTable> | undefined>
-  create: (ctx: ScopedContext, input: Insert<TTable>) => Promise<Row<TTable>>
-  update: (ctx: ScopedContext, input: { id: PkField<TTable>, data: Update<TTable> }) => Promise<Row<TTable>>
-  delete: (ctx: ScopedContext, input: { id: PkField<TTable> }) => Promise<void>
-  duplicate: (ctx: ScopedContext, input: { id: PkField<TTable> }) => Promise<Row<TTable>>
+  list: (ctx: AuthedContext, input: ListInput) => Promise<PaginatedResult<Row<TTable>>>
+  getById: (ctx: AuthedContext, input: { id: PkField<TTable> }) => Promise<Row<TTable> | undefined>
+  create: (ctx: AuthedContext, input: Insert<TTable>) => Promise<Row<TTable>>
+  update: (ctx: AuthedContext, input: { id: PkField<TTable>, data: Update<TTable> }) => Promise<Row<TTable>>
+  delete: (ctx: AuthedContext, input: { id: PkField<TTable> }) => Promise<void>
+  duplicate: (ctx: AuthedContext, input: { id: PkField<TTable> }) => Promise<Row<TTable>>
 }
