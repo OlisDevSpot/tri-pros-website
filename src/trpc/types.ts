@@ -1,6 +1,6 @@
-// ─── Entity Server System — Shared Types ────────────────────────────────────
-// Type contract consumed by L0 (create-crud-handlers), L1 (create-crud-router),
-// L2 (create-entity-router), and the entity registry.
+// ─── tRPC Shared Types ──────────────────────────────────────────────────────
+// Central type definitions for the entire tRPC layer: context shapes,
+// Entity Server System contracts (L0/L1/L2), and HTTP adapter types.
 //
 // See ADR-0002 (docs/adr/0002-entity-server-system.md) for design rationale
 // and the Phase 1a spec (docs/superpowers/specs/...) for scope and policy.
@@ -43,6 +43,12 @@ export type AuthedContext = BaseTRPCContext & {
 /** Context after entity-level scope resolution — all fields resolved. */
 export type ScopedContext = AuthedContext & {
   scope: SQL | null
+}
+
+/** HTTP adapter context — extends base with request/response headers. */
+export interface HTTPTRPCContext extends BaseTRPCContext {
+  req?: Request
+  resHeaders: Headers
 }
 
 /**

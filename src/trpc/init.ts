@@ -1,34 +1,12 @@
-import type { BaseTRPCContext } from '@/trpc/types'
+import type { HTTPTRPCContext } from '@/trpc/types'
 
 import { initTRPC, TRPCError } from '@trpc/server'
-import { headers as getHeaders } from 'next/headers'
-import { cache } from 'react'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
 
-import { auth } from '@/shared/domains/auth/server'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
-export interface HTTPTRPCContext extends BaseTRPCContext {
-  req?: Request
-  resHeaders: Headers
-}
-
-export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeaders: Headers }): Promise<HTTPTRPCContext> => {
-  const reqHeaders = await getHeaders()
-
-  const session = await auth.api.getSession({
-    headers: reqHeaders,
-  })
-
-  return {
-    session,
-    ability: null,
-    scope: null,
-    req: ctx.req,
-    resHeaders: ctx.resHeaders,
-  }
-})
+export { createHTTPTRPCContext } from '@/trpc/lib/create-http-context'
 
 const t = initTRPC.context<HTTPTRPCContext>().create({
   transformer: superjson,
