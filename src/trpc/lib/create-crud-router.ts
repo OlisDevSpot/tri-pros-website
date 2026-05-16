@@ -11,7 +11,7 @@
 // Generic upper bound on CoreEntitySpec is the type-level forcing function:
 // NestedEntitySpec instances fail to compile when passed in.
 
-import type { PgTable } from 'drizzle-orm/pg-core'
+import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type { AppAbility, CoreEntitySpec, SlotName } from './types'
 
@@ -153,7 +153,9 @@ function makeGetByIdProcedure<TSpec extends CoreEntitySpec<PgTable>>(
       })
   }
 
-  const tokenColumn = (spec.table as unknown as Record<string, unknown>)[spec.shareable.tokenColumn]
+  const table = spec.table as unknown as Record<string, PgColumn | undefined>
+
+  const tokenColumn = table[spec.shareable.tokenColumn]
   if (!tokenColumn) {
     throw new Error(
       `[create-crud-router] spec.shareable.tokenColumn '${spec.shareable.tokenColumn}' `
@@ -161,7 +163,7 @@ function makeGetByIdProcedure<TSpec extends CoreEntitySpec<PgTable>>(
     )
   }
   const pkName = spec.primaryKey ?? 'id'
-  const pkColumn = (spec.table as unknown as Record<string, unknown>)[pkName]
+  const pkColumn = table[pkName]
   if (!pkColumn) {
     throw new Error(
       `[create-crud-router] spec.primaryKey '${pkName}' is not a column on `
@@ -172,15 +174,18 @@ function makeGetByIdProcedure<TSpec extends CoreEntitySpec<PgTable>>(
   return baseProcedure
     .input(z.object({ id: z.string(), token: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      // Token path: anonymous or authenticated, token matches → return row.
+      // LAYERING DEFERRAL: this token path issues a raw db read instead of
+      // calling an L0 handler. Future work — add `getByToken` to L0 so this
+      // path also goes through createCrudHandlers and L1 has zero direct DB
+      // imports. Deferred until Phase 1b's Proposal migration is the first
+      // real consumer that pressure-tests the shape. See ADR-0002 + the
+      // Phase 1a spec for the rationale.
       if (input.token) {
         const [row] = await db
           .select()
           .from(spec.table as PgTable)
           .where(and(
-            // @ts-expect-error — runtime-validated above; columns are PgColumn at runtime.
             eq(pkColumn, input.id),
-            // @ts-expect-error — same.
             eq(tokenColumn, input.token),
           ))
           .limit(1)
@@ -190,9 +195,12 @@ function makeGetByIdProcedure<TSpec extends CoreEntitySpec<PgTable>>(
         return row
       }
 
-      // Session path: authenticated callers go through normal scope.
-      // baseProcedure doesn't add `ability` to ctx (only protectedProcedure
-      // does), so we construct one inline from the session's role.
+      // DO NOT REMOVE: baseProcedure ctx has no `.ability` (only
+      // protectedProcedure's middleware adds it). The shareable getById
+      // runs on baseProcedure so anonymous token-holders can read. When
+      // a session is present but no token, this is the ONLY place we
+      // can construct an ability — removing it breaks the session path
+      // of every shareable entity.
       if (!ctx.session) {
         throw new TRPCError({
           code: 'UNAUTHORIZED',
