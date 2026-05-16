@@ -19,6 +19,8 @@
     "db:reset:dev": "DRIZZLE_TARGET=dev tsx ./src/shared/db/lib/db-reset.ts",
     "db:seed": "tsx ./src/shared/db/lib/db-seed.ts",
     "db:seed:dev": "DRIZZLE_TARGET=dev tsx ./src/shared/db/lib/db-seed.ts",
+    "db:snapshot": "tsx scripts/snapshot-prod-to-dev.ts",
+    "db:snapshot:fresh": "tsx scripts/snapshot-prod-to-dev.ts --fresh",
     "email": "npx react-email -dir ./src/shared/services/resend/emails",
     "scrape-project": "tsx scripts/portfolio-scraper/index.ts",
     "import-project": "tsx scripts/portfolio-scraper/import-project.ts",
