@@ -10,8 +10,7 @@
 
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
-import type { AppAbility } from '@/shared/domains/permissions/types'
-import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
+import type { AuthedContext, CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
@@ -227,7 +226,7 @@ function makeGetByIdProcedure<TSpec extends EntityServerSpec<PgTable>>(
         })
       }
       const agentCtx = buildAgentCtx(
-        { session: ctx.session, ability },
+        { session: ctx.session, ability, scope: null },
         spec,
       )
       const row = await handlers.getById(agentCtx, { id: input.id } as IdInput)
@@ -241,7 +240,7 @@ function makeGetByIdProcedure<TSpec extends EntityServerSpec<PgTable>>(
 // ── helpers ──────────────────────────────────────────────────────────────
 
 function assertCan(
-  ctx: { ability: AppAbility },
+  ctx: AuthedContext,
   slot: SlotName,
   spec: EntityServerSpec<PgTable>,
 ): void {

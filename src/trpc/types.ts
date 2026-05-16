@@ -21,14 +21,27 @@ import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
 export type SlotName = 'list' | 'getById' | 'create' | 'update' | 'delete' | 'duplicate'
 
 /**
- * Framework-agnostic context that every L0 handler receives. Session is
- * always present — L1's `shareable` token path takes a separate branch
- * that bypasses L0 entirely (no session, no scope, just a token match).
+ * Single shared context shape for all tRPC procedures. Each field starts
+ * nullable; middleware layers progressively narrow:
+ *   - baseProcedure:      all nullable (public routes)
+ *   - protectedProcedure: session + ability non-null
+ *   - L1 entity layer:    scope computed (null for omni, SQL for scoped)
  */
-export interface AgentCtx {
+export interface BaseTRPCContext {
+  session: BetterAuthSession | null
+  ability: AppAbility | null
+  /** Visibility SQL fragment for row-level reads. `null` = omni / no scoping / not yet resolved. */
+  scope: SQL | null
+}
+
+/** Context after protectedProcedure/agentProcedure — session + ability guaranteed non-null. */
+export type AuthedContext = BaseTRPCContext & {
   session: BetterAuthSession
   ability: AppAbility
-  /** Visibility SQL fragment to apply to reads. `null` = omni / no scoping. */
+}
+
+/** Context after entity-level scope resolution — all fields resolved. */
+export type ScopedContext = AuthedContext & {
   scope: SQL | null
 }
 
@@ -92,10 +105,10 @@ export interface PaginatedResult<T> {
 }
 
 export interface CrudHandlers<TTable extends PgTable> {
-  list: (ctx: AgentCtx, input: ListInput) => Promise<PaginatedResult<Row<TTable>>>
-  getById: (ctx: AgentCtx, input: { id: PkField<TTable> }) => Promise<Row<TTable> | undefined>
-  create: (ctx: AgentCtx, input: Insert<TTable>) => Promise<Row<TTable>>
-  update: (ctx: AgentCtx, input: { id: PkField<TTable>, data: Update<TTable> }) => Promise<Row<TTable>>
-  delete: (ctx: AgentCtx, input: { id: PkField<TTable> }) => Promise<void>
-  duplicate: (ctx: AgentCtx, input: { id: PkField<TTable> }) => Promise<Row<TTable>>
+  list: (ctx: ScopedContext, input: ListInput) => Promise<PaginatedResult<Row<TTable>>>
+  getById: (ctx: ScopedContext, input: { id: PkField<TTable> }) => Promise<Row<TTable> | undefined>
+  create: (ctx: ScopedContext, input: Insert<TTable>) => Promise<Row<TTable>>
+  update: (ctx: ScopedContext, input: { id: PkField<TTable>, data: Update<TTable> }) => Promise<Row<TTable>>
+  delete: (ctx: ScopedContext, input: { id: PkField<TTable> }) => Promise<void>
+  duplicate: (ctx: ScopedContext, input: { id: PkField<TTable> }) => Promise<Row<TTable>>
 }

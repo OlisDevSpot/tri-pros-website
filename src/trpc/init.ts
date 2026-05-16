@@ -1,17 +1,15 @@
-import type { BetterAuthSession } from '@/shared/domains/auth/server'
+import type { BaseTRPCContext } from '@/trpc/types'
+
 import { initTRPC, TRPCError } from '@trpc/server'
 import { headers as getHeaders } from 'next/headers'
 import { cache } from 'react'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
+
 import { auth } from '@/shared/domains/auth/server'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
-export interface CoreTRPCContext {
-  session: BetterAuthSession | null
-}
-
-export interface HTTPTRPCContext extends CoreTRPCContext {
+export interface HTTPTRPCContext extends BaseTRPCContext {
   req?: Request
   resHeaders: Headers
 }
@@ -25,6 +23,8 @@ export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeade
 
   return {
     session,
+    ability: null,
+    scope: null,
     req: ctx.req,
     resHeaders: ctx.resHeaders,
   }
@@ -67,7 +67,7 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   })
 
   return await next({
-    ctx: { ...ctx, session: ctx.session, ability },
+    ctx: { ...ctx, session: ctx.session, ability, scope: null },
   })
 })
 

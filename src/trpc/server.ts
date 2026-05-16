@@ -13,7 +13,7 @@ export const trpc = createTRPCOptionsProxy({
     const session = await auth.api.getSession()
     const req = new Request(env.NEXT_PUBLIC_BASE_URL)
 
-    return { session, req, setCookie: () => {}, resHeaders: new Headers() }
+    return { session, ability: null, scope: null, req, setCookie: () => {}, resHeaders: new Headers() }
   },
   router: appRouter,
   queryClient: getQueryClient,
