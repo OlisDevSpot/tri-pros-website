@@ -62,6 +62,17 @@ export interface EntityServerSpec<TTable extends PgTable = PgTable> {
   }
 }
 
+// ── Primary key type derivation ──────────────────────────────────────────
+//
+// Extracts the PK value type from a table's select schema so handler inputs
+// reflect the actual column type (string for UUID, number for serial).
+// All current entities use `id` as the column name. If a future entity uses
+// a different column name via `primaryKey`, this falls back to string | number
+// until the design is revisited (one-adopter-not-a-seam per ADR-0002).
+
+export type PkField<TTable extends PgTable>
+  = Row<TTable> extends { id: infer T } ? T : string | number
+
 // ── L0 handler shape ─────────────────────────────────────────────────────
 //
 // Each slot is `(ctx, input) => Promise<output>`. Pure async functions, no
@@ -82,9 +93,9 @@ export interface PaginatedResult<T> {
 
 export interface CrudHandlers<TTable extends PgTable> {
   list: (ctx: AgentCtx, input: ListInput) => Promise<PaginatedResult<Row<TTable>>>
-  getById: (ctx: AgentCtx, input: { id: string }) => Promise<Row<TTable> | undefined>
+  getById: (ctx: AgentCtx, input: { id: PkField<TTable> }) => Promise<Row<TTable> | undefined>
   create: (ctx: AgentCtx, input: Insert<TTable>) => Promise<Row<TTable>>
-  update: (ctx: AgentCtx, input: { id: string, data: Update<TTable> }) => Promise<Row<TTable>>
-  delete: (ctx: AgentCtx, input: { id: string }) => Promise<void>
-  duplicate: (ctx: AgentCtx, input: { id: string }) => Promise<Row<TTable>>
+  update: (ctx: AgentCtx, input: { id: PkField<TTable>, data: Update<TTable> }) => Promise<Row<TTable>>
+  delete: (ctx: AgentCtx, input: { id: PkField<TTable> }) => Promise<void>
+  duplicate: (ctx: AgentCtx, input: { id: PkField<TTable> }) => Promise<Row<TTable>>
 }

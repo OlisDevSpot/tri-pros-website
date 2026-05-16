@@ -15,6 +15,7 @@ import type {
   EntityServerSpec,
   ListInput,
   PaginatedResult,
+  PkField,
 } from '@/trpc/types'
 
 import { and, asc, desc, eq } from 'drizzle-orm'
@@ -88,7 +89,7 @@ async function getByIdImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
-  input: { id: string },
+  input: { id: PkField<TTable> },
 ): Promise<Row<TTable> | undefined> {
   const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
   const [row] = await db
@@ -135,7 +136,7 @@ async function updateImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
-  input: { id: string, data: Update<TTable> },
+  input: { id: PkField<TTable>, data: Update<TTable> },
 ): Promise<Row<TTable>> {
   const validated = spec.schemas.update.parse(input.data) as Update<TTable>
   const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
@@ -159,7 +160,7 @@ async function deleteImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
-  input: { id: string },
+  input: { id: PkField<TTable> },
 ): Promise<void> {
   const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
   const deleted = await db
@@ -184,7 +185,7 @@ async function duplicateImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
-  input: { id: string },
+  input: { id: PkField<TTable> },
 ): Promise<Row<TTable>> {
   const source = await getByIdImpl(spec, pkColumn, ctx, input)
   if (!source) {

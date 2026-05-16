@@ -11,7 +11,7 @@
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type { AppAbility } from '@/shared/domains/permissions/types'
-import type { EntityServerSpec, SlotName } from '@/trpc/types'
+import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
@@ -24,6 +24,12 @@ import { agentProcedure, baseProcedure, createTRPCRouter } from '@/trpc/init'
 
 import { buildAgentCtx } from './build-agent-ctx'
 import { createCrudHandlers } from './create-crud-handlers'
+
+// L1 is the Zod→L0 adapter. spec.schemas.select is ZodTypeAny (type-erased
+// by design) so Zod outputs `unknown` for the id field. This type bridges
+// the boundary — Zod validates the value at runtime; this assertion tells TS
+// the shape matches what L0 expects. Same pattern used for create/update below.
+interface IdInput { id: string | number }
 
 // Action mapping per slot — fixed (not entity-configurable).
 const SLOT_ACTIONS: Record<SlotName, 'read' | 'create' | 'update' | 'delete'> = {
@@ -49,7 +55,13 @@ export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
 ) {
   const handlers = createCrudHandlers(spec)
   const exclude = new Set(options.exclude ?? [])
-  const idSchema = z.object({ id: z.string() })
+
+  // Derive the id Zod schema from the entity's select schema so the
+  // procedure input matches the actual PK column type (string for UUID,
+  // number for serial). Falls back to z.union if the shape can't be read.
+  const selectShape = (spec.schemas.select as z.ZodObject<Record<string, z.ZodTypeAny>>).shape
+  const pkField = selectShape[spec.primaryKey ?? 'id']
+  const idSchema = z.object({ id: pkField ?? z.union([z.string(), z.number()]) })
 
   const procs: Record<string, unknown> = {}
 
@@ -90,7 +102,7 @@ export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
   if (!exclude.has('update')) {
     procs.update = agentProcedure
       .input(z.object({
-        id: z.string(),
+        id: idSchema.shape.id,
         data: spec.schemas.update,
       }))
       .mutation(async ({ ctx, input }) => {
@@ -98,7 +110,7 @@ export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
         const agentCtx = buildAgentCtx(ctx, spec)
         // `input.data` is typed as `unknown` because `spec.schemas.update` is
         // `ZodTypeAny` — the schema validates at runtime. Cast is safe here.
-        return mapDomainErrors(() => handlers.update(agentCtx, input as { id: string, data: Partial<PgTable['$inferInsert']> }))
+        return mapDomainErrors(() => handlers.update(agentCtx, input as IdInput & { data: Partial<PgTable['$inferInsert']> }))
       })
   }
 
@@ -108,7 +120,7 @@ export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx, 'delete', spec)
         const agentCtx = buildAgentCtx(ctx, spec)
-        return mapDomainErrors(() => handlers.delete(agentCtx, input))
+        return mapDomainErrors(() => handlers.delete(agentCtx, input as IdInput))
       })
   }
 
@@ -118,7 +130,7 @@ export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx, 'duplicate', spec)
         const agentCtx = buildAgentCtx(ctx, spec)
-        return mapDomainErrors(() => handlers.duplicate(agentCtx, input))
+        return mapDomainErrors(() => handlers.duplicate(agentCtx, input as IdInput))
       })
   }
 
@@ -134,8 +146,8 @@ export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
 
 function makeGetByIdProcedure<TSpec extends EntityServerSpec<PgTable>>(
   spec: TSpec,
-  handlers: ReturnType<typeof createCrudHandlers<TSpec['table']>>,
-  idSchema: z.ZodObject<{ id: z.ZodString }>,
+  handlers: CrudHandlers<PgTable>,
+  idSchema: z.ZodObject<{ id: z.ZodTypeAny }>,
 ) {
   if (!spec.shareable) {
     return agentProcedure
@@ -143,7 +155,7 @@ function makeGetByIdProcedure<TSpec extends EntityServerSpec<PgTable>>(
       .query(async ({ ctx, input }) => {
         assertCan(ctx, 'getById', spec)
         const agentCtx = buildAgentCtx(ctx, spec)
-        const row = await handlers.getById(agentCtx, input)
+        const row = await handlers.getById(agentCtx, input as IdInput)
         if (!row) {
           throw new TRPCError({ code: 'NOT_FOUND', message: `${spec.entityName} not found` })
         }
@@ -170,7 +182,7 @@ function makeGetByIdProcedure<TSpec extends EntityServerSpec<PgTable>>(
   }
 
   return baseProcedure
-    .input(z.object({ id: z.string(), token: z.string().optional() }))
+    .input(z.object({ id: idSchema.shape.id, token: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       // LAYERING DEFERRAL: this token path issues a raw db read instead of
       // calling an L0 handler. Future work — add `getByToken` to L0 so this
@@ -219,7 +231,7 @@ function makeGetByIdProcedure<TSpec extends EntityServerSpec<PgTable>>(
         { session: ctx.session, ability },
         spec,
       )
-      const row = await handlers.getById(agentCtx, { id: input.id })
+      const row = await handlers.getById(agentCtx, { id: input.id } as IdInput)
       if (!row) {
         throw new TRPCError({ code: 'NOT_FOUND', message: `${spec.entityName} not found` })
       }
