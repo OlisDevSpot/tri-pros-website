@@ -38,7 +38,7 @@ L1 — createCrudRouter ─────►  │ tRPC sub-router exposing CRUD sl
                               │ • applies CASL action gate per slot          │
                               │ • builds AgentCtx, calls L0                  │
                               │ • maps domain errors → TRPCError             │
-                              │ • TS-refuses NestedEntitySpec (generic bound)│
+                              │ • generic bound: EntityServerSpec            │
                               │ • reads spec.shareable for dual-credential   │
                               │   getById (baseProcedure + token branch)     │
                               └────────────────┬─────────────────────────────┘
@@ -57,50 +57,27 @@ L0 — createCrudHandlers ───►  │ raw async fns: (ctx, input) => resul
 
 ## Type contract
 
-The spec is a discriminated union with `parentEntity` as the discriminant. Both branches share the same shape — `parentEntity: null` only flips required/optional on `caslSubject` and `visibility`.
+> **Revision note:** The original design used a discriminated union (`CoreEntitySpec | NestedEntitySpec`) over `parentEntity`. This was reverted before the PR shipped — ~70 LoC of dormant scaffolding with no consumer. See ADR-0002's "Considered alternatives" for rationale.
+
+The spec is a single `EntityServerSpec` interface. Every entity is a top-level identity with required `caslSubject` and `visibility`. Entity-internal relations (junction tables, append-only logs) live as business plugin procedures on the parent's L2 router.
 
 ```ts
-// src/trpc/lib/types.ts
+// src/trpc/types.ts
 
-import type { AppAbility, AppSubject, EntityName } from '@/shared/domains/permissions/types'
-import type { BetterAuthSession } from '@/shared/domains/auth/server'
-import type { PgTable, PgColumn } from 'drizzle-orm/pg-core'
-import type { SQL } from 'drizzle-orm'
-import type { z } from 'zod'
-
-export type SlotName = 'list' | 'getById' | 'create' | 'update' | 'delete' | 'duplicate'
-
-/**
- * Framework-agnostic context every L0 handler receives. Session always
- * present — public-token reads (`shareable` entities) take a separate L1
- * branch that bypasses L0 entirely.
- */
-export interface AgentCtx {
-  session: BetterAuthSession
-  ability: AppAbility
-  /** Visibility SQL fragment to apply to reads. `null` = omni / no scope. */
-  scope: SQL | null
-}
-
-// ── Shared base — same shape both branches ────────────────────────────────
-interface EntitySpecBase<
-  TTable extends PgTable = PgTable,
-  TInsert = unknown,
-  TUpdate = unknown,
-  TSelect = unknown,
-> {
+export interface EntityServerSpec<TTable extends PgTable = PgTable> {
   entityName: EntityName
+  caslSubject: AppSubject
+  visibility: (userId: string) => SQL
   table: TTable
   schemas: {
-    insert: z.ZodType<TInsert>
-    update: z.ZodType<TUpdate>
-    select: z.ZodType<TSelect>
+    insert: z.ZodTypeAny
+    update: z.ZodTypeAny
+    select: z.ZodTypeAny
   }
-  /** Defaults to 'id'. Override for serial PKs, custom column names, etc. */
   primaryKey?: string
 
-  // Named typed config — no free-form callbacks. Promote new patterns here
-  // only when 2+ entities adopt them.
+  // Named typed config — all optional. Promote new patterns here only when
+  // 2+ entities adopt them (per ADR-0002 "one-adopter-not-a-seam" rule).
   shareable?: { tokenColumn: string }
   update?: { jsonbMergeColumns: readonly PgColumn[] }
   list?: {
@@ -109,72 +86,7 @@ interface EntitySpecBase<
     defaultSort?: { column: string, dir: 'asc' | 'desc' }
   }
 }
-
-// ── Core branch: parentEntity null → auth REQUIRED ───────────────────────
-export interface CoreEntitySpec<...> extends EntitySpecBase<...> {
-  parentEntity: null                                    // ← discriminant
-  caslSubject: AppSubject                               // REQUIRED
-  visibility: (userId: string) => SQL                   // REQUIRED
-}
-
-// ── Nested branch: parentEntity non-null → auth OPTIONAL (inherited) ────
-//
-// DORMANT in Phase 1a. Types compile, but no entity uses this branch yet.
-// All new entities MUST be authored as `CoreEntitySpec` until a concrete
-// nested-entity consumer emerges and we pressure-test the parent-chain
-// resolution rule against a real table.
-export interface NestedEntitySpec<...> extends EntitySpecBase<...> {
-  parentEntity: EntityName                              // ← discriminant: non-null
-  parentRef: { foreignKey: PgColumn }                   // REQUIRED — FK to parent
-
-  caslSubject?: AppSubject                              // OPTIONAL — inherits parent chain
-  visibility?: (userId: string) => SQL                  // OPTIONAL — derived from parent
-}
-
-export type EntityServerSpec = CoreEntitySpec | NestedEntitySpec
-
-/** CRUD slot signatures. Output types narrow from spec.schemas.select. */
-export interface CrudHandlers<Spec extends EntityServerSpec> {
-  list:       (ctx: AgentCtx, input: ListInput<Spec>) => Promise<PaginatedResult<Row<Spec>>>
-  getById:    (ctx: AgentCtx, input: { id: string }) => Promise<Row<Spec> | undefined>
-  create:     (ctx: AgentCtx, input: Insert<Spec>) => Promise<Row<Spec>>
-  update:     (ctx: AgentCtx, input: { id: string, data: Update<Spec> }) => Promise<Row<Spec> | undefined>
-  delete:     (ctx: AgentCtx, input: { id: string }) => Promise<void>
-  duplicate?: (ctx: AgentCtx, input: { id: string }) => Promise<Row<Spec>>
-}
 ```
-
-### The discriminant is the forcing function
-
-`createCrudRouter<TSpec extends CoreEntitySpec>(spec: TSpec, opts?)` — the generic upper bound on `CoreEntitySpec` is what makes TS reject `NestedEntitySpec`. There's no runtime check; the compiler refuses the call.
-
-### Nested inheritance rule (deferred to first real consumer)
-
-For any nested-entity field that can be inherited (`caslSubject`, `visibility`):
-
-```
-resolved(field, spec) = spec[field] ?? resolved(field, entityRegistry[spec.parentEntity])
-```
-
-Walks the parent chain until a value is found. Core entities terminate the recursion. Override at any level.
-
-For `visibility` specifically, the default derivation when no local override is structural:
-
-```ts
-function deriveNestedVisibility(spec: NestedEntitySpec): (userId: string) => SQL {
-  return (userId) => {
-    const parent = entityRegistry[spec.parentEntity]!
-    return exists(
-      db.select().from(parent.table).where(and(
-        eq(parent.table[parent.primaryKey ?? 'id'], spec.parentRef.foreignKey),
-        resolved('visibility', parent)(userId),
-      )),
-    )
-  }
-}
-```
-
-This logic ships as documentation only in Phase 1a. The L0 implementation throws `Error('NestedEntitySpec not yet implemented — first nested consumer needs to validate the parent-chain resolution rule')` until a real consumer exists.
 
 ## L0 / L1 / L2 implementation
 
@@ -182,7 +94,7 @@ This logic ships as documentation only in Phase 1a. The L0 implementation throws
 
 Returns `CrudHandlers<Spec>` for the spec passed in.
 
-- **Core branch**: fully implemented.
+Fully implemented:
   - `list`: composes `spec.visibility(userId)` (skipped when `ability.can('manage', 'all')`) with the toolkit's `paginatedQueryInput` → `paginate()`. Uses `spec.list.searchColumns / sortableColumns / defaultSort`.
   - `getById`: applies visibility scope, queries by `spec.primaryKey ?? 'id'`.
   - `create`: validates with `spec.schemas.insert`; `db.insert(spec.table).values(data).returning()`.
@@ -191,9 +103,7 @@ Returns `CrudHandlers<Spec>` for the spec passed in.
   - `duplicate`: always generated (read-by-id + create-with-same-data is universal). Entities control surface via L1 `exclude: ['duplicate']`. No separate spec field — keeps the spec smaller.
   - Throws domain errors (`new Error('NotFound')`, `new Error('Forbidden')`). Never `TRPCError`.
 
-- **Nested branch**: throws `not yet implemented`. Types compile.
-
-### L1 — `createCrudRouter<TSpec extends CoreEntitySpec>(spec, { exclude? })`
+### L1 — `createCrudRouter<TSpec extends EntityServerSpec>(spec, { exclude? })`
 
 Returns a tRPC router with one procedure per non-excluded slot.
 
@@ -216,7 +126,7 @@ Action mapping by slot:
 | `delete`   | `delete`    |
 | `duplicate`| `create`    |
 
-### L2 — `createEntityRouter<TSpec extends CoreEntitySpec>(spec, plugins?)`
+### L2 — `createEntityRouter<TSpec extends EntityServerSpec>(spec, plugins?)`
 
 ```ts
 createEntityRouter(proposalServerSpec, {
@@ -233,17 +143,16 @@ createEntityRouter(proposalServerSpec, {
 ### `build-agent-ctx.ts` (internal)
 
 ```ts
-export function buildAgentCtx<Spec extends EntityServerSpec>(
+export function buildAgentCtx(
   trpcCtx: { session: BetterAuthSession, ability: AppAbility },
-  spec: Spec,
+  spec: EntityServerSpec,
 ): AgentCtx {
-  // For CoreEntitySpec: spec.visibility is required, call it directly.
-  // For NestedEntitySpec (dormant): walk parent chain per the inheritance
-  // rule defined in "Nested inheritance rule" above. Not exercised in Phase 1a.
-  const scope = trpcCtx.ability.can('manage', 'all')
-    ? null
-    : spec.visibility(trpcCtx.session.user.id)
-  return { session: trpcCtx.session, ability: trpcCtx.ability, scope }
+  const isOmni = trpcCtx.ability.can('manage', 'all')
+  return {
+    session: trpcCtx.session,
+    ability: trpcCtx.ability,
+    scope: isOmni ? null : spec.visibility(trpcCtx.session.user.id),
+  }
 }
 ```
 
@@ -347,13 +256,9 @@ Old names removed; no backward-compat alias. Touching ~3-5 import sites that ref
 - Field-level CASL helper (`requireFieldAccess`) deferred to v2 per ADR (one-adopter-not-a-seam).
 - Wrap/replace-style CRUD overrides deferred to v2 per ADR.
 
-### Nested branch is dormant — deliberate policy
+### Discriminated-union design reverted
 
-The discriminated-union types include the Nested branch because (a) the ADR is already written this way, (b) the discriminant *is* the forcing function, (c) real candidate tables exist (`meetingParticipants`, `customerNotes`, `proposalViews`).
-
-**Policy until first nested consumer emerges**: all new entities MUST be `CoreEntitySpec`. The parent-chain resolution rule and `deriveNestedVisibility` join structure are documented but not pressure-tested. When a real nested entity is genuinely needed (not "feels like it could be nested"), revisit the design with the consumer in hand.
-
-This is intentional dormant design. The types exist to preserve architectural framing; the L0 implementation defers until the design can be validated against a real consumer.
+The original spec included a discriminated union (`CoreEntitySpec | NestedEntitySpec`) over `parentEntity` to support future nested entities with parent-chain auth inheritance. This was reverted before the PR shipped: ~70 LoC of dormant scaffolding with zero consumers. Real candidate tables (`meetingParticipants`, `customerNotes`, `proposalViews`) are better modeled as business plugin procedures on the parent's L2 router. See ADR-0002's "Considered alternatives" for the full rationale.
 
 ## Procedures still "doing too much" — migration scorecard
 
@@ -390,8 +295,8 @@ The PR must pass:
 - `pnpm lint` clean
 - App loads; agent dashboard renders; existing customer/meeting/proposal/project screens render unchanged
 - No tRPC procedure call site touched (the diff for `app.ts` and every `*.router.ts` is empty)
-- `EntityServerSpec` discriminated union enforces correct fields per branch (manually verified: write a wrong spec in scratch file, confirm TS errors, delete scratch file)
-- `createCrudRouter` refuses to compile when passed a `NestedEntitySpec` (manually verified same way)
+- `EntityServerSpec` interface enforces required fields (`caslSubject`, `visibility`, `table`, `schemas`) at compile time
+- Omitting a required field produces a clear TS error
 - Existing CASL rules unchanged in semantics — `defineAbilitiesFor` returns the same `AppAbility` for the same inputs as before
 
 ## Open design decisions captured
@@ -402,9 +307,9 @@ These were considered and decided during brainstorming. Listed for future reader
 
 2. **`AppSubjects` → `AppSubject` rename** (plural → singular). Matches ADR-0002 vocabulary. Old name removed without alias. Touches ~3-5 import sites.
 
-3. **Phase 1a delivers fully working Core L0**, not type stubs. Phase 1b's Proposal migration is a real consumer; the factory has to function for it to migrate. Nested L0 is the only deferred implementation.
+3. **Phase 1a delivers fully working L0**, not type stubs. Phase 1b's Proposal migration is a real consumer; the factory has to function for it to migrate.
 
-4. **Nested L0 deferred until first concrete consumer.** Types compile; runtime throws. Documented as intentional dormancy.
+4. **Nested-entity discriminated union pulled.** Original design included `CoreEntitySpec | NestedEntitySpec`; reverted before PR shipped. See ADR-0002 "Considered alternatives."
 
 5. **Field-level CASL deferred to v2.** Customer's per-field loop is the only current adopter — one-adopter-not-a-seam per ADR.
 

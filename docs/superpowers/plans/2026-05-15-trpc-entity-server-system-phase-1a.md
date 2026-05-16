@@ -1,5 +1,7 @@
 # tRPC Entity Server System — Phase 1a Implementation Plan
 
+> **NOTE:** Task 3 (types.ts) was further simplified after Task 11 to collapse the discriminated-union design. See the final ADR for current shape.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Land the L0/L1/L2 factory layers + registry + entity-name colocation for the Entity Server System. Pure additive — no existing tRPC procedure is touched; no runtime behavior changes.
