@@ -9,10 +9,9 @@
 // For NestedEntitySpec (dormant in Phase 1a), the visibility resolver walks
 // the parent chain per ADR-0002. Phase 1a only exercises the Core branch.
 
-import type { AgentCtx, EntityServerSpec } from './types'
-
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { AppAbility } from '@/shared/domains/permissions/types'
+import type { AgentCtx, EntityServerSpec } from '@/trpc/types'
 
 interface TRPCAuthedCtx {
   session: BetterAuthSession

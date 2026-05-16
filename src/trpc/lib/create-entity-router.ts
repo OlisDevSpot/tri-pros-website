@@ -11,7 +11,7 @@
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 
-import type { CoreEntitySpec } from './types'
+import type { CoreEntitySpec } from '@/trpc/types'
 
 import { createTRPCRouter } from '@/trpc/init'
 

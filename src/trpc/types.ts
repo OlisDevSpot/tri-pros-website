@@ -9,6 +9,7 @@ import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import type z from 'zod'
 
+import type { Insert, Row, Update } from '@/shared/db/types'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { EntityName } from '@/shared/domains/permissions/abilities'
 import type { AppAbility, AppSubject } from '@/shared/domains/permissions/types'
@@ -30,15 +31,6 @@ export interface AgentCtx {
   /** Visibility SQL fragment to apply to reads. `null` = omni / no scoping. */
   scope: SQL | null
 }
-
-// ── Helper row-shape aliases ─────────────────────────────────────────────
-// Row, Insert, Update derived from the Drizzle table's $infer* properties.
-// This keeps the spec compact — entities don't have to thread row types
-// through every generic parameter; the factory pulls them from the table.
-
-export type Row<TTable extends PgTable> = TTable['$inferSelect']
-export type Insert<TTable extends PgTable> = TTable['$inferInsert']
-export type Update<TTable extends PgTable> = Partial<TTable['$inferInsert']>
 
 // ── Shared spec base — both branches have these fields with the same shape ─
 

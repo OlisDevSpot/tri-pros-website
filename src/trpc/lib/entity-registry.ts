@@ -11,9 +11,8 @@
 // orchestration. Instead, `createEntityRouter` is the single producer, and
 // duplicate registrations throw immediately.
 
-import type { EntityServerSpec } from './types'
-
 import type { EntityName } from '@/shared/domains/permissions/abilities'
+import type { EntityServerSpec } from '@/trpc/types'
 
 export const entityRegistry: Partial<Record<EntityName, EntityServerSpec>> = {}
 

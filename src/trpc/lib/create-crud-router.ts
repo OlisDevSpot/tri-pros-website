@@ -13,9 +13,8 @@
 
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
-import type { CoreEntitySpec, SlotName } from './types'
-
 import type { AppAbility } from '@/shared/domains/permissions/types'
+import type { CoreEntitySpec, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'

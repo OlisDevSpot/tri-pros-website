@@ -12,17 +12,15 @@
 
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
+import type { Insert, Row, Update } from '@/shared/db/types'
 import type {
   AgentCtx,
   CoreEntitySpec,
   CrudHandlers,
   EntityServerSpec,
-  Insert,
   ListInput,
   PaginatedResult,
-  Row,
-  Update,
-} from './types'
+} from '@/trpc/types'
 
 import { and, asc, desc, eq } from 'drizzle-orm'
 
