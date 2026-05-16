@@ -58,9 +58,8 @@ export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
 
   // Derive the id Zod schema from the entity's select schema so the
   // procedure input matches the actual PK column type (string for UUID,
-  // number for serial). Falls back to z.union if the shape can't be read.
-  const selectShape = (spec.schemas.select as z.ZodObject<Record<string, z.ZodTypeAny>>).shape
-  const pkField = selectShape[spec.primaryKey ?? 'id']
+  // number for serial). Falls back to z.union if the field isn't found.
+  const pkField = spec.schemas.select.shape[spec.primaryKey ?? 'id']
   const idSchema = z.object({ id: pkField ?? z.union([z.string(), z.number()]) })
 
   const procs: Record<string, unknown> = {}

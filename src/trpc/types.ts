@@ -44,9 +44,9 @@ export interface EntityServerSpec<TTable extends PgTable = PgTable> {
   visibility: (userId: string) => SQL
   table: TTable
   schemas: {
-    insert: z.ZodTypeAny
-    update: z.ZodTypeAny
-    select: z.ZodTypeAny
+    insert: z.ZodObject<Record<string, z.ZodTypeAny>>
+    update: z.ZodObject<Record<string, z.ZodTypeAny>>
+    select: z.ZodObject<Record<string, z.ZodTypeAny>>
   }
   /** Defaults to 'id'. Override for serial PKs or custom column names. */
   primaryKey?: string
