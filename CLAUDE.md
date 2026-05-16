@@ -68,17 +68,16 @@ src/
   features/          # Feature modules (proposal-flow, landing)
     proposal-flow/   # constants, contexts, hooks, lib, schemas, types, ui/
   shared/
-    auth/            # better-auth setup — client.ts and server.ts
     config/          # Env validation — client-env.ts (public vars), server-env.ts (all vars)
     constants/       # App-wide enums (userRoles, tradeLocations, homeAreas, etc.)
     components/      # Shared React components
     dal/             # Data Access Layer, split into client/ and server/
     db/              # Drizzle client, schema, migrations, seeds
-    entities/        # Business logic
+    domains/         # Cross-cutting domain modules with their own internal structure: auth/ (better-auth client + server), construction/, permissions/ (CASL abilities), pipelines/
+    entities/        # Business logic per entity (customers, meetings, proposals, projects) — see fractal Single Unit pattern
     hooks/           # Shared React hooks
     lib/             # Utilities (formatters, loan-calculations, etc.)
-    permissions/     # Role-based access control helpers
-    services/        # External service clients (ai, docusign, notion, r2, resend, upstash) + domain services. monday/ and pipedrive/ are LEGACY — do not use.
+    services/        # External service clients (ai, docusign, notion, r2, resend, upstash). monday/ and pipedrive/ are LEGACY — do not use.
     types/           # Shared TypeScript types
   trpc/              # tRPC setup and routers
     init.ts          # Procedure types: baseProcedure, agentProcedure (auth-required)
