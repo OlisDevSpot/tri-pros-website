@@ -32,10 +32,16 @@ export interface AgentCtx {
   scope: SQL | null
 }
 
-// ── Shared spec base — both branches have these fields with the same shape ─
-
-interface EntitySpecBase<TTable extends PgTable = PgTable> {
+/**
+ * Typed declaration per entity. Required fields: `caslSubject` and `visibility`
+ * — every entity is a top-level identity with its own CASL subject and
+ * visibility predicate. Entity-internal relations (junction tables, append-only
+ * logs) live as business plugin procedures on the parent's L2 router.
+ */
+export interface EntityServerSpec<TTable extends PgTable = PgTable> {
   entityName: EntityName
+  caslSubject: AppSubject
+  visibility: (userId: string) => SQL
   table: TTable
   schemas: {
     insert: z.ZodTypeAny
@@ -55,41 +61,6 @@ interface EntitySpecBase<TTable extends PgTable = PgTable> {
     defaultSort?: { column: string, dir: 'asc' | 'desc' }
   }
 }
-
-// ── Core branch ──────────────────────────────────────────────────────────
-//
-// `parentEntity: null` is the discriminant. Core entities REQUIRE
-// `caslSubject` and `visibility` — they're root-level identities.
-
-export interface CoreEntitySpec<TTable extends PgTable = PgTable> extends EntitySpecBase<TTable> {
-  parentEntity: null
-  caslSubject: AppSubject
-  visibility: (userId: string) => SQL
-}
-
-// ── Nested branch ────────────────────────────────────────────────────────
-//
-// DORMANT in Phase 1a — types compile, but no entity uses this branch yet.
-// Policy: all new entities MUST be authored as `CoreEntitySpec`. Reach for
-// `NestedEntitySpec` only when a concrete consumer emerges that genuinely
-// requires parent-chain auth inheritance, and revisit the design with the
-// consumer in hand.
-//
-// When that day comes:
-//   - `parentEntity` is a non-null EntityName (parent must already exist
-//     in the registry at module load time).
-//   - `parentRef` is the FK on THIS table pointing at the parent.
-//   - `caslSubject` and `visibility` default to inherited from parent chain;
-//     override locally if this nested entity has genuinely different rules.
-
-export interface NestedEntitySpec<TTable extends PgTable = PgTable> extends EntitySpecBase<TTable> {
-  parentEntity: EntityName
-  parentRef: { foreignKey: PgColumn }
-  caslSubject?: AppSubject
-  visibility?: (userId: string) => SQL
-}
-
-export type EntityServerSpec = CoreEntitySpec | NestedEntitySpec
 
 // ── L0 handler shape ─────────────────────────────────────────────────────
 //

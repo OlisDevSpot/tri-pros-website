@@ -7,14 +7,11 @@
 // `spec.shareable` rewires `getById` to use baseProcedure (no session
 // required) and accept an optional `token`. Token path bypasses scope/CASL
 // entirely; session path runs the normal authenticated flow.
-//
-// Generic upper bound on CoreEntitySpec is the type-level forcing function:
-// NestedEntitySpec instances fail to compile when passed in.
 
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type { AppAbility } from '@/shared/domains/permissions/types'
-import type { CoreEntitySpec, SlotName } from '@/trpc/types'
+import type { EntityServerSpec, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
@@ -46,7 +43,7 @@ interface CreateCrudRouterOptions {
   exclude?: SlotName[]
 }
 
-export function createCrudRouter<TSpec extends CoreEntitySpec<PgTable>>(
+export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
   spec: TSpec,
   options: CreateCrudRouterOptions = {},
 ) {
@@ -135,7 +132,7 @@ export function createCrudRouter<TSpec extends CoreEntitySpec<PgTable>>(
 // return row if token matches. Session path: construct ability inline
 // (baseProcedure lacks ctx.ability), enforce read, run normal flow.
 
-function makeGetByIdProcedure<TSpec extends CoreEntitySpec<PgTable>>(
+function makeGetByIdProcedure<TSpec extends EntityServerSpec<PgTable>>(
   spec: TSpec,
   handlers: ReturnType<typeof createCrudHandlers<TSpec['table']>>,
   idSchema: z.ZodObject<{ id: z.ZodString }>,
@@ -235,7 +232,7 @@ function makeGetByIdProcedure<TSpec extends CoreEntitySpec<PgTable>>(
 function assertCan(
   ctx: { ability: AppAbility },
   slot: SlotName,
-  spec: CoreEntitySpec<PgTable>,
+  spec: EntityServerSpec<PgTable>,
 ): void {
   const action = SLOT_ACTIONS[slot]
   if (!ctx.ability.can(action, spec.caslSubject)) {

@@ -5,9 +5,6 @@
 // Visibility resolution:
 //   - Omni callers (CASL `manage all`)  → scope = null   (L0 skips scoping)
 //   - Non-omni callers                   → scope = spec.visibility(userId)
-//
-// For NestedEntitySpec (dormant in Phase 1a), the visibility resolver walks
-// the parent chain per ADR-0002. Phase 1a only exercises the Core branch.
 
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { AppAbility } from '@/shared/domains/permissions/types'
@@ -23,29 +20,9 @@ export function buildAgentCtx(
   spec: EntityServerSpec,
 ): AgentCtx {
   const isOmni = trpcCtx.ability.can('manage', 'all')
-
-  if (isOmni) {
-    return {
-      session: trpcCtx.session,
-      ability: trpcCtx.ability,
-      scope: null,
-    }
+  return {
+    session: trpcCtx.session,
+    ability: trpcCtx.ability,
+    scope: isOmni ? null : spec.visibility(trpcCtx.session.user.id),
   }
-
-  // For CoreEntitySpec: spec.visibility is required, call it directly.
-  // For NestedEntitySpec: would walk parent chain (dormant in Phase 1a).
-  if (spec.parentEntity === null) {
-    return {
-      session: trpcCtx.session,
-      ability: trpcCtx.ability,
-      scope: spec.visibility(trpcCtx.session.user.id),
-    }
-  }
-
-  // Nested branch — not yet implemented. Phase 1a never reaches this code
-  // path at runtime because no NestedEntitySpec is consumed.
-  throw new Error(
-    `[build-agent-ctx] NestedEntitySpec ('${spec.entityName}') is not yet `
-    + 'supported. All Phase 1a entities must be CoreEntitySpec.',
-  )
 }

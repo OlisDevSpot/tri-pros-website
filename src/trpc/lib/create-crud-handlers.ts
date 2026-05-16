@@ -1,21 +1,16 @@
 // ─── createCrudHandlers (L0) ────────────────────────────────────────────────
-// Raw CRUD handler functions for a CoreEntitySpec. Returns
+// Raw CRUD handler functions for an EntityServerSpec. Returns
 // CrudHandlers<TTable> with list/getById/create/update/delete/duplicate.
 //
 // Composable from anywhere: business plugins (L2), RSC paths, jobs, scripts.
 // No tRPC dependency. Throws domain errors (Error('NotFound'), etc.) which
 // L1 maps to TRPCError.
-//
-// Phase 1a scope:
-//   - Core branch: fully implemented
-//   - Nested branch: throws — first nested consumer will pressure-test parent-chain resolution
 
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 
 import type { Insert, Row, Update } from '@/shared/db/types'
 import type {
   AgentCtx,
-  CoreEntitySpec,
   CrudHandlers,
   EntityServerSpec,
   ListInput,
@@ -30,24 +25,11 @@ import { buildOrderBy } from '@/shared/dal/server/query/sort'
 import { db } from '@/shared/db'
 
 /**
- * L0 factory. For a CoreEntitySpec, returns fully-wired CRUD handlers that
- * apply visibility scoping uniformly. For a NestedEntitySpec, returns a
- * placeholder set of handlers that throw — Phase 1a doesn't implement
- * Nested L0 until a real consumer surfaces.
+ * L0 factory. Returns fully-wired CRUD handlers that apply visibility
+ * scoping uniformly.
  */
 export function createCrudHandlers<TTable extends PgTable>(
-  spec: EntityServerSpec & { table: TTable },
-): CrudHandlers<TTable> {
-  if (spec.parentEntity !== null) {
-    return makeNestedPlaceholder(spec.entityName)
-  }
-  return makeCoreHandlers(spec as CoreEntitySpec<TTable>)
-}
-
-// ── Core handlers ────────────────────────────────────────────────────────
-
-function makeCoreHandlers<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
 ): CrudHandlers<TTable> {
   const pkColumn = getPkColumn(spec)
 
@@ -69,7 +51,7 @@ function makeCoreHandlers<TTable extends PgTable>(
 // No entity consumes the factory in Phase 1a, so this gap is deliberate.
 
 async function listImpl<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
   ctx: AgentCtx,
   input: ListInput,
 ): Promise<PaginatedResult<Row<TTable>>> {
@@ -103,7 +85,7 @@ async function listImpl<TTable extends PgTable>(
 // ── getById ──────────────────────────────────────────────────────────────
 
 async function getByIdImpl<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
   input: { id: string },
@@ -125,7 +107,7 @@ async function getByIdImpl<TTable extends PgTable>(
 // is the business plugin's responsibility, not L0's.
 
 async function createImpl<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
   _ctx: AgentCtx,
   input: Insert<TTable>,
 ): Promise<Row<TTable>> {
@@ -150,7 +132,7 @@ async function createImpl<TTable extends PgTable>(
 // adds JSONB-merge when Proposal needs it.
 
 async function updateImpl<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
   input: { id: string, data: Update<TTable> },
@@ -174,7 +156,7 @@ async function updateImpl<TTable extends PgTable>(
 // ── delete ───────────────────────────────────────────────────────────────
 
 async function deleteImpl<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
   input: { id: string },
@@ -199,7 +181,7 @@ async function deleteImpl<TTable extends PgTable>(
 // or other duplicate-time side effects wrap this in a business plugin.
 
 async function duplicateImpl<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
   ctx: AgentCtx,
   input: { id: string },
@@ -223,7 +205,7 @@ async function duplicateImpl<TTable extends PgTable>(
 // ── helpers ──────────────────────────────────────────────────────────────
 
 function getPkColumn<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
 ): PgColumn {
   const pkName = spec.primaryKey ?? 'id'
   const table = spec.table as unknown as Record<string, PgColumn>
@@ -238,7 +220,7 @@ function getPkColumn<TTable extends PgTable>(
 }
 
 function resolveDefaultSort<TTable extends PgTable>(
-  spec: CoreEntitySpec<TTable>,
+  spec: EntityServerSpec<TTable>,
 ) {
   const ds = spec.list?.defaultSort
   if (ds && spec.list?.sortableColumns?.[ds.column]) {
@@ -247,26 +229,4 @@ function resolveDefaultSort<TTable extends PgTable>(
   }
   // Fall back to primary-key DESC so newest-first is the universal default.
   return desc(getPkColumn(spec))
-}
-
-// ── nested-branch placeholder ────────────────────────────────────────────
-
-function makeNestedPlaceholder<TTable extends PgTable>(
-  entityName: string,
-): CrudHandlers<TTable> {
-  const fail = (slot: string) => {
-    throw new Error(
-      `[create-crud-handlers] NestedEntitySpec ('${entityName}', slot '${slot}') `
-      + 'is not implemented in Phase 1a. All entities must be CoreEntitySpec '
-      + 'until a concrete nested consumer pressure-tests parent-chain resolution.',
-    )
-  }
-  return {
-    list: async () => fail('list') as never,
-    getById: async () => fail('getById') as never,
-    create: async () => fail('create') as never,
-    update: async () => fail('update') as never,
-    delete: async () => fail('delete') as never,
-    duplicate: async () => fail('duplicate') as never,
-  }
 }

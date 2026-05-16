@@ -3,7 +3,6 @@
 //
 // Populated by `createEntityRouter(spec, ...)` as a side-effect: any entity
 // whose router is composed via L2 lands here. Used by:
-//   - L0 (nested entities resolving their parent chain — dormant in Phase 1a)
 //   - Future cross-cutting tooling (openapi gen, admin scaffolds, observability)
 //
 // The registry is intentionally a plain Partial<Record<...>>: registration is

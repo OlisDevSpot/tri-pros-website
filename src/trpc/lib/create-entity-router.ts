@@ -1,5 +1,5 @@
 // ─── createEntityRouter (L2) ────────────────────────────────────────────────
-// Top-level composer. Takes a CoreEntitySpec and any number of plugin
+// Top-level composer. Takes an EntityServerSpec and any number of plugin
 // factories, registers the spec, auto-mounts the L1 CRUD sub-router under
 // key `crud`, and mounts each plugin under its key in the returned router.
 //
@@ -11,7 +11,7 @@
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 
-import type { CoreEntitySpec } from '@/trpc/types'
+import type { EntityServerSpec } from '@/trpc/types'
 
 import { createTRPCRouter } from '@/trpc/init'
 
@@ -24,7 +24,7 @@ type AnyRouter = ReturnType<typeof createTRPCRouter>
 
 type PluginFactory<TSpec> = (spec: TSpec) => AnyRouter
 
-export function createEntityRouter<TSpec extends CoreEntitySpec<PgTable>>(
+export function createEntityRouter<TSpec extends EntityServerSpec<PgTable>>(
   spec: TSpec,
   plugins: Record<string, PluginFactory<TSpec>> = {},
 ) {
