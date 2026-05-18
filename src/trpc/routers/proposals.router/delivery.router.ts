@@ -5,20 +5,20 @@
 // pre-configured auth + scope middleware.
 //
 // Orchestration pattern: procedure calls pure services (email, notification),
-// generic CRUD DAL (handlers.update), cross-entity DAL, and dispatches jobs.
+// generic CRUD DAL (proposalCrud.update), cross-entity DAL, and dispatches jobs.
 // No direct db imports. No deprecated DAL functions.
 
+import type { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
 
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { deriveOutcomeOnProposalSent } from '@/shared/entities/meetings/dal/server/mutations'
+import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { recordProposalView } from '@/shared/entities/proposals/dal/server/mutations'
 import { getFullView, getProposalViews } from '@/shared/entities/proposals/dal/server/queries'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { emailService } from '@/shared/services/email.service'
 import { sendViewNotificationJob } from '@/shared/services/upstash/jobs/send-view-notification'
 import { syncContractDraftJob } from '@/shared/services/upstash/jobs/sync-contract-draft'
@@ -43,8 +43,6 @@ const recordViewSchema = z.object({
 })
 
 export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServerSpec.table>) {
-  const handlers = createCrudDal(proposalServerSpec)
-
   return createTRPCRouter({
     sendProposalEmail: entity.authedProcedure
       .input(sendEmailSchema)
@@ -61,7 +59,7 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
         })
 
         // 2. Update proposal status via generic CRUD
-        const proposal = dalToTrpc(await handlers.update(ctx, {
+        const proposal = dalToTrpc(await proposalCrud.update(ctx, {
           id: input.proposalId,
           data: { status: 'sent', sentAt: new Date().toISOString() },
         }))

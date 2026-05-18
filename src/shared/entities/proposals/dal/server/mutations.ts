@@ -16,16 +16,15 @@ import type { Insert, Row } from '@/shared/db/types'
 import { randomBytes } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 
-import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/lib/types'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { createEmptySowSection } from '@/shared/entities/proposals/lib/create-empty-sow-section'
 import { deriveProposalKind } from '@/shared/entities/proposals/lib/derive-proposal-kind'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
 // ── proposalCreateDal ───────────────────────────────────────────────────
 
@@ -109,8 +108,7 @@ export async function proposalDuplicateDal(
   input: { id: string },
 ): Promise<DalReturn<Row<typeof proposals>>> {
   return dalDbOperation(async () => {
-    const defaults = createCrudDal(proposalServerSpec)
-    const source = dalVerifySuccess(await defaults.getById(ctx, input))
+    const source = dalVerifySuccess(await proposalCrud.getById(ctx, input))
 
     if (!source) {
       throw new ThrowableDalError({ type: 'not-found' })

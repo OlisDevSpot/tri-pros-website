@@ -8,6 +8,8 @@ import { intakeModes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
 import { deleteCustomer, getCustomer, getCustomers } from '@/shared/dal/server/customers/api'
 import { userCanSeeCustomer } from '@/shared/dal/server/customers/visibility'
+import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { addParticipant } from '@/shared/dal/server/meetings/participants'
 import { buildFilterWhere } from '@/shared/dal/server/query/filters'
 import { paginate } from '@/shared/dal/server/query/output'
@@ -20,9 +22,13 @@ import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { geocodeAddress } from '@/shared/services/google-maps/geocode'
 import { agentProcedure, baseProcedure, createTRPCRouter } from '../init'
 
@@ -509,5 +515,58 @@ export const customersRouter = createTRPCRouter({
 
         return { customerId: customer.id, meetingId }
       })
+    }),
+
+  /**
+   * Updates the customer's age in their profile JSON. Shareable — accessible
+   * by agents (via session) and homeowners (via proposal token). The token
+   * path resolves the customer through the proposal's meeting chain.
+   */
+  submitCustomerAge: baseProcedure
+    .input(z.object({
+      proposalId: z.string().uuid(),
+      token: z.string().optional(),
+      age: z.number().int().min(18).max(120),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Resolve the customer through the proposal
+      const proposal = dalVerifySuccess(await getFullView(
+        ctx.session
+          ? buildUserContext(ctx.session.user.id, ctx.session.user.role, proposalServerSpec)
+          : SYSTEM_CONTEXT,
+        { id: input.proposalId },
+      ))
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+      }
+
+      // Auth gate: session with CASL permission OR valid token
+      const ability = defineAbilitiesFor(
+        ctx.session ? { id: ctx.session.user.id, role: ctx.session.user.role } : null,
+      )
+      const canUpdate = ability.can('update', 'Customer')
+      const hasValidToken = input.token && proposal.token === input.token
+
+      if (!canUpdate && !hasValidToken) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Access denied' })
+      }
+
+      if (!proposal.customer) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
+      }
+
+      // Update customer profile age via CRUD singleton
+      const existing = dalVerifySuccess(await customerCrud.getById(SYSTEM_CONTEXT, { id: proposal.customer.id }))
+      if (!existing) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+      }
+      const currentProfile = (existing as Record<string, unknown>).customerProfileJSON as Record<string, unknown> | null
+      const updatedProfile = { ...currentProfile, age: input.age }
+      dalVerifySuccess(await customerCrud.update(SYSTEM_CONTEXT, {
+        id: proposal.customer.id,
+        data: { customerProfileJSON: updatedProfile } as Record<string, unknown>,
+      }))
+
+      return { success: true, age: input.age }
     }),
 })

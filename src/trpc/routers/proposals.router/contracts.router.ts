@@ -5,21 +5,18 @@
 // entity.authedProcedure / entity.shareableProcedure for pre-configured
 // auth + scope middleware.
 //
-// Cross-entity writes (customer profile) use SYSTEM_CONTEXT via
-// customerHandlers — these are system-level side-effects not gated by the
-// agent's proposal visibility scope.
+// Customer age writes have been moved to customersRouter.submitCustomerAge.
+// This router only manages proposal-level contract operations.
 
+import type { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
 
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { envelopeDocumentIds } from '@/shared/constants/enums'
-import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
-import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { contractService } from '@/shared/services/contract.service'
 import { EnvelopeSelectionError, evaluateDocuments, validateEnvelopeSelection } from '@/shared/services/zoho-sign/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/zoho-sign/documents/proposal-context'
@@ -29,9 +26,6 @@ import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
 
 export function createContractsRouter(entity: EntityToolkit<typeof proposalServerSpec.table>) {
-  const proposalHandlers = createCrudDal(proposalServerSpec)
-  const customerHandlers = createCrudDal(customerServerSpec)
-
   return createTRPCRouter({
     getContractStatus: entity.shareableProcedure
       .input(z.object({ id: z.string(), token: z.string().optional() }))
@@ -137,9 +131,9 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
       }),
 
     /**
-     * Atomically persists customer age + proposal envelope-document
-     * selection. Selection is re-validated against the registry rules —
-     * never trust the client's filter alone.
+     * Persists the proposal envelope-document selection. The age param is
+     * used for senior-vs-non-senior validation only — customer age is now
+     * saved via customersRouter.submitCustomerAge separately.
      */
     configureDraftEnvelope: entity.authedProcedure
       .input(z.object({
@@ -152,13 +146,10 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         if (!proposal) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
         }
-        if (!proposal.customer) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
-        }
 
-        const proposalCtx = buildProposalContext(proposal, { ageOverride: input.age })
+        const evalCtx = buildProposalContext(proposal, { ageOverride: input.age })
         try {
-          validateEnvelopeSelection(proposalCtx, input.envelopeDocumentIds)
+          validateEnvelopeSelection(evalCtx, input.envelopeDocumentIds)
         }
         catch (err) {
           if (err instanceof EnvelopeSelectionError) {
@@ -167,57 +158,16 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
           throw err
         }
 
-        // Cross-entity customer write — SYSTEM_CONTEXT because this is a
-        // system-level side-effect on the customer entity.
-        const customerId = proposal.customer.id
-        const existing = dalToTrpc(await customerHandlers.getById(SYSTEM_CONTEXT, { id: customerId }))
-        const existingProfile = (existing as Record<string, unknown>).customerProfileJSON as Record<string, unknown> | null
-        const updatedProfile = { ...existingProfile, age: input.age }
-        dalToTrpc(await customerHandlers.update(SYSTEM_CONTEXT, {
-          id: customerId,
-          data: { customerProfileJSON: updatedProfile },
-        }))
-
-        // Proposal write — user's own scope
         const updatedFormMeta = {
           ...proposal.formMetaJSON,
           envelopeDocumentIds: input.envelopeDocumentIds,
         }
-        dalToTrpc(await proposalHandlers.update(ctx, {
+        dalToTrpc(await proposalCrud.update(ctx, {
           id: input.proposalId,
           data: { formMetaJSON: updatedFormMeta },
         }))
 
-        return { success: true, age: input.age, envelopeDocumentIds: input.envelopeDocumentIds }
-      }),
-
-    submitCustomerAge: entity.shareableProcedure
-      .input(z.object({
-        id: z.string(),
-        token: z.string().optional(),
-        age: z.number().int().min(18).max(120),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const proposal = dalToTrpc(await getFullView(ctx, { id: input.id }))
-        if (!proposal) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-        }
-        if (!proposal.customer) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
-        }
-
-        // Cross-entity customer write — SYSTEM_CONTEXT because this may be
-        // a homeowner submitting via token, not an agent.
-        const customerId = proposal.customer.id
-        const existing = dalToTrpc(await customerHandlers.getById(SYSTEM_CONTEXT, { id: customerId }))
-        const existingProfile = (existing as Record<string, unknown>).customerProfileJSON as Record<string, unknown> | null
-        const updatedProfile = { ...existingProfile, age: input.age }
-        dalToTrpc(await customerHandlers.update(SYSTEM_CONTEXT, {
-          id: customerId,
-          data: { customerProfileJSON: updatedProfile },
-        }))
-
-        return { success: true, age: input.age }
+        return { success: true, envelopeDocumentIds: input.envelopeDocumentIds }
       }),
   })
 }

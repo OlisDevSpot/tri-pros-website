@@ -21,7 +21,7 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
   const { invalidateProposal } = useInvalidation()
 
   const submitAge = useMutation(
-    trpc.proposalsRouter.contracts.submitCustomerAge.mutationOptions({
+    trpc.customersRouter.submitCustomerAge.mutationOptions({
       onSuccess: () => {
         invalidateProposal()
         toast.success('Age saved')
@@ -72,7 +72,7 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
         <Button
           onClick={() => {
             if (isValid) {
-              submitAge.mutate({ id: proposalId, token, age: parsedAge })
+              submitAge.mutate({ proposalId, token, age: parsedAge })
             }
           }}
           disabled={!isValid || submitAge.isPending}

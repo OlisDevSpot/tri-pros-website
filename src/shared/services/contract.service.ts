@@ -3,11 +3,10 @@ import type { ContractEvent } from '@/shared/constants/enums'
 import type { ScopedContext } from '@/shared/dal/server/lib/types'
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import type { ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
-import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getBySigningRequestId, getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { pdfService } from '@/shared/services/pdf.service'
 import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
@@ -25,8 +24,6 @@ interface ZohoCreateDocResponse {
 }
 
 function createContractService() {
-  const handlers = createCrudDal(proposalServerSpec)
-
   async function getAuthHeader() {
     const token = await getZohoAccessToken()
     return { Authorization: `Zoho-oauthtoken ${token}` }
@@ -149,7 +146,7 @@ function createContractService() {
     if (selection.length > 0) {
       const proposalCtx = buildProposalContext(proposal)
       const { requestId, status } = await assembleEnvelope(proposalCtx)
-      dalVerifySuccess(await handlers.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
+      dalVerifySuccess(await proposalCrud.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
       return { requestId, status }
     }
 
@@ -174,7 +171,7 @@ function createContractService() {
       throw attachErr
     }
 
-    dalVerifySuccess(await handlers.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
+    dalVerifySuccess(await proposalCrud.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
     return { requestId, status }
   }
 
@@ -216,7 +213,7 @@ function createContractService() {
         throw new Error(`Zoho Sign submit failed: ${errorText}`)
       }
 
-      dalVerifySuccess(await handlers.update(ctx, {
+      dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
         data: {
           signingRequestId: requestId,
@@ -244,7 +241,7 @@ function createContractService() {
         throw new Error(`Zoho Sign recall failed: ${errorText}`)
       }
 
-      dalVerifySuccess(await handlers.update(ctx, {
+      dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
         data: {
           signingRequestId: null,
@@ -269,7 +266,7 @@ function createContractService() {
       }
 
       // Clear old reference
-      dalVerifySuccess(await handlers.update(ctx, {
+      dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
         data: {
           signingRequestId: null,
@@ -287,7 +284,7 @@ function createContractService() {
         throw new Error(`Zoho Sign submit failed: ${errorText}`)
       }
 
-      dalVerifySuccess(await handlers.update(ctx, {
+      dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
         data: {
           signingRequestId: requestId,
@@ -318,7 +315,7 @@ function createContractService() {
       await deleteRequest(proposal.signingRequestId).catch(() => {})
 
       // Clear stale reference
-      dalVerifySuccess(await handlers.update(ctx, {
+      dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
         data: {
           signingRequestId: null,
@@ -393,7 +390,7 @@ function createContractService() {
       }
 
       // 4. Update via generic CRUD
-      return dalVerifySuccess(await handlers.update(ctx, { id: proposal.id, data: setFields }))
+      return dalVerifySuccess(await proposalCrud.update(ctx, { id: proposal.id, data: setFields }))
     },
   }
 }
