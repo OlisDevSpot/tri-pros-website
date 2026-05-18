@@ -1,5 +1,6 @@
-import { applyContractEvent } from '@/shared/dal/server/proposals/api'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { mapZohoOperationToContractEvent, shouldNotifyOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
+import { contractService } from '@/shared/services/contract.service'
 import { notificationService } from '@/shared/services/notification.service'
 import { createJob } from '../lib/create-job'
 
@@ -12,10 +13,8 @@ interface SyncZohoSignStatusPayload {
 
 /**
  * Persists a single Zoho Sign event onto the matching proposal.
- *
- * Lookup is by `signingRequestId`. Once the project-management hub adds
- * addendum signing (PM-hub spec §7), this handler grows a parallel branch
- * that resolves by `media_files.tags.zohoEnvelopeId`.
+ * Lookup is by `signingRequestId`. Business logic (idempotency,
+ * auto-approve) lives in contractService.applyContractEvent.
  */
 export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
   'sync-zoho-sign-status',
@@ -25,7 +24,7 @@ export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
       return
     }
 
-    const updated = await applyContractEvent({ signingRequestId, event, performedAt })
+    const updated = await contractService.applyContractEvent(SYSTEM_CONTEXT, { signingRequestId, event, performedAt })
     if (!updated) {
       return
     }

@@ -34,7 +34,7 @@ async function main() {
   await c.end()
 
   console.log(`\nDispatching QStash job → ${PROD_BASE_URL}/api/qstash-jobs?job=sync-contract-draft`)
-  await syncContractDraftJob.dispatch({ proposalId: PROPOSAL_ID, ownerKey: null })
+  await syncContractDraftJob.dispatch({ proposalId: PROPOSAL_ID })
   console.log('  dispatched. QStash will POST to Vercel within seconds.\n')
 
   // Poll for signing_request_id to appear (or timeout).

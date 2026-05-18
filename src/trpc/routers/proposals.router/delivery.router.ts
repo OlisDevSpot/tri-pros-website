@@ -77,13 +77,7 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
         }
 
         // 4. Dispatch async contract draft sync job
-        // @migration(contract-service)
-        // ownerKey is passed for the un-migrated contract.service. Once
-        // contract.service migrates to DAL + SYSTEM_CONTEXT pattern, remove
-        // ownerKey from the job payload entirely.
-        const isOmni = ctx.ability.can('manage', 'all')
-        const ownerKey = isOmni ? null : ctx.session.user.id
-        await syncContractDraftJob.dispatch({ proposalId: input.proposalId, ownerKey })
+        await syncContractDraftJob.dispatch({ proposalId: input.proposalId })
 
         return { data, proposal }
       }),

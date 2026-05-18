@@ -1,15 +1,15 @@
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { contractService } from '@/shared/services/contract.service'
 
 import { createJob } from '../lib/create-job'
 
 interface SyncContractDraftPayload {
   proposalId: string
-  ownerKey: string | null
 }
 
 export const syncContractDraftJob = createJob<SyncContractDraftPayload>(
   'sync-contract-draft',
-  async ({ proposalId, ownerKey }) => {
-    await contractService.ensureDraftSynced(proposalId, ownerKey)
+  async ({ proposalId }) => {
+    await contractService.ensureDraftSynced(SYSTEM_CONTEXT, proposalId)
   },
 )
