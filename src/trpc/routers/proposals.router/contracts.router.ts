@@ -20,7 +20,7 @@ import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
-import { zohoSignService } from '@/shared/services/zoho-sign.service'
+import { contractService } from '@/shared/services/contracts.service'
 import { EnvelopeSelectionError, evaluateDocuments, validateEnvelopeSelection } from '@/shared/services/zoho-sign/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/zoho-sign/documents/proposal-context'
 import { ENVELOPE_DOCUMENTS } from '@/shared/services/zoho-sign/documents/registry'
@@ -60,7 +60,7 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         }
 
         try {
-          const status = await zohoSignService.getSigningStatus(proposal.signingRequestId)
+          const status = await contractService.getSigningStatus(proposal.signingRequestId)
           return { ...status, ...stamps }
         }
         catch {
@@ -71,31 +71,31 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
     createContractDraft: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return zohoSignService.createSigningRequest(ctx, input.proposalId)
+        return contractService.createSigningRequest(ctx, input.proposalId)
       }),
 
     submitContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return zohoSignService.sendSigningRequest(ctx, input.proposalId)
+        return contractService.sendSigningRequest(ctx, input.proposalId)
       }),
 
     sendContractForSigning: entity.shareableProcedure
       .input(z.object({ id: z.string(), token: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return zohoSignService.sendSigningRequest(ctx, input.id)
+        return contractService.sendSigningRequest(ctx, input.id)
       }),
 
     recallContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return zohoSignService.recallSigningRequest(ctx, input.proposalId)
+        return contractService.recallSigningRequest(ctx, input.proposalId)
       }),
 
     resendContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return zohoSignService.resendSigningRequest(ctx, input.proposalId)
+        return contractService.resendSigningRequest(ctx, input.proposalId)
       }),
 
     /**

@@ -1,5 +1,5 @@
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
-import { zohoSignService } from '@/shared/services/zoho-sign.service'
+import { contractService } from '@/shared/services/contracts.service'
 
 import { createJob } from '../lib/create-job'
 
@@ -10,6 +10,6 @@ interface SyncContractDraftPayload {
 export const syncContractDraftJob = createJob<SyncContractDraftPayload>(
   'sync-contract-draft',
   async ({ proposalId }) => {
-    await zohoSignService.ensureDraftSynced(SYSTEM_CONTEXT, proposalId)
+    await contractService.ensureDraftSynced(SYSTEM_CONTEXT, proposalId)
   },
 )

@@ -23,7 +23,7 @@ interface ZohoCreateDocResponse {
   }
 }
 
-function createZohoSignService() {
+function createContractService() {
   async function getAuthHeader() {
     const token = await getZohoAccessToken()
     return { Authorization: `Zoho-oauthtoken ${token}` }
@@ -395,5 +395,5 @@ function createZohoSignService() {
   }
 }
 
-export type ZohoSignService = ReturnType<typeof createZohoSignService>
-export const zohoSignService = createZohoSignService()
+export type ContractService = ReturnType<typeof createContractService>
+export const contractService = createContractService()
