@@ -67,6 +67,10 @@ export function createCrudRouter<
 >(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
   // Merge default DAL handlers with any caller-provided overrides.
   const defaults = createCrudDal(config.spec)
+  // Cast: spread merge of defaults + Partial overrides loses the full interface
+  // type. TS can't prove all 5 keys are present after the merge (even though
+  // defaults has all 5 and Partial can only override, not remove). Fixable by
+  // explicit ?? per key — deferred for readability.
   const handlers = { ...defaults, ...config.handlers } as CrudHandlers<TTable, TId>
 
   // Select the right procedure based on shareable config.
@@ -102,6 +106,10 @@ export function createCrudRouter<
       .input(config.schemas.insert)
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'create', config.spec)
+        // Cast: Zod schema output ≠ Drizzle Insert type because the API schema
+        // intentionally .omit()s server-derived fields (e.g. kind, token). The
+        // custom create handler adds them before inserting. Two independent type
+        // systems (Zod + Drizzle) — can't be bridged without coupling DAL to Zod.
         return dalToTrpc(await handlers.create(ctx, input as Insert<TTable>))
       }),
 

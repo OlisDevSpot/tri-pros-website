@@ -32,7 +32,9 @@ import { createMiddleware } from '@/trpc/init'
  * Neither: throws UNAUTHORIZED.
  */
 export function shareableMiddleware(spec: EntityServerSpec) {
-  // Resolve token column at factory time (not per-request) for early validation.
+  // Cast: Drizzle's PgTable type doesn't expose columns as a keyed record.
+  // Dynamic column lookup by name (from spec.shareable.tokenColumn) requires
+  // treating the table object as a record. No typed API exists for this.
   const table = spec.table as unknown as Record<string, PgColumn | undefined>
   const tokenColumnName = spec.shareable?.tokenColumn
   const tokenColumn = tokenColumnName ? table[tokenColumnName] : undefined
@@ -45,6 +47,9 @@ export function shareableMiddleware(spec: EntityServerSpec) {
   }
 
   return createMiddleware(async ({ ctx, next, getRawInput }) => {
+    // Cast: tRPC v11's getRawInput() returns Promise<unknown> by design —
+    // input hasn't been Zod-validated yet. We peek at the token field before
+    // validation for the dual-credential branching decision.
     const rawInput = await getRawInput() as Record<string, unknown> | undefined
     const token = rawInput?.token as string | undefined
 

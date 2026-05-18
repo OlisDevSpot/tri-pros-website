@@ -76,11 +76,13 @@ export function createEntityRouter<TSpec extends EntityServerSpec, TRouter exten
   const scopedAgentProcedure = agentProcedure.use(scopeMiddleware(spec))
   const scopedShareableProcedure = baseProcedure.use(shareableMiddleware(spec))
 
-  // Controlled cast at the toolkit boundary. After .use(middleware), tRPC's
-  // ProcedureBuilder type changes shape (augmented ctx). The EntityToolkit
-  // interface uses `typeof agentProcedure` / `typeof baseProcedure` for
-  // consumer ergonomics — .input()/.query()/.mutation() still work identically.
-  // This is the ONLY place these casts exist.
+  // Cast: tRPC's ProcedureBuilder type changes after every .use() — the
+  // augmented ctx makes the post-middleware type incompatible with the
+  // pre-middleware type. tRPC provides no interface for "procedure builder
+  // of any middleware depth." Their pattern is top-level const + typeof,
+  // which doesn't work for our per-entity factory. The .input()/.query()/
+  // .mutation() API is identical regardless — the cast restores the builder
+  // API type for downstream consumers.
   const toolkit = {
     authedProcedure: scopedAgentProcedure as typeof agentProcedure,
     shareableProcedure: scopedShareableProcedure as typeof baseProcedure,

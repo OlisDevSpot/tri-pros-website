@@ -74,32 +74,30 @@ export const proposalVisibility = (userId: string) =>
 // src/shared/entities/proposals/lib/server-spec.ts
 import { PROPOSAL } from './constants'
 import { proposalVisibility } from './visibility'
-import { proposalsTable } from '@/shared/db/schema'
-import { createInsertSchema, createUpdateSchema, createSelectSchema } from 'drizzle-zod'
+import { insertProposalSchema, proposals, selectProposalSchema } from '@/shared/db/schema'
+
+const updateProposalSchema = insertProposalSchema.partial()
+
+// Concrete-typed schemas — consumed by createCrudRouter for tRPC type inference.
+// The spec also holds these objects, but type-erased via the EntityServerSpec
+// interface (fine for DAL's runtime .parse()).
+export const proposalSchemas = {
+  insert: insertProposalSchema,
+  update: updateProposalSchema,
+}
 
 export const proposalServerSpec = {
   entityName: PROPOSAL,
   caslSubject: PROPOSAL,
   visibility: proposalVisibility,
-  table: proposalsTable,
-  schemas: {
-    insert: createInsertSchema(proposalsTable),
-    update: createUpdateSchema(proposalsTable),
-    select: createSelectSchema(proposalsTable),
-  },
+  table: proposals,
+  schemas: { ...proposalSchemas, select: selectProposalSchema },
   // Optional spec fields — named typed config for cross-entity patterns:
   shareable: { tokenColumn: 'token' },
-  update: {
-    jsonbMergeColumns: [
-      proposalsTable.formMetaJSON,
-      proposalsTable.projectJSON,
-      proposalsTable.fundingJSON,
-    ],
-  },
   // Note: list is NOT on the spec — it's a business concern with entity-specific
   // joins, derived columns, and filter predicates. Each entity writes its own
   // list query as a business sub-router procedure.
-} satisfies EntityServerSpec
+} satisfies EntityServerSpec<typeof proposals>  // TId defaults to string (UUID)
 ```
 
 ---
@@ -109,14 +107,23 @@ export const proposalServerSpec = {
 `src/trpc/routers/<entity>.router/index.ts`:
 
 ```ts
+import z from 'zod'
 import { createEntityRouter } from '@/trpc/lib/create-entity-router'
+import { createCrudRouter } from '@/trpc/lib/create-crud-router'
 import { createTRPCRouter } from '@/trpc/init'
-import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
+import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
 export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
   createTRPCRouter({
-    // CRUD sub-router — 5 single-row operations (getById, create, update, delete, duplicate)
-    crud: entity.crud({ handlers: { create: customCreateDal } }),
+    // CRUD sub-router — 5 single-row operations with full client type inference.
+    // Custom handlers override create/duplicate with entity-specific business logic.
+    crud: createCrudRouter({
+      spec: proposalServerSpec,
+      schemas: { ...proposalSchemas, id: z.string().uuid() },
+      authedProcedure: entity.authedProcedure,
+      shareableProcedure: entity.shareableProcedure,
+      handlers: { create: customCreateDal, duplicate: customDuplicateDal },
+    }),
 
     // Business sub-router — entity-specific queries (list, enriched views, etc.)
     business: createTRPCRouter({
@@ -124,11 +131,8 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
       getFullView: entity.shareableProcedure.input(viewSchema).query(viewHandler),
     }),
 
-    // Delivery sub-router — email, contract signing, etc.
-    delivery: createTRPCRouter({
-      sendEmail: entity.authedProcedure.input(emailSchema).mutation(emailHandler),
-      recordView: entity.publicProcedure.input(viewSchema).mutation(viewHandler),
-    }),
+    // Service-layer sub-router — receives entity toolkit via factory.
+    delivery: createDeliveryRouter(entity),
   })
 )
 ```
@@ -140,10 +144,9 @@ The factory function receives an **entity toolkit** with pre-configured tRPC pro
 | `entity.authedProcedure` | Agent-only, scope resolved | `agentProcedure.use(scopeMiddleware(spec))` |
 | `entity.shareableProcedure` | Token-or-session, auto-resolves scope | `baseProcedure.use(shareableMiddleware(spec))` |
 | `entity.publicProcedure` | No auth required | `baseProcedure` (pass-through) |
-| `entity.crud(options?)` | Auto-generated CRUD sub-router | Uses authed/shareable internally |
 | `entity.spec` | The spec itself | For sub-routers that need it |
 
-These are NOT custom abstractions — `entity.authedProcedure` IS a real tRPC procedure with full type inference and middleware composability.
+CRUD is NOT on the toolkit — call `createCrudRouter()` directly in the factory for full type inference. These are NOT custom abstractions — `entity.authedProcedure` IS a real tRPC procedure with full type inference and middleware composability.
 
 ---
 
@@ -180,9 +183,10 @@ trpc.proposals.crud.getById.useQuery({ id, token: shareToken })
 
 ## Common variations
 
-- **Suppress a CRUD slot**: `createCrudRouter(spec, { exclude: ['delete'] })`. The handler is still generated at L0 (so business procedures can still call it internally) but it's not surfaced in the public tRPC router.
-- **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec. The factory derives the id schema from `spec.schemas.select.shape[spec.primaryKey]`. The consumer-facing input field is always normalized to `id`; the factory maps to the actual column name internally.
-- **Behavior not covered by any spec field**: write it as a business procedure that calls `handlers.<slot>` internally. Do NOT add it as a CRUD override. If the same pattern appears across 2+ entities, propose adding it as a named typed spec field — that's the promotion bar.
+- **Override a CRUD handler**: pass `handlers: { create: customCreateDal }` to `createCrudRouter`. The custom handler must match `CrudHandlers<TTable, TId>` for that slot. Non-overridden slots use the generic DAL defaults from `createCrudDal(spec)`.
+- **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. Use `EntityServerSpec<typeof table, number>` for the `TId` generic.
+- **Behavior not covered by any spec field**: write it as a business procedure on the business sub-router. If the same pattern appears across 2+ entities, propose adding it as a named typed spec field — that's the promotion bar.
+- **Service-layer sub-router** (email, contracts, etc.): declare as a factory function `createDeliveryRouter(entity: EntityToolkit<TTable>)` that receives the entity toolkit and returns a tRPC router. Sub-routers get DAL handlers via `createCrudDal(spec)` directly. See `delivery.router.ts` as the reference implementation.
 
 ---
 
@@ -190,8 +194,9 @@ trpc.proposals.crud.getById.useQuery({ id, token: shareToken })
 
 - ❌ **Don't put callback functions or business logic in the server-spec.** The spec is data. The only function allowed is the visibility predicate (and it's a named spec field, not free-form).
 - ❌ **Don't write a new `userCanSeeX` predicate in `dal/server/`.** Visibility colocates with the entity at `entities/<entity>/lib/visibility.ts`.
-- ❌ **Don't hand-roll CRUD procedures.** Use the factory. If the factory's output isn't sufficient, you almost certainly want a business procedure, not a custom CRUD slot.
-- ❌ **Don't write `if (ctx.ability.can('manage', 'all')) ...` inline.** The L0 factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
+- ❌ **Don't hand-roll CRUD procedures.** Use `createCrudRouter()`. If the factory's output isn't sufficient, you almost certainly want a business procedure, not a custom CRUD slot.
+- ❌ **Don't write `if (ctx.ability.can('manage', 'all')) ...` inline.** The CRUD factory applies CASL and visibility uniformly. Reaching for the omni check inline is a smell.
+- ❌ **Don't put `crud()` on the entity toolkit.** Call `createCrudRouter()` directly in the factory function — this is how type inference flows through. Toolkit is for pre-scoped procedures only.
 - ❌ **Don't define entity-name strings in `domains/permissions/`.** Identity lives in `entities/<entity>/lib/constants.ts` and is *imported* by `permissions/abilities.ts`. Inverting this creates circular logic and breaks the "entity owns its identity" rule.
 
 ---

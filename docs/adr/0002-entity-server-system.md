@@ -124,6 +124,16 @@ Each entity's identity string lives in `entities/<entity>/lib/constants.ts`; `do
 
 - **Auto-derived `EntityName` union from registry.** Rejected: too magical. Hand-maintained union in `abilities.ts` with compile error when missed.
 
+- **`entity.crud()` on the toolkit.** Phase 1a put CRUD generation on the toolkit as a method. The method return was cast to `AnyRouter` — erasing all tRPC type inference for the client. Replaced: `createCrudRouter()` called directly in the factory function. The return type flows through the object literal into `TRouter`. The toolkit now provides only pre-scoped procedures + spec.
+
+- **Type-erased schemas on EntityServerSpec for tRPC input.** The spec's `schemas` field is `ZodObject<Record<string, ZodTypeAny>>` — type-erased for DAL's runtime `.parse()`. Using it as `.input(spec.schemas.insert)` gives the client `unknown` types. Replaced: `createCrudRouter` receives concrete schemas as a separate config property. Same objects at runtime; the entity spec file exports both `proposalSchemas` (concrete types for tRPC) and `proposalServerSpec` (type-erased via interface for DAL).
+
+- **`PkField<TTable>` conditional type for primary key derivation.** Unresolvable when `TTable` is a generic bounded by `PgTable` — TypeScript can't evaluate the conditional. Replaced: explicit `TId extends string | number` generic on `EntityServerSpec` and `CrudHandlers`. Default `string` (UUID). Serial entities pass `number`.
+
+- **Schemas removed from EntityServerSpec entirely.** Considered: DAL trusts callers, no `.parse()` validation. Rejected: the WDS/Next.js DAL pattern says DAL owns authorization + validation. Schemas stay on the spec for DAL's runtime validation. tRPC gets concrete types via a separate export path.
+
+- **Hand-typed middleware interfaces.** Phase 1a defined `ScopeMiddlewareOpts` and `ShareableMiddlewareOpts` as manual interfaces, then cast the middleware into `.use()` with `as never`. This killed ctx type tracking. Replaced: export `t.middleware` as `createMiddleware` from `init.ts` and use it in middleware factories. tRPC natively tracks ctx transformations. Zero casts in middleware.
+
 ## Consequences
 
 - **Standardize DAL first, then tRPC.** The execution order matters. DAL standardization creates reusable data-access functions; tRPC becomes a thin wrapper calling them. This reverses the Phase 1a approach (which started at tRPC and worked down).
@@ -161,3 +171,9 @@ Each entity's identity string lives in `entities/<entity>/lib/constants.ts`; `do
 - **`ctx: ScopedContext = SYSTEM_CONTEXT` — the universal DAL calling convention.** Every DAL function accepts `ScopedContext` as its first argument. `SYSTEM_CONTEXT` is a sensible default (full access, no visibility scoping) but callers choose what to pass: tRPC procedures pass their middleware-resolved scoped `ctx`, services accept `ctx` from their caller and thread it to DAL (defaulting to `SYSTEM_CONTEXT` when invoked from jobs/webhooks), and RSC uses `buildSessionContext(spec)`. This replaces the old `ownerKey` pattern (null for omni, userId for scoped) — visibility is now a SQL predicate on `ctx.scope`, not an ad-hoc parameter.
 
 - **`@migration(<dependency>)` comments for sequencing gaps.** When the correct pattern can't be fully applied because a dependency entity hasn't migrated yet, implement the target pattern with a migration comment: `// @migration(meetings-entity-router)` followed by what the code does now, what it becomes, and what to delete. Greppable by dependency identifier. See `delivery.router.ts` and `notification.service.ts` for examples.
+
+- **`createCrudRouter` uses concrete Zod schemas for full client type inference.** The CRUD router is a static object literal (all 5 slots always present). It receives concrete Zod schemas (`TInsert`, `TUpdate`, `TId`) as a separate config property — not from the type-erased spec. The entity spec file exports both: `proposalSchemas` (concrete types, consumed by `createCrudRouter`) and `proposalServerSpec` (type-erased via `EntityServerSpec` interface, consumed by DAL/middleware). Same objects at runtime.
+
+- **Middleware uses `t.middleware` (`createMiddleware`).** Both `scopeMiddleware` and `shareableMiddleware` use `createMiddleware` from `init.ts` — tRPC's native middleware factory. This lets tRPC track ctx transformations through the middleware chain. Downstream procedures get properly typed ctx without casts.
+
+- **9 casts remain — all at framework boundaries, all documented inline.** Three categories: (1) tRPC ProcedureBuilder type after `.use()` — 3 casts at toolkit assembly in `createEntityRouter`, unavoidable with per-entity factory pattern; (2) Zod→Drizzle type boundary — 2 casts in `createCrudRouter` where API schemas intentionally `.omit()` server-derived fields; (3) Drizzle/tRPC framework APIs — 3 casts for `PgTable` column lookup and `getRawInput()` returning `unknown`. Each cast has an inline comment explaining why it exists.
