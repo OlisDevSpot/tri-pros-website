@@ -1,19 +1,24 @@
-// ─── createCrudRouter (L1) ──────────────────────────────────────────────────
+// ─── createCrudRouter (CRUD Sub-router) ─────────────────────────────────────
 // Thin tRPC sub-router that maps 5 CRUD slots to tRPC procedures.
-// Receives pre-scoped procedures from the L2 entity toolkit — scope middleware
-// is already baked in. Each slot wires:
+// Receives pre-scoped procedures from the entity router and concrete Zod
+// schemas for full type inference. Each slot wires:
 //   - CASL action gate (action <- slot, subject <- spec.caslSubject)
-//   - Zod input validation from spec.schemas
+//   - Zod input validation from concrete schemas (not type-erased spec)
 //   - DAL handler call (default from createCrudDal, overridable per-slot)
-//   - domain error -> TRPCError mapping
+//   - DalReturn → TRPCError via dalToTrpc
+//
+// The router is a static object literal — all 5 slots always present.
+// TypeScript infers the full router shape for end-to-end client type safety.
 //
 // `spec.shareable` controls whether `getById` and `update` use the shareable
 // procedure (token-or-session) or the authed procedure (session-only).
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 
+import type { Insert } from '@/shared/db/types'
+import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 import type { agentProcedure, baseProcedure } from '@/trpc/init'
-import type { AuthedContext, CrudHandlers, EntityServerSpec, ScopedContext, SlotName } from '@/trpc/types'
+import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
@@ -22,14 +27,8 @@ import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
-// L1 is the Zod->L0 adapter. spec.schemas.select is ZodObject (type-erased
-// by design) so Zod outputs `unknown` for the id field. This type bridges
-// the boundary — Zod validates the value at runtime; this assertion tells TS
-// the shape matches what L0 expects. Same pattern used for create/update below.
-interface IdInput { id: string | number }
-
 // Action mapping per slot — fixed (not entity-configurable).
-const SLOT_ACTIONS: Record<SlotName, 'read' | 'create' | 'update' | 'delete'> = {
+const SLOT_ACTIONS: Record<SlotName, AppAction> = {
   getById: 'read',
   create: 'create',
   update: 'update',
@@ -37,139 +36,117 @@ const SLOT_ACTIONS: Record<SlotName, 'read' | 'create' | 'update' | 'delete'> = 
   duplicate: 'create',
 }
 
-interface CreateCrudRouterOptions {
+export interface CreateCrudRouterConfig<
+  TTable extends PgTable,
+  TId extends string | number,
+  TInsert extends z.ZodObject<z.ZodRawShape>,
+  TUpdate extends z.ZodObject<z.ZodRawShape>,
+> {
+  /** Entity spec — runtime config (table, visibility, casl, shareable). */
+  spec: EntityServerSpec<TTable, TId>
   /**
-   * Slots to omit from the surfaced tRPC procedures. The DAL still generates
-   * them — business plugins can call `handlers.<slot>` directly.
+   * Concrete Zod schemas for tRPC input validation + type inference.
+   * `id`: Zod validator matching TId (z.string().uuid() or z.number().int())
+   * `insert`: Entity's insert schema (concrete, not type-erased)
+   * `update`: Entity's update schema (concrete, not type-erased)
    */
-  exclude?: SlotName[]
-  /**
-   * Override individual CRUD handler functions. Merged with defaults from
-   * `createCrudDal(spec)` — only the keys you provide are overridden.
-   */
-  handlers?: Partial<CrudHandlers<PgTable>>
-  /**
-   * Pre-scoped agent procedure (agentProcedure + scope middleware).
-   * Passed in from the L2 entity toolkit — L1 does NOT create its own
-   * middleware chain.
-   */
+  schemas: { id: z.ZodType<TId>, insert: TInsert, update: TUpdate }
+  /** Pre-scoped agent procedure (agentProcedure + scope middleware). */
   authedProcedure: typeof agentProcedure
-  /**
-   * Pre-scoped shareable procedure (baseProcedure + shareable middleware).
-   * Used for getById/update on shareable entities. Passed in from the L2
-   * entity toolkit.
-   */
+  /** Pre-scoped shareable procedure (baseProcedure + shareable middleware). */
   shareableProcedure: typeof baseProcedure
+  /** Override individual CRUD handlers. Merged with createCrudDal defaults. */
+  handlers?: Partial<CrudHandlers<TTable, TId>>
 }
 
-export function createCrudRouter<TSpec extends EntityServerSpec<PgTable>>(
-  spec: TSpec,
-  options: CreateCrudRouterOptions,
-) {
+export function createCrudRouter<
+  TTable extends PgTable,
+  TId extends string | number,
+  TInsert extends z.ZodObject<z.ZodRawShape>,
+  TUpdate extends z.ZodObject<z.ZodRawShape>,
+>(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
   // Merge default DAL handlers with any caller-provided overrides.
-  const defaults = createCrudDal(spec)
-  const handlers: CrudHandlers<PgTable> = { ...defaults, ...options.handlers }
-  const exclude = new Set(options.exclude ?? [])
-
-  // Derive the id Zod schema from the entity's select schema so the
-  // procedure input matches the actual PK column type (string for UUID,
-  // number for serial). Falls back to z.union if the field isn't found.
-  const pkField = spec.schemas.select.shape[spec.primaryKey ?? 'id']
-  const idSchema = z.object({ id: pkField ?? z.union([z.string(), z.number()]) })
+  const defaults = createCrudDal(config.spec)
+  const handlers = { ...defaults, ...config.handlers } as CrudHandlers<TTable, TId>
 
   // Select the right procedure based on shareable config.
-  // Shareable entities use the token-or-session procedure for read/update;
-  // non-shareable entities use the authed procedure for everything.
-  const readProcedure = spec.shareable
-    ? options.shareableProcedure
-    : options.authedProcedure
-  const updateProcedure = spec.shareable
-    ? options.shareableProcedure
-    : options.authedProcedure
+  const readProcedure = config.spec.shareable
+    ? config.shareableProcedure
+    : config.authedProcedure
+  const updateProcedure = config.spec.shareable
+    ? config.shareableProcedure
+    : config.authedProcedure
 
-  const procs: Record<string, unknown> = {}
+  // Input schemas — token always optional (harmless on non-shareable entities).
+  const { id: idZod } = config.schemas
+  const idInput = z.object({ id: idZod, token: z.string().optional() })
+  const updateInput = z.object({ id: idZod, data: config.schemas.update, token: z.string().optional() })
+  const idOnlyInput = z.object({ id: idZod })
 
-  if (!exclude.has('getById')) {
-    // Token path: ctx.ability is null — skip CASL check.
-    // Session path: ctx.ability is non-null — enforce read permission.
-    const getByIdInput = spec.shareable
-      ? z.object({ id: idSchema.shape.id, token: z.string().optional() })
-      : idSchema
-
-    procs.getById = readProcedure
-      .input(getByIdInput)
-      .query(async ({ ctx, input }: { ctx: Record<string, unknown>, input: Record<string, unknown> }) => {
+  // Static object literal — TypeScript infers the full router shape.
+  return createTRPCRouter({
+    getById: readProcedure
+      .input(idInput)
+      .query(async ({ ctx, input }) => {
         if (ctx.ability) {
-          assertCan(ctx as unknown as AuthedContext, 'getById', spec)
+          assertCan(ctx.ability, 'getById', config.spec)
         }
-        const row = await dalToTrpc(
-          await handlers.getById(ctx as unknown as ScopedContext, input as unknown as IdInput),
-        )
+        const row = dalToTrpc(await handlers.getById(ctx, { id: input.id }))
         if (!row) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: `${spec.entityName} not found` })
+          throw new TRPCError({ code: 'NOT_FOUND', message: `${config.spec.entityName} not found` })
         }
         return row
-      })
-  }
+      }),
 
-  if (!exclude.has('create')) {
-    procs.create = options.authedProcedure
-      .input(spec.schemas.insert)
-      .mutation(async ({ ctx, input }: { ctx: Record<string, unknown>, input: unknown }) => {
-        assertCan(ctx as unknown as AuthedContext, 'create', spec)
-        return dalToTrpc(
-          await handlers.create(ctx as unknown as ScopedContext, input as PgTable['$inferInsert']),
-        )
-      })
-  }
+    create: config.authedProcedure
+      .input(config.schemas.insert)
+      .mutation(async ({ ctx, input }) => {
+        assertCan(ctx.ability, 'create', config.spec)
+        return dalToTrpc(await handlers.create(ctx, input as Insert<TTable>))
+      }),
 
-  if (!exclude.has('update')) {
-    const updateInput = spec.shareable
-      ? z.object({ id: idSchema.shape.id, data: spec.schemas.update, token: z.string().optional() })
-      : z.object({ id: idSchema.shape.id, data: spec.schemas.update })
-
-    procs.update = updateProcedure
+    update: updateProcedure
       .input(updateInput)
-      .mutation(async ({ ctx, input }: { ctx: Record<string, unknown>, input: unknown }) => {
+      .mutation(async ({ ctx, input }) => {
         if (ctx.ability) {
-          assertCan(ctx as unknown as AuthedContext, 'update', spec)
+          assertCan(ctx.ability, 'update', config.spec)
         }
-        return dalToTrpc(
-          await handlers.update(ctx as unknown as ScopedContext, input as IdInput & { data: Partial<PgTable['$inferInsert']> }),
-        )
-      })
-  }
+        // Cast: Zod 4 can't resolve generic TUpdate output type in z.object({ data: TUpdate }).
+        // The schema validates at runtime; this tells TS the shape matches CrudHandlers.
+        const { id, data } = input as { id: TId, data: z.output<TUpdate>, token?: string }
+        return dalToTrpc(await handlers.update(ctx, { id, data }))
+      }),
 
-  if (!exclude.has('delete')) {
-    procs.delete = options.authedProcedure
-      .input(idSchema)
-      .mutation(async ({ ctx, input }: { ctx: Record<string, unknown>, input: unknown }) => {
-        assertCan(ctx as unknown as AuthedContext, 'delete', spec)
-        return dalToTrpc(await handlers.delete(ctx as unknown as ScopedContext, input as IdInput))
-      })
-  }
+    delete: config.authedProcedure
+      .input(idOnlyInput)
+      .mutation(async ({ ctx, input }) => {
+        assertCan(ctx.ability, 'delete', config.spec)
+        dalToTrpc(await handlers.delete(ctx, { id: input.id }))
+      }),
 
-  if (!exclude.has('duplicate')) {
-    procs.duplicate = options.authedProcedure
-      .input(idSchema)
-      .mutation(async ({ ctx, input }: { ctx: Record<string, unknown>, input: unknown }) => {
-        assertCan(ctx as unknown as AuthedContext, 'duplicate', spec)
-        return dalToTrpc(await handlers.duplicate(ctx as unknown as ScopedContext, input as IdInput))
-      })
-  }
-
-  return createTRPCRouter(procs as Parameters<typeof createTRPCRouter>[0])
+    duplicate: config.authedProcedure
+      .input(idOnlyInput)
+      .mutation(async ({ ctx, input }) => {
+        assertCan(ctx.ability, 'duplicate', config.spec)
+        return dalToTrpc(await handlers.duplicate(ctx, { id: input.id }))
+      }),
+  })
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────
 
+/**
+ * CASL permission gate. Accepts ability directly (not ctx) so callers
+ * can pass ctx.ability after narrowing — avoids TS not narrowing the
+ * full ctx object through a function boundary.
+ */
 function assertCan(
-  ctx: AuthedContext,
+  ability: { can: (action: AppAction, subject: AppSubject) => boolean },
   slot: SlotName,
-  spec: EntityServerSpec<PgTable>,
+  spec: EntityServerSpec,
 ): void {
   const action = SLOT_ACTIONS[slot]
-  if (!ctx.ability.can(action, spec.caslSubject)) {
+  if (!ability.can(action, spec.caslSubject)) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: `You do not have permission to ${action} ${spec.entityName}`,
