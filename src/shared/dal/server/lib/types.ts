@@ -61,6 +61,7 @@ export const SYSTEM_CONTEXT: ScopedContext = {
  */
 export interface EntityServerSpec<
   TTable extends PgTable = PgTable,
+  // eslint-disable-next-line unused-imports/no-unused-vars -- Phantom type param carried through to CrudHandlers<TTable, TId> via createCrudDal
   TId extends string | number = string,
 > {
   entityName: EntityName
