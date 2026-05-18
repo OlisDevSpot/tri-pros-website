@@ -10,8 +10,8 @@
 //   const handlers = { ...defaults, create: proposalCreateDal, duplicate: proposalDuplicateDal }
 
 import type { DalReturn, PkField, ScopedContext } from '@/shared/dal/server/lib/types'
-import type { Insert, Row } from '@/shared/db/types'
 import type { InsertProposalView, ProposalView } from '@/shared/db/schema/proposal-views'
+import type { Insert, Row } from '@/shared/db/types'
 
 import { randomBytes } from 'node:crypto'
 import { eq } from 'drizzle-orm'
