@@ -1,5 +1,5 @@
 import type { ProposalContext } from './types'
-import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
+import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
 import { isSeniorByAge } from '@/shared/entities/customers/lib/customer-predicates'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'

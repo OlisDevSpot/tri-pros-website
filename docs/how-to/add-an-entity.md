@@ -96,14 +96,9 @@ export const proposalServerSpec = {
       proposalsTable.fundingJSON,
     ],
   },
-  list: {
-    searchColumns: [proposalsTable.title],
-    sortableColumns: {
-      createdAt: proposalsTable.createdAt,
-      title: proposalsTable.title,
-    },
-    defaultSort: { column: 'createdAt', dir: 'desc' },
-  },
+  // Note: list is NOT on the spec — it's a business concern with entity-specific
+  // joins, derived columns, and filter predicates. Each entity writes its own
+  // list query as a business sub-router procedure.
 } satisfies EntityServerSpec
 ```
 
@@ -115,38 +110,40 @@ export const proposalServerSpec = {
 
 ```ts
 import { createEntityRouter } from '@/trpc/lib/create-entity-router'
+import { createTRPCRouter } from '@/trpc/init'
 import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
-import { proposalBusinessRouter } from './business'
-import { proposalDeliveryRouter } from './delivery'
 
-export const proposalsRouter = createEntityRouter(proposalServerSpec, {
-  business: proposalBusinessRouter,
-  delivery: proposalDeliveryRouter,
-})
-```
+export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
+  createTRPCRouter({
+    // CRUD sub-router — 5 single-row operations (getById, create, update, delete, duplicate)
+    crud: entity.crud({ handlers: { create: customCreateDal } }),
 
-The CRUD sub-router is auto-plugged. Plugins are `(spec) => Router` factories:
+    // Business sub-router — entity-specific queries (list, enriched views, etc.)
+    business: createTRPCRouter({
+      list: entity.authedProcedure.input(listSchema).query(listHandler),
+      getFullView: entity.shareableProcedure.input(viewSchema).query(viewHandler),
+    }),
 
-```ts
-// src/trpc/routers/proposals.router/business.ts
-import { z } from 'zod'
-import { createTRPCRouter, agentProcedure } from '@/trpc/init'
-import { createCrudHandlers } from '@/trpc/lib/create-crud-handlers'
-import type { ProposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
-
-export const proposalBusinessRouter = (spec: ProposalServerSpec) => {
-  const handlers = createCrudHandlers(spec)
-
-  return createTRPCRouter({
-    duplicateWithSnapshot: agentProcedure
-      .input(z.object({ id: z.string().uuid() }))
-      .mutation(async ({ ctx, input }) => {
-        const source = await handlers.getById(ctx, { id: input.id })
-        // ...custom snapshot logic, then call handlers.create
-      }),
+    // Delivery sub-router — email, contract signing, etc.
+    delivery: createTRPCRouter({
+      sendEmail: entity.authedProcedure.input(emailSchema).mutation(emailHandler),
+      recordView: entity.publicProcedure.input(viewSchema).mutation(viewHandler),
+    }),
   })
-}
+)
 ```
+
+The factory function receives an **entity toolkit** with pre-configured tRPC procedures:
+
+| Member | What it is | Middleware chain |
+|--------|-----------|-----------------|
+| `entity.authedProcedure` | Agent-only, scope resolved | `agentProcedure.use(scopeMiddleware(spec))` |
+| `entity.shareableProcedure` | Token-or-session, auto-resolves scope | `baseProcedure.use(shareableMiddleware(spec))` |
+| `entity.publicProcedure` | No auth required | `baseProcedure` (pass-through) |
+| `entity.crud(options?)` | Auto-generated CRUD sub-router | Uses authed/shareable internally |
+| `entity.spec` | The spec itself | For sub-routers that need it |
+
+These are NOT custom abstractions — `entity.authedProcedure` IS a real tRPC procedure with full type inference and middleware composability.
 
 ---
 

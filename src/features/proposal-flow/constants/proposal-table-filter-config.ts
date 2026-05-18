@@ -14,7 +14,7 @@ const PROPOSAL_PRICE_MAX = 300_000
 const PROPOSAL_PRICE_STEP = 1_000
 
 /**
- * Filter config for the proposals table. Ids match `proposalsRouter.crud.list`'s
+ * Filter config for the proposals table. Ids match `proposalsRouter.business.list`'s
  * `filters` shape on the server.
  */
 export const PROPOSAL_FILTER_CONFIG = [

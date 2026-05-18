@@ -7,7 +7,7 @@ export function useUpdateProposal() {
   const { invalidateProposal } = useInvalidation()
 
   const trpc = useTRPC()
-  return useMutation(trpc.proposalsRouter.crud.updateProposal.mutationOptions({
+  return useMutation(trpc.proposalsRouter.crud.update.mutationOptions({
     onSuccess: (data) => {
       invalidateProposal({ proposalId: data.id })
     },

@@ -17,7 +17,7 @@ import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-t
 import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
-export type ProposalRow = AppRouterOutputs['proposalsRouter']['crud']['list']['rows'][number]
+export type ProposalRow = AppRouterOutputs['proposalsRouter']['business']['list']['rows'][number]
 
 export interface ProposalTableMeta {
   proposalActions?: (row: ProposalRow) => EntityActionConfig<ProposalRow>[]

@@ -1,3 +1,13 @@
+/**
+ * @deprecated These functions are being migrated to:
+ *   - CRUD: `shared/dal/server/lib/create-crud-dal.ts` (generic factory)
+ *   - Business: `shared/entities/proposals/dal/server/queries.ts` (getFullView, listProposals)
+ *   - Overrides: `shared/entities/proposals/dal/server/mutations.ts` (proposalCreateDal, proposalDuplicateDal)
+ *   - Types: `ProposalWithCustomer` / `ProposalCustomer` moved to queries.ts
+ *
+ * Remaining consumers are service-layer files (contract.service, pdf.service, delivery.router,
+ * contracts.router) which will be migrated in follow-up issues.
+ */
 import type { ContractEvent } from '@/shared/constants/enums'
 import type { InsertProposalSchema, Proposal } from '@/shared/db/schema/proposals'
 import { randomBytes } from 'node:crypto'

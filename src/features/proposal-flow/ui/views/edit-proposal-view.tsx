@@ -79,7 +79,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     const nextFinalTcp = computeFinalTcp(rawData.funding.data)
 
     return {
-      proposalId,
+      id: proposalId,
       data: {
         label: rawData.project.data.label,
         formMetaJSON: rawData.meta,

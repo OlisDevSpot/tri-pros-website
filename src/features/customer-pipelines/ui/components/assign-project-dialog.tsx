@@ -49,7 +49,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   )
 
   const approveProposalMutation = useMutation(
-    trpc.proposalsRouter.crud.updateProposal.mutationOptions({
+    trpc.proposalsRouter.crud.update.mutationOptions({
       onSuccess: () => {
         invalidateProposal()
         invalidateProject()
@@ -72,7 +72,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   }
 
   function handleApproveProposal(proposalId: string) {
-    approveProposalMutation.mutate({ proposalId, data: { status: 'approved' } })
+    approveProposalMutation.mutate({ id: proposalId, data: { status: 'approved' } })
   }
 
   const customerProjects = dataQuery.data?.projects ?? []

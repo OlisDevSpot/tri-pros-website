@@ -1,6 +1,6 @@
 import type { Buffer } from 'node:buffer'
 import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
-import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
+import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
 
 /**
  * Snapshot of everything an envelope assembler needs to fill fields and

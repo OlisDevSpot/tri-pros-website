@@ -43,7 +43,7 @@ export function PastProposalsTable() {
   const [projectPrompt, setProjectPrompt] = useState<ProjectPrompt | null>(null)
 
   const pagination = usePaginatedQuery<Record<string, never>, ProposalRow>(
-    trpc.proposalsRouter.crud.list.queryOptions,
+    trpc.proposalsRouter.business.list.queryOptions,
     {},
     {
       paramPrefix: 'pp',
@@ -82,7 +82,7 @@ export function PastProposalsTable() {
       // first-approval-of-initial-sale from re-approval-of-initial-sale.
       if (row.meetingProjectId) {
         updateProposal.mutate(
-          { proposalId: id, data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() } },
+          { id, data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() } },
           { onSuccess: () => toast.success('Proposal approved') },
         )
         return
@@ -99,14 +99,14 @@ export function PastProposalsTable() {
     }
 
     updateProposal.mutate(
-      { proposalId: id, data: { status } },
+      { id, data: { status } },
       { onSuccess: () => toast.success('Status updated') },
     )
   }, [pagination.rows, updateProposal])
 
   const handleProjectCreated = useCallback((selectedProposalId: string, projectId?: string) => {
     updateProposal.mutate({
-      proposalId: selectedProposalId,
+      id: selectedProposalId,
       data: { status: 'approved' as ProposalStatus, approvedAt: new Date().toISOString() },
     })
     setProjectPrompt(null)
@@ -131,7 +131,7 @@ export function PastProposalsTable() {
     proposalActions: () => sharedActions,
     onUpdateStatus: handleStatusChange,
     onUpdateCreatedAt: (id, date) => updateProposal.mutate(
-      { proposalId: id, data: { createdAt: date.toISOString() } },
+      { id, data: { createdAt: date.toISOString() } },
       { onSuccess: () => toast.success('Created date updated') },
     ),
     onViewProfile: (customerId) => {

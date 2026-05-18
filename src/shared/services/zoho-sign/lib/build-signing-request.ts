@@ -1,4 +1,4 @@
-import type { ProposalWithCustomer } from '@/shared/dal/server/proposals/api'
+import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { cslbEarliestStartDate } from '@/shared/entities/proposals/lib/cslb-start-date'
 import { ZOHO_SIGN_TEMPLATES } from '../constants'
