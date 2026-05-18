@@ -12,6 +12,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/lib/types'
 import type { PaginatedResult } from '@/shared/dal/server/query/output'
 import type { ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Proposal } from '@/shared/db/schema/proposals'
+import type { Row } from '@/shared/db/types'
 
 import { and, count, desc, eq, getTableColumns, gte, inArray, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
@@ -316,5 +317,29 @@ export async function getProposalViews(
       directViews: views.filter(v => v.source === 'direct').length,
       views,
     }
+  })
+}
+
+// ── getBySigningRequestId ──────────────────────────────────────────────
+//
+// Lookup a proposal by its Zoho Sign signing request ID (non-PK field).
+// Used by contract.service.applyContractEvent to find the proposal
+// associated with a webhook event, then update it via generic CRUD.
+// Returns plain row — no joins needed for contract event processing.
+
+export async function getBySigningRequestId(
+  ctx: ScopedContext,
+  input: { signingRequestId: string },
+): Promise<DalReturn<Row<typeof proposals> | undefined>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select()
+      .from(proposals)
+      .where(and(
+        eq(proposals.signingRequestId, input.signingRequestId),
+        ctx.scope ?? undefined,
+      ))
+      .limit(1)
+    return row
   })
 }
