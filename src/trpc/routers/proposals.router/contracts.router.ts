@@ -1,242 +1,223 @@
+// ─── Contracts Router (Entity Toolkit Pattern) ──────────────────────────────
+// Service-layer sub-router for proposal contract lifecycle: draft creation,
+// signing submission, recall, resend, status checks, and envelope config.
+// Receives the entity toolkit from the parent entity router factory — uses
+// entity.authedProcedure / entity.shareableProcedure for pre-configured
+// auth + scope middleware.
+//
+// Cross-entity writes (customer profile) use SYSTEM_CONTEXT via
+// customerHandlers — these are system-level side-effects not gated by the
+// agent's proposal visibility scope.
+
+import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
+
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
 import z from 'zod'
+
 import { envelopeDocumentIds } from '@/shared/constants/enums'
-import { getProposal } from '@/shared/dal/server/proposals/api'
-import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
-import { proposals } from '@/shared/db/schema/proposals'
-import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { contractService } from '@/shared/services/contract.service'
 import { EnvelopeSelectionError, evaluateDocuments, validateEnvelopeSelection } from '@/shared/services/zoho-sign/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/zoho-sign/documents/proposal-context'
 import { ENVELOPE_DOCUMENTS } from '@/shared/services/zoho-sign/documents/registry'
-import { agentProcedure, baseProcedure, createTRPCRouter } from '../../init'
 
-export const contractsRouter = createTRPCRouter({
-  getContractStatus: baseProcedure
-    .input(z.object({ proposalId: z.string(), token: z.string().optional() }))
-    .query(async ({ input, ctx }) => {
-      const proposal = await getProposal(input.proposalId)
+import { createTRPCRouter } from '../../init'
+import { dalToTrpc } from '../../lib/dal-to-trpc'
 
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-      }
+export function createContractsRouter(entity: EntityToolkit<typeof proposalServerSpec.table>) {
+  const proposalHandlers = createCrudDal(proposalServerSpec)
+  const customerHandlers = createCrudDal(customerServerSpec)
 
-      const ability = defineAbilitiesFor(
-        ctx.session ? { id: ctx.session.user.id, role: ctx.session.user.role } : null,
-      )
-      const canRead = ability.can('read', 'Proposal')
-      const hasValidToken = input.token && proposal.token === input.token
+  return createTRPCRouter({
+    getContractStatus: entity.shareableProcedure
+      .input(z.object({ id: z.string(), token: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        const proposal = dalToTrpc(await getFullView(ctx, input))
 
-      if (!canRead && !hasValidToken) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Access denied' })
-      }
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+        }
 
-      if (!proposal.signingRequestId) {
-        return null
-      }
+        if (!proposal.signingRequestId) {
+          return null
+        }
 
-      const stamps = {
-        contractSentAt: proposal.contractSentAt,
-        contractViewedAt: proposal.contractViewedAt,
-        contractSignedAt: proposal.contractSignedAt,
-        contractDeclinedAt: proposal.contractDeclinedAt,
-      }
+        const stamps = {
+          contractSentAt: proposal.contractSentAt,
+          contractViewedAt: proposal.contractViewedAt,
+          contractSignedAt: proposal.contractSignedAt,
+          contractDeclinedAt: proposal.contractDeclinedAt,
+        }
 
-      // Webhook is the source of truth for terminal state — skip the live
-      // Zoho call once we've persisted completion or decline.
-      if (proposal.contractSignedAt) {
-        return { requestId: proposal.signingRequestId, requestStatus: 'completed' as const, signerStatuses: [], ...stamps }
-      }
-      if (proposal.contractDeclinedAt) {
-        return { requestId: proposal.signingRequestId, requestStatus: 'declined' as const, signerStatuses: [], ...stamps }
-      }
+        // Webhook is the source of truth for terminal state — skip the live
+        // Zoho call once we've persisted completion or decline.
+        if (proposal.contractSignedAt) {
+          return { requestId: proposal.signingRequestId, requestStatus: 'completed' as const, signerStatuses: [], ...stamps }
+        }
+        if (proposal.contractDeclinedAt) {
+          return { requestId: proposal.signingRequestId, requestStatus: 'declined' as const, signerStatuses: [], ...stamps }
+        }
 
-      try {
-        const status = await contractService.getSigningStatus(proposal.signingRequestId)
-        return { ...status, ...stamps }
-      }
-      catch {
-        return null
-      }
-    }),
+        try {
+          const status = await contractService.getSigningStatus(proposal.signingRequestId)
+          return { ...status, ...stamps }
+        }
+        catch {
+          return null
+        }
+      }),
 
-  createContractDraft: agentProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const ownerKey = isOmni ? null : ctx.session.user.id
-      return contractService.createSigningRequest(input.proposalId, ownerKey)
-    }),
+    createContractDraft: entity.authedProcedure
+      .input(z.object({ proposalId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return contractService.createSigningRequest(ctx, input.proposalId)
+      }),
 
-  submitContract: agentProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const ownerKey = isOmni ? null : ctx.session.user.id
-      return contractService.sendSigningRequest(input.proposalId, ownerKey)
-    }),
+    submitContract: entity.authedProcedure
+      .input(z.object({ proposalId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return contractService.sendSigningRequest(ctx, input.proposalId)
+      }),
 
-  sendContractForSigning: baseProcedure
-    .input(z.object({ proposalId: z.string(), token: z.string() }))
-    .mutation(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
+    sendContractForSigning: entity.shareableProcedure
+      .input(z.object({ id: z.string(), token: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return contractService.sendSigningRequest(ctx, input.id)
+      }),
 
-      if (!proposal || proposal.token !== input.token) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid token' })
-      }
+    recallContract: entity.authedProcedure
+      .input(z.object({ proposalId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return contractService.recallSigningRequest(ctx, input.proposalId)
+      }),
 
-      return contractService.sendSigningRequest(input.proposalId, input.token)
-    }),
+    resendContract: entity.authedProcedure
+      .input(z.object({ proposalId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return contractService.resendSigningRequest(ctx, input.proposalId)
+      }),
 
-  recallContract: agentProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const ownerKey = isOmni ? null : ctx.session.user.id
-      return contractService.recallSigningRequest(input.proposalId, ownerKey)
-    }),
+    /**
+     * Drives the agent draft-config form. `ageOverride` previews
+     * senior-vs-non-senior rule changes against an unsaved age.
+     */
+    evaluateEnvelopeDocs: entity.authedProcedure
+      .input(z.object({
+        proposalId: z.string(),
+        ageOverride: z.number().int().min(18).max(120).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const proposal = dalToTrpc(await getFullView(ctx, { id: input.proposalId }))
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+        }
 
-  resendContract: agentProcedure
-    .input(z.object({ proposalId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
-      const ownerKey = isOmni ? null : ctx.session.user.id
-      return contractService.resendSigningRequest(input.proposalId, ownerKey)
-    }),
+        const proposalCtx = buildProposalContext(proposal, { ageOverride: input.ageOverride })
+        const { required, optional } = evaluateDocuments(proposalCtx)
+        const requiredSet = new Set(required)
+        const optionalSet = new Set(optional)
+        const docs = ENVELOPE_DOCUMENTS
+          .filter(d => requiredSet.has(d.id) || optionalSet.has(d.id))
+          .map(d => ({
+            id: d.id,
+            label: d.label,
+            status: requiredSet.has(d.id) ? ('required' as const) : ('optional' as const),
+          }))
 
-  /**
-   * Drives the agent draft-config form. `ageOverride` previews
-   * senior-vs-non-senior rule changes against an unsaved age.
-   */
-  evaluateEnvelopeDocs: agentProcedure
-    .input(z.object({
-      proposalId: z.string(),
-      ageOverride: z.number().int().min(18).max(120).optional(),
-    }))
-    .query(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-      }
+        return {
+          kind: proposalCtx.kind,
+          isSenior: proposalCtx.isSenior,
+          isLongSow: proposalCtx.isLongSow,
+          docs,
+        }
+      }),
 
-      const ctx = buildProposalContext(proposal, { ageOverride: input.ageOverride })
-      const { required, optional } = evaluateDocuments(ctx)
-      const requiredSet = new Set(required)
-      const optionalSet = new Set(optional)
-      const docs = ENVELOPE_DOCUMENTS
-        .filter(d => requiredSet.has(d.id) || optionalSet.has(d.id))
-        .map(d => ({
-          id: d.id,
-          label: d.label,
-          status: requiredSet.has(d.id) ? ('required' as const) : ('optional' as const),
+    /**
+     * Atomically persists customer age + proposal envelope-document
+     * selection. Selection is re-validated against the registry rules —
+     * never trust the client's filter alone.
+     */
+    configureDraftEnvelope: entity.authedProcedure
+      .input(z.object({
+        proposalId: z.string(),
+        age: z.number().int().min(18).max(120),
+        envelopeDocumentIds: z.array(z.enum(envelopeDocumentIds)),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const proposal = dalToTrpc(await getFullView(ctx, { id: input.proposalId }))
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+        }
+        if (!proposal.customer) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
+        }
+
+        const proposalCtx = buildProposalContext(proposal, { ageOverride: input.age })
+        try {
+          validateEnvelopeSelection(proposalCtx, input.envelopeDocumentIds)
+        }
+        catch (err) {
+          if (err instanceof EnvelopeSelectionError) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message })
+          }
+          throw err
+        }
+
+        // Cross-entity customer write — SYSTEM_CONTEXT because this is a
+        // system-level side-effect on the customer entity.
+        const customerId = proposal.customer.id
+        const existing = dalToTrpc(await customerHandlers.getById(SYSTEM_CONTEXT, { id: customerId }))
+        const existingProfile = (existing as Record<string, unknown>).customerProfileJSON as Record<string, unknown> | null
+        const updatedProfile = { ...existingProfile, age: input.age }
+        dalToTrpc(await customerHandlers.update(SYSTEM_CONTEXT, {
+          id: customerId,
+          data: { customerProfileJSON: updatedProfile },
         }))
 
-      return {
-        kind: ctx.kind,
-        isSenior: ctx.isSenior,
-        isLongSow: ctx.isLongSow,
-        docs,
-      }
-    }),
-
-  /**
-   * Atomically persists customer age + proposal envelope-document
-   * selection. Selection is re-validated against the registry rules —
-   * never trust the client's filter alone.
-   */
-  configureDraftEnvelope: agentProcedure
-    .input(z.object({
-      proposalId: z.string(),
-      age: z.number().int().min(18).max(120),
-      envelopeDocumentIds: z.array(z.enum(envelopeDocumentIds)),
-    }))
-    .mutation(async ({ input }) => {
-      const proposal = await getProposal(input.proposalId)
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-      }
-      if (!proposal.customer) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
-      }
-
-      const ctxForValidation = buildProposalContext(proposal, { ageOverride: input.age })
-      try {
-        validateEnvelopeSelection(ctxForValidation, input.envelopeDocumentIds)
-      }
-      catch (err) {
-        if (err instanceof EnvelopeSelectionError) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: err.message })
+        // Proposal write — user's own scope
+        const updatedFormMeta = {
+          ...proposal.formMetaJSON,
+          envelopeDocumentIds: input.envelopeDocumentIds,
         }
-        throw err
-      }
+        dalToTrpc(await proposalHandlers.update(ctx, {
+          id: input.proposalId,
+          data: { formMetaJSON: updatedFormMeta },
+        }))
 
-      const customerId = proposal.customer.id
-      const [existingCustomer] = await db
-        .select({ customerProfileJSON: customers.customerProfileJSON })
-        .from(customers)
-        .where(eq(customers.id, customerId))
-      const updatedProfile = { ...existingCustomer?.customerProfileJSON, age: input.age }
-      const updatedFormMeta = {
-        ...proposal.formMetaJSON,
-        envelopeDocumentIds: input.envelopeDocumentIds,
-      }
+        return { success: true, age: input.age, envelopeDocumentIds: input.envelopeDocumentIds }
+      }),
 
-      await db.transaction(async (tx) => {
-        await tx
-          .update(customers)
-          .set({ customerProfileJSON: updatedProfile })
-          .where(eq(customers.id, customerId))
-        await tx
-          .update(proposals)
-          .set({ formMetaJSON: updatedFormMeta })
-          .where(eq(proposals.id, input.proposalId))
-      })
+    submitCustomerAge: entity.shareableProcedure
+      .input(z.object({
+        id: z.string(),
+        token: z.string().optional(),
+        age: z.number().int().min(18).max(120),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const proposal = dalToTrpc(await getFullView(ctx, { id: input.id }))
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+        }
+        if (!proposal.customer) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
+        }
 
-      return { success: true, age: input.age, envelopeDocumentIds: input.envelopeDocumentIds }
-    }),
+        // Cross-entity customer write — SYSTEM_CONTEXT because this may be
+        // a homeowner submitting via token, not an agent.
+        const customerId = proposal.customer.id
+        const existing = dalToTrpc(await customerHandlers.getById(SYSTEM_CONTEXT, { id: customerId }))
+        const existingProfile = (existing as Record<string, unknown>).customerProfileJSON as Record<string, unknown> | null
+        const updatedProfile = { ...existingProfile, age: input.age }
+        dalToTrpc(await customerHandlers.update(SYSTEM_CONTEXT, {
+          id: customerId,
+          data: { customerProfileJSON: updatedProfile },
+        }))
 
-  submitCustomerAge: baseProcedure
-    .input(z.object({
-      proposalId: z.string(),
-      token: z.string().optional(),
-      age: z.number().int().min(18).max(120),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const proposal = await getProposal(input.proposalId)
-      if (!proposal) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-      }
-
-      // Dual-gate auth: CASL for agents/super-admins, token for homeowners
-      const ability = defineAbilitiesFor(
-        ctx.session ? { id: ctx.session.user.id, role: ctx.session.user.role } : null,
-      )
-      const canUpdate = ability.can('update', 'Customer')
-      const hasValidToken = input.token && proposal.token === input.token
-
-      if (!canUpdate && !hasValidToken) {
-        throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Access denied' })
-      }
-
-      if (!proposal.customer) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
-      }
-
-      // Read existing profile to merge (avoid clobbering other fields)
-      const [existing] = await db
-        .select({ customerProfileJSON: customers.customerProfileJSON })
-        .from(customers)
-        .where(eq(customers.id, proposal.customer.id))
-
-      const updatedProfile = { ...existing?.customerProfileJSON, age: input.age }
-
-      await db
-        .update(customers)
-        .set({ customerProfileJSON: updatedProfile })
-        .where(eq(customers.id, proposal.customer.id))
-
-      return { success: true, age: input.age }
-    }),
-})
+        return { success: true, age: input.age }
+      }),
+  })
+}

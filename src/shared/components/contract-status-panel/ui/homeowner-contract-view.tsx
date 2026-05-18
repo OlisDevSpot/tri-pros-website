@@ -73,7 +73,7 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
             customerAge={customerAge}
             proposalId={proposalId}
             token={token}
-            onRequestAgreement={() => sendContract.mutate({ proposalId, token })}
+            onRequestAgreement={() => sendContract.mutate({ id: proposalId, token })}
           />
         </div>
       </div>

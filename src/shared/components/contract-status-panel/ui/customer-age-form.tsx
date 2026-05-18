@@ -72,7 +72,7 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
         <Button
           onClick={() => {
             if (isValid) {
-              submitAge.mutate({ proposalId, token, age: parsedAge })
+              submitAge.mutate({ id: proposalId, token, age: parsedAge })
             }
           }}
           disabled={!isValid || submitAge.isPending}

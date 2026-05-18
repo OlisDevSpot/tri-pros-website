@@ -9,7 +9,7 @@ import { createTRPCRouter } from '../../init'
 import { createCrudRouter } from '../../lib/create-crud-router'
 import { createEntityRouter } from '../../lib/create-entity-router'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
-import { contractsRouter } from './contracts.router'
+import { createContractsRouter } from './contracts.router'
 import { createDeliveryRouter } from './delivery.router'
 
 export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) => {
@@ -51,6 +51,6 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
 
     // ── Service-layer sub-routers ─────────────────────────────────────────
     delivery: createDeliveryRouter(entity),
-    contracts: contractsRouter,
+    contracts: createContractsRouter(entity),
   })
 })
