@@ -5,8 +5,9 @@
 // entity.authedProcedure / entity.shareableProcedure for pre-configured
 // auth + scope middleware.
 //
-// Customer age writes have been moved to customersRouter.submitCustomerAge.
-// This router only manages proposal-level contract operations.
+// Standalone customer-age submission lives on customersRouter.submitCustomerAge.
+// configureDraftEnvelope orchestrates both customer age + envelope doc selection
+// as a single business action (agent configuring a draft before sending).
 
 import type { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
@@ -15,6 +16,8 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { envelopeDocumentIds } from '@/shared/constants/enums'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { contractService } from '@/shared/services/contract.service'
@@ -131,9 +134,10 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
       }),
 
     /**
-     * Persists the proposal envelope-document selection. The age param is
-     * used for senior-vs-non-senior validation only — customer age is now
-     * saved via customersRouter.submitCustomerAge separately.
+     * Orchestrates draft envelope configuration: persists customer age AND
+     * proposal envelope-document selection. Single business action — agent
+     * configures a draft before sending. Validates selection against
+     * registry rules with the age override applied.
      */
     configureDraftEnvelope: entity.authedProcedure
       .input(z.object({
@@ -145,6 +149,9 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         const proposal = dalToTrpc(await getFullView(ctx, { id: input.proposalId }))
         if (!proposal) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+        }
+        if (!proposal.customer) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
         }
 
         const evalCtx = buildProposalContext(proposal, { ageOverride: input.age })
@@ -158,6 +165,18 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
           throw err
         }
 
+        // Cross-entity: customer age (SYSTEM_CONTEXT — auth checked by authedProcedure)
+        const existing = dalToTrpc(await customerCrud.getById(SYSTEM_CONTEXT, { id: proposal.customer.id }))
+        if (!existing) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+        }
+        const currentProfile = (existing as Record<string, unknown>).customerProfileJSON as Record<string, unknown> | null
+        dalToTrpc(await customerCrud.update(SYSTEM_CONTEXT, {
+          id: proposal.customer.id,
+          data: { customerProfileJSON: { ...currentProfile, age: input.age } } as Record<string, unknown>,
+        }))
+
+        // Same-entity: proposal envelope docs (user's own ctx — scoped)
         const updatedFormMeta = {
           ...proposal.formMetaJSON,
           envelopeDocumentIds: input.envelopeDocumentIds,
@@ -167,7 +186,7 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
           data: { formMetaJSON: updatedFormMeta },
         }))
 
-        return { success: true, envelopeDocumentIds: input.envelopeDocumentIds }
+        return { success: true, age: input.age, envelopeDocumentIds: input.envelopeDocumentIds }
       }),
   })
 }
