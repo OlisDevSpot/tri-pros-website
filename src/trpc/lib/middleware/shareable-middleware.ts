@@ -1,0 +1,90 @@
+// ─── Shareable Middleware ───────────────────────────────────────────────────
+// Middleware factory for shareable entities (e.g., proposals with token URLs).
+//
+// Two paths:
+// - **Token present**: validates token against entity table, injects scope as
+//   `eq(tokenColumn, input.token)`. CASL checks skipped — token IS authorization.
+//   `ability` is null on ctx.
+// - **Session present, no token**: requires session, builds ability, resolves
+//   scope from spec.visibility(userId). Normal authenticated flow.
+// - **Neither**: throws UNAUTHORIZED.
+//
+// Uses `createMiddleware` (t.middleware) so tRPC natively tracks ctx
+// transformation — downstream procedures see scope/ability without casts.
+//
+// Chain on baseProcedure (no session required for token path).
+
+import type { PgColumn } from 'drizzle-orm/pg-core'
+
+import type { EntityServerSpec } from '@/shared/dal/server/lib/types'
+
+import { TRPCError } from '@trpc/server'
+import { eq } from 'drizzle-orm'
+
+import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
+import { createMiddleware } from '@/trpc/init'
+
+/**
+ * Builds a shareable-access middleware for the given entity spec.
+ *
+ * Token path: sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`.
+ * Session path: builds ability, resolves scope from `spec.visibility(userId)`.
+ * Neither: throws UNAUTHORIZED.
+ */
+export function shareableMiddleware(spec: EntityServerSpec) {
+  // Resolve token column at factory time (not per-request) for early validation.
+  const table = spec.table as unknown as Record<string, PgColumn | undefined>
+  const tokenColumnName = spec.shareable?.tokenColumn
+  const tokenColumn = tokenColumnName ? table[tokenColumnName] : undefined
+
+  if (spec.shareable && !tokenColumn) {
+    throw new Error(
+      `[shareable-middleware] spec.shareable.tokenColumn '${tokenColumnName}' `
+      + `is not a column on ${spec.entityName}'s table.`,
+    )
+  }
+
+  return createMiddleware(async ({ ctx, next, getRawInput }) => {
+    const rawInput = await getRawInput() as Record<string, unknown> | undefined
+    const token = rawInput?.token as string | undefined
+
+    // ── Token path ───────────────────────────────────────────────────────
+    // Token IS authorization. No session/ability needed.
+    if (token && tokenColumn) {
+      return next({
+        ctx: {
+          ...ctx,
+          session: ctx.session,
+          ability: null,
+          scope: eq(tokenColumn, token),
+        },
+      })
+    }
+
+    // ── Session path ─────────────────────────────────────────────────────
+    // No token — require authenticated session.
+    if (!ctx.session) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'A valid token or authenticated session is required',
+      })
+    }
+
+    const ability = defineAbilitiesFor({
+      id: ctx.session.user.id,
+      role: ctx.session.user.role,
+    })
+
+    const isOmni = ability.can('manage', 'all')
+    const scope = isOmni ? null : spec.visibility(ctx.session.user.id)
+
+    return next({
+      ctx: {
+        ...ctx,
+        session: ctx.session,
+        ability,
+        scope,
+      },
+    })
+  })
+}
