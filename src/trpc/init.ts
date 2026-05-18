@@ -23,6 +23,7 @@ const t = initTRPC.context<HTTPTRPCContext>().create({
 })
 
 export const createTRPCRouter = t.router
+export const createMiddleware = t.middleware
 export const createCallerFactory = t.createCallerFactory
 export const baseProcedure = t.procedure
 
