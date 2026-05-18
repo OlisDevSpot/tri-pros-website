@@ -1,6 +1,13 @@
 import type { Buffer } from 'node:buffer'
+import type { ContractEvent } from '@/shared/constants/enums'
+import type { ScopedContext } from '@/shared/dal/server/lib/types'
+import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import type { ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
-import { getProposal, updateProposal } from '@/shared/dal/server/proposals/api'
+import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { getBySigningRequestId, getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { pdfService } from '@/shared/services/pdf.service'
 import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
@@ -18,6 +25,8 @@ interface ZohoCreateDocResponse {
 }
 
 function createContractService() {
+  const handlers = createCrudDal(proposalServerSpec)
+
   async function getAuthHeader() {
     const token = await getZohoAccessToken()
     return { Authorization: `Zoho-oauthtoken ${token}` }
@@ -130,22 +139,22 @@ function createContractService() {
    * (.claude/plans/i-just-confirmed-harmonic-pinwheel.md) for the full
    * migration shape.
    */
-  async function createDraft(proposalId: string, ownerKey: string | null) {
-    const proposal = await getProposal(proposalId)
+  async function createDraft(ctx: ScopedContext, proposalId: string) {
+    const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
     if (!proposal) {
       throw new Error(`Proposal ${proposalId} not found`)
     }
 
     const selection = proposal.formMetaJSON.envelopeDocumentIds ?? []
     if (selection.length > 0) {
-      const ctx = buildProposalContext(proposal)
-      const { requestId, status } = await assembleEnvelope(ctx)
-      await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
+      const proposalCtx = buildProposalContext(proposal)
+      const { requestId, status } = await assembleEnvelope(proposalCtx)
+      dalVerifySuccess(await handlers.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
       return { requestId, status }
     }
 
     // Legacy path: pre-Phase-5 proposals without an envelope-document selection.
-    const pdfBuffer = await pdfService.generateSowPdf({ proposalId })
+    const pdfBuffer = await pdfService.generateSowPdf(ctx, { proposalId })
     const sowPages = await countPdfPages(pdfBuffer)
     const { templateId, body } = buildSigningRequest(proposal, { sowPages })
 
@@ -165,14 +174,14 @@ function createContractService() {
       throw attachErr
     }
 
-    await updateProposal(ownerKey, proposalId, { signingRequestId: requestId })
+    dalVerifySuccess(await handlers.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
     return { requestId, status }
   }
 
   return {
     /** Creates a draft signing request (not sent to signers). 0 credits if truly draft. */
-    createSigningRequest: async (proposalId: string, ownerKey: string | null) => {
-      const proposal = await getProposal(proposalId)
+    createSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
+      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
       if (!proposal) {
         throw new Error(`Proposal ${proposalId} not found`)
       }
@@ -182,12 +191,12 @@ function createContractService() {
         return { requestId: proposal.signingRequestId }
       }
 
-      return createDraft(proposalId, ownerKey)
+      return createDraft(ctx, proposalId)
     },
 
     /** Submits an existing draft for signing. Creates a fresh draft first if none exists. */
-    sendSigningRequest: async (proposalId: string, ownerKey: string | null) => {
-      const proposal = await getProposal(proposalId)
+    sendSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
+      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
       if (!proposal) {
         throw new Error(`Proposal ${proposalId} not found`)
       }
@@ -196,7 +205,7 @@ function createContractService() {
 
       // Create draft if one doesn't exist yet
       if (!requestId) {
-        const result = await createDraft(proposalId, ownerKey)
+        const result = await createDraft(ctx, proposalId)
         requestId = result.requestId
       }
 
@@ -207,17 +216,20 @@ function createContractService() {
         throw new Error(`Zoho Sign submit failed: ${errorText}`)
       }
 
-      await updateProposal(ownerKey, proposalId, {
-        signingRequestId: requestId,
-        contractSentAt: new Date().toISOString(),
-      })
+      dalVerifySuccess(await handlers.update(ctx, {
+        id: proposalId,
+        data: {
+          signingRequestId: requestId,
+          contractSentAt: new Date().toISOString(),
+        },
+      }))
 
       return { requestId }
     },
 
     /** Recalls (cancels) an in-progress signing request. Clears signingRequestId. */
-    recallSigningRequest: async (proposalId: string, ownerKey: string | null) => {
-      const proposal = await getProposal(proposalId)
+    recallSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
+      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
       if (!proposal) {
         throw new Error(`Proposal ${proposalId} not found`)
       }
@@ -232,17 +244,20 @@ function createContractService() {
         throw new Error(`Zoho Sign recall failed: ${errorText}`)
       }
 
-      await updateProposal(ownerKey, proposalId, {
-        signingRequestId: null,
-        contractSentAt: null,
-      })
+      dalVerifySuccess(await handlers.update(ctx, {
+        id: proposalId,
+        data: {
+          signingRequestId: null,
+          contractSentAt: null,
+        },
+      }))
 
       return { recalled: true }
     },
 
     /** Recalls existing request (if any), creates a fresh draft with current data, and submits it. */
-    resendSigningRequest: async (proposalId: string, ownerKey: string | null) => {
-      const proposal = await getProposal(proposalId)
+    resendSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
+      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
       if (!proposal) {
         throw new Error(`Proposal ${proposalId} not found`)
       }
@@ -254,13 +269,16 @@ function createContractService() {
       }
 
       // Clear old reference
-      await updateProposal(ownerKey, proposalId, {
-        signingRequestId: null,
-        contractSentAt: null,
-      })
+      dalVerifySuccess(await handlers.update(ctx, {
+        id: proposalId,
+        data: {
+          signingRequestId: null,
+          contractSentAt: null,
+        },
+      }))
 
       // Create fresh draft with current proposal data
-      const { requestId } = await createDraft(proposalId, ownerKey)
+      const { requestId } = await createDraft(ctx, proposalId)
 
       // Submit for signing
       const submitRes = await jsonRequest(`/requests/${requestId}/submit`, { method: 'POST' })
@@ -269,10 +287,13 @@ function createContractService() {
         throw new Error(`Zoho Sign submit failed: ${errorText}`)
       }
 
-      await updateProposal(ownerKey, proposalId, {
-        signingRequestId: requestId,
-        contractSentAt: new Date().toISOString(),
-      })
+      dalVerifySuccess(await handlers.update(ctx, {
+        id: proposalId,
+        data: {
+          signingRequestId: requestId,
+          contractSentAt: new Date().toISOString(),
+        },
+      }))
 
       return { requestId }
     },
@@ -282,28 +303,31 @@ function createContractService() {
      * Deletes the existing request (draft or in-progress) and creates a fresh draft.
      * Drafts are free (0 credits), so delete + recreate is the cheapest sync strategy.
      */
-    ensureDraftSynced: async (proposalId: string, ownerKey: string | null) => {
-      const proposal = await getProposal(proposalId)
+    ensureDraftSynced: async (ctx: ScopedContext, proposalId: string) => {
+      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
       if (!proposal) {
         throw new Error(`Proposal ${proposalId} not found`)
       }
 
       // No existing request — just create
       if (!proposal.signingRequestId) {
-        return createDraft(proposalId, ownerKey)
+        return createDraft(ctx, proposalId)
       }
 
       // Delete old request (works for drafts and in-progress), ignore errors
       await deleteRequest(proposal.signingRequestId).catch(() => {})
 
       // Clear stale reference
-      await updateProposal(ownerKey, proposalId, {
-        signingRequestId: null,
-        contractSentAt: null,
-      })
+      dalVerifySuccess(await handlers.update(ctx, {
+        id: proposalId,
+        data: {
+          signingRequestId: null,
+          contractSentAt: null,
+        },
+      }))
 
       // Create fresh draft with current proposal data
-      return createDraft(proposalId, ownerKey)
+      return createDraft(ctx, proposalId)
     },
 
     getSigningStatus: async (requestId: string): Promise<ZohoContractStatus> => {
@@ -331,6 +355,42 @@ function createContractService() {
         requestStatus: req.request_status as ZohoRequestStatus,
         signerStatuses: dedupeSignerStatuses(req.actions),
       }
+    },
+
+    /**
+     * Applies a contract-signing event (from Zoho webhook) to the matching
+     * proposal. Handles event->column mapping, idempotency, and auto-approve.
+     * Returns the updated proposal, or undefined when no-op.
+     */
+    applyContractEvent: async (ctx: ScopedContext, input: {
+      signingRequestId: string
+      event: ContractEvent
+      performedAt: string
+    }) => {
+      const { signingRequestId, event, performedAt } = input
+
+      // 1. Find proposal by signingRequestId
+      const proposal = dalVerifySuccess(await getBySigningRequestId(ctx, { signingRequestId }))
+      if (!proposal) return undefined
+
+      // 2. Idempotency check
+      const column = contractEventColumn[event]
+      const policy = contractEventIdempotencyPolicy[event]
+      const existingValue = proposal[column as keyof typeof proposal] as string | null
+      if (policy === 'write-once' && existingValue !== null) return undefined
+      if (policy === 'earliest-wins' && existingValue !== null && existingValue <= performedAt) return undefined
+
+      // 3. Build update payload
+      const setFields: Partial<InsertProposalSchema> = { [column]: performedAt }
+      if (shouldAutoApproveOnContractEvent(event)) {
+        setFields.status = 'approved'
+        if (!proposal.approvedAt) {
+          setFields.approvedAt = performedAt
+        }
+      }
+
+      // 4. Update via generic CRUD
+      return dalVerifySuccess(await handlers.update(ctx, { id: proposal.id, data: setFields }))
     },
   }
 }

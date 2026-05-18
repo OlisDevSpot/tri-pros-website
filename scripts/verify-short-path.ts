@@ -10,6 +10,7 @@
  */
 import assert from 'node:assert/strict'
 import { Client } from 'pg'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { contractService } from '@/shared/services/contract.service'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
@@ -59,7 +60,7 @@ async function main() {
 
   let createdRequestId: string | null = null
   try {
-    const { requestId } = await contractService.createSigningRequest(target.id, null)
+    const { requestId } = await contractService.createSigningRequest(SYSTEM_CONTEXT, target.id)
     createdRequestId = requestId
     console.log(`  draft created: ${requestId}`)
 
