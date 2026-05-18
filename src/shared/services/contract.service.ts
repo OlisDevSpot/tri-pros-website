@@ -371,14 +371,17 @@ function createContractService() {
 
       // 1. Find proposal by signingRequestId
       const proposal = dalVerifySuccess(await getBySigningRequestId(ctx, { signingRequestId }))
-      if (!proposal) return undefined
+      if (!proposal)
+        return undefined
 
       // 2. Idempotency check
       const column = contractEventColumn[event]
       const policy = contractEventIdempotencyPolicy[event]
       const existingValue = proposal[column as keyof typeof proposal] as string | null
-      if (policy === 'write-once' && existingValue !== null) return undefined
-      if (policy === 'earliest-wins' && existingValue !== null && existingValue <= performedAt) return undefined
+      if (policy === 'write-once' && existingValue !== null)
+        return undefined
+      if (policy === 'earliest-wins' && existingValue !== null && existingValue <= performedAt)
+        return undefined
 
       // 3. Build update payload
       const setFields: Partial<InsertProposalSchema> = { [column]: performedAt }
