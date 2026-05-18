@@ -19,7 +19,7 @@ export function QuickNoteInput({ customerId, onSuccess }: Props) {
   const { invalidateCustomer } = useInvalidation()
 
   const addNoteMutation = useMutation(
-    trpc.customersRouter.addNote.mutationOptions({
+    trpc.customersRouter.business.addNote.mutationOptions({
       onSuccess: () => {
         setContent('')
         invalidateCustomer()

@@ -42,7 +42,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
   }, [mode, form])
 
   const submit = useMutation(
-    trpc.customersRouter.createFromIntake.mutationOptions({
+    trpc.customersRouter.business.createFromIntake.mutationOptions({
       onSuccess: () => {
         form.reset({ ...getIntakeFormDefaults(mode), _honeypot: 'submitted' })
       },

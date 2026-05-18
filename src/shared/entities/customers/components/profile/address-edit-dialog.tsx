@@ -35,7 +35,7 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
   const [picked, setPicked] = useState<AddressFields | null>(null)
 
   const updateContact = useMutation(
-    trpc.customersRouter.updateCustomerContact.mutationOptions({
+    trpc.customersRouter.business.updateCustomerContact.mutationOptions({
       onSuccess: () => {
         invalidateCustomer()
         toast.success('Address updated')

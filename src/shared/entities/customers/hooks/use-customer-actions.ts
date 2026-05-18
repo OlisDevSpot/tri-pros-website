@@ -14,7 +14,7 @@ export function useCustomerActions() {
   // refresh every surface those entities feed (lists, pipelines, dashboard,
   // schedule, lead-source signed counts).
   const deleteCustomer = useMutation(
-    trpc.customersRouter.delete.mutationOptions({
+    trpc.customersRouter.business.delete.mutationOptions({
       onSuccess: () => {
         invalidateCustomer()
         invalidateMeeting()

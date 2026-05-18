@@ -32,7 +32,7 @@ export function CustomersTable() {
   const { setModal, open: openModal } = useModalStore()
 
   const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
-    trpc.customersRouter.list.queryOptions,
+    trpc.customersRouter.business.list.queryOptions,
     {},
     {
       paramPrefix: 'pc',
@@ -43,7 +43,7 @@ export function CustomersTable() {
   )
 
   const updateCreatedAt = useMutation(
-    trpc.customersRouter.updateCreatedAt.mutationOptions({
+    trpc.customersRouter.business.updateCreatedAt.mutationOptions({
       onSuccess: () => {
         toast.success('Created date updated')
         invalidateCustomer()
