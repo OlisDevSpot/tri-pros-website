@@ -99,7 +99,7 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
 │  ┌────────────────────────────────────────────────┐   │
 │  │  CORE: DAL + Services                          │   │
 │  │  entities/<entity>/dal/server/  (DalReturn<T>) │   │
-│  │  shared/services/          (pure: format+send) │   │
+│  │  shared/services/     (DAL + external APIs)     │   │
 │  └────────────────────────────────────────────────┘   │
 │           ↓                        ↓                  │
 │          DB (only via DAL)    External APIs            │
@@ -111,9 +111,11 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
 - Services never import `db` — they call DAL functions with `SYSTEM_CONTEXT` or a passed-in context.
 - Generic CRUD for simple field updates. No ad-hoc DAL wrappers.
 
-**Two invocation modes for DAL:**
-- From tRPC: `dalToTrpc(await dalFunction(ctx, input))` — middleware provides scoped ctx
-- From services/jobs: `await dalFunction(SYSTEM_CONTEXT, input)` — full access, no visibility scoping
+**DAL invocation — `ctx: ScopedContext = SYSTEM_CONTEXT`:**
+- From tRPC procedures: `dalToTrpc(await dalFunction(ctx, input))` — middleware-resolved scoped ctx
+- From services: `await dalFunction(ctx, input)` — ctx passed from caller (tRPC procedure passes its scoped ctx, jobs pass `SYSTEM_CONTEXT`)
+- From jobs/webhooks: `await dalFunction(SYSTEM_CONTEXT, input)` — full access, no visibility scoping
+- From RSC: `await dalFunction(buildSessionContext(spec), input)` — session-resolved context
 
 ---
 

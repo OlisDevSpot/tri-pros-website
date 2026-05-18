@@ -20,11 +20,12 @@ This design establishes the pattern that all remaining service-layer sub-routers
    `SYSTEM_CONTEXT` or a passed-in context. Some services are pure formatters/dispatchers
    (emailService), others compose DAL + external APIs (contractService).
 2. **Procedures orchestrate** — the tRPC procedure body is the orchestration point.
-   It calls services (pure), CRUD DAL (via handlers), cross-entity DAL, and dispatches jobs.
+   It calls services, CRUD DAL (via handlers), cross-entity DAL, and dispatches jobs.
 3. **Generic CRUD for simple updates** — `handlers.update(ctx, { id, data })` for any
    field update. No ad-hoc wrapper functions like `updateProposalStatus`.
-4. **`SYSTEM_CONTEXT` default, `ctx` override** — services/jobs default to `SYSTEM_CONTEXT`
-   when calling DAL. tRPC procedures pass their middleware-resolved `ctx` for scoped access.
+4. **`ctx: ScopedContext = SYSTEM_CONTEXT`** — DAL functions accept context from their
+   caller. `SYSTEM_CONTEXT` is the default (full access). tRPC procedures pass scoped `ctx`,
+   services thread through whatever context their caller provides, jobs use `SYSTEM_CONTEXT`.
 5. **`@migration` comments for sequencing gaps** — when a dependency entity (meetings)
    hasn't migrated yet, implement the correct pattern with a migration comment
    explaining what changes when the dependency lands.
