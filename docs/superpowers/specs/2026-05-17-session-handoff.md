@@ -73,8 +73,8 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
 
 **Pattern established:**
 - Sub-routers receive entity toolkit via factory: `createDeliveryRouter(entity)`
-- Procedures orchestrate: pure services (no DB) → CRUD DAL → cross-entity DAL → job dispatch
-- Services are pure formatters/dispatchers — never import `db`
+- Procedures orchestrate: services → CRUD DAL → cross-entity DAL → job dispatch
+- Services never import `db` — they call DAL with `SYSTEM_CONTEXT` or passed-in context
 - `SYSTEM_CONTEXT` for cross-entity side-effects and public procedure paths
 - Generic CRUD for simple updates — no ad-hoc wrapper functions
 - `@migration(<dependency>)` comments for sequencing gaps
@@ -108,7 +108,7 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
 
 **Hard rules:**
 - Only DAL files import `db`. No exceptions.
-- Services are pure — no `db` imports, no DAL calls. Data comes from callers.
+- Services never import `db` — they call DAL functions with `SYSTEM_CONTEXT` or a passed-in context.
 - Generic CRUD for simple field updates. No ad-hoc DAL wrappers.
 
 **Two invocation modes for DAL:**
