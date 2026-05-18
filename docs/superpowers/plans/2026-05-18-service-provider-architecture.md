@@ -30,9 +30,9 @@
 | Move | `services/upstash/` → `services/providers/upstash/` |
 | Move | `services/gohighlevel/` → `services/providers/gohighlevel/` |
 | Move | `services/pipedrive/` → `services/providers/pipedrive/` |
-| Keep | `services/ai/` stays (internal service helper, not a provider) |
-| Keep | `services/pdf/` stays (internal service helper, not a provider) |
-| Rewrite | ~125 import paths across the codebase |
+| Move | `services/ai/` → `services/providers/ai/` (wraps OpenAI via Vercel AI SDK — external API) |
+| Move | `services/pdf/` → `shared/lib/pdf/` (local utility — pdfmake/pdf-lib, no external HTTP) |
+| Rewrite | ~130 import paths across the codebase |
 
 ### Phase 2: Zoho Sign Decomposition
 
@@ -55,7 +55,7 @@
 - Create: `src/shared/services/providers/` (directory)
 - Move: 12 directories from `services/<name>/` to `services/providers/<name>/`
 
-- [ ] **Step 1: Create providers directory and move all 12 provider dirs**
+- [ ] **Step 1: Create providers directory and move all 13 provider dirs**
 
 ```bash
 cd src/shared/services
@@ -72,16 +72,18 @@ git mv push providers/push
 git mv upstash providers/upstash
 git mv gohighlevel providers/gohighlevel
 git mv pipedrive providers/pipedrive
+git mv ai providers/ai
 ```
 
-- [ ] **Step 2: Verify `ai/` and `pdf/` are NOT moved**
+- [ ] **Step 2: Move `pdf/` to `shared/lib/pdf/` (local utility, not a provider)**
 
-These are internal service helper directories (not external API providers). They stay at `services/ai/` and `services/pdf/`.
+`pdf/` uses pdfmake + pdf-lib — purely local in-process generation with no external HTTP calls. It belongs in `shared/lib/`, not in services or providers.
 
 ```bash
-ls src/shared/services/ai/
-ls src/shared/services/pdf/
-# Both should still exist
+cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/issue-193
+mkdir -p src/shared/lib/pdf
+git mv src/shared/services/pdf/* src/shared/lib/pdf/
+rmdir src/shared/services/pdf
 ```
 
 - [ ] **Step 3: Commit the directory moves**
@@ -140,6 +142,12 @@ find src scripts -name '*.ts' -o -name '*.tsx' | xargs sed -i "s|@/shared/servic
 
 # pipedrive (1 file)
 find src scripts -name '*.ts' -o -name '*.tsx' | xargs sed -i "s|@/shared/services/pipedrive/|@/shared/services/providers/pipedrive/|g"
+
+# ai (2 files)
+find src scripts -name '*.ts' -o -name '*.tsx' | xargs sed -i "s|@/shared/services/ai/|@/shared/services/providers/ai/|g"
+
+# pdf → shared/lib/pdf (7 files — different target path!)
+find src scripts -name '*.ts' -o -name '*.tsx' | xargs sed -i "s|@/shared/services/pdf/|@/shared/lib/pdf/|g"
 ```
 
 - [ ] **Step 2: Fix relative imports within provider directories**
@@ -959,7 +967,7 @@ import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getBySigningRequestId, getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
 import { pdfService } from '@/shared/services/pdf.service'
-import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
+import { countPdfPages } from '@/shared/lib/pdf/count-pdf-pages'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
 import { buildSigningRequest } from '@/shared/services/providers/zoho-sign/lib/build-signing-request'
 import { zohoSyncService } from '@/shared/services/zoho-sync.service'

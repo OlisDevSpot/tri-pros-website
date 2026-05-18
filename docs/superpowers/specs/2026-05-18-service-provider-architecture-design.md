@@ -1,6 +1,6 @@
 # Service & Provider Architecture — Design Spec
 
-> Standardize the `src/shared/services/` directory into a two-tier architecture: flat service files (domain facades) + a `providers/` subdirectory (external API clients + translators). First application: decompose `contracts.service.ts` by extracting Zoho Sign HTTP plumbing into `providers/zoho-sign/` and creating `zoho-sync.service.ts` as the ACL facade.
+> Standardize the backend into four tiers: internal services (business orchestrators), sync services (ACL facades), providers (external API clients + translators in `services/providers/`), and shared libs (local utilities in `shared/lib/`). First application: decompose `contracts.service.ts` by extracting Zoho Sign HTTP plumbing into `providers/zoho-sign/` and creating `zoho-sync.service.ts` as the ACL facade. Also move `pdf/` helpers to `shared/lib/pdf/` and `ai/` to `providers/ai/`.
 
 ## Problem
 
@@ -54,12 +54,12 @@ src/shared/services/
   email.service.ts            # email orchestration (calls resend client)
   notification.service.ts     # push notification dispatch
   accounting.service.ts       # invoicing orchestration (calls quickbooks client)
-  pdf.service.ts              # PDF generation (pure internal — no provider)
-  media.service.ts            # media processing (pure internal)
-  ai.service.ts               # AI generation
-  analytics.service.ts        # analytics
-  construction-data.service.ts # construction data
-  webhook.service.ts          # webhook processing
+  pdf.service.ts              # PDF generation (orchestrates shared/lib/pdf/ + DAL)
+  media.service.ts            # media processing (calls r2 provider + sharp)
+  ai.service.ts               # AI orchestration (calls providers/ai/)
+  analytics.service.ts        # analytics (stub)
+  construction-data.service.ts # construction data (calls notion provider)
+  webhook.service.ts          # webhook processing (stub)
 
   # Sync services / ACL facades (bridge domain → exactly one provider):
   zoho-sync.service.ts        # sync contracts to Zoho Sign
@@ -196,10 +196,22 @@ src/shared/services/
       schemas.ts
       types.ts
 
+    ai/                        # AI provider (OpenAI via Vercel AI SDK)
+      lib/
+        generate-project-summary.ts
+
     pipedrive/                 # LEGACY — do not use
       client.ts
       api/
         put-lead.ts
+
+# ── Local utilities (NOT providers — no external HTTP) ──
+src/shared/lib/
+  pdf/                         # PDF generation (pdfmake + pdf-lib, purely local)
+    render-pdf.ts
+    sow-doc-definition.ts
+    tiptap-to-pdfmake.ts
+    count-pdf-pages.ts
 ```
 
 ## Naming Conventions
@@ -397,7 +409,7 @@ The pure evaluator functions (`evaluateDocuments`, `validateEnvelopeSelection`, 
 
 ### Phase 1: Provider directory restructure (separate PR — move-only, no logic changes)
 
-Move existing `zoho-sign/`, `google-calendar/`, `quickbooks/`, `r2/`, `resend/`, `notion/`, `push/`, `upstash/`, `google-drive/`, `google-maps/`, `gohighlevel/`, `pipedrive/` into `services/providers/`.
+Move existing `zoho-sign/`, `google-calendar/`, `quickbooks/`, `r2/`, `resend/`, `notion/`, `push/`, `upstash/`, `google-drive/`, `google-maps/`, `gohighlevel/`, `pipedrive/`, `ai/` into `services/providers/`. Move `pdf/` from `services/pdf/` to `shared/lib/pdf/` (it's a local utility, not a provider).
 
 Update all imports project-wide. No logic changes. This is a large mechanical rename — its own PR to keep the Zoho decomposition diff reviewable.
 
