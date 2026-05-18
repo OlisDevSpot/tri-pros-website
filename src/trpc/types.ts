@@ -20,7 +20,6 @@ export type {
   DalError,
   DalReturn,
   EntityServerSpec,
-  PkField,
   ScopedContext,
   SlotName,
 } from '@/shared/dal/server/lib/types'
