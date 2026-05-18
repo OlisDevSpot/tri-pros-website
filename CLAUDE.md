@@ -118,7 +118,7 @@ Three layers, strict dependency direction. Every request — browser or server-i
 | Layer | Role | Imports `db`? | Examples |
 |-------|------|:---:|---------|
 | **tRPC** | Client-to-server typesafe glue | No | Entity routers, middleware |
-| **Services** | External system orchestration | No | contract.service, email.service, Upstash jobs |
+| **Services** | External system orchestration | No | zoho-sign.service, email.service, pdf.service, Upstash jobs |
 | **DAL** | Database boundary (ONLY layer touching DB) | **Yes** | `entities/*/dal/server/`, `shared/dal/server/lib/` |
 
 **Client-initiated flow** (browser → user action):

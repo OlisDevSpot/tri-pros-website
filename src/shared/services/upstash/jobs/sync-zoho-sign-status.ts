@@ -1,7 +1,7 @@
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { mapZohoOperationToContractEvent, shouldNotifyOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
-import { contractService } from '@/shared/services/contracts.service'
 import { notificationService } from '@/shared/services/notification.service'
+import { zohoSignService } from '@/shared/services/zoho-sign.service'
 import { createJob } from '../lib/create-job'
 
 interface SyncZohoSignStatusPayload {
@@ -14,7 +14,7 @@ interface SyncZohoSignStatusPayload {
 /**
  * Persists a single Zoho Sign event onto the matching proposal.
  * Lookup is by `signingRequestId`. Business logic (idempotency,
- * auto-approve) lives in contractService.applyContractEvent.
+ * auto-approve) lives in zohoSignService.applyContractEvent.
  */
 export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
   'sync-zoho-sign-status',
@@ -24,7 +24,7 @@ export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
       return
     }
 
-    const updated = await contractService.applyContractEvent(SYSTEM_CONTEXT, { signingRequestId, event, performedAt })
+    const updated = await zohoSignService.applyContractEvent(SYSTEM_CONTEXT, { signingRequestId, event, performedAt })
     if (!updated) {
       return
     }

@@ -384,7 +384,7 @@ async function reorderToRegistryOrder(
   }
 }
 
-/** Multipart attach via PUT /requests/{id}. Mirrors contracts.service.ts addFilesToRequest. */
+/** Multipart attach via PUT /requests/{id}. Mirrors zoho-sign.service.ts addFilesToRequest. */
 async function attachFiles(token: string, requestId: string, files: AttachFile[]): Promise<void> {
   if (files.length === 0) {
     return
