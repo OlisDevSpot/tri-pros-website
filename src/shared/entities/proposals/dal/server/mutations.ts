@@ -9,7 +9,7 @@
 // Consumed by the L1 crud router via handler overrides:
 //   const handlers = { ...defaults, create: proposalCreateDal, duplicate: proposalDuplicateDal }
 
-import type { DalReturn, PkField, ScopedContext } from '@/shared/dal/server/lib/types'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/lib/types'
 import type { InsertProposalView, ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Insert, Row } from '@/shared/db/types'
 
@@ -106,7 +106,7 @@ export async function proposalCreateDal(
 
 export async function proposalDuplicateDal(
   ctx: ScopedContext,
-  input: { id: PkField<typeof proposals> },
+  input: { id: string },
 ): Promise<DalReturn<Row<typeof proposals>>> {
   return dalDbOperation(async () => {
     const defaults = createCrudDal(proposalServerSpec)
