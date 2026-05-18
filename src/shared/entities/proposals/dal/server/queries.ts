@@ -323,7 +323,7 @@ export async function getProposalViews(
 // ── getBySigningRequestId ──────────────────────────────────────────────
 //
 // Lookup a proposal by its Zoho Sign signing request ID (non-PK field).
-// Used by contract.service.applyContractEvent to find the proposal
+// Used by contracts.service.applyContractEvent to find the proposal
 // associated with a webhook event, then update it via generic CRUD.
 // Returns plain row — no joins needed for contract event processing.
 

@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict'
 import { Client } from 'pg'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
-import { contractService } from '@/shared/services/contract.service'
+import { contractService } from '@/shared/services/contracts.service'
 import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
 import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
 
