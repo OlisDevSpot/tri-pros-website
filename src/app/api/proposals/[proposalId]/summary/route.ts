@@ -1,4 +1,5 @@
-import { getProposal } from '@/shared/dal/server/proposals/api'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
@@ -17,7 +18,12 @@ export async function GET(
     return Response.json({ error: 'Missing token' }, { status: 401 })
   }
 
-  const proposal = await getProposal(proposalId)
+  // TODO: Rebuild as procedure → QStash job → ai.service → DAL update (see spec)
+  const result = await getFullView(SYSTEM_CONTEXT, { id: proposalId })
+  if (!result.success) {
+    return Response.json({ error: 'Not found' }, { status: 404 })
+  }
+  const proposal = result.data
 
   if (!proposal) {
     return Response.json({ error: 'Not found' }, { status: 404 })
