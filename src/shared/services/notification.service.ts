@@ -2,14 +2,18 @@ import type { ContractEvent } from '@/shared/constants/enums'
 import { and, eq, ne } from 'drizzle-orm'
 import { ROOTS } from '@/shared/config/roots'
 import { db } from '@/shared/db'
-import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
 import { sendPushToUser, sendPushToUsers } from '@/shared/services/push/send'
-import { resendClient } from '@/shared/services/resend/client'
-import { RESEND_FROM } from '@/shared/services/resend/constants'
-import { renderProposalViewedEmail } from '@/shared/services/resend/lib/render-emails'
+
+// @migration(meetings-entity-router)
+// This service still imports `db` for the meeting notification methods
+// (notifyMeetingParticipantAdded, notifyMeetingScheduledTimeChanged).
+// Once the meetings router migrates to entity toolkit:
+// - Callers pass pre-assembled params (customer name, address, recipients)
+// - The `db` import and all direct queries are removed
+// - This service becomes a pure formatter + push/email dispatcher
 
 // iOS lock-screen titles truncate around 30-40 chars. Front-load the event
 // type + customer identity so the truncated form still tells the user what
@@ -78,39 +82,12 @@ function createNotificationService() {
         console.warn(`[notificationService] notifyProposalViewed push partial failure:`, pushResult)
       }
 
-      // Email — gated by a per-user preference that doesn't exist yet.
-      // Default OFF until the user-settings UI lands (GitHub issue #188).
-      // When the setting ships, replace the constant with
-      // `await getUserEmailPref(params.proposalOwnerId, 'proposalViewed')`.
-      const userOptedInToProposalViewedEmail = false
-      if (!userOptedInToProposalViewedEmail) {
-        return
-      }
-
-      const [owner] = await db
-        .select({ email: user.email })
-        .from(user)
-        .where(eq(user.id, params.proposalOwnerId))
-      if (!owner?.email) {
-        return
-      }
-
-      const { error } = await resendClient.emails.send({
-        from: RESEND_FROM.default,
-        to: owner.email,
-        subject: `🔔 ${params.customerName} just opened their proposal`,
-        react: renderProposalViewedEmail({
-          customerName: params.customerName,
-          proposalLabel: params.proposalLabel,
-          viewedAt: params.viewedAt,
-          sourceLabel,
-          proposalId: params.proposalId,
-        }),
-      })
-
-      if (error) {
-        console.error(`[notificationService] Failed to notify proposal viewed:`, error)
-      }
+      // @migration(user-email-preferences)
+      // Email notification for proposal views was disabled pending user
+      // preference system (issue #188). When that ships:
+      // 1. Caller passes `ownerEmail` in params (already available on session)
+      // 2. Check user preference via DAL query or params
+      // 3. Send email using ownerEmail — no db lookup needed here
     },
 
     // Fires when an internal user is added/promoted as a participant on a
@@ -122,6 +99,10 @@ function createNotificationService() {
     // actor on this signature on purpose — the call site already knows
     // whether `participantUserId === ctx.session.user.id` and can short-
     // circuit before calling us.
+    //
+    // @migration(meetings-entity-router)
+    // Once meetings migrates: caller passes { customerName, customerAddress,
+    // scheduledFor } in params. Remove the db query below.
     notifyMeetingParticipantAdded: async (params: {
       meetingId: string
       participantUserId: string
@@ -166,6 +147,10 @@ function createNotificationService() {
     // (vs at the call site like the participant-added path) because the
     // recipients are derived here and the actor is the only signal the
     // caller has to suppress.
+    //
+    // @migration(meetings-entity-router)
+    // Once meetings migrates: caller passes { recipientUserIds, customerName,
+    // customerAddress } in params. Remove both db queries below.
     notifyMeetingScheduledTimeChanged: async (params: {
       meetingId: string
       newScheduledFor: string | null
