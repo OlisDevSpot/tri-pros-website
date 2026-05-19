@@ -1,118 +1,18 @@
-import type { Buffer } from 'node:buffer'
 import type { ContractEvent } from '@/shared/constants/enums'
 import type { ScopedContext } from '@/shared/dal/server/lib/types'
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
-import type { ZohoContractStatus, ZohoRequestStatus } from '@/shared/services/providers/zoho-sign/types'
+import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getBySigningRequestId, getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
 import { countPdfPages } from '@/shared/lib/pdf/count-pdf-pages'
 import { pdfService } from '@/shared/services/pdf.service'
-import { ZOHO_SIGN_BASE_URL } from '@/shared/services/providers/zoho-sign/constants'
-import { assembleEnvelope } from '@/shared/services/providers/zoho-sign/lib/documents/assemble-envelope'
-import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
 import { buildSigningRequest } from '@/shared/services/providers/zoho-sign/lib/build-signing-request'
-import { dedupeSignerStatuses } from '@/shared/services/providers/zoho-sign/lib/dedupe-signer-statuses'
-import { getZohoAccessToken } from '@/shared/services/providers/zoho-sign/lib/get-access-token'
-
-interface ZohoCreateDocResponse {
-  requests: {
-    request_id: string
-    request_status: string
-  }
-}
+import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
+import { zohoSyncService } from '@/shared/services/zoho-sync.service'
 
 function createContractService() {
-  async function getAuthHeader() {
-    const token = await getZohoAccessToken()
-    return { Authorization: `Zoho-oauthtoken ${token}` }
-  }
-
-  /** Standard JSON request for non-template endpoints (recall, submit, get status) */
-  async function jsonRequest(path: string, options: RequestInit = {}) {
-    const auth = await getAuthHeader()
-    return fetch(`${ZOHO_SIGN_BASE_URL}/api/v1${path}`, {
-      ...options,
-      headers: {
-        ...auth,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
-  }
-
-  /** Template endpoint uses form-encoded data={json} with is_quicksend as query param */
-  async function createFromTemplate(templateId: string, body: object, quickSend: boolean) {
-    const auth = await getAuthHeader()
-    const qs = `is_quicksend=${quickSend}`
-
-    return fetch(
-      `${ZOHO_SIGN_BASE_URL}/api/v1/templates/${templateId}/createdocument?${qs}`,
-      {
-        method: 'POST',
-        headers: {
-          ...auth,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `data=${encodeURIComponent(JSON.stringify(body))}`,
-      },
-    )
-  }
-
-  /** Deletes a draft or recalls+deletes an in-progress request. Zoho uses PUT, not DELETE. */
-  async function deleteRequest(requestId: string) {
-    const res = await jsonRequest(`/requests/${requestId}/delete`, {
-      method: 'PUT',
-      body: JSON.stringify({ recall_inprogress: true }),
-    })
-    return res.ok
-  }
-
-  /**
-   * Attaches one or more files to an existing draft signing request.
-   * Zoho requires the `requests` wrapper in the multipart `data` field;
-   * an empty inner object means "keep the existing request metadata as-is,
-   * just add the file(s)". Confirmed via live test on 2026-04-23.
-   * See spec §6.5.
-   */
-  async function addFilesToRequest(requestId: string, files: Array<{ name: string, buffer: Buffer, mime: string }>): Promise<void> {
-    const auth = await getAuthHeader()
-    const form = new FormData()
-    form.append('data', JSON.stringify({ requests: {} }))
-    for (const f of files) {
-      form.append('file', new Blob([new Uint8Array(f.buffer)], { type: f.mime }), f.name)
-    }
-    const res = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
-      method: 'PUT',
-      headers: auth, // no explicit Content-Type; FormData sets multipart boundary
-      body: form,
-    })
-    if (!res.ok) {
-      const errorText = await res.text()
-      throw new Error(`Zoho addFilesToRequest failed (${res.status}): ${errorText}`)
-    }
-  }
-
-  function sanitizeFilename(name: string): string {
-    return name
-      .replace(/[\\/]/g, '_')
-      .replace(/\s+/g, '_')
-      .slice(0, 200)
-  }
-
-  async function parseDraftResponse(res: Response): Promise<{ requestId: string, status: string }> {
-    if (!res.ok) {
-      throw new Error(`Zoho Sign create draft failed: ${await res.text()}`)
-    }
-    const data = await res.json() as ZohoCreateDocResponse
-    const requestId = data.requests.request_id
-    if (!requestId) {
-      throw new Error('Zoho Sign returned no request_id')
-    }
-    return { requestId, status: data.requests.request_status }
-  }
-
   /**
    * Creates a Zoho Sign draft for a proposal. Two code paths:
    *
@@ -145,7 +45,7 @@ function createContractService() {
     const selection = proposal.formMetaJSON.envelopeDocumentIds ?? []
     if (selection.length > 0) {
       const proposalCtx = buildProposalContext(proposal)
-      const { requestId, status } = await assembleEnvelope(proposalCtx)
+      const { requestId, status } = await zohoSyncService.createEnvelope(proposalCtx)
       dalVerifySuccess(await proposalCrud.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
       return { requestId, status }
     }
@@ -155,21 +55,11 @@ function createContractService() {
     const sowPages = await countPdfPages(pdfBuffer)
     const { templateId, body } = buildSigningRequest(proposal, { sowPages })
 
-    const createRes = await createFromTemplate(templateId, body, false)
-    const { requestId, status } = await parseDraftResponse(createRes)
-
-    try {
-      await addFilesToRequest(requestId, [{
-        name: sanitizeFilename(`scope-of-work-${proposal.label || proposalId}.pdf`),
-        buffer: pdfBuffer,
-        mime: 'application/pdf',
-      }])
-    }
-    catch (attachErr) {
-      // Draft exists but attachment failed — clean up so next retry doesn't inherit a half-built envelope.
-      await deleteRequest(requestId).catch(() => {})
-      throw attachErr
-    }
+    const { requestId, status } = await zohoSyncService.createLegacyDraft(templateId, body, [{
+      name: zohoSyncService.sanitizeFilename(`scope-of-work-${proposal.label || proposalId}.pdf`),
+      buffer: pdfBuffer,
+      mime: 'application/pdf',
+    }])
 
     dalVerifySuccess(await proposalCrud.update(ctx, { id: proposalId, data: { signingRequestId: requestId } }))
     return { requestId, status }
@@ -207,11 +97,7 @@ function createContractService() {
       }
 
       // Submit the draft for signing
-      const submitRes = await jsonRequest(`/requests/${requestId}/submit`, { method: 'POST' })
-      if (!submitRes.ok) {
-        const errorText = await submitRes.text()
-        throw new Error(`Zoho Sign submit failed: ${errorText}`)
-      }
+      await zohoSyncService.submitForSigning(requestId)
 
       dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
@@ -235,11 +121,7 @@ function createContractService() {
         throw new Error(`Proposal ${proposalId} has no signing request to recall`)
       }
 
-      const res = await jsonRequest(`/requests/${proposal.signingRequestId}/recall`, { method: 'POST' })
-      if (!res.ok) {
-        const errorText = await res.text()
-        throw new Error(`Zoho Sign recall failed: ${errorText}`)
-      }
+      await zohoSyncService.recallRequest(proposal.signingRequestId)
 
       dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
@@ -261,8 +143,7 @@ function createContractService() {
 
       // Recall existing request if present
       if (proposal.signingRequestId) {
-        await jsonRequest(`/requests/${proposal.signingRequestId}/recall`, { method: 'POST' })
-          .catch(() => {}) // Ignore recall errors (may already be completed/recalled)
+        await zohoSyncService.recallRequestSilent(proposal.signingRequestId)
       }
 
       // Clear old reference
@@ -278,11 +159,7 @@ function createContractService() {
       const { requestId } = await createDraft(ctx, proposalId)
 
       // Submit for signing
-      const submitRes = await jsonRequest(`/requests/${requestId}/submit`, { method: 'POST' })
-      if (!submitRes.ok) {
-        const errorText = await submitRes.text()
-        throw new Error(`Zoho Sign submit failed: ${errorText}`)
-      }
+      await zohoSyncService.submitForSigning(requestId)
 
       dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
@@ -312,7 +189,7 @@ function createContractService() {
       }
 
       // Delete old request (works for drafts and in-progress), ignore errors
-      await deleteRequest(proposal.signingRequestId).catch(() => {})
+      await zohoSyncService.deleteRequestSilent(proposal.signingRequestId)
 
       // Clear stale reference
       dalVerifySuccess(await proposalCrud.update(ctx, {
@@ -328,30 +205,7 @@ function createContractService() {
     },
 
     getSigningStatus: async (requestId: string): Promise<ZohoContractStatus> => {
-      const res = await jsonRequest(`/requests/${requestId}`, { method: 'GET' })
-      if (!res.ok) {
-        const errorText = await res.text()
-        throw new Error(`Zoho Sign status check failed for ${requestId}: ${errorText}`)
-      }
-
-      const data = await res.json() as {
-        requests: {
-          request_id: string
-          request_status: string
-          actions: {
-            role: string
-            action_status: string
-          }[]
-        }
-      }
-
-      const req = data.requests
-
-      return {
-        requestId: req.request_id,
-        requestStatus: req.request_status as ZohoRequestStatus,
-        signerStatuses: dedupeSignerStatuses(req.actions),
-      }
+      return zohoSyncService.getRequestStatus(requestId)
     },
 
     /**
