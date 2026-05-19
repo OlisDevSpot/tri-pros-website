@@ -1,25 +1,11 @@
-import type { Buffer } from 'node:buffer'
 import type { EnvelopeDocument, ProposalContext } from './types'
+import type { AttachFile } from '../../client'
 import type { EnvelopeDocumentId } from '@/shared/constants/enums'
-import { SOW_INLINE_MAX_CHARS, ZOHO_SIGN_BASE_URL } from '../../constants'
-import { getZohoAccessToken } from '../get-access-token'
+import { SOW_INLINE_MAX_CHARS } from '../../constants'
+import { zohoSignClient } from '../../client'
+import { sanitizeFilename } from '../sanitize-filename'
 import { evaluateDocuments } from './evaluate'
 import { ENVELOPE_DOCUMENTS } from './registry'
-
-interface ZohoMergeSendResponse {
-  code?: number
-  status?: string
-  requests?: {
-    request_id: string
-    request_status: string
-  }
-}
-
-interface AttachFile {
-  name: string
-  buffer: Buffer
-  mime: string
-}
 
 interface AssembleResult {
   requestId: string
@@ -84,8 +70,6 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
     throw new Error('assembleEnvelope: at least one zoho-template document is required (cannot build an envelope from PDFs alone)')
   }
 
-  const token = await getZohoAccessToken()
-
   // Step 1: mergesend creates a multi-template envelope and returns one
   // request_id. POST /api/v1/templates/mergesend (form-urlencoded):
   // template_ids=[...]&data={...}&is_quicksend=false. See
@@ -95,40 +79,21 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
   // dev server (or unexpected text field bloat) is immediately visible
   // without waiting for Zoho to fail.
   logMergeSendDiagnostics(ctx, mergeBody)
-  const mergeRes = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/templates/mergesend`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Zoho-oauthtoken ${token}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: mergeBody,
-  })
-  if (!mergeRes.ok) {
-    const responseText = await mergeRes.text()
-    // Log the full request payload alongside the response so we can diagnose
-    // field-validation / action-id / template-id mismatches without re-running.
+
+  let mergeJson
+  try {
+    mergeJson = await zohoSignClient.mergesend(mergeBody)
+  }
+  catch (err) {
     console.error('[zoho-sign] mergesend failed', {
-      status: mergeRes.status,
-      response: responseText,
       proposalId: ctx.proposal.id,
       kind: ctx.kind,
       templateIds: templateDocs.flatMap(d => d.source.kind === 'zoho-template' ? [d.source.zohoTemplateId] : []),
       requestBody: mergeBody,
     })
-    let zohoCode: number | undefined
-    let zohoMessage: string | undefined
-    try {
-      const parsed = JSON.parse(responseText) as { code?: number, message?: string }
-      zohoCode = parsed.code
-      zohoMessage = parsed.message
-    }
-    catch {}
-    const detail = zohoCode != null
-      ? `code ${zohoCode} — ${zohoMessage ?? responseText}`
-      : responseText
-    throw new Error(`Zoho mergesend failed (${mergeRes.status}): ${detail}`)
+    throw err
   }
-  const mergeJson = (await mergeRes.json()) as ZohoMergeSendResponse
+
   const requestId = mergeJson.requests?.request_id
   if (!requestId) {
     throw new Error(`Zoho mergesend returned no request_id: ${JSON.stringify(mergeJson)}`)
@@ -150,10 +115,10 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
           mime: 'application/pdf',
         })
       }
-      await attachFiles(token, requestId, files)
+      await zohoSignClient.attachFiles(requestId, files)
     }
     catch (attachErr) {
-      await deleteRequest(token, requestId).catch(() => {})
+      await zohoSignClient.deleteRequest(requestId).catch(() => {})
       throw attachErr
     }
   }
@@ -168,7 +133,7 @@ export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleRe
   // array — undocumented but verified working (probe-reorder-thorough.ts
   // shapes P3/P4/P8). No-op when current order already matches registry.
   try {
-    await reorderToRegistryOrder(token, requestId, templateDocs, pdfDocs.length)
+    await reorderToRegistryOrder(requestId, templateDocs, pdfDocs.length)
   }
   catch (reorderErr) {
     // Don't tear down the envelope for a reorder failure — log and continue;
@@ -286,13 +251,6 @@ function buildEnvelopeName(ctx: ProposalContext): string {
   return `${customer} — ${kindLabel}${suffix}`
 }
 
-interface ZohoGetResponse {
-  requests?: {
-    template_ids?: string[]
-    document_ids?: { document_id: string, document_order: string, document_name: string }[]
-  }
-}
-
 /**
  * Reorders the envelope's documents to match the registry's template
  * order, leaving any attached PDFs at the end in attach order. No-op when
@@ -315,19 +273,12 @@ interface ZohoGetResponse {
  * via probe-reorder-thorough.ts shapes P3/P4/P8.
  */
 async function reorderToRegistryOrder(
-  token: string,
   requestId: string,
   templateDocs: readonly EnvelopeDocument[],
   numPdfs: number,
 ): Promise<void> {
   // GET current state
-  const getRes = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
-    headers: { Authorization: `Zoho-oauthtoken ${token}` },
-  })
-  if (!getRes.ok) {
-    throw new Error(`Zoho GET request failed (${getRes.status}): ${await getRes.text()}`)
-  }
-  const j = (await getRes.json()) as ZohoGetResponse
+  const j = await zohoSignClient.getRequest(requestId)
   const currentDocs = (j.requests?.document_ids ?? []).slice().sort(
     (a, b) => Number(a.document_order) - Number(b.document_order),
   )
@@ -369,55 +320,7 @@ async function reorderToRegistryOrder(
     return
   }
 
-  const body = new URLSearchParams()
-  body.set('data', JSON.stringify({ requests: { document_ids: desired } }))
-  const res = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Zoho-oauthtoken ${token}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  })
-  if (!res.ok) {
-    throw new Error(`Zoho reorder PUT failed (${res.status}): ${await res.text()}`)
-  }
-}
-
-/** Multipart attach via PUT /requests/{id}. Mirrors contracts.service.ts addFilesToRequest. */
-async function attachFiles(token: string, requestId: string, files: AttachFile[]): Promise<void> {
-  if (files.length === 0) {
-    return
-  }
-  const form = new FormData()
-  form.append('data', JSON.stringify({ requests: {} }))
-  for (const f of files) {
-    form.append('file', new Blob([new Uint8Array(f.buffer)], { type: f.mime }), f.name)
-  }
-  const res = await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}`, {
-    method: 'PUT',
-    headers: { Authorization: `Zoho-oauthtoken ${token}` },
-    body: form,
-  })
-  if (!res.ok) {
-    throw new Error(`Zoho addFilesToRequest failed (${res.status}): ${await res.text()}`)
-  }
-}
-
-/** Recall + delete. Best-effort cleanup on attach failure. */
-async function deleteRequest(token: string, requestId: string): Promise<void> {
-  await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${requestId}/delete`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Zoho-oauthtoken ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ recall_inprogress: true }),
-  })
-}
-
-function sanitizeFilename(name: string): string {
-  return name.replace(/[\\/]/g, '_').replace(/\s+/g, '_').slice(0, 200)
+  await zohoSignClient.reorderDocuments(requestId, desired)
 }
 
 /**
