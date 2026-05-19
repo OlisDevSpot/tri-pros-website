@@ -136,7 +136,7 @@ Each entity's identity string lives in `entities/<entity>/lib/constants.ts`; `do
 
 ## Consequences
 
-- **Standardize DAL first, then tRPC.** The execution order matters. DAL standardization creates reusable data-access functions; tRPC becomes a thin wrapper calling them. This reverses the Phase 1a approach (which started at tRPC and worked down).
+- **Standardize DAL first, then tRPC.** The execution order matters. DAL standardization creates reusable data-access functions; tRPC and the services layer become thin orchestration wrappers calling them. This reverses the Phase 1a approach (which started at tRPC and worked down).
 
 - **Migration order: Proposal → Customer → Meeting → Project.** Proposals first as the highest-learning entity (shareable + JSONB merge + dual-credential). Each migration: create/standardize DAL → wire entity router → update client call sites. Each is a single PR.
 

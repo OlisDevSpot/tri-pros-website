@@ -1,109 +1,207 @@
-# Proposals Entity — Business Rules & Patterns
+# Proposals — Business Rules
 
-> Canonical reference for anyone writing code that touches proposals.
-> In-file comments reference rules here by number (e.g., "See DOCS.md P-3").
-> If code contradicts this document, the document wins — fix the code.
+A **Proposal** is a quoted scope-of-work delivered to a customer for review and optional e-signature. Customer (1) → Meeting (many) → Proposal (many). Approval is the only legal trigger for Project creation.
 
-## Status Lifecycle
+This directory holds: schemas (`schemas/`), types (`types.ts`), enum constants and action configs (`constants/`), computed-value helpers + server spec (`lib/`), CRUD + business DAL (`dal/server/`), action-config hooks (`hooks/`), and reusable components (`components/`). The server spec at `lib/server-spec.ts` is consumed by `src/trpc/routers/proposals.router/`.
+
+## Lifecycle
 
 ```
-draft → sent → approved
-                 ↑ (auto on contract signed, see C-3)
-       → declined (manual only, see C-5)
+   draft  ──►  proposal-sent  ──►  approved  ──►  (project created automatically)
+                    │
+                    ├── contract-sent      (contractSentAt — Zoho envelope out)
+                    ├── contract-viewed    (contractViewedAt)
+                    ├── contract-signed    (contractSignedAt)  ──► auto-approves
+                    └── contract-declined  (contractDeclinedAt — status unchanged)
+
+   declined / expired         (terminal; agent recovers manually if relevant)
 ```
 
-## Business Rules
+Status transitions are convention-enforced in handlers; no DB CHECK constraint guards illegal transitions. The DB enforces one critical invariant: **at most one approved `initial-sale` proposal per meeting** (unique index — see `#one-approved-initial-sale-per-meeting`).
 
-### Pricing (P)
+## Rules
 
-**P-1. finalTcp is DERIVED, never stored.**
-`finalTcp = max(0, startingTcp - sum(discount incentives))`. Single source of truth: `lib/compute-final-tcp.ts`. Any code needing the final price MUST call `computeFinalTcp()`. The SQL equivalent in `queries.ts` mirrors this formula exactly for sort/filter.
+### kind-derived-from-meeting-project
 
-**P-2. Only `discount`-type incentives reduce TCP.**
-`exclusive-offer` incentives are informational and do not affect the price. The filter is in `computeTotalDiscounts()`.
+`proposal.kind` is `'initial-sale'` if the meeting has no project at insert time, `'additional-work'` if it does. Server-derived from `meeting.projectId` — never accepted as client input.
 
-**P-3. startingTcp is post-breakdown in all pricing modes.**
-In `breakdown` mode the form syncs `startingTcp = sum(sectionPrices) + miscPrice` before saving. `computeFinalTcp` does not need to know about pricing mode.
+**Why**: kind is an aggregate of project linkage; agents can't pick it independently of the meeting's project state without drift.
+**Reference impl**: `lib/derive-proposal-kind.ts`, applied in `dal/server/mutations.ts:proposalCreateDal`
+**Enforced by**: `insertProposalSchema.omit({ kind: true })` + server derivation
 
-### Kind & Creation (K)
+### kind-frozen-after-insert
 
-**K-1. `kind` is server-derived and frozen at insert.**
-`deriveProposalKind(meetingProjectId)`: meeting has project → `additional-work`; no project → `initial-sale`. The `insertProposalSchema` omits `kind` — clients never set it. See `lib/derive-proposal-kind.ts`.
+Once set at insert, `kind` is never re-derived. If the meeting later acquires a `projectId` (because an initial-sale on the same meeting was approved and minted a project), existing proposals keep their original `kind`.
 
-**K-2. `kind` never changes after creation.**
-Even if the meeting later gets a project (from the initial-sale being approved), the proposal's kind stays as-is. Each project has exactly one `initial-sale` and N `additional-work` proposals.
+**Why**: every project is anchored by the proposal that minted it (one `initial-sale`) plus N `additional-work` proposals; re-deriving would silently reclassify history.
+**Reference impl**: `lib/derive-proposal-kind.ts`; the spec excludes `kind` from update path
+**Enforced by**: convention (no update handler touches `kind`)
 
-**K-3. Token is server-generated at creation.**
-Format: `tpr-{16 hex chars}`. Generated in `dal/server/mutations.ts`. The `insertProposalSchema` omits `token`. Tokens are permanent — never rotated, never expired.
+### share-token-generated-at-insert
 
-**K-4. SOW is snapshot from meeting trade selections at creation.**
-If the meeting has `flowStateJSON.tradeSelections` and the input has no existing SOW, the create DAL snapshots trade selections into `projectJSON.data.sow`. After creation, the SOW is independent of the meeting's trade selections.
+Every proposal gets a unique share token at insert: `tpr-{16 random hex}`. Stored on `proposals.token`. Tokens are permanent — never rotated, never expired.
 
-**K-5. One approved initial-sale per meeting.**
-Enforced by DB unique index: `(meetingId) WHERE kind='initial-sale' AND status='approved'`. Multiple draft/sent initial-sales on the same meeting can coexist (agent iterating on offers).
+**Why**: a customer needs to view their proposal without logging in; the token IS the authorization for that read. Permanence means the URL emailed once stays valid.
+**Reference impl**: `dal/server/mutations.ts:proposalCreateDal` (generation); `lib/server-spec.ts` (`shareable.tokenColumn`)
+**Enforced by**: server-derived; `token` omitted from `insertProposalSchema`
 
-### Visibility & Access (V)
+### sow-snapshot-from-meeting-on-create
 
-**V-1. Agent visibility = meeting participation.**
-Non-omni agents see a proposal ONLY when they participate in the proposal's meeting (any role). Predicate: `userParticipatesInMeeting(userId, proposals.meetingId)`. See `lib/visibility.ts`.
+When creating a proposal, if the meeting has `flowStateJSON.tradeSelections` and the input has no existing SOW, the create handler snapshots trade selections into `projectJSON.data.sow`. After creation, the SOW is independent of the meeting's trade selections.
 
-**V-2. Token access bypasses visibility scoping.**
-A valid share token (`?token=tpr-xxx`) IS authentication. The shareable middleware sets `ctx.scope = eq(proposals.token, token)` and `ctx.ability = null`. CASL checks are skipped — the token is the authorization.
+**Why**: the agent's meeting-time scope picks should flow into the proposal as a starting point — but the proposal is the contract; once authored, it can't be retroactively re-driven by the meeting state.
+**Reference impl**: `dal/server/mutations.ts:proposalCreateDal` (steps 3–4)
+**Enforced by**: convention
 
-**V-3. Both `getById` and `update` are shareable.**
-Homeowners view AND edit proposals via token (e.g., selecting a finance option). The `shareable: { tokenColumn: 'token' }` on the spec routes both through `shareableProcedure`.
+### shareable-via-token
 
-**V-4. Omni users (super-admin) see all proposals.**
-`scope = null` — no WHERE predicate applied.
+A proposal can be read AND updated by an unauthenticated client via `?token=<shareToken>`. The `shareableMiddleware` resolves token-or-session and sets `ctx.scope = eq(proposals.token, token)` on the token path. CASL is `null` on token path — token IS authorization.
 
-### Contracts & Signing (C)
+**Why**: customer e-signature flow + finance-option selection both require unauthenticated read/update. Treating token as scope means the DAL is unchanged from the authed path.
+**Reference impl**: `lib/server-spec.ts:shareable`
+**Enforced by**: `shareableMiddleware` (entity toolkit); see ADR-0002 §4 and [`../../trpc/DOCS.md`](../../trpc/DOCS.md) (when written)
 
-**C-1. Contract events are idempotent.**
-`viewed`: earliest-wins (first view is meaningful, later views are noise). `completed`/`declined`: write-once (terminal events, duplicates are Zoho retries).
+### visibility-via-meeting-participation
 
-**C-2. Zoho operation types diverge from docs.**
-Both documented and observed values are mapped in `lib/contract-events.ts`. Confirmed via live webhook test 2026-05-04.
+Non-omni agents see a proposal only if they participate in the proposal's meeting (any role). Super-admins (`ability.can('manage', 'all')`) bypass scoping — caller passes `ctx.scope = null`.
 
-**C-3. `completed` auto-approves the proposal.**
-Sets `status = 'approved'` and stamps `approvedAt`. This matches the manual approval flow.
+**Why**: the meeting is where the customer relationship is owned; proposals inherit visibility from there. `ownerId` is the author, not the gate.
+**Reference impl**: `lib/visibility.ts` → `userParticipatesInMeeting`
+**Enforced by**: `scopeMiddleware(proposalServerSpec)` on every entity procedure
 
-**C-4. `declined` does NOT auto-change status.**
-Customer-initiated declines are rare and usually recoverable. Agent intervenes manually.
+### one-approved-initial-sale-per-meeting
 
-**C-5. Notification triggers.**
-Only `completed` and `declined` events trigger push notifications.
+DB unique index `proposals_one_approved_initial_sale_per_meeting_idx` enforces: at most one row per `meetingId` where `kind = 'initial-sale' AND status = 'approved'`. Many draft/sent initial-sales coexist freely.
 
-### CSLB Compliance (L)
+**Why**: by induction from `#kind-derived-from-meeting-project`, all initial-sales for a project live on the project's birthing meeting (the earliest meeting linked to it). Per-meeting uniqueness transitively enforces "at most one approved initial-sale per project" — the real business invariant.
+**Reference impl**: `src/shared/db/schema/proposals.ts` (index)
+**Enforced by**: Postgres (duplicate insert fails)
 
-**L-1. Cancellation window: 3 business days standard, 5 for seniors.**
-Per Cal. Civil Code 1689.6/1689.7 (post AB 2471, effective 2021-01-01).
+### conversion-trigger
 
-**L-2. Business day = any day except Sunday.**
-Named federal holidays are NOT currently excluded (intentional simplification). See `lib/cslb-start-date.ts` for the caveat.
+When `status` transitions to `approved`, a Project is created automatically and the meeting's outcome is set to `converted_to_project`. The `converted_to_project` outcome is **derived, never selectable** in the meeting outcome dropdown — it appears but is disabled.
 
-**L-3. Window starts day AFTER signing.**
-Signing day is Day 0. Earliest legal start is the calendar day after the Nth business day.
+**Why**: a project represents a signed contract. Without an approved proposal there's no contract. Manual selection would create projects without contractual basis.
+**Reference impl**: approve handler in `src/trpc/routers/proposals.router/business.router.ts`; see also `../projects/DOCS.md` and `../meetings/DOCS.md`
+**Enforced by**: convention + disabled UI option
 
-### Duplication (D)
+### jsonb-merge-on-update
 
-**D-1. Duplicating a proposal resets status to `draft`.**
+`formMetaJSON`, `projectJSON`, `fundingJSON` deep-merge on update — never replaced. The spec declares which columns merge.
 
-**D-2. Duplicating reassigns ownership to the current user.**
+**Why**: forms submit partial state across multi-step flows; replacement would wipe prior steps.
+**Reference impl**: `lib/server-spec.ts:update.jsonbMergeColumns`
+**Enforced by**: `createCrudRouter` update handler reads `spec.update.jsonbMergeColumns` and applies merge
 
-**D-3. Duplicated proposals get a fresh token and re-derived kind.**
-The duplicate calls `proposalCreateDal` internally, so kind/token are server-derived from the current meeting state (not copied from source).
+### final-tcp-derived
 
-## Patterns in This Entity
+The final contract price is computed from `fundingJSON.data`:
 
-### DAL Pattern
-All data access through `dal/server/queries.ts` (reads) and `dal/server/mutations.ts` (writes). Returns `DalReturn<T>`. Uses `dalDbOperation` + `ThrowableDalError` internally. See `memory/coding-conventions.md` Rule 15.
+```
+finalTcp = max(0, startingTcp − Σ discount-typed incentives)
+```
 
-### Server Spec
-`lib/server-spec.ts` — `proposalServerSpec` satisfying `EntityServerSpec<typeof proposals>`. Wires visibility, schemas, shareable config, JSONB merge columns.
+Only `discount`-typed incentives reduce TCP; `exclusive-offer` incentives are informational and don't affect price. In `breakdown` pricing mode the form syncs `startingTcp = Σ sectionPrices + miscPrice` before saving, so the helper is pricing-mode-agnostic.
 
-### tRPC Router
-`trpc/routers/proposals.router/index.ts` — uses `createEntityRouter(proposalServerSpec, factory)`. CRUD inlined for type inference. Business queries (getFullView, list) on business sub-router. Delivery + contracts mounted as deferred service-layer sub-routers.
+**Never persisted.** Always re-derive at read time. SQL filter/sort on price uses a Drizzle `sql<number>` expression that mirrors the helper exactly.
 
----
+**Why**: line-item edits would silently invalidate a stored TCP. Single source of truth; SQL mirror keeps server-side filtering correct.
+**Reference impl**: `lib/compute-final-tcp.ts` (JS); `dal/server/queries.ts:listProposals` `finalTcpExpr` (SQL mirror)
+**Enforced by**: convention (no `final_tcp` column exists; field was removed from `fundingDataSchema` in commit `a6c431e`)
 
-*Last updated: 2026-05-17. If a rule here is wrong, fix this document AND the code.*
+### cslb-start-date
+
+Project start date must respect the California Civil Code §1689.6/§1689.7 rescission window:
+
+- 3 business days for standard contracts; 5 for senior contracts (buyer ≥65)
+- "Business day" excludes Sundays only (Saturdays count; named federal holidays are *not* currently excluded — intentional simplification; see helper docstring for the trade-off)
+- Window starts the day **after** signing (signing day is Day 0)
+- Earliest legal start = next calendar day after the Nth business day
+
+**Why**: starting work before the rescission window expires creates legal liability under Cal. B&P Code §7159.
+**Reference impl**: `lib/cslb-start-date.ts:cslbEarliestStartDate`
+**Enforced by**: convention (helper must be called wherever start date is computed)
+
+### contract-events-from-zoho
+
+Zoho Sign webhooks deliver `operation_type` strings mapped to three internal events: `viewed`, `completed`, `declined`. The mapper handles Zoho's docs-vs-actual divergence (docs say `RequestCompleted`; actual payload says `RequestSigningSuccess` — both accepted). Unrecognized operations are no-oped. Confirmed via live webhook test 2026-05-04.
+
+**Reference impl**: `lib/contract-events.ts:mapZohoOperationToContractEvent`
+**Enforced by**: convention (contracts service routes all webhook ops through this mapper)
+
+### contract-event-idempotency
+
+Each contract event has a fixed idempotency policy:
+
+| Event | Policy | Rationale |
+|---|---|---|
+| `viewed` | earliest-wins | first view is meaningful; later views are noise |
+| `completed` | write-once | terminal; duplicate delivery = Zoho retry, not real second action |
+| `declined` | write-once | terminal; same reasoning |
+
+**Reference impl**: `lib/contract-events.ts:contractEventIdempotencyPolicy`
+**Enforced by**: contracts service applies the policy before write
+
+### completed-auto-approves
+
+A `completed` contract event auto-promotes proposal status to `approved` and stamps `approvedAt` (matching the manual approval flow). `declined` does **not** flip status — agent intervention is expected.
+
+**Why**: customer-initiated declines are rare and usually recoverable in conversation; auto-flipping creates stale "declined" rows the agent can't easily resurrect. Approval is the trigger for project creation (see `#conversion-trigger`), so auto-approve closes the loop on signing.
+**Reference impl**: `lib/contract-events.ts:shouldAutoApproveOnContractEvent`
+**Enforced by**: contracts service consumes this flag
+
+### margin-multiplier-tiers
+
+Per-section and proposal-level margin (`price − cost − incentives`) and multiplier (`price ÷ cost`) drive a 4-tier color classification used across cost-related UI:
+
+| Tier | Threshold | Meaning |
+|---|---|---|
+| `danger` | multiplier `< 2×` | below break-even safety margin |
+| `healthy` | `2×` to `3×` | standard residential remodeling range |
+| `excellent` | `≥ 3×` | strong margin |
+| `unknown` | no cost data | no signal |
+
+Cost helpers return `null` (not 0) when cost data is incomplete — distinguishes "not tracked" from "actually zero."
+
+**Why**: the tier system is used in multiple UI surfaces; a single classification keeps colors aligned with reality.
+**Reference impl**: `lib/compute-sow-financials.ts` (`classifyMultiplierTier`), `lib/compute-proposal-cost-totals.ts`
+**Enforced by**: convention
+
+### cost-data-asymmetric-incomplete
+
+`hasMissingCostData` flags **asymmetric** incompleteness: true only when some sections have cost lines and some don't (agent started tracking but didn't finish). False when no sections have cost lines (haven't started) or all do (finished).
+
+**Why**: prevents alert fatigue in total-mode proposals where cost lines are optional. We only nag when the data is in a partial state.
+**Reference impl**: `lib/compute-proposal-cost-totals.ts`
+**Enforced by**: convention
+
+### duplicate-resets-and-redrives
+
+Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived (duplicate calls `proposalCreateDal` internally). Only the JSONB content (`formMetaJSON`, `projectJSON`, `fundingJSON`) and `financeOptionId` / `meetingId` are copied.
+
+**Why**: a duplicate is "start a new proposal from this template," not "clone." Server-derivation prevents the duplicate from inheriting stale state (wrong kind if the meeting has changed projects, an existing-but-disclosed share token, etc.).
+**Reference impl**: `dal/server/mutations.ts:proposalDuplicateDal`
+**Enforced by**: implementation (manual `Insert` shape)
+
+## Anti-patterns
+
+- **Storing `finalTcp`.** Always derive via `computeFinalTcp` — see `#final-tcp-derived`.
+- **Setting `kind` from client input.** Server-derived; omitted from insert/update schemas.
+- **Replacing `formMetaJSON` / `projectJSON` / `fundingJSON` on update.** They deep-merge — see `#jsonb-merge-on-update`.
+- **Adding a CASL check on the share-token path.** Token IS authorization; CASL is `null`.
+- **Setting `converted_to_project` meeting outcome manually.** Derived from proposal approval.
+- **Computing project start date by adding 3 calendar days to signing.** Use `cslbEarliestStartDate(signingDate, isSenior)` — Sundays don't count.
+- **Re-deriving `kind` when `meeting.projectId` changes.** Frozen at insert.
+- **Trusting `proposal.token` as a secret.** It's a URL-safe ID, not a password — anyone with the URL has access. Don't append authority beyond proposal read/update.
+
+## See also
+
+- ADR-0002 — Entity Server System (server spec, scope/shareable middleware)
+- [`../../trpc/DOCS.md`](../../trpc/DOCS.md) — tRPC procedures, `shareableMiddleware`, `createCrudRouter` (when written)
+- [`../customers/DOCS.md`](../customers/DOCS.md) — phone-visibility threshold gates on proposal-sent (when written)
+- [`../meetings/DOCS.md`](../meetings/DOCS.md) — meeting outcome `converted_to_project` is set by proposal approval (when written)
+- [`../projects/DOCS.md`](../projects/DOCS.md) — project creation triggered by approval; one project per birthing meeting (when written)
+- `docs/proposal/creation-guide.md` — sales-side proposal authoring playbook
+- `docs/proposal/scope-presentation.md` — SOW UX
+- `docs/proposal/financing-presentation.md` — financing UX
+- `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL

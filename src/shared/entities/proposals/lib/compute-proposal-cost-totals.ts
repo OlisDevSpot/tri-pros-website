@@ -19,19 +19,10 @@ export interface ProposalCostTotals {
   hasMissingCostData: boolean
 }
 
-/**
- * Aggregate cost + margin + multiplier for a proposal, evaluated against
- * `finalTcp` (post-discount). Margin and multiplier are the agent's
- * headline KPIs for "profit per project" — discounts come out of agent
- * profit, so they must be netted in.
- *
- * `totalMultiplier` is null when total cost is 0 (avoids Infinity / NaN).
- * `hasMissingCostData` flags asymmetric incompleteness — true when SOME
- * sections have cost lines and some don't (the agent started tracking
- * but didn't finish). False when no sections have cost lines (haven't
- * started) or all do (finished). Avoids alert fatigue in total-mode
- * proposals where cost lines are optional.
- */
+/** Aggregate cost + margin + multiplier vs `finalTcp` (post-discount, so
+ *  discounts net out of agent profit). `totalMultiplier` is null when total
+ *  cost is 0 to avoid Infinity/NaN.
+ *  see ../DOCS.md#margin-multiplier-tiers + #cost-data-asymmetric-incomplete */
 export function computeProposalCostTotals(data: InsertProposalSchema): ProposalCostTotals {
   const sow = data.projectJSON.data.sow
   const subtotal = data.fundingJSON.data.startingTcp

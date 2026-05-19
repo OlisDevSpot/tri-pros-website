@@ -1,13 +1,7 @@
-// ─── Proposal Business Mutations ────────────────────────────────────────────
-// Custom CRUD overrides for the proposals entity. These replace the generic
-// create/duplicate handlers with proposal-specific business logic (kind
-// derivation, token generation, SOW snapshot from meeting trade selections).
-//
-// Every function returns DalReturn<T> — never throws. Uses dalDbOperation
-// for DB error wrapping and ThrowableDalError for business logic errors.
-//
-// Consumed by the L1 crud router via handler overrides:
-//   const handlers = { ...defaults, create: proposalCreateDal, duplicate: proposalDuplicateDal }
+// Custom CRUD overrides for the proposals entity. Replace generic create/duplicate
+// with proposal-specific business logic. see ../../DOCS.md for the rules.
+// DAL conventions: docs/codebase-conventions/dal-conventions.md
+// Consumed via handler overrides in src/trpc/routers/proposals.router/index.ts
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { InsertProposalView, ProposalView } from '@/shared/db/schema/proposal-views'
@@ -33,7 +27,7 @@ export async function proposalCreateDal(
   input: Insert<typeof proposals>,
 ): Promise<DalReturn<Row<typeof proposals>>> {
   return dalDbOperation(async () => {
-    // 1. Derive kind from meeting's project linkage
+    // see ../../DOCS.md#kind-derived-from-meeting-project
     let meetingProjectId: string | null = null
     let meetingFlowState: { tradeSelections?: Array<{ tradeId: string, tradeName: string, selectedScopes: Array<{ id: string, label: string }> }> } | null = null
 
@@ -52,10 +46,10 @@ export async function proposalCreateDal(
 
     const kind = deriveProposalKind(meetingProjectId)
 
-    // 2. Generate unique share token
+    // see ../../DOCS.md#share-token-generated-at-insert
     const token = `tpr-${randomBytes(8).toString('hex')}`
 
-    // 3. Snapshot meeting trade selections into SOW (if present and SOW not already in input)
+    // see ../../DOCS.md#sow-snapshot-from-meeting-on-create
     let enrichedInput = input
     const tradeSelections = meetingFlowState?.tradeSelections
     if (tradeSelections && tradeSelections.length > 0) {
@@ -83,7 +77,6 @@ export async function proposalCreateDal(
       }
     }
 
-    // 4. Insert with server-derived fields
     const [row] = await db
       .insert(proposals)
       .values({
@@ -125,18 +118,14 @@ export async function proposalDuplicateDal(
       meetingId: source.meetingId ?? undefined,
     } as Insert<typeof proposals>
 
-    // Delegate to proposalCreateDal for kind derivation + token gen.
-    // dalVerifySuccess unwraps or re-throws as ThrowableDalError.
+    // Delegate to create for fresh kind + token derivation. see ../../DOCS.md#duplicate-resets-and-redrives
     return dalVerifySuccess(await proposalCreateDal(ctx, duplicateData))
   })
 }
 
 // ── recordProposalView ─────────────────────────────────────────────────
 
-/**
- * Records a proposal view event. Called from the public recordView procedure
- * when a homeowner opens their proposal link.
- */
+/** Records a proposal view event. Called from the public recordView procedure on homeowner open. */
 export async function recordProposalView(
   input: InsertProposalView,
 ): Promise<DalReturn<ProposalView>> {
