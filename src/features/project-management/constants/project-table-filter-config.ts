@@ -1,5 +1,5 @@
 import type { ProjectStatus, ProjectVisibility } from '@/shared/constants/enums'
-import type { FilterDefinition } from '@/shared/dal/client/query/types'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 
 import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
 import { projectStatuses, projectVisibilities } from '@/shared/constants/enums'

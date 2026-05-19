@@ -9,7 +9,7 @@
 // Consumed by the L1 crud router via handler overrides:
 //   const handlers = { ...defaults, create: proposalCreateDal, duplicate: proposalDuplicateDal }
 
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/lib/types'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { InsertProposalView, ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Insert, Row } from '@/shared/db/types'
 
@@ -17,7 +17,7 @@ import { randomBytes } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { ThrowableDalError } from '@/shared/dal/server/lib/types'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'

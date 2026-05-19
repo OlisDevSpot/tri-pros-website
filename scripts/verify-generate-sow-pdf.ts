@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { countPdfPages } from '@/shared/lib/pdf/count-pdf-pages'
 import { pdfService } from '@/shared/services/pdf.service'
 

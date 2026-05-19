@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Separator } from '@/shared/components/ui/separator'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 

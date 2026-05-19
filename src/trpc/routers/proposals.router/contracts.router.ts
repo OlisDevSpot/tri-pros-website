@@ -16,7 +16,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { envelopeDocumentIds } from '@/shared/constants/enums'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'

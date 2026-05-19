@@ -1,6 +1,6 @@
 'use client'
 
-import type { PaginatedQueryResult } from '@/shared/dal/client/query/types'
+import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
 
 import { createContext, use } from 'react'
 

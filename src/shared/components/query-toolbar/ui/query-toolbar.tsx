@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react'
 
 import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
-import type { FilterDefinition, FilterValue, PaginatedQueryResult } from '@/shared/dal/client/query/types'
+import type { FilterDefinition, FilterValue, PaginatedQueryResult } from '@/shared/dal/client/lib/types'
 
 import { Columns3Icon, SlidersHorizontal, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'

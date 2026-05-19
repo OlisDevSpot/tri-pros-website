@@ -12,7 +12,7 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
-import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
+import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { useTRPC } from '@/trpc/helpers'
 
 export function ActivitiesTable() {

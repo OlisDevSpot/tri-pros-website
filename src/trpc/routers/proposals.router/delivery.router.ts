@@ -14,7 +14,7 @@ import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { deriveOutcomeOnProposalSent } from '@/shared/entities/meetings/dal/server/mutations'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { recordProposalView } from '@/shared/entities/proposals/dal/server/mutations'

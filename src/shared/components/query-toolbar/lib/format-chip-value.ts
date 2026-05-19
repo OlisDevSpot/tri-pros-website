@@ -1,4 +1,4 @@
-import type { FilterDefinition, FilterValue } from '@/shared/dal/client/query/types'
+import type { FilterDefinition, FilterValue } from '@/shared/dal/client/lib/types'
 
 import { format } from 'date-fns'
 

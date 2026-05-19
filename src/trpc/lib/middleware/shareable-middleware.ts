@@ -16,7 +16,7 @@
 
 import type { PgColumn } from 'drizzle-orm/pg-core'
 
-import type { EntityServerSpec } from '@/shared/dal/server/lib/types'
+import type { EntityServerSpec } from '@/shared/dal/server/types'
 
 import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'

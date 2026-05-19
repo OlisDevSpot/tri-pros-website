@@ -15,7 +15,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface IdentityContactSectionProps {

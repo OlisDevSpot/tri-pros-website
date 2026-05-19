@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { useTRPC } from '@/trpc/helpers'
 

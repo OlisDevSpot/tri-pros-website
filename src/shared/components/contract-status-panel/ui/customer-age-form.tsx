@@ -7,7 +7,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface CustomerAgeFormProps {

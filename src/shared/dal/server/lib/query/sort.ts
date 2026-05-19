@@ -1,6 +1,6 @@
 import type { AnyColumn, SQL } from 'drizzle-orm'
 
-import type { SortFields } from '@/shared/dal/server/query/schemas'
+import type { SortFields } from '@/shared/dal/server/lib/query/schemas'
 
 import { asc, desc } from 'drizzle-orm'
 

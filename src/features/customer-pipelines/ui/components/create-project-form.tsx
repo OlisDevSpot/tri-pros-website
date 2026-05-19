@@ -27,7 +27,7 @@ import {
 } from '@/shared/components/ui/select'
 import { Separator } from '@/shared/components/ui/separator'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { formatAddress, formatAsDollars } from '@/shared/lib/formatters'
 import { useTRPC } from '@/trpc/helpers'
 

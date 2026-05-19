@@ -17,10 +17,10 @@ import {
   updateParticipantRole,
   userParticipatesInMeeting,
 } from '@/shared/dal/server/meetings/participants'
-import { buildFilterWhere } from '@/shared/dal/server/query/filters'
-import { paginate } from '@/shared/dal/server/query/output'
-import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/query/schemas'
-import { buildOrderBy } from '@/shared/dal/server/query/sort'
+import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
+import { paginate } from '@/shared/dal/server/lib/query/output'
+import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
+import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
 import { isUniqueViolation } from '@/shared/db/lib/pg-errors'

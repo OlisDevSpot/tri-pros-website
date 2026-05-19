@@ -17,7 +17,7 @@ import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { projectFormDefaults, projectFormSchema } from '@/shared/entities/projects/schemas'
 import { useTRPC } from '@/trpc/helpers'
 

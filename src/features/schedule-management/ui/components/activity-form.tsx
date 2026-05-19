@@ -26,7 +26,7 @@ import {
 } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { activityEntityTypes, activityTypes } from '@/shared/constants/enums'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { capitalize } from '@/shared/lib/formatters'
 import { useTRPC } from '@/trpc/helpers'
 

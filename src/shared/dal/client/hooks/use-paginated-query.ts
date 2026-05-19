@@ -1,14 +1,14 @@
 'use client'
 
-import type { FilterDefinition, FilterState, FilterValue, PaginatedQueryResult } from '@/shared/dal/client/query/types'
-import type { PaginatedResult } from '@/shared/dal/server/query/output'
+import type { FilterDefinition, FilterState, FilterValue, PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { parseAsInteger, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
 import { useCallback, useEffect, useMemo } from 'react'
 
-import { filterParserRegistry } from '@/shared/dal/client/query/filter-parser-registry'
-import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/client/query/url-state'
+import { filterParserRegistry } from '@/shared/dal/client/lib/filter-parser-registry'
+import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/client/lib/url-state'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 
 /**

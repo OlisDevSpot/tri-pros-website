@@ -19,15 +19,15 @@ import type {
   DalReturn,
   EntityServerSpec,
   ScopedContext,
-} from './types'
+} from '../types'
 import type { Insert, Row, Update } from '@/shared/db/types'
 
 import { and, eq } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 
+import { ThrowableDalError } from '../types'
 import { dalDbOperation } from './helpers'
-import { ThrowableDalError } from './types'
 
 export function createCrudDal<TTable extends PgTable, TId extends string | number = string>(
   spec: EntityServerSpec<TTable, TId>,

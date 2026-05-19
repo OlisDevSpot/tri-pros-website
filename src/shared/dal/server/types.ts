@@ -3,7 +3,7 @@
 // They live here (not in trpc/) because DAL is the foundational layer —
 // tRPC, services, and jobs all depend on DAL, never the reverse.
 //
-// Import from: `@/shared/dal/server/lib/types`
+// Import from: `@/shared/dal/server/types`
 
 import type { SQL } from 'drizzle-orm'
 import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'

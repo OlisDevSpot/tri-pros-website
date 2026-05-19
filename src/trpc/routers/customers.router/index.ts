@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'

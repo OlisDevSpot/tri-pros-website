@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { contractService } from '@/shared/services/contracts.service'
 
 import { createJob } from '../lib/create-job'

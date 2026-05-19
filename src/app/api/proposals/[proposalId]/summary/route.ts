@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { formatAsDollars } from '@/shared/lib/formatters'

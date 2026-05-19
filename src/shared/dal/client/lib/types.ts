@@ -1,4 +1,4 @@
-import type { DateRange, NumberRange } from '@/shared/dal/server/query/schemas'
+import type { DateRange, NumberRange } from '@/shared/dal/server/lib/query/schemas'
 
 /**
  * Time-preset descriptor for `date-range` filter type. Click a preset → fill

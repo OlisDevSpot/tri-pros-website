@@ -7,7 +7,7 @@
 // When the meetings entity router migrates, this file becomes the canonical
 // meetings mutations module alongside a queries.ts sibling.
 
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/lib/types'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 import { and, eq, inArray } from 'drizzle-orm'
 

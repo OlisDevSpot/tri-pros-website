@@ -1,4 +1,4 @@
-import type { EntityServerSpec } from '@/shared/dal/server/lib/types'
+import type { EntityServerSpec } from '@/shared/dal/server/types'
 
 import {
   insertProposalSchema,

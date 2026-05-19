@@ -12,7 +12,7 @@ import type { BetterAuthSession } from '@/shared/domains/auth/server'
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
 // ── Re-exports from DAL types (canonical source) ────────────────────────
-// Consumers can import from either location. Prefer `@/shared/dal/server/lib/types`
+// Consumers can import from either location. Prefer `@/shared/dal/server/types`
 // for new DAL code; `@/trpc/types` for tRPC layer code.
 
 export type {
@@ -22,14 +22,14 @@ export type {
   EntityServerSpec,
   ScopedContext,
   SlotName,
-} from '@/shared/dal/server/lib/types'
+} from '@/shared/dal/server/types'
 
 export {
   dalError,
   dalSuccess,
   SYSTEM_CONTEXT,
   ThrowableDalError,
-} from '@/shared/dal/server/lib/types'
+} from '@/shared/dal/server/types'
 
 // ── tRPC-specific context types ─────────────────────────────────────────
 

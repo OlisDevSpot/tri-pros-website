@@ -9,7 +9,7 @@
 //
 // Chain after agentProcedure (which guarantees session + ability non-null).
 
-import type { EntityServerSpec } from '@/shared/dal/server/lib/types'
+import type { EntityServerSpec } from '@/shared/dal/server/types'
 
 import { TRPCError } from '@trpc/server'
 

@@ -1,6 +1,6 @@
 import type { Buffer } from 'node:buffer'
 
-import type { ScopedContext } from '@/shared/dal/server/lib/types'
+import type { ScopedContext } from '@/shared/dal/server/types'
 
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'

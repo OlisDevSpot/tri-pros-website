@@ -6,7 +6,7 @@ import { useMemo } from 'react'
 import { toast } from 'sonner'
 
 import { ROOTS } from '@/shared/config/roots'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { PROPOSAL_ACTIONS } from '@/shared/entities/proposals/constants/actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { copyToClipboard } from '@/shared/lib/clipboard'

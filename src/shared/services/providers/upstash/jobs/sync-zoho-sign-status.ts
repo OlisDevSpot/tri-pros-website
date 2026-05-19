@@ -1,4 +1,4 @@
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { mapZohoOperationToContractEvent, shouldNotifyOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
 import { contractService } from '@/shared/services/contracts.service'
 import { notificationService } from '@/shared/services/notification.service'

@@ -1,5 +1,5 @@
 import type { ContractEvent } from '@/shared/constants/enums'
-import type { ScopedContext } from '@/shared/dal/server/lib/types'
+import type { ScopedContext } from '@/shared/dal/server/types'
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'

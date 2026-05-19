@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 type ParticipantsCache = inferRouterOutputs<AppRouter>['meetingsRouter']['getParticipants']

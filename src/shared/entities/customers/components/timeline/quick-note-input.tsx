@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {

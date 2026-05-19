@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { AddressAutocomplete } from '@/shared/components/inputs/address-autocomplete'
 import { Button } from '@/shared/components/ui/button'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import {
   buildAerialStaticMapUrl,
   buildStreetViewStaticUrl,

@@ -2,8 +2,8 @@
 
 import type { ComponentType } from 'react'
 
-import type { FilterDefinition } from '@/shared/dal/client/query/types'
-import type { DateRange, NumberRange } from '@/shared/dal/server/query/schemas'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
+import type { DateRange, NumberRange } from '@/shared/dal/server/lib/query/schemas'
 
 import { BooleanFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/boolean-filter-control'
 import { DateRangeFilterControl } from '@/shared/components/query-toolbar/ui/filter-controls/date-range-filter-control'

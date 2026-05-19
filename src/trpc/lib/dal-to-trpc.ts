@@ -4,7 +4,7 @@
 //
 // Services/jobs handle DalReturn directly — only tRPC uses this bridge.
 
-import type { DalReturn } from '@/shared/dal/server/lib/types'
+import type { DalReturn } from '@/shared/dal/server/types'
 
 import { TRPCError } from '@trpc/server'
 

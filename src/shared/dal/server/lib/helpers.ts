@@ -17,13 +17,13 @@
 //     })
 //   }
 
-import type { DalReturn, EntityServerSpec, ScopedContext } from './types'
+import type { DalReturn, EntityServerSpec, ScopedContext } from '../types'
 
 import type { UserRole } from '@/shared/constants/enums'
 
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
-import { dalError, dalSuccess, ThrowableDalError } from './types'
+import { dalError, dalSuccess, ThrowableDalError } from '../types'
 
 // ── dalDbOperation ──────────────────────────────────────────────────────
 //
