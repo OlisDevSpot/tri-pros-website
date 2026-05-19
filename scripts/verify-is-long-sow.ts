@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import assert from 'node:assert/strict'
-import { SOW_INLINE_MAX_CHARS } from '@/shared/services/zoho-sign/constants'
-import { isLongSow } from '@/shared/services/zoho-sign/lib/is-long-sow'
+import { SOW_INLINE_MAX_CHARS } from '@/shared/services/providers/zoho-sign/constants'
+import { isLongSow } from '@/shared/services/providers/zoho-sign/lib/is-long-sow'
 
 assert.equal(SOW_INLINE_MAX_CHARS, 3600, 'threshold constant drifted')
 

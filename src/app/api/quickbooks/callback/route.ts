@@ -1,9 +1,9 @@
-import type { QBTokenResponse } from '@/shared/services/quickbooks/types'
+import type { QBTokenResponse } from '@/shared/services/providers/quickbooks/types'
 import { Buffer } from 'node:buffer'
 import { NextResponse } from 'next/server'
 import env from '@/shared/config/server-env'
-import { QB_TOKEN_URL } from '@/shared/services/quickbooks/constants'
-import { upsertTokens } from '@/shared/services/quickbooks/lib/access-token-cache'
+import { QB_TOKEN_URL } from '@/shared/services/providers/quickbooks/constants'
+import { upsertTokens } from '@/shared/services/providers/quickbooks/lib/access-token-cache'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)

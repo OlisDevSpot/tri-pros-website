@@ -74,25 +74,70 @@ src/
     dal/             # Data Access Layer, split into client/ and server/
     db/              # Drizzle client, schema, migrations, seeds
     domains/         # Cross-cutting domain modules with their own internal structure: auth/ (better-auth client + server), construction/, permissions/ (CASL abilities), pipelines/
-    entities/        # Business logic per entity (customers, meetings, proposals, projects) — see fractal Single Unit pattern
+    entities/        # Business logic per entity — each has lib/, hooks/, components/, dal/server/ (DalReturn queries+mutations), dal/client/ (tRPC hooks)
     hooks/           # Shared React hooks
     lib/             # Utilities (formatters, loan-calculations, etc.)
     services/        # External service clients (ai, docusign, notion, r2, resend, upstash). monday/ and pipedrive/ are LEGACY — do not use.
     types/           # Shared TypeScript types
-  trpc/              # tRPC setup and routers
+  trpc/              # tRPC setup and routers (typesafe glue — calls DAL, never db)
     init.ts          # Procedure types: baseProcedure, agentProcedure (auth-required)
     server.ts        # Server-side tRPC client (server-only)
+    lib/             # Entity factories, middleware (scope, shareable), dal-to-trpc bridge
     routers/         # app, ai, construction, docusign, landing, notion, proposal
 ```
 
-### tRPC
+### tRPC + Entity Server System
 
-tRPC is the primary API layer, used with TanStack React Query. Two procedure types defined in `src/trpc/init.ts`:
+tRPC is the **client-to-server typesafe glue layer**, not the place for business logic. Two base procedure types in `src/trpc/init.ts`:
 
 - `baseProcedure` — public, no auth required
 - `agentProcedure` — throws UNAUTHORIZED if no session
 
+**Entity routers** use `createEntityRouter(spec, factory)` which provides pre-configured procedures with scope middleware:
+
+```ts
+export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
+  createTRPCRouter({
+    crud: createTRPCRouter({ /* inlined CRUD using entity.authedProcedure / entity.shareableProcedure */ }),
+    business: createTRPCRouter({ /* entity-specific queries */ }),
+    delivery: deliveryRouter,  // service-layer sub-router (deferred)
+  })
+)
+```
+
+The entity toolkit: `entity.authedProcedure` (agent + scope), `entity.shareableProcedure` (token-or-session + scope), `entity.publicProcedure` (no auth), `entity.crud()` (generic CRUD sub-router), `entity.spec`.
+
+**tRPC procedures call DAL and unwrap with `dalToTrpc()`** — see DAL section below.
+
 The server-side proxy (`src/trpc/server.ts`) is marked `server-only` and uses React `cache()` for request deduplication.
+
+### Backend Layers: tRPC → Services → DAL → DB
+
+Three layers, strict dependency direction. Every request — browser or server-initiated — flows through the same core functions.
+
+| Layer | Role | Imports `db`? | Examples |
+|-------|------|:---:|---------|
+| **tRPC** | Client-to-server typesafe glue | No | Entity routers, middleware |
+| **Services** | External system orchestration | No | contracts.service, email.service, pdf.service, Upstash jobs |
+| **DAL** | Database boundary (ONLY layer touching DB) | **Yes** | `entities/*/dal/server/`, `shared/dal/server/lib/` |
+
+**Client-initiated flow** (browser → user action):
+```
+Browser → tRPC hook → tRPC procedure (middleware resolves auth/scope)
+  → procedure body calls DAL or Service
+  → dalToTrpc() maps DalReturn errors to HTTP responses
+```
+
+**Server-initiated flow** (jobs, webhooks, cron, RSC):
+```
+Trigger → Service or job handler
+  → constructs context: SYSTEM_CONTEXT (full access) or buildUserContext(userId, role, spec)
+  → calls DAL directly → inspects DalReturn { success, data/error }
+```
+
+DAL pattern adapted from [WebDevSimplified/next-js-data-access-layer](https://github.com/WebDevSimplified/next-js-data-access-layer). Every DAL function returns `DalReturn<T>` (never throws, never redirects). Full conventions in `memory/coding-conventions.md` Rules 15 + 19.
+
+**Entity DAL** at `entities/<entity>/dal/server/` (queries.ts + mutations.ts). Generic CRUD via `createCrudDal(spec)`. Key files: `shared/dal/server/lib/types.ts`, `shared/dal/server/lib/helpers.ts`, `trpc/lib/dal-to-trpc.ts`. See ADR-0002.
 
 ### Query toolkit (pagination + sort + search + filters + page-size)
 

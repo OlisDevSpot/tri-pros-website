@@ -55,7 +55,7 @@ export function Funding({ onPickFinancingOption }: Props) {
     onPickFinancingOption?.(option)
     updateProposal.mutate({
       token,
-      proposalId: proposal.data.id,
+      id: proposal.data.id,
       data: {
         financeOptionId: option.id,
       },
@@ -134,7 +134,7 @@ export function Funding({ onPickFinancingOption }: Props) {
                             onClick={() => {
                               updateProposal.mutate({
                                 token,
-                                proposalId: proposalData.id,
+                                id: proposalData.id,
                                 data: {
                                   fundingJSON: {
                                     ...proposalData.fundingJSON,

@@ -2,7 +2,7 @@
 
 import { useChannel, useConnectionStateListener } from 'ably/react'
 import { useCallback, useState } from 'react'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 
 interface MeetingSyncStatus {
   status: string

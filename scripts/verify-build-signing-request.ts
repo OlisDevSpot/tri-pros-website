@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import assert from 'node:assert/strict'
-import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
+import { buildSigningRequest } from '@/shared/services/providers/zoho-sign/lib/build-signing-request'
 
 const proposal = {
   customer: {

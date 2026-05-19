@@ -11,9 +11,9 @@ import { useColumnVisibility } from '@/shared/components/data-table/lib/use-colu
 import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/query/defaults'
-import { usePaginatedQuery } from '@/shared/dal/client/query/use-paginated-query'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
+import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
@@ -30,7 +30,7 @@ export function AllCustomersSection() {
   const { setModal, open: openModal } = useModalStore()
 
   const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
-    trpc.customersRouter.list.queryOptions,
+    trpc.customersRouter.business.list.queryOptions,
     {},
     {
       paramPrefix: 'all',
@@ -41,7 +41,7 @@ export function AllCustomersSection() {
   )
 
   const updateCreatedAt = useMutation(
-    trpc.customersRouter.updateCreatedAt.mutationOptions({
+    trpc.customersRouter.business.updateCreatedAt.mutationOptions({
       onSuccess: () => {
         toast.success('Created date updated')
         invalidateCustomer()

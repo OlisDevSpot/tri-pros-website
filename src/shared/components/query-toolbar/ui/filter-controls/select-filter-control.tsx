@@ -1,6 +1,6 @@
 'use client'
 
-import type { FilterDefinition } from '@/shared/dal/client/query/types'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 

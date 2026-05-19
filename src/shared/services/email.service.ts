@@ -1,9 +1,9 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import { ROOTS } from '@/shared/config/roots'
-import { resendClient } from '@/shared/services/resend/client'
-import { RESEND_FROM, RESEND_LEAD_INBOX } from '@/shared/services/resend/constants'
-import { buildSenderFrom } from '@/shared/services/resend/lib/build-sender-from'
-import { renderGeneralInquiryEmail, renderProposalEmail, renderScheduleConsultationEmail } from '@/shared/services/resend/lib/render-emails'
+import { resendClient } from '@/shared/services/providers/resend/client'
+import { RESEND_FROM, RESEND_LEAD_INBOX } from '@/shared/services/providers/resend/constants'
+import { buildSenderFrom } from '@/shared/services/providers/resend/lib/build-sender-from'
+import { renderGeneralInquiryEmail, renderProposalEmail, renderScheduleConsultationEmail } from '@/shared/services/providers/resend/lib/render-emails'
 
 function createEmailService() {
   return {

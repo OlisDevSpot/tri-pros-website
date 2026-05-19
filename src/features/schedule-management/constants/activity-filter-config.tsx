@@ -1,4 +1,4 @@
-import type { FilterDefinition } from '@/shared/dal/client/query/types'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 
 import {
   TIME_PRESET_LAST_WEEK,

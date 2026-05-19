@@ -1,8 +1,8 @@
 'use client'
 
 import type { PortfolioProject } from '@/shared/entities/projects/types'
-import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { AnimatePresence, motion } from 'motion/react'
 import { PortfolioProjectCard } from '@/features/project-management/ui/components/portfolio-project-card'
 

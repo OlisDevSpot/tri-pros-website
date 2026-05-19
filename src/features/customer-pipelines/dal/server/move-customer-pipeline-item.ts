@@ -5,13 +5,13 @@ import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fr
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
-import { userParticipatesInMeeting } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/domains/pipelines/constants/fresh-pipeline'
+import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 
 interface MoveParams {
   customerId: string

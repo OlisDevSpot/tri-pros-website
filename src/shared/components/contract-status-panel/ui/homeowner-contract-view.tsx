@@ -1,11 +1,11 @@
 'use client'
 
-import type { ZohoContractStatus } from '@/shared/services/zoho-sign/types'
+import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowRight, Loader2, Mail, PartyPopper, TriangleAlert } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Button } from '@/shared/components/ui/button'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 import { useCreditCooldown } from '../hooks/use-credit-cooldown'
 import { deriveTimelineState } from '../lib/derive-timeline-state'
@@ -73,7 +73,7 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
             customerAge={customerAge}
             proposalId={proposalId}
             token={token}
-            onRequestAgreement={() => sendContract.mutate({ proposalId, token })}
+            onRequestAgreement={() => sendContract.mutate({ id: proposalId, token })}
           />
         </div>
       </div>

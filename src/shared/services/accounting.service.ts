@@ -1,11 +1,11 @@
-import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse } from '@/shared/services/quickbooks/types'
+import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse } from '@/shared/services/providers/quickbooks/types'
 import { eq, inArray } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
-import { qbRequest } from '@/shared/services/quickbooks/client'
+import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
 function createAccountingService() {
   function derivePaymentStatus(balance: number, total: number): string {

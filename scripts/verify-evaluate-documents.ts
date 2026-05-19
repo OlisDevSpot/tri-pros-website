@@ -10,12 +10,12 @@
  * Run: pnpm tsx scripts/verify-evaluate-documents.ts
  */
 import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
-import type { ProposalContext } from '@/shared/services/zoho-sign/documents/types'
+import type { ProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/types'
 import {
   EnvelopeSelectionError,
   evaluateDocuments,
   validateEnvelopeSelection,
-} from '@/shared/services/zoho-sign/documents/evaluate'
+} from '@/shared/services/providers/zoho-sign/lib/documents/evaluate'
 
 interface FixtureInput {
   kind: ProposalKind

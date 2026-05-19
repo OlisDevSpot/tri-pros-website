@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server'
 import { generalInquiryFormSchema } from '@/features/landing/schemas/general-inquiry-form'
 import { scheduleConsultationFormSchema } from '@/features/landing/schemas/schedule-consultation-form'
 import { emailService } from '@/shared/services/email.service'
-import { putLead as putPipedriveLead } from '@/shared/services/pipedrive/api/put-lead'
+import { putLead as putPipedriveLead } from '@/shared/services/providers/pipedrive/api/put-lead'
 import { baseProcedure, createTRPCRouter } from '../../init'
 import { projectsRouter } from './projects.router'
 

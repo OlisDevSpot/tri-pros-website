@@ -1,6 +1,6 @@
 'use client'
 
-import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
 import { CheckIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { cn } from '@/shared/lib/utils'

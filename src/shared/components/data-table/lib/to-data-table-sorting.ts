@@ -1,5 +1,5 @@
 import type { DataTableServerSorting } from '@/shared/components/data-table/types'
-import type { PaginatedQueryResult } from '@/shared/dal/client/query/types'
+import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
 
 interface ToDataTableSortingOptions {
   /**

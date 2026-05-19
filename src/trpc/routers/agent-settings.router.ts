@@ -4,8 +4,8 @@ import { z } from 'zod'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema'
 import { agentProfileSchema } from '@/shared/entities/users/schemas'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
-import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
+import { getPresignedUploadUrl } from '@/shared/services/providers/r2/get-presigned-upload-url'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 

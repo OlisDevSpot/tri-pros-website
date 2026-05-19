@@ -8,9 +8,9 @@
  */
 
 import { Client } from 'pg'
-import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
-import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
-import { ZOHO_SIGN_BASE_URL } from '@/shared/services/zoho-sign/constants'
+import { getZohoAccessToken } from '@/shared/services/providers/zoho-sign/lib/get-access-token'
+import { buildSigningRequest } from '@/shared/services/providers/zoho-sign/lib/build-signing-request'
+import { ZOHO_SIGN_BASE_URL } from '@/shared/services/providers/zoho-sign/constants'
 
 const PROPOSAL_ID = 'baaf55ef-31b1-4393-b721-cdba21610021'
 

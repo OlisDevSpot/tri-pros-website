@@ -1,13 +1,14 @@
 /* eslint-disable no-console */
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
-import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { countPdfPages } from '@/shared/lib/pdf/count-pdf-pages'
 import { pdfService } from '@/shared/services/pdf.service'
 
 const PROPOSAL_ID = 'baaf55ef-31b1-4393-b721-cdba21610021'
 
 async function main() {
-  const buf = await pdfService.generateSowPdf({ proposalId: PROPOSAL_ID })
+  const buf = await pdfService.generateSowPdf(SYSTEM_CONTEXT, { proposalId: PROPOSAL_ID })
   const pages = await countPdfPages(buf)
 
   writeFileSync('/tmp/sow-verification.pdf', buf)

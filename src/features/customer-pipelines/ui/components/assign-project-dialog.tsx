@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Separator } from '@/shared/components/ui/separator'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -49,7 +49,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   )
 
   const approveProposalMutation = useMutation(
-    trpc.proposalsRouter.crud.updateProposal.mutationOptions({
+    trpc.proposalsRouter.crud.update.mutationOptions({
       onSuccess: () => {
         invalidateProposal()
         invalidateProject()
@@ -72,7 +72,7 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   }
 
   function handleApproveProposal(proposalId: string) {
-    approveProposalMutation.mutate({ proposalId, data: { status: 'approved' } })
+    approveProposalMutation.mutate({ id: proposalId, data: { status: 'approved' } })
   }
 
   const customerProjects = dataQuery.data?.projects ?? []

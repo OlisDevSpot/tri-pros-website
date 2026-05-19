@@ -3,7 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 export function useCustomerActions() {
@@ -14,7 +14,7 @@ export function useCustomerActions() {
   // refresh every surface those entities feed (lists, pipelines, dashboard,
   // schedule, lead-source signed counts).
   const deleteCustomer = useMutation(
-    trpc.customersRouter.delete.mutationOptions({
+    trpc.customersRouter.business.delete.mutationOptions({
       onSuccess: () => {
         invalidateCustomer()
         invalidateMeeting()

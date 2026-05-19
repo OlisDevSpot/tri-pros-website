@@ -10,7 +10,7 @@ export function useContractStatus(proposalId: string, token?: string, isSent?: b
   const draftPollCountRef = useRef(0)
 
   const query = useQuery({
-    ...trpc.proposalsRouter.contracts.getContractStatus.queryOptions({ proposalId, token }),
+    ...trpc.proposalsRouter.contracts.getContractStatus.queryOptions({ id: proposalId, token }),
     refetchInterval: (query) => {
       const data = query.state.data
       const requestStatus = data?.requestStatus

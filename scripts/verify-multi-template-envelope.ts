@@ -18,7 +18,7 @@
  * The draft is left in Zoho — clean it up via Sign UI or a follow-up
  * DELETE /requests/{id} call.
  */
-import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
+import { getZohoAccessToken } from '@/shared/services/providers/zoho-sign/lib/get-access-token'
 
 const ESIGN_WAIVER_TEMPLATE = '563034000000079183'
 const ESIGN_WAIVER_HOMEOWNER_ACTION = '563034000000079195'

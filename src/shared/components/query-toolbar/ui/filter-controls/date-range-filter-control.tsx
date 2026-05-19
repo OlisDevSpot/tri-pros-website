@@ -2,8 +2,8 @@
 
 import type { DateRange as ReactDayPickerRange } from 'react-day-picker'
 
-import type { FilterDefinition } from '@/shared/dal/client/query/types'
-import type { DateRange } from '@/shared/dal/server/query/schemas'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
+import type { DateRange } from '@/shared/dal/server/lib/query/schemas'
 
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'

@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import assert from 'node:assert/strict'
-import { SOW_FIELD_MAX_CHARS } from '@/shared/services/zoho-sign/constants'
-import { packSowText } from '@/shared/services/zoho-sign/lib/pack-sow-text'
+import { SOW_FIELD_MAX_CHARS } from '@/shared/services/providers/zoho-sign/constants'
+import { packSowText } from '@/shared/services/providers/zoho-sign/lib/pack-sow-text'
 
 // Case 1: input under the cap fits entirely in sow1
 {

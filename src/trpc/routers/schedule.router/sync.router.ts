@@ -1,10 +1,10 @@
 import { and, eq, isNotNull, isNull, or } from 'drizzle-orm'
 
 import { gcalSyncableActivityTypes } from '@/shared/constants/enums'
-import { getSystemOwnerId } from '@/shared/dal/server/users/system'
 import { db } from '@/shared/db'
 import { activities } from '@/shared/db/schema/activities'
 import { meetings } from '@/shared/db/schema/meetings'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { agentProcedure, createTRPCRouter } from '@/trpc/init'
 

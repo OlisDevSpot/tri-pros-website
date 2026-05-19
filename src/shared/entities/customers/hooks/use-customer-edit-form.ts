@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { buildCustomerFormDefaults } from '@/shared/entities/customers/lib/build-customer-form-defaults'
 import { useTRPC } from '@/trpc/helpers'
@@ -28,13 +28,13 @@ export function useCustomerEditForm(customer: Customer) {
   })
 
   const profileMutation = useMutation(
-    trpc.customersRouter.updateProfile.mutationOptions({
+    trpc.customersRouter.business.updateProfile.mutationOptions({
       onSuccess: () => invalidateCustomer(),
     }),
   )
 
   const contactMutation = useMutation(
-    trpc.customersRouter.updateCustomerContact.mutationOptions({
+    trpc.customersRouter.business.updateCustomerContact.mutationOptions({
       onSuccess: () => invalidateCustomer(),
     }),
   )

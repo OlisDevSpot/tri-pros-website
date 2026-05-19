@@ -1,10 +1,9 @@
 import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
-import type { CustomersViewer } from '@/shared/dal/server/customers/api'
+import type { CustomersViewer } from '@/shared/entities/customers/dal/server/queries'
 
 import { TRPCError } from '@trpc/server'
 import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
-import { userCanSeeCustomer } from '@/shared/dal/server/customers/visibility'
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
@@ -12,6 +11,7 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 

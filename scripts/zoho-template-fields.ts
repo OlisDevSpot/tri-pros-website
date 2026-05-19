@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
+import { getZohoAccessToken } from '@/shared/services/providers/zoho-sign/lib/get-access-token'
 
 const DEFAULT_TEMPLATE_IDS = ['563034000000046241', '563034000000055081']
 

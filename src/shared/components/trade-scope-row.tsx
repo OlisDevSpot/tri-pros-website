@@ -1,12 +1,12 @@
 'use client'
 
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { TrashIcon } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useGetScopes } from '@/shared/services/notion/dal/scopes/hooks/queries/use-get-scopes'
+import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
 
 interface Props {
   tradeId: string

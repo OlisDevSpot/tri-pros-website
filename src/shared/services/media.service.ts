@@ -1,13 +1,13 @@
-import type { R2BucketName } from '@/shared/services/r2/buckets'
+import type { R2BucketName } from '@/shared/services/providers/r2/buckets'
 import {
   getMediaFileById,
   setOptimizationComplete,
   setOptimizationFailed,
   setOptimizationProcessing,
-} from '@/shared/dal/server/media-files/api'
-import { getObject } from '@/shared/services/r2/lib/get-object'
-import { processImageVariants } from '@/shared/services/r2/lib/process-image-variants'
-import { putObject } from '@/shared/services/r2/put-object'
+} from '@/shared/entities/media-files/dal/server/queries'
+import { getObject } from '@/shared/services/providers/r2/lib/get-object'
+import { processImageVariants } from '@/shared/services/providers/r2/lib/process-image-variants'
+import { putObject } from '@/shared/services/providers/r2/put-object'
 
 function createMediaService() {
   return {

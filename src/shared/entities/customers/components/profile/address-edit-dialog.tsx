@@ -10,12 +10,12 @@ import { toast } from 'sonner'
 import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { AddressAutocomplete } from '@/shared/components/inputs/address-autocomplete'
 import { Button } from '@/shared/components/ui/button'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import {
   buildAerialStaticMapUrl,
   buildStreetViewStaticUrl,
   hasGoogleMapsKey,
-} from '@/shared/services/google-maps/static-urls'
+} from '@/shared/services/providers/google-maps/static-urls'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -35,7 +35,7 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
   const [picked, setPicked] = useState<AddressFields | null>(null)
 
   const updateContact = useMutation(
-    trpc.customersRouter.updateCustomerContact.mutationOptions({
+    trpc.customersRouter.business.updateCustomerContact.mutationOptions({
       onSuccess: () => {
         invalidateCustomer()
         toast.success('Address updated')

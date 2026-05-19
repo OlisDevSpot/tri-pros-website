@@ -1,34 +1,12 @@
-import type { BetterAuthSession } from '@/shared/domains/auth/server'
+import type { HTTPTRPCContext } from '@/trpc/types'
+
 import { initTRPC, TRPCError } from '@trpc/server'
-import { headers as getHeaders } from 'next/headers'
-import { cache } from 'react'
 import superjson from 'superjson'
 import { ZodError } from 'zod'
-import { auth } from '@/shared/domains/auth/server'
+
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 
-export interface CoreTRPCContext {
-  session: BetterAuthSession | null
-}
-
-export interface HTTPTRPCContext extends CoreTRPCContext {
-  req?: Request
-  resHeaders: Headers
-}
-
-export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeaders: Headers }): Promise<HTTPTRPCContext> => {
-  const reqHeaders = await getHeaders()
-
-  const session = await auth.api.getSession({
-    headers: reqHeaders,
-  })
-
-  return {
-    session,
-    req: ctx.req,
-    resHeaders: ctx.resHeaders,
-  }
-})
+export { createHTTPTRPCContext } from '@/trpc/lib/create-http-context'
 
 const t = initTRPC.context<HTTPTRPCContext>().create({
   transformer: superjson,
@@ -45,6 +23,7 @@ const t = initTRPC.context<HTTPTRPCContext>().create({
 })
 
 export const createTRPCRouter = t.router
+export const createMiddleware = t.middleware
 export const createCallerFactory = t.createCallerFactory
 export const baseProcedure = t.procedure
 
@@ -67,7 +46,7 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   })
 
   return await next({
-    ctx: { ...ctx, session: ctx.session, ability },
+    ctx: { ...ctx, session: ctx.session, ability, scope: null },
   })
 })
 

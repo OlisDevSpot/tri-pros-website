@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react'
 
-import type { PaginatedQueryResult } from '@/shared/dal/client/query/types'
+import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
 
 import { formatTotalCount } from '@/shared/lib/pagination-format'
 import { cn } from '@/shared/lib/utils'

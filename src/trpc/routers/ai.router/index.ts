@@ -1,6 +1,6 @@
 import z from 'zod'
 import { proposalFormShape } from '@/features/proposal-flow/schemas/form-schema'
-import { generateAISummaryJob } from '@/shared/services/upstash/jobs/generate-ai-summary'
+import { generateAISummaryJob } from '@/shared/services/providers/upstash/jobs/generate-ai-summary'
 import { baseProcedure, createTRPCRouter } from '../../init'
 
 export const aiRouter = createTRPCRouter({

@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
+import { getZohoAccessToken } from '@/shared/services/providers/zoho-sign/lib/get-access-token'
 
 async function main() {
   const token = await getZohoAccessToken()

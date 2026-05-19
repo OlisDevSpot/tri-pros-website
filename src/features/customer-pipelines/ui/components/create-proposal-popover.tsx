@@ -31,8 +31,8 @@ export function CreateProposalPopover({ meetings }: Props) {
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>('')
 
   const createMutation = useMutation(
-    trpc.proposalsRouter.crud.createProposal.mutationOptions({
-      onSuccess: ({ proposal }) => {
+    trpc.proposalsRouter.crud.create.mutationOptions({
+      onSuccess: (proposal) => {
         setPopoverOpen(false)
         setSelectedMeetingId('')
         router.push(ROOTS.dashboard.proposals.byId(proposal.id))

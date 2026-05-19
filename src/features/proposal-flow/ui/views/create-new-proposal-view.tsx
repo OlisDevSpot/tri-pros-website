@@ -17,6 +17,7 @@ import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Form } from '@/shared/components/ui/form'
+import { ROOTS } from '@/shared/config/roots'
 
 import { useSession } from '@/shared/domains/auth/client'
 import { useTRPC } from '@/trpc/helpers'
@@ -85,10 +86,9 @@ export function CreateNewProposalView() {
 
   function onSubmit(data: ProposalFormSchema) {
     createProposal.mutate(buildMutationData(data), {
-      onSuccess: (result) => {
-        const urlWithoutQueryStrings = result.proposalUrl.split('?')[0]
+      onSuccess: (proposal) => {
         toast.success('Proposal created!')
-        router.push(urlWithoutQueryStrings)
+        router.push(ROOTS.dashboard.proposals.byId(proposal.id))
       },
       onError: error => toast.error(error.message),
     })

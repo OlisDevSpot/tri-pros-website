@@ -6,7 +6,7 @@ import { useMemo } from 'react'
 import { toast } from 'sonner'
 
 import { ROOTS } from '@/shared/config/roots'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { PROPOSAL_ACTIONS } from '@/shared/entities/proposals/constants/actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { copyToClipboard } from '@/shared/lib/clipboard'
@@ -57,7 +57,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
   })
 
   const duplicateProposal = useMutation(
-    trpc.proposalsRouter.crud.duplicateProposal.mutationOptions({
+    trpc.proposalsRouter.crud.duplicate.mutationOptions({
       onSuccess: () => {
         invalidateProposal()
         toast.success('Proposal duplicated')
@@ -67,7 +67,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
   )
 
   const deleteProposal = useMutation(
-    trpc.proposalsRouter.crud.deleteProposal.mutationOptions({
+    trpc.proposalsRouter.crud.delete.mutationOptions({
       onSuccess: () => {
         invalidateProposal()
         toast.success('Proposal deleted')
@@ -101,7 +101,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
     },
     {
       action: PROPOSAL_ACTIONS.duplicate,
-      onAction: entity => duplicateProposal.mutate({ proposalId: entity.id }),
+      onAction: entity => duplicateProposal.mutate({ id: entity.id }),
       isLoading: duplicateProposal.isPending,
     },
     {
@@ -113,7 +113,7 @@ export function useProposalActionConfigs<T extends ProposalEntity>(
       onAction: async (entity) => {
         const ok = await confirmDelete()
         if (ok) {
-          deleteProposal.mutate({ proposalId: entity.id })
+          deleteProposal.mutate({ id: entity.id })
         }
       },
       isLoading: deleteProposal.isPending,

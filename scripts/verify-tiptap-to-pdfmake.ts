@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import assert from 'node:assert/strict'
-import { tiptapToPdfmake } from '@/shared/services/pdf/tiptap-to-pdfmake'
+import { tiptapToPdfmake } from '@/shared/lib/pdf/tiptap-to-pdfmake'
 
 // paragraph
 {

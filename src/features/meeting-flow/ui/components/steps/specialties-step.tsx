@@ -2,7 +2,7 @@
 
 import type { MeetingFlowContext } from '@/features/meeting-flow/types'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   TRADE_CATEGORY_LABELS,
@@ -12,7 +12,7 @@ import { TradeCard } from '@/features/meeting-flow/ui/components/steps/trade-car
 import { TradeDetail } from '@/features/meeting-flow/ui/components/steps/trade-detail'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Accordion } from '@/shared/components/ui/accordion'
-import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queries/use-get-trades'
+import { useGetAllTrades } from '@/shared/services/providers/notion/dal/trades/hooks/queries/use-get-trades'
 
 interface SpecialtiesStepProps {
   flowContext: MeetingFlowContext

@@ -1,4 +1,4 @@
-import type { FilterDefinition } from '@/shared/dal/client/query/types'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 
 import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
 import { proposalStatuses } from '@/shared/constants/enums'
@@ -14,7 +14,7 @@ const PROPOSAL_PRICE_MAX = 300_000
 const PROPOSAL_PRICE_STEP = 1_000
 
 /**
- * Filter config for the proposals table. Ids match `proposalsRouter.crud.list`'s
+ * Filter config for the proposals table. Ids match `proposalsRouter.business.list`'s
  * `filters` shape on the server.
  */
 export const PROPOSAL_FILTER_CONFIG = [

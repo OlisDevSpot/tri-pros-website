@@ -1,5 +1,5 @@
-import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { unstable_cache } from 'next/cache'
 
 import { getTradeImages } from '@/features/landing/lib/get-trade-images'

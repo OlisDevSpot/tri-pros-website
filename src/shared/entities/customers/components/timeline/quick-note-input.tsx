@@ -5,7 +5,7 @@ import { useState } from 'react'
 
 import { Button } from '@/shared/components/ui/button'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -19,7 +19,7 @@ export function QuickNoteInput({ customerId, onSuccess }: Props) {
   const { invalidateCustomer } = useInvalidation()
 
   const addNoteMutation = useMutation(
-    trpc.customersRouter.addNote.mutationOptions({
+    trpc.customersRouter.business.addNote.mutationOptions({
       onSuccess: () => {
         setContent('')
         invalidateCustomer()

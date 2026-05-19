@@ -9,14 +9,30 @@
 // - Conditions like `{ id: user.id }` restrict to "own" resources
 //
 // HOW TO EXTEND:
-// - New resource? Add to AppSubjects in types.ts, add rules here
-// - New role? Add a new case block below
-// - New action on existing resource? Add a `can()` line to the role
+// - New entity? Add its identity constant at `entities/<entity>/lib/constants.ts`,
+//   import it below, and add it to ENTITY_NAMES.
+// - New non-entity subject (feature/route gate)? Add it to AppSubject in types.ts.
+// - New role? Add a new case block below.
+// - New action on existing subject? Add a `can()` line to the role.
 
 import type { AppAbility } from './types'
 
 import type { UserRole } from '@/shared/constants/enums'
+
 import { AbilityBuilder, createMongoAbility } from '@casl/ability'
+
+// Per-entity identity constants colocated with the entity. The derived
+// `EntityName` union is the entity portion of `AppSubject` — every entity
+// here is automatically permittable. Adding a new entity is one import +
+// one line in ENTITY_NAMES.
+import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
+import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
+import { MEETING } from '@/shared/entities/meetings/lib/constants'
+import { PROJECT } from '@/shared/entities/projects/lib/constants'
+import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
+
+export const ENTITY_NAMES = [CUSTOMER, MEETING, PROPOSAL, PROJECT, ACTIVITY] as const
+export type EntityName = (typeof ENTITY_NAMES)[number]
 
 // The user shape we need for permission decisions.
 // Intentionally minimal — only id and role. If you need more fields
@@ -93,7 +109,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
     // a condition here or use a join-based check.
     //
     // Note on "own record" enforcement: CASL field conditions require subject
-    // type objects (not plain strings). Since AppSubjects uses plain strings,
+    // type objects (not plain strings). Since AppSubject uses plain strings,
     // the { id } restriction is enforced at the DAL layer, not here.
     case 'homeowner':
       can('read', 'Proposal')

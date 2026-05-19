@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
 import { ROOTS } from '@/shared/config/roots'
-import { useInvalidation } from '@/shared/dal/client/use-invalidation'
+import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { onPipelineChange } from '@/shared/domains/pipelines/lib/on-pipeline-change'
 
 /**

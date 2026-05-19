@@ -1,12 +1,12 @@
 import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
 
-import { userParticipatesInMeeting } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 
 type ActionTier = 'HOT_NOW' | 'HOT_LEAD' | 'FOLLOW_UP_DUE' | 'STALE' | 'NO_PROPOSAL'
 

@@ -1,4 +1,4 @@
-import type { AccountRow } from '@/shared/dal/server/accounts/google-calendar'
+import type { AccountRow } from '@/shared/entities/accounts/dal/server/google-calendar'
 
 import { getPublicBaseUrl } from '@/shared/config/public-url'
 import env from '@/shared/config/server-env'
@@ -8,7 +8,7 @@ import {
   getAccountByChannelId,
   getGoogleAccountForUser,
   updateAccountGCalFields,
-} from '@/shared/dal/server/accounts/google-calendar'
+} from '@/shared/entities/accounts/dal/server/google-calendar'
 import {
   clearActivityGCalFields,
   clearAllActivityGCalFieldsForUser,
@@ -19,7 +19,7 @@ import {
   getSyncableActivitiesForUser,
   updateActivityFromGCal,
   updateActivityGCalFields,
-} from '@/shared/dal/server/activities/google-calendar'
+} from '@/shared/entities/activities/dal/server/google-calendar'
 import {
   clearAllMeetingGCalFields,
   clearMeetingGCalFields,
@@ -28,15 +28,14 @@ import {
   getMeetingForGCal,
   updateMeetingGCalFields,
   updateMeetingScheduledFor,
-} from '@/shared/dal/server/meetings/google-calendar'
-import { getSystemOwnerId } from '@/shared/dal/server/users/system'
+} from '@/shared/entities/meetings/dal/server/google-calendar'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 
-import { refreshAccessToken } from '@/shared/services/google-drive/lib/refresh-access-token'
-import { GCalSyncTokenExpiredError, googleCalendarClient } from './google-calendar/client'
-import { hasRemoteChanged, resolveConflict } from './google-calendar/lib/conflict'
-import { gcalEventToLocal } from './google-calendar/lib/map-from-gcal'
-
-import { activityToGCalEvent, meetingToGCalEvent } from './google-calendar/lib/map-to-gcal'
+import { GCalSyncTokenExpiredError, googleCalendarClient } from '@/shared/services/providers/google-calendar/client'
+import { hasRemoteChanged, resolveConflict } from '@/shared/services/providers/google-calendar/lib/conflict'
+import { gcalEventToLocal } from '@/shared/services/providers/google-calendar/lib/map-from-gcal'
+import { activityToGCalEvent, meetingToGCalEvent } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
+import { refreshAccessToken } from '@/shared/services/providers/google-drive/lib/refresh-access-token'
 
 const isDev = env.NODE_ENV === 'development'
 const TRI_PROS_CALENDAR_NAME = isDev ? 'Tri Pros Schedule (DEV)' : 'Tri Pros Schedule'

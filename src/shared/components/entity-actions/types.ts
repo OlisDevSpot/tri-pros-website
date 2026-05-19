@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { ComponentProps, ReactNode } from 'react'
 
 import type { Button } from '@/shared/components/ui/button'
-import type { AppActions, AppSubjects } from '@/shared/domains/permissions/types'
+import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 
 // ── Legacy standalone button props (kept for backward compat) ────────────────
 
@@ -22,7 +22,7 @@ export interface EntityAction {
   label: string
   icon: LucideIcon
   /** CASL permission check: [action, subject]. If undefined, always visible. */
-  permission?: [AppActions, AppSubjects]
+  permission?: [AppAction, AppSubject]
   /** If true, render with destructive (red) styling */
   destructive?: boolean
   /** If true, this is the primary action shown as a button in bar mode */

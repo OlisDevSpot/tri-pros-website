@@ -66,7 +66,8 @@ export function Proposal() {
     )
   }
 
-  const { token, customer } = proposal.data
+  const proposalData = proposal.data
+  const { token, customer } = proposalData
   const customerEmail = customer?.email ?? ''
   const customerName = customer?.name ?? 'Customer'
 
@@ -103,11 +104,11 @@ export function Proposal() {
                     isAgent={viewMode === 'agent'}
                     customerAge={customer?.customerAge ?? null}
                     customerId={customer?.id ?? null}
-                    envelopeDocumentIds={proposal.data.formMetaJSON?.envelopeDocumentIds ?? null}
-                    proposalKind={proposal.data.kind}
+                    envelopeDocumentIds={proposalData.formMetaJSON?.envelopeDocumentIds ?? null}
+                    proposalKind={proposalData.kind}
                     customerName={customer?.name ?? null}
-                    proposalStatus={proposal.data.status}
-                    proposalSentAt={proposal.data.sentAt}
+                    proposalStatus={proposalData.status}
+                    proposalSentAt={proposalData.sentAt}
                     isSendingEmail={sendProposalEmail.isPending}
                     onSendProposalEmail={(message: string) => {
                       if (!customerEmail) {

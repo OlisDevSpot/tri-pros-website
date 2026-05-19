@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto'
 import env from '@/shared/config/server-env'
-import { syncQbInvoiceJob } from '@/shared/services/upstash/jobs/sync-qb-invoice'
-import { syncQbPaymentJob } from '@/shared/services/upstash/jobs/sync-qb-payment'
+import { syncQbInvoiceJob } from '@/shared/services/providers/upstash/jobs/sync-qb-invoice'
+import { syncQbPaymentJob } from '@/shared/services/providers/upstash/jobs/sync-qb-payment'
 
 interface QBWebhookNotification {
   realmId: string

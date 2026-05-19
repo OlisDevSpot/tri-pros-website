@@ -1,7 +1,7 @@
 'use client'
 
-import type { FilterDefinition } from '@/shared/dal/client/query/types'
-import type { NumberRange } from '@/shared/dal/server/query/schemas'
+import type { FilterDefinition } from '@/shared/dal/client/lib/types'
+import type { NumberRange } from '@/shared/dal/server/lib/query/schemas'
 
 import { useRef, useState } from 'react'
 

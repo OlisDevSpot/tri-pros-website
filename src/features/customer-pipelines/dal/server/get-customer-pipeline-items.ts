@@ -5,7 +5,6 @@ import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import { and, count, desc, eq, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
 
 import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
-import { userParticipatesInMeeting } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -14,6 +13,7 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {

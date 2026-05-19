@@ -22,7 +22,7 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
 
   // Pre-populated mode: fetch customer by ID on mount
   const prefillQuery = useQuery(
-    trpc.customersRouter.getById.queryOptions(
+    trpc.customersRouter.business.getById.queryOptions(
       { customerId: prefillCustomerId ?? '' },
       { enabled: !!prefillCustomerId && !selectedId },
     ),
@@ -37,7 +37,7 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
   }
 
   const searchQuery = useQuery(
-    trpc.customersRouter.search.queryOptions(
+    trpc.customersRouter.business.search.queryOptions(
       { query },
       { enabled: query.length >= 2 && !selectedId },
     ),

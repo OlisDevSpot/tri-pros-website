@@ -1,5 +1,5 @@
 import type { DataTableServerPagination } from '@/shared/components/data-table/types'
-import type { PaginatedQueryResult } from '@/shared/dal/client/query/types'
+import type { PaginatedQueryResult } from '@/shared/dal/client/lib/types'
 
 /**
  * Adapt a `usePaginatedQuery` result into the `DataTableServerPagination`

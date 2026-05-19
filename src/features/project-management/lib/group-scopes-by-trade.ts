@@ -1,4 +1,4 @@
-import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
 
 export interface TradeRow {
   tradeId: string
