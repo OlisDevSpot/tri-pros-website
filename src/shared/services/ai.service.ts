@@ -1,5 +1,5 @@
 import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
-import { generateProjectSummary } from '@/shared/services/ai/generate-project-summary'
+import { generateProjectSummary } from '@/shared/services/providers/ai/generate-project-summary'
 
 /** AI service: wraps existing AI functions + stubs for future expansion */
 function createAIService() {

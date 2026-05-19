@@ -3,8 +3,8 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import z from 'zod'
 import env from '@/shared/config/server-env'
-import { R2_BUCKETS } from '@/shared/services/r2/buckets'
-import { getPresignedUploadUrl } from '@/shared/services/r2/get-presigned-upload-url'
+import { R2_BUCKETS } from '@/shared/services/providers/r2/buckets'
+import { getPresignedUploadUrl } from '@/shared/services/providers/r2/get-presigned-upload-url'
 import { baseProcedure, createTRPCRouter } from '../init'
 
 const redis = new Redis({

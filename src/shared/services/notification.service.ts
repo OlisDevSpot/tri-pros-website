@@ -5,7 +5,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
-import { sendPushToUser, sendPushToUsers } from '@/shared/services/push/send'
+import { sendPushToUser, sendPushToUsers } from '@/shared/services/providers/push/send'
 
 // @migration(meetings-entity-router)
 // This service still imports `db` for the meeting notification methods

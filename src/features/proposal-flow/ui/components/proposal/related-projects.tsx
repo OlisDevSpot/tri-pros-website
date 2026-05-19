@@ -8,7 +8,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { ROOTS } from '@/shared/config/roots'
 import { projectsData } from '@/shared/db/seeds/data/projects'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
 
 const PORTFOLIO_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.portfolioProjects] ?? ''
 

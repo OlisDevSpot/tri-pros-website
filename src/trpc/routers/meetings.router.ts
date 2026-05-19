@@ -30,8 +30,8 @@ import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/l
 import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
 import { notificationService } from '@/shared/services/notification.service'
+import { ably } from '@/shared/services/providers/upstash/realtime'
 import { schedulingService } from '@/shared/services/scheduling.service'
-import { ably } from '@/shared/services/upstash/realtime'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingsRouter = createTRPCRouter({

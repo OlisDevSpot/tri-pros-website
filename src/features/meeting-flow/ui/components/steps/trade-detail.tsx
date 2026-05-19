@@ -8,7 +8,7 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Label } from '@/shared/components/ui/label'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { meetingPainTypes } from '@/shared/constants/enums'
-import { useGetScopes } from '@/shared/services/notion/dal/scopes/hooks/queries/use-get-scopes'
+import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
 
 interface TradeDetailProps {
   selection: TradeSelection

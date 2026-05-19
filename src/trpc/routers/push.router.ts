@@ -3,7 +3,7 @@ import {
   deletePushSubscriptionForUser,
   upsertPushSubscription,
 } from '@/shared/dal/server/push-subscriptions/api'
-import { sendPushToUser } from '@/shared/services/push/send'
+import { sendPushToUser } from '@/shared/services/providers/push/send'
 import { agentProcedure, createTRPCRouter, protectedProcedure } from '../init'
 
 // Subscribe payload mirrors what `PushSubscription.toJSON()` returns in the

@@ -1,5 +1,5 @@
 import type { Project } from './schema'
-import type { RawPropertyMap } from '@/shared/services/notion/types'
+import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 export const PROJECT_PROPERTIES_MAP = {
   title: {

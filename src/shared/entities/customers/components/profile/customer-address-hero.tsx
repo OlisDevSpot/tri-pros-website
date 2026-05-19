@@ -8,7 +8,7 @@ import {
   buildRoadmapStaticMapUrl,
   buildStreetViewStaticUrl,
   hasGoogleMapsKey,
-} from '@/shared/services/google-maps/static-urls'
+} from '@/shared/services/providers/google-maps/static-urls'
 
 interface Props {
   address: string | null

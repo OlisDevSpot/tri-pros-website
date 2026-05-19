@@ -1,4 +1,4 @@
-import type { ZohoActionStatus, ZohoRequestStatus } from '@/shared/services/zoho-sign/types'
+import type { ZohoActionStatus, ZohoRequestStatus } from '@/shared/services/providers/zoho-sign/types'
 
 interface RequestStatusConfig {
   label: string

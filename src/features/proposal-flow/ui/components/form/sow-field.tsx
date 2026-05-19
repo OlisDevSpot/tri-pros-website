@@ -1,6 +1,6 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
-import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -16,8 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
-import { useGetScopes } from '@/shared/services/notion/dal/scopes/hooks/queries/use-get-scopes'
-import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queries/use-get-trades'
+import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
+import { useGetAllTrades } from '@/shared/services/providers/notion/dal/trades/hooks/queries/use-get-trades'
 import { useTRPC } from '@/trpc/helpers'
 import { SOWFinancialsFields } from './sow-financials-fields'
 

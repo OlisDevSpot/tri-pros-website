@@ -8,7 +8,7 @@
  */
 
 import { Client } from 'pg'
-import { buildSigningRequest } from '@/shared/services/zoho-sign/lib/build-signing-request'
+import { buildSigningRequest } from '@/shared/services/providers/zoho-sign/lib/build-signing-request'
 
 const PROPOSAL_ID = 'baaf55ef-31b1-4393-b721-cdba21610021'
 

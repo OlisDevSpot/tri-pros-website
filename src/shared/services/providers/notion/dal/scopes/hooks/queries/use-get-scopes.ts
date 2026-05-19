@@ -1,4 +1,4 @@
-import type { QueryNotionScopesOptions } from '@/shared/services/notion/types'
+import type { QueryNotionScopesOptions } from '@/shared/services/providers/notion/types'
 import { useQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/helpers'
 

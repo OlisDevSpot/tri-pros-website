@@ -1,8 +1,8 @@
 'use client'
 
 import type { PortfolioProject } from '@/shared/entities/projects/types'
-import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { useMemo, useState } from 'react'
 import { PortfolioGrid } from '@/features/project-management/ui/components/portfolio-grid'
 import { PortfolioPagination } from '@/features/project-management/ui/components/portfolio-pagination'

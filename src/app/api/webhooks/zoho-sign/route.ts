@@ -1,9 +1,9 @@
 // Zoho webhook payload quirks & HMAC notes: docs/zoho-sign/webhook-notes.md
 import env from '@/shared/config/server-env'
-import { syncZohoSignStatusJob } from '@/shared/services/upstash/jobs/sync-zoho-sign-status'
-import { WEBHOOK_SIGNATURE_HEADER } from '@/shared/services/zoho-sign/constants'
-import { verifyWebhookSignature } from '@/shared/services/zoho-sign/lib/verify-webhook-signature'
-import { webhookPayloadSchema } from '@/shared/services/zoho-sign/types'
+import { syncZohoSignStatusJob } from '@/shared/services/providers/upstash/jobs/sync-zoho-sign-status'
+import { WEBHOOK_SIGNATURE_HEADER } from '@/shared/services/providers/zoho-sign/constants'
+import { verifyWebhookSignature } from '@/shared/services/providers/zoho-sign/lib/verify-webhook-signature'
+import { webhookPayloadSchema } from '@/shared/services/providers/zoho-sign/types'
 
 /**
  * Zoho Sign webhook receiver.

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
-import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
+import { countPdfPages } from '@/shared/lib/pdf/count-pdf-pages'
 import { pdfService } from '@/shared/services/pdf.service'
 
 const PROPOSAL_ID = 'baaf55ef-31b1-4393-b721-cdba21610021'

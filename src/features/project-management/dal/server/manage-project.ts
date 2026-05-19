@@ -1,11 +1,11 @@
 import type { InsertProject, Project } from '@/shared/db/schema'
-import type { R2BucketName } from '@/shared/services/r2/buckets'
+import type { R2BucketName } from '@/shared/services/providers/r2/buckets'
 
 import { asc, eq, inArray } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
-import { deleteMediaWithVariants } from '@/shared/services/r2/lib/delete-media-with-variants'
+import { deleteMediaWithVariants } from '@/shared/services/providers/r2/lib/delete-media-with-variants'
 
 export async function createProject(
   data: InsertProject,

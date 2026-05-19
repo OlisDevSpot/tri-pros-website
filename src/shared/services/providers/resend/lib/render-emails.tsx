@@ -1,8 +1,8 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
-import { GeneralInquiryEmail } from '@/shared/services/resend/emails/general-inquiry-email'
-import { ProjectEmailTemplate } from '@/shared/services/resend/emails/project-inquiry-email'
-import ProposalEmail from '@/shared/services/resend/emails/proposal-email'
-import ProposalViewedEmail from '@/shared/services/resend/emails/proposal-viewed-email'
+import { GeneralInquiryEmail } from '@/shared/services/providers/resend/emails/general-inquiry-email'
+import { ProjectEmailTemplate } from '@/shared/services/providers/resend/emails/project-inquiry-email'
+import ProposalEmail from '@/shared/services/providers/resend/emails/proposal-email'
+import ProposalViewedEmail from '@/shared/services/providers/resend/emails/proposal-viewed-email'
 
 export function renderProposalEmail(params: {
   proposalUrl: string

@@ -1,6 +1,6 @@
 'use client'
 
-import type { ZohoContractStatus } from '@/shared/services/zoho-sign/types'
+import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowRight, Loader2, Mail, PartyPopper, TriangleAlert } from 'lucide-react'
 import { motion } from 'motion/react'

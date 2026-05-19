@@ -7,8 +7,8 @@
  * Run: ZOHO_SIGN_*=... pnpm tsx scripts/verify-add-files-endpoint.ts
  */
 import { Buffer } from 'node:buffer'
-import { ZOHO_SIGN_BASE_URL, ZOHO_SIGN_TEMPLATES } from '@/shared/services/zoho-sign/constants'
-import { getZohoAccessToken } from '@/shared/services/zoho-sign/lib/get-access-token'
+import { ZOHO_SIGN_BASE_URL, ZOHO_SIGN_TEMPLATES } from '@/shared/services/providers/zoho-sign/constants'
+import { getZohoAccessToken } from '@/shared/services/providers/zoho-sign/lib/get-access-token'
 
 async function main() {
   const token = await getZohoAccessToken()

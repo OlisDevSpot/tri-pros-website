@@ -1,5 +1,5 @@
 import type { SOW } from './schema'
-import type { RawPropertyMap } from '@/shared/services/notion/types'
+import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 export const SOW_PROPERTIES_MAP = {
   name: {

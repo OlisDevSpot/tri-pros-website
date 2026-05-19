@@ -10,7 +10,7 @@
  * in the right state (sent + null signing_request_id).
  */
 import { Client } from 'pg'
-import { syncContractDraftJob } from '@/shared/services/upstash/jobs/sync-contract-draft'
+import { syncContractDraftJob } from '@/shared/services/providers/upstash/jobs/sync-contract-draft'
 
 const PROPOSAL_ID = '16ba7459-806c-4dab-8937-af7db3b80a6a'
 const PROD_BASE_URL = 'https://www.triprosremodeling.com'

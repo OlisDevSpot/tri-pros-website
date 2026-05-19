@@ -1,5 +1,5 @@
-import type { Contact } from '@/shared/services/notion/lib/contacts/schema'
-import type { RawPropertyMap } from '@/shared/services/notion/types'
+import type { Contact } from '@/shared/services/providers/notion/lib/contacts/schema'
+import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 export const CONTACT_PROPERTIES_MAP = {
   name: {

@@ -1,4 +1,4 @@
-import { RESEND_BRAND_NAME, RESEND_FROM, RESEND_SENDER_MAILBOX } from '@/shared/services/resend/constants'
+import { RESEND_BRAND_NAME, RESEND_FROM, RESEND_SENDER_MAILBOX } from '@/shared/services/providers/resend/constants'
 
 /**
  * Build a personalized From-header. Rep's first name appears before the brand

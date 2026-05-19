@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { Buffer } from 'node:buffer'
 import { PDFDocument } from 'pdf-lib'
-import { countPdfPages } from '@/shared/services/pdf/count-pdf-pages'
+import { countPdfPages } from '@/shared/lib/pdf/count-pdf-pages'
 
 async function main() {
   const doc = await PDFDocument.create()

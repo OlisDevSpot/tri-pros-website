@@ -1,5 +1,5 @@
 import type { NotionPainPoint } from './schema'
-import type { RawPropertyMap } from '@/shared/services/notion/types'
+import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 export const PAIN_POINT_PROPERTIES_MAP = {
   name: { label: 'Pain point', type: 'title' },

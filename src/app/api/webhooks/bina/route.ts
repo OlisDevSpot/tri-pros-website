@@ -4,8 +4,8 @@ import { db } from '@/shared/db'
 import { binaWebhookLogs, customerNotes } from '@/shared/db/schema'
 import { findBestMatch } from '@/shared/lib/fuzzy-match'
 import { constructionDataService } from '@/shared/services/construction-data.service'
-import { BINA_AUTH_HEADER } from '@/shared/services/gohighlevel/constants'
-import { binaContactPayloadSchema } from '@/shared/services/gohighlevel/schemas'
+import { BINA_AUTH_HEADER } from '@/shared/services/providers/gohighlevel/constants'
+import { binaContactPayloadSchema } from '@/shared/services/providers/gohighlevel/schemas'
 
 interface MatchedTrade {
   tradeId: string

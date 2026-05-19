@@ -9,8 +9,8 @@ import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/r2/buckets'
-import { r2Client } from '@/shared/services/r2/client'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
+import { r2Client } from '@/shared/services/providers/r2/client'
 import { OUTPUT_BASE_DIR } from './constants'
 
 const BUCKET = R2_BUCKETS.portfolioProjects

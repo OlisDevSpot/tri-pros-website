@@ -1,5 +1,5 @@
 import type { AgreementStepKey } from '../constants/agreement-timeline'
-import type { ZohoContractStatus } from '@/shared/services/zoho-sign/types'
+import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 
 export type StepState = 'completed' | 'active' | 'upcoming'
 

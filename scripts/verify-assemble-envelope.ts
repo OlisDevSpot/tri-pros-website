@@ -9,8 +9,8 @@
  * The created draft is left in Zoho — clean it up via the Sign UI or
  * a follow-up DELETE /requests/{id} call.
  */
-import type { ProposalContext } from '@/shared/services/zoho-sign/documents/types'
-import { assembleEnvelope } from '@/shared/services/zoho-sign/documents/assemble-envelope'
+import type { ProposalContext } from '@/shared/services/providers/zoho-sign/documents/types'
+import { assembleEnvelope } from '@/shared/services/providers/zoho-sign/documents/assemble-envelope'
 
 function makeFakeContext(recipientEmail: string): ProposalContext {
   // Additional-work + short SOW + non-senior is the smallest envelope

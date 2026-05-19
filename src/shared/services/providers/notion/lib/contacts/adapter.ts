@@ -1,6 +1,6 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
-import type { Contact } from '@/shared/services/notion/lib/contacts/schema'
-import { contactSchema } from '@/shared/services/notion/lib/contacts/schema'
+import type { Contact } from '@/shared/services/providers/notion/lib/contacts/schema'
+import { contactSchema } from '@/shared/services/providers/notion/lib/contacts/schema'
 import { dateISO, email, peopleIds, phone, relationIds, richText, selectName, titleText } from '../extractors'
 import { CONTACT_PROPERTIES_MAP } from './properties-map'
 

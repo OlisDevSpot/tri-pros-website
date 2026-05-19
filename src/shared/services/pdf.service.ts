@@ -5,8 +5,8 @@ import type { ScopedContext } from '@/shared/dal/server/lib/types'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 
-import { renderPdf } from './pdf/render-pdf'
-import { buildSowDocDefinition } from './pdf/sow-doc-definition'
+import { renderPdf } from '@/shared/lib/pdf/render-pdf'
+import { buildSowDocDefinition } from '@/shared/lib/pdf/sow-doc-definition'
 
 /** Proposal PDFs, finance forms, printable documents */
 function createPDFService() {

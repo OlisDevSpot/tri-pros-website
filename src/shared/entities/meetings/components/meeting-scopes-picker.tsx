@@ -1,7 +1,7 @@
 'use client'
 
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Label } from '@/shared/components/ui/label'
@@ -20,8 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select'
-import { useGetScopes } from '@/shared/services/notion/dal/scopes/hooks/queries/use-get-scopes'
-import { useGetAllTrades } from '@/shared/services/notion/dal/trades/hooks/queries/use-get-trades'
+import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
+import { useGetAllTrades } from '@/shared/services/providers/notion/dal/trades/hooks/queries/use-get-trades'
 
 interface ScopeRowProps {
   entry: TradeSelection

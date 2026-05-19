@@ -15,7 +15,7 @@ import {
   buildAerialStaticMapUrl,
   buildStreetViewStaticUrl,
   hasGoogleMapsKey,
-} from '@/shared/services/google-maps/static-urls'
+} from '@/shared/services/providers/google-maps/static-urls'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {

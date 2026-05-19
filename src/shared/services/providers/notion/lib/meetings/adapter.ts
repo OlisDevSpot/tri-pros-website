@@ -1,6 +1,6 @@
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
-import type { Meeting } from '@/shared/services/notion/lib/meetings/schema'
-import { meetingSchema } from '@/shared/services/notion/lib/meetings/schema'
+import type { Meeting } from '@/shared/services/providers/notion/lib/meetings/schema'
+import { meetingSchema } from '@/shared/services/providers/notion/lib/meetings/schema'
 import { dateISO, peopleIds, phone, relationIds, richText, titleText } from '../extractors'
 import { MEETING_PROPERTIES_MAP } from './properties-map'
 

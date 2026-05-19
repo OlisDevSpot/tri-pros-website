@@ -1,4 +1,4 @@
-import type { MeetingForGCal } from '@/shared/services/google-calendar/lib/map-to-gcal'
+import type { MeetingForGCal } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
 
 import { eq, isNotNull } from 'drizzle-orm'
 import { getParticipantEmails } from '@/shared/dal/server/meetings/participants'

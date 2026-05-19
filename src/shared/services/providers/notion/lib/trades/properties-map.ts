@@ -1,5 +1,5 @@
 import type { Trade } from './schema'
-import type { RawPropertyMap } from '@/shared/services/notion/types'
+import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 export const TRADE_PROPERTIES_MAP = {
   name: {

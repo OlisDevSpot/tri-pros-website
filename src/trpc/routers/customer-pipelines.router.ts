@@ -9,8 +9,8 @@ import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server
 import { meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
-import { R2_BUCKETS } from '@/shared/services/r2/buckets'
-import { getPresignedDownloadUrl } from '@/shared/services/r2/get-presigned-download-url'
+import { R2_BUCKETS } from '@/shared/services/providers/r2/buckets'
+import { getPresignedDownloadUrl } from '@/shared/services/providers/r2/get-presigned-download-url'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 

@@ -9,7 +9,7 @@ import type {
   PersonaRiskFactor,
 } from '@/shared/entities/customers/schemas/persona-profile-schema'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
-import type { NotionPainPoint } from '@/shared/services/notion/lib/pain-points/schema'
+import type { NotionPainPoint } from '@/shared/services/providers/notion/lib/pain-points/schema'
 import {
   BENEFIT_TEMPLATES,
   EMOTIONAL_LEVER_DESCRIPTIONS,

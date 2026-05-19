@@ -27,7 +27,7 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
-import { geocodeAddress } from '@/shared/services/google-maps/geocode'
+import { geocodeAddress } from '@/shared/services/providers/google-maps/geocode'
 
 import { createTRPCRouter } from '../../init'
 

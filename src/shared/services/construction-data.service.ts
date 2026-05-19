@@ -1,11 +1,11 @@
-import type { ScopeOrAddon } from '@/shared/services/notion/lib/scopes/schema'
-import type { SOW } from '@/shared/services/notion/lib/sows/schema'
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
-import { queryNotionDatabase } from '@/shared/services/notion/dal/query-notion-database'
-import { pageToTiptapJson } from '@/shared/services/notion/lib/page-to-tiptap-json'
-import { pageToScope } from '@/shared/services/notion/lib/scopes/adapter'
-import { pageToSOW } from '@/shared/services/notion/lib/sows/adapter'
-import { pageToTrade } from '@/shared/services/notion/lib/trades/adapter'
+import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
+import type { SOW } from '@/shared/services/providers/notion/lib/sows/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
+import { queryNotionDatabase } from '@/shared/services/providers/notion/dal/query-notion-database'
+import { pageToTiptapJson } from '@/shared/services/providers/notion/lib/page-to-tiptap-json'
+import { pageToScope } from '@/shared/services/providers/notion/lib/scopes/adapter'
+import { pageToSOW } from '@/shared/services/providers/notion/lib/sows/adapter'
+import { pageToTrade } from '@/shared/services/providers/notion/lib/trades/adapter'
 
 /** Trades/scopes/SOW from Notion — stable interface over existing Notion DAL */
 function createConstructionDataService() {

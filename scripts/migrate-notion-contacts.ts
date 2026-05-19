@@ -28,12 +28,12 @@ import { customerNotes } from '../src/shared/db/schema/customer-notes'
 import { customers } from '../src/shared/db/schema/customers'
 import { leadSourcesTable } from '../src/shared/db/schema/lead-sources'
 import { meetings } from '../src/shared/db/schema/meetings'
-import { notionClient } from '../src/shared/services/notion/client'
-import { notionDatabasesMeta } from '../src/shared/services/notion/constants/databases'
-import { pageToContact } from '../src/shared/services/notion/lib/contacts/adapter'
-import { titleText } from '../src/shared/services/notion/lib/extractors'
-import { R2_BUCKETS } from '../src/shared/services/r2/buckets'
-import { putObject } from '../src/shared/services/r2/put-object'
+import { notionClient } from '../src/shared/services/providers/notion/client'
+import { notionDatabasesMeta } from '../src/shared/services/providers/notion/constants/databases'
+import { pageToContact } from '../src/shared/services/providers/notion/lib/contacts/adapter'
+import { titleText } from '../src/shared/services/providers/notion/lib/extractors'
+import { R2_BUCKETS } from '../src/shared/services/providers/r2/buckets'
+import { putObject } from '../src/shared/services/providers/r2/put-object'
 
 // ── Constants ──────────────────────────────────────────────
 

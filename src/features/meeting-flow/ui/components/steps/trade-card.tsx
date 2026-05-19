@@ -1,6 +1,6 @@
 'use client'
 
-import type { Trade } from '@/shared/services/notion/lib/trades/schema'
+import type { Trade } from '@/shared/services/providers/notion/lib/trades/schema'
 import { CheckIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {
@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from '@/shared/components/ui/tooltip'
 import { cn } from '@/shared/lib/utils'
-import { useGetScopes } from '@/shared/services/notion/dal/scopes/hooks/queries/use-get-scopes'
+import { useGetScopes } from '@/shared/services/providers/notion/dal/scopes/hooks/queries/use-get-scopes'
 
 interface TradeCardProps {
   trade: Trade

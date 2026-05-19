@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import type { Content } from 'pdfmake/interfaces'
 import assert from 'node:assert/strict'
-import { buildSowDocDefinition } from '@/shared/services/pdf/sow-doc-definition'
+import { buildSowDocDefinition } from '@/shared/lib/pdf/sow-doc-definition'
 
 const proposal = {
   id: 'test-id',

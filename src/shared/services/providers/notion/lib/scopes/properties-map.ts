@@ -1,5 +1,5 @@
 import type { ScopeOrAddon } from './schema'
-import type { RawPropertyMap } from '@/shared/services/notion/types'
+import type { RawPropertyMap } from '@/shared/services/providers/notion/types'
 
 export const SCOPE_OR_ADDON_PROPERTIES_MAP = {
   name: {
