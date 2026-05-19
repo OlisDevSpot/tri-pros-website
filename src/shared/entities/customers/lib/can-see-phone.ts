@@ -1,13 +1,13 @@
 import type { AppAbility } from '@/shared/domains/permissions/types'
 
 /**
- * Determine whether the current viewer may see a customer's phone number.
+ * Render-site helper: did the DAL gate this customer's phone, or is it
+ * genuinely empty? see ../DOCS.md#phone-visibility-threshold
  *
- * Rule: super-admins always see the phone; agents only see it once the
- * customer has at least one proposal sent. The DAL enforces this by nulling
- * `phone` in query results — this predicate exists so render sites can
- * distinguish "null because gated" (show unlock tooltip) from "null because
- * the customer genuinely has no phone" (super-admins only; show Add button).
+ * Super-admins always see the phone; agents see it once `hasSentProposal`
+ * is true (a proposal at status `sent` or `approved`). The DAL is the
+ * actual gate — this predicate just decides whether to show "unlock" vs
+ * "add phone" affordance for null values.
  */
 export function canAgentSeePhone(
   ability: AppAbility,
