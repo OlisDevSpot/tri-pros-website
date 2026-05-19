@@ -42,10 +42,11 @@
  * insert time when `meeting.projectId` was NULL). This migration's
  * birthing-meeting heuristic would reclassify those proposals to
  * `additional-work` because the assigned meeting is not the project's
- * earliest. The spec accepts this divergence — see
- * `docs/superpowers/specs/2026-05-07-proposal-kind-hotfix-design.md`,
- * "Known Limitations" section. Verify on prod before running by sampling a
- * few proposals on assigned meetings; if any are critical, resolve manually.
+ * earliest. Verify on prod before running by sampling a few proposals
+ * on assigned meetings; if any are critical, resolve manually.
+ * (Original design spec lived in docs/superpowers/, deleted 2026-05-19;
+ *  the kind-derivation rule itself is at
+ *  src/shared/entities/proposals/DOCS.md#kind-derived-from-meeting-project.)
  *
  * Usage:
  *   pnpm migrate:proposal-kind:dev    # dev DB (default NODE_ENV)
