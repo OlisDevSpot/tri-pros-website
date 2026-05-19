@@ -22,9 +22,8 @@ export const meetingParticipants = pgTable('meeting_participants', {
   updatedAt,
 }, table => [
   unique('meeting_id_user_id_unique').on(table.meetingId, table.userId),
-  // Partial unique indexes: at most one owner row and one co_owner row per
-  // meeting. Enforced atomically at the DB level — closes the TOCTOU window
-  // in the application's check-then-insert pattern. Helpers are unconstrained.
+  // Partial unique indexes — one owner + one co_owner per meeting, helpers unconstrained.
+  // see src/shared/entities/meetings/DOCS.md#participant-roles-three
   uniqueIndex('meeting_one_owner_idx')
     .on(table.meetingId)
     .where(sql`role = 'owner'`),

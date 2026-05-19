@@ -2,23 +2,10 @@ import type { DealStructure } from '@/shared/entities/meetings/schemas'
 
 /**
  * Derived-value helpers for a meeting's `dealStructure` scratchpad.
- *
- * None of these values are persisted on the meeting — they are pure
- * functions of stored inputs (`startingTcp`, `incentives`, `apr`, etc.)
- * and must be computed on read. Mirrors the pattern established for
- * proposals (`entities/proposals/lib/compute-final-tcp`).
+ * Pure functions; never persisted. see ../DOCS.md#dealStructure-derived-helpers
  */
 
-/**
- * Final TCP at the meeting stage:
- *
- *     max(0, startingTcp − Σ incentive.amount)
- *
- * Every incentive on the meeting's deal structure is a discount
- * (`DealStructureIncentive` has no discriminator — it's always an amount
- * deduction). Unlike the proposal schema, there are no exclusive-offer
- * variants to filter out.
- */
+/** Final TCP: max(0, startingTcp − Σ incentive.amount). All incentives are discounts at the meeting stage. */
 export function computeDealFinalTcp(deal: DealStructure | null | undefined): number {
   if (!deal) {
     return 0
@@ -29,14 +16,10 @@ export function computeDealFinalTcp(deal: DealStructure | null | undefined): num
 }
 
 /**
- * Amortized monthly payment for the finance mode:
- *
- *     monthlyPayment = (P · r) / (1 − (1 + r)^−n)
- *
+ * Amortized monthly when mode === 'finance':
+ *   monthlyPayment = (P · r) / (1 − (1 + r)^−n)
  * where P = finalTcp, r = apr / 100 / 12, n = termMonths.
- * Zero-interest loans fall back to simple division (P / n).
- *
- * Returns 0 when any input is missing or mode is not 'finance'.
+ * Zero-interest falls back to P / n. Returns 0 if any input missing or mode != 'finance'.
  */
 export function computeDealMonthlyPayment(deal: DealStructure | null | undefined): number {
   if (!deal || deal.mode !== 'finance') {
@@ -56,12 +39,8 @@ export function computeDealMonthlyPayment(deal: DealStructure | null | undefined
 }
 
 /**
- * Deposit percentage of the final TCP for cash mode:
- *
- *     round((depositAmount / finalTcp) · 100)
- *
- * Returns 0 when any input is missing, mode is not 'cash', or the
- * final TCP is zero (to avoid division by zero).
+ * Deposit % of finalTcp when mode === 'cash': round(depositAmount / finalTcp * 100).
+ * Returns 0 if any input missing, mode != 'cash', or finalTcp is 0.
  */
 export function computeDealDepositPercent(deal: DealStructure | null | undefined): number {
   if (!deal || deal.mode !== 'cash') {
