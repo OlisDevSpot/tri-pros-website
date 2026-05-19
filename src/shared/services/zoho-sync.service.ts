@@ -1,9 +1,9 @@
-import type { ZohoContractStatus, ZohoRequestStatus } from './providers/zoho-sign/types'
-import type { ProposalContext } from './providers/zoho-sign/lib/documents/types'
 import type { AttachFile } from './providers/zoho-sign/client'
+import type { ProposalContext } from './providers/zoho-sign/lib/documents/types'
+import type { ZohoContractStatus, ZohoRequestStatus } from './providers/zoho-sign/types'
 import { zohoSignClient } from './providers/zoho-sign/client'
-import { assembleEnvelope } from './providers/zoho-sign/lib/documents/assemble-envelope'
 import { dedupeSignerStatuses } from './providers/zoho-sign/lib/dedupe-signer-statuses'
+import { assembleEnvelope } from './providers/zoho-sign/lib/documents/assemble-envelope'
 import { sanitizeFilename } from './providers/zoho-sign/lib/sanitize-filename'
 
 // ---------------------------------------------------------------------------
