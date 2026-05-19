@@ -1,12 +1,4 @@
-// ─── Scope Middleware ───────────────────────────────────────────────────────
-// Middleware factory that resolves visibility scope for an entity.
-// Omni users (CASL `manage all`) get `scope: null` — they see everything.
-// Non-omni users get `scope: spec.visibility(userId)` — a Drizzle SQL fragment
-// that DAL handlers apply to WHERE clauses.
-//
-// Uses `createMiddleware` (t.middleware) so tRPC natively tracks the ctx
-// transformation — downstream procedures see `scope` on ctx without casts.
-//
+// Scope-resolving middleware. see ../../DOCS.md#scope-middleware-is-the-core-superpower
 // Chain after agentProcedure (which guarantees session + ability non-null).
 
 import type { EntityServerSpec } from '@/shared/dal/server/types'
@@ -15,13 +7,7 @@ import { TRPCError } from '@trpc/server'
 
 import { createMiddleware } from '@/trpc/init'
 
-/**
- * Builds a scope-resolving middleware for the given entity spec.
- *
- * Reads `ctx.ability` + `ctx.session` (guaranteed non-null by agentProcedure)
- * and sets `ctx.scope` to the entity's visibility predicate, or `null` for
- * omni users.
- */
+/** Returns a middleware that sets `ctx.scope` from `spec.visibility(userId)` (or null for omni). */
 export function scopeMiddleware(spec: EntityServerSpec) {
   return createMiddleware(async ({ ctx, next }) => {
     // Runtime guard — agentProcedure already checked, but createMiddleware

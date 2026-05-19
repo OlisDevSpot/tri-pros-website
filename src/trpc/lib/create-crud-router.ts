@@ -1,17 +1,6 @@
-// ─── createCrudRouter (CRUD Sub-router) ─────────────────────────────────────
-// Thin tRPC sub-router that maps 5 CRUD slots to tRPC procedures.
-// Receives pre-scoped procedures from the entity router and concrete Zod
-// schemas for full type inference. Each slot wires:
-//   - CASL action gate (action <- slot, subject <- spec.caslSubject)
-//   - Zod input validation from concrete schemas (not type-erased spec)
-//   - DAL handler call (default from createCrudDal, overridable per-slot)
-//   - DalReturn → TRPCError via dalToTrpc
-//
-// The router is a static object literal — all 5 slots always present.
-// TypeScript infers the full router shape for end-to-end client type safety.
-//
-// `spec.shareable` controls whether `getById` and `update` use the shareable
-// procedure (token-or-session) or the authed procedure (session-only).
+// CRUD sub-router factory — 5 single-row operations. see ../DOCS.md#crud-five-slots-fixed
+// Each slot wires: CASL action gate + Zod input + DAL handler + dalToTrpc bridge.
+// spec.shareable controls whether getById/update use shareable vs authed procedure.
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 

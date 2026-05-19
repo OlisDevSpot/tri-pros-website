@@ -1,20 +1,11 @@
-// ─── DAL → tRPC Error Bridge ────────────────────────────────────────────────
-// Maps DalReturn errors to TRPCError. This is the boundary between DAL
-// (returns DalReturn, never throws) and tRPC (communicates via TRPCError).
-//
+// DAL → tRPC error bridge. see ../DOCS.md#dal-to-trpc-bridge
 // Services/jobs handle DalReturn directly — only tRPC uses this bridge.
 
 import type { DalReturn } from '@/shared/dal/server/types'
 
 import { TRPCError } from '@trpc/server'
 
-/**
- * Unwrap DalReturn<T>: return data on success, throw TRPCError on failure.
- *
- * Usage in procedure bodies:
- *   const row = dalToTrpc(await handlers.getById(ctx, input))
- *   const proposal = dalToTrpc(await getFullView(ctx, input))
- */
+/** Unwrap DalReturn<T>: return data on success, throw TRPCError on failure. */
 export function dalToTrpc<T>(result: DalReturn<T>): T {
   if (result.success) {
     return result.data
