@@ -13,7 +13,7 @@
 ## Branch & Context
 
 - **Branch:** `migrating-notion` (already created, already checked out)
-- **Spec:** `docs/superpowers/specs/2026-03-19-notion-crm-migration-design.md`
+- **Spec:** `docs/plans/notion-crm-migration-design.md`
 - **Working directory:** project root (`/home/olis-solutions/olis-v3/nextjs/tri-pros-website`)
 - **Package manager:** `pnpm`
 - **Path alias:** `@/` → `src/`

@@ -2,8 +2,8 @@
 
 **Status:** 🔴 READY — unblocked, execute first before pipeline-native-customers
 **Branch:** `migrating-notion`
-**Spec:** `docs/superpowers/specs/2026-03-19-notion-crm-migration-design.md`
-**Plan:** `docs/superpowers/plans/2026-03-19-notion-crm-migration.md`
+**Spec:** [`docs/plans/notion-crm-migration-design.md`](../plans/notion-crm-migration-design.md)
+**Plan:** [`docs/plans/notion-crm-migration-plan.md`](../plans/notion-crm-migration-plan.md)
 **Date Planned:** 2026-03-19
 
 ---
@@ -17,7 +17,7 @@ Replace Notion as the source of customer contacts — customers become first-cla
 ## How to Resume
 
 Start a new Claude Code session and say:
-> "I want to execute the Notion CRM migration plan. The plan is at `docs/superpowers/plans/2026-03-19-notion-crm-migration.md`. Invoke the `executing-plans` skill and let's get started."
+> "I want to execute the Notion CRM migration plan. The plan is at `docs/plans/notion-crm-migration-plan.md`. Invoke the `executing-plans` skill and let's get started."
 
 ---
 
