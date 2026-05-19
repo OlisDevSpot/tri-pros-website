@@ -4,7 +4,7 @@ import { SYSTEM_CONTEXT } from '@/shared/dal/server/lib/types'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { cslbEarliestStartDate } from '@/shared/entities/proposals/lib/cslb-start-date'
 import { pdfService } from '@/shared/services/pdf.service'
-import { ZOHO_SIGN_TEMPLATES } from '../constants'
+import { ZOHO_SIGN_TEMPLATES } from '../../constants'
 
 // --- Field source helpers -------------------------------------------------
 //

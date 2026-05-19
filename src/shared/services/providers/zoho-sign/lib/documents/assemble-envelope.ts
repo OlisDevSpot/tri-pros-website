@@ -1,8 +1,8 @@
 import type { Buffer } from 'node:buffer'
 import type { EnvelopeDocument, ProposalContext } from './types'
 import type { EnvelopeDocumentId } from '@/shared/constants/enums'
-import { SOW_INLINE_MAX_CHARS, ZOHO_SIGN_BASE_URL } from '../constants'
-import { getZohoAccessToken } from '../lib/get-access-token'
+import { SOW_INLINE_MAX_CHARS, ZOHO_SIGN_BASE_URL } from '../../constants'
+import { getZohoAccessToken } from '../get-access-token'
 import { evaluateDocuments } from './evaluate'
 import { ENVELOPE_DOCUMENTS } from './registry'
 

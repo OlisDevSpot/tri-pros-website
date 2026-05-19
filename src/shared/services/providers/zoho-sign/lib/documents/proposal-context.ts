@@ -3,7 +3,7 @@ import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/serve
 import { isSeniorByAge } from '@/shared/entities/customers/lib/customer-predicates'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
-import { isLongSow } from '../lib/is-long-sow'
+import { isLongSow } from '../is-long-sow'
 
 /**
  * Pure snapshot for predicates + field sources. `ageOverride` only
