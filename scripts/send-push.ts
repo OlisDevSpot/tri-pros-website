@@ -20,7 +20,7 @@ import './lib/load-env'
 import { eq } from 'drizzle-orm'
 import { db } from '../src/shared/db'
 import { user } from '../src/shared/db/schema/auth'
-import { sendPushToUser } from '../src/shared/services/providers/push/send'
+import { sendPushToUser } from '../src/shared/services/providers/web-push/send'
 
 interface Args {
   to?: string

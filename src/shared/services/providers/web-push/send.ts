@@ -1,5 +1,5 @@
 import type { PushPayloadInput } from './lib/build-payload'
-import type { VapidDetails } from './lib/web-push-client'
+import type { VapidDetails } from './client'
 import type { PushSubscriptionRow } from '@/shared/dal/server/push-subscriptions/api'
 import webpush from 'web-push'
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/shared/dal/server/push-subscriptions/api'
 import { buildPushPayload } from './lib/build-payload'
 import { DEAD_PUSH_STATUS_CODES, DEFAULT_PUSH_TTL_SECONDS } from './lib/constants'
-import { getVapidDetails } from './lib/web-push-client'
+import { getVapidDetails } from './client'
 
 import 'server-only'
 
