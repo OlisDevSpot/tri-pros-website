@@ -1,3 +1,2 @@
-// Canonical entity-name constant for the Project entity. Source of truth
-// for `EntityName` and `AppSubject` (see domains/permissions/abilities.ts).
+/** Entity-name constant. Source of truth for `EntityName` / `AppSubject`. */
 export const PROJECT = 'Project' as const
