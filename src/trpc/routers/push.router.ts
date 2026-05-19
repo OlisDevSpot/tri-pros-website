@@ -2,7 +2,7 @@ import z from 'zod'
 import {
   deletePushSubscriptionForUser,
   upsertPushSubscription,
-} from '@/shared/dal/server/push-subscriptions/api'
+} from '@/shared/entities/push-subscriptions/dal/server/queries'
 import { sendPushToUser } from '@/shared/services/providers/web-push/send'
 import { agentProcedure, createTRPCRouter, protectedProcedure } from '../init'
 

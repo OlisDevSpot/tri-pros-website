@@ -6,6 +6,16 @@ import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-p
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
 import { meetingOutcomes, meetingParticipantRoles, meetingTypes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
+import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
+import { paginate } from '@/shared/dal/server/lib/query/output'
+import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
+import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { db } from '@/shared/db'
+import { isUniqueViolation } from '@/shared/db/lib/pg-errors'
+import { customers, insertMeetingSchema, mediaFiles, meetingParticipants, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
+import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
+import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import {
   addParticipant,
   countParticipantsByRole,
@@ -16,19 +26,9 @@ import {
   removeParticipant,
   updateParticipantRole,
   userParticipatesInMeeting,
-} from '@/shared/dal/server/meetings/participants'
-import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
-import { paginate } from '@/shared/dal/server/lib/query/output'
-import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
-import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
-import { getSystemOwnerId } from '@/shared/dal/server/users/system'
-import { db } from '@/shared/db'
-import { isUniqueViolation } from '@/shared/db/lib/pg-errors'
-import { customers, insertMeetingSchema, mediaFiles, meetingParticipants, meetings, projects, proposals, user, x_projectScopes } from '@/shared/db/schema'
-import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
-import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+} from '@/shared/entities/meetings/dal/server/participants'
 import { meetingFlowStateSchema } from '@/shared/entities/meetings/schemas'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { notificationService } from '@/shared/services/notification.service'
 import { ably } from '@/shared/services/providers/upstash/realtime'
 import { schedulingService } from '@/shared/services/scheduling.service'

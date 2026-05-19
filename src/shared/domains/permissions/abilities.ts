@@ -23,14 +23,15 @@ import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 
 // Per-entity identity constants colocated with the entity. The derived
 // `EntityName` union is the entity portion of `AppSubject` — every entity
-// here is automatically permittable. Adding a 5th entity is one import +
+// here is automatically permittable. Adding a new entity is one import +
 // one line in ENTITY_NAMES.
+import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 
-export const ENTITY_NAMES = [CUSTOMER, MEETING, PROPOSAL, PROJECT] as const
+export const ENTITY_NAMES = [CUSTOMER, MEETING, PROPOSAL, PROJECT, ACTIVITY] as const
 export type EntityName = (typeof ENTITY_NAMES)[number]
 
 // The user shape we need for permission decisions.

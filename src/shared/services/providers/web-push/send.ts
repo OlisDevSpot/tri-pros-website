@@ -1,6 +1,6 @@
-import type { PushPayloadInput } from './lib/build-payload'
 import type { VapidDetails } from './client'
-import type { PushSubscriptionRow } from '@/shared/dal/server/push-subscriptions/api'
+import type { PushPayloadInput } from './lib/build-payload'
+import type { PushSubscriptionRow } from '@/shared/entities/push-subscriptions/dal/server/queries'
 import webpush from 'web-push'
 import {
   deletePushSubscriptionsByEndpoint,
@@ -8,10 +8,10 @@ import {
   getPushSubscriptionsByUsers,
   markPushFailure,
   markPushSuccess,
-} from '@/shared/dal/server/push-subscriptions/api'
+} from '@/shared/entities/push-subscriptions/dal/server/queries'
+import { getVapidDetails } from './client'
 import { buildPushPayload } from './lib/build-payload'
 import { DEAD_PUSH_STATUS_CODES, DEFAULT_PUSH_TTL_SECONDS } from './lib/constants'
-import { getVapidDetails } from './client'
 
 import 'server-only'
 

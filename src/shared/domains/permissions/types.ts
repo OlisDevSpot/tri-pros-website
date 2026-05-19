@@ -4,7 +4,7 @@
 // parameterized with our specific actions and subjects.
 //
 // Subjects derive from per-entity constants:
-//   - `EntityName` (4 business entities) comes from `abilities.ts`, which
+//   - `EntityName` (5 business entities) comes from `abilities.ts`, which
 //     imports each entity's identity from `entities/<entity>/lib/constants.ts`.
 //   - The non-entity subjects below are feature/route gates that aren't
 //     real business entities — they stay hand-maintained.
@@ -20,18 +20,16 @@ import type { EntityName } from './abilities'
 export type AppAction = 'access' | 'assign' | 'create' | 'delete' | 'manage' | 'read' | 'update'
 
 // Subjects (resources) that actions apply to.
-// `EntityName` covers the 4 business entities (Customer/Meeting/Proposal/Project).
+// `EntityName` covers the 5 business entities (Customer/Meeting/Proposal/Project/Activity).
 // The rest are non-entity feature gates that stay hand-maintained:
 //   - 'all'              CASL built-in wildcard
 //   - 'Dashboard'        route-level gate (dashboard access)
 //   - 'Calendar'         feature gate (GCal sync)
 //   - 'CustomerPipeline' feature gate (manage rehash/dead pipeline access)
-//   - 'Activity'         activity-log entity (no Entity Server System integration yet)
 //   - 'User'             user-record reads (no Entity Server System integration yet)
 export type AppSubject
   = EntityName
     | 'all'
-    | 'Activity'
     | 'Calendar'
     | 'CustomerPipeline'
     | 'Dashboard'

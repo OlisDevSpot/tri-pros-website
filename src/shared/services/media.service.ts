@@ -4,7 +4,7 @@ import {
   setOptimizationComplete,
   setOptimizationFailed,
   setOptimizationProcessing,
-} from '@/shared/dal/server/media-files/api'
+} from '@/shared/entities/media-files/dal/server/queries'
 import { getObject } from '@/shared/services/providers/r2/lib/get-object'
 import { processImageVariants } from '@/shared/services/providers/r2/lib/process-image-variants'
 import { putObject } from '@/shared/services/providers/r2/put-object'

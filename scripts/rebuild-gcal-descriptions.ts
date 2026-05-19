@@ -38,8 +38,8 @@
  */
 import './lib/load-env'
 import { isNotNull } from 'drizzle-orm'
-import { clearMeetingGCalFields, updateMeetingGCalFields } from '@/shared/dal/server/meetings/google-calendar'
-import { getSystemOwnerId } from '@/shared/dal/server/users/system'
+import { clearMeetingGCalFields, updateMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { schedulingService } from '@/shared/services/scheduling.service'

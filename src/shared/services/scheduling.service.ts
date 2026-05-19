@@ -1,4 +1,4 @@
-import type { AccountRow } from '@/shared/dal/server/accounts/google-calendar'
+import type { AccountRow } from '@/shared/entities/accounts/dal/server/google-calendar'
 
 import { getPublicBaseUrl } from '@/shared/config/public-url'
 import env from '@/shared/config/server-env'
@@ -8,7 +8,7 @@ import {
   getAccountByChannelId,
   getGoogleAccountForUser,
   updateAccountGCalFields,
-} from '@/shared/dal/server/accounts/google-calendar'
+} from '@/shared/entities/accounts/dal/server/google-calendar'
 import {
   clearActivityGCalFields,
   clearAllActivityGCalFieldsForUser,
@@ -19,7 +19,7 @@ import {
   getSyncableActivitiesForUser,
   updateActivityFromGCal,
   updateActivityGCalFields,
-} from '@/shared/dal/server/activities/google-calendar'
+} from '@/shared/entities/activities/dal/server/google-calendar'
 import {
   clearAllMeetingGCalFields,
   clearMeetingGCalFields,
@@ -28,8 +28,8 @@ import {
   getMeetingForGCal,
   updateMeetingGCalFields,
   updateMeetingScheduledFor,
-} from '@/shared/dal/server/meetings/google-calendar'
-import { getSystemOwnerId } from '@/shared/dal/server/users/system'
+} from '@/shared/entities/meetings/dal/server/google-calendar'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 
 import { GCalSyncTokenExpiredError, googleCalendarClient } from '@/shared/services/providers/google-calendar/client'
 import { hasRemoteChanged, resolveConflict } from '@/shared/services/providers/google-calendar/lib/conflict'

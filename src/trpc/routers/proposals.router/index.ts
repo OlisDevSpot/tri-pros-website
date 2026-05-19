@@ -1,6 +1,6 @@
 import z from 'zod'
 
-import { getFinanceOptions } from '@/shared/dal/server/finance-options/api'
+import { getFinanceOptions } from '@/shared/entities/finance-options/dal/server/queries'
 import { proposalCreateDal, proposalDuplicateDal } from '@/shared/entities/proposals/dal/server/mutations'
 import { getFullView, listProposals, proposalListInputSchema } from '@/shared/entities/proposals/dal/server/queries'
 import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'

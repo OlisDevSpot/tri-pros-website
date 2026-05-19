@@ -1,7 +1,7 @@
 import type { SQL } from 'drizzle-orm'
 
-import { userCanSeeCustomer } from '@/shared/dal/server/customers/visibility'
 import { customers } from '@/shared/db/schema'
+import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
 
 /**
  * Canonical agent-visibility predicate for the customers entity.

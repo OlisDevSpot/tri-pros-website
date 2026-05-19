@@ -1,7 +1,7 @@
 import env from '@/shared/config/server-env'
-import { createCustomerFromWebhook } from '@/shared/dal/server/customers/api'
 import { db } from '@/shared/db'
 import { binaWebhookLogs, customerNotes } from '@/shared/db/schema'
+import { createCustomerFromWebhook } from '@/shared/entities/customers/dal/server/queries'
 import { findBestMatch } from '@/shared/lib/fuzzy-match'
 import { constructionDataService } from '@/shared/services/construction-data.service'
 import { BINA_AUTH_HEADER } from '@/shared/services/providers/gohighlevel/constants'

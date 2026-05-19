@@ -1,4 +1,4 @@
-import { syncAllCustomers } from '@/shared/dal/server/customers/api'
+import { syncAllCustomers } from '@/shared/entities/customers/dal/server/queries'
 import { createJob } from '../lib/create-job'
 
 export const syncCustomersJob = createJob(

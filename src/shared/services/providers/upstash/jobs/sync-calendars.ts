@@ -1,4 +1,4 @@
-import { getAccountsWithGCalEnabled } from '@/shared/dal/server/accounts/google-calendar'
+import { getAccountsWithGCalEnabled } from '@/shared/entities/accounts/dal/server/google-calendar'
 import { schedulingService } from '@/shared/services/scheduling.service'
 import { createJob } from '../lib/create-job'
 

@@ -1,10 +1,10 @@
 import type { MeetingForGCal } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
 
 import { eq, isNotNull } from 'drizzle-orm'
-import { getParticipantEmails } from '@/shared/dal/server/meetings/participants'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
+import { getParticipantEmails } from '@/shared/entities/meetings/dal/server/participants'
 
 // ── Queries ──────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 import type { SQL } from 'drizzle-orm'
 
-import { userParticipatesInMeeting } from '@/shared/dal/server/meetings/participants'
 import { proposals } from '@/shared/db/schema'
+import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 
 /**
  * Canonical agent-visibility predicate for the proposals entity.
