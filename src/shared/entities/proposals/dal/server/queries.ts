@@ -70,10 +70,12 @@ export const proposalListFiltersSchema = {
 export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
 export type ProposalListInput = z.infer<typeof proposalListInputSchema>
 
-/** Enriched single-proposal read: proposal + customer + meeting.projectId +
- *  earliest contract-sent date across the project. Used by proposal page,
- *  delivery, contracts. Scope is set by middleware (authed: visibility predicate;
- *  shareable: eq(token)). see ../../DOCS.md#shareable-via-token */
+/**
+ * Enriched single-proposal read: proposal + customer + meeting.projectId +
+ * earliest contract-sent date across the project. Used by proposal page,
+ * delivery, contracts. Scope is set by middleware (authed: visibility predicate;
+ * shareable: eq(token)). see ../../DOCS.md#shareable-via-token
+ */
 export async function getFullView(
   ctx: ScopedContext,
   input: { id: string },
@@ -132,10 +134,12 @@ export async function getFullView(
   })
 }
 
-/** Server-paginated proposals list. Drives Past Proposals table + dashboard
- *  recent-proposals strip. Search: ilike on proposals.label OR customers.name.
- *  Sort whitelist below. Default: createdAt DESC.
- *  `price` is derived — SQL expression mirrors `computeFinalTcp`. see ../../DOCS.md#final-tcp-derived */
+/**
+ * Server-paginated proposals list. Drives Past Proposals table + dashboard
+ * recent-proposals strip. Search: ilike on proposals.label OR customers.name.
+ * Sort whitelist below. Default: createdAt DESC.
+ * `price` is derived — SQL expression mirrors `computeFinalTcp`. see ../../DOCS.md#final-tcp-derived
+ */
 export async function listProposals(
   ctx: ScopedContext,
   input: ProposalListInput,
@@ -268,8 +272,10 @@ export async function getProposalViews(
   })
 }
 
-/** Lookup by Zoho `signingRequestId` (non-PK). Used by contracts service
- *  webhook handler to find the proposal for an inbound event. */
+/**
+ * Lookup by Zoho `signingRequestId` (non-PK). Used by contracts service
+ * webhook handler to find the proposal for an inbound event.
+ */
 export async function getBySigningRequestId(
   ctx: ScopedContext,
   input: { signingRequestId: string },

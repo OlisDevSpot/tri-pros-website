@@ -19,10 +19,12 @@ export interface ProposalCostTotals {
   hasMissingCostData: boolean
 }
 
-/** Aggregate cost + margin + multiplier vs `finalTcp` (post-discount, so
- *  discounts net out of agent profit). `totalMultiplier` is null when total
- *  cost is 0 to avoid Infinity/NaN.
- *  see ../DOCS.md#margin-multiplier-tiers + #cost-data-asymmetric-incomplete */
+/**
+ * Aggregate cost + margin + multiplier vs `finalTcp` (post-discount, so
+ * discounts net out of agent profit). `totalMultiplier` is null when total
+ * cost is 0 to avoid Infinity/NaN.
+ * see ../DOCS.md#margin-multiplier-tiers + #cost-data-asymmetric-incomplete
+ */
 export function computeProposalCostTotals(data: InsertProposalSchema): ProposalCostTotals {
   const sow = data.projectJSON.data.sow
   const subtotal = data.fundingJSON.data.startingTcp

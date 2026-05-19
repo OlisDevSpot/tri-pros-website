@@ -7,15 +7,17 @@ This directory holds: schemas (`schemas/`), types (`types.ts`), enum constants a
 ## Lifecycle
 
 ```
-   draft  ──►  proposal-sent  ──►  approved  ──►  (project created automatically)
-                    │
-                    ├── contract-sent      (contractSentAt — Zoho envelope out)
-                    ├── contract-viewed    (contractViewedAt)
-                    ├── contract-signed    (contractSignedAt)  ──► auto-approves
-                    └── contract-declined  (contractDeclinedAt — status unchanged)
+   draft  ──►  sent  ──►  approved  ──►  (project created automatically)
+                │
+                ├── contractSentAt        (Zoho envelope out)
+                ├── contractViewedAt      (Zoho webhook: viewed)
+                ├── contractSignedAt      (Zoho webhook: completed → auto-approves)
+                └── contractDeclinedAt    (Zoho webhook: declined — status unchanged)
 
-   declined / expired         (terminal; agent recovers manually if relevant)
+   declined                (terminal; agent recovers manually if relevant)
 ```
+
+`status` has four values: `draft | sent | approved | declined`. Contract events are separate timestamp columns (not status values) — set by Zoho Sign webhooks independent of status.
 
 Status transitions are convention-enforced in handlers; no DB CHECK constraint guards illegal transitions. The DB enforces one critical invariant: **at most one approved `initial-sale` proposal per meeting** (unique index — see `#one-approved-initial-sale-per-meeting`).
 
@@ -198,7 +200,7 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 
 - ADR-0002 — Entity Server System (server spec, scope/shareable middleware)
 - [`../../trpc/DOCS.md`](../../trpc/DOCS.md) — tRPC procedures, `shareableMiddleware`, `createCrudRouter` (when written)
-- [`../customers/DOCS.md`](../customers/DOCS.md) — phone-visibility threshold gates on proposal-sent (when written)
+- [`../customers/DOCS.md`](../customers/DOCS.md) — phone-visibility threshold gates on the `sent`-or-later proposal lifecycle (when written)
 - [`../meetings/DOCS.md`](../meetings/DOCS.md) — meeting outcome `converted_to_project` is set by proposal approval (when written)
 - [`../projects/DOCS.md`](../projects/DOCS.md) — project creation triggered by approval; one project per birthing meeting (when written)
 - `docs/proposal/creation-guide.md` — sales-side proposal authoring playbook

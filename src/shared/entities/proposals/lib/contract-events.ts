@@ -1,7 +1,9 @@
 import type { ContractEvent } from '@/shared/constants/enums'
 
-/** Zoho Sign webhook payload mapping + idempotency/notification/auto-approve
- *  policies for contract events. see ../DOCS.md#contract-events-from-zoho */
+/**
+ * Zoho Sign webhook payload mapping + idempotency/notification/auto-approve
+ * policies for contract events. see ../DOCS.md#contract-events-from-zoho
+ */
 
 // Zoho's actual payloads diverge from docs (docs: RequestCompleted; observed:
 // RequestSigningSuccess). Both are accepted. Confirmed via live test 2026-05-04.
