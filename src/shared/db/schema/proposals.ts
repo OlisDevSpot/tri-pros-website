@@ -1,9 +1,11 @@
-import type z from 'zod'
 import type { ProposalStatus } from '@/shared/constants/enums'
 import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
+
 import { relations, sql } from 'drizzle-orm'
 import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import z from 'zod'
+
 import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
@@ -87,11 +89,14 @@ export const insertProposalSchema = createInsertSchema(proposals, {
   fundingJSON: fundingSectionSchema,
 }).omit({
   id: true,
-  token: true,
   updatedAt: true,
-  // `kind` is server-derived (see createProposal DAL) — never accepted from
-  // clients. Frozen at insert; updateProposal must not change it either.
-  kind: true,
+}).extend({
+  // Server-derived fields: hooks.create.before sets these. Optional so
+  // clients don't send them (hook fills in), but Zod doesn't strip them.
+  // see ../entities/proposals/DOCS.md#kind-derived-from-meeting-project
+  // see ../entities/proposals/DOCS.md#share-token-generated-at-insert
+  kind: z.enum(['initial-sale', 'additional-work']).optional(),
+  token: z.string().optional(),
 })
 
 export type InsertProposalSchema = z.infer<typeof insertProposalSchema>
