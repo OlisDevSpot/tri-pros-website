@@ -5,7 +5,6 @@ import { meetingSchemas, meetingServerSpec } from '@/shared/entities/meetings/li
 import { createTRPCRouter } from '../../init'
 import { createCrudRouter } from '../../lib/create-crud-router'
 import { createEntityRouter } from '../../lib/create-entity-router'
-import { meetingLifecycle } from './lifecycle'
 import { createParticipantsRouter } from './participants.router'
 import { createMeetingReadsRouter } from './reads.router'
 
@@ -16,7 +15,6 @@ export const meetingsRouter = createEntityRouter(meetingServerSpec, (entity) => 
       schemas: { ...meetingSchemas, id: z.string().uuid() },
       authedProcedure: entity.authedProcedure,
       shareableProcedure: entity.shareableProcedure,
-      lifecycle: meetingLifecycle,
     }),
     reads: createMeetingReadsRouter(entity),
     participants: createParticipantsRouter(entity),
