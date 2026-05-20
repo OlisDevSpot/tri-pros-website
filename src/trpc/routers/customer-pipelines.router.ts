@@ -1,16 +1,23 @@
 import type { LeadMeta } from '@/shared/entities/customers/schemas'
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { getCustomerPipelineItems } from '@/features/customer-pipelines/dal/server/get-customer-pipeline-items'
 import { getCustomerProfile } from '@/features/customer-pipelines/dal/server/get-customer-profile'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
 import { meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
+import { buildUserContext } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
+import { meetings } from '@/shared/db/schema/meetings'
+import { projects } from '@/shared/db/schema/projects'
+import { proposals } from '@/shared/db/schema/proposals'
+import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/buckets'
 import { getPresignedDownloadUrl } from '@/shared/services/providers/r2/get-presigned-download-url'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
@@ -84,6 +91,47 @@ export const customerPipelinesRouter = createTRPCRouter({
       })
 
       return { url }
+    }),
+
+  // Get projects + proposals for a customer via meeting context (used by customer pipelines sidebar)
+  getCustomerProjects: agentProcedure
+    .input(z.object({ meetingId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const scopedCtx = buildUserContext(ctx.session.user.id, ctx.session.user.role, meetingServerSpec)
+      const meeting = dalToTrpc(await meetingCrud.getById(scopedCtx, { id: input.meetingId }))
+      if (!meeting?.customerId) {
+        return { projects: [], proposals: [] }
+      }
+      const customerProjects = await db
+        .select({ id: projects.id, title: projects.title, status: projects.status, pipelineStage: projects.pipelineStage, createdAt: projects.createdAt })
+        .from(projects)
+        .where(eq(projects.customerId, meeting.customerId))
+        .orderBy(desc(projects.createdAt))
+      const meetingProposals = await db
+        .select({ id: proposals.id, label: proposals.label, status: proposals.status, createdAt: proposals.createdAt })
+        .from(proposals)
+        .where(eq(proposals.meetingId, input.meetingId))
+        .orderBy(desc(proposals.createdAt))
+      return { projects: customerProjects, proposals: meetingProposals }
+    }),
+
+  // Assign a meeting to a project (sets projectId + meetingOutcome)
+  assignToProject: agentProcedure
+    .input(z.object({
+      meetingId: z.string().uuid(),
+      projectId: z.string().uuid(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.ability.cannot('update', 'Meeting')) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to update meetings' })
+      }
+      return dalToTrpc(await meetingCrud.update(
+        { session: ctx.session, ability: ctx.ability, scope: null },
+        {
+          id: input.meetingId,
+          data: { projectId: input.projectId, meetingOutcome: 'converted_to_project' },
+        },
+      ))
     }),
 
 })
