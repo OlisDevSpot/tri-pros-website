@@ -1,12 +1,13 @@
-import type z from 'zod'
 import type {
   MeetingContext,
   MeetingFlowState,
 } from '@/shared/entities/meetings/schemas'
+
 import { relations } from 'drizzle-orm'
 import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import z from 'zod'
+
 import {
   meetingContextSchema,
   meetingFlowStateSchema,
@@ -63,8 +64,11 @@ export const insertMeetingSchema = createInsertSchema(meetings, {
   flowStateJSON: meetingFlowStateSchema.optional(),
 }).omit({
   id: true,
-  ownerId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Un-omitted: hooks.create.before defaults from ctx.session.
+  // Optional so clients don't need to send it (hook fills it in).
+  ownerId: z.string().optional(),
 })
 export type InsertMeetingSchema = z.infer<typeof insertMeetingSchema>
