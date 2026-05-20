@@ -6,8 +6,16 @@ import { TradeView } from '@/features/landing/ui/views/trade-view'
 export const revalidate = 180
 
 export async function generateStaticParams() {
-  const trades = await getTradesByPillar('luxury-renovations')
-  return trades.map(trade => ({ tradeSlug: trade.slug }))
+  // Swallow Notion failures (e.g., CI placeholder token) so build doesn't
+  // fail on external API outage; pages fall back to dynamic rendering at
+  // request time. Matches the portfolio/[projectAccessor] pattern.
+  try {
+    const trades = await getTradesByPillar('luxury-renovations')
+    return trades.map(trade => ({ tradeSlug: trade.slug }))
+  }
+  catch {
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ tradeSlug: string }> }) {

@@ -32,12 +32,12 @@ export function AssignProjectDialog({ meetingId, open, onOpenChange }: AssignPro
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
 
   const dataQuery = useQuery({
-    ...trpc.meetingsRouter.getCustomerProjects.queryOptions({ meetingId: meetingId! }),
+    ...trpc.customerPipelinesRouter.getCustomerProjects.queryOptions({ meetingId: meetingId! }),
     enabled: open && !!meetingId,
   })
 
   const assignMutation = useMutation(
-    trpc.meetingsRouter.assignToProject.mutationOptions({
+    trpc.customerPipelinesRouter.assignToProject.mutationOptions({
       onSuccess: () => {
         invalidateMeeting()
         invalidateProject()

@@ -5,8 +5,7 @@ import { and, asc, eq, exists, inArray, or } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { meetingParticipants, user } from '@/shared/db/schema'
 
-// ── Visibility Helper ───────────────────────────────────────────────────────
-
+// Visibility helper — see ../../DOCS.md#visibility-via-participation
 export function userParticipatesInMeeting(userId: string, meetingIdColumn: SQL | any): SQL {
   return exists(
     db.select({ id: meetingParticipants.id })
@@ -20,11 +19,7 @@ export function userParticipatesInMeeting(userId: string, meetingIdColumn: SQL |
 
 // ── Queries ─────────────────────────────────────────────────────────────────
 
-/**
- * Standalone async check: is this user a participant in this meeting (any role)?
- * Use this when you need a boolean rather than a SQL clause to embed.
- * For embedding in WHERE clauses, use {@link userParticipatesInMeeting} instead.
- */
+/** Boolean check (vs embeddable SQL via `userParticipatesInMeeting`). */
 export async function isParticipant(meetingId: string, userId: string): Promise<boolean> {
   const [row] = await db
     .select({ id: meetingParticipants.id })
@@ -95,15 +90,9 @@ export interface OwnerCoOwnerRow {
 }
 
 /**
- * Batch-fetch owner + co_owner participants for a set of meetings.
- *
- * Returned rows are ordered by `created_at ASC` so that, in the defensive case
- * where duplicate owner/co_owner rows somehow exist for a meeting, callers that
- * pick the first row per (meetingId, role) get a deterministic result.
- *
- * Use when reshaping a list of meetings into per-row owner/coOwner objects —
- * avoids the cross-product multiplication that LEFT JOIN-ing the junction
- * table directly would cause if duplicates exist.
+ * Batch-fetch owner + co_owner for a set of meetings. Use this instead of
+ * LEFT JOIN — see ../../DOCS.md anti-patterns. Ordered by created_at ASC so
+ * defensive callers that pick first-per-(meeting, role) get deterministic results.
  */
 export async function getOwnerCoOwnerForMeetings(meetingIds: string[]): Promise<OwnerCoOwnerRow[]> {
   if (meetingIds.length === 0) {
@@ -152,11 +141,7 @@ export interface MeetingParticipantRow {
   userImage: string | null
 }
 
-/**
- * Batch-fetch ALL participants (all roles) for a set of meetings, ordered by
- * user.id ASC so callers can derive deterministic combo keys (e.g. swimlane
- * grouping by participant set).
- */
+/** Batch-fetch ALL participants. Ordered by user.id ASC for deterministic combo keys (swimlane grouping). */
 export async function getAllParticipantsForMeetings(meetingIds: string[]): Promise<MeetingParticipantRow[]> {
   if (meetingIds.length === 0) {
     return []

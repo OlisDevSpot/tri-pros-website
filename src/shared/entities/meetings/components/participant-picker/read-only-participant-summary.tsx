@@ -49,7 +49,7 @@ export function ReadOnlyParticipantSummary({
   )
 
   const participantsQuery = useQuery({
-    ...trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
+    ...trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId }),
     initialData: initialData ?? undefined,
   })
 

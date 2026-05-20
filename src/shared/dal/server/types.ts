@@ -77,6 +77,54 @@ export interface EntityServerSpec<
   primaryKey?: string
   shareable?: { tokenColumn: string }
   update?: { jsonbMergeColumns: readonly PgColumn[] }
+  /**
+   * Entity lifecycle hooks. Executed by createCrudDal — both before and after.
+   *
+   * - `before` hooks: async, data transformation. Can read DB via DAL functions
+   *   (never naked `db`). Return the (possibly enriched) data.
+   * - `after` hooks: async, side effects (services, notifications, realtime).
+   *   The hook implementation decides what to `await` (critical) vs
+   *   `void .catch()` (best-effort).
+   *
+   * All hooks receive ScopedContext. Hooks should be thin orchestrators —
+   * pure business logic belongs in `entities/<entity>/lib/`, service
+   * orchestration uses existing services.
+   */
+  hooks?: {
+    create?: {
+      // eslint-disable-next-line ts/method-signature-style -- bivariant method signatures required for EntityServerSpec<Table> → EntityServerSpec<PgTable> assignability
+      before?(input: Insert<TTable>, ctx: ScopedContext): Promise<Insert<TTable>> | Insert<TTable>
+      // eslint-disable-next-line ts/method-signature-style
+      after?(row: Row<TTable>, ctx: ScopedContext): Promise<void>
+    }
+    update?: {
+      // eslint-disable-next-line ts/method-signature-style
+      before?(data: Update<TTable>, ctx: ScopedContext): Promise<Update<TTable>> | Update<TTable>
+      // eslint-disable-next-line ts/method-signature-style
+      after?(row: Row<TTable>, ctx: ScopedContext, meta: {
+        previousRow: Row<TTable>
+        input: Update<TTable>
+      }): Promise<void>
+    }
+    delete?: {
+      // eslint-disable-next-line ts/method-signature-style
+      before?(id: string | number, ctx: ScopedContext): Promise<void>
+      // eslint-disable-next-line ts/method-signature-style
+      after?(id: string | number, ctx: ScopedContext): Promise<void>
+    }
+  }
+  /**
+   * Declarative duplicate config. Default behavior: copy full row minus PK.
+   * Duplicate routes through createImpl — create hooks fire automatically.
+   * This is NOT a hook. It's declarative configuration for field selection.
+   */
+  duplicate?: {
+    /** Fields to drop beyond PK (which is always dropped). */
+    exclude?: readonly string[]
+    /** Override/transform specific field values on the copy. */
+    // eslint-disable-next-line ts/method-signature-style
+    overrides?(source: Row<TTable>, ctx: ScopedContext): Partial<Insert<TTable>>
+  }
 }
 
 // ── CRUD Slot Names ─────────────────────────────────────────────────────

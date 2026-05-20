@@ -1,11 +1,6 @@
-// ─── Proposal Business Queries ──────────────────────────────────────────────
-// Enriched reads and complex list queries for the proposals entity. These
-// handle multi-table joins, derived columns, and entity-specific filters
-// that the generic CRUD DAL cannot express.
-//
-// Every function receives `ScopedContext` and applies `ctx.scope` for
-// visibility-scoped WHERE clauses (null = omni, SQL predicate = scoped).
-// Returns DalReturn<T> — never throws.
+// Business queries for the proposals entity. Multi-table joins, derived
+// columns, and entity-specific filters. see ../../DOCS.md for business rules.
+// All DAL conventions: see docs/codebase-conventions/dal-conventions.md
 
 import type { MeetingPipeline } from '@/shared/constants/enums'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
@@ -50,10 +45,7 @@ export type ProposalWithCustomer = Proposal & {
   projectFirstContractSentAt: string | null
 }
 
-/**
- * Enriched row returned by `listProposals` — base proposal columns plus
- * view stats and meeting/customer context for table display.
- */
+/** Enriched row returned by `listProposals` — base columns + view stats + meeting/customer context. */
 export type ProposalListRow = Proposal & {
   viewCount: number
   lastViewedAt: string | null
@@ -63,9 +55,7 @@ export type ProposalListRow = Proposal & {
   meetingProjectId: string | null
 }
 
-// ── Filter schema ───────────────────────────────────────────────────────
-// Exported so the router can reference the same shape in its `.input()`.
-
+// Filter schema — exported so the router can reference the same shape in its `.input()`.
 export const proposalListFiltersSchema = {
   status: z.array(z.enum(proposalStatuses)).optional(),
   kind: z.array(z.enum(proposalKinds)).optional(),
@@ -80,18 +70,12 @@ export const proposalListFiltersSchema = {
 export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
 export type ProposalListInput = z.infer<typeof proposalListInputSchema>
 
-// ── getFullView ─────────────────────────────────────────────────────────
-//
-// Enriched single-proposal read with customer data, meeting project
-// linkage, and project-first-contract-sent-at subquery. Used by the
-// proposal page, delivery flow, contracts, and any UI that needs the
-// full proposal + customer context.
-//
-// Applies `ctx.scope` for visibility scoping. On the authed path, scope
-// is the visibility predicate (e.g. userParticipatesInMeeting). On the
-// shareable/token path, scope is `eq(proposals.token, token)`. The
-// middleware sets `ctx.scope` appropriately for both paths.
-
+/**
+ * Enriched single-proposal read: proposal + customer + meeting.projectId +
+ * earliest contract-sent date across the project. Used by proposal page,
+ * delivery, contracts. Scope is set by middleware (authed: visibility predicate;
+ * shareable: eq(token)). see ../../DOCS.md#shareable-via-token
+ */
 export async function getFullView(
   ctx: ScopedContext,
   input: { id: string },
@@ -111,21 +95,11 @@ export async function getFullView(
           zip: customers.zip,
           customerProfileJSON: customers.customerProfileJSON,
         },
-        // The proposal's meeting's projectId. Null = meeting has no
-        // project yet (one is created when the meeting's initial-sale
-        // proposal is approved). Non-null = meeting is on an existing
-        // project. Note: this is the meeting's *current* projectId —
-        // distinct from `proposal.kind`, which is the kind frozen at
-        // proposal insert. Used by UI surfaces that need project linkage
-        // (e.g., the project-creation gate in PastProposalsTable).
+        // Meeting's *current* projectId — distinct from frozen proposal.kind.
         meetingProjectId: meetings.projectId,
-        // Best-available "original contract date" for this proposal's
-        // project — drives AWD's `original-contract-date` on additional-
-        // work envelopes. Falls through `contract_sent_at → approved_at →
-        // created_at` because projects can exist before the original
-        // proposal's contract is sent (project conversion fires on
-        // approval, contract goes out after). Null only when the meeting
-        // has no project (initial-sale, where this field is unused).
+        // Original contract date for AWD envelopes. COALESCE chain order matters:
+        // project exists before original contract is sent (conversion on approval,
+        // contract after), so contract_sent_at may be null while approved_at exists.
         projectFirstContractSentAt: sql<string | null>`(
         SELECT COALESCE(MIN(p2.contract_sent_at), MIN(p2.approved_at), MIN(p2.created_at))
         FROM ${proposals} p2
@@ -160,29 +134,12 @@ export async function getFullView(
   })
 }
 
-// ── listProposals ───────────────────────────────────────────────────────
-//
-// Server-paginated proposals list. Drives the Past Proposals table and
-// the dashboard-widget recent-proposals strip. Applies `ctx.scope` for
-// visibility (null for omni callers, SQL predicate for scoped agents).
-//
-// Filters (URL-driven via the query toolkit):
-//   status:     multi-select on proposals.status
-//   kind:       multi-select on proposals.kind
-//   createdAt:  date-range on proposals.createdAt
-//   sentAt:     date-range on proposals.sentAt
-//   pipeline:   'projects' | 'fresh' | 'rehash' | 'dead' (derived)
-//   price:      number-range on derived finalTcp
-//   customerId: scope to one customer (profile modal)
-//   meetingId:  scope to one meeting (meeting overview card list)
-//
-// Search: ilike against proposals.label OR customers.name.
-// Sort whitelist: createdAt, sentAt, status, label, customerName, viewCount, price.
-// Default order: createdAt DESC.
-//
-// `price` is derived (matches `computeFinalTcp` in entities/proposals/lib):
-//   GREATEST(0, startingTcp - SUM(discount-typed incentive amounts))
-
+/**
+ * Server-paginated proposals list. Drives Past Proposals table + dashboard
+ * recent-proposals strip. Search: ilike on proposals.label OR customers.name.
+ * Sort whitelist below. Default: createdAt DESC.
+ * `price` is derived — SQL expression mirrors `computeFinalTcp`. see ../../DOCS.md#final-tcp-derived
+ */
 export async function listProposals(
   ctx: ScopedContext,
   input: ProposalListInput,
@@ -196,9 +153,7 @@ export async function listProposals(
         )
       : undefined
 
-    // Derived final contract price — mirrors `computeFinalTcp` in
-    // shared/entities/proposals/lib. Used by both the price filter and the
-    // `price` sort key below.
+    // SQL mirror of `computeFinalTcp`. see ../../DOCS.md#final-tcp-derived
     const finalTcpExpr = sql<number>`GREATEST(
       0::numeric,
       COALESCE((${proposals.fundingJSON}->'data'->>'startingTcp')::numeric, 0)
@@ -296,10 +251,7 @@ export interface ProposalViewStats {
   views: ProposalView[]
 }
 
-/**
- * Returns view stats for a proposal — total count, last viewed, breakdown
- * by source, and the raw view records ordered most-recent-first.
- */
+/** View stats for a proposal: total, last-viewed, source breakdown, raw records (newest first). */
 export async function getProposalViews(
   input: { proposalId: string },
 ): Promise<DalReturn<ProposalViewStats>> {
@@ -320,13 +272,10 @@ export async function getProposalViews(
   })
 }
 
-// ── getBySigningRequestId ──────────────────────────────────────────────
-//
-// Lookup a proposal by its Zoho Sign signing request ID (non-PK field).
-// Used by contracts.service.applyContractEvent to find the proposal
-// associated with a webhook event, then update it via generic CRUD.
-// Returns plain row — no joins needed for contract event processing.
-
+/**
+ * Lookup by Zoho `signingRequestId` (non-PK). Used by contracts service
+ * webhook handler to find the proposal for an inbound event.
+ */
 export async function getBySigningRequestId(
   ctx: ScopedContext,
   input: { signingRequestId: string },

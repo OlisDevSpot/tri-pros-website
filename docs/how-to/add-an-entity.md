@@ -102,7 +102,40 @@ export const proposalServerSpec = {
 
 ---
 
-## Step 5: Compose into the entity router
+## Step 5: Lifecycle Hooks (optional)
+
+Add hooks to your spec for data enrichment (before) and side effects (after):
+
+```ts
+hooks: {
+  create: {
+    before(input, ctx) {
+      return { ...input, ownerId: ctx.session!.user.id }
+    },
+    async after(row, ctx) {
+      await someService.onCreated(row, ctx)
+    },
+  },
+},
+```
+
+Add declarative duplicate config if the entity supports duplication:
+
+```ts
+duplicate: {
+  exclude: ['createdAt', 'updatedAt', 'status'],
+  overrides: (source, ctx) => ({
+    label: `Copy of ${source.label}`,
+    ownerId: ctx.session!.user.id,
+  }),
+},
+```
+
+Hooks should be thin orchestrators. Extract business logic to `lib/` helpers. Use existing services for orchestration. See `src/trpc/DOCS.md#lifecycle-hooks` for the full hook contract.
+
+---
+
+## Step 6: Compose into the entity router
 
 `src/trpc/routers/<entity>.router/index.ts`:
 
@@ -116,13 +149,12 @@ import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals
 export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
   createTRPCRouter({
     // CRUD sub-router — 5 single-row operations with full client type inference.
-    // Custom handlers override create/duplicate with entity-specific business logic.
+    // Lifecycle enrichment lives on spec.hooks, not in handler overrides.
     crud: createCrudRouter({
       spec: proposalServerSpec,
       schemas: { ...proposalSchemas, id: z.string().uuid() },
       authedProcedure: entity.authedProcedure,
       shareableProcedure: entity.shareableProcedure,
-      handlers: { create: customCreateDal, duplicate: customDuplicateDal },
     }),
 
     // Business sub-router — entity-specific queries (list, enriched views, etc.)
@@ -150,7 +182,7 @@ CRUD is NOT on the toolkit — call `createCrudRouter()` directly in the factory
 
 ---
 
-## Step 6: Register in the app router
+## Step 7: Register in the app router
 
 `src/trpc/routers/app.ts`:
 
@@ -163,7 +195,7 @@ export const appRouter = createTRPCRouter({
 
 ---
 
-## Step 7: Use it
+## Step 8: Use it
 
 ```ts
 // Agent caller — session has CASL read permission
@@ -183,7 +215,8 @@ trpc.proposals.crud.getById.useQuery({ id, token: shareToken })
 
 ## Common variations
 
-- **Override a CRUD handler**: pass `handlers: { create: customCreateDal }` to `createCrudRouter`. The custom handler must match `CrudHandlers<TTable, TId>` for that slot. Non-overridden slots use the generic DAL defaults from `createCrudDal(spec)`.
+- **Enrich or derive data on create/update**: use `spec.hooks.create.before` / `spec.hooks.update.before`. These run at the DAL layer before the DB write and return enriched input. Prefer hooks over handler overrides for data transformation.
+- **Override a CRUD handler** (last resort — bypasses hooks entirely): pass `handlers: { create: customCreateDal }` to `createCrudRouter`. The custom handler must match `CrudHandlers<TTable, TId>` for that slot. Non-overridden slots use the generic DAL defaults from `createCrudDal(spec)`.
 - **Non-`id` primary key** (serial integer, custom column name, etc.): set `primaryKey` on the spec and pass `id: z.number().int()` in the schemas config. Use `EntityServerSpec<typeof table, number>` for the `TId` generic.
 - **Behavior not covered by any spec field**: write it as a business procedure on the business sub-router. If the same pattern appears across 2+ entities, propose adding it as a named typed spec field — that's the promotion bar.
 - **Service-layer sub-router** (email, contracts, etc.): declare as a factory function `createDeliveryRouter(entity: EntityToolkit<TTable>)` that receives the entity toolkit and returns a tRPC router. Sub-routers get DAL handlers via `createCrudDal(spec)` directly. See `delivery.router.ts` as the reference implementation.

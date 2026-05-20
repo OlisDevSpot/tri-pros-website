@@ -3,7 +3,7 @@ import type { inferRouterOutputs } from '@trpc/server'
 import type { InitialParticipantSummary } from './types'
 import type { AppRouter } from '@/trpc/routers/app'
 
-type ParticipantsCache = inferRouterOutputs<AppRouter>['meetingsRouter']['getParticipants']
+type ParticipantsCache = inferRouterOutputs<AppRouter>['meetingsRouter']['participants']['getParticipants']
 
 /**
  * Builds a `ParticipantsCache`-shaped array from optional owner / co-owner

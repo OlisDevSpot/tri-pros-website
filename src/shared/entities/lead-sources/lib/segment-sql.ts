@@ -7,17 +7,9 @@ import { customers } from '@/shared/db/schema/customers'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
 
 /**
- * SQL predicate for the 4-state customer segmentation used by the lead-source
- * detail panel.
- *
- *   - all    → no constraint (returns undefined)
- *   - signed → has at least one project (canonical via isSignedCustomerSql)
- *   - dead   → pipeline = 'dead' AND not signed (a signed customer remains in
- *              "signed" even if pipeline later flips to dead)
- *   - active → pipeline IN ('active', 'rehash') AND not signed
- *
- * Invariant the consumer relies on: active + signed + dead === all (counts
- * partition the customer set, no double-count, no orphans).
+ * Customer segmentation predicate for the lead-source detail panel. The
+ * active/signed/dead/all partition invariant is essential for KPI accuracy.
+ * see ../DOCS.md#customer-segmentation-partition
  */
 export function buildSegmentWhere(segment: CustomerSegment | undefined): SQL | undefined {
   if (!segment || segment === 'all') {

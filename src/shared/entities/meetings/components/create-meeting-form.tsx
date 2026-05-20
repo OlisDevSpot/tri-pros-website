@@ -64,7 +64,7 @@ export function CreateMeetingForm({
   const customerProjects = profileQuery.data?.projects ?? []
 
   const createMutation = useMutation(
-    trpc.meetingsRouter.create.mutationOptions({
+    trpc.meetingsRouter.crud.create.mutationOptions({
       onSuccess: () => {
         setMeetingType('Fresh')
         setScheduledFor(undefined)
@@ -76,7 +76,7 @@ export function CreateMeetingForm({
   )
 
   const updateMutation = useMutation(
-    trpc.meetingsRouter.update.mutationOptions({
+    trpc.meetingsRouter.crud.update.mutationOptions({
       onSuccess: () => {
         onSuccess?.()
       },
@@ -94,11 +94,13 @@ export function CreateMeetingForm({
     if (isEditMode) {
       updateMutation.mutate({
         id: editMeetingId,
-        meetingType,
-        scheduledFor: scheduledFor?.toISOString(),
-        flowStateJSON: tradeSelections.length > 0
-          ? { tradeSelections }
-          : undefined,
+        data: {
+          meetingType,
+          scheduledFor: scheduledFor?.toISOString(),
+          flowStateJSON: tradeSelections.length > 0
+            ? { tradeSelections }
+            : undefined,
+        },
       })
     }
     else {

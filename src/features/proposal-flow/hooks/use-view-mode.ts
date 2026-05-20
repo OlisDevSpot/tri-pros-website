@@ -7,13 +7,8 @@ import { useAbility } from '@/shared/domains/permissions/hooks'
 export type ViewMode = 'customer' | 'agent'
 
 /**
- * Single source of truth for the proposal-flow view mode. Reads `?view`
- * and applies the CASL permission gate inside the hook so no caller can
- * accidentally bypass it: a homeowner who appends `?view=agent` to the
- * URL deterministically gets `'customer'`.
- *
- * Default (no `?view` param) is `'customer'` — agents must opt in,
- * which keeps internal data hidden by default.
+ * Customer-vs-agent view mode for the proposal flow. CASL-gated inside the hook.
+ * see ../DOCS.md#view-mode-defaults-to-customer-casl-gates-agent
  */
 export function useViewMode(): ViewMode {
   const [view] = useQueryState('view')

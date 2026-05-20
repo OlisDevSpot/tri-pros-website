@@ -34,10 +34,7 @@ export function computeSectionIncentives(section: SectionLike): number {
   return incentives(section).reduce((sum, inc) => sum + inc.amount, 0)
 }
 
-/**
- * Price − Cost − Incentives. Returns null when sectionPrice is null
- * (total-mode) or when there are no cost lines (cost unknown).
- */
+/** Price − Cost − Incentives. Null when sectionPrice is null (total-mode) or no cost lines. */
 export function computeSectionMargin(section: SectionLike): number | null {
   const price = section.financials.sectionPrice
   if (price == null) {
@@ -49,10 +46,7 @@ export function computeSectionMargin(section: SectionLike): number | null {
   return price - computeSectionCost(section) - computeSectionIncentives(section)
 }
 
-/**
- * Price ÷ Cost. Returns null when sectionPrice is null, cost is 0,
- * or there are no cost lines.
- */
+/** Price ÷ Cost. Null when sectionPrice is null, cost is 0, or no cost lines. */
 export function computeSectionMultiplier(section: SectionLike): number | null {
   const price = section.financials.sectionPrice
   if (price == null) {
@@ -76,13 +70,7 @@ export function formatMultiplier(value: number | null): string {
 
 export type MultiplierTier = 'danger' | 'healthy' | 'excellent' | 'unknown'
 
-/**
- * Classifies a multiplier for color treatment:
- * - `danger`:    < 2× — below break-even safety margin
- * - `healthy`:   2×–3× — standard residential remodeling range
- * - `excellent`: ≥ 3× — strong margin, deserves visual celebration
- * - `unknown`:   null (no data)
- */
+/** see ../DOCS.md#margin-multiplier-tiers */
 export function getMultiplierTier(value: number | null): MultiplierTier {
   if (value == null) {
     return 'unknown'

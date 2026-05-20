@@ -14,7 +14,7 @@ import { ParticipantPicker, ReadOnlyParticipantSummary } from '@/shared/entities
 import { MEETING_OUTCOME_COLORS, MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { formatDateCell } from '@/shared/lib/formatters'
 
-export type MeetingRow = AppRouterOutputs['meetingsRouter']['list']['rows'][number]
+export type MeetingRow = AppRouterOutputs['meetingsRouter']['reads']['list']['rows'][number]
 
 export interface MeetingTableMeta {
   meetingActions?: (row: MeetingRow) => EntityActionConfig<MeetingRow>[]
@@ -58,7 +58,7 @@ export const MEETING_COLUMNS = {
             hasSentProposal: row.original.hasSentProposal ?? false,
             hasApprovedProposal: row.original.hasApprovedProposal ?? false,
           })}
-          onChange={outcome => meta?.onUpdateOutcome?.(row.original.id, outcome)}
+          onChange={outcome => meta?.onUpdateOutcome?.(row.original.id, outcome as MeetingOutcome)}
         />
       )
     },

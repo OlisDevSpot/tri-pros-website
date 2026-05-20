@@ -1,18 +1,4 @@
-// ─── Shareable Middleware ───────────────────────────────────────────────────
-// Middleware factory for shareable entities (e.g., proposals with token URLs).
-//
-// Two paths:
-// - **Token present**: validates token against entity table, injects scope as
-//   `eq(tokenColumn, input.token)`. CASL checks skipped — token IS authorization.
-//   `ability` is null on ctx.
-// - **Session present, no token**: requires session, builds ability, resolves
-//   scope from spec.visibility(userId). Normal authenticated flow.
-// - **Neither**: throws UNAUTHORIZED.
-//
-// Uses `createMiddleware` (t.middleware) so tRPC natively tracks ctx
-// transformation — downstream procedures see scope/ability without casts.
-//
-// Chain on baseProcedure (no session required for token path).
+// Token-or-session dual-credential middleware. see ../../DOCS.md#shareable-middleware-token-or-session
 
 import type { PgColumn } from 'drizzle-orm/pg-core'
 
@@ -24,13 +10,7 @@ import { eq } from 'drizzle-orm'
 import { defineAbilitiesFor } from '@/shared/domains/permissions/abilities'
 import { createMiddleware } from '@/trpc/init'
 
-/**
- * Builds a shareable-access middleware for the given entity spec.
- *
- * Token path: sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`.
- * Session path: builds ability, resolves scope from `spec.visibility(userId)`.
- * Neither: throws UNAUTHORIZED.
- */
+/** Token path → eq(tokenColumn, token) + ability null. Session path → normal scope resolution. */
 export function shareableMiddleware(spec: EntityServerSpec) {
   // Cast: Drizzle's PgTable type doesn't expose columns as a keyed record.
   // Dynamic column lookup by name (from spec.shareable.tokenColumn) requires

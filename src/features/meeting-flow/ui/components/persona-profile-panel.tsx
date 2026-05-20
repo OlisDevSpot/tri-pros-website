@@ -200,7 +200,7 @@ export function PersonaProfilePanel({ isOpen, meetingId, onOpenChange }: Persona
   const trpc = useTRPC()
 
   const profileQuery = useQuery(
-    trpc.meetingsRouter.getPersonaProfile.queryOptions(
+    trpc.meetingFlowRouter.getPersonaProfile.queryOptions(
       { meetingId },
       { enabled: isOpen },
     ),

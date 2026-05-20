@@ -121,7 +121,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         options: MEETING_OUTCOME_OPTIONS,
         getCurrentValue: (entity: T) => entity.meetingOutcome ?? 'not_set',
         onSelect: (entity: T, value: string) => {
-          updateOutcome.mutate({ id: entity.id, meetingOutcome: value as MeetingOutcome })
+          updateOutcome.mutate({ id: entity.id, data: { meetingOutcome: value as MeetingOutcome } })
         },
         isLoading: updateOutcome.isPending,
       },

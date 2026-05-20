@@ -27,9 +27,12 @@ export const customers = pgTable('customers', {
   leadSourceId: uuid('lead_source_id').references(() => leadSourcesTable.id, { onDelete: 'set null' }),
   leadType: leadTypeEnum('lead_type'),
   leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),
-  /** @deprecated Pipeline now lives on meetings.pipeline. Will be removed after backfill migration. */
+  // Coarse 3-bucket customer-level pipeline. UI uses a 5-bucket derived
+  // classification that explodes `active` based on downstream records.
+  // see src/shared/entities/customers/DOCS.md#derived-5-bucket-pipeline
   pipeline: customerPipelineEnum('pipeline').notNull().default('active'),
-  /** Lead stage for customers with no meetings (leads pipeline). Default: 'new'. */
+  // Lead-funnel stage for customers in the `leads` derived pipeline (no meetings yet).
+  // see src/shared/entities/customers/DOCS.md#pipeline-stage-only-for-leads
   pipelineStage: text('pipeline_stage'),
   syncedAt: timestamp('synced_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   createdAt,

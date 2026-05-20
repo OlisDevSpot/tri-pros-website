@@ -1,35 +1,6 @@
-// ─── createEntityRouter ─────────────────────────────────────────────────────
-// Top-level composer. Takes an EntityServerSpec and a factory function that
-// receives pre-scoped tRPC procedures. The factory returns a router.
-//
-// The toolkit provides pre-scoped tRPC procedures for building sub-routers:
-//   - `authedProcedure`     — agentProcedure + scope middleware
-//   - `shareableProcedure`  — baseProcedure + shareable middleware (token-or-session)
-//   - `publicProcedure`     — baseProcedure pass-through
-//   - `spec`                — the entity spec itself
-//
-// CRUD sub-router: call `createCrudRouter()` directly in the factory with
-// concrete schemas. This preserves full tRPC type inference — the return
-// type flows through the object literal into TRouter.
-//
-// Usage:
-// ```ts
-// export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =>
-//   createTRPCRouter({
-//     crud: createCrudRouter({
-//       spec: proposalServerSpec,
-//       schemas: { ...proposalSchemas, id: z.string().uuid() },
-//       authedProcedure: entity.authedProcedure,
-//       shareableProcedure: entity.shareableProcedure,
-//       handlers: { create: proposalCreateDal },
-//     }),
-//     business: createTRPCRouter({ ... }),
-//     delivery: createDeliveryRouter(entity),
-//   })
-// )
-// ```
-//
+// Top-level entity-router composer. see ../DOCS.md#entity-router-via-factory
 // Side effect on call: registerEntity(spec). Duplicate registration throws.
+// Canonical usage: src/trpc/routers/proposals.router/index.ts
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 
@@ -45,13 +16,10 @@ import { shareableMiddleware } from './middleware/shareable-middleware'
 type AnyRouter = ReturnType<typeof createTRPCRouter>
 
 /**
- * Entity toolkit — pre-scoped procedures provided to the entity's factory
- * function and sub-router factories. These are NOT custom abstractions:
- * each procedure IS a real tRPC procedure with full type inference and
- * middleware composability.
- *
- * CRUD sub-router is NOT on the toolkit — call `createCrudRouter()` directly
- * in the factory function to preserve full type inference.
+ * Entity toolkit handed to the factory function. Real tRPC procedures, not
+ * custom abstractions — full type inference + middleware composability.
+ * CRUD is NOT on the toolkit — call `createCrudRouter()` directly in the
+ * factory to preserve full type inference.
  */
 export interface EntityToolkit<TTable extends PgTable> {
   /** Agent-only procedure with visibility scope resolved. */

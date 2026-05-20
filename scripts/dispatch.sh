@@ -96,6 +96,80 @@ worktree_path() {
   echo "${WORKTREE_DIR}/issue-${issue_num}"
 }
 
+# Sync local `main` with `origin/main` so worktrees branch from fresh base.
+# Returns 0 if main is safely usable, 1 otherwise (caller should exit).
+ensure_main_synced() {
+  log "Fetching latest origin/main"
+  if ! git -C "${REPO_ROOT}" fetch origin main 2>/dev/null; then
+    error "Failed to fetch origin/main. Check network/auth and retry."
+    return 1
+  fi
+
+  local local_main origin_main
+  local_main=$(git -C "${REPO_ROOT}" rev-parse main 2>/dev/null || echo "")
+  origin_main=$(git -C "${REPO_ROOT}" rev-parse origin/main 2>/dev/null || echo "")
+
+  if [[ -z "$origin_main" ]]; then
+    error "Could not resolve origin/main. Is the remote configured?"
+    return 1
+  fi
+
+  # No local main yet — create it pointing at origin/main.
+  if [[ -z "$local_main" ]]; then
+    git -C "${REPO_ROOT}" branch main "$origin_main" >/dev/null 2>&1 || {
+      error "Failed to create local main from origin/main."
+      return 1
+    }
+    log "Created local main from origin/main"
+    return 0
+  fi
+
+  # Already in sync — nothing to do.
+  if [[ "$local_main" == "$origin_main" ]]; then
+    log "Local main is up to date with origin/main"
+    return 0
+  fi
+
+  # Behind-only: fast-forward local main.
+  if git -C "${REPO_ROOT}" merge-base --is-ancestor "$local_main" "$origin_main" 2>/dev/null; then
+    local current_branch
+    current_branch=$(git -C "${REPO_ROOT}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+    if [[ "$current_branch" == "main" ]]; then
+      if ! git -C "${REPO_ROOT}" diff --quiet HEAD -- 2>/dev/null; then
+        error "Local main has uncommitted changes. Commit or stash before dispatching:"
+        error "  cd ${REPO_ROOT} && git status"
+        return 1
+      fi
+      git -C "${REPO_ROOT}" merge --ff-only origin/main >/dev/null 2>&1 || {
+        error "Failed to fast-forward local main."
+        return 1
+      }
+    else
+      # HEAD is elsewhere — safe to update the `main` ref directly via fetch.
+      # `fetch origin main:main` only succeeds on a fast-forward.
+      git -C "${REPO_ROOT}" fetch origin main:main >/dev/null 2>&1 || {
+        error "Failed to fast-forward local main."
+        return 1
+      }
+    fi
+    success "Fast-forwarded local main to origin/main"
+    return 0
+  fi
+
+  # Ahead-only: local has unpushed commits. User intent ambiguous — warn and proceed.
+  if git -C "${REPO_ROOT}" merge-base --is-ancestor "$origin_main" "$local_main" 2>/dev/null; then
+    warn "Local main has unpushed commits ahead of origin/main."
+    warn "Worktree will branch from local main (not origin/main)."
+    return 0
+  fi
+
+  # Diverged: commits on both sides. Refuse to create worktree on stale base.
+  error "Local main has diverged from origin/main (commits on both sides)."
+  error "Resolve before dispatching:"
+  error "  cd ${REPO_ROOT} && git checkout main && git pull --rebase"
+  return 1
+}
+
 # Check if an issue is already dispatched
 is_dispatched() {
   local issue_num="$1"
@@ -719,6 +793,11 @@ cmd_start() {
 
   log "Dispatching issue #${issue_num}: ${BOLD}${title}${NC}"
   echo ""
+
+  # Step 0: Sync local main with origin/main before branching from it.
+  # Prevents dispatched worktrees from being created on stale main, which
+  # leads to needless merge conflicts at PR time. Bails on diverged history.
+  ensure_main_synced || exit 1
 
   # Step 1: Create worktree
   log "Creating worktree at ${DIM}${wt_path}${NC}"

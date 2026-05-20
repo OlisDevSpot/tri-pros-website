@@ -26,7 +26,11 @@ An **Entity Server System** with five pieces:
 
 ### 1. EntityServerSpec
 
-A typed declaration per entity at `entities/<entity>/lib/server-spec.ts`. A single interface with required `caslSubject` and `visibility` — every entity is a top-level identity. Named typed config fields for cross-entity patterns: `shareable: { tokenColumn }` (dual-credential access via share token, covers getById AND update), `update.jsonbMergeColumns` (deep-merge JSONB columns instead of replace), `primaryKey` (override default `'id'`). No callback functions in the spec except the visibility predicate — the spec is data, not behavior.
+A typed declaration per entity at `entities/<entity>/lib/server-spec.ts`. A single interface with required `caslSubject` and `visibility` — every entity is a top-level identity. Named typed config fields for cross-entity patterns: `shareable: { tokenColumn }` (dual-credential access via share token, covers getById AND update), `update.jsonbMergeColumns` (deep-merge JSONB columns instead of replace), `primaryKey` (override default `'id'`).
+
+**Lifecycle hooks** live on `spec.hooks`, organized by operation (`create`, `update`, `delete`), each with optional `before` and `after` callbacks. `before` runs at the DAL layer before the DB write (data enrichment, derivation) and returns the enriched input. `after` runs after the DB write (side effects — services, notifications, realtime events) and returns `void`. Both are async-capable. This follows the same before+after-at-the-same-layer pattern used by better-auth (`databaseHooks`), Payload CMS (`beforeChange`/`afterChange`), and Prisma client extensions.
+
+**Declarative duplicate config** lives on `spec.duplicate` with `exclude` (columns to omit) and `overrides` (a function returning override values). Duplicating routes through `createImpl` so `hooks.create.before/after` fire automatically — no separate duplicate hook needed.
 
 ### 2. Standardized DAL
 
@@ -136,7 +140,7 @@ Each entity's identity string lives in `entities/<entity>/lib/constants.ts`; `do
 
 ## Consequences
 
-- **Standardize DAL first, then tRPC.** The execution order matters. DAL standardization creates reusable data-access functions; tRPC becomes a thin wrapper calling them. This reverses the Phase 1a approach (which started at tRPC and worked down).
+- **Standardize DAL first, then tRPC.** The execution order matters. DAL standardization creates reusable data-access functions; tRPC and the services layer become thin orchestration wrappers calling them. This reverses the Phase 1a approach (which started at tRPC and worked down).
 
 - **Migration order: Proposal → Customer → Meeting → Project.** Proposals first as the highest-learning entity (shareable + JSONB merge + dual-credential). Each migration: create/standardize DAL → wire entity router → update client call sites. Each is a single PR.
 

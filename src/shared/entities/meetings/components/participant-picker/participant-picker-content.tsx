@@ -47,10 +47,10 @@ export function ParticipantPickerContent({
   const lockHintId = useId()
 
   const participantsQuery = useQuery(
-    trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
+    trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId }),
   )
   const internalUsersQuery = useQuery(
-    trpc.meetingsRouter.getInternalUsers.queryOptions(),
+    trpc.meetingsRouter.reads.getInternalUsers.queryOptions(),
   )
 
   const { pendingUserId, addMutation, add, remove, promoteToOwner } = useParticipantMutations({ meetingId })

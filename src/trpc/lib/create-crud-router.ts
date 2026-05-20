@@ -1,17 +1,6 @@
-// ─── createCrudRouter (CRUD Sub-router) ─────────────────────────────────────
-// Thin tRPC sub-router that maps 5 CRUD slots to tRPC procedures.
-// Receives pre-scoped procedures from the entity router and concrete Zod
-// schemas for full type inference. Each slot wires:
-//   - CASL action gate (action <- slot, subject <- spec.caslSubject)
-//   - Zod input validation from concrete schemas (not type-erased spec)
-//   - DAL handler call (default from createCrudDal, overridable per-slot)
-//   - DalReturn → TRPCError via dalToTrpc
-//
-// The router is a static object literal — all 5 slots always present.
-// TypeScript infers the full router shape for end-to-end client type safety.
-//
-// `spec.shareable` controls whether `getById` and `update` use the shareable
-// procedure (token-or-session) or the authed procedure (session-only).
+// CRUD sub-router factory — 5 single-row operations. see ../DOCS.md#crud-five-slots-fixed
+// Each slot wires: CASL action gate + Zod input + DAL handler + dalToTrpc bridge.
+// spec.shareable controls whether getById/update use shareable vs authed procedure.
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 
@@ -55,7 +44,13 @@ export interface CreateCrudRouterConfig<
   authedProcedure: typeof agentProcedure
   /** Pre-scoped shareable procedure (baseProcedure + shareable middleware). */
   shareableProcedure: typeof baseProcedure
-  /** Override individual CRUD handlers. Merged with createCrudDal defaults. */
+  /**
+   * Override individual CRUD handlers. Merged with createCrudDal defaults.
+   * ⚠️ Overrides BYPASS spec.hooks entirely — the override replaces the
+   * full DAL function including its before/after hook invocations.
+   * Prefer spec.hooks for data enrichment; use this only when the entire
+   * operation must be replaced.
+   */
   handlers?: Partial<CrudHandlers<TTable, TId>>
 }
 
@@ -110,7 +105,8 @@ export function createCrudRouter<
         // intentionally .omit()s server-derived fields (e.g. kind, token). The
         // custom create handler adds them before inserting. Two independent type
         // systems (Zod + Drizzle) — can't be bridged without coupling DAL to Zod.
-        return dalToTrpc(await handlers.create(ctx, input as Insert<TTable>))
+        const row = dalToTrpc(await handlers.create(ctx, input as Insert<TTable>))
+        return row
       }),
 
     update: updateProcedure
@@ -122,7 +118,9 @@ export function createCrudRouter<
         // Cast: Zod 4 can't resolve generic TUpdate output type in z.object({ data: TUpdate }).
         // The schema validates at runtime; this tells TS the shape matches CrudHandlers.
         const { id, data } = input as { id: TId, data: z.output<TUpdate>, token?: string }
-        return dalToTrpc(await handlers.update(ctx, { id, data }))
+
+        const row = dalToTrpc(await handlers.update(ctx, { id, data }))
+        return row
       }),
 
     delete: config.authedProcedure
@@ -136,7 +134,8 @@ export function createCrudRouter<
       .input(idOnlyInput)
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'duplicate', config.spec)
-        return dalToTrpc(await handlers.duplicate(ctx, { id: input.id }))
+        const row = dalToTrpc(await handlers.duplicate(ctx, { id: input.id }))
+        return row
       }),
   })
 }
