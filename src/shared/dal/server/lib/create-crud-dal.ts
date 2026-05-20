@@ -66,12 +66,12 @@ async function getByIdImpl<TTable extends PgTable>(
 
 async function createImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
-  _ctx: ScopedContext,
+  ctx: ScopedContext,
   input: Insert<TTable>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
-    const enriched = spec.hooks?.beforeCreate
-      ? spec.hooks.beforeCreate(input)
+    const enriched = spec.hooks?.create?.before
+      ? await spec.hooks.create.before(input, ctx)
       : input
     const validated = spec.schemas.insert.parse(enriched) as Insert<TTable>
     const [row] = await db
@@ -81,6 +81,11 @@ async function createImpl<TTable extends PgTable>(
     if (!row) {
       throw new ThrowableDalError({ type: 'create-failed' })
     }
+
+    if (spec.hooks?.create?.after) {
+      await spec.hooks.create.after(row as Row<TTable>, ctx)
+    }
+
     return row as Row<TTable>
   })
 }
@@ -94,9 +99,19 @@ async function updateImpl<TTable extends PgTable>(
   input: { id: string | number, data: Update<TTable> },
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
-    const enrichedData = spec.hooks?.beforeUpdate
-      ? spec.hooks.beforeUpdate(input.data)
+    const enrichedData = spec.hooks?.update?.before
+      ? await spec.hooks.update.before(input.data, ctx)
       : input.data
+
+    // Fetch previousRow only when after hook needs it (one extra SELECT)
+    let previousRow: Row<TTable> | undefined
+    if (spec.hooks?.update?.after) {
+      const prev = await getByIdImpl(spec, pkColumn, ctx, { id: input.id })
+      if (prev.success) {
+        previousRow = prev.data as Row<TTable> | undefined
+      }
+    }
+
     const validated = spec.schemas.update.parse(enrichedData) as Update<TTable>
     const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
     const [row] = await db
@@ -107,6 +122,14 @@ async function updateImpl<TTable extends PgTable>(
     if (!row) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
+
+    if (spec.hooks?.update?.after && previousRow) {
+      await spec.hooks.update.after(row as Row<TTable>, ctx, {
+        previousRow,
+        input: input.data,
+      })
+    }
+
     return row as Row<TTable>
   })
 }
@@ -120,6 +143,10 @@ async function deleteImpl<TTable extends PgTable>(
   input: { id: string | number },
 ): Promise<DalReturn<void>> {
   return dalDbOperation(async () => {
+    if (spec.hooks?.delete?.before) {
+      await spec.hooks.delete.before(input.id, ctx)
+    }
+
     const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
     const deleted = await db
       .delete(spec.table as PgTable)
@@ -127,6 +154,10 @@ async function deleteImpl<TTable extends PgTable>(
       .returning({ id: pkColumn })
     if (deleted.length === 0) {
       throw new ThrowableDalError({ type: 'not-found' })
+    }
+
+    if (spec.hooks?.delete?.after) {
+      await spec.hooks.delete.after(input.id, ctx)
     }
   })
 }
@@ -139,33 +170,33 @@ async function duplicateImpl<TTable extends PgTable>(
   ctx: ScopedContext,
   input: { id: string | number },
 ): Promise<DalReturn<Row<TTable>>> {
-  return dalDbOperation(async () => {
-    const srcResult = await getByIdImpl(spec, pkColumn, ctx, input)
-    if (!srcResult.success) {
-      throw new ThrowableDalError(srcResult.error)
-    }
-    const source = srcResult.data
-    if (!source) {
-      throw new ThrowableDalError({ type: 'not-found' })
-    }
-    let values: Record<string, unknown>
-    if (spec.hooks?.beforeDuplicate) {
-      values = spec.hooks.beforeDuplicate(source) as Record<string, unknown>
-    }
-    else {
-      const pkName = spec.primaryKey ?? 'id'
-      const { [pkName]: _droppedPk, ...rest } = source as Record<string, unknown>
-      values = rest
-    }
-    const [row] = await db
-      .insert(spec.table as PgTable)
-      .values(values as Record<string, unknown>)
-      .returning()
-    if (!row) {
-      throw new ThrowableDalError({ type: 'duplicate-failed' })
-    }
-    return row as Row<TTable>
-  })
+  // 1. Fetch source row
+  const srcResult = await getByIdImpl(spec, pkColumn, ctx, input)
+  if (!srcResult.success) {
+    return srcResult
+  }
+  const source = srcResult.data
+  if (!source) {
+    return { success: false, error: { type: 'not-found' } }
+  }
+
+  // 2. Copy full row, drop PK + excluded fields
+  const pkName = spec.primaryKey ?? 'id'
+  const excludeSet = new Set<string>([
+    pkName,
+    ...(spec.duplicate?.exclude ?? []),
+  ])
+  const base = Object.fromEntries(
+    Object.entries(source as Record<string, unknown>)
+      .filter(([key]) => !excludeSet.has(key)),
+  )
+
+  // 3. Apply overrides
+  const overrides = spec.duplicate?.overrides?.(source, ctx) ?? {}
+  const insertData = { ...base, ...overrides } as Insert<TTable>
+
+  // 4. Route through createImpl — create.before + create.after fire automatically
+  return createImpl(spec, ctx, insertData)
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────
