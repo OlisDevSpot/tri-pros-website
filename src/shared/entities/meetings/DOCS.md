@@ -90,7 +90,7 @@ When a proposal is sent on a meeting, the meeting's outcome **conditionally** fl
 `meetings.flowStateJSON.tradeSelections` is the meeting-time scope picker output. On proposal creation, the create handler snapshots these into the proposal's SOW (`projectJSON.data.sow`). After snapshot, the proposal SOW is independent.
 
 **Why**: the agent picks trades during the meeting; that picks-list flows into the first proposal as a starting point. Once the proposal exists, the agent edits the SOW independently — re-pulling from meeting state would erase their work.
-**Reference impl**: `../proposals/dal/server/mutations.ts:proposalCreateDal` (the snapshot step); `dal/server/google-calendar.ts:getMeetingForGCal` (also reads tradeSelections for the GCal event description)
+**Reference impl**: `../proposals/lib/server-spec.ts:hooks.create.before` (the snapshot step, reads meeting via `meetingCrud.getById`); `dal/server/google-calendar.ts:getMeetingForGCal` (also reads tradeSelections for the GCal event description)
 **Enforced by**: convention
 
 ### gcal-sync-state-fields

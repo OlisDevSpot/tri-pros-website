@@ -28,7 +28,7 @@ Status transitions are convention-enforced in handlers; no DB CHECK constraint g
 `proposal.kind` is `'initial-sale'` if the meeting has no project at insert time, `'additional-work'` if it does. Server-derived from `meeting.projectId` — never accepted as client input.
 
 **Why**: kind is an aggregate of project linkage; agents can't pick it independently of the meeting's project state without drift.
-**Reference impl**: `lib/derive-proposal-kind.ts`, applied in `dal/server/mutations.ts:proposalCreateDal`
+**Reference impl**: `lib/derive-proposal-kind.ts`, applied in `lib/server-spec.ts:hooks.create.before`
 **Enforced by**: `insertProposalSchema.omit({ kind: true })` + server derivation
 
 ### kind-frozen-after-insert
@@ -44,7 +44,7 @@ Once set at insert, `kind` is never re-derived. If the meeting later acquires a 
 Every proposal gets a unique share token at insert: `tpr-{16 random hex}`. Stored on `proposals.token`. Tokens are permanent — never rotated, never expired.
 
 **Why**: a customer needs to view their proposal without logging in; the token IS the authorization for that read. Permanence means the URL emailed once stays valid.
-**Reference impl**: `dal/server/mutations.ts:proposalCreateDal` (generation); `lib/server-spec.ts` (`shareable.tokenColumn`)
+**Reference impl**: `lib/server-spec.ts:hooks.create.before` (generation); `lib/server-spec.ts` (`shareable.tokenColumn`)
 **Enforced by**: server-derived; `token` omitted from `insertProposalSchema`
 
 ### sow-snapshot-from-meeting-on-create
@@ -52,7 +52,7 @@ Every proposal gets a unique share token at insert: `tpr-{16 random hex}`. Store
 When creating a proposal, if the meeting has `flowStateJSON.tradeSelections` and the input has no existing SOW, the create handler snapshots trade selections into `projectJSON.data.sow`. After creation, the SOW is independent of the meeting's trade selections.
 
 **Why**: the agent's meeting-time scope picks should flow into the proposal as a starting point — but the proposal is the contract; once authored, it can't be retroactively re-driven by the meeting state.
-**Reference impl**: `dal/server/mutations.ts:proposalCreateDal` (steps 3–4)
+**Reference impl**: `lib/server-spec.ts:hooks.create.before` (reads meeting via `meetingCrud.getById`, snapshots tradeSelections)
 **Enforced by**: convention
 
 ### shareable-via-token
@@ -179,11 +179,11 @@ Cost helpers return `null` (not 0) when cost data is incomplete — distinguishe
 
 ### duplicate-resets-and-redrives
 
-Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived (duplicate calls `proposalCreateDal` internally). Only the JSONB content (`formMetaJSON`, `projectJSON`, `fundingJSON`) and `financeOptionId` / `meetingId` are copied.
+Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived via `hooks.create.before` (which fires automatically because duplicate routes through `createImpl`). Only the JSONB content (`formMetaJSON`, `projectJSON`, `fundingJSON`) and `financeOptionId` / `meetingId` are copied via `spec.duplicate.exclude` + `spec.duplicate.overrides`.
 
 **Why**: a duplicate is "start a new proposal from this template," not "clone." Server-derivation prevents the duplicate from inheriting stale state (wrong kind if the meeting has changed projects, an existing-but-disclosed share token, etc.).
-**Reference impl**: `dal/server/mutations.ts:proposalDuplicateDal`
-**Enforced by**: implementation (manual `Insert` shape)
+**Reference impl**: `lib/server-spec.ts:duplicate` (exclude + overrides config); `lib/server-spec.ts:hooks.create.before` (kind + token derivation fires on every create, including duplicates)
+**Enforced by**: declarative duplicate config on the spec
 
 ## Anti-patterns
 

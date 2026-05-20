@@ -63,7 +63,7 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
       schemas: { ...proposalSchemas, id: z.string().uuid() },
       authedProcedure: entity.authedProcedure,
       shareableProcedure: entity.shareableProcedure,
-      handlers: { create: proposalCreateDal, duplicate: proposalDuplicateDal },
+      // No handler overrides — lifecycle hooks on the spec handle enrichment.
     }),
     business: createTRPCRouter({ ... }),
     delivery: createDeliveryRouter(entity),
@@ -120,6 +120,33 @@ Handler code receives `ctx.scope` either way and applies it identically. The han
 **Why**: customer e-signature flow needs unauthenticated read/update. Treating token as scope means the DAL is unchanged from the authed path; only middleware differs.
 **Reference impl**: `src/trpc/lib/middleware/shareable-middleware.ts`
 **Enforced by**: ADR-0002; convention
+
+## Lifecycle Hooks
+
+Entity lifecycle hooks execute at the DAL layer — both before and after database writes. All hooks live on `EntityServerSpec.hooks`, organized by operation (`create`, `update`, `delete`).
+
+### Hook Contract
+
+| | `before` | `after` |
+|---|---|---|
+| **Async** | Yes (`Promise<T> \| T`) | Yes (`Promise<void>`) |
+| **Purpose** | Data transformation, enrichment | Side effects (services, notifications, realtime) |
+| **DB access** | Via DAL functions only (never naked `db`) | Via DAL functions only |
+| **Context** | `ScopedContext` | `ScopedContext` |
+| **Return** | Enriched input data | void |
+| **Error** | Throw to abort | Hook impl decides: `await` (critical) vs `void .catch()` (best-effort) |
+
+### Rules
+
+- **Hooks are thin orchestrators.** Pure business logic in `entities/<entity>/lib/`. Service orchestration via existing services.
+- **Never use naked `db` in hooks.** All DB access through DAL functions.
+- **`ScopedContext` always.** `ctx.session` may be null when called from jobs/services.
+- **`duplicate` is declarative config, not a hook.** Lives on `spec.duplicate` with `exclude` + `overrides`. Routes through `createImpl` so create hooks fire automatically.
+- **`handlers` overrides bypass hooks entirely.** Use only when the full operation must be replaced.
+
+### Framework Precedent
+
+Follows better-auth (`databaseHooks`), Payload CMS (collection `beforeChange`/`afterChange`), and Prisma (client extensions) — all keep before+after at the same layer.
 
 ### crud-five-slots-fixed
 

@@ -99,6 +99,16 @@ Client-side custom hook wrappers only when the query is reused in 2+ places. For
 **Reference impl**: `src/shared/dal/client/hooks/`
 **Enforced by**: convention
 
+## Lifecycle Hooks
+
+The DAL layer is the hook execution engine for all entity lifecycle hooks. Both `before` and `after` hooks execute inside `createCrudDal` functions.
+
+- Hooks can call other DAL functions (via `SYSTEM_CONTEXT` or passed `ctx`)
+- Never use naked `db` in hooks — always go through DAL
+- `before` hooks return type: `Promise<T> | T` (sync enrichment still works)
+- `after` hooks return type: `Promise<void>` (fire-and-forget decided by hook impl)
+- All hooks receive `ScopedContext` — handle `ctx.session` being null for jobs/services
+
 ## Anti-patterns
 
 - **Throwing in DAL** (`throw new Error('not found')`). Use `dalError({ type: 'not-found' })`.
