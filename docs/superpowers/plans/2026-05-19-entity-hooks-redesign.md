@@ -624,10 +624,13 @@ After the `update: { jsonbMergeColumns: [...] }` property, add:
       // see ../DOCS.md#share-token-generated-at-insert
       // see ../DOCS.md#sow-snapshot-from-meeting-on-create
       async before(input, ctx) {
-        const meeting = input.meetingId
-          ? dalVerifySuccess(await meetingCrud.getById(SYSTEM_CONTEXT, { id: input.meetingId as string }))
-          : null
+        if (!input.meetingId) {
+          return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }
+        }
 
+        const meeting = dalVerifySuccess(
+          await meetingCrud.getById(SYSTEM_CONTEXT, { id: input.meetingId }),
+        )
         const kind = deriveProposalKind(meeting?.projectId ?? null)
         const token = generateShareToken()
         const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)
