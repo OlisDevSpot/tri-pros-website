@@ -1,5 +1,6 @@
-import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
 import type { PgTable } from 'drizzle-orm/pg-core'
+
+import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
 
 import { TRPCError } from '@trpc/server'
 import { inArray } from 'drizzle-orm'

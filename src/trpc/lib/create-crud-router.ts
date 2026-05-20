@@ -48,12 +48,16 @@ export interface CreateCrudRouterConfig<
   handlers?: Partial<CrudHandlers<TTable, TId>>
   /** Post-write lifecycle callbacks. Async — can call services, other DALs, fire-and-forget. */
   lifecycle?: {
+    // eslint-disable-next-line ts/method-signature-style -- bivariant method signatures required for generic TTable assignability
     onCreated?(ctx: AuthedContext, row: Row<TTable>): Promise<void>
+    // eslint-disable-next-line ts/method-signature-style
     onUpdated?(ctx: AuthedContext, row: Row<TTable>, meta: {
       previousRow: Row<TTable>
       input: { id: TId, data: Update<TTable> }
     }): Promise<void>
+    // eslint-disable-next-line ts/method-signature-style
     onDeleted?(ctx: AuthedContext, input: { id: TId }): Promise<void>
+    // eslint-disable-next-line ts/method-signature-style
     onDuplicated?(ctx: AuthedContext, row: Row<TTable>, sourceId: TId): Promise<void>
   }
 }

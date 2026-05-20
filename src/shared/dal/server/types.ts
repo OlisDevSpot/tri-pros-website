@@ -80,10 +80,11 @@ export interface EntityServerSpec<
   /** Sync data-enrichment hooks. Run inside createCrudDal default handlers only. */
   hooks?: {
     /** Enrich input before insert. Pure sync — no async, no DB reads, no services. */
+    // eslint-disable-next-line ts/method-signature-style -- bivariant method signatures required for EntityServerSpec<Table> → EntityServerSpec<PgTable> assignability
     beforeCreate?(input: Insert<TTable>): Insert<TTable>
-    /** Enrich data before update. Pure sync — no async, no DB reads, no services. */
+    // eslint-disable-next-line ts/method-signature-style
     beforeUpdate?(data: Update<TTable>): Update<TTable>
-    /** Cherry-pick fields from source row for duplicate. Pure sync. */
+    // eslint-disable-next-line ts/method-signature-style
     beforeDuplicate?(source: Row<TTable>): Partial<Insert<TTable>>
   }
 }
