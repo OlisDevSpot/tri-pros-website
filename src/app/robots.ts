@@ -6,8 +6,18 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/api'],
+        disallow: [
+          '/admin',
+          '/api',
+          '/auth-flow',
+          '/dashboard',
+          '/intake',
+          '/proposal-flow',
+          '/tests',
+        ],
       },
     ],
+    sitemap: 'https://triprosremodeling.com/sitemap.xml',
+    host: 'https://triprosremodeling.com',
   }
 }

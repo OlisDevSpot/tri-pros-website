@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import process from 'node:process'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/shared/components/providers'
 import { PwaSplashScreen } from '@/shared/components/splash-screen/pwa-splash-screen'
@@ -36,9 +37,13 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://triprosremodeling.com'),
   title: {
     default: 'Tri Pros Remodeling',
     template: '%s | Tri Pros Remodeling',
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
   icons: {
     icon: [
@@ -58,33 +63,35 @@ export const metadata: Metadata = {
     title: 'TPR',
     statusBarStyle: 'black-translucent',
   },
-  description: 'Premium construction services for discerning homeowners and businesses who demand excellence. 25+ years experience building architectural masterpieces that stand the test of time.',
-  keywords: 'luxury construction, custom homes, premium renovations, commercial construction, elite builders',
+  description: 'Family-led residential construction company serving Southern California homeowners. Kitchen and bathroom remodels, ADU construction, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
   authors: [{ name: 'Tri Pros Remodeling' }],
   creator: 'Tri Pros Remodeling',
+  publisher: 'Tri Pros Remodeling',
   openGraph: {
-    title: 'Tri Pros Remodeling | Crafting Architectural Masterpieces',
-    description: 'Premium construction services for discerning homeowners and businesses who demand excellence and require tailored results.',
+    title: 'Tri Pros Remodeling | Kitchen, Bath, ADU & Home Remodeling in SoCal',
+    description: 'Family-led residential construction company. Kitchen and bathroom remodels, ADU construction, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
+    url: 'https://triprosremodeling.com',
+    siteName: 'Tri Pros Remodeling',
     type: 'website',
     locale: 'en_US',
     images: [
       {
         url: '/company/logo/opengraph-image.png',
-        width: 629,
-        height: 313,
-      },
-      {
-        url: '/company/logo/opengraph-image-2.jpg',
-        width: 800,
-        height: 800,
+        width: 1200,
+        height: 630,
+        alt: 'Tri Pros Remodeling — Kitchen, Bath, ADU and Home Remodeling in Southern California',
+        type: 'image/png',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tri Pros Remodeling | Luxury Custom Homes',
-    description:
-      'Premium construction services for discerning homeowners and businesses who demand excellence.',
+    title: 'Tri Pros Remodeling | Kitchen, Bath, ADU & Home Remodeling in SoCal',
+    description: 'Family-led residential construction company. Kitchen and bathroom remodels, ADU construction, garage conversions, and home additions across the San Fernando Valley, San Gabriel Valley, and Greater Los Angeles.',
+    images: ['/company/logo/opengraph-image.png'],
+  },
+  alternates: {
+    canonical: 'https://triprosremodeling.com',
   },
   robots: {
     index: true,
