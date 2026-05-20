@@ -4,10 +4,10 @@
 
 import type { PgTable } from 'drizzle-orm/pg-core'
 
-import type { Insert, Row, Update } from '@/shared/db/types'
+import type { Insert } from '@/shared/db/types'
 import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 import type { agentProcedure, baseProcedure } from '@/trpc/init'
-import type { AuthedContext, CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
+import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
@@ -44,22 +44,14 @@ export interface CreateCrudRouterConfig<
   authedProcedure: typeof agentProcedure
   /** Pre-scoped shareable procedure (baseProcedure + shareable middleware). */
   shareableProcedure: typeof baseProcedure
-  /** Override individual CRUD handlers. Merged with createCrudDal defaults. */
+  /**
+   * Override individual CRUD handlers. Merged with createCrudDal defaults.
+   * ⚠️ Overrides BYPASS spec.hooks entirely — the override replaces the
+   * full DAL function including its before/after hook invocations.
+   * Prefer spec.hooks for data enrichment; use this only when the entire
+   * operation must be replaced.
+   */
   handlers?: Partial<CrudHandlers<TTable, TId>>
-  /** Post-write lifecycle callbacks. Async — can call services, other DALs, fire-and-forget. */
-  lifecycle?: {
-    // eslint-disable-next-line ts/method-signature-style -- bivariant method signatures required for generic TTable assignability
-    onCreated?(ctx: AuthedContext, row: Row<TTable>): Promise<void>
-    // eslint-disable-next-line ts/method-signature-style
-    onUpdated?(ctx: AuthedContext, row: Row<TTable>, meta: {
-      previousRow: Row<TTable>
-      input: { id: TId, data: Update<TTable> }
-    }): Promise<void>
-    // eslint-disable-next-line ts/method-signature-style
-    onDeleted?(ctx: AuthedContext, input: { id: TId }): Promise<void>
-    // eslint-disable-next-line ts/method-signature-style
-    onDuplicated?(ctx: AuthedContext, row: Row<TTable>, sourceId: TId): Promise<void>
-  }
 }
 
 export function createCrudRouter<
@@ -114,9 +106,6 @@ export function createCrudRouter<
         // custom create handler adds them before inserting. Two independent type
         // systems (Zod + Drizzle) — can't be bridged without coupling DAL to Zod.
         const row = dalToTrpc(await handlers.create(ctx, input as Insert<TTable>))
-        if (config.lifecycle?.onCreated) {
-          await config.lifecycle.onCreated(ctx as AuthedContext, row)
-        }
         return row
       }),
 
@@ -130,20 +119,7 @@ export function createCrudRouter<
         // The schema validates at runtime; this tells TS the shape matches CrudHandlers.
         const { id, data } = input as { id: TId, data: z.output<TUpdate>, token?: string }
 
-        // Fetch previous row for lifecycle callback (one extra SELECT, only when onUpdated defined)
-        let previousRow: Row<TTable> | undefined
-        if (config.lifecycle?.onUpdated) {
-          previousRow = dalToTrpc(await handlers.getById(ctx, { id })) ?? undefined
-        }
-
         const row = dalToTrpc(await handlers.update(ctx, { id, data }))
-
-        if (config.lifecycle?.onUpdated && previousRow) {
-          await config.lifecycle.onUpdated(ctx as AuthedContext, row, {
-            previousRow,
-            input: { id, data: data as Update<TTable> },
-          })
-        }
         return row
       }),
 
@@ -152,9 +128,6 @@ export function createCrudRouter<
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'delete', config.spec)
         dalToTrpc(await handlers.delete(ctx, { id: input.id }))
-        if (config.lifecycle?.onDeleted) {
-          await config.lifecycle.onDeleted(ctx as AuthedContext, { id: input.id as TId })
-        }
       }),
 
     duplicate: config.authedProcedure
@@ -162,9 +135,6 @@ export function createCrudRouter<
       .mutation(async ({ ctx, input }) => {
         assertCan(ctx.ability, 'duplicate', config.spec)
         const row = dalToTrpc(await handlers.duplicate(ctx, { id: input.id }))
-        if (config.lifecycle?.onDuplicated) {
-          await config.lifecycle.onDuplicated(ctx as AuthedContext, row, input.id as TId)
-        }
         return row
       }),
   })
