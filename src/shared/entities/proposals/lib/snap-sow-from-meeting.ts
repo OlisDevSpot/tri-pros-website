@@ -1,8 +1,8 @@
 // Snapshot trade selections from meeting flow state into proposal projectJSON.
 // see ../DOCS.md#sow-snapshot-from-meeting-on-create
 
-import type { Insert } from '@/shared/db/types'
 import type { proposals } from '@/shared/db/schema/proposals'
+import type { Insert } from '@/shared/db/types'
 
 import { createEmptySowSection } from './create-empty-sow-section'
 
@@ -23,13 +23,17 @@ export function snapSowFromMeeting(
   flowState: MeetingFlowState | null,
 ): Insert<typeof proposals> {
   const tradeSelections = flowState?.tradeSelections
-  if (!tradeSelections?.length) return input
+  if (!tradeSelections?.length) {
+    return input
+  }
 
   const projectJSON = (input.projectJSON ?? {}) as Record<string, unknown>
   const data = (projectJSON.data ?? {}) as Record<string, unknown>
 
   // Don't overwrite existing SOW
-  if (data.sow) return input
+  if (data.sow) {
+    return input
+  }
 
   const sow = tradeSelections.map(entry =>
     createEmptySowSection({

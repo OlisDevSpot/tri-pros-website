@@ -47,7 +47,7 @@ export const proposalServerSpec = {
       // see ../DOCS.md#kind-derived-from-meeting-project
       // see ../DOCS.md#share-token-generated-at-insert
       // see ../DOCS.md#sow-snapshot-from-meeting-on-create
-      async before(input, ctx) {
+      async before(input, _ctx) {
         if (!input.meetingId) {
           return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }
         }
@@ -69,11 +69,20 @@ export const proposalServerSpec = {
   // Routed through createImpl — create.before re-derives kind + generates fresh token.
   duplicate: {
     exclude: [
-      'createdAt', 'updatedAt',
-      'status', 'kind', 'token',
-      'sentAt', 'approvedAt',
-      'contractSentAt', 'contractViewedAt', 'contractSignedAt', 'contractDeclinedAt',
-      'signingRequestId', 'qbInvoiceId', 'qbPaymentStatus',
+      'createdAt',
+      'updatedAt',
+      'status',
+      'kind',
+      'token',
+      'sentAt',
+      'approvedAt',
+      'contractSentAt',
+      'contractViewedAt',
+      'contractSignedAt',
+      'contractDeclinedAt',
+      'signingRequestId',
+      'qbInvoiceId',
+      'qbPaymentStatus',
     ],
     overrides: (source, ctx) => ({
       label: `Copy of ${source.label}`,

@@ -92,11 +92,16 @@ export const meetingServerSpec = {
   // Routed through createImpl — create.before stamps ownerId, create.after adds participant.
   duplicate: {
     exclude: [
-      'createdAt', 'updatedAt',
-      'meetingOutcome', 'pipeline',
-      'flowStateJSON', 'agentNotes',
+      'createdAt',
+      'updatedAt',
+      'meetingOutcome',
+      'pipeline',
+      'flowStateJSON',
+      'agentNotes',
       'projectId',
-      'gcalEventId', 'gcalEtag', 'gcalSyncedAt',
+      'gcalEventId',
+      'gcalEtag',
+      'gcalSyncedAt',
     ],
     overrides: (_source, ctx) => ({
       ownerId: ctx.session!.user.id,
