@@ -77,6 +77,15 @@ export interface EntityServerSpec<
   primaryKey?: string
   shareable?: { tokenColumn: string }
   update?: { jsonbMergeColumns: readonly PgColumn[] }
+  /** Sync data-enrichment hooks. Run inside createCrudDal default handlers only. */
+  hooks?: {
+    /** Enrich input before insert. Pure sync — no async, no DB reads, no services. */
+    beforeCreate?(input: Insert<TTable>): Insert<TTable>
+    /** Enrich data before update. Pure sync — no async, no DB reads, no services. */
+    beforeUpdate?(data: Update<TTable>): Update<TTable>
+    /** Cherry-pick fields from source row for duplicate. Pure sync. */
+    beforeDuplicate?(source: Row<TTable>): Partial<Insert<TTable>>
+  }
 }
 
 // ── CRUD Slot Names ─────────────────────────────────────────────────────
