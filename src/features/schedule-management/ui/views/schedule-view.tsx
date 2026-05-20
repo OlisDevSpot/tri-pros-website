@@ -43,7 +43,7 @@ export function ScheduleView() {
 
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
-  const meetings = useQuery(trpc.meetingsRouter.list.queryOptions({
+  const meetings = useQuery(trpc.meetingsRouter.reads.list.queryOptions({
     pagination: { limit: 500, offset: 0 },
   }))
   const meetingRows = meetings.data?.rows
@@ -94,7 +94,7 @@ export function ScheduleView() {
   })
 
   const handleUpdateScheduledFor = useCallback((meetingId: string, date: Date) => {
-    updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() })
+    updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } })
   }, [updateScheduledFor])
 
   const isLoading = meetings.isLoading || activitiesQuery.isLoading

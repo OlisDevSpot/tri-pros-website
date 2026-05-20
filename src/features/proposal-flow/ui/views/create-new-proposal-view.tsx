@@ -1,6 +1,7 @@
 'use client'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import type { Customer } from '@/shared/db/schema'
 import type { SOW } from '@/shared/entities/proposals/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
@@ -33,7 +34,7 @@ export function CreateNewProposalView() {
   const hasAppliedSnapshot = useRef(false)
 
   const meetingQuery = useQuery(
-    trpc.meetingsRouter.getById.queryOptions(
+    trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions(
       { id: meetingId },
       { enabled: !!meetingId },
     ),
@@ -56,7 +57,7 @@ export function CreateNewProposalView() {
     }
     hasAppliedSnapshot.current = true
 
-    const defaults = buildProposalDefaults(meeting, customer)
+    const defaults = buildProposalDefaults(meeting, customer as Customer | null)
     form.reset(defaults)
   }, [meeting, customer, form])
 

@@ -2,6 +2,7 @@
 
 import type { MeetingFlowContext } from '@/features/meeting-flow/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
+import type { Customer } from '@/shared/db/schema'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
@@ -57,7 +58,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const { status: syncStatus } = useMeetingSync(meetingId)
 
   const meetingQuery = useQuery(
-    trpc.meetingsRouter.getById.queryOptions({ id: meetingId }),
+    trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions({ id: meetingId }),
   )
 
   const invalidateMeetingQueries = useCallback(() => {
@@ -65,14 +66,14 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   }, [invalidateMeeting])
 
   const updateMeeting = useMutation(
-    trpc.meetingsRouter.update.mutationOptions({
+    trpc.meetingsRouter.crud.update.mutationOptions({
       onSuccess: invalidateMeetingQueries,
       onError: () => toast.error('Failed to save'),
     }),
   )
 
   const updateCustomerProfile = useMutation(
-    trpc.meetingsRouter.updateCustomerProfileForMeeting.mutationOptions({
+    trpc.meetingFlowRouter.updateCustomerProfile.mutationOptions({
       onSuccess: invalidateMeetingQueries,
       onError: () => toast.error('Failed to save customer data'),
     }),
@@ -85,7 +86,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     const current = meeting?.flowStateJSON ?? {}
     updateMeeting.mutate({
       id: meetingId,
-      flowStateJSON: { ...current, ...patch },
+      data: { flowStateJSON: { ...current, ...patch } },
     })
   }, [meeting?.flowStateJSON, meetingId, updateMeeting])
 
@@ -93,7 +94,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     if (!customer?.id) {
       return
     }
-    const currentSection = (customer as Record<string, unknown>)[jsonbKey] ?? {}
+    const currentSection = (customer as unknown as Record<string, unknown>)[jsonbKey] ?? {}
     updateCustomerProfile.mutate({
       meetingId,
       customerId: customer.id,
@@ -105,21 +106,21 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     const current = (meeting?.contextJSON ?? {}) as MeetingContext
     updateMeeting.mutate({
       id: meetingId,
-      contextJSON: { ...current, ...patch } as MeetingContext,
+      data: { contextJSON: { ...current, ...patch } as MeetingContext },
     })
   }, [meeting?.contextJSON, meetingId, updateMeeting])
 
   const handleOutcomeChange = useCallback((outcome: string) => {
     updateMeeting.mutate({
       id: meetingId,
-      meetingOutcome: outcome as MeetingOutcome,
+      data: { meetingOutcome: outcome as MeetingOutcome },
     })
   }, [meetingId, updateMeeting])
 
   const handleAgentNotesChange = useCallback((notes: string) => {
     updateMeeting.mutate({
       id: meetingId,
-      agentNotes: notes,
+      data: { agentNotes: notes },
     })
   }, [meetingId, updateMeeting])
 
@@ -130,7 +131,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     return {
       meetingId,
       customerId: meeting.customerId ?? null,
-      customer,
+      customer: customer as Customer | null,
       flowState: meeting.flowStateJSON ?? null,
       onFlowStateChange: handleFlowStateChange,
       onCustomerProfileChange: handleCustomerProfileChange,
@@ -138,7 +139,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   }, [meeting, meetingId, customer, handleFlowStateChange, handleCustomerProfileChange])
 
   const contextFilledCount = useMemo(
-    () => (meeting ? computeContextFilledCount(meeting, customer) : 0),
+    () => (meeting ? computeContextFilledCount(meeting, customer as Customer | null) : 0),
     [meeting, customer],
   )
 
@@ -277,7 +278,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
       {/* Overlay sheets */}
       <ContextPanel
-        customer={customer}
+        customer={customer as Customer | null}
         isOpen={contextOpen}
         meeting={meeting}
         onAgentNotesChange={handleAgentNotesChange}

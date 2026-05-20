@@ -40,7 +40,7 @@ export function PastMeetingsTable() {
   const [assignProjectMeetingId, setAssignProjectMeetingId] = useState<string | null>(null)
 
   const pagination = usePaginatedQuery<Record<string, never>, MeetingRow>(
-    trpc.meetingsRouter.list.queryOptions,
+    trpc.meetingsRouter.reads.list.queryOptions,
     {},
     {
       paramPrefix: 'pm',
@@ -81,9 +81,9 @@ export function PastMeetingsTable() {
   const meta = useMemo<MeetingTableMeta>(() => ({
     meetingActions: () => sharedActions,
     onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) =>
-      updateOutcome.mutate({ id: meetingId, meetingOutcome: outcome }),
+      updateOutcome.mutate({ id: meetingId, data: { meetingOutcome: outcome } }),
     onUpdateScheduledFor: (meetingId: string, date: Date) =>
-      updateScheduledFor.mutate({ id: meetingId, scheduledFor: date.toISOString() }),
+      updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } }),
     onAssignRep: (meetingId: string) => {
       setAssignRepDialog({ meetingId })
     },

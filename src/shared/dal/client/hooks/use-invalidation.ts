@@ -30,7 +30,7 @@ export function useInvalidation() {
         ? trpc.customerPipelinesRouter.getCustomerProfile.queryFilter({ customerId })
         : trpc.customerPipelinesRouter.getCustomerProfile.queryFilter(),
     meetingCustomerProjects: () =>
-      trpc.meetingsRouter.getCustomerProjects.queryFilter(),
+      trpc.customerPipelinesRouter.getCustomerProjects.queryFilter(),
     landingProjects: () =>
       trpc.landingRouter.projectsRouter.getProjects.queryFilter(),
   }

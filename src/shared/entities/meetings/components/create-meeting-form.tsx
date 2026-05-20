@@ -94,11 +94,13 @@ export function CreateMeetingForm({
     if (isEditMode) {
       updateMutation.mutate({
         id: editMeetingId,
-        meetingType,
-        scheduledFor: scheduledFor?.toISOString(),
-        flowStateJSON: tradeSelections.length > 0
-          ? { tradeSelections }
-          : undefined,
+        data: {
+          meetingType,
+          scheduledFor: scheduledFor?.toISOString(),
+          flowStateJSON: tradeSelections.length > 0
+            ? { tradeSelections }
+            : undefined,
+        },
       })
     }
     else {
