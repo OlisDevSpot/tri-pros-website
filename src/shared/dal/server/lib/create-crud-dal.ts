@@ -70,7 +70,10 @@ async function createImpl<TTable extends PgTable>(
   input: Insert<TTable>,
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
-    const validated = spec.schemas.insert.parse(input) as Insert<TTable>
+    const enriched = spec.hooks?.beforeCreate
+      ? spec.hooks.beforeCreate(input)
+      : input
+    const validated = spec.schemas.insert.parse(enriched) as Insert<TTable>
     const [row] = await db
       .insert(spec.table as PgTable)
       .values(validated)
@@ -91,7 +94,10 @@ async function updateImpl<TTable extends PgTable>(
   input: { id: string | number, data: Update<TTable> },
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
-    const validated = spec.schemas.update.parse(input.data) as Update<TTable>
+    const enrichedData = spec.hooks?.beforeUpdate
+      ? spec.hooks.beforeUpdate(input.data)
+      : input.data
+    const validated = spec.schemas.update.parse(enrichedData) as Update<TTable>
     const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
     const [row] = await db
       .update(spec.table as PgTable)
@@ -142,11 +148,18 @@ async function duplicateImpl<TTable extends PgTable>(
     if (!source) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
-    const pkName = spec.primaryKey ?? 'id'
-    const { [pkName]: _droppedPk, ...rest } = source as Record<string, unknown>
+    let values: Record<string, unknown>
+    if (spec.hooks?.beforeDuplicate) {
+      values = spec.hooks.beforeDuplicate(source) as Record<string, unknown>
+    }
+    else {
+      const pkName = spec.primaryKey ?? 'id'
+      const { [pkName]: _droppedPk, ...rest } = source as Record<string, unknown>
+      values = rest
+    }
     const [row] = await db
       .insert(spec.table as PgTable)
-      .values(rest as Record<string, unknown>)
+      .values(values as Record<string, unknown>)
       .returning()
     if (!row) {
       throw new ThrowableDalError({ type: 'duplicate-failed' })
