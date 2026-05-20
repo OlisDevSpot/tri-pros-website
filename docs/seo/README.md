@@ -34,6 +34,6 @@ Tactical execution decisions (within the playbook's locked architecture) can be 
 ## Related (outside this directory)
 
 - **GitHub project board:** https://github.com/users/OlisDevSpot/projects/3 — search for `area:seo` label
-- **ROOT SEO issue:** [TBD — link added once created] — master tracker with sub-issues
+- **ROOT SEO issue:** [#222](https://github.com/OlisDevSpot/tri-pros-website/issues/222) — master tracker with sub-issues (12-month gameplan + 24 locked decisions)
 - **`CLAUDE.md`** (project root) — engineering conventions
 - **`docs/codebase-conventions/`** — cross-cutting engineering rules (DAL, tRPC, schema, query toolkit)
