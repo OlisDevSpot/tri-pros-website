@@ -11,7 +11,7 @@ export function useMeetingActions() {
   const { invalidateMeeting } = useInvalidation()
 
   const deleteMeeting = useMutation(
-    trpc.meetingsRouter.delete.mutationOptions({
+    trpc.meetingsRouter.crud.delete.mutationOptions({
       onSuccess: () => {
         invalidateMeeting()
         toast.success('Meeting deleted')
@@ -21,7 +21,7 @@ export function useMeetingActions() {
   )
 
   const duplicateMeeting = useMutation(
-    trpc.meetingsRouter.duplicate.mutationOptions({
+    trpc.meetingsRouter.crud.duplicate.mutationOptions({
       onSuccess: () => {
         invalidateMeeting()
         toast.success('Meeting duplicated')
@@ -31,7 +31,7 @@ export function useMeetingActions() {
   )
 
   const updateOutcome = useMutation(
-    trpc.meetingsRouter.update.mutationOptions({
+    trpc.meetingsRouter.crud.update.mutationOptions({
       onSuccess: () => {
         invalidateMeeting()
         toast.success('Outcome updated')
@@ -41,7 +41,7 @@ export function useMeetingActions() {
   )
 
   const updateScheduledFor = useMutation(
-    trpc.meetingsRouter.update.mutationOptions({
+    trpc.meetingsRouter.crud.update.mutationOptions({
       onSuccess: () => {
         invalidateMeeting()
         toast.success('Scheduled date updated')

@@ -53,7 +53,7 @@ export function ParticipantPicker({
   )
 
   const participantsQuery = useQuery({
-    ...trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
+    ...trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId }),
     // `placeholderData` (vs `initialData`) keeps the query in `pending` so
     // the helper count still gets refreshed in the background. Without an
     // initial snapshot, falls back to the existing loading behavior.

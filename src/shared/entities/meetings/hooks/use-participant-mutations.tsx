@@ -11,8 +11,8 @@ import { toast } from 'sonner'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
-type ParticipantsCache = inferRouterOutputs<AppRouter>['meetingsRouter']['getParticipants']
-type ManageParticipantsInput = inferRouterInputs<AppRouter>['meetingsRouter']['manageParticipants']
+type ParticipantsCache = inferRouterOutputs<AppRouter>['meetingsRouter']['participants']['getParticipants']
+type ManageParticipantsInput = inferRouterInputs<AppRouter>['meetingsRouter']['participants']['manageParticipants']
 type ParticipantRole = 'co_owner' | 'helper' | 'owner'
 
 interface UseParticipantMutationsArgs {
@@ -41,7 +41,7 @@ interface MutationContext {
  * `getParticipants` cache so the UI updates instantly while the server call runs.
  *
  * The optimistic update for `changeRoleMutation` mirrors the server semantics in
- * `meetingsRouter.manageParticipants` (see src/trpc/routers/meetings.router.ts):
+ * `meetingsRouter.participants.manageParticipants` (see src/trpc/routers/meetings.router.ts):
  *  - to 'owner': demote current owner → co_owner, UNLESS a different co_owner
  *    already exists, in which case the outgoing owner is removed entirely.
  *  - to 'co_owner': just update (server will reject with CONFLICT if a different
@@ -57,7 +57,7 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
   const [pendingUserId, setPendingUserId] = useState<string | null>(null)
 
   function getQueryOpts(meetingId: string) {
-    return trpc.meetingsRouter.getParticipants.queryOptions({ meetingId })
+    return trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId })
   }
 
   // Shared cache lifecycle. `mutateCache` runs after snapshotting; it should
@@ -113,7 +113,7 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
   // swimlane combos, participant-avatar stacks, and any list surface that
   // embeds meeting participants (schedule getAll, customer pipeline, dashboard).
   const addMutation = useMutation(
-    trpc.meetingsRouter.manageParticipants.mutationOptions(
+    trpc.meetingsRouter.participants.manageParticipants.mutationOptions(
       makeOptions({
         extraInvalidate: invalidateMeeting,
         mutateCache: (input, old) => {
@@ -144,7 +144,7 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
   // the co-owner is promoted (or the system user takes over), which cascades to
   // ownerId-dependent displays (meeting list rows, meeting header, etc.)
   const removeMutation = useMutation(
-    trpc.meetingsRouter.manageParticipants.mutationOptions(
+    trpc.meetingsRouter.participants.manageParticipants.mutationOptions(
       makeOptions({
         extraInvalidate: invalidateMeeting,
         mutateCache: (input, old) => {
@@ -170,7 +170,7 @@ export function useParticipantMutations({ meetingId: defaultMeetingId, silent = 
   // changeRole triggers full meeting invalidation: owner changes cascade to
   // ownerId-dependent displays (meeting list rows, meeting header, etc.)
   const changeRoleMutation = useMutation(
-    trpc.meetingsRouter.manageParticipants.mutationOptions(
+    trpc.meetingsRouter.participants.manageParticipants.mutationOptions(
       makeOptions({
         extraInvalidate: invalidateMeeting,
         mutateCache: (input, old) => {

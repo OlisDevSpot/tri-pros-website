@@ -38,7 +38,7 @@ interface ParticipantsSlotProps {
   meetingId: string
   variant: 'full' | 'compact'
   /**
-   * Optional pre-fetched summary (from `meetingsRouter.list`). When present,
+   * Optional pre-fetched summary (from `meetingsRouter.reads.list`). When present,
    * the compact variant renders its avatar stack from this without hitting
    * `getParticipants` — the detail query runs lazily only when the popover
    * opens. Full variant always fetches detail (needs email for contact actions).
@@ -72,7 +72,7 @@ function sortParticipants<T extends { role: MeetingParticipantRole, name: string
 function useMeetingParticipants(meetingId: string, enabled: boolean) {
   const trpc = useTRPC()
   const { data, isLoading } = useQuery({
-    ...trpc.meetingsRouter.getParticipants.queryOptions({ meetingId }),
+    ...trpc.meetingsRouter.participants.getParticipants.queryOptions({ meetingId }),
     enabled,
   })
 
