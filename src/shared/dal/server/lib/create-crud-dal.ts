@@ -180,7 +180,9 @@ async function duplicateImpl<TTable extends PgTable>(
     return { success: false, error: { type: 'not-found' } }
   }
 
-  // 2. Copy full row, drop PK + excluded fields
+  // 2. Copy full row, drop PK + excluded fields, convert null → undefined
+  // DB rows use null for absent nullable columns; insert schemas use
+  // .optional() which accepts undefined but rejects null.
   const pkName = spec.primaryKey ?? 'id'
   const excludeSet = new Set<string>([
     pkName,
@@ -188,7 +190,8 @@ async function duplicateImpl<TTable extends PgTable>(
   ])
   const base = Object.fromEntries(
     Object.entries(source as Record<string, unknown>)
-      .filter(([key]) => !excludeSet.has(key)),
+      .filter(([key]) => !excludeSet.has(key))
+      .map(([key, val]) => [key, val === null ? undefined : val]),
   )
 
   // 3. Apply overrides
