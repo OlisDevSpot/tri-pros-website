@@ -142,9 +142,20 @@ TWILIO_TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_SHAKEN_STIR_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_10DLC_CAMPAIGN_SID=CMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # pending campaign approval
-TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
+
+# Pilot DIDs — each owned number has both the E.164 form and Twilio Phone Number SID.
+# DID *role* (transfer_target vs dial) lives in dialer_dids.role once seeded; env vars are bootstrap input.
+TWILIO_DID_213_E164=+1213XXXXXXX
+TWILIO_DID_213_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_424_E164=+1424XXXXXXX
+TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_626_E164=+1626XXXXXXX
+TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Transfer-target role pointer — read by runtime code when initiating the human-leg dial.
+# Bootstrap input: seed-dialer-dids.ts assigns role='transfer_target' to whichever DID matches this.
+# In the pilot this points to the 213 DID; mirror the same value as TWILIO_DID_213_E164.
+TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
 
 # Twilio SIP Trunking
 TWILIO_SIP_TRUNK_DOMAIN=tripros.pstn.twilio.com

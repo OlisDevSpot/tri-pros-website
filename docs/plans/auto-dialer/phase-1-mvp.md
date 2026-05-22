@@ -188,7 +188,18 @@ TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx       # for Voice SDK JWT signing
 TWILIO_API_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx     # TwiML app for browser Client
-TWILIO_TRANSFER_TARGET_DID_E164=+1XXXXXXXXXX                # the "Tri Pros Transfers" DID for outbound legs to humans
+
+# Pilot DIDs — E.164 + SID per number. Role lives in dialer_dids.role once seeded.
+TWILIO_DID_213_E164=+1213XXXXXXX
+TWILIO_DID_213_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_DID_424_E164=+1424XXXXXXX
+TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_DID_626_E164=+1626XXXXXXX
+TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Transfer-target role pointer — read at runtime for the human-leg dial (no DB hit).
+# Also tells seed-dialer-dids.ts which DID gets role='transfer_target'. Mirrors TWILIO_DID_213_E164 in the pilot.
+TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
 
 # Retell
 RETELL_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3936,42 +3947,57 @@ import { dialerDids } from '@/shared/db/schema'
 
 interface DidInput {
   e164Number: string
-  areaCode: string
   twilioPhoneSid: string
-  isTransferTargetDid: boolean
 }
 
-// Populate from Phase 0 procurement output.
-const DIDS: DidInput[] = [
-  { e164Number: '+1310XXXXXXX', areaCode: '310', twilioPhoneSid: 'PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', isTransferTargetDid: false },
-  { e164Number: '+1213XXXXXXX', areaCode: '213', twilioPhoneSid: 'PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', isTransferTargetDid: false },
-  { e164Number: '+1818XXXXXXX', areaCode: '818', twilioPhoneSid: 'PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', isTransferTargetDid: false },
-  { e164Number: '+1949XXXXXXX', areaCode: '949', twilioPhoneSid: 'PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', isTransferTargetDid: false },
-  { e164Number: '+1626XXXXXXX', areaCode: '626', twilioPhoneSid: 'PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', isTransferTargetDid: false },
-  { e164Number: '+1XXXXXXXXXX', areaCode: 'XXX', twilioPhoneSid: 'PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', isTransferTargetDid: true },  // transfer-target
+// Phase 0 pilot DIDs — read straight from env so we don't drift from .env.
+// Pool expansion (to 7-10 DIDs) lands ~1-2 weeks before Phase 2 ramp.
+const PILOT_DIDS: DidInput[] = [
+  { e164Number: process.env.TWILIO_DID_213_E164!, twilioPhoneSid: process.env.TWILIO_DID_213_SID! },
+  { e164Number: process.env.TWILIO_DID_424_E164!, twilioPhoneSid: process.env.TWILIO_DID_424_SID! },
+  { e164Number: process.env.TWILIO_DID_626_E164!, twilioPhoneSid: process.env.TWILIO_DID_626_SID! },
 ]
 
+const TRANSFER_TARGET = process.env.TWILIO_TRANSFER_TARGET_DID_E164!
+
+function deriveAreaCode(e164: string): string {
+  // +1AAAXXXXXXX → AAA
+  return e164.slice(2, 5)
+}
+
 async function main() {
+  if (!TRANSFER_TARGET) {
+    console.error('TWILIO_TRANSFER_TARGET_DID_E164 is required')
+    process.exit(1)
+  }
+  for (const did of PILOT_DIDS) {
+    if (!did.e164Number || !did.twilioPhoneSid) {
+      console.error('Missing TWILIO_DID_*_E164 / _SID env var; aborting.')
+      process.exit(1)
+    }
+  }
+
   console.log('Seeding dialer DIDs…')
-  for (const did of DIDS) {
+  for (const did of PILOT_DIDS) {
+    const isTransferTarget = did.e164Number === TRANSFER_TARGET
     await db.insert(dialerDids).values({
       e164Number: did.e164Number,
-      areaCode: did.areaCode,
+      areaCode: deriveAreaCode(did.e164Number),
       twilioPhoneSid: did.twilioPhoneSid,
-      status: did.isTransferTargetDid ? 'active' : 'warming',
-      dailyCap: did.isTransferTargetDid ? 200 : 20,
-      isTransferTargetDid: did.isTransferTargetDid,
-      warmingStartedAt: did.isTransferTargetDid ? null : new Date().toISOString(),
+      status: isTransferTarget ? 'active' : 'warming',
+      dailyCap: isTransferTarget ? 200 : 20,
+      isTransferTargetDid: isTransferTarget,
+      warmingStartedAt: isTransferTarget ? null : new Date().toISOString(),
     }).onConflictDoNothing({ target: dialerDids.e164Number })
   }
-  console.log(`Inserted ${DIDS.length} DIDs (skipped duplicates).`)
+  console.log(`Inserted ${PILOT_DIDS.length} DIDs (skipped duplicates). Transfer target = ${TRANSFER_TARGET}.`)
   process.exit(0)
 }
 
 main().catch(err => { console.error(err); process.exit(1) })
 ```
 
-> **Before running:** edit DIDS array to match real values from Phase 0 procurement.
+> **Before running:** verify `.env` (or `.env.local`) has all six `TWILIO_DID_{213,424,626}_{E164,SID}` vars plus `TWILIO_TRANSFER_TARGET_DID_E164`. Script reads everything from env — no inline edits required.
 
 - [ ] **Step 42.2: Settings seed**
 
