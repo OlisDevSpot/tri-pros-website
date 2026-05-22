@@ -26,7 +26,7 @@ Two of the tasks have **1-2 week external vetting timelines** (Twilio Trust Hub 
 - ✅ STIR/SHAKEN A-attestation enabled on dial DIDs
 - ✅ 10DLC campaign approved
 - ✅ Retell account active + verified outbound test call from their dashboard
-- ✅ Sendblue account active + verified test iMessage
+- ⏸ ~~Sendblue account active + verified test iMessage~~ **DEFERRED** — Phase 1 ships with Twilio-only messaging
 - ✅ Dial DIDs + 1 reserved transfer-target DID purchased and visible in Twilio Console (pilot: 3 dial; expand to 7-10 before scaling)
 - ✅ **DID reputation baseline complete** — CNAM set, FreeCallerRegistry submitted, Nomorobo submitted, baseline reputation screenshots captured per DID
 - ✅ FTC DNC list access credentials obtained
@@ -201,7 +201,11 @@ In Retell → Settings → API Keys, generate an API key for the Tri Pros app to
 
 ---
 
-### Task 3: Sendblue account + verification
+### Task 3: Sendblue account + verification — **⏸ DEFERRED (2026-05-21)**
+
+**Status:** Deferred ~1-2 weeks post Phase 1 launch. Phase 1 ships with Twilio-only messaging. Sendblue (iMessage premium UX) becomes a swap-in via the existing `services/messaging/` vendor abstraction when user re-engages. See EPIC.md decisions log entry "Sendblue (iMessage) deferred" for full rationale.
+
+**To resume:** Pick up the steps below from where deferred — no setup prerequisite has been done yet beyond reading.
 
 **Owner:** User
 **Estimated effort:** 30-60 min
@@ -283,7 +287,11 @@ This subdomain is what Twilio + Retell + Sendblue webhook URLs will point to. Op
 
 ---
 
-### Task 7: TCPA attorney consult (recommended)
+### Task 7: TCPA attorney consult (recommended) — **⏸ DEFERRED to end of epic (2026-05-22)**
+
+**Status:** User decision (2026-05-22): defer all real-world professional/legal consultations to the absolute last task of the auto-dialer epic, after the system has been validated in production with real lead volume. Rationale: opt-in language is already in place via existing web forms; risk surface is low at pilot scale; cheaper to consult once with concrete real-world evidence than upfront on hypotheticals.
+
+**To resume:** Run after Phase 5 (customer-side integration + observability) is in place and the dialer has accumulated 30+ days of real lead engagement data. The questions below are still the right ones to bring — just with operational evidence attached.
 
 **Owner:** User
 **Estimated effort:** 1-2 hour billable consult; cost $400-800
@@ -323,12 +331,12 @@ When ALL of these are checked, Phase 1 can begin:
 - [ ] DID reputation: baseline screenshots captured (BatchDialer + Numeracle + CIDR attestation tester)
 - [ ] Twilio: 10DLC campaign approved + active
 - [ ] Retell: account active, BYO Twilio import verified, test outbound call successful
-- [ ] Sendblue: account active, test iMessage + SMS fallback verified
+- [ ] ~~Sendblue: account active, test iMessage + SMS fallback verified~~ **DEFERRED**
 - [ ] FTC DNC: telemarketer registration approved, 5-area-code subscription active
 - [ ] Inngest: account active, project connected (preparatory; doesn't block Phase 1)
 - [ ] (Optional) Webhook subdomain `dialer.triprosremodeling.com` resolving to Vercel
 - [ ] (Optional) Twilio Voice Integrity enabled (only if FCR alone doesn't clear "Spam Likely" within 4 weeks)
-- [ ] (Recommended) TCPA attorney consult complete, opinion documented
+- [ ] ~~(Recommended) TCPA attorney consult complete, opinion documented~~ **DEFERRED to end of epic** (after Phase 5 with real production data)
 
 ---
 

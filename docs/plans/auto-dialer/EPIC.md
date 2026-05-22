@@ -17,7 +17,7 @@ Tri Pros Remodeling needs to handle thousands of weekly lead-dial attempts with 
 ## Strategic decisions (immutable; see spec for rationale)
 
 - **Custom orchestrator over CloudTalk** — our app owns cadence, compliance, DID pool, transfer routing. CloudTalk revisit-trigger: hiring 3rd VA AND queue/coaching becomes blocking.
-- **Vendor stack** — Twilio (backbone) + Retell (AI voice) + Sendblue (iMessage) + Hiya (Phase-2 branded calling).
+- **Vendor stack** — Twilio (backbone, including all Phase-1 messaging) + Retell (AI voice) + ~~Sendblue (iMessage)~~ (deferred post-launch) + Hiya (Phase-2 branded calling).
 - **Vendor abstraction** — every external vendor sits behind an interface in `services/{voip,ai-voice,branded-calling,messaging}/`. Swap = concrete impl swap, no caller changes.
 - **Mobile = cellular routing, not browser WebRTC** — PSTN call to human's cell, PWA only handles dashboard/dispositions.
 - **AI script content is owner-managed** — the system does NOT enforce specific disclosure language. Per-source AI greeting + warm-intro template editable via UI.
@@ -134,6 +134,28 @@ Every `@migration` comment in the dialer code points to a future swap. Searchabl
 
 > Each entry: date, decision, context, link to PR/commit. Append-only. This is where "we decided X mid-Phase-2 because we found Y" gets recorded.
 
+### 2026-05-22 — TCPA attorney consult deferred to end of epic
+
+**Phase:** 0 → end-of-epic
+**Context:** Phase 0 spec listed TCPA attorney consult as "recommended" during procurement. User decision (2026-05-22) to defer all real-world professional/legal consultations to the absolute last task of the auto-dialer epic instead.
+**Decision:** TCPA attorney consult moves from Phase 0 Task 7 to "end of epic, after Phase 5." All other Phase 0 work proceeds without legal sign-off. Existing opt-in language on web forms + Meta lead ads is treated as adequate consent basis for the pilot.
+**Alternative considered:** Standard "upfront legal review before any outbound" approach. Rejected: pilot risk surface is low (only opted-in leads, small volume, owner-managed AI script); consulting once with real operational data is more efficient than hypothetical advice. Treat as deferred risk accepted by ownership.
+**Impact:** Phase 0 gate criteria updated. `phase-0-setup.md` Task 7 marked DEFERRED. If a TCPA-related issue surfaces mid-epic (e.g., a complaint), revisit immediately rather than waiting for end-of-epic.
+**Link:** (this commit)
+
+### 2026-05-21 — Sendblue (iMessage) deferred from Phase 1 to "post-launch enhancement"
+
+**Phase:** 0 → 1 boundary
+**Context:** After completing Retell + Twilio Voice integration (Phase 0 Step 7) and reviewing Sendblue's Phase 0 setup requirements, user decided to defer iMessage entirely and ship Phase 1 with Twilio-only messaging. Rationale: validate the core call+SMS pipeline first; add iMessage premium experience as an upgrade when there's signal it moves conversion.
+**Decision:** Sendblue setup deferred indefinitely (~1-2 weeks post Phase 1 launch, user-initiated). Phase 1 ships with Twilio Programmable Messaging as the sole concrete `MessagingProvider` impl. The `services/messaging/` vendor abstraction stays — Sendblue can drop in later as `sendblue.messaging.ts` with routing logic in `messaging-provider-router.ts` that picks Sendblue for iMessage-capable recipients, falls back to Twilio for everyone else.
+**Alternative considered:** Build Sendblue now to land the full messaging UX at Phase 1 launch. Rejected: adds 1-2 weeks of additional setup + verification + integration time for what is a UX enhancement, not a core capability. SMS via Twilio is sufficient to validate the pipeline.
+**Impact:**
+- `docs/plans/auto-dialer/phase-0-setup.md`: Task 3 (Sendblue) marked DEFERRED
+- `docs/plans/auto-dialer/phase-1-mvp.md`: Sendblue-specific tasks (provider impl, webhooks, routing) marked DEFERRED; Twilio messaging provider becomes sole impl; "iMessage vs SMS" UI distinction in chat UI deferred to post-launch
+- Phase 1 chat UI renders all messages as SMS-style (no blue/green bubble distinction yet — placeholder/future enhancement)
+- **10DLC vetting is now even more critical-path** — it gates ALL Phase 1 messaging, not just SMS fallback. Watch the Campaign approval clock closely.
+**Link:** (this commit)
+
 ### 2026-05-21 — Layered spam mitigation promoted to Phase 0
 
 **Phase:** 0 (procurement)
@@ -169,6 +191,32 @@ Every `@migration` comment in the dialer code points to a future swap. Searchabl
 | 5 | Auto-enrollment per lead source | User | Phase 4 | Manual-only in pilot |
 | 6 | Multi-seller routing rules when 2nd human onboards | User + product | When 2nd seat added | Round-robin, least-recently-transferred ties broken |
 | 7 | Sunday calling | User | Phase 4 (super-admin config) | Excluded by default |
+| 8 | **iPhone Live Voicemail handling** — AI must respond when iPhone's call-screening asks "please state your name and reason for calling" | User + Phase 1 implementer | Phase 1 (agent prompt design) | See "Known production challenges" below |
+
+---
+
+## Known production challenges (surfaced during Phase 0 testing)
+
+### iPhone Live Voicemail (iOS 17+) call screening
+
+**Discovered:** 2026-05-21, Phase 0 Step 7 outbound test from 626 DID to user's iPhone.
+
+**What it is:** iPhone's on-device call screening intercepts unknown callers and plays "Please state your name and reason for calling." It transcribes the response and presents it to the user as a screening prompt. If the caller doesn't respond intelligibly within a few seconds, the call routes to voicemail.
+
+**Why it matters:** Layered on TOP of carrier "Spam Likely" labeling. Even if FCR clears our reputation, individual recipients with Live Voicemail enabled will still screen unknown callers. Estimated impact: 20-40% of iPhone recipients have it enabled.
+
+**Phase 1 implementation requirements** (capture in agent prompt design task):
+
+1. **Front-load identification in welcome message.** First sentence MUST include business name + reason, so even if the AI is interrupted by the screening prompt, the answer is in the first words:
+   > "Hi, this is the Tri Pros Remodeling assistant calling about your recent remodeling inquiry."
+
+2. **Detect the screening prompt pattern.** Retell agent prompt should include behavior: "If you hear a prompt asking you to state your name and reason for calling, respond clearly with: 'This is the Tri Pros Remodeling assistant calling about [customer name]'s recent remodeling inquiry. May I speak with [customer name]?' Then wait for a human response before continuing your script."
+
+3. **Voicemail detection (AMD).** Twilio + Retell support Answering Machine Detection — when detected, hang up rather than leave a long AI message (better for reputation + cost). Configure via Retell's voicemail detection settings.
+
+4. **Test against Live Voicemail explicitly.** Phase 1 manual verification step: place test call to an iPhone with Live Voicemail enabled and confirm the AI passes screening.
+
+**Spec reference:** Update `docs/superpowers/specs/2026-05-21-ai-dialer-design.md` §6 "AI script invariants" to add Live Voicemail handling as an invariant during Phase 1 implementation review.
 
 ---
 
