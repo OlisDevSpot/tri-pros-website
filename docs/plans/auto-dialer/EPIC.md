@@ -60,8 +60,8 @@ Each engine vets registrations independently and scores reputation by behavior (
 
 | Phase | Status | Plan | Spec section | Estimated effort |
 |---|---|---|---|---|
-| 0 — External setup (Trust Hub, 10DLC, accounts, DIDs) | Not started | [phase-0-setup.md](./phase-0-setup.md) | §9 Phase 0 | 1-2 weeks (mostly waiting) |
-| 1 — MVP end-to-end transfer + messaging foundation | Not started | [phase-1-mvp.md](./phase-1-mvp.md) | §9 Phase 1 | 2 weeks |
+| 0 — External setup (Trust Hub, 10DLC, accounts, DIDs) | **Done (2026-05-22)** — vetting clocks still running in background; see "Phase 0 outcomes" below | [phase-0-setup.md](./phase-0-setup.md) | §9 Phase 0 | 1-2 weeks (mostly waiting) |
+| 1 — MVP end-to-end transfer + messaging foundation | Ready to start (Twilio-only messaging after Sendblue deferral) | [phase-1-mvp.md](./phase-1-mvp.md) | §9 Phase 1 | 2 weeks |
 | 2 — Cadence + compliance + lifecycle branches + auto messaging | Not started | _Pending — written after Phase 1 lands_ | §9 Phase 2 | 1 week |
 | 3 — DID pool + spam mitigation | Not started | _Pending — written after Phase 2 lands_ | §9 Phase 3 | 1 week |
 | 4 — Super-admin config + dashboards + chat UI + mobile mode | Not started | _Pending — written after Phase 3 lands_ | §9 Phase 4 | 1-1.5 weeks |
@@ -96,6 +96,81 @@ Phase 0 (procurement) ──► Phase 1 (MVP)
 - **Phase 4 → Phase 5**: soft. Phase 5 (customer integration) imports components built in Phase 4 (`shared/components/dialer/*`).
 
 **Parallelization opportunity:** Phase 3 + Phase 4 can largely run in parallel (different parts of the stack) once Phase 2 lands.
+
+---
+
+## Phase 0 outcomes (as of 2026-05-22)
+
+What's in place vs what's still vetting vs what's deferred. Phase 1 code work can start immediately; only specific tasks are gated by vetting clocks.
+
+### ✅ Verified working
+- **Twilio account** + **3 DIDs**: `+1 213 XXX XXXX` (transfer-target), `+1 424 XXX XXXX` (dial), `+1 626 XXX XXXX` (dial)
+- **CNAM** set to `TRI PROS REMODEL` on all 3 DIDs
+- **Trust Hub Business Profile**: APPROVED (`TWILIO_TRUST_PROFILE_SID`)
+- **SHAKEN/STIR Trust Product**: APPROVED, A-attestation active (`TWILIO_SHAKEN_STIR_SID`)
+- **Twilio API Key + TwiML App**: created, SIDs saved
+- **Elastic SIP Trunk** `tripros-retell-trunk`: all 3 DIDs attached, Termination via credential auth, Origination = `sip:sip.retellai.com`
+- **Retell account**: active, 3 DIDs imported, test agent deployed, outbound PSTN test from 626 → user's cell **SUCCEEDED**. iPhone Live Voicemail "state your name" prompt handled by Retell's built-in feature — no extra prompt engineering needed.
+- **10DLC Brand**: APPROVED
+- **Inngest account**: tri-pros-owned, Olis Solutions invited as admin, Event Key + Signing Key saved
+- **Webhook subdomain**: `https://dialer.triprosremodeling.com` verified (CNAME → cname.vercel-dns.com)
+
+### ⏳ Background vetting (does NOT block start of Phase 1)
+- **10DLC Campaign**: submitted, vetting 3-14 days. Blocks Phase 1 SMS-send tasks specifically.
+- **FCC DNC SAN**: submitted (5-area-code free tier), 1-2 business days. Blocks Phase 1 DNC-scrub compliance gate specifically.
+- **FreeCallerRegistry**: submitted for all 3 DIDs, 1-4 weeks per engine. Improves answer rate over time; doesn't block code.
+
+### 📅 Scheduled follow-ups
+- **2026-05-28**: DID reputation baseline check (BatchDialer + Numeracle + CIDR attestation tester) on 213/424/626 — captures starting point so we can verify FCR vetting is processing over coming weeks
+- **End of epic (post-Phase-5)**: TCPA attorney consult (deferred until real production data exists)
+
+### ⏸ Deferred (not Phase 1)
+- **Sendblue (iMessage)**: Phase 1 ships Twilio-only messaging via `services/messaging/twilio.ts`. Sendblue drops in later as another `MessagingProvider` concrete impl. See decision log entry "2026-05-21 — Sendblue (iMessage) deferred."
+- **TCPA attorney consult**: see decision log entry "2026-05-22 — TCPA attorney consult deferred to end of epic."
+- **DID pool expansion to 7-10**: defer until ~1-2 weeks before Phase 2 ramp (avoid starting warm-up clock on numbers we won't use for weeks).
+- **Twilio Voice Integrity**: only enable if FCR alone doesn't clear "Spam Likely" within 4 weeks.
+
+### Env vars now established (Phase 1 implementer relies on these being present)
+
+```bash
+# Twilio
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_API_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_SHAKEN_STIR_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_10DLC_CAMPAIGN_SID=CMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # pending campaign approval
+TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
+TWILIO_DID_424_E164=+1424XXXXXXX
+TWILIO_DID_626_E164=+1626XXXXXXX
+
+# Twilio SIP Trunking
+TWILIO_SIP_TRUNK_DOMAIN=tripros.pstn.twilio.com
+TWILIO_SIP_TRUNK_USERNAME=retell
+TWILIO_SIP_TRUNK_PASSWORD=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Retell
+RETELL_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+RETELL_TEST_AGENT_ID=agent_xxxxxxxxxxxxxxxxxxxxxxxxxxxx   # Phase 0 throwaway; replaced by per-source agents in Phase 1
+# RETELL_WEBHOOK_SIGNING_SECRET — captured during Phase 1 webhook wiring
+
+# FCC DNC (SAN pending)
+FTC_DNC_SAN=  # pending 1-2 business days
+FTC_DNC_USERNAME=tri-pros-remodeling
+FTC_DNC_PASSWORD=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Inngest
+INNGEST_EVENT_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+INNGEST_SIGNING_KEY=signkey-prod-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Webhook base URL
+DIALER_WEBHOOK_BASE_URL=https://dialer.triprosremodeling.com
+
+# Dev safety (Phase 1 will enforce)
+DIALER_DEV_OVERRIDE_NUMBER=  # set in dev/preview only; CI gate prevents production
+```
 
 ---
 
@@ -191,32 +266,6 @@ Every `@migration` comment in the dialer code points to a future swap. Searchabl
 | 5 | Auto-enrollment per lead source | User | Phase 4 | Manual-only in pilot |
 | 6 | Multi-seller routing rules when 2nd human onboards | User + product | When 2nd seat added | Round-robin, least-recently-transferred ties broken |
 | 7 | Sunday calling | User | Phase 4 (super-admin config) | Excluded by default |
-| 8 | **iPhone Live Voicemail handling** — AI must respond when iPhone's call-screening asks "please state your name and reason for calling" | User + Phase 1 implementer | Phase 1 (agent prompt design) | See "Known production challenges" below |
-
----
-
-## Known production challenges (surfaced during Phase 0 testing)
-
-### iPhone Live Voicemail (iOS 17+) call screening
-
-**Discovered:** 2026-05-21, Phase 0 Step 7 outbound test from 626 DID to user's iPhone.
-
-**What it is:** iPhone's on-device call screening intercepts unknown callers and plays "Please state your name and reason for calling." It transcribes the response and presents it to the user as a screening prompt. If the caller doesn't respond intelligibly within a few seconds, the call routes to voicemail.
-
-**Why it matters:** Layered on TOP of carrier "Spam Likely" labeling. Even if FCR clears our reputation, individual recipients with Live Voicemail enabled will still screen unknown callers. Estimated impact: 20-40% of iPhone recipients have it enabled.
-
-**Phase 1 implementation requirements** (capture in agent prompt design task):
-
-1. **Front-load identification in welcome message.** First sentence MUST include business name + reason, so even if the AI is interrupted by the screening prompt, the answer is in the first words:
-   > "Hi, this is the Tri Pros Remodeling assistant calling about your recent remodeling inquiry."
-
-2. **Detect the screening prompt pattern.** Retell agent prompt should include behavior: "If you hear a prompt asking you to state your name and reason for calling, respond clearly with: 'This is the Tri Pros Remodeling assistant calling about [customer name]'s recent remodeling inquiry. May I speak with [customer name]?' Then wait for a human response before continuing your script."
-
-3. **Voicemail detection (AMD).** Twilio + Retell support Answering Machine Detection — when detected, hang up rather than leave a long AI message (better for reputation + cost). Configure via Retell's voicemail detection settings.
-
-4. **Test against Live Voicemail explicitly.** Phase 1 manual verification step: place test call to an iPhone with Live Voicemail enabled and confirm the AI passes screening.
-
-**Spec reference:** Update `docs/superpowers/specs/2026-05-21-ai-dialer-design.md` §6 "AI script invariants" to add Live Voicemail handling as an invariant during Phase 1 implementation review.
 
 ---
 

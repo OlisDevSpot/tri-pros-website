@@ -4,14 +4,30 @@
 >
 > **Parent epic:** [EPIC.md](./EPIC.md)
 > **Spec section:** §9 Phase 1
-> **Prerequisite:** [Phase 0](./phase-0-setup.md) gate satisfied
-> **Status:** Not started
+> **Prerequisite:** [Phase 0](./phase-0-setup.md) gate satisfied — see EPIC.md "Phase 0 outcomes" for current state
+> **Status:** Ready to start (2026-05-22)
 
-**Goal:** Ship the minimum viable end-to-end flow: a super-admin clicks "Dial now (AI)" on a customer profile → AI dials → lead picks up → warm-transferred to softphone in dashboard → human takes call → dispositions. Plus messaging foundation: manual SMS/iMessage send, inbound STOP keyword handling.
+**Goal:** Ship the minimum viable end-to-end flow: a super-admin clicks "Dial now (AI)" on a customer profile → AI dials → lead picks up → warm-transferred to softphone in dashboard → human takes call → dispositions. Plus messaging foundation: manual **SMS** send (Twilio-only — Sendblue deferred), inbound STOP keyword handling.
 
-**Architecture:** Custom orchestrator in our tRPC + services + DAL layers. Vendor-abstracted: Twilio (VoIP) + Retell (AI voice) + Sendblue (iMessage) + null branded-calling (Phase 2 trigger). Per-source Retell agents stored in `lead_sources.dialerConfigJSON.retell_agent_id`. Dev-override env var `DIALER_DEV_OVERRIDE_NUMBER` for safe dev calls. 3rd-party React wrapper for Twilio Voice SDK (chosen via Task 2 spike). No automated tests in Phase 1 — manual verification per task. Annotated with `@migration` comments for Inngest, Ably realtime kernel, Hiya Connect.
+**Architecture:** Custom orchestrator in our tRPC + services + DAL layers. Vendor-abstracted: Twilio (VoIP + messaging) + Retell (AI voice via SIP trunking) + null branded-calling (Phase 2 trigger). Per-source Retell agents stored in `lead_sources.dialerConfigJSON.retell_agent_id`. Dev-override env var `DIALER_DEV_OVERRIDE_NUMBER` for safe dev calls. 3rd-party React wrapper for Twilio Voice SDK (chosen via Task 2 spike). No automated tests in Phase 1 — manual verification per task. Annotated with `@migration` comments for Inngest, Ably realtime kernel, Hiya Connect, **Sendblue (iMessage premium)**.
 
-**Tech Stack:** TypeScript, Next.js App Router, tRPC, Drizzle ORM (Postgres/Neon), CASL, Twilio (`twilio` server SDK + `@twilio/voice-sdk` browser), Retell SDK, Sendblue API, drizzle-zod, QStash (`@migration: → Inngest`).
+**Tech Stack:** TypeScript, Next.js App Router, tRPC, Drizzle ORM (Postgres/Neon), CASL, Twilio (`twilio` server SDK + `@twilio/voice-sdk` browser), Retell SDK, drizzle-zod, QStash (`@migration: → Inngest`).
+
+---
+
+## Phase 0 → Phase 1 scope adjustments (locked in 2026-05-22)
+
+Three scope changes from the original plan, all logged in EPIC.md decisions log:
+
+1. **Sendblue (iMessage) deferred.** Phase 1 implements Twilio-only messaging through the existing `services/messaging/` vendor abstraction. Task 25 (Sendblue impl + auto-fallback router) and Task 34 (Sendblue webhooks) are **DEFERRED**. The `MessagingProvider` interface keeps `channel: 'sms' | 'imessage'` so Sendblue can drop in later as a concrete `imessage` impl without interface changes. `dialer_messages` schema keeps `sendblue_message_id` column (nullable) and channel enum keeps `'imessage'` + `'fallback_sms'` values — schema is forward-compatible.
+2. **iPhone Live Voicemail = Retell built-in.** No special prompt engineering required — Retell's agent platform handles the "please state your name and reason for calling" screening prompt natively. Verified in Phase 0 test call. Do NOT add Live Voicemail handling logic to Phase 1 agent prompts.
+3. **Twilio Voice connectivity = SIP Trunking, NOT API import.** Retell doesn't have a Twilio-API-credential import path. Phase 0 set up an Elastic SIP Trunk (`tripros.pstn.twilio.com`) with credential auth + Retell origination at `sip:sip.retellai.com`. Phase 1's `services/voip/twilio.voip-provider.ts` should reflect this — outbound dials route via the established SIP trunk, not via fresh Programmable Voice connections.
+
+**Tasks blocked by Phase 0 vetting clocks (do these last):**
+- **Twilio SMS send** (Tasks 24, 30, 38) — gated by 10DLC Campaign approval (3-14 days from 2026-05-21 submission)
+- **DNC compliance gate** (referenced in Task 26 opt-out service) — gated by FCC DNC SAN issuance (1-2 business days from 2026-05-21 submission)
+
+Everything else — schema, entities, services, Retell webhooks, softphone widget, dialer admin UI, seed scripts — is fully unblocked and can be implemented immediately.
 
 ---
 
@@ -111,7 +127,7 @@ Each entity has: `DOCS.md`, `schemas/`, `types.ts`, `constants/`, `lib/constants
 - `src/app/(frontend)/(dashboard)/layout.tsx` — mount `softphone-widget` globally
 
 ### Seed scripts (`scripts/`)
-- `seed-dialer-dids.ts` — insert 6 DIDs from Phase 0 procurement
+- `seed-dialer-dids.ts` — insert 3 DIDs from Phase 0 procurement (213=transfer-target, 424=dial, 626=dial). Pool expansion to 7-10 numbers deferred to ~1-2 weeks before Phase 2 ramp — keeps fresh DIDs out of the warm-up clock until needed.
 - `seed-dialer-lead-source.ts` — configure one example lead source with `dialerConfigJSON.enabled=true + retell_agent_id`
 
 ---
@@ -125,7 +141,7 @@ Each entity has: `DOCS.md`, `schemas/`, `types.ts`, `constants/`, `lib/constants
 - ✅ Hang up; disposition modal appears; save "Booked meeting"; verify `dialer_attempts` row has final state + recording URL
 - ✅ Recording URL is playable from the customer profile (or admin page in Phase 1)
 - ✅ Send a test SMS via `send-message-button` from admin page; message arrives on test phone; row created in `dialer_messages`
-- ✅ Send a test iMessage via the same button; arrives blue on iPhone, falls back to green SMS on Android
+- ⏸ ~~Send a test iMessage via the same button; arrives blue on iPhone, falls back to green SMS on Android~~ **DEFERRED — Sendblue deferred post-Phase-1**
 - ✅ Reply STOP from test phone; `dialer_dnc` row created; auto-confirmation SMS received
 - ✅ `pnpm tsc` clean
 - ✅ `pnpm lint` clean
@@ -177,9 +193,9 @@ TWILIO_TRANSFER_TARGET_DID_E164=+1XXXXXXXXXX                # the "Tri Pros Tran
 # Retell
 RETELL_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Sendblue
-SENDBLUE_API_KEY_ID=xxxxxxxxxxxxxxxx
-SENDBLUE_API_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Sendblue — DEFERRED (Phase 1 ships Twilio-only messaging)
+# SENDBLUE_API_KEY_ID=
+# SENDBLUE_API_SECRET=
 
 # Webhook public URL (Vercel deployment URL OR custom subdomain)
 DIALER_WEBHOOK_BASE_URL=https://dialer.triprosremodeling.com
@@ -1982,13 +1998,19 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 25: Sendblue iMessage impl + messaging router
+### Task 25: Sendblue iMessage impl + messaging router — **⏸ DEFERRED (2026-05-22)**
 
-**Files:**
+> **Status:** Sendblue (iMessage) deferred to post-Phase-1-launch enhancement. See EPIC.md decision log entry "Sendblue (iMessage) deferred." Phase 1 implements Twilio-only messaging via Task 24's `twilioMessagingProvider` — no router needed (only one provider).
+>
+> **For Phase 1, instead of Task 25:** create a thin `services/messaging/send-message.service.ts` that wraps `twilioMessagingProvider.send()` with the same `channelPreference: 'sms' | 'imessage' | 'auto'` signature this task's router would have had — but the implementation hard-codes channel to `'sms'` regardless of preference. When Sendblue is added later, this service is the seam that swaps in real routing logic. Mark with `@migration: → Sendblue iMessage routing` so it's findable.
+>
+> **Remaining steps below are RETAINED as reference for the future Sendblue add — do not implement now.**
+
+**Files (deferred):**
 - Create: `src/services/messaging/sendblue.messaging-provider.ts`
 - Create: `src/services/messaging/messaging-router.service.ts`
 
-- [ ] **Step 25.1: Sendblue impl (fetch-based, no SDK)**
+- [ ] **Step 25.1: Sendblue impl (fetch-based, no SDK)** — DEFERRED
 
 ```ts
 // sendblue.messaging-provider.ts
@@ -2977,9 +2999,11 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 34: Webhook routes — Sendblue (inbound + status)
+### Task 34: Webhook routes — Sendblue (inbound + status) — **⏸ DEFERRED (2026-05-22)**
 
-**Files:**
+> **Status:** DEFERRED with Task 25. Sendblue webhooks have no purpose until Sendblue's `MessagingProvider` impl exists. Skip this task entirely; it's retained as reference for the future Sendblue add.
+
+**Files (deferred):**
 - Create: `src/services/messaging/sendblue-signature-verify.ts`
 - Create: `src/app/api/messaging/sendblue/inbound/route.ts`
 - Create: `src/app/api/messaging/sendblue/status/route.ts`
