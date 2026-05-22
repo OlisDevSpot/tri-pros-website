@@ -104,10 +104,10 @@ Phase 0 (procurement) ──► Phase 1 (MVP)
 What's in place vs what's still vetting vs what's deferred. Phase 1 code work can start immediately; only specific tasks are gated by vetting clocks.
 
 ### ✅ Verified working
-- **Twilio account** + **3 DIDs**: `+1 213 XXX XXXX` (transfer-target), `+1 424 XXX XXXX` (dial), `+1 626 XXX XXXX` (dial)
+- **Twilio account** + **3 DIDs**: `+1 213 XXX XXXX` (transfer-target role), `+1 424 XXX XXXX` (dial), `+1 626 XXX XXXX` (dial)
 - **CNAM** set to `TRI PROS REMODEL` on all 3 DIDs
 - **Trust Hub Business Profile**: APPROVED (`TWILIO_TRUST_PROFILE_SID`)
-- **SHAKEN/STIR Trust Product**: APPROVED, A-attestation active (`TWILIO_SHAKEN_STIR_SID`)
+- **SHAKEN/STIR**: A-attestation applied automatically to every DID under the approved Trust Hub Business Profile — no per-DID Trust Product or SID env var needed
 - **Twilio API Key + TwiML App**: created, SIDs saved
 - **Elastic SIP Trunk** `tripros-retell-trunk`: all 3 DIDs attached, Termination via credential auth, Origination = `sip:sip.retellai.com`
 - **Retell account**: active, 3 DIDs imported, test agent deployed, outbound PSTN test from 626 → user's cell **SUCCEEDED**. iPhone Live Voicemail "state your name" prompt handled by Retell's built-in feature — no extra prompt engineering needed.
@@ -140,22 +140,18 @@ TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_API_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_SHAKEN_STIR_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_10DLC_CAMPAIGN_SID=CMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # pending campaign approval
 
-# Pilot DIDs — each owned number has both the E.164 form and Twilio Phone Number SID.
-# DID *role* (transfer_target vs dial) lives in dialer_dids.role once seeded; env vars are bootstrap input.
-TWILIO_DID_213_E164=+1213XXXXXXX
-TWILIO_DID_213_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Pilot DIDs — role baked into the env var name.
+# Transfer-target = dedicated DID for the human-leg dial (213 in the pilot).
+# Dial DIDs = rotated for outbound to leads, area-coded.
+# Phase 1 seed script reads these and inserts into dialer_dids with role assignment.
+TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
+TWILIO_TRANSFER_TARGET_DID_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_424_E164=+1424XXXXXXX
 TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_626_E164=+1626XXXXXXX
 TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# Transfer-target role pointer — read by runtime code when initiating the human-leg dial.
-# Bootstrap input: seed-dialer-dids.ts assigns role='transfer_target' to whichever DID matches this.
-# In the pilot this points to the 213 DID; mirror the same value as TWILIO_DID_213_E164.
-TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
 
 # Twilio SIP Trunking
 TWILIO_SIP_TRUNK_DOMAIN=tripros.pstn.twilio.com

@@ -348,25 +348,21 @@ Once Phase 0 is complete, the implementing session will need these secrets (coll
 # Twilio
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_SHAKEN_STIR_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # SHAKEN/STIR A-attestation is auto-applied account-wide; no separate Trust-Product SID needed
 TWILIO_10DLC_CAMPAIGN_SID=CMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Pilot DIDs (E.164 + SID per number). Role lives in dialer_dids.role once seeded.
-TWILIO_DID_213_E164=+1213XXXXXXX
-TWILIO_DID_213_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Pilot DIDs — role baked into env var name.
+TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
+TWILIO_TRANSFER_TARGET_DID_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_424_E164=+1424XXXXXXX
 TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_626_E164=+1626XXXXXXX
 TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Transfer-target role pointer (mirrors 213 in the pilot)
-TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
-
 # Twilio SIP Trunking (Retell origination)
 TWILIO_SIP_TRUNK_DOMAIN=tripros.pstn.twilio.com
 TWILIO_SIP_TRUNK_USERNAME=retell
-TWILIO_SIP_TRUNK_PASSWORD=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_SIP_TRUNK_PASSWORD=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Retell
 RETELL_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
