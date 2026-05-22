@@ -32,6 +32,7 @@ const STATIC_ROUTES: RouteEntry[] = [
   { path: '/community/join', changeFrequency: 'monthly', priority: 0.5 },
   { path: '/blog', changeFrequency: 'daily', priority: 0.8 },
   { path: '/privacy', changeFrequency: 'yearly', priority: 0.3 },
+  { path: '/terms', changeFrequency: 'yearly', priority: 0.3 },
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
