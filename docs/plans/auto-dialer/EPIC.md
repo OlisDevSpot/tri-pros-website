@@ -24,6 +24,38 @@ Tri Pros Remodeling needs to handle thousands of weekly lead-dial attempts with 
 
 ---
 
+## Spam mitigation strategy (LAYERED)
+
+**Carrier "Spam Likely" labeling is the #1 risk to dialer effectiveness.** Discovered 2026-05-21 during Phase 0 testing: a fresh Twilio DID with STIR/SHAKEN A-attestation **APPROVED** still rendered as "Spam Likely" on iPhone. STIR/SHAKEN proves *who* is calling (not spoofed) but says nothing about whether the call is *wanted*. The actual verdict comes from three independent carrier analytics engines layered on top:
+
+| Engine | Carriers Using It |
+|---|---|
+| **Hiya** | AT&T native + Samsung devices + Hiya app |
+| **TNS** | Verizon native |
+| **First Orion** | T-Mobile / Sprint native |
+
+Each engine vets registrations independently and scores reputation by behavior (call duration, hangup rate, complaint rate, volume patterns). Brand-new DIDs with zero history default to skeptical treatment.
+
+**Mitigation is a layered stack, deployed progressively:**
+
+| Layer | When | Cost | Effort | Triggers |
+|---|---|---|---|---|
+| **L1 — Free baseline**: CNAM + FreeCallerRegistry + Nomorobo + behavioral hygiene | Phase 0 | Free | 1hr setup + 2-4 week vetting clock | Mandatory; do TODAY |
+| **L2 — DID pool + warming + per-DID health**: 7-10 DIDs in rotation, ≤75 attempts/DID/day, warm-up cadence (week 1: 10-20 → week 3: 75), auto-retire flagged DIDs | Phase 1 (schema) → Phase 2 (orchestrator) | Free (just DID cost ~$1.15/mo each) | Built into `dialer_dids` schema | Mandatory before any production volume |
+| **L3 — Cheap insurance**: Twilio Voice Integrity (managed registration + monitoring) + FCC Reassigned Numbers Database scrub | Phase 1-2 | ~$5-15/DID/mo Voice Integrity + ~$1,300/yr RND | 1 hour | Enable Voice Integrity if FCR alone doesn't clear "Spam Likely" within 4 weeks; RND mandatory for TCPA safe harbor |
+| **L4 — Branded display**: Hiya Connect (AT&T+T-Mobile+Samsung) + Verizon BCID via Numeracle or First Orion as OSP | Phase 2-3 | $29-500/mo Hiya self-serve → $300-800/mo Verizon BCID OSP | 1-2 weeks setup | Volume >3K conversations/mo |
+| **L5 — Continuous monitoring at scale**: Caller ID Reputation (CIDR) + Hiya Reputation API (programmatic spam-status checks baked into dialer) | Phase 3+ | ~$64/mo CIDR + Hiya API quoted | dev integration | DID pool >10 OR sustained answer-rate drop >25% |
+
+**Behavior matters more than registration.** All registration in the world won't save a DID that bursts 200 calls in 30 min with <10s avg duration. The data model bakes this in:
+- `dialer_dids` table tracks per-DID daily call count, complaint count, "spam_likely" detection
+- `dialer_attempts` captures duration, hangup pattern, vendor flags
+- Dispatcher service enforces ≤75 attempts/DID/day cap with rotation
+- Auto-retire flow parks DIDs that cross thresholds (drops >25% week-over-week, or 2-of-3 engines flag) for 60-90 days
+
+**Forward-looking signal:** Verizon BCID went live Sept 2025. By Phase 3, full national branded-calling coverage will require *two* vendors (Hiya for AT&T + Numeracle/First Orion as OSP for Verizon BCID) OR Twilio Branded Calling (currently Public Beta; covers T-Mobile + Verizon, NOT AT&T). Twilio's offering may consolidate this by Phase 3 — revisit then.
+
+---
+
 ## Phase status
 
 | Phase | Status | Plan | Spec section | Estimated effort |
@@ -102,7 +134,14 @@ Every `@migration` comment in the dialer code points to a future swap. Searchabl
 
 > Each entry: date, decision, context, link to PR/commit. Append-only. This is where "we decided X mid-Phase-2 because we found Y" gets recorded.
 
-_(Empty — start populating once Phase 0 procurement begins.)_
+### 2026-05-21 — Layered spam mitigation promoted to Phase 0
+
+**Phase:** 0 (procurement)
+**Context:** First Phase-0 test call from a fresh Twilio DID (424 area code) with STIR/SHAKEN A-attestation APPROVED rendered as **"Spam Likely"** on iPhone. Research confirmed STIR/SHAKEN is necessary-but-not-sufficient — carriers run independent reputation engines (Hiya/AT&T, TNS/Verizon, First Orion/T-Mobile) on top with their own behavioral models. Brand-new DIDs default to skeptical treatment.
+**Decision:** Add a 5-layer spam mitigation strategy to EPIC (see "Spam mitigation strategy" section above) and promote L1 (free baseline: CNAM + FreeCallerRegistry + Nomorobo + reputation baseline) into Phase 0 as new **Task 1.5**. L2 (DID pool warming + per-DID health) stays in Phase 1-2 as already designed. L3-L5 (Voice Integrity, Hiya Connect, Verizon BCID, CIDR monitoring) deferred to Phase 2-3 with explicit triggers.
+**Alternative considered:** Skip free baseline, go straight to Hiya Connect ($29/mo entry). Rejected: Hiya doesn't cover Verizon, and free baseline must process for 2-4 weeks regardless — starting it on Day 1 means it's complete by the time we're ready to dial production volume. Spending money in Phase 0 before validating that free baseline alone clears the flag is wasteful.
+**Impact:** Phase 0 plan extended with Task 1.5 (~1 hour user effort). Phase 0 gate criteria updated. DID pool plan revised from "5 dial + 1 transfer = 6 numbers" to "3 pilot now, expand to 7-10 before scaling >150 attempts/day". `@migration: → Hiya Connect` trigger condition now formally written as "answer rate <15% sustained AND/OR sustained Spam Likely after 4 weeks of FCR vetting."
+**Link:** (this commit)
 
 ### Template entry
 

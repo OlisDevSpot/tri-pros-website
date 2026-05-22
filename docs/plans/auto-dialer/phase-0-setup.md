@@ -27,9 +27,12 @@ Two of the tasks have **1-2 week external vetting timelines** (Twilio Trust Hub 
 - ✅ 10DLC campaign approved
 - ✅ Retell account active + verified outbound test call from their dashboard
 - ✅ Sendblue account active + verified test iMessage
-- ✅ 5 dial DIDs + 1 reserved transfer-target DID purchased and visible in Twilio Console
+- ✅ Dial DIDs + 1 reserved transfer-target DID purchased and visible in Twilio Console (pilot: 3 dial; expand to 7-10 before scaling)
+- ✅ **DID reputation baseline complete** — CNAM set, FreeCallerRegistry submitted, Nomorobo submitted, baseline reputation screenshots captured per DID
 - ✅ FTC DNC list access credentials obtained
 - ✅ (Recommended) TCPA attorney consult complete with documented opinion
+
+**Note on DID reputation:** STIR/SHAKEN A-attestation alone does NOT prevent carrier "Spam Likely" labeling. The three carrier analytics engines (Hiya → AT&T, TNS → Verizon, First Orion → T-Mobile) run independently on top of STIR/SHAKEN with their own behavioral models. Task 1.5 below is the mandatory free baseline. See EPIC.md → "Spam mitigation strategy" for the full layered stack.
 
 ---
 
@@ -107,6 +110,64 @@ Watch Twilio Console for approval emails. Once approved:
 - 10DLC: shows "Active" campaign, throughput limit enabled
 
 **This task is complete when all approval indicators show green.**
+
+---
+
+### Task 1.5: DID Reputation Baseline (do TODAY, immediately after DID purchase)
+
+**Owner:** User
+**Estimated effort:** ~1 hour active + 2-4 weeks background processing
+**Why this exists:** Your first test call from a fresh Twilio DID with STIR/SHAKEN A-attestation approved showed **"Spam Likely"** on iPhone. That's because A-attestation proves you didn't spoof, but says nothing about whether you're spam. The actual verdict comes from Hiya (used by AT&T + Samsung), TNS (Verizon), and First Orion (T-Mobile) running independent reputation analytics layered on top of STIR/SHAKEN. Brand-new DIDs with zero call history default to skeptical treatment. This task registers your DIDs with each engine proactively so the spam-likely flag clears within 2-4 weeks.
+
+⚠️ **Do all steps below within the same day** — vetting clocks start at submission and you want them running in parallel with Trust Hub + 10DLC vetting (Tasks 1.4-1.5 above).
+
+- [ ] **Step 1.5.1: Set CNAM on every DID** (free, ~5 min/number)
+
+In Twilio Console → Phone Numbers → click each DID → Voice section → Caller Name Display → set to **"TRI PROS REMODEL"** (15-char max on most carriers; exact match to registered business name).
+
+CNAM is primarily honored by landlines and a small fraction of mobile flows. **It will NOT directly fix the iPhone "Spam Likely" issue** (mobile carriers ignore CNAM in favor of their analytics engines). But it's free, helps landlines, and signals "legitimate registered business" to engine vetters reviewing your FCR submission.
+
+- [ ] **Step 1.5.2: Submit all DIDs to FreeCallerRegistry** (free, ~15 min total)
+
+Go to https://freecallerregistry.com/fcr/public/html/home.html. One form submits to Hiya + TNS + First Orion simultaneously — the three engines behind AT&T, Verizon, and T-Mobile. Run by those companies directly, not a third party.
+
+Required info: business name (must match Trust Hub exactly), EIN, call type (B2C lead callback), industry (Home Improvement / Construction Services), expected call volume, brief description of why you call (following up on opted-in remodeling leads).
+
+**Processing time:** 1-4 weeks per engine (each vets independently). They may email for clarifications — respond within 24 hours to keep your submission active.
+
+**This will not retroactively remove the "Spam Likely" label from your existing test calls** — it tells engines "this is a legit business" so future calls get scored fairly.
+
+- [ ] **Step 1.5.3: Submit to Nomorobo good-caller list** (free, ~10 min)
+
+Separate ecosystem from FCR — Nomorobo's database is used by many third-party caller ID apps and feeds into iPhone's Live Caller ID feature. Go to https://www.nomorobo.com/contact-us, select "good caller registration", submit business details + all 3 DIDs.
+
+- [ ] **Step 1.5.4: Establish reputation baseline** (free, ~10 min)
+
+Run free reputation checks against each DID. Screenshot results — you'll re-check weekly during warm-up to confirm vetting is processing.
+
+- https://batchdialer.com/reputation-check (up to 3 numbers, no signup, shows current label per carrier)
+- https://www.numeracle.com/number-check (up to 15 numbers, emails detailed cross-carrier report)
+- https://calleridreputation.com/attestation-tester/ (verifies STIR attestation is being applied correctly)
+
+**Expected baseline (today):** "Unrated" or "Spam Likely" on most carriers. **Expected after 2-4 weeks** of FCR + Nomorobo + low-volume warm calling: cleared to "Allowed" / "No label" on at least 2 of 3 engines.
+
+- [ ] **Step 1.5.5: Plan DID pool expansion** (do NOT buy today — defer to ~1 week before Phase 2 scaling)
+
+Industry rule of thumb: **maximum 75 dial attempts per DID per day** (50/day safe target). For target ~500 attempts/day at scale, you need **7-10 DIDs in rotation**. You currently have 3 (213, 424, 626). Plan to buy 4-7 more before going above ~150 attempts/day. SoCal area codes to add when ready:
+
+- 619 (San Diego)
+- 760 (Inland Empire)
+- 909 (San Bernardino / Riverside)
+- 562 (Long Beach)
+- 951 (Riverside)
+
+**Don't buy today** — fresh DIDs need 2-4 weeks of warming before they're spam-safe. Buying now means starting their clock for volume you won't hit for 8+ weeks. Buy them 1-2 weeks before the planned ramp instead.
+
+- [ ] **Step 1.5.6: (Optional, paid) Enable Twilio Voice Integrity**
+
+Twilio Console → Trust Hub → Voice Integrity. This is Twilio's productized "managed registration with all 3 engines + ongoing reputation monitoring." Pricing not public (likely ~$5-15/DID/month). Easiest "paid version of FCR" path if you don't want to maintain registrations manually.
+
+**Recommendation:** wait until after FCR results come in (2-4 weeks). If FCR alone clears the "Spam Likely" flag on 2 of 3 engines, skip Voice Integrity. If it doesn't, enable it as the next escalation.
 
 ---
 
@@ -255,13 +316,18 @@ When ALL of these are checked, Phase 1 can begin:
 
 - [ ] Twilio Trust Hub: business profile approved
 - [ ] Twilio Trust Hub: SHAKEN/STIR Trust Product approved (A-attestation enabled)
-- [ ] Twilio: 5 dial DIDs purchased + 1 transfer-target DID purchased (6 total)
+- [ ] Twilio: dial DIDs purchased + 1 transfer-target DID purchased (pilot: 3 dial + 0 reserved transfer — using 213 as transfer; expand pool to 7-10 before scaling >150/day)
+- [ ] Twilio: CNAM set on every DID ("TRI PROS REMODEL")
+- [ ] DID reputation: FreeCallerRegistry submitted for all DIDs
+- [ ] DID reputation: Nomorobo good-caller list submitted for all DIDs
+- [ ] DID reputation: baseline screenshots captured (BatchDialer + Numeracle + CIDR attestation tester)
 - [ ] Twilio: 10DLC campaign approved + active
 - [ ] Retell: account active, BYO Twilio import verified, test outbound call successful
 - [ ] Sendblue: account active, test iMessage + SMS fallback verified
 - [ ] FTC DNC: telemarketer registration approved, 5-area-code subscription active
 - [ ] Inngest: account active, project connected (preparatory; doesn't block Phase 1)
 - [ ] (Optional) Webhook subdomain `dialer.triprosremodeling.com` resolving to Vercel
+- [ ] (Optional) Twilio Voice Integrity enabled (only if FCR alone doesn't clear "Spam Likely" within 4 weeks)
 - [ ] (Recommended) TCPA attorney consult complete, opinion documented
 
 ---
