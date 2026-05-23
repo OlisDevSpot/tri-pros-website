@@ -1,5 +1,17 @@
 # Auto-Dialer Epic — Living Context
 
+> ## ⏸ DEFERRED — pivoted to CloudTalk on 2026-05-23
+>
+> **This EPIC describes a custom Twilio + Retell + Sendblue build that is no longer the active plan.** The user pivoted to **CloudTalk** as the integrated VoIP + AI-voice provider mid-Phase-1A grilling session. CloudTalk replaces Twilio + Retell + Sendblue.
+>
+> **What to read instead:** [`docs/plans/voip/HANDOFF-from-twilio-build.md`](../voip/HANDOFF-from-twilio-build.md) — full pivot context, what carries over, what's abandoned, starter sketch for the new CloudTalk EPIC.
+>
+> **Why this doc still lives here:** Business-logic decisions, strategic context (spam mitigation rationale, why-not-CloudTalk-originally analysis, owner-managed AI script position, deferred TCPA consult, etc.) are still valid under CloudTalk. The infrastructure-specific bits (Trust Hub, Elastic SIP Trunk, Retell agents, 10DLC) are obsolete but informative for the CloudTalk Phase 0 design.
+>
+> **Aborted implementation work:** see git branch `archive/twilio-build-aborted` (5 commits, not merged). Not for use.
+>
+> ---
+
 > **What this is:** The front door for the auto-dialer initiative. Tracks vision, phase status, inter-phase decisions made *during* implementation (vs. up-front design choices, which live in the spec), open questions still to resolve, and links to all related artifacts. Updated as phases ship.
 >
 > **Distinction from related docs:**

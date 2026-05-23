@@ -1,5 +1,17 @@
 # Phase 1 — MVP End-to-End Transfer + Messaging Foundation
 
+> ## ⏸ DEFERRED — pivoted to CloudTalk on 2026-05-23
+>
+> **This Phase 1 plan implements a custom Twilio + Retell orchestration that is no longer being built.** CloudTalk subsumes most of what these 44 tasks would have created.
+>
+> **What to read instead:** [`docs/plans/voip/HANDOFF-from-twilio-build.md`](../voip/HANDOFF-from-twilio-build.md). Sections "What carries over" + "What does NOT carry over" + "Open grilling questions never reached" tell you which decisions inside this Phase 1 plan are still applicable to the CloudTalk EPIC vs which are vendor-specific noise.
+>
+> **Aborted implementation:** the first 11 tasks were partially executed on branch `archive/twilio-build-aborted` (5 commits, not merged). Task 12 was in-flight at pivot time.
+>
+> **Grilling-session decisions** (Q1-Q8 + architectural A1) are documented in the handoff and still apply to CloudTalk — they're business-logic / schema-shape decisions, not Twilio-Retell-specific.
+>
+> ---
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **Parent epic:** [EPIC.md](./EPIC.md)

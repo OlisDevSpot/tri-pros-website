@@ -1,5 +1,15 @@
 # Phase 0 — External Setup & Procurement
 
+> ## ⏸ DEFERRED — pivoted to CloudTalk on 2026-05-23
+>
+> **This Phase 0 describes Twilio + Retell + Sendblue procurement (Trust Hub, 10DLC, SIP trunking, Retell agents, etc.) which is no longer the active plan.** CloudTalk replaces these vendors. A new Phase 0 for CloudTalk procurement + dashboard configuration will be written in a fresh EPIC.
+>
+> **What to read instead:** [`docs/plans/voip/HANDOFF-from-twilio-build.md`](../voip/HANDOFF-from-twilio-build.md). Section "Phase 0 procurement state" lists what's already paid for / configured under Twilio and whether it's portable, reusable, or obsolete under CloudTalk.
+>
+> **Why this doc still lives here:** the procurement *categories* (account setup, business identity, DID strategy, compliance registrations, attorney consults, webhook subdomain) are the SAME categories CloudTalk Phase 0 will need to walk through. The vendor-specific steps are obsolete; the structural template informs the CloudTalk version.
+>
+> ---
+
 > **For agentic workers:** This phase is **almost entirely manual/external** — vendor account signups, business identity verification, attorney consults. NO code work. Tasks are checklists to track, not commits to make.
 >
 > **Parent epic:** [EPIC.md](./EPIC.md)
