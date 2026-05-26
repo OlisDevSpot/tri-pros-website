@@ -237,18 +237,31 @@ function buildMergeSendBody(ctx: ProposalContext, templateDocs: readonly Envelop
  * merged template's name ("tpr-HI"), which is unhelpful when scanning
  * dozens of customer agreements at once.
  *
- * Format: "{customer} — {kind label}[ — {proposal label}]"
- *  - "Patricia Zanders — Initial Sale Agreement"
- *  - "Patricia Zanders — Additional Work Addendum — Bathroom Add-on"
+ * Zoho Sign rejects dash characters in `request_name`, so we use commas
+ * as separators.
+ *
+ * Format: "{customer}, {first trade}, {first scope}[ ...]"
+ *  - "Patricia Zanders, Plumbing, Drain Cleaning"
+ *  - "Patricia Zanders, Plumbing, Drain Cleaning ..."  (multi-section SOW)
+ *  - "Patricia Zanders"                                (no SOW yet)
  */
 function buildEnvelopeName(ctx: ProposalContext): string {
   const customer = ctx.proposal.customer?.name?.trim() || '(Unknown Customer)'
-  const kindLabel = ctx.kind === 'initial-sale'
-    ? 'Initial Sale Agreement'
-    : 'Additional Work Addendum'
-  const proposalLabel = ctx.proposal.label?.trim()
-  const suffix = proposalLabel ? ` — ${proposalLabel}` : ''
-  return `${customer} — ${kindLabel}${suffix}`
+  const sow = ctx.proposal.projectJSON?.data?.sow ?? []
+  const firstSow = sow[0]
+
+  const parts: string[] = [customer]
+  const trade = firstSow?.trade?.label?.trim()
+  if (trade) {
+    parts.push(trade)
+  }
+  const firstScope = firstSow?.scopes?.[0]?.label?.trim()
+  if (firstScope) {
+    parts.push(firstScope)
+  }
+
+  const base = parts.join(', ')
+  return sow.length > 1 ? `${base} ...` : base
 }
 
 /**
