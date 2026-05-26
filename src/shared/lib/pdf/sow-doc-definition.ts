@@ -22,18 +22,9 @@ export function buildSowDocDefinition(proposal: ProposalWithCustomer): TDocument
     content.push({
       text: `${i + 1}. ${item.title || 'Untitled scope'}`,
       style: 'itemTitle',
+      margin: [0, 0, 0, 12],
       pageBreak: i > 0 ? 'before' : undefined,
     })
-    if (item.trade?.label) {
-      content.push({ text: item.trade.label, style: 'itemTrade', margin: [0, 0, 0, 4] })
-    }
-    if (item.scopes?.length) {
-      content.push({
-        text: item.scopes.map(s => s.label).join(' · '),
-        style: 'scopeChips',
-        margin: [0, 0, 0, 12],
-      })
-    }
     const doc = safeParseDoc(item.contentJSON)
     if (doc) {
       content.push(...(tiptapToPdfmake(doc) as Content[]))
@@ -47,8 +38,6 @@ export function buildSowDocDefinition(proposal: ProposalWithCustomer): TDocument
       docTitle: { fontSize: 20, bold: true, margin: [0, 0, 0, 4] },
       subtitle: { fontSize: 10, color: '#666', margin: [0, 0, 0, 16] },
       itemTitle: { fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
-      itemTrade: { fontSize: 10, color: '#666', italics: true },
-      scopeChips: { fontSize: 9, color: '#444' },
       h1: { fontSize: 14, bold: true },
       h2: { fontSize: 12, bold: true },
       h3: { fontSize: 11, bold: true },
