@@ -80,6 +80,22 @@ const envSchema = z.object({
   // ABLY
   ABLY_API_KEY: z.string(),
 
+  // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (CloudTalk).
+  // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
+  VOIP_WEBHOOK_BASE_URL: z.string().optional(),
+  // Phase 0 only — mocked transfer-target endpoint returns this E.164 for the smoke test.
+  // Replaced in Phase 1 with the real Twilio in-house DID lookup. Leave empty in prod.
+  CLOUDTALK_PHASE0_TRANSFER_TARGET_E164: z.string().optional(),
+
+  // CLOUDTALK (voip-campaigns)
+  // HTTP Basic auth — Access Key ID is the username, Access Key Secret is the password.
+  CLOUDTALK_ACCESS_KEY_ID: z.string().optional(),
+  CLOUDTALK_ACCESS_KEY_SECRET: z.string().optional(),
+  // Long-random shared secret appended as ?secret=<value> on the webhook URL configured in CloudTalk dashboard.
+  CLOUDTALK_WEBHOOK_SECRET: z.string().optional(),
+  // Optional comma-separated CIDRs for Vercel edge allowlist.
+  CLOUDTALK_WEBHOOK_IP_ALLOWLIST: z.string().optional(),
+
   // WEB PUSH (VAPID)
   // Generate with `node scripts/generate-vapid-keys.mjs`. The public key is
   // exposed to the client via NEXT_PUBLIC_*; the private key signs JWT auth
