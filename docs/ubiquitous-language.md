@@ -115,8 +115,9 @@ Trade (discipline)
 
 | Term | Definition |
 |------|-----------|
-| **Pipeline** | Business-wide workflow track: `fresh` (new sales), `projects` (active construction), `rehash` (re-engagement), `dead` (archived). Derived from meetings + projects — not stored on customer. A customer can appear in multiple pipelines simultaneously. |
+| **Pipeline** | Business-wide post-meeting workflow track: `fresh` (new sales), `projects` (active construction), `rehash` (re-engagement), `dead` (archived). Derived from meetings + projects — not stored on customer. A customer can appear in multiple pipelines simultaneously. **Note:** the **pre-meeting "lead" stage** is NOT part of this enum — it's owned by the third-party auto-dialer provider (CloudTalk; see `docs/plans/voip-campaigns/EPIC.md` § "Data ownership model"). Our app caches pre-meeting lifecycle state in `customers.voipCampaignStatus` + `customers.voipLifecycleTags` JSONB but the provider is the source of truth. |
 | **Pipeline (on meeting)** | Stored field: `fresh \| rehash \| dead`. If `meeting.projectId` is set, effective pipeline is `projects` (overrides stored field). |
+| **Lead lifecycle** | The pre-meeting state machine: `Lead → Engaged → Transferred → Booked / Exhausted / BadNumber`. **Owned by the auto-dialer provider** (CloudTalk), not our app. Our app reads this state via webhook push and caches it; the provider is the source of truth. On `Booked`, the graduation event hands ownership over to our app's **Pipeline** (above) — from `Booked` onward, our app is authoritative. |
 | **Fresh Pipeline Stage** | Computed from meetings + proposals: `needs_confirmation → meeting_scheduled → meeting_in_progress → meeting_completed → follow_up_scheduled → proposal_sent → contract_sent → approved \| declined`. |
 | **Projects Pipeline Stage** | Stored on project: `signed → permits_pending → in_progress → punch_list → completed`. |
 | **SFH** (Single Family Home) | A residential structure type — the primary unit of work. A project is typically associated with a single SFH at a unique physical address. |
