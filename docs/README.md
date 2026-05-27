@@ -29,9 +29,12 @@ Tri Pros Remodeling is a Southern California residential construction and remode
 | Service / provider 4-tier architecture | `codebase-conventions/service-architecture.md` (+ ADR-0003) |
 | Pagination / sort / search / filters toolkit | `codebase-conventions/query-toolkit.md` |
 | Tailwind / shadcn / motion / 'use client' / lint | `codebase-conventions/frontend-stack.md` |
+| PWA shell, safe-area, layout chain, scroll ownership | `codebase-conventions/app-shell.md` |
+| Compound entity cards, `<EntityActionMenu>`, `<EntityList>` | `codebase-conventions/entity-frontend.md` |
 | Env vars, public URLs, VAPID, integrations inventory | `codebase-conventions/environment.md` |
 | **Business rules per entity** | `src/shared/entities/<entity>/DOCS.md` (proposals/ is canonical) |
 | **tRPC entity-server-system operational rules** | `src/trpc/DOCS.md` |
+| **Where does a new rule go?** | `codebase-conventions/README.md` (decision tree) |
 
 ---
 
@@ -79,7 +82,7 @@ docs/
     add-an-entity.md
 
   codebase-conventions/             cross-cutting engineering rules
-    README.md                       topic index
+    README.md                       topic index + "where does a new rule go?" decision tree
     database-schema.md
     enum-standardization.md
     trpc-procedures.md
@@ -87,6 +90,8 @@ docs/
     service-architecture.md
     query-toolkit.md
     frontend-stack.md
+    app-shell.md                    PWA + safe-area + layout + scroll ownership
+    entity-frontend.md              compound entity cards + EntityActionMenu + EntityList
     environment.md
 
   plans/                            large unimplemented designs
