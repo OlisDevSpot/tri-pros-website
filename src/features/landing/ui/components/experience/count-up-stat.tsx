@@ -23,7 +23,7 @@ export function CountUpStat({ value, className }: CountUpStatProps) {
     const controls = animate(0, parsed.numeric, {
       duration: 1.6,
       ease: [0.16, 1, 0.3, 1],
-      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+
       onUpdate: v => setDisplay(`${parsed.prefix}${Math.round(v)}${parsed.suffix}`),
     })
     return () => controls.stop()
