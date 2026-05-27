@@ -1,8 +1,21 @@
-# Handoff — pivot from custom Twilio+Retell build to CloudTalk-based VoIP system
+# Handoff — pivot from custom Twilio+Retell build to dual VoIP architecture
 
-> **Status:** Handoff complete (2026-05-23). Awaiting new `/grill-with-docs` session to architect the CloudTalk EPIC.
-> **Previous EPIC:** [`docs/plans/auto-dialer/EPIC.md`](../auto-dialer/EPIC.md) — **DEFERRED**, preserved as reference for business-logic decisions still valid under CloudTalk.
-> **Design spec (still mostly valid):** [`docs/superpowers/specs/2026-05-21-ai-dialer-design.md`](../../superpowers/specs/2026-05-21-ai-dialer-design.md)
+> ## Status: Historical context — superseded by the dual-EPIC architecture (2026-05-23)
+>
+> The 2026-05-23 grilling session that followed this handoff resolved the pivot into a **two-system architecture**:
+> - [voip-in-house EPIC](../voip-in-house/EPIC.md) (formerly `docs/plans/auto-dialer/`) — Twilio for agent-mediated comms, inbound IVR, lifecycle SMS, tokenized links, internal-comm push pipeline
+> - [voip-campaigns EPIC](../voip-campaigns/EPIC.md) — CloudTalk for lead-to-meeting conversion (the high-volume AI dialing piece only)
+>
+> **Cross-system contract:** [INTEGRATION-SEAM.md](./INTEGRATION-SEAM.md)
+>
+> **This handoff doc is preserved as historical context for *why* the split happened.** The architectural choices it sketches (CloudTalk-as-wholesale-replacement, single VoIP EPIC) are no longer the live plan — but the business decisions it preserves (manual mode deferred, AI script content owner-managed, A2-A7 grilling questions, idempotency keys, `voip_*` naming convention) carry forward to both EPICs.
+>
+> ---
+>
+> **Original status banner (frozen 2026-05-23):**
+> Handoff complete (2026-05-23). Awaited a new `/grill-with-docs` session to architect the CloudTalk EPIC.
+> **Previous EPIC at time of handoff:** `docs/plans/auto-dialer/EPIC.md` (since renamed to [`docs/plans/voip-in-house/EPIC.md`](../voip-in-house/EPIC.md) per the 2026-05-23 grilling session output).
+> **Design spec (frozen historical):** [`docs/superpowers/specs/2026-05-21-ai-dialer-design.md`](../../superpowers/specs/2026-05-21-ai-dialer-design.md)
 
 ---
 
@@ -92,7 +105,7 @@ CloudTalk may own some of this state (e.g., DIDs registered in CloudTalk dashboa
 | FCC DNC SAN | ⏳ Submitted (1-2 business days) | Still relevant for DNC scrub regardless of provider |
 | FreeCallerRegistry (Hiya/TNS/First Orion) | ⏳ Submitted | Still relevant for reputation; not provider-tied |
 | Inngest account | ✅ Active, keys saved | Still useful for our orchestration; not provider-tied |
-| `dialer.triprosremodeling.com` subdomain | ✅ Verified | Still useful as webhook base URL |
+| `voip.triprosremodeling.com` subdomain | ✅ Verified | Still useful as webhook base URL |
 
 ### App-wide patterns introduced this session (reusable beyond dialer)
 
@@ -228,7 +241,7 @@ docs/plans/voip/
 - DID procurement / number porting from Twilio (if applicable)
 - AI voice agent configuration in CloudTalk dashboard
 - Routing / workflow configuration in CloudTalk dashboard
-- Webhook endpoint configuration (CloudTalk → our `dialer.triprosremodeling.com/api/cloudtalk/...`)
+- Webhook endpoint configuration (CloudTalk → our `voip.triprosremodeling.com/api/cloudtalk/...`)
 - API key generation + storage
 - SMS sender registration (CloudTalk equivalent of 10DLC)
 - Trust / compliance setup (CloudTalk's equivalent of SHAKEN/STIR, DNC scrubbing)

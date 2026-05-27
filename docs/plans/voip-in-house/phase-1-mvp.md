@@ -1,483 +1,515 @@
-# Phase 1 — MVP End-to-End Transfer + Messaging Foundation
+# Phase 1 — MVP In-house Twilio VoIP Foundation
 
-> ## ⏸ DEFERRED — pivoted to CloudTalk on 2026-05-23
->
-> **This Phase 1 plan implements a custom Twilio + Retell orchestration that is no longer being built.** CloudTalk subsumes most of what these 44 tasks would have created.
->
-> **What to read instead:** [`docs/plans/voip/HANDOFF-from-twilio-build.md`](../voip/HANDOFF-from-twilio-build.md). Sections "What carries over" + "What does NOT carry over" + "Open grilling questions never reached" tell you which decisions inside this Phase 1 plan are still applicable to the CloudTalk EPIC vs which are vendor-specific noise.
->
-> **Aborted implementation:** the first 11 tasks were partially executed on branch `archive/twilio-build-aborted` (5 commits, not merged). Task 12 was in-flight at pivot time.
->
-> **Grilling-session decisions** (Q1-Q8 + architectural A1) are documented in the handoff and still apply to CloudTalk — they're business-logic / schema-shape decisions, not Twilio-Retell-specific.
->
-> ---
+> **Parent EPIC:** [EPIC.md](./EPIC.md)
+> **Sibling EPIC:** [voip-campaigns](../voip-campaigns/EPIC.md) — ships **after** this EPIC because CloudTalk depends on the in-house DIDs + DNC table + voip routing endpoints existing.
+> **Cross-system contract:** [../voip/INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md) — load-bearing for anything that touches voip routing endpoints, `voip_dnc` propagation, the `source` discriminator, or webhook routes.
+> **Prerequisite:** [Phase 0](./phase-0-setup.md) gate satisfied (Twilio + Trust Hub + DIDs + webhook subdomain). 10DLC Campaign vetting and FCC DNC SAN issuance still in background — they gate specific tasks (Task 25, Task 14) but don't block the start of Phase 1.
+> **Status:** Ready to start (2026-05-23 descope rewrite complete).
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
->
-> **Parent epic:** [EPIC.md](./EPIC.md)
-> **Spec section:** §9 Phase 1
-> **Prerequisite:** [Phase 0](./phase-0-setup.md) gate satisfied — see EPIC.md "Phase 0 outcomes" for current state
-> **Status:** Ready to start (2026-05-22)
+**Goal:** Ship the in-house VoIP foundation that every other in-house comms feature (lifecycle SMS, mobile mode, admin observability, customer-side timeline) builds on, AND that voip-campaigns Phase 1 depends on.
 
-**Goal:** Ship the minimum viable end-to-end flow: a super-admin clicks "Dial now (AI)" on a customer profile → AI dials → lead picks up → warm-transferred to softphone in dashboard → human takes call → dispositions. Plus messaging foundation: manual **SMS** send (Twilio-only — Sendblue deferred), inbound STOP keyword handling.
+In agent-facing terms, Phase 1 ships:
+- An agent can click "Call" on a customer profile → app dials the customer **from the agent's sticky Tri Pros DID** → bridges into the agent's browser softphone → conversation happens → disposition recorded.
+- An agent can click "Send SMS" on a customer profile → app sends SMS from the same sticky DID → delivery status tracked → inbound replies threaded.
+- A customer who replies STOP gets opted out automatically → `voip_dnc` records it → all future outbound (in-house AND CloudTalk) gates against this table.
+- CloudTalk's Call Flow Designer can hit our voip routing endpoints mid-call to look up caller context, get a warm-transfer target DID, and double-check compliance.
+- An agent can mint a tokenized link and send it via SMS — the customer opens it, lands on the L-DOC document-upload route, the token gets consumed (single-use, 48h TTL, phone-tied).
+- Super-admin has a global kill switch via `app_settings(feature='voip-in-house')` that halts all in-house outbound.
 
-**Architecture:** Custom orchestrator in our tRPC + services + DAL layers. Vendor-abstracted: Twilio (VoIP + messaging) + Retell (AI voice via SIP trunking) + null branded-calling (Phase 2 trigger). Per-source Retell agents stored in `lead_sources.dialerConfigJSON.retell_agent_id`. Dev-override env var `DIALER_DEV_OVERRIDE_NUMBER` for safe dev calls. 3rd-party React wrapper for Twilio Voice SDK (chosen via Task 2 spike). No automated tests in Phase 1 — manual verification per task. Annotated with `@migration` comments for Inngest, Ably realtime kernel, Hiya Connect, **Sendblue (iMessage premium)**.
+Everything voip-campaigns adds in its Phase 1 (CloudTalk-side enrollment, attribute sync, webhook handling, graduation) plugs into the schema + DNC + voip routing surface this phase ships.
 
-**Tech Stack:** TypeScript, Next.js App Router, tRPC, Drizzle ORM (Postgres/Neon), CASL, Twilio (`twilio` server SDK + `@twilio/voice-sdk` browser), Retell SDK, drizzle-zod, QStash (`@migration: → Inngest`).
+**Architecture:** Single-provider commit to **Twilio**. NO formal `VoIPProvider` interface — Twilio-only paths. CloudTalk integration is the sibling EPIC's concern; this EPIC just exposes the contract surface (voip routing endpoints, DNC, voip_* tables with `source` discriminator). All `voip_*` tables and the `services/voip/` top-level service tree land here. `providers/twilio/` follows the existing provider shape (`client.ts + voice.ts + messaging.ts + webhooks/`), mirroring `providers/notion/` and `providers/zoho-sign/`. tRPC entity routers use the entity-factory pattern (ADR-0002 — `createEntityRouter` + `createCrudRouter`) that's already live in `src/trpc/lib/`. Mobile (cellular routing) is **deferred to Phase 3**; Phase 1 ships browser softphone only.
+
+**Tech stack:** TypeScript, Next.js App Router, tRPC (entity factory), Drizzle ORM (Postgres/Neon), CASL, `twilio` server SDK, `@twilio/voice-sdk` browser SDK, drizzle-zod, QStash (`@migration: → Inngest` annotations). No automated tests in Phase 1 — manual verification per task, per existing codebase pattern. No Retell, no Sendblue, no SIP Trunking, no AI dispatching, no cadence engine (CloudTalk owns those for lead-conversion campaigns).
 
 ---
 
-## Phase 0 → Phase 1 scope adjustments (locked in 2026-05-22)
+## What changed vs the pre-2026-05-23 plan
 
-Three scope changes from the original plan, all logged in EPIC.md decisions log:
+Per the EPIC split (see [EPIC.md decisions log](./EPIC.md#2026-05-23--epic-split-ai-dialerlead-conversion--voip-campaigns-in-house-comms--this-epic)), this rewrite **drops** every AI-dialer / Retell / Sendblue / branded-calling / cadence-engine concern (moved to [voip-campaigns](../voip-campaigns/EPIC.md) or deferred entirely):
 
-1. **Sendblue (iMessage) deferred.** Phase 1 implements Twilio-only messaging through the existing `services/messaging/` vendor abstraction. Task 25 (Sendblue impl + auto-fallback router) and Task 34 (Sendblue webhooks) are **DEFERRED**. The `MessagingProvider` interface keeps `channel: 'sms' | 'imessage'` so Sendblue can drop in later as a concrete `imessage` impl without interface changes. `dialer_messages` schema keeps `sendblue_message_id` column (nullable) and channel enum keeps `'imessage'` + `'fallback_sms'` values — schema is forward-compatible.
-2. **iPhone Live Voicemail = Retell built-in.** No special prompt engineering required — Retell's agent platform handles the "please state your name and reason for calling" screening prompt natively. Verified in Phase 0 test call. Do NOT add Live Voicemail handling logic to Phase 1 agent prompts.
-3. **Twilio Voice connectivity = SIP Trunking, NOT API import.** Retell doesn't have a Twilio-API-credential import path. Phase 0 set up an Elastic SIP Trunk (`tripros.pstn.twilio.com`) with credential auth + Retell origination at `sip:sip.retellai.com`. Phase 1's `services/voip/twilio.voip-provider.ts` should reflect this — outbound dials route via the established SIP trunk, not via fresh Programmable Voice connections.
+- `dialer_*` schema names → `voip_*` (with a `source: 'in_house' | 'cloudtalk'` discriminator)
+- `dialer_lead_states` table → dropped entirely (CloudTalk owns cadence state)
+- `dialer_settings` singleton → replaced by generic `app_settings(feature, config_json)` table; first row `feature='voip-in-house'`
+- Retell + Sendblue + branded-calling providers → dropped entirely
+- Custom AI-dialer dispatcher / cadence engine / transfer-router INITIATION → dropped
+- 10 enum const arrays for dialer states → trimmed to the 5 the in-house side actually needs
 
-**Tasks blocked by Phase 0 vetting clocks (do these last):**
-- **Twilio SMS send** (Tasks 24, 30, 38) — gated by 10DLC Campaign approval (3-14 days from 2026-05-21 submission)
-- **DNC compliance gate** (referenced in Task 26 opt-out service) — gated by FCC DNC SAN issuance (1-2 business days from 2026-05-21 submission)
+It **adds**:
+- A `source` discriminator on the shared `voip_calls`, `voip_messages`, `voip_dids` tables + forward-compat nullable columns (`cloudtalk_call_uuid`, `campaign_id`, `transcript_summary`, `sentiment`, `cloudtalk_message_id`, `template_key`) populated by voip-campaigns later.
+- **VoIP routing endpoints** at `src/app/api/voip/routing/{caller-lookup,transfer-target,compliance-check}/route.ts` — sync request-response (NOT webhooks) per [`webhook-routes.md`](../../codebase-conventions/webhook-routes.md) Rule 5. voip-campaigns configures CloudTalk's Call Flow Designer dashboard to fire these mid-call. Phase 0 scaffolds already exist as mocks at these paths; **Phase 1 replaces the mocks with real impls**. Response shapes are contractually defined in [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md).
+- **Tokenized-link sends** — `voip_link_tokens` table, mint via tRPC, consume via `/api/voip/links/[token]` route. First use case is L-DOC (document upload). Pattern extends to payment, reschedule, e-sign in later phases.
+- **Generic `app_settings` table** + DAL. First row is `feature='voip-in-house'`; voip-campaigns adds its own row in its Phase 1.
+- **ESLint `no-restricted-imports` rule** enforcing the dependency direction from [INTEGRATION-SEAM.md "Dependency direction"](../voip/INTEGRATION-SEAM.md#dependency-direction): top-level `services/voip/*` MUST NOT import `services/voip/campaigns/*` or `providers/cloudtalk/*`.
+- A **Phase 1 → voip-campaigns Phase 1 boundary verification** task — confirms `voip_dnc` writes from inbound STOP work, voip routing endpoints respond per contract, source-discriminator columns are populated correctly. Gates the cross-EPIC seam before CloudTalk-side work starts.
 
-Everything else — schema, entities, services, Retell webhooks, softphone widget, dialer admin UI, seed scripts — is fully unblocked and can be implemented immediately.
-
----
-
-## Decisions captured from grilling
-
-1. **No automated tests.** Manual verification + telemetry, per existing codebase pattern. Each task has explicit manual verification steps; no test code written.
-2. **Per-source Retell agents from day one.** `lead_sources.dialerConfigJSON.retell_agent_id` is required & used. Owner creates one Retell agent per dialer-enabled lead source.
-3. **Dev override env var** `DIALER_DEV_OVERRIDE_NUMBER` forces all dial-to numbers to that one number during dev/preview. CI gate prevents it being set on production.
-4. **3rd-party React wrapper for Twilio Voice SDK** — Task 2 spike evaluates options; if none acceptable, fall back to custom wrapper.
-5. **Dial-trigger UI** = dedicated auto-dialer feature page + `shared/components/dialer/call-now-button/` placeable component (Phase 5 mounts on customer profile / pipeline / dashboard).
+It **inverts** what was Task 28 (transfer-router service). Phase 1 does NOT initiate AI-to-human warm transfers — that's voip-campaigns's job via CloudTalk's Call Flow Designer. Phase 1 **exposes** the voip routing transfer-target endpoint that CloudTalk **calls**, returning the right in-house DID for the warm transfer destination.
 
 ---
 
-## File structure (Phase 1 deliverables)
+## Architectural anchors (do not re-litigate)
+
+These come from the EPIC decisions log + INTEGRATION-SEAM. Carrying them forward into Phase 1 implementation:
+
+1. **Single-provider commit to Twilio.** No `VoIPProvider` interface. `providers/twilio/*` is the only voice + SMS path. Future swap rewrites `providers/twilio/*` + the services that touch it.
+2. **`services/voip/` umbrella** at `src/shared/services/voip/`. Top-level files owned by this EPIC. `services/voip/campaigns/` is voip-campaigns's subdir — **this EPIC does NOT touch it** (lint-enforced via Task 33).
+3. **Sticky DID-per-agent.** Phase 1 introduces `voip_dids.assigned_user_id` (nullable; transfer-target DID stays unassigned). NO `customers.assignedAgentUserId` field. Customer↔agent stickiness is implicit via the DID they're talking to.
+4. **`voip_dnc` is app-canonical.** Both this EPIC and voip-campaigns gate against it. STOP writes here from either side.
+5. **`source` discriminator + forward-compat nullable columns** in `voip_calls`, `voip_messages`, `voip_dids`. Documented in each entity's `DOCS.md` as "forward-compat for voip-campaigns".
+6. **Subdomain:** `voip.triprosremodeling.com` — `VOIP_WEBHOOK_BASE_URL` env var. All webhooks + voip routing endpoints route here.
+7. **Mobile (cellular routing) = Phase 3.** Phase 1 ships browser softphone only; `voip_user_availability.transfer_mode` enum gets `'desktop'` + a placeholder, but no mobile dispatch logic.
+8. **Kill switch via `app_settings(feature='voip-in-house', config_json.globalKillSwitch)`** — Phase 1 ships the table + a seed row + the gate in `voip-compliance.service.ts`. The UI toggle ships in Phase 4.
+
+---
+
+## Tasks blocked by Phase 0 vetting clocks
+
+Two tasks remain gated by external clocks. Sequence the implementation so they run last; everything else is unblocked.
+
+- **Task 14 (FTC DNC scrub gate)** — gated by FCC DNC SAN issuance (1-2 business days from submission, may already be in hand). Without the SAN, the DNC-scrub leg of the compliance gate is a no-op.
+- **Task 25 (Twilio SMS-send + STOP handler verification)** — gated by 10DLC Campaign approval (3-14 days from 2026-05-22 submission). Without an approved campaign, Twilio will reject outbound SMS. Code can land + lint clean before approval; the e2e SMS verification step in Task 36 waits for approval.
+
+All schema, entity scaffolds, services, webhooks, providers, softphone widget, admin view, seed scripts can land immediately.
+
+---
+
+## File structure (Phase 1 deliverables — concrete, no inference)
 
 ### New schema files (`src/shared/db/schema/`)
-- `dialer-attempts.ts` — per-call lifecycle records
-- `dialer-dids.ts` — DID pool state
-- `dialer-lead-states.ts` — per-customer cadence state (Phase 1: minimal — full lifecycle in Phase 2)
-- `dialer-dnc.ts` — Do-Not-Call list
-- `dialer-user-availability.ts` — transfer-target presence
-- `dialer-settings.ts` — singleton config (Phase 1: created with defaults, UI in Phase 4)
-- `dialer-messages.ts` — SMS/iMessage history
+- `voip-calls.ts` — call lifecycle records (renamed from `dialer_attempts` + source-discriminated)
+- `voip-dids.ts` — DID pool with `assigned_user_id` for sticky-DID-per-agent
+- `voip-dnc.ts` — Do-Not-Call registry (canonical for both EPICs)
+- `voip-user-availability.ts` — agent transfer-target presence
+- `voip-messages.ts` — SMS history (renamed; iMessage columns dropped)
+- `voip-link-tokens.ts` — tokenized-link sends (mint/validate)
+- `app-settings.ts` — generic feature-keyed config
 
 ### Modified schema
-- `meta.ts` — add 9 new pgEnums
-- `lead-sources.ts` — add `dialerConfigJSON` JSONB field
+- `meta.ts` — adds new pgEnums for the voip domain
+- `lead-sources.ts` — adds `voipConfigJSON` JSONB field
 
 ### New enum file (`src/shared/constants/enums/`)
-- `dialer.ts` — 9 const arrays + derived types
+- `voip.ts` — const arrays + derived types (co-located per Rule 26)
 
-### New backend entities (`src/shared/entities/`) — minimal Phase 1 cuts
-Each entity has: `DOCS.md`, `schemas/`, `types.ts`, `constants/`, `lib/constants.ts` (CASL name), `dal/server/{create,findById,update,list}.ts`. **No** `components/`, `hooks/`, or `lib/state-machine.ts` in Phase 1 (deferred to Phase 2+).
-
-- `entities/dialer-attempts/`
-- `entities/dialer-dids/`
-- `entities/dialer-lead-states/`
-- `entities/dialer-dnc/`
-- `entities/dialer-user-availability/`
-- `entities/dialer-settings/`
-- `entities/dialer-messages/`
+### New backend entities (`src/shared/entities/`)
+- `voip-calls/`, `voip-dids/`, `voip-dnc/`, `voip-user-availability/`, `voip-messages/`, `voip-link-tokens/`, `app-settings/`
+- Each follows the entity-factory layout per [ADR-0002](../../adr/0002-entity-server-system.md) + [`src/trpc/DOCS.md`](../../../src/trpc/DOCS.md): `DOCS.md`, `lib/constants.ts` (CASL name), `schemas/`, `types.ts`, `dal/server/` (custom queries only — generic CRUD comes from the factory), `spec.ts` (`EntityServerSpec`).
 
 ### Modified abilities
-- `domains/permissions/abilities.ts` — register 7 new entity names
+- `src/shared/domains/permissions/abilities.ts` — register 7 new entity names
 
-### New vendor service providers (`src/services/`)
-- `voip/voip-provider.interface.ts`
-- `voip/twilio.voip-provider.ts`
-- `voip/voip-provider.factory.ts`
-- `ai-voice/ai-voice-agent.interface.ts`
-- `ai-voice/retell.ai-voice-agent.ts`
-- `branded-calling/branded-calling.interface.ts`
-- `branded-calling/null.branded-calling.ts`
-- `messaging/messaging-provider.interface.ts`
-- `messaging/twilio.messaging-provider.ts`
-- `messaging/sendblue.messaging-provider.ts`
-- `messaging/messaging-router.service.ts`
+### New providers (`src/shared/services/providers/twilio/`)
+- `client.ts` — singleton Twilio client + dev-override gate (mirrors `providers/notion/client.ts`)
+- `voice.ts` — `placeCall`, `endCall`, `mintSoftphoneAccessToken`, `validateVoiceSignature`
+- `messaging.ts` — `sendSms`, `validateMessagingSignature`
+- `webhooks/types.ts` — Zod schemas for inbound webhook payloads
+- `constants/` — call-status mapping, message-status mapping
+- `types.ts` — provider-native types
 
-### New orchestration services (`src/services/dialer/`)
-- `dispatcher/start-test-call.service.ts` — manual one-off dial trigger
-- `transfer-router/find-available-human.service.ts` — picks first available human
-- `transfer-router/build-warm-intro.service.ts` — composes verbal warm-intro string
-- `disposition/record.service.ts` — persist disposition
-- `compliance/opt-out-compliance.service.ts` — shared opt-out handler (B5 + SMS STOP)
+### New services (`src/shared/services/voip/`)
+- `voip-calls.service.ts` — `placeAgentCall`, `recordCallLifecycle`, `setDisposition`
+- `voip-messages.service.ts` — `sendManualSms`, `recordInboundMessage`, `recordMessageStatus`
+- `voip-dids.service.ts` — `getStickyDidForAgent(userId)`, `getTransferTargetDid()`
+- `voip-dnc.service.ts` — `recordDnc`, `lookupDnc`, STOP-keyword detection
+- `voip-compliance.service.ts` — `canOutboundTo(phoneE164)` (DNC + calling-hours + kill-switch gate)
+- `voip-routing.service.ts` — backends the voip routing endpoints (`lookupCallerContext`, `findTransferTarget`, `complianceCheck`)
+- `voip-link-tokens.service.ts` — `mintToken`, `consumeToken`
+- `voip-user-availability.service.ts` — `upsertAvailability`, `listAvailableTransferHumans`
 
-### New webhook routes (`src/app/api/`)
-- `voip/twilio/access-token/route.ts` — issue JWT for browser softphone
-- `voip/twilio/status/route.ts` — call lifecycle status callback
-- `voip/twilio/recording/route.ts` — recording-ready callback
-- `dialer/ai/lead-context/route.ts` — Retell mid-call function (lead lookup)
-- `dialer/ai/route-transfer/route.ts` — Retell mid-call function (available human)
-- `dialer/ai/log-disposition/route.ts` — Retell function (set disposition)
-- `dialer/ai/call-completed/route.ts` — Retell webhook (final state)
-- `messaging/twilio/inbound/route.ts` — inbound SMS (STOP handler)
-- `messaging/twilio/status/route.ts` — SMS delivery status
-- `messaging/sendblue/inbound/route.ts` — inbound iMessage
-- `messaging/sendblue/status/route.ts` — iMessage delivery status
+### New webhook + API routes (`src/app/api/`)
+
+> Per [`webhook-routes.md`](../../codebase-conventions/webhook-routes.md): async webhooks under `/api/webhooks/<vendor>/` (ONE route per vendor); sync request-response under `/api/<domain>/<purpose>/...`; browser/customer-facing outside both.
+
+**Async webhooks** (vendor → us; 200 ack only; no business-data body in response):
+- `webhooks/twilio/route.ts` — POST; ONE route for ALL Twilio async status callbacks (voice status, recording status, message status). Dispatches internally on payload discriminant.
+
+**Sync request-response** (vendor waits for our response):
+- `voip/routing/caller-lookup/route.ts` — POST; CloudTalk Call Flow Designer enrichment (Phase 1 replaces Phase 0 mock with real impl)
+- `voip/routing/transfer-target/route.ts` — POST; CloudTalk warm-transfer lookup (Phase 1 replaces Phase 0 mock with real impl)
+- `voip/routing/compliance-check/route.ts` — POST; CloudTalk pre-dial gate (Phase 1 replaces Phase 0 mock with real impl)
+- `voip/twiml/voice-inbound/route.ts` — POST; Twilio inbound voice (returns placeholder voicemail TwiML; Phase 3 IVR replaces)
+- `voip/twiml/messaging-inbound/route.ts` — POST; Twilio inbound SMS (STOP detection + TCPA auto-confirm; returns empty TwiML)
+
+**Browser / customer-facing** (outside `/api/webhooks/` and `/api/voip/routing/`):
+- `voip/softphone/access-token/route.ts` — GET; returns JWT for browser softphone
+- `voip/links/[token]/route.ts` — GET; tokenized-link consume + redirect
+
+> **Note:** the CloudTalk async webhook handler (`webhooks/cloudtalk/route.ts`) is owned by **voip-campaigns**, NOT this EPIC. Already exists as a Phase 0 scaffold; voip-campaigns Phase 1 fills in the switch arms using the services this EPIC creates.
 
 ### New tRPC routers (`src/trpc/routers/`)
-- `dialer-attempts.router.ts` — `startTestCall` mutation + `list` query
-- `dialer-messages.router.ts` — `send` mutation + `list` query
-- Modified: `app.ts` — register both routers
+- `voip-calls.router/` (entity router) — `crud` + business (`placeAgentCall`, `setDisposition`, `listRecent`)
+- `voip-messages.router/` (entity router) — `crud` + business (`send`, `listByCustomer`)
+- `voip-dids.router/` (entity router) — admin queries
+- `voip-dnc.router/` (entity router) — `crud` + business (`recordManualDnc`)
+- `voip-user-availability.router.ts` — `getMine`, `upsertMine`, `listAvailable` (admin)
+- `voip-link-tokens.router.ts` — `mint` (returns short URL)
+- `app-settings.router.ts` — `getByFeature`, `update` (super-admin only)
+- Modified: `app.ts` — register all 7 routers
 
-### New shared UI components (`src/shared/components/dialer/`)
-- `softphone-widget/` — Twilio Voice SDK integration (via chosen 3rd-party wrapper)
-- `call-disposition-picker/` — modal opened after call ends
-- `send-message-button/` — embeddable message-send action
-- `call-now-button/` — placeable "Dial now (AI)" trigger
-
-### New feature surface (`src/features/auto-dialer/`)
-- `ui/views/dialer-admin-view.tsx` — Phase 1: test page with `call-now-button` + recent attempts table
+### New UI surface (`src/features/voip-in-house/`)
+- `ui/components/softphone-widget/` — Twilio Voice JS SDK integration
+- `ui/components/call-disposition-picker/` — modal opened after call ends
+- `ui/components/call-now-button/` — click-to-call placeable
+- `ui/components/send-message-button/` — send-SMS placeable
+- `ui/views/voip-in-house-admin-view.tsx` — Phase 1 test page (admin only)
+- `ui/components/index.ts` — public entrypoint for components (re-exports `SoftphoneWidget`, `CallNowButton`, `SendMessageButton`)
+- `ui/views/index.ts` — public entrypoint for views (re-exports `VoipInHouseAdminView`)
 
 ### New route
-- `src/app/(frontend)/(dashboard)/auto-dialer/page.tsx` — mounts `dialer-admin-view`
+- `src/app/(frontend)/dashboard/voip-in-house/page.tsx` — mounts the admin view
+  - Note: path is `dashboard/`, not `(dashboard)/` — `dashboard` is a regular segment, not a route group. Old planning docs that say `(dashboard)` are stale.
 
 ### Modified layout
-- `src/app/(frontend)/(dashboard)/layout.tsx` — mount `softphone-widget` globally
+- `src/app/(frontend)/dashboard/layout.tsx` — mounts `<SoftphoneWidget />` globally
 
 ### Seed scripts (`scripts/`)
-- `seed-dialer-dids.ts` — insert 3 DIDs from Phase 0 procurement (213=transfer-target, 424=dial, 626=dial). Pool expansion to 7-10 numbers deferred to ~1-2 weeks before Phase 2 ramp — keeps fresh DIDs out of the warm-up clock until needed.
-- `seed-dialer-lead-source.ts` — configure one example lead source with `dialerConfigJSON.enabled=true + retell_agent_id`
+- `seed-voip-dids.ts` — inserts the 3 Phase 0 DIDs from env vars (transfer-target + per-agent dial DIDs)
+- `seed-app-settings-voip.ts` — inserts `feature='voip-in-house'` row with default config
+- `configure-lead-source-voip.ts` — sets `voipConfigJSON.inHouse` on an example lead source
+
+### ESLint config
+- `eslint.config.js` — adds `no-restricted-imports` rule per [INTEGRATION-SEAM.md "Dependency direction"](../voip/INTEGRATION-SEAM.md#dependency-direction)
 
 ---
 
 ## Manual verification gate (Phase 1 done when ALL pass)
 
-- ✅ Super-admin clicks "Dial now (AI)" on a test customer profile → that customer's phone (overridden to `DIALER_DEV_OVERRIDE_NUMBER`) rings within 5s
-- ✅ Test phone picks up; hears the configured Retell agent's greeting; AI passes lead context correctly (name, trade)
-- ✅ Lead says "yes, transfer me"; softphone widget in dashboard shows incoming-transfer banner with lead context within 3s
-- ✅ Click Accept; audio bridges; can talk both ways
-- ✅ Hang up; disposition modal appears; save "Booked meeting"; verify `dialer_attempts` row has final state + recording URL
-- ✅ Recording URL is playable from the customer profile (or admin page in Phase 1)
-- ✅ Send a test SMS via `send-message-button` from admin page; message arrives on test phone; row created in `dialer_messages`
-- ⏸ ~~Send a test iMessage via the same button; arrives blue on iPhone, falls back to green SMS on Android~~ **DEFERRED — Sendblue deferred post-Phase-1**
-- ✅ Reply STOP from test phone; `dialer_dnc` row created; auto-confirmation SMS received
-- ✅ `pnpm tsc` clean
-- ✅ `pnpm lint` clean
-- ✅ Production stack cost during Phase 1: <$50
+- ✅ Agent clicks "Call" on a customer profile → softphone widget transitions to active-call → customer phone (override-routed in dev) rings → audio bridges both ways → hang up → disposition modal saves → `voip_calls` row has terminal status + `source='in_house'` + `twilio_call_sid` + `recording_url`.
+- ✅ Agent clicks "Send SMS" on a customer profile → arrives on test phone → `voip_messages` row created with `direction='outbound'`, `source='in_house'`, `status='sent'` or `'delivered'` (after status webhook).
+- ✅ Reply STOP from the test phone → `voip_dnc` row created with `source='twilio_stop'` + `phone_e164` = test phone + customer's lead state... no wait, no lead state in this EPIC. Just the DNC row + auto-confirmation SMS arrives.
+- ✅ Next outbound attempt (call OR SMS) to the same phone → compliance gate blocks with `dnc_blocked` reason; no Twilio call placed; no row inserted (or row inserted with `status='skipped_compliance'` if we choose to log).
+- ✅ Toggle `app_settings(feature='voip-in-house').configJson.globalKillSwitch = true` via DB → next outbound attempt blocks with `kill_switch_active` reason.
+- ✅ POST `/api/voip/routing/caller-lookup` with valid shared-secret + `{caller_e164: <test customer phone>}` → returns `{customer_id, first_name, pipeline_stage, ...}` per [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md).
+- ✅ POST `/api/voip/routing/transfer-target` with valid shared-secret + `{caller_e164, customer_id}` → returns `{target_e164, warm_intro, custom_parameters}`.
+- ✅ POST `/api/voip/routing/compliance-check` with DNC'd phone → returns `{allowed: false, reason: 'dnc'}`. With clean phone → returns `{allowed: true}`.
+- ✅ Agent mints an L-DOC link via tRPC → returns short URL like `https://voip.triprosremodeling.com/api/voip/links/<token>` → opening URL within 48h validates and 302s to the L-DOC handler page (Phase 1 ships a stub page that just says "doc upload coming in Phase 2"; the validation + consume logic is what's tested).
+- ✅ Opening the same token a second time → returns "link already used" (or whatever the consumed branch renders).
+- ✅ `pnpm tsc` clean.
+- ✅ `pnpm lint` clean (including the new `no-restricted-imports` rule for `services/voip/*` → `services/voip/campaigns/*`).
+- ✅ Phase 1 → Phase 2 boundary checks (Task 35) all pass.
 
 ---
 
 ## Tasks
 
-> **Convention:** every task ends with `pnpm tsc && pnpm lint` (NEVER `pnpm build` — see CLAUDE.md). Conventional commit messages: `feat(dialer): ...`, `feat(messaging): ...`, `chore(dialer): ...`. Use `pnpm db:push:dev` for schema pushes (NEVER `pnpm db:push`).
->
-> **Manual verification format:** each task ends with explicit steps the developer runs to validate. If any step fails, the task is not complete — debug before committing.
+> **Convention:** every task ends with `pnpm tsc && pnpm lint` (NEVER `pnpm build`). Conventional commits: `feat(voip): ...`, `feat(twilio): ...`, `chore(voip): ...`, `feat(app-settings): ...`. Use `pnpm db:push:dev` (NEVER `pnpm db:push`). Use `import './lib/load-env'` in scripts (NEVER `'dotenv/config'`). Verify entity scaffolds by importing the entity-name constant into `abilities.ts` and ensuring CASL union typechecks (the entity-factory pattern's compile-time forcing function).
+
+> **Manual verification format:** each task ends with explicit steps to run. If any step fails, the task is incomplete — debug before committing.
+
+### Task 0: Extend `DalError` union with `'precondition-failed'`
+
+**Files:**
+- Modify: `src/shared/dal/server/types.ts`
+- Modify: `src/trpc/lib/dal-to-trpc.ts`
+
+> The voip services have a category of failure mode the existing `DalError` union doesn't cover: domain-precondition violations (customer has no phone, kill-switch active, DNC blocked, compliance gate refused). Today's union covers only `'not-found' | 'forbidden' | 'create-failed' | 'duplicate-failed' | 'db-error' | 'unknown-error'`. Mapping a kill-switch failure to `'forbidden'` is semantically wrong (it's not auth-based); to `'unknown-error'` is lossy (we want the reason in the message). Extend the union.
+
+- [ ] **Step 0.1: Add the new variant to `DalError`**
+
+In `src/shared/dal/server/types.ts`, extend the `DalError` union:
+
+```ts
+export type DalError
+  = | { type: 'not-found' }
+    | { type: 'forbidden' }
+    | { type: 'create-failed', cause?: unknown }
+    | { type: 'duplicate-failed', cause?: unknown }
+    | { type: 'db-error', cause: unknown }
+    | { type: 'unknown-error', cause: unknown }
+    | { type: 'precondition-failed', reason: string }  // ← NEW
+```
+
+> Match the actual existing field shapes (some variants carry `cause`, etc.) — read the live file before editing.
+
+- [ ] **Step 0.2: Map the new variant to a TRPCError code**
+
+In `src/trpc/lib/dal-to-trpc.ts`, add a case to the switch:
+
+```ts
+case 'precondition-failed':
+  throw new TRPCError({ code: 'PRECONDITION_FAILED', message: result.error.reason })
+```
+
+- [ ] **Step 0.3: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/dal/server/types.ts src/trpc/lib/dal-to-trpc.ts
+git commit -m "feat(dal): add 'precondition-failed' variant to DalError union (voip prep)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
 
 ---
 
-### Task 1: Install vendor SDK dependencies + env var scaffolding
+### Task 1: Install vendor SDKs + register env vars
 
 **Files:**
 - Modify: `package.json`
+- Modify: `src/shared/config/server-env.ts`
 - Modify: `.env.local` (developer's local; not committed)
-- Create: `docs/plans/auto-dialer/env-vars-reference.md` (committed reference)
 
 - [ ] **Step 1.1: Install packages**
 
 ```bash
-pnpm add twilio @twilio/voice-sdk retell-sdk
+pnpm add twilio @twilio/voice-sdk
 pnpm add -D @types/twilio
 ```
 
-`twilio` is the server SDK. `@twilio/voice-sdk` is the browser SDK. `retell-sdk` is Retell's official SDK. Sendblue is fetch-based — no SDK needed.
+`twilio` is the server SDK. `@twilio/voice-sdk` is the browser SDK. **No** retell-sdk, **no** sendblue dependencies — those vendors are out of scope for this EPIC per the 2026-05-23 pivot.
 
-- [ ] **Step 1.2: Create env vars reference doc**
+- [ ] **Step 1.2: Register env vars in `server-env.ts`**
 
-Create `docs/plans/auto-dialer/env-vars-reference.md`:
+Read `src/shared/config/server-env.ts` first; merge the additions into the existing `envSchema`. Add (matching existing comment-block style):
 
-```markdown
-# Auto-dialer env vars
+```ts
+// TWILIO (voip-in-house)
+TWILIO_ACCOUNT_SID: z.string(),
+TWILIO_AUTH_TOKEN: z.string(),
+TWILIO_API_KEY_SID: z.string(),
+TWILIO_API_KEY_SECRET: z.string(),
+TWILIO_TWIML_APP_SID: z.string(),
+TWILIO_TRUST_PROFILE_SID: z.string().optional(),
+TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(),  // gated by 10DLC vetting; optional until approval
 
-## Server-side (Vercel + .env.local)
+// Pilot DIDs (role-named per Phase 0 procurement)
+TWILIO_TRANSFER_TARGET_DID_E164: z.string(),
+TWILIO_TRANSFER_TARGET_DID_SID: z.string(),
+TWILIO_DID_424_E164: z.string(),
+TWILIO_DID_424_SID: z.string(),
+TWILIO_DID_626_E164: z.string(),
+TWILIO_DID_626_SID: z.string(),
 
-# Twilio
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx       # for Voice SDK JWT signing
-TWILIO_API_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx     # TwiML app for browser Client
+// FCC DNC (SAN pending — optional until Phase 0 issuance)
+FTC_DNC_SAN: z.string().optional(),
+FTC_DNC_USERNAME: z.string().optional(),
+FTC_DNC_PASSWORD: z.string().optional(),
 
-# Pilot DIDs — role baked into env var name.
-# Transfer-target = dedicated DID for the human-leg dial. Dial DIDs = area-coded, rotated to leads.
-TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
-TWILIO_TRANSFER_TARGET_DID_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_DID_424_E164=+1424XXXXXXX
-TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_DID_626_E164=+1626XXXXXXX
-TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// Shared VoIP webhook base URL (covers Twilio + future CloudTalk webhooks + voip routing endpoints)
+VOIP_WEBHOOK_BASE_URL: z.string(),
 
-# Retell
-RETELL_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// Dev safety: redirects all outbound voice/SMS to a single test number in dev/preview.
+// CI gate (Step 1.4) prevents this being set in production.
+VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
 
-# Sendblue — DEFERRED (Phase 1 ships Twilio-only messaging)
-# SENDBLUE_API_KEY_ID=
-# SENDBLUE_API_SECRET=
-
-# Webhook public URL (Vercel deployment URL OR custom subdomain)
-DIALER_WEBHOOK_BASE_URL=https://dialer.triprosremodeling.com
-
-# DEV ONLY: forces all outbound dialer calls to a single test number (your cell)
-# MUST be unset in production. CI gate enforces this.
-DIALER_DEV_OVERRIDE_NUMBER=+1XXXXXXXXXX  # leave unset in production
+// CloudTalk webhook secret — single secret protecting BOTH:
+//   1. Mid-call routing endpoints (`/api/voip/routing/*`) — voip-in-house Phase 1 (this EPIC) verifies inbound
+//   2. Post-call webhooks (`/api/cloudtalk/webhook`) — voip-campaigns Phase 1 verifies inbound
+// Both surfaces are CloudTalk → us with the same trust model; one secret is sufficient.
+// voip-in-house Phase 1 implementer generates this (32+ char URL-safe random) and configures into
+// CloudTalk's Call Flow Designer (voip-campaigns Phase 0 dashboard work).
+// Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+CLOUDTALK_WEBHOOK_SECRET: z.string().min(32),
 ```
+
+> **Removed vars (per 2026-05-23 pivot):** `RETELL_*`, `TWILIO_SIP_TRUNK_*`, `SENDBLUE_*`, `DIALER_*`. If any of these were stubbed in `server-env.ts` from the aborted Phase 1A branch, delete them as part of this change. Search: `grep -E "RETELL_|SENDBLUE_|SIP_TRUNK_|DIALER_" src/shared/config/server-env.ts`.
 
 - [ ] **Step 1.3: Add CI gate for production env**
 
-Create `scripts/lib/check-prod-env.ts` (or extend existing if present):
+Create or extend a pre-build env-check script — search for an existing one first (`grep -rn "NODE_ENV.*production" scripts/ src/shared/config/`). If no canonical place exists, add it as the bottom of `server-env.ts` after the schema validation:
 
 ```ts
-if (process.env.NODE_ENV === 'production' && process.env.DIALER_DEV_OVERRIDE_NUMBER) {
-  console.error('❌ DIALER_DEV_OVERRIDE_NUMBER must NOT be set in production')
-  process.exit(1)
+if (
+  env.NODE_ENV === 'production'
+  && env.VOIP_DEV_OVERRIDE_NUMBER
+) {
+  throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
 }
 ```
 
-Hook into existing CI or pre-deploy verification (check if there's a `pre-build` script in package.json; if so, add this; otherwise note for future CI work).
+This runs at server startup (because `server-env.ts` is imported at server-boot). If a hook into `pnpm tsc` / a `pre-build` step exists, add a parallel check there too.
 
-- [ ] **Step 1.4: Verify**
-
-```bash
-pnpm tsc
-pnpm lint
-```
-
-Both clean. Packages visible in `pnpm-lock.yaml` diff.
-
-- [ ] **Step 1.5: Commit**
-
-```bash
-git add package.json pnpm-lock.yaml docs/plans/auto-dialer/env-vars-reference.md scripts/lib/check-prod-env.ts
-git commit -m "$(cat <<'EOF'
-feat(dialer): add Twilio + Retell SDKs + env var scaffolding
-
-Adds @twilio/voice-sdk, twilio (server), retell-sdk dependencies.
-Documents required env vars in env-vars-reference.md.
-Adds CI gate preventing DIALER_DEV_OVERRIDE_NUMBER in production.
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
-EOF
-)"
-```
-
----
-
-### Task 2: Spike — choose Twilio Voice SDK React wrapper
-
-**Files:**
-- Create: `docs/plans/auto-dialer/spike-twilio-voice-react-wrapper.md`
-
-- [ ] **Step 2.1: Search npm + GitHub for current React wrappers around `@twilio/voice-sdk`**
-
-Search terms to use:
-- `@twilio/voice-sdk react`
-- `twilio voice react hooks`
-- `twilio webrtc react`
-- `react twilio device`
-
-Catalog candidates. Common patterns include `react-twilio-voice-sdk`, hand-rolled hooks from blog posts, and various community packages.
-
-- [ ] **Step 2.2: Evaluate each candidate against these criteria**
-
-For each candidate, document:
-1. GitHub stars + last commit date (must be ≤6 months stale)
-2. TypeScript native (not just typed via @types)
-3. Twilio SDK version supported (must support `@twilio/voice-sdk` v2.x)
-4. API surface coverage: `Device.register()`, `Device.on('incoming', ...)`, `Call.accept()`, `Call.reject()`, `Call.disconnect()`, `Call.mute()`, custom parameters access
-5. Open issues — any critical bugs?
-6. License (MIT preferred)
-7. Number of weekly npm downloads (proxy for community health)
-
-- [ ] **Step 2.3: Document choice + fallback**
-
-Create `docs/plans/auto-dialer/spike-twilio-voice-react-wrapper.md`:
-
-```markdown
-# Spike: Twilio Voice SDK React wrapper choice
-
-## Candidates evaluated
-
-| Package | Stars | Last commit | TS native | API coverage | Decision |
-|---|---|---|---|---|---|
-| ... | ... | ... | ... | ... | ... |
-
-## Choice
-
-**Chosen:** `<package-name>` (or "Custom wrapper" if none qualified)
-
-**Rationale:** ...
-
-**Fallback:** if `<package-name>` proves limiting during implementation, fall back to custom hook + provider wrapping `@twilio/voice-sdk` directly. Estimated fallback cost: ~1 day.
-```
-
-- [ ] **Step 2.4: Install the chosen package (if any)**
-
-```bash
-pnpm add <chosen-package>
-```
-
-If none qualified, skip; Task 22 will build a custom wrapper.
-
-- [ ] **Step 2.5: Verify + commit**
+- [ ] **Step 1.4: Verify + commit**
 
 ```bash
 pnpm tsc
 pnpm lint
-git add docs/plans/auto-dialer/spike-twilio-voice-react-wrapper.md package.json pnpm-lock.yaml
-git commit -m "$(cat <<'EOF'
-chore(dialer): spike + choose Twilio Voice SDK React wrapper
-
-Evaluates available 3rd-party React wrappers for @twilio/voice-sdk.
-Documents choice and fallback plan in spike note.
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
-EOF
-)"
-```
-
----
-
-### Task 3: Dialer enum const arrays + types
-
-**Files:**
-- Create: `src/shared/constants/enums/dialer.ts`
-- Modify: `src/shared/constants/enums/index.ts`
-
-- [ ] **Step 3.1: Create enum const file**
-
-Create `src/shared/constants/enums/dialer.ts`:
-
-```ts
-export const dialerAttemptStatuses = [
-  'queued', 'initiated', 'dialing', 'no_answer', 'voicemail_left',
-  'live_transferred', 'live_not_interested', 'live_callback_scheduled',
-  'failed', 'skipped_compliance',
-] as const
-export type DialerAttemptStatus = (typeof dialerAttemptStatuses)[number]
-
-export const dialerDispositions = [
-  'booked_meeting', 'interested_not_now', 'wrong_number',
-  'not_interested', 'opt_out', 'unreached', 'voicemail',
-] as const
-export type DialerDisposition = (typeof dialerDispositions)[number]
-
-export const dialerDidStatuses = ['warming', 'active', 'cooldown', 'flagged', 'retired'] as const
-export type DialerDidStatus = (typeof dialerDidStatuses)[number]
-
-export const dialerLeadStateStatuses = [
-  'queued', 'in_progress', 'reached', 'opted_out', 'exhausted', 'paused',
-] as const
-export type DialerLeadStateStatus = (typeof dialerLeadStateStatuses)[number]
-
-export const dialerDncSources = [
-  'lead_request', 'manual_admin', 'ftc_dnc', 'wireless_dnc', 'state_dnc', 'sms_opt_out',
-] as const
-export type DialerDncSource = (typeof dialerDncSources)[number]
-
-export const dialerUserAvailabilities = ['available', 'off_shift'] as const
-export type DialerUserAvailability = (typeof dialerUserAvailabilities)[number]
-
-export const dialerTransferModes = ['desktop', 'mobile', 'auto'] as const
-export type DialerTransferMode = (typeof dialerTransferModes)[number]
-
-export const dialerMessageStatuses = [
-  'queued', 'sent', 'delivered', 'failed', 'undelivered', 'received',
-] as const
-export type DialerMessageStatus = (typeof dialerMessageStatuses)[number]
-
-export const dialerMessageChannels = ['sms', 'imessage', 'fallback_sms'] as const
-export type DialerMessageChannel = (typeof dialerMessageChannels)[number]
-
-export const dialerMessageDirections = ['outbound', 'inbound'] as const
-export type DialerMessageDirection = (typeof dialerMessageDirections)[number]
-```
-
-- [ ] **Step 3.2: Update barrel export**
-
-In `src/shared/constants/enums/index.ts`, add:
-```ts
-export * from './dialer'
-```
-
-(Match existing pattern — re-read the current `index.ts` first and follow its style.)
-
-- [ ] **Step 3.3: Verify + commit**
-
-```bash
-pnpm tsc
-pnpm lint
-git add src/shared/constants/enums/dialer.ts src/shared/constants/enums/index.ts
-git commit -m "feat(dialer): add 10 dialer enum const arrays + types
+git add package.json pnpm-lock.yaml src/shared/config/server-env.ts
+git commit -m "feat(voip): install Twilio SDKs + register voip env vars
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 4: pgEnum declarations in meta.ts
+### Task 2: voip enum const arrays + types
+
+**Files:**
+- Create: `src/shared/constants/enums/voip.ts`
+- Modify: `src/shared/constants/enums/index.ts` — add `export * from './voip'`
+
+> Per Rule 26, the const array + derived type live in the same file. No separate `types/enums/voip.ts`.
+
+- [ ] **Step 2.1: Create the enum file**
+
+```ts
+// src/shared/constants/enums/voip.ts
+
+// Cross-source discriminator (used by voip_calls, voip_messages, voip_dids).
+// 'cloudtalk' rows are populated by voip-campaigns' webhook handler; 'in_house' rows by Twilio webhooks.
+export const voipSources = ['in_house', 'cloudtalk'] as const
+export type VoipSource = (typeof voipSources)[number]
+
+// Call lifecycle (in-house Twilio call). CloudTalk-originated rows use the same enum;
+// 'no_answer' and 'voicemail' are the CloudTalk-side terminals.
+export const voipCallStatuses = [
+  'queued',
+  'initiated',
+  'ringing',
+  'answered',
+  'completed',
+  'no_answer',
+  'voicemail',
+  'failed',
+  'skipped_compliance',
+] as const
+export type VoipCallStatus = (typeof voipCallStatuses)[number]
+
+// Disposition recorded post-call (agent picks via UI; CloudTalk AI populates via webhook for 'cloudtalk' source).
+export const voipCallDispositions = [
+  'booked_meeting',
+  'callback_scheduled',
+  'interested_not_now',
+  'not_interested',
+  'wrong_number',
+  'opt_out',
+  'voicemail_left',
+  'unreached',
+] as const
+export type VoipCallDisposition = (typeof voipCallDispositions)[number]
+
+// DID lifecycle. In-house DIDs are typically 'active' (low-volume; no warming cycle).
+// CloudTalk DIDs may use 'warming' / 'cooldown' / 'flagged' / 'retired' per voip-campaigns rotation policy.
+export const voipDidStatuses = ['active', 'warming', 'cooldown', 'flagged', 'retired'] as const
+export type VoipDidStatus = (typeof voipDidStatuses)[number]
+
+// DID role within the in-house pool. Transfer-target receives CloudTalk warm-transfers + general inbound.
+// Agent-outbound DIDs are sticky per agent (assigned_user_id set).
+export const voipDidRoles = ['transfer_target', 'agent_outbound', 'campaign_rotation'] as const
+export type VoipDidRole = (typeof voipDidRoles)[number]
+
+// DNC source. Matches INTEGRATION-SEAM.md §5 exactly.
+export const voipDncSources = [
+  'twilio_stop',     // inbound STOP/UNSUB to in-house Twilio DID
+  'cloudtalk_stop',  // inbound STOP to a CloudTalk DID (CloudTalk auto-honors + posts webhook)
+  'voice_request',   // customer asked to be removed on a live call
+  'manual_admin',    // admin clicks "Add to DNC" in admin UI
+  'ftc',             // FTC DNC list scrub (Phase 2+ cron)
+] as const
+export type VoipDncSource = (typeof voipDncSources)[number]
+
+// Agent availability for receiving warm transfers.
+export const voipUserAvailabilities = ['available', 'on_call', 'off_shift'] as const
+export type VoipUserAvailability = (typeof voipUserAvailabilities)[number]
+
+// Transfer mode for receiving warm transfers. 'mobile' (cellular) is Phase 3; Phase 1 ships 'desktop' only.
+// 'auto' resolves to desktop if browser softphone registered, else mobile (Phase 3 behavior).
+export const voipTransferModes = ['desktop', 'mobile', 'auto'] as const
+export type VoipTransferMode = (typeof voipTransferModes)[number]
+
+// Message direction.
+export const voipMessageDirections = ['outbound', 'inbound'] as const
+export type VoipMessageDirection = (typeof voipMessageDirections)[number]
+
+// Message status. SMS only — no iMessage values (Sendblue is dropped permanently).
+export const voipMessageStatuses = [
+  'queued',
+  'sent',
+  'delivered',
+  'failed',
+  'undelivered',
+  'received',
+] as const
+export type VoipMessageStatus = (typeof voipMessageStatuses)[number]
+
+// Tokenized-link type. L-DOC is Phase 1; others land per use case.
+export const voipLinkTokenTypes = ['l_doc', 'l_pay', 'l_cal', 'l_esign'] as const
+export type VoipLinkTokenType = (typeof voipLinkTokenTypes)[number]
+```
+
+- [ ] **Step 2.2: Update the enum barrel**
+
+In `src/shared/constants/enums/index.ts`, add (match existing pattern):
+
+```ts
+export * from './voip'
+```
+
+- [ ] **Step 2.3: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/constants/enums/voip.ts src/shared/constants/enums/index.ts
+git commit -m "feat(voip): add voip enum const arrays + types
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 3: pgEnum declarations in `meta.ts`
 
 **Files:**
 - Modify: `src/shared/db/schema/meta.ts`
 
-- [ ] **Step 4.1: Add pgEnum declarations**
+> Per the [database-schema convention](../../codebase-conventions/database-schema.md), ALL pgEnums live in `meta.ts` (never in individual table files). Merge the new imports with the existing import block.
 
-In `src/shared/db/schema/meta.ts`, add at the bottom (after existing enum declarations):
+- [ ] **Step 3.1: Add the pgEnum block**
+
+In `src/shared/db/schema/meta.ts`, append after the existing pgEnums:
 
 ```ts
-// DIALER
 import {
-  dialerAttemptStatuses,
-  dialerDispositions,
-  dialerDidStatuses,
-  dialerLeadStateStatuses,
-  dialerDncSources,
-  dialerUserAvailabilities,
-  dialerTransferModes,
-  dialerMessageStatuses,
-  dialerMessageChannels,
-  dialerMessageDirections,
+  voipSources,
+  voipCallStatuses,
+  voipCallDispositions,
+  voipDidStatuses,
+  voipDidRoles,
+  voipDncSources,
+  voipUserAvailabilities,
+  voipTransferModes,
+  voipMessageDirections,
+  voipMessageStatuses,
+  voipLinkTokenTypes,
 } from '@/shared/constants/enums'
 
-export const dialerAttemptStatusEnum = pgEnum('dialer_attempt_status', dialerAttemptStatuses)
-export const dialerDispositionEnum = pgEnum('dialer_disposition', dialerDispositions)
-export const dialerDidStatusEnum = pgEnum('dialer_did_status', dialerDidStatuses)
-export const dialerLeadStateStatusEnum = pgEnum('dialer_lead_state_status', dialerLeadStateStatuses)
-export const dialerDncSourceEnum = pgEnum('dialer_dnc_source', dialerDncSources)
-export const dialerUserAvailabilityEnum = pgEnum('dialer_user_availability', dialerUserAvailabilities)
-export const dialerTransferModeEnum = pgEnum('dialer_transfer_mode', dialerTransferModes)
-export const dialerMessageStatusEnum = pgEnum('dialer_message_status', dialerMessageStatuses)
-export const dialerMessageChannelEnum = pgEnum('dialer_message_channel', dialerMessageChannels)
-export const dialerMessageDirectionEnum = pgEnum('dialer_message_direction', dialerMessageDirections)
+// VOIP
+export const voipSourceEnum = pgEnum('voip_source', voipSources)
+export const voipCallStatusEnum = pgEnum('voip_call_status', voipCallStatuses)
+export const voipCallDispositionEnum = pgEnum('voip_call_disposition', voipCallDispositions)
+export const voipDidStatusEnum = pgEnum('voip_did_status', voipDidStatuses)
+export const voipDidRoleEnum = pgEnum('voip_did_role', voipDidRoles)
+export const voipDncSourceEnum = pgEnum('voip_dnc_source', voipDncSources)
+export const voipUserAvailabilityEnum = pgEnum('voip_user_availability', voipUserAvailabilities)
+export const voipTransferModeEnum = pgEnum('voip_transfer_mode', voipTransferModes)
+export const voipMessageDirectionEnum = pgEnum('voip_message_direction', voipMessageDirections)
+export const voipMessageStatusEnum = pgEnum('voip_message_status', voipMessageStatuses)
+export const voipLinkTokenTypeEnum = pgEnum('voip_link_token_type', voipLinkTokenTypes)
 ```
 
-(Merge the new import with the existing import from `@/shared/constants/enums` — don't add a separate import block.)
+Merge the new `import { voip... } from '@/shared/constants/enums'` with any existing import from that module — don't add a duplicate.
 
-- [ ] **Step 4.2: Verify + commit**
+- [ ] **Step 3.2: Verify + commit**
 
 ```bash
-pnpm tsc
-pnpm lint
+pnpm tsc && pnpm lint
 git add src/shared/db/schema/meta.ts
-git commit -m "feat(dialer): register pgEnums for dialer entities in meta.ts
+git commit -m "feat(voip): register voip pgEnums in meta.ts
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 5: dialer_attempts table + Zod schemas
+### Task 4: `voip_calls` table
 
 **Files:**
-- Create: `src/shared/db/schema/dialer-attempts.ts`
+- Create: `src/shared/db/schema/voip-calls.ts`
 
-- [ ] **Step 5.1: Create the schema file**
-
-Create `src/shared/db/schema/dialer-attempts.ts`:
+- [ ] **Step 4.1: Create the schema file**
 
 ```ts
+// src/shared/db/schema/voip-calls.ts
 import type z from 'zod'
 import { relations } from 'drizzle-orm'
 import { integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
@@ -486,597 +518,582 @@ import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { customers } from './customers'
 import {
-  dialerAttemptStatusEnum,
-  dialerDispositionEnum,
+  voipCallDispositionEnum,
+  voipCallStatusEnum,
+  voipMessageDirectionEnum,
+  voipSourceEnum,
 } from './meta'
 
-export const dialerAttempts = pgTable('dialer_attempts', {
+export const voipCalls = pgTable('voip_calls', {
   id,
-  customerId: uuid('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
-  didUsed: text('did_used').notNull(),
-  retellCallId: text('retell_call_id').unique(),
+  source: voipSourceEnum('source').notNull(),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  direction: voipMessageDirectionEnum('direction').notNull(),
+  didUsed: text('did_used').notNull(),          // E.164 of the Tri Pros DID this call used
+  remoteE164: text('remote_e164').notNull(),    // The other end (customer or external caller)
+  status: voipCallStatusEnum('status').notNull().default('queued'),
+
+  // In-house Twilio columns
   twilioCallSid: text('twilio_call_sid').unique(),
-  status: dialerAttemptStatusEnum('status').notNull().default('queued'),
-  initiatedAt: timestamp('initiated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
-  answeredAt: timestamp('answered_at', { mode: 'string', withTimezone: true }),
-  transferredAt: timestamp('transferred_at', { mode: 'string', withTimezone: true }),
-  endedAt: timestamp('ended_at', { mode: 'string', withTimezone: true }),
-  transferredToUserId: text('transferred_to_user_id').references(() => user.id, { onDelete: 'set null' }),
-  durationSeconds: integer('duration_seconds'),
-  disposition: dialerDispositionEnum('disposition'),
-  skipReason: text('skip_reason'),
-  aiSummary: text('ai_summary'),
-  aiSentiment: text('ai_sentiment'),
   recordingUrl: text('recording_url'),
   recordingDurationSeconds: integer('recording_duration_seconds'),
+
+  // Forward-compat: voip-campaigns populates these when source='cloudtalk'.
+  // See INTEGRATION-SEAM.md §2 + §8.
+  cloudtalkCallUuid: text('cloudtalk_call_uuid').unique(),
+  campaignId: text('campaign_id'),
+  transcriptSummary: text('transcript_summary'),
+  sentiment: text('sentiment'),
+
+  // Lifecycle timestamps
+  initiatedAt: timestamp('initiated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
+  answeredAt: timestamp('answered_at', { mode: 'string', withTimezone: true }),
+  endedAt: timestamp('ended_at', { mode: 'string', withTimezone: true }),
+  durationSeconds: integer('duration_seconds'),
+
+  // Agent association (for in-house: who initiated/received; for cloudtalk: who the warm-transfer landed on)
+  agentUserId: text('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+
+  // Disposition (post-call). Agent picks via UI for in-house; CloudTalk AI sets via webhook for cloudtalk.
+  disposition: voipCallDispositionEnum('disposition'),
+  dispositionNote: text('disposition_note'),
+  skipReason: text('skip_reason'),
+
   metaJson: jsonb('meta_json'),
   createdAt,
   updatedAt,
 })
 
-export const dialerAttemptsRelations = relations(dialerAttempts, ({ one }) => ({
-  customer: one(customers, { fields: [dialerAttempts.customerId], references: [customers.id] }),
-  transferredToUser: one(user, { fields: [dialerAttempts.transferredToUserId], references: [user.id] }),
+export const voipCallsRelations = relations(voipCalls, ({ one }) => ({
+  customer: one(customers, { fields: [voipCalls.customerId], references: [customers.id] }),
+  agentUser: one(user, { fields: [voipCalls.agentUserId], references: [user.id] }),
 }))
 
-export const selectDialerAttemptSchema = createSelectSchema(dialerAttempts)
-export type DialerAttempt = z.infer<typeof selectDialerAttemptSchema>
+export const selectVoipCallSchema = createSelectSchema(voipCalls)
+export type VoipCall = z.infer<typeof selectVoipCallSchema>
 
-export const insertDialerAttemptSchema = createInsertSchema(dialerAttempts).omit({
+export const insertVoipCallSchema = createInsertSchema(voipCalls).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 })
-export type InsertDialerAttempt = z.infer<typeof insertDialerAttemptSchema>
+export type InsertVoipCall = z.infer<typeof insertVoipCallSchema>
 ```
 
-- [ ] **Step 5.2: Verify (no db:push yet — batched in Task 12)**
+- [ ] **Step 4.2: Verify (no `db:push:dev` yet — batched in Task 11)**
 
 ```bash
-pnpm tsc
-pnpm lint
-```
-
-- [ ] **Step 5.3: Commit**
-
-```bash
-git add src/shared/db/schema/dialer-attempts.ts
-git commit -m "feat(dialer): add dialer_attempts table schema
+pnpm tsc && pnpm lint
+git add src/shared/db/schema/voip-calls.ts
+git commit -m "feat(voip): add voip_calls table schema (with source discriminator + cloudtalk forward-compat columns)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 6: dialer_dids table
+### Task 5: `voip_dids` table
 
-**Files:** Create `src/shared/db/schema/dialer-dids.ts`
+**Files:**
+- Create: `src/shared/db/schema/voip-dids.ts`
 
-- [ ] **Step 6.1: Create the schema file**
+> Notable change vs the old `dialer_dids`: adds `assigned_user_id` (sticky-DID-per-agent) and `role` (transfer_target / agent_outbound / campaign_rotation) instead of a single `is_transfer_target_did` boolean. CloudTalk-owned campaign DIDs live in this table with `source='cloudtalk'` + `role='campaign_rotation'` (populated by voip-campaigns later).
+
+- [ ] **Step 5.1: Create the schema file**
 
 ```ts
+// src/shared/db/schema/voip-dids.ts
 import type z from 'zod'
-import { boolean, integer, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
+import { integer, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
-import { dialerDidStatusEnum } from './meta'
+import { user } from './auth'
+import { voipDidRoleEnum, voipDidStatusEnum, voipSourceEnum } from './meta'
 
-export const dialerDids = pgTable('dialer_dids', {
+export const voipDids = pgTable('voip_dids', {
   id,
+  source: voipSourceEnum('source').notNull(),
   e164Number: text('e164_number').notNull().unique(),
   areaCode: varchar('area_code', { length: 3 }).notNull(),
-  twilioPhoneSid: text('twilio_phone_sid').notNull().unique(),
-  status: dialerDidStatusEnum('status').notNull().default('warming'),
-  dailyCap: integer('daily_cap').notNull().default(20),
+  role: voipDidRoleEnum('role').notNull(),
+  status: voipDidStatusEnum('status').notNull().default('active'),
+
+  // Sticky-DID-per-agent (in-house only). Null for transfer-target + campaign_rotation DIDs.
+  assignedUserId: text('assigned_user_id').references(() => user.id, { onDelete: 'set null' }),
+
+  // Twilio identifier (in-house only)
+  twilioPhoneSid: text('twilio_phone_sid').unique(),
+
+  // Operational stats (incremented by Twilio status webhooks; reset daily by Phase 2 cron)
   attemptsToday: integer('attempts_today').notNull().default(0),
   attemptsTotal: integer('attempts_total').notNull().default(0),
   lastAttemptAt: timestamp('last_attempt_at', { mode: 'string', withTimezone: true }),
   lastFlaggedAt: timestamp('last_flagged_at', { mode: 'string', withTimezone: true }),
   flagReason: text('flag_reason'),
-  warmingStartedAt: timestamp('warming_started_at', { mode: 'string', withTimezone: true }),
+
+  // Reputation snapshots (Phase 2+ writes to this; Phase 1 schema-only)
   reputationDataJson: jsonb('reputation_data_json'),
-  isTransferTargetDid: boolean('is_transfer_target_did').notNull().default(false),
+
   createdAt,
   updatedAt,
 })
 
-export const selectDialerDidSchema = createSelectSchema(dialerDids)
-export type DialerDid = z.infer<typeof selectDialerDidSchema>
+export const selectVoipDidSchema = createSelectSchema(voipDids)
+export type VoipDid = z.infer<typeof selectVoipDidSchema>
 
-export const insertDialerDidSchema = createInsertSchema(dialerDids).omit({
+export const insertVoipDidSchema = createInsertSchema(voipDids).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 })
-export type InsertDialerDid = z.infer<typeof insertDialerDidSchema>
+export type InsertVoipDid = z.infer<typeof insertVoipDidSchema>
+```
+
+- [ ] **Step 5.2: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/db/schema/voip-dids.ts
+git commit -m "feat(voip): add voip_dids table schema (sticky-DID-per-agent + source discriminator)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 6: `voip_dnc` table
+
+**Files:**
+- Create: `src/shared/db/schema/voip-dnc.ts`
+
+> The `source` enum values match [INTEGRATION-SEAM.md §5](../voip/INTEGRATION-SEAM.md) exactly. Both EPICs gate against this table.
+
+- [ ] **Step 6.1: Create the schema file**
+
+```ts
+// src/shared/db/schema/voip-dnc.ts
+import type z from 'zod'
+import { pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { createdAt, id } from '../lib/schema-helpers'
+import { user } from './auth'
+import { voipDncSourceEnum } from './meta'
+
+export const voipDnc = pgTable('voip_dnc', {
+  id,
+  phoneE164: text('phone_e164').notNull().unique(),
+  source: voipDncSourceEnum('source').notNull(),
+  reason: text('reason'),
+  addedAt: timestamp('added_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
+  addedByUserId: text('added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+
+  // Forward-compat: voip-campaigns sets this after pushing the DNC entry to CloudTalk's
+  // contact attribute (do_not_call=true). NULL = not yet pushed (or no push needed because
+  // source='cloudtalk_stop' = already honored CloudTalk-side).
+  cloudtalkSyncedAt: timestamp('cloudtalk_synced_at', { mode: 'string', withTimezone: true }),
+
+  createdAt,
+})
+
+export const selectVoipDncSchema = createSelectSchema(voipDnc)
+export type VoipDnc = z.infer<typeof selectVoipDncSchema>
+
+export const insertVoipDncSchema = createInsertSchema(voipDnc).omit({
+  id: true,
+  createdAt: true,
+})
+export type InsertVoipDnc = z.infer<typeof insertVoipDncSchema>
 ```
 
 - [ ] **Step 6.2: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/db/schema/dialer-dids.ts
-git commit -m "feat(dialer): add dialer_dids table schema
+git add src/shared/db/schema/voip-dnc.ts
+git commit -m "feat(voip): add voip_dnc table schema (cross-EPIC canonical DNC store)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 7: dialer_lead_states table
+### Task 7: `voip_user_availability` table
 
-**Files:** Create `src/shared/db/schema/dialer-lead-states.ts`
+**Files:**
+- Create: `src/shared/db/schema/voip-user-availability.ts`
 
 - [ ] **Step 7.1: Create the schema file**
 
 ```ts
+// src/shared/db/schema/voip-user-availability.ts
 import type z from 'zod'
-import { integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
-import { customers } from './customers'
-import { dialerDispositionEnum, dialerLeadStateStatusEnum } from './meta'
+import { voipTransferModeEnum, voipUserAvailabilityEnum } from './meta'
 
-export const dialerLeadStates = pgTable('dialer_lead_states', {
-  id,
-  customerId: uuid('customer_id').notNull().unique().references(() => customers.id, { onDelete: 'cascade' }),
-  enrolledAt: timestamp('enrolled_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
-  enrolledByUserId: text('enrolled_by_user_id').references(() => user.id, { onDelete: 'set null' }),
-  status: dialerLeadStateStatusEnum('status').notNull().default('queued'),
-  nextAttemptAt: timestamp('next_attempt_at', { mode: 'string', withTimezone: true }),
-  lastAttemptAt: timestamp('last_attempt_at', { mode: 'string', withTimezone: true }),
-  attemptsToday: integer('attempts_today').notNull().default(0),
-  attemptsTotal: integer('attempts_total').notNull().default(0),
-  maxAttemptsPerDay: integer('max_attempts_per_day').notNull().default(10),
-  maxTotalAttempts: integer('max_total_attempts').notNull().default(50),
-  lastDisposition: dialerDispositionEnum('last_disposition'),
-  pauseUntil: timestamp('pause_until', { mode: 'string', withTimezone: true }),
-  notes: text('notes'),
-  createdAt,
-  updatedAt,
+export const voipUserAvailability = pgTable('voip_user_availability', {
+  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
+  enrolledForTransfers: boolean('enrolled_for_transfers').notNull().default(false),
+  manualStatus: voipUserAvailabilityEnum('manual_status').notNull().default('off_shift'),
+  transferMode: voipTransferModeEnum('transfer_mode').notNull().default('desktop'),
+  cellPhoneE164: text('cell_phone_e164'),  // populated when transferMode='mobile' (Phase 3)
+  onCallUntil: timestamp('on_call_until', { mode: 'string', withTimezone: true }),
+  lastTransferredAt: timestamp('last_transferred_at', { mode: 'string', withTimezone: true }),
+  updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
 })
 
-export const selectDialerLeadStateSchema = createSelectSchema(dialerLeadStates)
-export type DialerLeadState = z.infer<typeof selectDialerLeadStateSchema>
+export const selectVoipUserAvailabilitySchema = createSelectSchema(voipUserAvailability)
+export type VoipUserAvailability = z.infer<typeof selectVoipUserAvailabilitySchema>
 
-export const insertDialerLeadStateSchema = createInsertSchema(dialerLeadStates).omit({
-  id: true,
-  createdAt: true,
+export const insertVoipUserAvailabilitySchema = createInsertSchema(voipUserAvailability).omit({
   updatedAt: true,
 })
-export type InsertDialerLeadState = z.infer<typeof insertDialerLeadStateSchema>
+export type InsertVoipUserAvailability = z.infer<typeof insertVoipUserAvailabilitySchema>
 ```
 
 - [ ] **Step 7.2: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/db/schema/dialer-lead-states.ts
-git commit -m "feat(dialer): add dialer_lead_states table schema
+git add src/shared/db/schema/voip-user-availability.ts
+git commit -m "feat(voip): add voip_user_availability table schema
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 8: dialer_dnc table
+### Task 8: `voip_messages` table
 
-**Files:** Create `src/shared/db/schema/dialer-dnc.ts`
+**Files:**
+- Create: `src/shared/db/schema/voip-messages.ts`
+
+> Notable changes vs old `dialer_messages`: drops `sendblue_message_id` + `imessage` / `fallback_sms` channel values entirely. Adds `source` discriminator + `cloudtalk_message_id` forward-compat column.
 
 - [ ] **Step 8.1: Create the schema file**
 
 ```ts
+// src/shared/db/schema/voip-messages.ts
 import type z from 'zod'
-import { pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
+import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { createdAt, id } from '../lib/schema-helpers'
+import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
-import { dialerDncSourceEnum } from './meta'
+import { customers } from './customers'
+import {
+  voipMessageDirectionEnum,
+  voipMessageStatusEnum,
+  voipSourceEnum,
+} from './meta'
 
-export const dialerDnc = pgTable('dialer_dnc', {
+export const voipMessages = pgTable('voip_messages', {
   id,
-  phoneE164: text('phone_e164').notNull().unique(),
-  source: dialerDncSourceEnum('source').notNull(),
-  reason: text('reason'),
-  addedAt: timestamp('added_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
-  addedByUserId: text('added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  source: voipSourceEnum('source').notNull(),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  direction: voipMessageDirectionEnum('direction').notNull(),
+  didUsed: text('did_used').notNull(),          // E.164 of the Tri Pros DID used
+  remoteE164: text('remote_e164').notNull(),    // The other end's E.164
+  body: text('body').notNull(),
+  status: voipMessageStatusEnum('status').notNull().default('queued'),
+
+  // In-house Twilio identifier
+  twilioMessageSid: text('twilio_message_sid').unique(),
+
+  // Forward-compat: voip-campaigns populates these when source='cloudtalk'. See INTEGRATION-SEAM.md §2 + §8.
+  cloudtalkMessageId: text('cloudtalk_message_id').unique(),
+  campaignId: text('campaign_id'),
+  templateKey: text('template_key'),  // 'manual' for ad-hoc; specific keys for templated sends
+
+  // Agent association (who sent / who the inbound is threaded to)
+  agentUserId: text('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+
+  sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
+  deliveredAt: timestamp('delivered_at', { mode: 'string', withTimezone: true }),
+  failedAt: timestamp('failed_at', { mode: 'string', withTimezone: true }),
+  metaJson: jsonb('meta_json'),
   createdAt,
+  updatedAt,
 })
 
-export const selectDialerDncSchema = createSelectSchema(dialerDnc)
-export type DialerDnc = z.infer<typeof selectDialerDncSchema>
+export const voipMessagesRelations = relations(voipMessages, ({ one }) => ({
+  customer: one(customers, { fields: [voipMessages.customerId], references: [customers.id] }),
+  agentUser: one(user, { fields: [voipMessages.agentUserId], references: [user.id] }),
+}))
 
-export const insertDialerDncSchema = createInsertSchema(dialerDnc).omit({
+export const selectVoipMessageSchema = createSelectSchema(voipMessages)
+export type VoipMessage = z.infer<typeof selectVoipMessageSchema>
+
+export const insertVoipMessageSchema = createInsertSchema(voipMessages).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 })
-export type InsertDialerDnc = z.infer<typeof insertDialerDncSchema>
+export type InsertVoipMessage = z.infer<typeof insertVoipMessageSchema>
 ```
 
 - [ ] **Step 8.2: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/db/schema/dialer-dnc.ts
-git commit -m "feat(dialer): add dialer_dnc table schema
+git add src/shared/db/schema/voip-messages.ts
+git commit -m "feat(voip): add voip_messages table schema (source discriminator + cloudtalk forward-compat)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 9: dialer_user_availability table
+### Task 9: `voip_link_tokens` table (NEW — tokenized-link sends)
 
-**Files:** Create `src/shared/db/schema/dialer-user-availability.ts`
+**Files:**
+- Create: `src/shared/db/schema/voip-link-tokens.ts`
+
+> Per the EPIC locked decision: tokens are single-use, 48h TTL, phone-tied. Phase 1's first use case is L-DOC (document upload). The token schema is generic so payment/reschedule/e-sign variants drop in later without migrations.
 
 - [ ] **Step 9.1: Create the schema file**
 
 ```ts
+// src/shared/db/schema/voip-link-tokens.ts
 import type z from 'zod'
-import { boolean, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { createdAt, id } from '../lib/schema-helpers'
 import { user } from './auth'
-import { dialerTransferModeEnum, dialerUserAvailabilityEnum } from './meta'
+import { customers } from './customers'
+import { voipLinkTokenTypeEnum } from './meta'
 
-export const dialerUserAvailability = pgTable('dialer_user_availability', {
-  userId: text('user_id').primaryKey().references(() => user.id, { onDelete: 'cascade' }),
-  enrolledForTransfers: boolean('enrolled_for_transfers').notNull().default(false),
-  manualStatus: dialerUserAvailabilityEnum('manual_status').notNull().default('off_shift'),
-  transferMode: dialerTransferModeEnum('transfer_mode').notNull().default('desktop'),
-  cellPhoneE164: text('cell_phone_e164'),
-  onCallUntil: timestamp('on_call_until', { mode: 'string', withTimezone: true }),
-  lastTransferredAt: timestamp('last_transferred_at', { mode: 'string', withTimezone: true }),
-  updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
+export const voipLinkTokens = pgTable('voip_link_tokens', {
+  id,
+  token: text('token').notNull().unique(),                  // URL-safe random; ~32 chars
+  type: voipLinkTokenTypeEnum('type').notNull(),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  phoneE164: text('phone_e164').notNull(),                  // tied to the recipient's phone
+  expiresAt: timestamp('expires_at', { mode: 'string', withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { mode: 'string', withTimezone: true }),
+  createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+
+  // Type-specific payload (e.g., for L-DOC: { uploadSlotId, instructions, returnUrl }).
+  // Validated per-type at mint + at consume.
+  payloadJson: jsonb('payload_json').notNull(),
+
+  createdAt,
 })
 
-export const selectDialerUserAvailabilitySchema = createSelectSchema(dialerUserAvailability)
-export type DialerUserAvailability = z.infer<typeof selectDialerUserAvailabilitySchema>
+export const selectVoipLinkTokenSchema = createSelectSchema(voipLinkTokens)
+export type VoipLinkToken = z.infer<typeof selectVoipLinkTokenSchema>
 
-export const insertDialerUserAvailabilitySchema = createInsertSchema(dialerUserAvailability).omit({
-  updatedAt: true,
+export const insertVoipLinkTokenSchema = createInsertSchema(voipLinkTokens).omit({
+  id: true,
+  createdAt: true,
 })
-export type InsertDialerUserAvailability = z.infer<typeof insertDialerUserAvailabilitySchema>
+export type InsertVoipLinkToken = z.infer<typeof insertVoipLinkTokenSchema>
 ```
 
 - [ ] **Step 9.2: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/db/schema/dialer-user-availability.ts
-git commit -m "feat(dialer): add dialer_user_availability table schema
+git add src/shared/db/schema/voip-link-tokens.ts
+git commit -m "feat(voip): add voip_link_tokens table schema (tokenized-link sends; L-DOC first)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 10: dialer_settings singleton table + Zod schema for config
+### Task 10: `app_settings` table (NEW — generic feature-keyed config)
 
 **Files:**
-- Create: `src/shared/db/schema/dialer-settings.ts`
-- Create: `src/shared/entities/dialer-settings/schemas/config-schema.ts`
+- Create: `src/shared/db/schema/app-settings.ts`
 
-- [ ] **Step 10.1: Create the Zod config schema**
+> Replaces what the old plan called `dialer_settings`. Generic by design so voip-campaigns (and any future feature) can use the same table with its own row. Two rows are anticipated short-term: `feature='voip-in-house'` (this EPIC) and `feature='voip-campaigns'` (sibling EPIC's Phase 1).
 
-Create `src/shared/entities/dialer-settings/schemas/config-schema.ts`:
-
-```ts
-import { z } from 'zod'
-
-const weekdayEnum = z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])
-
-export const dialerSettingsConfigSchema = z.object({
-  defaults: z.object({
-    maxAttemptsPerDay: z.number().int().min(1).max(20),
-    maxTotalAttempts: z.number().int().min(1).max(500),
-    interAttemptIntervalMinutes: z.number().int().min(15).max(720),
-    voicemailBackoffHours: z.number().min(0.5).max(72),
-    voicemailMaxPerDay: z.number().int().min(0).max(5),
-  }),
-  callingWindow: z.object({
-    startHourLocal: z.number().int().min(0).max(23),
-    endHourLocal: z.number().int().min(0).max(23),
-    callingDays: z.array(weekdayEnum),
-    powerHours: z.array(z.tuple([z.number(), z.number()])),
-  }).refine(c => c.endHourLocal > c.startHourLocal, { message: 'end hour must be after start hour' }),
-  didPool: z.object({
-    targetPoolSize: z.number().int().min(1).max(100),
-    warmingStartCap: z.number().int().min(5).max(50),
-    warmingIncrement: z.number().int().min(5).max(50),
-    warmingIncrementIntervalDays: z.number().int().min(1).max(14),
-    activeDailyCap: z.number().int().min(20).max(200),
-    hangupWithin3sFlagThreshold: z.number().min(0).max(1),
-    cooldownDays: z.number().int().min(7).max(180),
-    autoProcurementEnabled: z.boolean(),
-  }),
-  cadenceDecay: z.object({
-    saturateDays: z.number().int().min(1).max(7),
-    backoffDays: z.number().int().min(1).max(14),
-    backoffAttemptsPerDay: z.number().int().min(1),
-    backgroundDays: z.number().int().min(1).max(30),
-    backgroundAttemptsPerDay: z.number().int().min(1),
-  }),
-  globalKillSwitch: z.boolean(),
-})
-
-export type DialerSettingsConfig = z.infer<typeof dialerSettingsConfigSchema>
-
-export const DEFAULT_DIALER_SETTINGS_CONFIG: DialerSettingsConfig = {
-  defaults: {
-    maxAttemptsPerDay: 10,
-    maxTotalAttempts: 50,
-    interAttemptIntervalMinutes: 90,
-    voicemailBackoffHours: 3,
-    voicemailMaxPerDay: 1,
-  },
-  callingWindow: {
-    startHourLocal: 8,
-    endHourLocal: 21,
-    callingDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
-    powerHours: [[9, 12], [17, 19]],
-  },
-  didPool: {
-    targetPoolSize: 5,
-    warmingStartCap: 20,
-    warmingIncrement: 20,
-    warmingIncrementIntervalDays: 3,
-    activeDailyCap: 60,
-    hangupWithin3sFlagThreshold: 0.30,
-    cooldownDays: 30,
-    autoProcurementEnabled: false,
-  },
-  cadenceDecay: {
-    saturateDays: 3,
-    backoffDays: 7,
-    backoffAttemptsPerDay: 2,
-    backgroundDays: 14,
-    backgroundAttemptsPerDay: 1,
-  },
-  globalKillSwitch: false,
-}
-```
-
-- [ ] **Step 10.2: Create the schema file**
-
-Create `src/shared/db/schema/dialer-settings.ts`:
+- [ ] **Step 10.1: Create the schema file**
 
 ```ts
+// src/shared/db/schema/app-settings.ts
 import type z from 'zod'
-import type { DialerSettingsConfig } from '@/shared/entities/dialer-settings/schemas/config-schema'
-import { sql } from 'drizzle-orm'
-import { check, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { dialerSettingsConfigSchema } from '@/shared/entities/dialer-settings/schemas/config-schema'
 import { user } from './auth'
 
-export const dialerSettings = pgTable('dialer_settings', {
-  id: text('id').primaryKey().default('singleton'),
-  configJson: jsonb('config_json').$type<DialerSettingsConfig>().notNull(),
+export const appSettings = pgTable('app_settings', {
+  feature: text('feature').primaryKey(),  // e.g., 'voip-in-house', 'voip-campaigns'
+  configJson: jsonb('config_json').notNull(),
   updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
-}, table => [
-  check('dialer_settings_singleton', sql`${table.id} = 'singleton'`),
-])
-
-export const selectDialerSettingsSchema = createSelectSchema(dialerSettings, {
-  configJson: dialerSettingsConfigSchema,
 })
-export type DialerSettings = z.infer<typeof selectDialerSettingsSchema>
 
-export const insertDialerSettingsSchema = createInsertSchema(dialerSettings, {
-  configJson: dialerSettingsConfigSchema,
-}).omit({
+export const selectAppSettingsSchema = createSelectSchema(appSettings)
+export type AppSetting = z.infer<typeof selectAppSettingsSchema>
+
+export const insertAppSettingsSchema = createInsertSchema(appSettings).omit({
   updatedAt: true,
 })
-export type InsertDialerSettings = z.infer<typeof insertDialerSettingsSchema>
+export type InsertAppSetting = z.infer<typeof insertAppSettingsSchema>
 ```
 
-- [ ] **Step 10.3: Verify + commit**
+> Per-feature `configJson` Zod schemas live in each feature's entity (e.g., `entities/app-settings/schemas/voip-in-house-config-schema.ts`) and are validated at write time by the service layer.
+
+- [ ] **Step 10.2: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/db/schema/dialer-settings.ts src/shared/entities/dialer-settings/schemas/config-schema.ts
-git commit -m "feat(dialer): add dialer_settings singleton table + config schema
+git add src/shared/db/schema/app-settings.ts
+git commit -m "feat(app-settings): add generic feature-keyed app_settings table
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 11: dialer_messages table
-
-**Files:** Create `src/shared/db/schema/dialer-messages.ts`
-
-- [ ] **Step 11.1: Create the schema file**
-
-```ts
-import type z from 'zod'
-import { relations } from 'drizzle-orm'
-import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { createdAt, id, updatedAt } from '../lib/schema-helpers'
-import { customers } from './customers'
-import { dialerAttempts } from './dialer-attempts'
-import {
-  dialerMessageChannelEnum,
-  dialerMessageDirectionEnum,
-  dialerMessageStatusEnum,
-} from './meta'
-
-export const dialerMessages = pgTable('dialer_messages', {
-  id,
-  customerId: uuid('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
-  dialerAttemptId: uuid('dialer_attempt_id').references(() => dialerAttempts.id, { onDelete: 'set null' }),
-  direction: dialerMessageDirectionEnum('direction').notNull(),
-  channel: dialerMessageChannelEnum('channel').notNull(),
-  body: text('body').notNull(),
-  twilioMessageSid: text('twilio_message_sid').unique(),
-  sendblueMessageId: text('sendblue_message_id').unique(),
-  status: dialerMessageStatusEnum('status').notNull().default('queued'),
-  sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
-  deliveredAt: timestamp('delivered_at', { mode: 'string', withTimezone: true }),
-  failedAt: timestamp('failed_at', { mode: 'string', withTimezone: true }),
-  templateKey: text('template_key'),
-  metaJson: jsonb('meta_json'),
-  createdAt,
-  updatedAt,
-})
-
-export const dialerMessagesRelations = relations(dialerMessages, ({ one }) => ({
-  customer: one(customers, { fields: [dialerMessages.customerId], references: [customers.id] }),
-  dialerAttempt: one(dialerAttempts, { fields: [dialerMessages.dialerAttemptId], references: [dialerAttempts.id] }),
-}))
-
-export const selectDialerMessageSchema = createSelectSchema(dialerMessages)
-export type DialerMessage = z.infer<typeof selectDialerMessageSchema>
-
-export const insertDialerMessageSchema = createInsertSchema(dialerMessages).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-})
-export type InsertDialerMessage = z.infer<typeof insertDialerMessageSchema>
-```
-
-- [ ] **Step 11.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/db/schema/dialer-messages.ts
-git commit -m "feat(dialer): add dialer_messages table schema
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 12: lead_sources.dialerConfigJSON + Zod schema + db push migration
+### Task 11: `lead_sources.voipConfigJSON` + Zod schema + `db:push:dev`
 
 **Files:**
-- Create: `src/shared/entities/lead-sources/schemas/dialer-config-schema.ts`
-- Modify: `src/shared/entities/lead-sources/schemas.ts` (or schemas dir per existing pattern — check first)
+- Create: `src/shared/entities/lead-sources/schemas/voip-config-schema.ts`
+- Modify: `src/shared/entities/lead-sources/schemas.ts` (or its dir-form `schemas/index.ts` — check first; the existing pattern re-exports `leadSourceFormConfigSchema`)
 - Modify: `src/shared/db/schema/lead-sources.ts`
-- Modify: `src/shared/db/schema/index.ts` — re-export all new dialer tables
+- Modify: `src/shared/db/schema/index.ts` — re-export all 7 new tables
 
-- [ ] **Step 12.1: Create the dialer-config Zod schema**
+> The `voipConfigJSON` shape is shared between this EPIC and voip-campaigns. Sub-objects: `inHouse` (owned here) and `campaigns` (owned by voip-campaigns; type stub'd here as optional, real fields land in voip-campaigns Phase 1). See [INTEGRATION-SEAM.md §9](../voip/INTEGRATION-SEAM.md).
 
-Create `src/shared/entities/lead-sources/schemas/dialer-config-schema.ts`:
+- [ ] **Step 11.1: Create the voip-config Zod schema**
 
 ```ts
+// src/shared/entities/lead-sources/schemas/voip-config-schema.ts
 import { z } from 'zod'
 
-export const leadSourceDialerConfigSchema = z.object({
+// Sub-object owned by voip-in-house (this EPIC).
+const voipInHouseConfigSchema = z.object({
   enabled: z.boolean(),
-  retellAgentId: z.string().nullable(),
-  trade: z.string(),
-  consentContext: z.string(),
-  aiGreetingOverride: z.string().nullable(),
-  warmIntroTemplate: z.string().nullable(),
-  cadenceOverrides: z.object({
-    maxAttemptsPerDay: z.number().int().min(1).max(20).optional(),
-    maxTotalAttempts: z.number().int().min(1).max(500).optional(),
-    quietHours: z.object({
-      start: z.string(),
-      end: z.string(),
-    }).optional(),
+  // Templates for transactional / lifecycle SMS the in-house side may send for this lead source.
+  // Phase 1 ships only the schema; Phase 2 wires Inngest-driven sends.
+  transactionalSmsTemplates: z.object({
+    meetingReminder: z.string().optional(),
+    proposalLinkSend: z.string().optional(),
+    projectStatusUpdate: z.string().optional(),
+    docUploadRequest: z.string().optional(),
   }).nullable(),
-  messageTemplates: z.object({
-    callbackReminder: z.string().optional(),
-    voicemailFollowup: z.string().optional(),
-    optOutConfirm: z.string().optional(),
+  // Override the default calling-hours window for this lead source (e.g., commercial lead source = M-F only).
+  // null = inherit from app_settings.
+  callingHoursOverride: z.object({
+    startHourLocal: z.number().int().min(0).max(23),
+    endHourLocal: z.number().int().min(0).max(23),
+    callingDays: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])),
   }).nullable(),
 })
 
-export type LeadSourceDialerConfig = z.infer<typeof leadSourceDialerConfigSchema>
+// Sub-object owned by voip-campaigns (sibling EPIC). Stubbed here as a loose record so this EPIC
+// doesn't constrain the sibling's design; voip-campaigns Phase 1 narrows this to a strict schema.
+const voipCampaignsConfigStubSchema = z.object({
+  enabled: z.boolean(),
+}).passthrough().nullable()
+
+export const leadSourceVoipConfigSchema = z.object({
+  inHouse: voipInHouseConfigSchema,
+  campaigns: voipCampaignsConfigStubSchema,
+})
+
+export type LeadSourceVoipConfig = z.infer<typeof leadSourceVoipConfigSchema>
 ```
 
-- [ ] **Step 12.2: Add field to lead-sources schema**
+- [ ] **Step 11.2: Re-export from the lead-sources entity barrel**
 
-Modify `src/shared/db/schema/lead-sources.ts`. Read the file first to confirm exact existing structure, then add:
+In `src/shared/entities/lead-sources/schemas.ts` (or `schemas/index.ts` per existing pattern — read first and match), append:
 
 ```ts
-// Add to imports (top of file):
-import type { LeadSourceDialerConfig } from '@/shared/entities/lead-sources/schemas/dialer-config-schema'
-import { leadSourceDialerConfigSchema } from '@/shared/entities/lead-sources/schemas/dialer-config-schema'
+export { leadSourceVoipConfigSchema } from './schemas/voip-config-schema'
+export type { LeadSourceVoipConfig } from './schemas/voip-config-schema'
+```
 
-// Inside leadSourcesTable definition, add:
-  dialerConfigJSON: jsonb('dialer_config_json').$type<LeadSourceDialerConfig>(),
+- [ ] **Step 11.3: Add the `voipConfigJSON` field to `lead-sources.ts` schema**
 
-// Modify selectLeadSourceSchema:
+Modify `src/shared/db/schema/lead-sources.ts`. Read the existing file first — its shape was: `id, name, slug, token, formConfigJSON (notnull), isActive, archivedAt, createdAt, updatedAt`. Add the new column nullable (existing rows have no voip config):
+
+```ts
+import type { LeadSourceVoipConfig } from '@/shared/entities/lead-sources/schemas/voip-config-schema'
+import { leadSourceVoipConfigSchema } from '@/shared/entities/lead-sources/schemas/voip-config-schema'
+
+// Inside the leadSourcesTable definition, after formConfigJSON:
+  voipConfigJSON: jsonb('voip_config_json').$type<LeadSourceVoipConfig>(),
+
+// Update selectLeadSourceSchema:
 export const selectLeadSourceSchema = createSelectSchema(leadSourcesTable, {
   formConfigJSON: leadSourceFormConfigSchema,
-  dialerConfigJSON: leadSourceDialerConfigSchema.nullable(),
+  voipConfigJSON: leadSourceVoipConfigSchema.nullable(),
 })
 
-// Modify insertLeadSourceSchema:
+// Update insertLeadSourceSchema:
 export const insertLeadSourceSchema = createInsertSchema(leadSourcesTable, {
   formConfigJSON: leadSourceFormConfigSchema,
-  dialerConfigJSON: leadSourceDialerConfigSchema.optional(),
+  voipConfigJSON: leadSourceVoipConfigSchema.optional(),
 }).omit({ id: true, createdAt: true, updatedAt: true })
 ```
 
-- [ ] **Step 12.3: Re-export new tables from schema barrel**
+- [ ] **Step 11.4: Re-export the new tables from the schema barrel**
 
-Modify `src/shared/db/schema/index.ts` — add the 7 new exports. Match existing pattern (re-read first):
+In `src/shared/db/schema/index.ts`, add (match existing pattern; read file first):
 
 ```ts
-export * from './dialer-attempts'
-export * from './dialer-dids'
-export * from './dialer-lead-states'
-export * from './dialer-dnc'
-export * from './dialer-user-availability'
-export * from './dialer-settings'
-export * from './dialer-messages'
+export * from './app-settings'
+export * from './voip-calls'
+export * from './voip-dids'
+export * from './voip-dnc'
+export * from './voip-link-tokens'
+export * from './voip-messages'
+export * from './voip-user-availability'
 ```
 
-- [ ] **Step 12.4: Push schema to dev DB**
+- [ ] **Step 11.5: Push schema to dev DB**
 
 ```bash
 pnpm db:push:dev
 ```
 
-**Verify:** drizzle-kit prompts confirming the new tables + enum types + `lead_sources.dialer_config_json` column. Accept the changes. **Do NOT run `pnpm db:push` — that's production.**
+**Verify:** drizzle-kit prompts to add 7 new tables + 11 new enum types + `lead_sources.voip_config_json` column. Accept. **Do NOT run `pnpm db:push` — that's production.**
 
-- [ ] **Step 12.5: Manually verify the migration**
+- [ ] **Step 11.6: Manually verify the migration**
 
-Connect to dev DB (via your usual tool — psql / Neon dashboard / Drizzle Studio):
+Connect to dev DB (Drizzle Studio or psql via `DATABASE_DEV_URL`):
 
 ```sql
--- Confirm tables exist
+-- 7 new tables
 SELECT table_name FROM information_schema.tables
-WHERE table_schema = 'public' AND table_name LIKE 'dialer_%'
+WHERE table_schema = 'public' AND (table_name LIKE 'voip_%' OR table_name = 'app_settings')
 ORDER BY table_name;
 
--- Confirm enum types exist
+-- 11 new enum types
 SELECT typname FROM pg_type
-WHERE typname LIKE 'dialer_%'
+WHERE typname LIKE 'voip_%'
 ORDER BY typname;
 
 -- Confirm lead_sources got the new column
-SELECT column_name, data_type FROM information_schema.columns
-WHERE table_name = 'lead_sources' AND column_name = 'dialer_config_json';
+SELECT column_name, data_type, is_nullable FROM information_schema.columns
+WHERE table_name = 'lead_sources' AND column_name = 'voip_config_json';
 
--- Confirm CHECK constraint on dialer_settings.id
-SELECT con.conname, pg_get_constraintdef(con.oid)
-FROM pg_constraint con
-JOIN pg_class rel ON rel.oid = con.conrelid
-WHERE rel.relname = 'dialer_settings';
+-- Confirm forward-compat columns on voip_calls + voip_messages
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'voip_calls' AND column_name IN ('source', 'cloudtalk_call_uuid', 'campaign_id', 'transcript_summary', 'sentiment')
+ORDER BY column_name;
 ```
 
-Expected: 7 dialer tables, 10 dialer enum types, `dialer_config_json` column on `lead_sources`, CHECK constraint `dialer_settings_singleton` present.
+Expected: 7 tables (app_settings + 6 voip_*), 11 voip_* enum types, `voip_config_json` jsonb nullable column on lead_sources, all 5 forward-compat columns present on `voip_calls`.
 
-- [ ] **Step 12.6: Commit**
+- [ ] **Step 11.7: Commit**
 
 ```bash
-git add src/shared/db/schema/lead-sources.ts src/shared/entities/lead-sources/schemas/dialer-config-schema.ts src/shared/db/schema/index.ts
+pnpm tsc && pnpm lint
+git add src/shared/db/schema/lead-sources.ts src/shared/db/schema/index.ts \
+  src/shared/entities/lead-sources/schemas/voip-config-schema.ts \
+  src/shared/entities/lead-sources/schemas.ts
 git commit -m "$(cat <<'EOF'
-feat(dialer): add dialerConfigJSON to lead_sources + push migration
+feat(voip): add voipConfigJSON to lead_sources + push migration
 
-- Adds nullable dialerConfigJSON jsonb column to lead_sources
-- Adds Zod schema for LeadSourceDialerConfig
-- Re-exports all 7 new dialer tables from schema barrel
-- Pushed via pnpm db:push:dev (NOT production)
+- Adds shared voip config field with inHouse + campaigns sub-objects per INTEGRATION-SEAM.md §9
+- Pushed voip_* tables + app_settings + 11 new enum types via pnpm db:push:dev (NOT production)
+- Re-exports all 7 new tables from the schema barrel
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -1085,2242 +1102,2504 @@ EOF
 
 ---
 
-### Tasks 13-19: Backend entity minimal scaffolds (per ADR-0002 pattern)
+### Tasks 12-18: Backend entity scaffolds (entity-factory pattern per ADR-0002)
 
-> **Each task creates ONE entity directory** following the existing flat-entity-folder pattern. Phase 1 only needs the minimum: CASL name constant + Zod re-exports + minimal DAL. NO `components/`, NO `hooks/`, NO `lib/state-machine.ts` in Phase 1 — those land in later phases.
+> Each task creates ONE entity directory under `src/shared/entities/<entity>/`. The `EntityServerSpec` lives at `entities/<entity>/lib/server-spec.ts` (verified across proposals/meetings/customers). The router (Task 30) imports the spec from there. Phase 1 only needs: DOCS.md, lib/constants.ts, lib/server-spec.ts, schemas/, types.ts, and any custom DAL queries beyond the generic CRUD factory.
+>
+> **Read these first:**
+> - [ADR-0002](../../adr/0002-entity-server-system.md) — the EntityServerSpec contract
+> - [`src/trpc/DOCS.md`](../../../src/trpc/DOCS.md) — operational rules for the system
+> - [`docs/how-to/add-an-entity.md`](../../how-to/add-an-entity.md) — step-by-step recipe
+> - [`src/shared/entities/proposals/`](../../../src/shared/entities/proposals/) — canonical migrated example
+>
+> **Template — apply to each entity** (substitute `<entity>` + `<EntityName>` + per-entity unique pieces):
+>
+> ```
+> src/shared/entities/<entity>/
+>   DOCS.md
+>   lib/constants.ts             ← exports the CASL entity-name constant
+>   schemas/index.ts             ← re-exports from db schema + any custom Zod
+>   types.ts                     ← re-exports Drizzle-inferred types
+>   dal/server/<query>.ts        ← only when generic CRUD doesn't cover it
+> (router lives at src/trpc/routers/<entity>.router/ — Task 30 — and imports the spec)
+> ```
 
-**Template per entity** (apply to each of Tasks 13-19, substituting `<entity>` and `<EntityName>`):
+#### Task 12: `entities/voip-calls/`
 
-```
-src/shared/entities/<entity>/
-  DOCS.md
-  schemas/index.ts                  ← re-exports from db schema (if no additional Zod shapes; otherwise add files)
-  types.ts                          ← re-exports Drizzle-inferred TS types from db schema
-  constants/index.ts                ← any per-entity const arrays (mostly re-exports in Phase 1)
-  lib/constants.ts                  ← exports the CASL entity name constant
-  dal/server/{create,find-by-id,list,update}.ts (and entity-specific extras)
-```
-
-> **For brevity, Tasks 13-19 below show only the unique fields per entity. The DAL pattern from Task 13 is the template — each entity follows it, substituting the table name. Where an entity needs entity-specific DAL functions (e.g., `findByPhone`), those are shown.**
-
-#### Task 13: entities/dialer-attempts/
-
-- [ ] **Step 13.1:** Create `DOCS.md`:
+- [ ] **Step 12.1: Create `DOCS.md`**
 
 ```markdown
-# dialer-attempts
+# voip-calls
 
-Per-call lifecycle records. The atomic unit of dialer activity.
+Per-call lifecycle records. Source-discriminated; both in-house Twilio calls and CloudTalk-originated
+calls (warm-transfer landings, AI-driven outbound) live in this table.
 
 ## Invariants
 
-- `skipped_compliance` attempts do NOT increment `dialer_lead_states.attempts_today` (no actual dial occurred).
-- `retell_call_id` and `twilio_call_sid` are vendor unique IDs; webhook handlers MUST use them as idempotency keys.
-- `disposition` is set post-call (by human or by AI via webhook). May be NULL while call is in flight.
-- `recording_url` is Twilio-hosted; access gated by CASL `view_recording` permission.
-- State transitions follow `entities/dialer-attempts/lib/state-machine.ts` (added in Phase 2).
+- **VC-1: Idempotency.** `twilio_call_sid` and `cloudtalk_call_uuid` are vendor unique IDs; webhook
+  handlers MUST use them as idempotency keys via `INSERT … ON CONFLICT DO UPDATE`.
+- **VC-2: Source discriminator.** `source='in_house'` rows are populated by Twilio webhooks (Task 23);
+  `source='cloudtalk'` rows are populated by the voip-campaigns webhook handler in its Phase 1. This
+  EPIC's services NEVER write rows with `source='cloudtalk'`.
+- **VC-3: Forward-compat columns.** `cloudtalk_call_uuid`, `campaign_id`, `transcript_summary`,
+  `sentiment` are populated only when `source='cloudtalk'`. Don't reference them from in-house code
+  paths.
+- **VC-4: Disposition lifecycle.** Set post-call. NULL while call is in flight. For in-house: agent
+  picks via UI. For cloudtalk: CloudTalk AI sets via webhook (typed disposition).
+- **VC-5: Recording URL.** Twilio-hosted (in-house) or CloudTalk-hosted (cloudtalk). Access gated by
+  CASL `view_recording` action on the VoipCall subject.
+- **VC-6: Compliance gate.** Outbound `placeAgentCall` checks `voip-compliance.service.ts::canOutboundTo`
+  before inserting a row. Blocked attempts insert a row with `status='skipped_compliance'` + populated
+  `skip_reason` (so admins can audit blocked attempts).
+
+## Forward-compat for voip-campaigns
+
+CloudTalk-source columns (nullable): `cloudtalk_call_uuid` (UNIQUE), `campaign_id`,
+`transcript_summary`, `sentiment`. Populated only when `source='cloudtalk'`. Schema lands in Phase 1;
+writers ship in voip-campaigns Phase 1.
 ```
 
-- [ ] **Step 13.2:** Create `lib/constants.ts`:
+- [ ] **Step 12.2: Create `lib/constants.ts`**
 
 ```ts
-export const DIALER_ATTEMPT = 'DialerAttempt' as const
-export type DialerAttemptEntityName = typeof DIALER_ATTEMPT
+export const VOIP_CALL = 'VoipCall' as const
+export type VoipCallEntityName = typeof VOIP_CALL
 ```
 
-- [ ] **Step 13.3:** Create `types.ts`:
-
-```ts
-export type { DialerAttempt, InsertDialerAttempt } from '@/shared/db/schema/dialer-attempts'
-```
-
-- [ ] **Step 13.4:** Create `schemas/index.ts`:
+- [ ] **Step 12.3: Create `schemas/index.ts`**
 
 ```ts
 export {
-  selectDialerAttemptSchema,
-  insertDialerAttemptSchema,
-} from '@/shared/db/schema/dialer-attempts'
+  selectVoipCallSchema,
+  insertVoipCallSchema,
+} from '@/shared/db/schema/voip-calls'
 ```
 
-- [ ] **Step 13.5:** Create `constants/index.ts`:
+- [ ] **Step 12.4: Create `types.ts`**
 
 ```ts
-export { dialerAttemptStatuses, dialerDispositions } from '@/shared/constants/enums/dialer'
+export type { VoipCall, InsertVoipCall } from '@/shared/db/schema/voip-calls'
 ```
 
-- [ ] **Step 13.6:** Create `dal/server/create.ts`:
+- [ ] **Step 12.5: Create `dal/server/` — three files only**
+
+Per the convention verified across proposals/meetings/customers, DAL files are CONSOLIDATED — `crud.ts` + `queries.ts` + `mutations.ts` (plus domain-specific like `visibility.ts`/`participants.ts` when justified). Do NOT create one file per query. Read [`shared/entities/proposals/dal/server/`](../../../src/shared/entities/proposals/dal/server/) for the canonical layout before writing.
+
+**`dal/server/crud.ts`** — the generic CRUD factory output:
 
 ```ts
-import type { InsertDialerAttempt } from '@/shared/db/schema/dialer-attempts'
-import { db } from '@/shared/db'
-import { dialerAttempts } from '@/shared/db/schema'
+import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
+import { voipCallServerSpec } from '@/shared/entities/voip-calls/lib/server-spec'
 
-export async function createDialerAttempt(input: InsertDialerAttempt) {
-  const [row] = await db.insert(dialerAttempts).values(input).returning()
-  return row
-}
+export const voipCallCrud = createCrudDal(voipCallServerSpec)
+// Generated handlers: getById, create, update, delete, duplicate. All return DalReturn.
 ```
 
-- [ ] **Step 13.7:** Create `dal/server/find-by-id.ts`:
+**`dal/server/queries.ts`** — DalReturn-shaped reads beyond CRUD:
 
 ```ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerAttempts } from '@/shared/db/schema'
-
-export async function findDialerAttemptById(id: string) {
-  const [row] = await db.select().from(dialerAttempts).where(eq(dialerAttempts.id, id)).limit(1)
-  return row ?? null
-}
-
-export async function findDialerAttemptByRetellId(retellCallId: string) {
-  const [row] = await db.select().from(dialerAttempts).where(eq(dialerAttempts.retellCallId, retellCallId)).limit(1)
-  return row ?? null
-}
-
-export async function findDialerAttemptByTwilioSid(twilioCallSid: string) {
-  const [row] = await db.select().from(dialerAttempts).where(eq(dialerAttempts.twilioCallSid, twilioCallSid)).limit(1)
-  return row ?? null
-}
-```
-
-- [ ] **Step 13.8:** Create `dal/server/list.ts`:
-
-```ts
-import { desc } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerAttempts } from '@/shared/db/schema'
-
-export async function listRecentDialerAttempts(limit = 50) {
-  return db.select().from(dialerAttempts).orderBy(desc(dialerAttempts.initiatedAt)).limit(limit)
-}
-```
-
-- [ ] **Step 13.9:** Create `dal/server/update.ts`:
-
-```ts
-import type { DialerAttempt } from '@/shared/db/schema/dialer-attempts'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerAttempts } from '@/shared/db/schema'
-
-export async function updateDialerAttempt(id: string, patch: Partial<DialerAttempt>) {
-  const [row] = await db.update(dialerAttempts).set(patch).where(eq(dialerAttempts.id, id)).returning()
-  return row
-}
-```
-
-- [ ] **Step 13.10:** Verify + commit:
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/entities/dialer-attempts/
-git commit -m "feat(dialer): scaffold dialer-attempts entity (minimal)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
-#### Task 14: entities/dialer-dids/
-
-- [ ] **Step 14.1:** Apply Task 13 template substituting `dialerDids` table. Unique values:
-
-`lib/constants.ts`: `export const DIALER_DID = 'DialerDid' as const`
-`types.ts`: re-exports `DialerDid`, `InsertDialerDid` from `@/shared/db/schema/dialer-dids`
-`schemas/index.ts`: re-exports `selectDialerDidSchema`, `insertDialerDidSchema`
-`constants/index.ts`: `export { dialerDidStatuses } from '@/shared/constants/enums/dialer'`
-
-DAL `create.ts`, `find-by-id.ts`, `list.ts`, `update.ts` mirror Task 13 substituting `dialerDids`. Plus `dal/server/find-by-e164.ts`:
-
-```ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerDids } from '@/shared/db/schema'
-
-export async function findDialerDidByE164(e164: string) {
-  const [row] = await db.select().from(dialerDids).where(eq(dialerDids.e164Number, e164)).limit(1)
-  return row ?? null
-}
-```
-
-`DOCS.md`:
-```markdown
-# dialer-dids
-
-DID pool with lifecycle state. One row per phone number we own.
-
-## Invariants
-
-- `is_transfer_target_did = true` for exactly ONE DID in the pool (the "Tri Pros Transfers" caller ID used for outbound legs to humans). This DID does NOT participate in dial rotation.
-- `status='warming' → 'active' → 'cooldown' | 'flagged' | 'retired'`. Retired is terminal.
-- `attempts_today` reset daily by cron at midnight UTC.
-- Atomic dispatch enforces `attempts_today < daily_cap` via `UPDATE ... WHERE ... RETURNING`.
-```
-
-- [ ] **Step 14.2:** Verify + commit (`feat(dialer): scaffold dialer-dids entity (minimal)`)
-
-#### Task 15: entities/dialer-lead-states/
-
-- [ ] **Step 15.1:** Apply template:
-
-`lib/constants.ts`: `export const DIALER_LEAD_STATE = 'DialerLeadState' as const`
-`types.ts`: re-exports `DialerLeadState`, `InsertDialerLeadState`
-`schemas/index.ts`: re-exports `selectDialerLeadStateSchema`, `insertDialerLeadStateSchema`
-`constants/index.ts`: re-exports `dialerLeadStateStatuses`
-
-DAL: standard four + `find-by-customer.ts`:
-
-```ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerLeadStates } from '@/shared/db/schema'
-
-export async function findDialerLeadStateByCustomerId(customerId: string) {
-  const [row] = await db.select().from(dialerLeadStates).where(eq(dialerLeadStates.customerId, customerId)).limit(1)
-  return row ?? null
-}
-```
-
-`DOCS.md`:
-```markdown
-# dialer-lead-states
-
-Per-customer dial cadence state. One row per enrolled customer (UNIQUE on customer_id).
-
-## Invariants
-
-- A customer can be enrolled at most once (UNIQUE customer_id).
-- `status` transitions: queued → in_progress → reached | opted_out | exhausted | paused; paused → in_progress (when pause_until passes).
-- `attempts_today` reset daily by midnight UTC cron.
-- `pause_until` is set when AI schedules a callback (branch B3); cadence resumes when it passes.
-- `enrolled_by_user_id` NULL = auto-enrolled by lead source; non-null = admin-enrolled.
-```
-
-- [ ] **Step 15.2:** Verify + commit (`feat(dialer): scaffold dialer-lead-states entity`)
-
-#### Task 16: entities/dialer-dnc/
-
-- [ ] **Step 16.1:** Apply template:
-
-`lib/constants.ts`: `export const DIALER_DNC = 'DialerDnc' as const`
-`types.ts`: re-exports `DialerDnc`, `InsertDialerDnc`
-`schemas/index.ts`: re-exports `selectDialerDncSchema`, `insertDialerDncSchema`
-`constants/index.ts`: re-exports `dialerDncSources`
-
-DAL: `create.ts`, `list.ts` (no `update` — DNC entries are append-only), plus `lookup-by-phone.ts`:
-
-```ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerDnc } from '@/shared/db/schema'
-
-export async function lookupDialerDncByPhone(phoneE164: string): Promise<boolean> {
-  const [row] = await db.select({ id: dialerDnc.id }).from(dialerDnc).where(eq(dialerDnc.phoneE164, phoneE164)).limit(1)
-  return row !== undefined
-}
-```
-
-`DOCS.md`:
-```markdown
-# dialer-dnc
-
-Do Not Call registry. Records both lead-initiated opt-outs and external scrub-list entries.
-
-## Invariants
-
-- Append-only. Entries are never removed (admin-managed corrections create a new entry).
-- UNIQUE on `phone_e164` — a phone can only be DNC'd once. Duplicate inserts must use ON CONFLICT DO NOTHING.
-- Every compliance gate dial check MUST call `lookupDialerDncByPhone` before dispatch.
-- TCPA: honor every opt-out within 5 minutes (well inside 24h legal requirement).
-```
-
-- [ ] **Step 16.2:** Verify + commit (`feat(dialer): scaffold dialer-dnc entity`)
-
-#### Task 17: entities/dialer-user-availability/
-
-- [ ] **Step 17.1:** Apply template (no `create.ts`/`update.ts` — uses single `upsert.ts`):
-
-`lib/constants.ts`: `export const DIALER_USER_AVAILABILITY = 'DialerUserAvailability' as const`
-`types.ts`: re-exports `DialerUserAvailability`, `InsertDialerUserAvailability`
-`schemas/index.ts`: re-exports
-`constants/index.ts`: re-exports `dialerUserAvailabilities`, `dialerTransferModes`
-
-DAL files:
-
-```ts
-// dal/server/find-by-user.ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerUserAvailability } from '@/shared/db/schema'
-
-export async function findDialerUserAvailability(userId: string) {
-  const [row] = await db.select().from(dialerUserAvailability).where(eq(dialerUserAvailability.userId, userId)).limit(1)
-  return row ?? null
-}
-```
-
-```ts
-// dal/server/upsert.ts
-import type { InsertDialerUserAvailability } from '@/shared/db/schema/dialer-user-availability'
-import { db } from '@/shared/db'
-import { dialerUserAvailability } from '@/shared/db/schema'
-
-export async function upsertDialerUserAvailability(input: InsertDialerUserAvailability) {
-  const [row] = await db.insert(dialerUserAvailability)
-    .values(input)
-    .onConflictDoUpdate({
-      target: dialerUserAvailability.userId,
-      set: { ...input, updatedAt: new Date().toISOString() },
-    })
-    .returning()
-  return row
-}
-```
-
-```ts
-// dal/server/list-available.ts
-import { and, eq, isNull } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerAttempts, dialerUserAvailability } from '@/shared/db/schema'
-
-/**
- * Returns user IDs of humans currently available for warm transfers.
- * Availability is DERIVED: enrolled + status='available' + no active call.
- */
-export async function listAvailableTransferHumans() {
-  const rows = await db.select({
-    userId: dialerUserAvailability.userId,
-    transferMode: dialerUserAvailability.transferMode,
-    cellPhoneE164: dialerUserAvailability.cellPhoneE164,
-    lastTransferredAt: dialerUserAvailability.lastTransferredAt,
-  })
-    .from(dialerUserAvailability)
-    .where(and(
-      eq(dialerUserAvailability.enrolledForTransfers, true),
-      eq(dialerUserAvailability.manualStatus, 'available'),
-    ))
-
-  const userIds = rows.map(r => r.userId)
-  if (userIds.length === 0) return []
-
-  const activeCalls = await db.select({ userId: dialerAttempts.transferredToUserId })
-    .from(dialerAttempts)
-    .where(and(eq(dialerAttempts.status, 'live_transferred'), isNull(dialerAttempts.endedAt)))
-
-  const busySet = new Set(activeCalls.map(c => c.userId).filter(Boolean) as string[])
-  return rows.filter(r => !busySet.has(r.userId))
-}
-```
-
-`DOCS.md`:
-```markdown
-# dialer-user-availability
-
-Transfer-target presence. One row per user who can take warm transfers.
-
-## Invariants
-
-- Availability is **DERIVED**, not stored: `enrolled_for_transfers AND manual_status='available' AND no active call in dialer_attempts where transferred_to_user_id = self AND ended_at IS NULL`.
-- Avoiding stored `is_busy` eliminates webhook-ordering races (Twilio status-callback timing).
-- `transfer_mode='mobile'` REQUIRES `cell_phone_e164` to be set (validated at API layer in Phase 4 UI).
-- `transfer_mode='auto'` → desktop if browser softphone is registered; otherwise mobile.
-```
-
-- [ ] **Step 17.2:** Verify + commit (`feat(dialer): scaffold dialer-user-availability entity`)
-
-#### Task 18: entities/dialer-settings/
-
-- [ ] **Step 18.1:** Apply template:
-
-`lib/constants.ts`: `export const DIALER_SETTINGS = 'DialerSettings' as const`
-`types.ts`: re-exports `DialerSettings`, `InsertDialerSettings`
-`schemas/index.ts`: re-exports both from db schema + `./config-schema` (created in Task 10)
-`constants/index.ts`: re-exports `DEFAULT_DIALER_SETTINGS_CONFIG` from schemas/config-schema
-
-DAL files:
-
-```ts
-// dal/server/get-singleton.ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerSettings } from '@/shared/db/schema'
-
-export async function getDialerSettingsSingleton() {
-  const [row] = await db.select().from(dialerSettings).where(eq(dialerSettings.id, 'singleton')).limit(1)
-  return row ?? null
-}
-```
-
-```ts
-// dal/server/upsert-singleton.ts
-import type { DialerSettingsConfig } from '@/shared/entities/dialer-settings/schemas/config-schema'
-import { db } from '@/shared/db'
-import { dialerSettings } from '@/shared/db/schema'
-
-export async function upsertDialerSettings(configJson: DialerSettingsConfig, updatedByUserId: string) {
-  const [row] = await db.insert(dialerSettings)
-    .values({ id: 'singleton', configJson, updatedByUserId })
-    .onConflictDoUpdate({
-      target: dialerSettings.id,
-      set: { configJson, updatedByUserId, updatedAt: new Date().toISOString() },
-    })
-    .returning()
-  return row
-}
-```
-
-```ts
-// lib/load-config.ts
-import type { DialerSettingsConfig } from '@/shared/entities/dialer-settings/schemas/config-schema'
-import { DEFAULT_DIALER_SETTINGS_CONFIG } from '@/shared/entities/dialer-settings/schemas/config-schema'
-import { getDialerSettingsSingleton } from '@/shared/entities/dialer-settings/dal/server/get-singleton'
-
-export async function loadDialerSettingsConfig(): Promise<DialerSettingsConfig> {
-  const row = await getDialerSettingsSingleton()
-  return row?.configJson ?? DEFAULT_DIALER_SETTINGS_CONFIG
-}
-```
-
-`DOCS.md`:
-```markdown
-# dialer-settings
-
-Singleton row holding super-admin-editable global dialer config. The `defaults-with-override` source-of-truth: lead source `cadenceOverrides` merge on top of these defaults at dispatch time.
-
-## Invariants
-
-- Single row, primary key always `'singleton'` (CHECK constraint enforces).
-- Phase 1 has no UI; row is created via seed script in Task 49 with `DEFAULT_DIALER_SETTINGS_CONFIG`.
-- Phase 4 ships the super-admin editing UI.
-- `loadDialerSettingsConfig()` falls back to in-memory defaults if no row exists — never throws.
-```
-
-- [ ] **Step 18.2:** Verify + commit (`feat(dialer): scaffold dialer-settings entity`)
-
-#### Task 19: entities/dialer-messages/
-
-- [ ] **Step 19.1:** Apply template:
-
-`lib/constants.ts`: `export const DIALER_MESSAGE = 'DialerMessage' as const`
-`types.ts`: re-exports `DialerMessage`, `InsertDialerMessage`
-`schemas/index.ts`: re-exports
-`constants/index.ts`: re-exports `dialerMessageStatuses`, `dialerMessageChannels`, `dialerMessageDirections`
-
-DAL: standard four + `list-by-customer.ts` + `update-status-by-vendor-id.ts`:
-
-```ts
-// dal/server/list-by-customer.ts
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import { desc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { dialerMessages } from '@/shared/db/schema'
+import { voipCalls } from '@/shared/db/schema'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import type { VoipCall } from '@/shared/entities/voip-calls/types'
 
-export async function listMessagesByCustomer(customerId: string, limit = 100) {
-  return db.select().from(dialerMessages)
-    .where(eq(dialerMessages.customerId, customerId))
-    .orderBy(desc(dialerMessages.createdAt))
-    .limit(limit)
+/** Used by Twilio voice status webhook (Task 26) for idempotent upsert. */
+export async function findByTwilioCallSid(
+  ctx: ScopedContext,
+  sid: string,
+): Promise<DalReturn<VoipCall | undefined>> {
+  return dalDbOperation(async () => {
+    const [row] = await db.select().from(voipCalls).where(eq(voipCalls.twilioCallSid, sid)).limit(1)
+    return row
+  })
+}
+
+/** Customer timeline view — unions across both sources via the discriminator column. */
+export async function listByCustomerId(
+  ctx: ScopedContext,
+  customerId: string,
+): Promise<DalReturn<VoipCall[]>> {
+  return dalDbOperation(async () => {
+    return db.select().from(voipCalls)
+      .where(eq(voipCalls.customerId, customerId))
+      .orderBy(desc(voipCalls.initiatedAt))
+  })
+}
+
+/** Admin view — recent calls across all customers. */
+export async function listRecent(ctx: ScopedContext, limit = 50): Promise<DalReturn<VoipCall[]>> {
+  return dalDbOperation(async () => {
+    return db.select().from(voipCalls).orderBy(desc(voipCalls.initiatedAt)).limit(limit)
+  })
 }
 ```
+
+**`dal/server/mutations.ts`** — DalReturn-shaped writes beyond CRUD:
 
 ```ts
-// dal/server/update-status-by-vendor-id.ts
-import type { DialerMessageStatus } from '@/shared/constants/enums/dialer'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { dialerMessages } from '@/shared/db/schema'
+import { voipCalls } from '@/shared/db/schema'
+import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import type { InsertVoipCall, VoipCall } from '@/shared/entities/voip-calls/types'
 
-export async function updateMessageStatusByTwilioSid(
-  twilioMessageSid: string,
-  status: DialerMessageStatus,
-  timestamps: { deliveredAt?: string, failedAt?: string },
-) {
-  const [row] = await db.update(dialerMessages)
-    .set({ status, ...timestamps })
-    .where(eq(dialerMessages.twilioMessageSid, twilioMessageSid))
-    .returning()
-  return row
+/** Used by `placeAgentCall` to insert the initial row. Skipped-compliance audit rows pass status='skipped_compliance'. */
+export async function createCall(ctx: ScopedContext, input: InsertVoipCall): Promise<DalReturn<VoipCall>> {
+  return dalDbOperation(async () => {
+    const [row] = await db.insert(voipCalls).values(input).returning()
+    if (!row) throw new Error('insert returned no row')
+    return row
+  })
 }
 
-export async function updateMessageStatusBySendblueId(
-  sendblueMessageId: string,
-  status: DialerMessageStatus,
-  timestamps: { deliveredAt?: string, failedAt?: string },
-) {
-  const [row] = await db.update(dialerMessages)
-    .set({ status, ...timestamps })
-    .where(eq(dialerMessages.sendblueMessageId, sendblueMessageId))
-    .returning()
-  return row
+/**
+ * Idempotent upsert from Twilio webhook events. Keys on `twilio_call_sid` when provided;
+ * falls back to PK lookup via `fallbackById` (used to patch a row pre-webhook with the SID).
+ */
+export async function upsertFromTwilioWebhook(
+  ctx: ScopedContext,
+  args: { callSid: string, patch: Partial<VoipCall>, fallbackById?: string },
+): Promise<DalReturn<VoipCall>> {
+  return dalDbOperation(async () => {
+    if (args.callSid) {
+      const [row] = await db.update(voipCalls).set(args.patch).where(eq(voipCalls.twilioCallSid, args.callSid)).returning()
+      if (row) return row
+    }
+    if (args.fallbackById) {
+      const [row] = await db.update(voipCalls).set(args.patch).where(eq(voipCalls.id, args.fallbackById)).returning()
+      if (row) return row
+    }
+    throw new Error('upsertFromTwilioWebhook: no matching row to patch')
+  })
 }
 ```
 
-`DOCS.md`:
-```markdown
-# dialer-messages
+> Visibility predicate (`lib/visibility.ts`) is defined in Step 12.6 below — services + the entity-factory consume it from there, not from DAL files.
 
-Every SMS / iMessage send and receive, with delivery status.
+- [ ] **Step 12.6: Create `src/shared/entities/voip-calls/lib/visibility.ts`**
+
+```ts
+// src/shared/entities/voip-calls/lib/visibility.ts
+import type { SQL } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
+import { voipCalls } from '@/shared/db/schema'
+
+/** Agent-visibility predicate. Agents see only calls they're the agent on. */
+export function voipCallVisibility(userId: string): SQL {
+  return eq(voipCalls.agentUserId, userId)
+}
+```
+
+- [ ] **Step 12.7: Create `src/shared/entities/voip-calls/lib/server-spec.ts`**
+
+Mirrors [`src/shared/entities/proposals/lib/server-spec.ts`](../../../src/shared/entities/proposals/lib/server-spec.ts) shape — exports BOTH the concrete schemas object (for `createCrudRouter` type inference) AND the spec.
+
+```ts
+// src/shared/entities/voip-calls/lib/server-spec.ts
+import type { EntityServerSpec } from '@/shared/dal/server/types'
+
+import {
+  insertVoipCallSchema,
+  selectVoipCallSchema,
+  voipCalls,
+} from '@/shared/db/schema'
+import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
+import { voipCallVisibility } from '@/shared/entities/voip-calls/lib/visibility'
+
+const updateVoipCallSchema = insertVoipCallSchema.partial()
+
+/** Concrete schemas for `createCrudRouter` type inference (spec carries type-erased copies). */
+export const voipCallSchemas = {
+  insert: insertVoipCallSchema,
+  update: updateVoipCallSchema,
+}
+
+export const voipCallServerSpec = {
+  entityName: VOIP_CALL,
+  caslSubject: VOIP_CALL,
+  visibility: voipCallVisibility,
+  table: voipCalls,
+  schemas: {
+    insert: insertVoipCallSchema,
+    update: updateVoipCallSchema,
+    select: selectVoipCallSchema,
+  },
+  // No shareable surface in Phase 1 (no tokenized recording playback yet) — omit the field entirely.
+  // No update-time JSONB merge needed (metaJson is owner-replaced, not patched) — omit `update`.
+  // No hooks needed in Phase 1 — disposition side-effects land in Phase 2 via voip-call-disposition.service.
+} satisfies EntityServerSpec<typeof voipCalls>
+```
+
+- [ ] **Step 12.8: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/entities/voip-calls/
+git commit -m "feat(voip): scaffold voip-calls entity (DAL + ServerSpec + visibility)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+#### Task 13: `entities/voip-dids/`
+
+Apply Task 12 template. Unique pieces:
+
+- `lib/constants.ts`: `export const VOIP_DID = 'VoipDid' as const`
+- `types.ts`: re-exports `VoipDid`, `InsertVoipDid`
+- `schemas/index.ts`: re-exports `selectVoipDidSchema`, `insertVoipDidSchema`
+
+**Backend files** (`dal/server/{crud,queries}.ts` + `lib/visibility.ts`):
+- `crud.ts` — `voipDidCrud = createCrudDal(voipDidServerSpec)`
+- `queries.ts` exports (DalReturn-shaped reads):
+  - `findByE164(ctx, e164)` → `DalReturn<VoipDid | undefined>`
+  - `findStickyForAgent(ctx, userId)` → `DalReturn<VoipDid | undefined>` (returns `source='in_house' AND role='agent_outbound' AND assignedUserId = userId`)
+  - `findTransferTarget(ctx)` → `DalReturn<VoipDid | undefined>` (returns the single `role='transfer_target' AND source='in_house'` DID)
+- `visibility.ts` — admin-only entity; returns `sql\`false\`` so non-admin roles see nothing (admin/super_admin bypass via `manage 'all'` CASL rule)
+
+**`DOCS.md`:**
+
+```markdown
+# voip-dids
+
+DID pool with lifecycle state. One row per phone number we own (Twilio-owned or CloudTalk-owned).
 
 ## Invariants
 
-- Webhook handlers update `status` idempotently keyed on `twilio_message_sid` or `sendblue_message_id`. Duplicate webhooks are safe.
-- `channel='fallback_sms'` = attempted iMessage via Sendblue, fell back to SMS via Twilio.
-- `direction='inbound'` rows have a vendor ID set but no `sent_at`.
-- STOP keyword inbound rows trigger `dialer_dnc` insert + opt-out-confirm outbound row.
-- `template_key='manual'` for ad-hoc sends, NULL for inbound, specific keys for auto-triggered (callback_reminder, voicemail_followup, opt_out_confirm).
+- **VD-1: Single transfer-target DID.** At any time, exactly ONE row has `role='transfer_target' AND source='in_house'`. Enforced at seed time (Task 34); admin UI in Phase 4 will block multi-target configs.
+- **VD-2: Sticky DID-per-agent.** `role='agent_outbound' AND source='in_house' AND assigned_user_id = <user>` — exactly one such row per agent. Customers calling back this DID route to that agent (Phase 2 inbound routing).
+- **VD-3: CloudTalk DIDs.** `source='cloudtalk' AND role='campaign_rotation'`. Inserted by voip-campaigns Phase 1; this EPIC does NOT touch them. `twilio_phone_sid` is NULL for cloudtalk DIDs.
+- **VD-4: Status lifecycle.** In-house DIDs typically stay 'active' (low-volume; no warming cycle). Campaign DIDs use 'warming' → 'active' → 'cooldown' | 'flagged' | 'retired'.
+
+## Forward-compat for voip-campaigns
+
+Schema-side only: `source` discriminator + `role='campaign_rotation'` enum value. voip-campaigns Phase 1 inserts campaign DIDs after configuring them in the CloudTalk dashboard.
 ```
 
-- [ ] **Step 19.2:** Verify + commit (`feat(dialer): scaffold dialer-messages entity`)
+**Spec** (`entities/voip-dids/lib/server-spec.ts`): admin-only entity. Visibility omni for admin/super_admin; no agent scope.
+
+Commit: `feat(voip): scaffold voip-dids entity + ServerSpec`.
+
+#### Task 14: `entities/voip-dnc/`
+
+Apply template. Unique pieces:
+
+- `lib/constants.ts`: `export const VOIP_DNC = 'VoipDnc' as const`
+- `types.ts`: re-exports `VoipDnc`, `InsertVoipDnc`
+- `schemas/index.ts`: re-exports
+
+**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
+- `crud.ts` — `voipDncCrud = createCrudDal(voipDncServerSpec)`. NB: voip-dnc is append-only — admin UI never calls update/delete; the generic factory output stays available for completeness but won't be wired into the router's `crud` sub-router (Task 30).
+- `queries.ts` exports:
+  - `isOnDnc(ctx, phoneE164)` → `DalReturn<boolean>` (used by compliance gate; uses `SELECT 1 … LIMIT 1`)
+  - `listRecent(ctx, limit)` → `DalReturn<VoipDnc[]>` (admin view)
+- `mutations.ts` exports:
+  - `recordDnc(ctx, { phoneE164, source, reason, addedByUserId? })` → `DalReturn<VoipDnc>`. Uses `INSERT … ON CONFLICT DO NOTHING` keyed on `phone_e164`.
+- `visibility.ts` — admin-only; returns `sql\`false\`` for non-admin roles.
+
+**`DOCS.md`:**
+
+```markdown
+# voip-dnc
+
+Canonical Do-Not-Call registry. Both voip-in-house and voip-campaigns gate against this table; STOP
+replies from either side write here. See [INTEGRATION-SEAM.md §5](../../../../docs/plans/voip/INTEGRATION-SEAM.md#5-dnc-propagation).
+
+## Invariants
+
+- **VDNC-1: Append-only.** Entries are never removed. Admin corrections (rare) create a new entry; the
+  newest wins by `added_at`.
+- **VDNC-2: UNIQUE by phone.** `INSERT … ON CONFLICT DO NOTHING` keyed on `phone_e164`.
+- **VDNC-3: TCPA timing.** Every opt-out is honored within 5 minutes (well inside the 24h legal max).
+  The compliance gate (`voip-compliance.service.ts::canOutboundTo`) reads this table directly — no
+  caching.
+- **VDNC-4: Source values.** Must match [INTEGRATION-SEAM.md §5](../../../../docs/plans/voip/INTEGRATION-SEAM.md):
+  `twilio_stop`, `cloudtalk_stop`, `voice_request`, `manual_admin`, `ftc`. Drift breaks cross-EPIC behavior.
+- **VDNC-5: CloudTalk-sync.** `cloudtalk_synced_at` is populated by voip-campaigns'
+  `dnc-propagation.service.ts` after pushing the entry to CloudTalk. NULL for sources where push isn't
+  needed (`cloudtalk_stop` = CloudTalk already honored on its side).
+```
+
+**Spec**: admin + super_admin can `manage`. Agents have `read`.
+
+Commit: `feat(voip): scaffold voip-dnc entity + ServerSpec`.
+
+#### Task 15: `entities/voip-user-availability/`
+
+Apply template. Unique pieces:
+
+- `lib/constants.ts`: `export const VOIP_USER_AVAILABILITY = 'VoipUserAvailability' as const`
+- `types.ts`: re-exports
+- `schemas/index.ts`: re-exports
+
+**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
+- `crud.ts` — `voipUserAvailabilityCrud = createCrudDal(voipUserAvailabilityServerSpec)`. NB: PK is `userId`, not `id` — set `primaryKey: 'userId'` on the spec.
+- `queries.ts` exports:
+  - `findByUserId(ctx, userId)` → `DalReturn<VoipUserAvailability | undefined>`
+  - `listAvailableForTransfer(ctx)` → `DalReturn<{userId, transferMode, cellPhoneE164, lastTransferredAt}[]>`. Derives by joining against `voip_calls` (filter to rows where `agent_user_id = self AND ended_at IS NULL`) — see VUA-1.
+- `mutations.ts` exports:
+  - `upsert(ctx, input)` → `DalReturn<VoipUserAvailability>`. Uses Postgres ON CONFLICT on `user_id` PK.
+- `visibility.ts` — `eq(voipUserAvailability.userId, userId)` so agents see their own row only.
+
+**`DOCS.md`:**
+
+```markdown
+# voip-user-availability
+
+Transfer-target presence for agents. One row per user who can receive warm transfers from CloudTalk or
+manual in-house transfers.
+
+## Invariants
+
+- **VUA-1: Availability is DERIVED, not stored.** "Available for warm transfer" =
+  `enrolled_for_transfers AND manual_status='available' AND NO active call in voip_calls where
+  agent_user_id = self AND ended_at IS NULL`. Storing a `is_busy` boolean would create webhook-ordering
+  races; the derived check has no race window.
+- **VUA-2: Mobile mode requires phone.** When `transfer_mode='mobile'`, `cell_phone_e164` must be set.
+  Validated at API layer. Phase 1 ships `transfer_mode='desktop'` only — `mobile` writes are blocked
+  at the service layer until Phase 3.
+- **VUA-3: Auto mode resolution.** `transfer_mode='auto'` falls back to desktop in Phase 1 (no mobile
+  routing). Phase 3 resolves it to desktop-if-softphone-registered-else-mobile.
+```
+
+**Spec**: agents `manage` their own row (scoped by `userId`); admin/super_admin `manage` all rows.
+
+Commit: `feat(voip): scaffold voip-user-availability entity + ServerSpec`.
+
+#### Task 16: `entities/voip-messages/`
+
+Apply template. Unique pieces:
+
+- `lib/constants.ts`: `export const VOIP_MESSAGE = 'VoipMessage' as const`
+- `types.ts`: re-exports
+- `schemas/index.ts`: re-exports
+
+**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
+- `crud.ts` — `voipMessageCrud = createCrudDal(voipMessageServerSpec)`
+- `queries.ts` exports:
+  - `findByTwilioMessageSid(ctx, sid)` → `DalReturn<VoipMessage | undefined>`
+  - `listByCustomerId(ctx, customerId, limit)` → `DalReturn<VoipMessage[]>` (threaded view; `order by created_at desc`)
+- `mutations.ts` exports:
+  - `createMessage(ctx, input)` → `DalReturn<VoipMessage>` (single insert; idempotent at the service layer via `findByTwilioMessageSid` pre-check)
+  - `updateStatusByTwilioSid(ctx, { sid, status, timestamps })` → `DalReturn<VoipMessage | undefined>` (idempotent status upsert; used by Task 27 messaging status webhook)
+- `visibility.ts` — `eq(voipMessages.agentUserId, userId)` so agents see only messages they're attached to.
+
+**`DOCS.md`:**
+
+```markdown
+# voip-messages
+
+Every outbound + inbound SMS. Source-discriminated.
+
+## Invariants
+
+- **VM-1: Idempotency.** Status webhooks update via `twilio_message_sid` (in-house) or
+  `cloudtalk_message_id` (cloudtalk). Duplicate webhooks are safe.
+- **VM-2: SMS only.** No iMessage. The `imessage` and `fallback_sms` channel enum values from the
+  pre-pivot plan are gone permanently.
+- **VM-3: STOP triggers DNC.** Inbound rows matching STOP/UNSUB/QUIT/CANCEL/END/REMOVE/OPT-OUT
+  trigger `voip-dnc.service.ts::recordDnc` (source='twilio_stop') + an auto-confirm outbound.
+- **VM-4: Template key.** `'manual'` for ad-hoc agent sends; specific keys for templated
+  (`'meeting_reminder'`, `'proposal_link'`, `'opt_out_confirm'`, etc.). Inbound rows have NULL
+  template_key.
+
+## Forward-compat for voip-campaigns
+
+CloudTalk-source columns (nullable): `cloudtalk_message_id` (UNIQUE), `campaign_id`, `template_key`.
+Populated only when `source='cloudtalk'`.
+```
+
+**Spec**: agents `read` + `send` on their own customers' messages (scoped via `agent_user_id` or via the customer's sticky DID); admin omni.
+
+Commit: `feat(voip): scaffold voip-messages entity + ServerSpec`.
+
+#### Task 17: `entities/voip-link-tokens/`
+
+Apply template. Unique pieces:
+
+- `lib/constants.ts`: `export const VOIP_LINK_TOKEN = 'VoipLinkToken' as const`
+- `types.ts`: re-exports
+- `schemas/index.ts`: re-exports + a `payload-schemas.ts` file with per-type Zod schemas (L-DOC first):
+
+```ts
+// schemas/payload-schemas.ts
+import { z } from 'zod'
+
+export const lDocPayloadSchema = z.object({
+  type: z.literal('l_doc'),
+  uploadSlotId: z.string().uuid(),   // references a future uploadSlots table (Phase 2)
+  instructions: z.string().max(500).optional(),
+  returnUrl: z.string().url().optional(),
+})
+
+// Future use cases (stubbed; not active in Phase 1):
+//   lPayPayloadSchema   — payment-link variant
+//   lCalPayloadSchema   — reschedule-link variant
+//   lEsignPayloadSchema — e-sign-link variant
+
+export const voipLinkTokenPayloadSchema = z.discriminatedUnion('type', [
+  lDocPayloadSchema,
+  // ...future schemas
+])
+export type VoipLinkTokenPayload = z.infer<typeof voipLinkTokenPayloadSchema>
+```
+
+**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
+- `crud.ts` — `voipLinkTokenCrud = createCrudDal(voipLinkTokenServerSpec)`
+- `queries.ts` exports:
+  - `findByToken(ctx, token)` → `DalReturn<VoipLinkToken | undefined>`
+- `mutations.ts` exports:
+  - `createToken(ctx, input)` → `DalReturn<VoipLinkToken>` (token-string + expires_at generated by the service, NOT by the DAL — the DAL just persists what the service produces, so secrets/TTL logic stays in `voip-link-tokens.service.ts` and the DAL stays pure persistence)
+  - `markUsed(ctx, token)` → `DalReturn<VoipLinkToken | undefined>`. Uses `UPDATE … WHERE token = ? AND used_at IS NULL RETURNING *` for race-safety; `undefined` return = lost the race or token didn't exist.
+- `visibility.ts` — `eq(voipLinkTokens.createdByUserId, userId)` so agents see only tokens they minted. (NB: the public consume route uses `SYSTEM_CONTEXT`, not the agent's scope, because the consumer is the customer following the SMS link — they're not authenticated.)
+
+**`DOCS.md`:**
+
+```markdown
+# voip-link-tokens
+
+Single-use, short-lived (48h TTL), phone-tied URLs for customer-side flows triggered by SMS.
+
+## Invariants
+
+- **VLT-1: Single-use.** `markUsed` uses `UPDATE ... WHERE used_at IS NULL` for race safety. A
+  second consume attempt returns "already used" without re-running the underlying flow.
+- **VLT-2: 48h TTL.** `expires_at = created_at + 48h`. The consume route returns 410 GONE if
+  `NOW() > expires_at`. Re-mint requires explicit agent action (no auto-renew).
+- **VLT-3: Phone-tied.** Consume validates that `phone_e164` matches the channel the customer is
+  arriving from when applicable (Phase 1 doesn't enforce this — the SMS link itself is the channel).
+- **VLT-4: Type-specific payload.** Per [voip-link-tokens/schemas/payload-schemas.ts], each `type`
+  has a discriminated Zod schema. Validated at mint AND at consume.
+- **VLT-5: First use case = L-DOC.** Phase 1 ships L-DOC plumbing only; the upload-flow page is a
+  Phase 2 deliverable. Phase 1's consume route validates + 302s to `/d/upload/<uploadSlotId>` which
+  shows a stub "Coming soon" page wired into the voip-in-house feature.
+
+## Forward-compat for voip-campaigns
+
+voip-campaigns may mint tokens via the same surface for campaign-driven SMS variants (e.g., "share
+project photos"). The token type enum is open-ended; new types add schemas to
+`payload-schemas.ts` + a new value to `voipLinkTokenTypes`.
+```
+
+**Spec**: agents `manage` tokens they created (scoped by `created_by_user_id`); admin omni. No
+shareable surface (the token IS the share mechanism — the consume route is public-by-design with
+HMAC-equivalent randomness gating).
+
+Commit: `feat(voip): scaffold voip-link-tokens entity + ServerSpec`.
+
+#### Task 18: `entities/app-settings/`
+
+Apply template. Unique pieces:
+
+- `lib/constants.ts`: `export const APP_SETTING = 'AppSetting' as const`
+- `types.ts`: re-exports
+- `schemas/index.ts`: re-exports + per-feature Zod schemas:
+
+```ts
+// schemas/voip-in-house-config-schema.ts
+import { z } from 'zod'
+
+export const voipInHouseAppSettingsConfigSchema = z.object({
+  globalKillSwitch: z.boolean(),
+  callingHours: z.object({
+    startHourLocal: z.number().int().min(0).max(23),
+    endHourLocal: z.number().int().min(0).max(23),
+    callingDays: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])),
+  }),
+  recordingRetentionDays: z.number().int().min(7).max(365),
+})
+export type VoipInHouseAppSettingsConfig = z.infer<typeof voipInHouseAppSettingsConfigSchema>
+
+export const DEFAULT_VOIP_IN_HOUSE_CONFIG: VoipInHouseAppSettingsConfig = {
+  globalKillSwitch: false,
+  callingHours: {
+    startHourLocal: 8,
+    endHourLocal: 21,
+    callingDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
+  },
+  recordingRetentionDays: 90,
+}
+```
+
+**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
+- `crud.ts` — `appSettingCrud = createCrudDal(appSettingServerSpec)`. NB: PK is `feature`, not `id` — set `primaryKey: 'feature'` on the spec.
+- `queries.ts` exports:
+  - `getByFeature(ctx, feature)` → `DalReturn<AppSetting | undefined>`
+- `mutations.ts` exports:
+  - `upsertConfig(ctx, { feature, configJson, updatedByUserId })` → `DalReturn<AppSetting>`. ON CONFLICT on `feature` PK. Per-feature Zod validation of `configJson` happens in the service-layer wrapper (e.g., `voip-compliance.service.ts` loads through a validator), NOT in the DAL.
+- `visibility.ts` — super-admin only; returns `sql\`false\`` for non-super-admin roles (admin gets `read` via CASL `manage 'all'` is NOT granted to admin for AppSetting — see Task 19; admins do NOT see this entity).
+
+**`DOCS.md`:**
+
+```markdown
+# app-settings
+
+Generic feature-keyed config. Row per feature. First feature key = `'voip-in-house'` (this EPIC).
+`'voip-campaigns'` lands in the sibling EPIC's Phase 1.
+
+## Invariants
+
+- **AS-1: Feature key namespace.** `feature` is the primary key; new features create their own row.
+- **AS-2: Per-feature Zod validation.** Each feature's `configJson` is validated by a schema in
+  `schemas/<feature>-config-schema.ts` at the service layer before any write. The DB column is
+  `jsonb` — service layer enforces shape.
+- **AS-3: Fall-back to defaults.** Service-layer loaders (`loadVoipInHouseConfig()`, etc.) return
+  the default config if no row exists yet — no throws at startup.
+- **AS-4: Kill-switch semantics.** Setting `configJson.globalKillSwitch = true` halts all in-house
+  outbound IMMEDIATELY (compliance gate reads on every send; no caching). Phase 4 ships the admin UI
+  to toggle this; Phase 1 manipulation is direct DB UPDATE.
+```
+
+**Spec**: super_admin-only `manage`; admin `read`. No agent access (it's super-admin config).
+
+Commit: `feat(app-settings): scaffold app-settings entity + ServerSpec`.
 
 ---
 
-### Task 20: Register dialer entities in CASL abilities
+### Task 19: Register voip entity names in CASL `abilities.ts`
 
-**Files:** Modify `src/domains/permissions/abilities.ts`
+**Files:**
+- Modify: `src/shared/domains/permissions/abilities.ts`
 
-> Read the file first to confirm structure — the entity-name colocation pattern from Issue #193 may or may not have landed yet. Adapt accordingly.
+> The entity-name colocation pattern is already live (see [`abilities.ts`](../../../src/shared/domains/permissions/abilities.ts)). Verified: it imports `CUSTOMER`, `MEETING`, `PROPOSAL`, `PROJECT`, `ACTIVITY` from each entity's `lib/constants.ts` and builds `ENTITY_NAMES` + `EntityName` from there.
 
-- [ ] **Step 20.1: Import the 7 entity-name constants**
+- [ ] **Step 19.1: Import the 7 new entity-name constants**
 
-Merge into existing imports:
+Merge into the existing import block (sorted per perfectionist rule):
 
 ```ts
-import { DIALER_ATTEMPT } from '@/shared/entities/dialer-attempts/lib/constants'
-import { DIALER_DID } from '@/shared/entities/dialer-dids/lib/constants'
-import { DIALER_LEAD_STATE } from '@/shared/entities/dialer-lead-states/lib/constants'
-import { DIALER_DNC } from '@/shared/entities/dialer-dnc/lib/constants'
-import { DIALER_USER_AVAILABILITY } from '@/shared/entities/dialer-user-availability/lib/constants'
-import { DIALER_SETTINGS } from '@/shared/entities/dialer-settings/lib/constants'
-import { DIALER_MESSAGE } from '@/shared/entities/dialer-messages/lib/constants'
+import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
+import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
+import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
+import { VOIP_DNC } from '@/shared/entities/voip-dnc/lib/constants'
+import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
+import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
+import { VOIP_USER_AVAILABILITY } from '@/shared/entities/voip-user-availability/lib/constants'
 ```
 
-- [ ] **Step 20.2: Add entity names to ENTITY_NAMES array**
+- [ ] **Step 19.2: Add them to `ENTITY_NAMES`**
 
-Add the 7 new names to the existing `ENTITY_NAMES` const array (this is what makes them part of the `EntityName` union + `AppSubject` type per ADR-0002).
+```ts
+export const ENTITY_NAMES = [
+  CUSTOMER, MEETING, PROPOSAL, PROJECT, ACTIVITY,
+  VOIP_CALL, VOIP_DID, VOIP_DNC, VOIP_LINK_TOKEN, VOIP_MESSAGE, VOIP_USER_AVAILABILITY,
+  APP_SETTING,
+] as const
+```
 
-- [ ] **Step 20.3: Add role rules per spec §4**
+- [ ] **Step 19.3: Add role rules**
 
-Adapt to existing rule-builder pattern in this file. Logical content:
+Inside each role case block, add `can(action, subject)` lines. The intent (translate to live builder syntax):
 
-- **super_admin** — `manage` all 7 dialer subjects
-- **admin** — `manage` on `[DIALER_DNC, DIALER_LEAD_STATE, DIALER_USER_AVAILABILITY, DIALER_MESSAGE]`; `read` on `[DIALER_ATTEMPT, DIALER_DID, DIALER_SETTINGS]`
-- **agent** — `read` on `DIALER_ATTEMPT` filtered to `{ transferredToUserId: user.id }`; `manage` on `DIALER_USER_AVAILABILITY` filtered to `{ userId: user.id }`; `['read', 'send']` on `DIALER_MESSAGE` (tRPC scopes further by assigned customer)
+**super-admin:** already `can('manage', 'all')` — covers everything new for free.
 
-- [ ] **Step 20.4: Verify + commit**
+**admin:**
+```ts
+can(['manage'], VOIP_DNC)
+can(['manage'], VOIP_USER_AVAILABILITY)
+can(['manage'], VOIP_MESSAGE)
+can(['manage'], VOIP_LINK_TOKEN)
+can(['read'], VOIP_CALL)
+can(['read'], VOIP_DID)
+can(['read'], APP_SETTING)
+```
+
+**agent:**
+```ts
+// Calls: read own; manage means initiate/dispose own
+can(['read', 'manage'], VOIP_CALL, { agentUserId: user.id })
+// Availability: manage own
+can(['manage'], VOIP_USER_AVAILABILITY, { userId: user.id })
+// Messages: read/send for own customers (scoped via service-layer customer-ownership check; CASL gate is by agentUserId)
+can(['read', 'send'], VOIP_MESSAGE, { agentUserId: user.id })
+// Link tokens: mint + read own
+can(['manage'], VOIP_LINK_TOKEN, { createdByUserId: user.id })
+// DIDs + DNC: read-only
+can(['read'], VOIP_DID)
+can(['read'], VOIP_DNC)
+// App settings: no access (super-admin only via above 'all')
+```
+
+> Match the actual builder syntax in `abilities.ts` (`can(action, subject, conditions)`). If `send` isn't currently in the action union, add it to `types.ts`'s action type.
+
+- [ ] **Step 19.4: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/domains/permissions/abilities.ts
-git commit -m "feat(dialer): register dialer entity names + role rules in CASL
+git add src/shared/domains/permissions/abilities.ts src/shared/domains/permissions/types.ts
+git commit -m "feat(voip): register voip + app-settings entities in CASL
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 21: VoipProvider interface + Twilio implementation
+### Task 20: Twilio provider scaffold
 
 **Files:**
-- Create: `src/services/voip/voip-provider.interface.ts`
-- Create: `src/services/voip/twilio.voip-provider.ts`
-- Create: `src/services/voip/voip-provider.factory.ts`
+- Create: `src/shared/services/providers/twilio/client.ts`
+- Create: `src/shared/services/providers/twilio/voice.ts`
+- Create: `src/shared/services/providers/twilio/messaging.ts`
+- Create: `src/shared/services/providers/twilio/webhooks/types.ts`
+- Create: `src/shared/services/providers/twilio/constants/index.ts`
+- Create: `src/shared/services/providers/twilio/types.ts`
 
-- [ ] **Step 21.1: Create the interface**
+> Mirrors the shape of `providers/notion/` and `providers/zoho-sign/` (verified live): `client.ts` (auth/SDK wrapper), `types.ts`, `constants/`, plus capability-grouped files (`voice.ts`, `messaging.ts`) and a `webhooks/` subdir for inbound payload types. Per the [service-architecture convention](../../codebase-conventions/service-architecture.md), providers expose **typed functions**, not interfaces. NO formal `VoIPProvider` interface — single-provider commit per locked decision.
 
-```ts
-// voip-provider.interface.ts
-
-export interface VoipProvider {
-  /**
-   * Place an outbound call FROM `from` (one of our DIDs) TO `to` (PSTN number or 'client:identity' for SDK).
-   * Returns the Twilio CallSid for tracking.
-   * Honors DIALER_DEV_OVERRIDE_NUMBER if set (replaces `to`).
-   */
-  placeCall(args: {
-    from: string                          // E.164 DID
-    to: string                            // E.164 OR 'client:agent_oliver'
-    statusCallbackUrl: string
-    customParameters?: Record<string, string>
-  }): Promise<{ callSid: string }>
-
-  /**
-   * Transfer an in-progress call to a new destination via SIP REFER.
-   * Used by AI agent's transfer flow OR by manual conference operations.
-   */
-  transferCall(args: {
-    callSid: string
-    to: string
-    warmIntro?: string                    // optional verbal intro before bridging
-  }): Promise<void>
-
-  /**
-   * End an in-progress call.
-   */
-  endCall(callSid: string): Promise<void>
-
-  /**
-   * Issue a short-lived JWT for the browser softphone (Twilio Voice SDK).
-   */
-  softphoneToken(userId: string): Promise<{ token: string, identity: string, ttlSeconds: number }>
-}
-```
-
-- [ ] **Step 21.2: Create the Twilio implementation**
+- [ ] **Step 20.1: `client.ts` — singleton Twilio client + dev-override gate**
 
 ```ts
-// twilio.voip-provider.ts
+// src/shared/services/providers/twilio/client.ts
 import twilio from 'twilio'
-import type { VoipProvider } from './voip-provider.interface'
+import env from '@/shared/config/server-env'
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID!,
-  process.env.TWILIO_AUTH_TOKEN!,
-)
+let cachedClient: ReturnType<typeof twilio> | null = null
 
-function maybeOverride(to: string): string {
-  const override = process.env.DIALER_DEV_OVERRIDE_NUMBER
-  if (override && to.startsWith('+')) {
-    console.warn(`[DIALER DEV OVERRIDE] Routing call to ${override} instead of ${to}`)
+export function getTwilioClient() {
+  if (!cachedClient) {
+    cachedClient = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN)
+  }
+  return cachedClient
+}
+
+/**
+ * Dev safety: if VOIP_DEV_OVERRIDE_NUMBER is set, replace any outbound `to` E.164 with the override.
+ * Production builds reject this env var (Task 1.3 CI gate).
+ */
+export function maybeOverrideRecipient(toE164: string): string {
+  const override = env.VOIP_DEV_OVERRIDE_NUMBER
+  if (override && toE164.startsWith('+')) {
+    // Use console here rather than logger because this is a dev-mode safety signal.
+    // eslint-disable-next-line no-console
+    console.warn(`[twilio] DEV OVERRIDE — routing ${toE164} → ${override}`)
     return override
   }
-  return to
-}
-
-export const twilioVoipProvider: VoipProvider = {
-  async placeCall({ from, to, statusCallbackUrl, customParameters }) {
-    const target = maybeOverride(to)
-    const call = await client.calls.create({
-      from,
-      to: target,
-      statusCallback: statusCallbackUrl,
-      statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-      statusCallbackMethod: 'POST',
-      record: true,
-      recordingStatusCallback: `${process.env.DIALER_WEBHOOK_BASE_URL}/api/voip/twilio/recording`,
-      // For Retell-managed calls, the TwiML/URL comes from Retell. For test calls
-      // initiated from our own dispatcher, we use a TwiML app.
-      applicationSid: process.env.TWILIO_TWIML_APP_SID,
-      sendDigits: customParameters ? undefined : undefined,
-    })
-    return { callSid: call.sid }
-  },
-
-  async transferCall({ callSid, to, warmIntro }) {
-    // Phase 1: Retell handles transfers internally via its own API.
-    // This method is here for future manual conference / transfer use cases.
-    // For Phase 1, primary transfer path is through Retell.startOutboundCall(...transferTarget).
-    // Keeping this signature so the interface is complete.
-    const target = maybeOverride(to)
-    void warmIntro
-    await client.calls(callSid).update({
-      twiml: `<Response><Dial>${target}</Dial></Response>`,
-    })
-  },
-
-  async endCall(callSid) {
-    await client.calls(callSid).update({ status: 'completed' })
-  },
-
-  async softphoneToken(userId) {
-    const AccessToken = twilio.jwt.AccessToken
-    const VoiceGrant = AccessToken.VoiceGrant
-    const ttlSeconds = 3600
-
-    const token = new AccessToken(
-      process.env.TWILIO_ACCOUNT_SID!,
-      process.env.TWILIO_API_KEY_SID!,
-      process.env.TWILIO_API_KEY_SECRET!,
-      { identity: `agent_${userId}`, ttl: ttlSeconds },
-    )
-
-    const voiceGrant = new VoiceGrant({
-      outgoingApplicationSid: process.env.TWILIO_TWIML_APP_SID!,
-      incomingAllow: true,
-    })
-    token.addGrant(voiceGrant)
-
-    return {
-      token: token.toJwt(),
-      identity: `agent_${userId}`,
-      ttlSeconds,
-    }
-  },
+  return toE164
 }
 ```
 
-- [ ] **Step 21.3: Create the factory**
+- [ ] **Step 20.2: `voice.ts` — placeCall + endCall + softphone JWT + signature verify**
 
 ```ts
-// voip-provider.factory.ts
-import type { VoipProvider } from './voip-provider.interface'
-import { twilioVoipProvider } from './twilio.voip-provider'
-
-let cached: VoipProvider | null = null
-
-export function getVoipProvider(): VoipProvider {
-  if (!cached) cached = twilioVoipProvider
-  return cached
-}
-```
-
-- [ ] **Step 21.4: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/voip/
-git commit -m "feat(dialer): add VoipProvider interface + Twilio impl + factory
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 22: AiVoiceAgentProvider interface + Retell implementation
-
-**Files:**
-- Create: `src/services/ai-voice/ai-voice-agent.interface.ts`
-- Create: `src/services/ai-voice/retell.ai-voice-agent.ts`
-- Create: `src/services/ai-voice/ai-voice-agent.factory.ts`
-
-- [ ] **Step 22.1: Create the interface**
-
-```ts
-// ai-voice-agent.interface.ts
-
-export interface AiVoiceAgentProvider {
-  /**
-   * Initiates an outbound AI-driven call. Returns the agent-side call ID.
-   * The agent dials the lead, runs the configured script, and warm-transfers per the
-   * route-transfer webhook decision.
-   */
-  startOutboundCall(args: {
-    agentId: string                       // Retell agent ID (per lead source)
-    from: string                          // E.164 of our DID
-    to: string                            // lead's phone OR DIALER_DEV_OVERRIDE_NUMBER
-    dynamicVariables: Record<string, string>  // {lead_name, trade, consent_context, ...}
-    metadata: { dialerAttemptId: string, customerId: string }
-    webhookUrl: string                    // base URL for our /api/dialer/ai/* webhooks
-  }): Promise<{ agentCallId: string }>
-
-  /**
-   * End an in-flight AI call (defensive — rarely used outside error recovery).
-   */
-  endCall(agentCallId: string): Promise<void>
-}
-```
-
-- [ ] **Step 22.2: Create Retell implementation**
-
-```ts
-// retell.ai-voice-agent.ts
-import Retell from 'retell-sdk'
-import type { AiVoiceAgentProvider } from './ai-voice-agent.interface'
-
-const client = new Retell({ apiKey: process.env.RETELL_API_KEY! })
-
-function maybeOverride(to: string): string {
-  const override = process.env.DIALER_DEV_OVERRIDE_NUMBER
-  if (override && to.startsWith('+')) {
-    console.warn(`[DIALER DEV OVERRIDE] Routing AI call to ${override} instead of ${to}`)
-    return override
-  }
-  return to
-}
-
-export const retellAiVoiceAgent: AiVoiceAgentProvider = {
-  async startOutboundCall({ agentId, from, to, dynamicVariables, metadata, webhookUrl }) {
-    const target = maybeOverride(to)
-    const call = await client.call.createPhoneCall({
-      from_number: from,
-      to_number: target,
-      override_agent_id: agentId,
-      retell_llm_dynamic_variables: dynamicVariables,
-      metadata,
-      // Retell auto-fires webhooks at call_started / call_ended / call_analyzed events
-      // to the agent's configured webhook_url. Mid-call function calls (lead-context,
-      // route-transfer, etc.) are configured in the Retell agent itself, pointing at:
-      //   ${webhookUrl}/api/dialer/ai/lead-context
-      //   ${webhookUrl}/api/dialer/ai/route-transfer
-      //   ${webhookUrl}/api/dialer/ai/log-disposition
-    })
-    void webhookUrl  // documented above; URLs configured in Retell agent UI not per-call
-    return { agentCallId: call.call_id }
-  },
-
-  async endCall(agentCallId) {
-    // Retell SDK doesn't expose end-call directly as of late 2025 — use REST endpoint if needed.
-    // For Phase 1, calls end naturally; this is a stub for future error recovery.
-    console.warn(`[Retell] endCall requested for ${agentCallId} — not implemented in Phase 1`)
-  },
-}
-```
-
-- [ ] **Step 22.3: Create factory**
-
-```ts
-// ai-voice-agent.factory.ts
-import type { AiVoiceAgentProvider } from './ai-voice-agent.interface'
-import { retellAiVoiceAgent } from './retell.ai-voice-agent'
-
-let cached: AiVoiceAgentProvider | null = null
-export function getAiVoiceAgent(): AiVoiceAgentProvider {
-  if (!cached) cached = retellAiVoiceAgent
-  return cached
-}
-```
-
-- [ ] **Step 22.4: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/ai-voice/
-git commit -m "feat(dialer): add AiVoiceAgentProvider interface + Retell impl
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 23: BrandedCallingProvider interface + null implementation
-
-**Files:**
-- Create: `src/services/branded-calling/branded-calling.interface.ts`
-- Create: `src/services/branded-calling/null.branded-calling.ts`
-- Create: `src/services/branded-calling/branded-calling.factory.ts`
-
-- [ ] **Step 23.1: Interface + null impl + factory**
-
-```ts
-// branded-calling.interface.ts
-export interface BrandedCallingProvider {
-  /**
-   * Returns reputation snapshot for a DID across networks.
-   * Null impl returns empty snapshot.
-   */
-  fetchReputation(e164: string): Promise<Record<string, unknown>>
-
-  /** Register a new DID with branded display. No-op for null impl. */
-  registerDid(e164: string): Promise<void>
-}
-```
-
-```ts
-// null.branded-calling.ts
-import type { BrandedCallingProvider } from './branded-calling.interface'
-
-// @migration: → hiya.branded-calling.ts when Hiya Connect is activated
-// Trigger: answer rate <15% sustained OR hangup-3s% >25%
-export const nullBrandedCalling: BrandedCallingProvider = {
-  async fetchReputation() { return {} },
-  async registerDid() { /* no-op */ },
-}
-```
-
-```ts
-// branded-calling.factory.ts
-import type { BrandedCallingProvider } from './branded-calling.interface'
-import { nullBrandedCalling } from './null.branded-calling'
-
-let cached: BrandedCallingProvider | null = null
-export function getBrandedCallingProvider(): BrandedCallingProvider {
-  if (!cached) cached = nullBrandedCalling
-  return cached
-}
-```
-
-- [ ] **Step 23.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/branded-calling/
-git commit -m "feat(dialer): add BrandedCallingProvider interface + null impl
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 24: MessagingProvider interface + Twilio impl
-
-**Files:**
-- Create: `src/services/messaging/messaging-provider.interface.ts`
-- Create: `src/services/messaging/twilio.messaging-provider.ts`
-
-- [ ] **Step 24.1: Interface**
-
-```ts
-// messaging-provider.interface.ts
-export interface MessagingProvider {
-  readonly channel: 'sms' | 'imessage'
-
-  /**
-   * Send a message. Returns the vendor's message ID + initial status.
-   * Honors DIALER_DEV_OVERRIDE_NUMBER if set.
-   */
-  send(args: {
-    to: string                          // E.164
-    body: string
-    statusCallbackUrl?: string
-  }): Promise<{ messageId: string, status: 'queued' | 'sent' | 'failed' }>
-}
-```
-
-- [ ] **Step 24.2: Twilio SMS impl**
-
-```ts
-// twilio.messaging-provider.ts
+// src/shared/services/providers/twilio/voice.ts
 import twilio from 'twilio'
-import type { MessagingProvider } from './messaging-provider.interface'
+import env from '@/shared/config/server-env'
+import { getTwilioClient, maybeOverrideRecipient } from './client'
 
-const client = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!)
-
-function maybeOverride(to: string): string {
-  const override = process.env.DIALER_DEV_OVERRIDE_NUMBER
-  if (override && to.startsWith('+')) {
-    console.warn(`[DIALER DEV OVERRIDE] Routing SMS to ${override} instead of ${to}`)
-    return override
-  }
-  return to
+interface PlaceCallArgs {
+  fromE164: string
+  toE164: string
+  statusCallbackUrl: string
+  recordingStatusCallbackUrl: string
+  customParameters?: Record<string, string>  // surfaced to the answering softphone client
 }
 
-function ensureStopFooter(body: string): string {
-  if (/reply\s+stop/i.test(body)) return body
-  return `${body.trim()}\n\nReply STOP to opt out.`
+export async function placeCall(args: PlaceCallArgs): Promise<{ callSid: string }> {
+  const to = maybeOverrideRecipient(args.toE164)
+  const call = await getTwilioClient().calls.create({
+    from: args.fromE164,
+    to,
+    applicationSid: env.TWILIO_TWIML_APP_SID,
+    statusCallback: args.statusCallbackUrl,
+    statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+    statusCallbackMethod: 'POST',
+    record: true,
+    recordingStatusCallback: args.recordingStatusCallbackUrl,
+  })
+  return { callSid: call.sid }
 }
 
-export const twilioMessagingProvider: MessagingProvider = {
-  channel: 'sms',
-
-  async send({ to, body, statusCallbackUrl }) {
-    const target = maybeOverride(to)
-    const message = await client.messages.create({
-      from: process.env.TWILIO_TRANSFER_TARGET_DID_E164!,  // reuse the "Tri Pros Transfers" DID for SMS too (Phase 1 simplicity)
-      to: target,
-      body: ensureStopFooter(body),
-      statusCallback: statusCallbackUrl,
-    })
-    return {
-      messageId: message.sid,
-      status: message.status === 'failed' ? 'failed' : message.status === 'sent' ? 'sent' : 'queued',
-    }
-  },
-}
-```
-
-- [ ] **Step 24.3: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/messaging/messaging-provider.interface.ts src/services/messaging/twilio.messaging-provider.ts
-git commit -m "feat(messaging): add MessagingProvider interface + Twilio SMS impl
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 25: Sendblue iMessage impl + messaging router — **⏸ DEFERRED (2026-05-22)**
-
-> **Status:** Sendblue (iMessage) deferred to post-Phase-1-launch enhancement. See EPIC.md decision log entry "Sendblue (iMessage) deferred." Phase 1 implements Twilio-only messaging via Task 24's `twilioMessagingProvider` — no router needed (only one provider).
->
-> **For Phase 1, instead of Task 25:** create a thin `services/messaging/send-message.service.ts` that wraps `twilioMessagingProvider.send()` with the same `channelPreference: 'sms' | 'imessage' | 'auto'` signature this task's router would have had — but the implementation hard-codes channel to `'sms'` regardless of preference. When Sendblue is added later, this service is the seam that swaps in real routing logic. Mark with `@migration: → Sendblue iMessage routing` so it's findable.
->
-> **Remaining steps below are RETAINED as reference for the future Sendblue add — do not implement now.**
-
-**Files (deferred):**
-- Create: `src/services/messaging/sendblue.messaging-provider.ts`
-- Create: `src/services/messaging/messaging-router.service.ts`
-
-- [ ] **Step 25.1: Sendblue impl (fetch-based, no SDK)** — DEFERRED
-
-```ts
-// sendblue.messaging-provider.ts
-import type { MessagingProvider } from './messaging-provider.interface'
-
-const BASE_URL = 'https://api.sendblue.co/api'
-
-function maybeOverride(to: string): string {
-  const override = process.env.DIALER_DEV_OVERRIDE_NUMBER
-  if (override && to.startsWith('+')) {
-    console.warn(`[DIALER DEV OVERRIDE] Routing iMessage to ${override} instead of ${to}`)
-    return override
-  }
-  return to
+export async function endCall(callSid: string): Promise<void> {
+  await getTwilioClient().calls(callSid).update({ status: 'completed' })
 }
 
-function ensureStopFooter(body: string): string {
-  if (/reply\s+stop/i.test(body)) return body
-  return `${body.trim()}\n\nReply STOP to opt out.`
-}
+interface SoftphoneTokenArgs { userId: string, ttlSeconds?: number }
 
-export const sendblueMessagingProvider: MessagingProvider = {
-  channel: 'imessage',
+export function mintSoftphoneAccessToken(args: SoftphoneTokenArgs): { token: string, identity: string, ttlSeconds: number } {
+  const AccessToken = twilio.jwt.AccessToken
+  const { VoiceGrant } = AccessToken
+  const ttlSeconds = args.ttlSeconds ?? 3600
+  const identity = `agent_${args.userId}`
 
-  async send({ to, body, statusCallbackUrl }) {
-    const target = maybeOverride(to)
-    const res = await fetch(`${BASE_URL}/send-message`, {
-      method: 'POST',
-      headers: {
-        'sb-api-key-id': process.env.SENDBLUE_API_KEY_ID!,
-        'sb-api-secret-key': process.env.SENDBLUE_API_SECRET!,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        number: target,
-        content: ensureStopFooter(body),
-        status_callback: statusCallbackUrl,
-      }),
-    })
-
-    if (!res.ok) {
-      return { messageId: '', status: 'failed' }
-    }
-
-    const data = await res.json() as { message_handle: string, status: string }
-    return {
-      messageId: data.message_handle,
-      status: data.status === 'SENT' ? 'sent' : 'queued',
-    }
-  },
-}
-```
-
-- [ ] **Step 25.2: Messaging router**
-
-```ts
-// messaging-router.service.ts
-import type { DialerMessageChannel } from '@/shared/constants/enums/dialer'
-import { twilioMessagingProvider } from './twilio.messaging-provider'
-import { sendblueMessagingProvider } from './sendblue.messaging-provider'
-
-/**
- * Sends a message via the requested channel, falling back to SMS if iMessage fails.
- * Returns the actual channel used + provider IDs for persistence.
- */
-export async function sendMessageRouted(args: {
-  to: string
-  body: string
-  channelPreference: 'sms' | 'imessage' | 'auto'
-  twilioStatusCallbackUrl: string
-  sendblueStatusCallbackUrl: string
-}): Promise<{
-  twilioMessageSid?: string
-  sendblueMessageId?: string
-  channelUsed: DialerMessageChannel
-  status: 'queued' | 'sent' | 'failed'
-}> {
-  const { to, body, channelPreference, twilioStatusCallbackUrl, sendblueStatusCallbackUrl } = args
-
-  if (channelPreference === 'sms') {
-    const res = await twilioMessagingProvider.send({ to, body, statusCallbackUrl: twilioStatusCallbackUrl })
-    return { twilioMessageSid: res.messageId, channelUsed: 'sms', status: res.status }
-  }
-
-  if (channelPreference === 'imessage' || channelPreference === 'auto') {
-    const iRes = await sendblueMessagingProvider.send({ to, body, statusCallbackUrl: sendblueStatusCallbackUrl })
-    if (iRes.status !== 'failed') {
-      return { sendblueMessageId: iRes.messageId, channelUsed: 'imessage', status: iRes.status }
-    }
-
-    // Fallback to SMS on iMessage failure
-    if (channelPreference === 'auto') {
-      const smsRes = await twilioMessagingProvider.send({ to, body, statusCallbackUrl: twilioStatusCallbackUrl })
-      return { twilioMessageSid: smsRes.messageId, channelUsed: 'fallback_sms', status: smsRes.status }
-    }
-
-    return { sendblueMessageId: iRes.messageId, channelUsed: 'imessage', status: 'failed' }
-  }
-
-  // unreachable; satisfy TS exhaustiveness
-  throw new Error(`Unknown channelPreference: ${String(channelPreference)}`)
-}
-```
-
-- [ ] **Step 25.3: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/messaging/sendblue.messaging-provider.ts src/services/messaging/messaging-router.service.ts
-git commit -m "feat(messaging): add Sendblue iMessage impl + auto-fallback router
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 26: Shared opt-out compliance service
-
-**Files:**
-- Create: `src/services/dialer/compliance/opt-out-compliance.service.ts`
-
-> Used by both branch B5 (live call opt-out) and inbound SMS STOP handler. Single source of truth.
-
-- [ ] **Step 26.1: Create the service**
-
-```ts
-// services/dialer/compliance/opt-out-compliance.service.ts
-import type { DialerDncSource } from '@/shared/constants/enums/dialer'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { customers, dialerDnc, dialerLeadStates } from '@/shared/db/schema'
-
-const OPT_OUT_KEYWORDS = /^(STOP|UNSUBSCRIBE|QUIT|CANCEL|END|REMOVE|OPT[\s-]?OUT)$/i
-
-export function isOptOutKeyword(body: string): boolean {
-  return OPT_OUT_KEYWORDS.test(body.trim())
+  const token = new AccessToken(
+    env.TWILIO_ACCOUNT_SID,
+    env.TWILIO_API_KEY_SID,
+    env.TWILIO_API_KEY_SECRET,
+    { identity, ttl: ttlSeconds },
+  )
+  token.addGrant(new VoiceGrant({
+    outgoingApplicationSid: env.TWILIO_TWIML_APP_SID,
+    incomingAllow: true,
+  }))
+  return { token: token.toJwt(), identity, ttlSeconds }
 }
 
 /**
- * Records a lead opt-out. Idempotent — duplicate calls are safe (ON CONFLICT DO NOTHING).
- * Updates: dialer_dnc + dialer_lead_states (status='opted_out').
+ * Validates the Twilio x-twilio-signature header against the request URL + form params.
+ * Returns true if the request is genuinely from Twilio.
  */
-export async function recordOptOut(args: {
-  customerId: string
-  source: DialerDncSource
-  reason?: string
-  addedByUserId?: string
-}) {
-  const customer = await db.select({ phone: customers.phone }).from(customers).where(eq(customers.id, args.customerId)).limit(1)
-  if (!customer[0]?.phone) {
-    throw new Error(`Customer ${args.customerId} has no phone`)
-  }
-
-  // 1. DNC insert (idempotent)
-  await db.insert(dialerDnc)
-    .values({
-      phoneE164: customer[0].phone,
-      source: args.source,
-      reason: args.reason,
-      addedByUserId: args.addedByUserId,
-    })
-    .onConflictDoNothing({ target: dialerDnc.phoneE164 })
-
-  // 2. Lead state → opted_out (if enrolled)
-  await db.update(dialerLeadStates)
-    .set({ status: 'opted_out', nextAttemptAt: null })
-    .where(eq(dialerLeadStates.customerId, args.customerId))
-}
-```
-
-- [ ] **Step 26.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/dialer/compliance/opt-out-compliance.service.ts
-git commit -m "feat(dialer): add shared opt-out compliance service
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 27: Dispatcher — startTestCall service
-
-**Files:**
-- Create: `src/services/dialer/dispatcher/start-test-call.service.ts`
-
-> Phase 1's one-off dial trigger. Phase 2 introduces the full cadence-driven dispatcher.
-
-- [ ] **Step 27.1: Create the service**
-
-```ts
-// services/dialer/dispatcher/start-test-call.service.ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { customers, dialerDids, leadSourcesTable } from '@/shared/db/schema'
-import { createDialerAttempt } from '@/shared/entities/dialer-attempts/dal/server/create'
-import { updateDialerAttempt } from '@/shared/entities/dialer-attempts/dal/server/update'
-import { getAiVoiceAgent } from '@/services/ai-voice/ai-voice-agent.factory'
-
-export async function startTestCall(args: {
-  customerId: string
-  initiatedByUserId: string
-}) {
-  // 1. Look up customer + their lead source's Retell agent
-  const [customer] = await db.select().from(customers).where(eq(customers.id, args.customerId)).limit(1)
-  if (!customer) throw new Error(`Customer ${args.customerId} not found`)
-  if (!customer.phone) throw new Error(`Customer ${args.customerId} has no phone`)
-  if (!customer.leadSourceId) throw new Error(`Customer ${args.customerId} has no lead source`)
-
-  const [leadSource] = await db.select().from(leadSourcesTable).where(eq(leadSourcesTable.id, customer.leadSourceId)).limit(1)
-  if (!leadSource?.dialerConfigJSON?.enabled) {
-    throw new Error(`Lead source ${customer.leadSourceId} is not dialer-enabled`)
-  }
-  if (!leadSource.dialerConfigJSON.retellAgentId) {
-    throw new Error(`Lead source ${customer.leadSourceId} has no retell_agent_id configured`)
-  }
-
-  // 2. Pick a DID (Phase 1: simplest — first 'active' or 'warming' non-transfer DID)
-  const [did] = await db.select().from(dialerDids)
-    .where(eq(dialerDids.isTransferTargetDid, false))
-    .limit(1)
-  if (!did) throw new Error('No available DIDs in pool')
-
-  // 3. Create dialer_attempt row (status='initiated')
-  const attempt = await createDialerAttempt({
-    customerId: customer.id,
-    didUsed: did.e164Number,
-    status: 'initiated',
-  })
-
-  // 4. Start the AI call via Retell
-  const ai = getAiVoiceAgent()
-  const result = await ai.startOutboundCall({
-    agentId: leadSource.dialerConfigJSON.retellAgentId,
-    from: did.e164Number,
-    to: customer.phone,
-    dynamicVariables: {
-      lead_name: customer.name,
-      trade: leadSource.dialerConfigJSON.trade,
-      consent_context: leadSource.dialerConfigJSON.consentContext,
-    },
-    metadata: {
-      dialerAttemptId: attempt!.id,
-      customerId: customer.id,
-    },
-    webhookUrl: process.env.DIALER_WEBHOOK_BASE_URL!,
-  })
-
-  // 5. Update attempt with Retell ID + status='dialing'
-  await updateDialerAttempt(attempt!.id, {
-    retellCallId: result.agentCallId,
-    status: 'dialing',
-  })
-
-  void args.initiatedByUserId  // logged via tRPC procedure caller, not in attempt row
-
-  return { dialerAttemptId: attempt!.id, retellCallId: result.agentCallId }
-}
-```
-
-- [ ] **Step 27.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/dialer/dispatcher/start-test-call.service.ts
-git commit -m "feat(dialer): add startTestCall dispatcher service (Phase 1 manual trigger)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 28: Transfer router services
-
-**Files:**
-- Create: `src/services/dialer/transfer-router/find-available-human.service.ts`
-- Create: `src/services/dialer/transfer-router/build-warm-intro.service.ts`
-
-- [ ] **Step 28.1: Available-human picker**
-
-```ts
-// find-available-human.service.ts
-import { listAvailableTransferHumans } from '@/shared/entities/dialer-user-availability/dal/server/list-available'
-
-export type TransferDecision =
-  | { kind: 'available', transferTo: string, userId: string }
-  | { kind: 'no_one_available' }
-
-export async function findAvailableHuman(): Promise<TransferDecision> {
-  const candidates = await listAvailableTransferHumans()
-  if (candidates.length === 0) return { kind: 'no_one_available' }
-
-  // Phase 1: pick the one least-recently-transferred-to (round-robin equivalent)
-  const sorted = [...candidates].sort((a, b) => {
-    const aT = a.lastTransferredAt ?? '1970-01-01'
-    const bT = b.lastTransferredAt ?? '1970-01-01'
-    return aT.localeCompare(bT)
-  })
-  const chosen = sorted[0]
-
-  if (chosen.transferMode === 'mobile' && chosen.cellPhoneE164) {
-    return { kind: 'available', transferTo: chosen.cellPhoneE164, userId: chosen.userId }
-  }
-  // Default: desktop (or 'auto' falls back to desktop in Phase 1; mobile-auto resolution lands in Phase 4)
-  return { kind: 'available', transferTo: `client:agent_${chosen.userId}`, userId: chosen.userId }
-}
-```
-
-- [ ] **Step 28.2: Warm-intro composer**
-
-```ts
-// build-warm-intro.service.ts
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { customers, leadSourcesTable } from '@/shared/db/schema'
-
-const DEFAULT_TEMPLATE = '{name} on the line — interested in {trade}'
-
-export async function buildWarmIntro(customerId: string): Promise<string> {
-  const [customer] = await db.select().from(customers).where(eq(customers.id, customerId)).limit(1)
-  if (!customer) return 'Lead on the line'
-
-  let template = DEFAULT_TEMPLATE
-  let trade = 'home improvement'
-
-  if (customer.leadSourceId) {
-    const [src] = await db.select().from(leadSourcesTable).where(eq(leadSourcesTable.id, customer.leadSourceId)).limit(1)
-    if (src?.dialerConfigJSON?.warmIntroTemplate) template = src.dialerConfigJSON.warmIntroTemplate
-    if (src?.dialerConfigJSON?.trade) trade = src.dialerConfigJSON.trade
-  }
-
-  return template
-    .replace('{name}', customer.name)
-    .replace('{trade}', trade)
-    .replace('{city}', customer.city ?? '')
-    .slice(0, 200)  // cap length to keep intros short
-}
-```
-
-- [ ] **Step 28.3: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/dialer/transfer-router/
-git commit -m "feat(dialer): add transfer-router services (find-available-human, build-warm-intro)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 29: Disposition recording service
-
-**Files:**
-- Create: `src/services/dialer/disposition/record.service.ts`
-
-- [ ] **Step 29.1: Create the service**
-
-```ts
-// services/dialer/disposition/record.service.ts
-import type { DialerDisposition } from '@/shared/constants/enums/dialer'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { dialerAttempts, dialerLeadStates } from '@/shared/db/schema'
-import { findDialerAttemptById } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-import { recordOptOut } from '@/services/dialer/compliance/opt-out-compliance.service'
-
-/**
- * Persists a final disposition for a dialer attempt + triggers downstream side effects:
- * - opt_out → DNC entry + lead state opted_out (via shared compliance service)
- * - booked_meeting / not_interested → lead state 'reached'
- * - wrong_number → lead state 'reached' + flag for admin review (Phase 5)
- */
-export async function recordDisposition(args: {
-  dialerAttemptId: string
-  disposition: DialerDisposition
-  recordedByUserId?: string  // null when set by AI webhook
-}) {
-  const attempt = await findDialerAttemptById(args.dialerAttemptId)
-  if (!attempt) throw new Error(`DialerAttempt ${args.dialerAttemptId} not found`)
-
-  await db.update(dialerAttempts)
-    .set({ disposition: args.disposition })
-    .where(eq(dialerAttempts.id, args.dialerAttemptId))
-
-  // Side effects per disposition
-  if (args.disposition === 'opt_out') {
-    await recordOptOut({
-      customerId: attempt.customerId,
-      source: 'lead_request',
-      reason: 'Opt-out during AI call',
-      addedByUserId: args.recordedByUserId,
-    })
-    return
-  }
-
-  if (['booked_meeting', 'not_interested', 'wrong_number', 'interested_not_now'].includes(args.disposition)) {
-    await db.update(dialerLeadStates)
-      .set({
-        status: args.disposition === 'interested_not_now' ? 'paused' : 'reached',
-        lastDisposition: args.disposition,
-        lastAttemptAt: new Date().toISOString(),
-      })
-      .where(eq(dialerLeadStates.customerId, attempt.customerId))
-  }
-}
-```
-
-- [ ] **Step 29.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/dialer/disposition/
-git commit -m "feat(dialer): add disposition record service
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 30: Manual message send service
-
-**Files:**
-- Create: `src/services/dialer/messaging/send-manual-message.service.ts`
-
-- [ ] **Step 30.1: Create the service**
-
-```ts
-// services/dialer/messaging/send-manual-message.service.ts
-import type { DialerMessageChannel } from '@/shared/constants/enums/dialer'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema'
-import { createDialerMessage } from '@/shared/entities/dialer-messages/dal/server/create'
-import { lookupDialerDncByPhone } from '@/shared/entities/dialer-dnc/dal/server/lookup-by-phone'
-import { sendMessageRouted } from '@/services/messaging/messaging-router.service'
-
-export class DncBlockedError extends Error {
-  constructor(phone: string) { super(`Phone ${phone} is on DNC; send blocked`) }
-}
-
-export async function sendManualMessage(args: {
-  customerId: string
-  body: string
-  channelPreference: 'sms' | 'imessage' | 'auto'
-}) {
-  const [customer] = await db.select().from(customers).where(eq(customers.id, args.customerId)).limit(1)
-  if (!customer) throw new Error(`Customer ${args.customerId} not found`)
-  if (!customer.phone) throw new Error(`Customer ${args.customerId} has no phone`)
-
-  // Compliance: never send to DNC numbers
-  if (await lookupDialerDncByPhone(customer.phone)) {
-    throw new DncBlockedError(customer.phone)
-  }
-
-  const base = process.env.DIALER_WEBHOOK_BASE_URL!
-  const result = await sendMessageRouted({
-    to: customer.phone,
-    body: args.body,
-    channelPreference: args.channelPreference,
-    twilioStatusCallbackUrl: `${base}/api/messaging/twilio/status`,
-    sendblueStatusCallbackUrl: `${base}/api/messaging/sendblue/status`,
-  })
-
-  // Persist to dialer_messages
-  const row = await createDialerMessage({
-    customerId: customer.id,
-    direction: 'outbound',
-    channel: result.channelUsed,
-    body: args.body,
-    twilioMessageSid: result.twilioMessageSid,
-    sendblueMessageId: result.sendblueMessageId,
-    status: result.status === 'sent' ? 'sent' : result.status === 'failed' ? 'failed' : 'queued',
-    sentAt: result.status !== 'failed' ? new Date().toISOString() : null,
-    templateKey: 'manual',
-  } as never)  // type assertion needed: discriminated union of vendor IDs
-
-  return row
-}
-```
-
-- [ ] **Step 30.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/services/dialer/messaging/
-git commit -m "feat(messaging): add manual send service with DNC check
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 31: Webhook routes — Twilio Voice (access-token + status + recording)
-
-**Files:**
-- Create: `src/app/api/voip/twilio/access-token/route.ts`
-- Create: `src/app/api/voip/twilio/status/route.ts`
-- Create: `src/app/api/voip/twilio/recording/route.ts`
-- Create: `src/services/voip/twilio-signature-verify.ts` (shared signature verification)
-
-> **Pattern:** every webhook handler is THIN — verify signature → delegate to service. Routes return `200 OK` even on duplicate events (idempotent). 4xx only for malformed payloads or signature failures.
-
-- [ ] **Step 31.1: Shared signature verification**
-
-```ts
-// services/voip/twilio-signature-verify.ts
-import twilio from 'twilio'
-
-/**
- * Verifies a Twilio webhook signature. Returns true if valid.
- * Use for status callbacks + recording callbacks + inbound SMS.
- */
-export function verifyTwilioSignature(args: {
+export function validateVoiceSignature(args: {
   signature: string | null
   url: string
   params: Record<string, string>
 }): boolean {
   if (!args.signature) return false
-  return twilio.validateRequest(
-    process.env.TWILIO_AUTH_TOKEN!,
-    args.signature,
-    args.url,
-    args.params,
+  return twilio.validateRequest(env.TWILIO_AUTH_TOKEN, args.signature, args.url, args.params)
+}
+```
+
+- [ ] **Step 20.3: `messaging.ts` — sendSms + signature verify**
+
+```ts
+// src/shared/services/providers/twilio/messaging.ts
+import twilio from 'twilio'
+import env from '@/shared/config/server-env'
+import { getTwilioClient, maybeOverrideRecipient } from './client'
+
+interface SendSmsArgs {
+  fromE164: string
+  toE164: string
+  body: string
+  statusCallbackUrl: string
+}
+
+function ensureStopFooter(body: string): string {
+  if (/reply\s+stop/i.test(body)) return body
+  return `${body.trim()}\n\nReply STOP to opt out.`
+}
+
+export async function sendSms(args: SendSmsArgs): Promise<{ messageSid: string, status: string }> {
+  const to = maybeOverrideRecipient(args.toE164)
+  const m = await getTwilioClient().messages.create({
+    from: args.fromE164,
+    to,
+    body: ensureStopFooter(args.body),
+    statusCallback: args.statusCallbackUrl,
+  })
+  return { messageSid: m.sid, status: m.status }
+}
+
+export function validateMessagingSignature(args: {
+  signature: string | null
+  url: string
+  params: Record<string, string>
+}): boolean {
+  if (!args.signature) return false
+  return twilio.validateRequest(env.TWILIO_AUTH_TOKEN, args.signature, args.url, args.params)
+}
+```
+
+- [ ] **Step 20.4: `webhooks/types.ts` — Zod schemas for inbound payloads**
+
+```ts
+// src/shared/services/providers/twilio/webhooks/types.ts
+import { z } from 'zod'
+
+// Twilio voice status callback params (subset we care about).
+export const voiceStatusPayloadSchema = z.object({
+  CallSid: z.string(),
+  CallStatus: z.enum(['queued', 'initiated', 'ringing', 'in-progress', 'completed', 'busy', 'failed', 'no-answer', 'canceled']),
+  From: z.string().optional(),
+  To: z.string().optional(),
+  CallDuration: z.string().optional(),  // string in webhook; coerce to number
+  Direction: z.string().optional(),
+})
+export type VoiceStatusPayload = z.infer<typeof voiceStatusPayloadSchema>
+
+export const voiceRecordingPayloadSchema = z.object({
+  CallSid: z.string(),
+  RecordingSid: z.string(),
+  RecordingUrl: z.string(),
+  RecordingDuration: z.string().optional(),
+  RecordingStatus: z.enum(['in-progress', 'completed', 'absent', 'failed']).optional(),
+})
+export type VoiceRecordingPayload = z.infer<typeof voiceRecordingPayloadSchema>
+
+export const messagingInboundPayloadSchema = z.object({
+  MessageSid: z.string(),
+  From: z.string(),
+  To: z.string(),
+  Body: z.string(),
+  NumMedia: z.string().optional(),
+})
+export type MessagingInboundPayload = z.infer<typeof messagingInboundPayloadSchema>
+
+export const messagingStatusPayloadSchema = z.object({
+  MessageSid: z.string(),
+  MessageStatus: z.enum(['queued', 'sending', 'sent', 'delivered', 'undelivered', 'failed', 'received']),
+  ErrorCode: z.string().optional(),
+})
+export type MessagingStatusPayload = z.infer<typeof messagingStatusPayloadSchema>
+```
+
+- [ ] **Step 20.5: `constants/index.ts` + `types.ts`**
+
+```ts
+// src/shared/services/providers/twilio/constants/index.ts
+import type { VoipCallStatus, VoipMessageStatus } from '@/shared/constants/enums'
+
+/** Webhook signature header — Twilio HMAC-SHA1 of the URL + form body. */
+export const WEBHOOK_SIGNATURE_HEADER = 'x-twilio-signature'
+
+// Twilio's voice status strings → our voipCallStatuses
+export const twilioVoiceStatusMap: Record<string, VoipCallStatus> = {
+  'queued': 'queued',
+  'initiated': 'initiated',
+  'ringing': 'ringing',
+  'in-progress': 'answered',
+  'completed': 'completed',
+  'no-answer': 'no_answer',
+  'busy': 'no_answer',
+  'failed': 'failed',
+  'canceled': 'failed',
+}
+
+// Twilio's message status strings → our voipMessageStatuses
+export const twilioMessageStatusMap: Record<string, VoipMessageStatus> = {
+  'queued': 'queued',
+  'sending': 'queued',
+  'sent': 'sent',
+  'delivered': 'delivered',
+  'undelivered': 'undelivered',
+  'failed': 'failed',
+  'received': 'received',
+}
+```
+
+> Convention follows `providers/zoho-sign/constants/` which exports `WEBHOOK_SIGNATURE_HEADER` consumed by `src/app/api/webhooks/zoho-sign/route.ts`.
+
+```ts
+// src/shared/services/providers/twilio/types.ts
+export type { VoiceStatusPayload, VoiceRecordingPayload, MessagingInboundPayload, MessagingStatusPayload } from './webhooks/types'
+```
+
+- [ ] **Step 20.6: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/services/providers/twilio/
+git commit -m "feat(twilio): scaffold Twilio provider (client, voice, messaging, webhook types)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 21: `services/voip/` — DNC + compliance + DIDs + user-availability
+
+> All four are pure data + gate functions; no Twilio interaction. They live in `src/shared/services/voip/` (top-level, owned by this EPIC). Per [INTEGRATION-SEAM.md "Dependency direction"](../voip/INTEGRATION-SEAM.md#dependency-direction), top-level voip services MUST NOT import `services/voip/campaigns/*` or `providers/cloudtalk/*` (lint-enforced in Task 33).
+
+**Files:**
+- Create: `src/shared/services/voip/voip-dnc.service.ts`
+- Create: `src/shared/services/voip/voip-compliance.service.ts`
+- Create: `src/shared/services/voip/voip-dids.service.ts`
+- Create: `src/shared/services/voip/voip-user-availability.service.ts`
+
+- [ ] **Step 21.1: `voip-dnc.service.ts`**
+
+```ts
+// src/shared/services/voip/voip-dnc.service.ts
+import type { VoipDncSource } from '@/shared/constants/enums'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import { isOnDnc } from '@/shared/entities/voip-dnc/dal/server/queries'
+import { recordDnc as recordDncDal } from '@/shared/entities/voip-dnc/dal/server/mutations'
+
+const STOP_KEYWORDS = /^(STOP|UNSUBSCRIBE|QUIT|CANCEL|END|REMOVE|OPT[\s-]?OUT)$/i
+
+export function isOptOutKeyword(body: string): boolean {
+  return STOP_KEYWORDS.test(body.trim())
+}
+
+/** Append a DNC row. Idempotent via UNIQUE(phone_e164) + ON CONFLICT DO NOTHING. */
+export async function recordDnc(
+  ctx: ScopedContext,
+  args: { phoneE164: string, source: VoipDncSource, reason?: string, addedByUserId?: string },
+): Promise<DalReturn<void>> {
+  return recordDncDal(ctx, args).then(r => r.success ? { success: true, data: undefined } : r)
+}
+
+/** Cheap boolean check — used by compliance gate. */
+export async function lookupDnc(ctx: ScopedContext, phoneE164: string): Promise<DalReturn<boolean>> {
+  return isOnDnc(ctx, phoneE164)
+}
+```
+
+- [ ] **Step 21.2: `voip-compliance.service.ts`**
+
+```ts
+// src/shared/services/voip/voip-compliance.service.ts
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import { getByFeature } from '@/shared/entities/app-settings/dal/server/queries'
+import { DEFAULT_VOIP_IN_HOUSE_CONFIG, voipInHouseAppSettingsConfigSchema } from '@/shared/entities/app-settings/schemas/voip-in-house-config-schema'
+import { lookupDnc } from './voip-dnc.service'
+
+export type ComplianceCheckResult =
+  | { allowed: true }
+  | { allowed: false, reason: 'dnc' | 'kill_switch_active' | 'outside_calling_hours' | 'invalid_phone' }
+
+/**
+ * Single gate for ALL outbound voice + SMS in this EPIC.
+ *   1. Phone must be E.164.
+ *   2. Kill switch must be off (app_settings(feature='voip-in-house').configJson.globalKillSwitch).
+ *   3. DNC must be clean (voip_dnc table).
+ *   4. (Soft) calling hours — if `enforceHours: true` (default true for voice; false for transactional SMS).
+ */
+export async function canOutboundTo(
+  ctx: ScopedContext,
+  args: { phoneE164: string, enforceHours?: boolean, localTzOffsetMinutes?: number },
+): Promise<DalReturn<ComplianceCheckResult>> {
+  // 1. E.164 sanity
+  if (!/^\+[1-9]\d{6,14}$/.test(args.phoneE164)) {
+    return { success: true, data: { allowed: false, reason: 'invalid_phone' } }
+  }
+
+  // 2. Load config (defaults to DEFAULT_VOIP_IN_HOUSE_CONFIG if no row)
+  const settingsResult = await getByFeature(ctx, 'voip-in-house')
+  if (!settingsResult.success) return settingsResult
+  const config = settingsResult.data
+    ? voipInHouseAppSettingsConfigSchema.parse(settingsResult.data.configJson)
+    : DEFAULT_VOIP_IN_HOUSE_CONFIG
+
+  if (config.globalKillSwitch) {
+    return { success: true, data: { allowed: false, reason: 'kill_switch_active' } }
+  }
+
+  // 3. DNC
+  const dncResult = await lookupDnc(ctx, args.phoneE164)
+  if (!dncResult.success) return dncResult
+  if (dncResult.data) {
+    return { success: true, data: { allowed: false, reason: 'dnc' } }
+  }
+
+  // 4. Calling hours (default enforce=true; transactional SMS sets enforce=false)
+  if (args.enforceHours !== false) {
+    const now = new Date()
+    const tzOffset = args.localTzOffsetMinutes ?? -8 * 60  // default PT; Phase 2 derives from customer.localTz
+    const localMs = now.getTime() + (now.getTimezoneOffset() + tzOffset) * 60_000
+    const local = new Date(localMs)
+    const day = (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const)[local.getUTCDay()]
+    const hour = local.getUTCHours()
+
+    if (!config.callingHours.callingDays.includes(day)) {
+      return { success: true, data: { allowed: false, reason: 'outside_calling_hours' } }
+    }
+    if (hour < config.callingHours.startHourLocal || hour >= config.callingHours.endHourLocal) {
+      return { success: true, data: { allowed: false, reason: 'outside_calling_hours' } }
+    }
+  }
+
+  return { success: true, data: { allowed: true } }
+}
+```
+
+> **Note on `enforceHours`:** calling-hours is enforced for voice + cold SMS. Transactional SMS (e.g., meeting reminders the customer expects) sets `enforceHours: false` — those land in Phase 2 (`services/voip/voip-lifecycle-sms.service.ts`).
+
+- [ ] **Step 21.3: `voip-dids.service.ts`**
+
+```ts
+// src/shared/services/voip/voip-dids.service.ts
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import { findStickyForAgent, findTransferTarget as findTransferTargetDal } from '@/shared/entities/voip-dids/dal/server/queries'
+import type { VoipDid } from '@/shared/entities/voip-dids/types'
+
+/**
+ * Returns the agent's sticky outbound DID. Phase 1: returns the single in_house+agent_outbound DID
+ * assigned to this user. If none assigned (pilot agents share DIDs initially), returns the
+ * unassigned dial DID (the agent's first-call assignment); future Phase 2 will introduce explicit
+ * sticky assignment via admin UI.
+ */
+export async function getStickyDidForAgent(
+  ctx: ScopedContext,
+  userId: string,
+): Promise<DalReturn<VoipDid>> {
+  const result = await findStickyForAgent(ctx, userId)
+  if (!result.success) return result
+  if (!result.data) {
+    return { success: false, error: { type: 'precondition-failed', reason: `No sticky DID assigned to user ${userId}` } }
+  }
+  return { success: true, data: result.data }
+}
+
+/** Returns the single transfer-target DID for warm-transfers landing from CloudTalk. */
+export async function getTransferTargetDid(ctx: ScopedContext): Promise<DalReturn<VoipDid>> {
+  const result = await findTransferTargetDal(ctx)
+  if (!result.success) return result
+  if (!result.data) {
+    return { success: false, error: { type: 'precondition-failed', reason: 'No transfer-target DID configured' } }
+  }
+  return { success: true, data: result.data }
+}
+```
+
+- [ ] **Step 21.4: `voip-user-availability.service.ts`**
+
+```ts
+// src/shared/services/voip/voip-user-availability.service.ts
+import type { VoipTransferMode, VoipUserAvailability } from '@/shared/constants/enums'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import { listAvailableForTransfer } from '@/shared/entities/voip-user-availability/dal/server/queries'
+import { upsert as upsertDal } from '@/shared/entities/voip-user-availability/dal/server/mutations'
+
+export async function upsertAvailability(
+  ctx: ScopedContext,
+  args: {
+    userId: string
+    enrolledForTransfers: boolean
+    manualStatus: VoipUserAvailability
+    transferMode: VoipTransferMode
+    cellPhoneE164?: string | null
+  },
+): Promise<DalReturn<void>> {
+  // Phase 1 guard: mobile transfer mode is not yet wired; block writes here until Phase 3.
+  if (args.transferMode === 'mobile') {
+    return { success: false, error: { type: 'precondition-failed', reason: 'mobile transfer_mode is a Phase 3 feature' } }
+  }
+  const result = await upsertDal(ctx, args)
+  return result.success ? { success: true, data: undefined } : result
+}
+
+export async function listAvailableTransferHumans(ctx: ScopedContext): Promise<DalReturn<{
+  userId: string
+  transferMode: VoipTransferMode
+  cellPhoneE164: string | null
+  lastTransferredAt: string | null
+}[]>> {
+  return listAvailableForTransfer(ctx)
+}
+```
+
+- [ ] **Step 21.5: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/services/voip/voip-dnc.service.ts \
+  src/shared/services/voip/voip-compliance.service.ts \
+  src/shared/services/voip/voip-dids.service.ts \
+  src/shared/services/voip/voip-user-availability.service.ts
+git commit -m "feat(voip): add DNC + compliance + DIDs + availability services
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 22: `services/voip/voip-calls.service.ts`
+
+**Files:**
+- Create: `src/shared/services/voip/voip-calls.service.ts`
+
+> The agent click-to-call flow: dial the customer FROM the agent's sticky DID, with the agent's softphone identity as the bridge endpoint. The compliance gate is the first thing the function does. CASL is enforced upstream in the tRPC procedure.
+
+- [ ] **Step 22.1: Create the service**
+
+```ts
+// src/shared/services/voip/voip-calls.service.ts
+import type { VoipCallDisposition } from '@/shared/constants/enums'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import env from '@/shared/config/server-env'
+import { findByTwilioCallSid } from '@/shared/entities/voip-calls/dal/server/queries'
+import { createCall, upsertFromTwilioWebhook } from '@/shared/entities/voip-calls/dal/server/mutations'
+import { findCustomerById } from '@/shared/entities/customers/dal/server/queries'
+import { placeCall } from '@/shared/services/providers/twilio/voice'
+import { canOutboundTo } from './voip-compliance.service'
+import { getStickyDidForAgent } from './voip-dids.service'
+
+/**
+ * Agent click-to-call. Dials the customer from the agent's sticky in-house DID.
+ * The customer-side leg connects to the agent's browser softphone (TwiML app routes "client:agent_<userId>").
+ */
+export async function placeAgentCall(
+  ctx: ScopedContext,
+  args: { customerId: string, agentUserId: string },
+): Promise<DalReturn<{ voipCallId: string, twilioCallSid: string }>> {
+  const customerResult = await findCustomerById(ctx, { id: args.customerId })
+  if (!customerResult.success) return customerResult
+  const customer = customerResult.data
+  if (!customer?.phone) {
+    return { success: false, error: { type: 'precondition-failed', reason: `Customer ${args.customerId} has no phone` } }
+  }
+
+  // Compliance gate
+  const compliance = await canOutboundTo(ctx, { phoneE164: customer.phone })
+  if (!compliance.success) return compliance
+  if (!compliance.data.allowed) {
+    // Log blocked attempt for audit
+    const blocked = await createCall(ctx, {
+      source: 'in_house',
+      customerId: customer.id,
+      direction: 'outbound',
+      didUsed: '',                  // not chosen yet
+      remoteE164: customer.phone,
+      status: 'skipped_compliance',
+      skipReason: compliance.data.reason,
+      agentUserId: args.agentUserId,
+    })
+    if (!blocked.success) return blocked
+    return { success: false, error: { type: 'precondition-failed', reason: `blocked: ${compliance.data.reason}` } }
+  }
+
+  // Get sticky DID
+  const didResult = await getStickyDidForAgent(ctx, args.agentUserId)
+  if (!didResult.success) return didResult
+  const did = didResult.data
+
+  // Insert initial row (status='initiated'); Twilio webhook will update lifecycle
+  const baseUrl = env.VOIP_WEBHOOK_BASE_URL
+
+  const created = await createCall(ctx, {
+    source: 'in_house',
+    customerId: customer.id,
+    direction: 'outbound',
+    didUsed: did.e164Number,
+    remoteE164: customer.phone,
+    status: 'initiated',
+    agentUserId: args.agentUserId,
+  })
+  if (!created.success) return created
+  const row = created.data
+
+  // Place the call
+  const { callSid } = await placeCall({
+    fromE164: did.e164Number,
+    toE164: customer.phone,
+    statusCallbackUrl: `${baseUrl}/api/webhooks/twilio`,
+    recordingStatusCallbackUrl: `${baseUrl}/api/webhooks/twilio`,
+    customParameters: {
+      voip_call_id: row.id,
+      customer_id: customer.id,
+      agent_user_id: args.agentUserId,
+      lead_name: customer.name,
+    },
+  })
+
+  // Patch the row with the Twilio SID for webhook idempotency
+  const patched = await upsertFromTwilioWebhook(ctx, {
+    callSid,
+    patch: { twilioCallSid: callSid },
+    // ensure existing row at row.id is what gets updated; falls back to looking up by ID if SID empty.
+    fallbackById: row.id,
+  })
+  if (!patched.success) return patched
+
+  return { success: true, data: { voipCallId: row.id, twilioCallSid: callSid } }
+}
+
+/** Idempotent lifecycle update from Twilio status webhook. */
+export async function recordCallLifecycle(
+  ctx: ScopedContext,
+  args: {
+    twilioCallSid: string
+    status: 'queued' | 'initiated' | 'ringing' | 'answered' | 'completed' | 'no_answer' | 'failed'
+    answeredAt?: string
+    endedAt?: string
+    durationSeconds?: number
+  },
+): Promise<DalReturn<void>> {
+  const patch: Record<string, unknown> = { status: args.status }
+  if (args.answeredAt) patch.answeredAt = args.answeredAt
+  if (args.endedAt) patch.endedAt = args.endedAt
+  if (args.durationSeconds !== undefined) patch.durationSeconds = args.durationSeconds
+  const result = await upsertFromTwilioWebhook(ctx, { callSid: args.twilioCallSid, patch })
+  return result.success ? { success: true, data: undefined } : result
+}
+
+export async function setDisposition(
+  ctx: ScopedContext,
+  args: { voipCallId: string, disposition: VoipCallDisposition, note?: string },
+): Promise<DalReturn<void>> {
+  // Direct DAL update; future side effect (e.g., opt_out → DNC) handled by the disposition picker UI which
+  // routes 'opt_out' through voip-dnc.service. Service layer here is intentionally minimal.
+  // (Full side-effect-from-disposition logic lands in Phase 2 lifecycle service.)
+  const result = await upsertFromTwilioWebhook(ctx, {
+    callSid: '',                          // not used here; falls back to ID lookup
+    fallbackById: args.voipCallId,
+    patch: { disposition: args.disposition, dispositionNote: args.note ?? null },
+  })
+  return result.success ? { success: true, data: undefined } : result
+}
+```
+
+> **Note:** `createCall` is the export from `entities/voip-calls/dal/server/mutations.ts` (Task 12.5). Thin DAL wrapper around `db.insert(voipCalls).values(input).returning()` inside `dalDbOperation`.
+
+- [ ] **Step 22.2: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/services/voip/voip-calls.service.ts \
+  src/shared/entities/voip-calls/dal/server/mutations.ts
+git commit -m "feat(voip): add voip-calls service (placeAgentCall, recordCallLifecycle, setDisposition)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 23: `services/voip/voip-messages.service.ts`
+
+**Files:**
+- Create: `src/shared/services/voip/voip-messages.service.ts`
+
+- [ ] **Step 23.1: Create the service**
+
+```ts
+// src/shared/services/voip/voip-messages.service.ts
+import type { VoipMessageStatus } from '@/shared/constants/enums'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import env from '@/shared/config/server-env'
+import { findByTwilioMessageSid } from '@/shared/entities/voip-messages/dal/server/queries'
+import { createMessage } from '@/shared/entities/voip-messages/dal/server/mutations'
+import { updateStatusByTwilioSid } from '@/shared/entities/voip-messages/dal/server/mutations'
+import { findCustomerById, findCustomerByPhone } from '@/shared/entities/customers/dal/server/queries'
+import { sendSms } from '@/shared/services/providers/twilio/messaging'
+import { canOutboundTo } from './voip-compliance.service'
+import { getStickyDidForAgent } from './voip-dids.service'
+import { isOptOutKeyword, recordDnc } from './voip-dnc.service'
+
+export async function sendManualSms(
+  ctx: ScopedContext,
+  args: { customerId: string, body: string, agentUserId: string },
+): Promise<DalReturn<{ voipMessageId: string }>> {
+  const customerResult = await findCustomerById(ctx, args.customerId)
+  if (!customerResult.success) return customerResult
+  const customer = customerResult.data
+  if (!customer?.phone) {
+    return { success: false, error: { type: 'precondition-failed', reason: `Customer ${args.customerId} has no phone` } }
+  }
+
+  // Compliance — for SMS, calling-hours is NOT enforced (transactional sends can land any time).
+  const compliance = await canOutboundTo(ctx, { phoneE164: customer.phone, enforceHours: false })
+  if (!compliance.success) return compliance
+  if (!compliance.data.allowed) {
+    return { success: false, error: { type: 'precondition-failed', reason: `blocked: ${compliance.data.reason}` } }
+  }
+
+  const didResult = await getStickyDidForAgent(ctx, args.agentUserId)
+  if (!didResult.success) return didResult
+  const did = didResult.data
+
+  const { messageSid, status } = await sendSms({
+    fromE164: did.e164Number,
+    toE164: customer.phone,
+    body: args.body,
+    statusCallbackUrl: `${env.VOIP_WEBHOOK_BASE_URL}/api/webhooks/twilio`,
+  })
+
+  const created = await createMessage(ctx, {
+    source: 'in_house',
+    customerId: customer.id,
+    direction: 'outbound',
+    didUsed: did.e164Number,
+    remoteE164: customer.phone,
+    body: args.body,
+    status: status === 'sent' ? 'sent' : 'queued',
+    twilioMessageSid: messageSid,
+    agentUserId: args.agentUserId,
+    templateKey: 'manual',
+    sentAt: new Date().toISOString(),
+  })
+  if (!created.success) return created
+
+  return { success: true, data: { voipMessageId: created.data.id } }
+}
+
+/** Inbound SMS handler — triggered by Twilio messaging inbound webhook (Task 24). */
+export async function recordInboundMessage(
+  ctx: ScopedContext,
+  args: { fromE164: string, toE164: string, body: string, twilioMessageSid: string },
+): Promise<DalReturn<{ wasOptOut: boolean }>> {
+  // Find customer by phone (may be null — STOP from non-customer still gets DNC'd)
+  const customerResult = await findCustomerByPhone(ctx, args.fromE164)
+  if (!customerResult.success) return customerResult
+  const customer = customerResult.data
+
+  // Log the inbound (idempotent on twilio_message_sid)
+  const existing = await findByTwilioMessageSid(ctx, args.twilioMessageSid)
+  if (existing.success && existing.data) {
+    // already processed
+    return { success: true, data: { wasOptOut: false } }
+  }
+
+  await createMessage(ctx, {
+    source: 'in_house',
+    customerId: customer?.id ?? null,
+    direction: 'inbound',
+    didUsed: args.toE164,
+    remoteE164: args.fromE164,
+    body: args.body,
+    status: 'received',
+    twilioMessageSid: args.twilioMessageSid,
+    templateKey: null,
+  })
+
+  // STOP handling
+  if (isOptOutKeyword(args.body)) {
+    await recordDnc(ctx, {
+      phoneE164: args.fromE164,
+      source: 'twilio_stop',
+      reason: `Inbound STOP via Twilio: "${args.body.trim()}"`,
+    })
+    return { success: true, data: { wasOptOut: true } }
+  }
+
+  return { success: true, data: { wasOptOut: false } }
+}
+
+export async function recordMessageStatus(
+  ctx: ScopedContext,
+  args: { twilioMessageSid: string, status: VoipMessageStatus },
+): Promise<DalReturn<void>> {
+  const result = await updateStatusByTwilioSid(ctx, args)
+  return result.success ? { success: true, data: undefined } : result
+}
+```
+
+> **Note on customer DAL:** The existing `customers/dal/server/queries.ts` returns BARE values (not `DalReturn<T>`) — older pattern from before the migration. Phase 1 adds two NEW exports there that DO return `DalReturn<T>` so voip services compose cleanly:
+>
+> ```ts
+> // src/shared/entities/customers/dal/server/queries.ts (additions)
+> import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+> import { eq } from 'drizzle-orm'
+> import { db } from '@/shared/db'
+> import { customers } from '@/shared/db/schema'
+> import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+> import type { Customer } from '@/shared/entities/customers/types'
+>
+> export async function findCustomerById(ctx: ScopedContext, id: string): Promise<DalReturn<Customer | undefined>> {
+>   return dalDbOperation(async () => {
+>     const [row] = await db.select().from(customers).where(eq(customers.id, id)).limit(1)
+>     return row
+>   })
+> }
+>
+> export async function findCustomerByPhone(ctx: ScopedContext, phoneE164: string): Promise<DalReturn<Customer | undefined>> {
+>   return dalDbOperation(async () => {
+>     const [row] = await db.select().from(customers).where(eq(customers.phone, phoneE164)).limit(1)
+>     return row
+>   })
+> }
+> ```
+>
+> Keep the older `getCustomer(customerId, viewer)` etc. functions in place — they're consumed by un-migrated callers. The two new functions are pure additions, no migration risk.
+
+- [ ] **Step 23.2: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/services/voip/voip-messages.service.ts \
+  src/shared/entities/voip-messages/dal/server/mutations.ts \
+  src/shared/entities/customers/dal/server/queries.ts
+git commit -m "feat(voip): add voip-messages service (sendManualSms, recordInboundMessage, recordMessageStatus)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 24: `services/voip/voip-routing.service.ts` (voip routing endpoint backend)
+
+**Files:**
+- Create: `src/shared/services/voip/voip-routing.service.ts`
+
+> Backends the three voip routing endpoints (Task 26). Response shapes match [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md) exactly. Auth + the HTTP envelope is handled in the route file; this service is pure business logic.
+
+- [ ] **Step 24.1: Create the service**
+
+```ts
+// src/shared/services/voip/voip-routing.service.ts
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import { findCustomerByPhone } from '@/shared/entities/customers/dal/server/queries'
+import { canOutboundTo } from './voip-compliance.service'
+import { getTransferTargetDid } from './voip-dids.service'
+import { listAvailableTransferHumans } from './voip-user-availability.service'
+
+// Response shape per INTEGRATION-SEAM.md §1, table row 1.
+export type CallerLookupResponse =
+  | {
+    customer_id: string
+    first_name: string
+    last_name: string | null
+    pipeline_stage: string | null
+    last_interaction_at: string | null
+    language: string | null
+    open_project: { id: string, name: string } | null
+  }
+  | { customer_id: null }
+
+export async function lookupCallerContext(
+  ctx: ScopedContext,
+  args: { caller_e164: string },
+): Promise<DalReturn<CallerLookupResponse>> {
+  const result = await findCustomerByPhone(ctx, args.caller_e164)
+  if (!result.success) return result
+  if (!result.data) return { success: true, data: { customer_id: null } }
+
+  const c = result.data
+  return {
+    success: true,
+    data: {
+      customer_id: c.id,
+      first_name: c.firstName ?? c.name ?? '',
+      last_name: c.lastName ?? null,
+      pipeline_stage: c.pipeline ?? null,
+      last_interaction_at: c.lastInteractionAt ?? null,
+      language: c.preferredLanguage ?? null,
+      open_project: null,  // Phase 2 joins active project; Phase 1 = always null
+    },
+  }
+}
+
+// Response shape per INTEGRATION-SEAM.md §1, table row 2.
+export type TransferTargetResponse =
+  | {
+    target_e164: string
+    warm_intro: string
+    custom_parameters: {
+      dialer_attempt_id?: string
+      customer_id: string
+      trade?: string
+      location?: string
+    }
+  }
+  | { target_e164: null, reason: 'no_human_available' | 'no_transfer_target_configured' }
+
+export async function findTransferTarget(
+  ctx: ScopedContext,
+  args: { caller_e164: string, customer_id: string },
+): Promise<DalReturn<TransferTargetResponse>> {
+  // 1. Is anyone available?
+  const availableResult = await listAvailableTransferHumans(ctx)
+  if (!availableResult.success) return availableResult
+  if (availableResult.data.length === 0) {
+    return { success: true, data: { target_e164: null, reason: 'no_human_available' } }
+  }
+
+  // 2. Get the dedicated transfer-target DID (CloudTalk dials INTO this DID; CloudTalk Call Flow
+  //    bridges the customer's leg to this number, which routes via Twilio TwiML to whichever
+  //    softphone is registered.)
+  const didResult = await getTransferTargetDid(ctx)
+  if (!didResult.success) {
+    return { success: true, data: { target_e164: null, reason: 'no_transfer_target_configured' } }
+  }
+
+  // 3. Build warm-intro (≤25 words per INTEGRATION-SEAM.md §1)
+  const customerResult = await findCustomerByPhone(ctx, args.caller_e164)
+  const name = customerResult.success && customerResult.data?.name ? customerResult.data.name : 'Lead'
+  const warmIntro = `${name} on the line — interested in remodeling. Coming over now.`.slice(0, 150)
+
+  return {
+    success: true,
+    data: {
+      target_e164: didResult.data.e164Number,
+      warm_intro: warmIntro,
+      custom_parameters: {
+        customer_id: args.customer_id,
+      },
+    },
+  }
+}
+
+// Response shape per INTEGRATION-SEAM.md §1, table row 3.
+export async function complianceCheckForCampaign(
+  ctx: ScopedContext,
+  args: { customer_id: string, phone_e164: string },
+): Promise<DalReturn<{ allowed: true } | { allowed: false, reason: string }>> {
+  const result = await canOutboundTo(ctx, { phoneE164: args.phone_e164, enforceHours: false })
+  if (!result.success) return result
+  if (result.data.allowed) return { success: true, data: { allowed: true } }
+  return { success: true, data: { allowed: false, reason: result.data.reason } }
+}
+```
+
+- [ ] **Step 24.2: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/services/voip/voip-routing.service.ts
+git commit -m "feat(voip): add voip-routing service (voip routing endpoint backend per INTEGRATION-SEAM.md §1)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 25: `services/voip/voip-link-tokens.service.ts`
+
+**Files:**
+- Create: `src/shared/services/voip/voip-link-tokens.service.ts`
+
+- [ ] **Step 25.1: Create the service**
+
+```ts
+// src/shared/services/voip/voip-link-tokens.service.ts
+import { randomBytes } from 'node:crypto'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import env from '@/shared/config/server-env'
+import { findByToken } from '@/shared/entities/voip-link-tokens/dal/server/queries'
+import { createToken, markUsed } from '@/shared/entities/voip-link-tokens/dal/server/mutations'
+import {
+  voipLinkTokenPayloadSchema,
+  type VoipLinkTokenPayload,
+} from '@/shared/entities/voip-link-tokens/schemas/payload-schemas'
+
+const TTL_HOURS = 48
+
+function generateToken(): string {
+  return randomBytes(24).toString('base64url')   // ~32 URL-safe chars
+}
+
+export async function mintToken(
+  ctx: ScopedContext,
+  args: {
+    customerId: string
+    phoneE164: string
+    payload: VoipLinkTokenPayload
+    createdByUserId: string
+  },
+): Promise<DalReturn<{ token: string, url: string, expiresAt: string }>> {
+  // Validate payload shape (defense in depth — caller should already have validated)
+  voipLinkTokenPayloadSchema.parse(args.payload)
+
+  const token = generateToken()
+  const expiresAt = new Date(Date.now() + TTL_HOURS * 60 * 60 * 1000).toISOString()
+
+  const result = await createToken(ctx, {
+    token,
+    type: args.payload.type,
+    customerId: args.customerId,
+    phoneE164: args.phoneE164,
+    expiresAt,
+    payloadJson: args.payload,
+    createdByUserId: args.createdByUserId,
+  })
+  if (!result.success) return result
+
+  const url = `${env.VOIP_WEBHOOK_BASE_URL}/api/voip/links/${token}`
+  return { success: true, data: { token, url, expiresAt } }
+}
+
+export type ConsumeTokenResult =
+  | { kind: 'ok', token: { type: string, payload: VoipLinkTokenPayload, customerId: string | null } }
+  | { kind: 'expired' }
+  | { kind: 'already_used' }
+  | { kind: 'not_found' }
+
+/** Validates and consumes a token. Single-use; concurrent attempts race-safely yield 'already_used' for losers. */
+export async function consumeToken(
+  ctx: ScopedContext,
+  token: string,
+): Promise<DalReturn<ConsumeTokenResult>> {
+  const found = await findByToken(ctx, token)
+  if (!found.success) return found
+  if (!found.data) return { success: true, data: { kind: 'not_found' } }
+
+  if (new Date(found.data.expiresAt).getTime() < Date.now()) {
+    return { success: true, data: { kind: 'expired' } }
+  }
+  if (found.data.usedAt) {
+    return { success: true, data: { kind: 'already_used' } }
+  }
+
+  const marked = await markUsed(ctx, token)
+  if (!marked.success) return marked
+  if (!marked.data) {
+    // Race condition lost — another consumer won.
+    return { success: true, data: { kind: 'already_used' } }
+  }
+
+  return {
+    success: true,
+    data: {
+      kind: 'ok',
+      token: {
+        type: marked.data.type,
+        payload: marked.data.payloadJson as VoipLinkTokenPayload,
+        customerId: marked.data.customerId,
+      },
+    },
+  }
+}
+```
+
+- [ ] **Step 25.2: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/shared/services/voip/voip-link-tokens.service.ts \
+  src/shared/entities/voip-link-tokens/dal/
+git commit -m "feat(voip): add voip-link-tokens service (mint + consume; 48h TTL, single-use, race-safe)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 26: Twilio async webhook handler (ONE route) + softphone access-token
+
+**Files:**
+- Create: `src/app/api/voip/softphone/access-token/route.ts` — browser-facing JWT (outside `/webhooks/` and `/voip/routing/` — browser-initiated)
+- Create: `src/app/api/webhooks/twilio/route.ts` — ONE route for ALL Twilio async status callbacks (voice status + recording status + messaging status)
+
+> **Convention:** per [`webhook-routes.md`](../../codebase-conventions/webhook-routes.md) Rule 1 + Rule 2, every external provider gets ONE async webhook route handler. The route handler IS the orchestrator — verify signature → switch on payload discriminant → call into the underlying service. NO per-event sub-routes. NO wrapper service. Twilio sends three status-callback flavors that share the same URL; each carries a unique discriminator field: voice status (`CallStatus`), recording status (`RecordingStatus`), messaging status (`MessageStatus`). Twilio expects 200 ack — no TwiML body. Inbound voice / inbound SMS (which DO expect TwiML response bodies) are SYNC and live under `/api/voip/twiml/*` in **Task 27**.
+
+> Routes are **THIN** — verify signature, parse, dispatch. Per Rule 4: 200 OK always once signature + envelope are valid, even if a downstream service call throws (`console.error` + persist later in `voip_webhook_errors`; no retry storm).
+
+- [ ] **Step 26.1: `access-token/route.ts` — GET, returns JWT for browser softphone**
+
+```ts
+// src/app/api/voip/softphone/access-token/route.ts
+import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import { auth } from '@/shared/domains/auth/server'
+import { mintSoftphoneAccessToken } from '@/shared/services/providers/twilio/voice'
+
+export async function GET() {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+
+  const token = mintSoftphoneAccessToken({ userId: session.user.id })
+  return NextResponse.json(token, { headers: { 'Cache-Control': 'no-store' } })
+}
+```
+
+- [ ] **Step 26.2: `webhooks/twilio/route.ts` — single async handler with payload-discriminant dispatch**
+
+```ts
+// src/app/api/webhooks/twilio/route.ts
+import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { validateTwilioSignature } from '@/shared/services/providers/twilio'
+import {
+  twilioMessageStatusMap,
+  twilioVoiceStatusMap,
+  WEBHOOK_SIGNATURE_HEADER,
+} from '@/shared/services/providers/twilio/constants'
+import {
+  messagingStatusPayloadSchema,
+  voiceRecordingPayloadSchema,
+  voiceStatusPayloadSchema,
+} from '@/shared/services/providers/twilio/webhooks/types'
+import { upsertFromTwilioWebhook } from '@/shared/entities/voip-calls/dal/server/mutations'
+import { recordCallLifecycle } from '@/shared/services/voip/voip-calls.service'
+import { recordMessageStatus } from '@/shared/services/voip/voip-messages.service'
+
+/**
+ * Single Twilio async webhook handler.
+ *
+ * Twilio doesn't send an `event_type` field, but each status flavor has a
+ * distinct discriminator key in the form-encoded body:
+ *   - recording status: `RecordingStatus` present (also carries CallSid — check FIRST)
+ *   - messaging status: `MessageStatus` present
+ *   - voice status:     `CallStatus` present
+ *
+ * All three callback fields in the Twilio Console (voice status, recording
+ * status, message status) point to this same URL. Twilio sends 200-ack-only;
+ * no TwiML in response.
+ */
+export async function POST(req: Request) {
+  const url = req.url
+  const formData = await req.formData()
+  const params: Record<string, string> = {}
+  formData.forEach((v, k) => { params[k] = String(v) })
+
+  const signature = (await headers()).get(WEBHOOK_SIGNATURE_HEADER)
+  if (!validateTwilioSignature({ signature, url, params })) {
+    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
+  }
+
+  try {
+    // Recording status — check first because recording payloads also carry CallSid.
+    if (params.RecordingStatus) {
+      const parsed = voiceRecordingPayloadSchema.safeParse(params)
+      if (!parsed.success) return NextResponse.json({ ok: true })
+      await upsertFromTwilioWebhook(SYSTEM_CONTEXT, {
+        callSid: parsed.data.CallSid,
+        patch: {
+          recordingUrl: parsed.data.RecordingUrl,
+          recordingDurationSeconds: parsed.data.RecordingDuration
+            ? parseInt(parsed.data.RecordingDuration, 10)
+            : null,
+        },
+      })
+      return NextResponse.json({ ok: true })
+    }
+
+    // Messaging status
+    if (params.MessageStatus) {
+      const parsed = messagingStatusPayloadSchema.safeParse(params)
+      if (!parsed.success) return NextResponse.json({ ok: true })
+      const internalStatus = twilioMessageStatusMap[parsed.data.MessageStatus]
+      if (!internalStatus) return NextResponse.json({ ok: true })
+      await recordMessageStatus(SYSTEM_CONTEXT, {
+        twilioMessageSid: parsed.data.MessageSid,
+        status: internalStatus,
+      })
+      return NextResponse.json({ ok: true })
+    }
+
+    // Voice status
+    if (params.CallStatus) {
+      const parsed = voiceStatusPayloadSchema.safeParse(params)
+      if (!parsed.success) return NextResponse.json({ ok: true })
+      const internalStatus = twilioVoiceStatusMap[parsed.data.CallStatus]
+      if (!internalStatus) return NextResponse.json({ ok: true })
+
+      const args: Parameters<typeof recordCallLifecycle>[1] = {
+        twilioCallSid: parsed.data.CallSid,
+        status: internalStatus,
+      }
+      if (internalStatus === 'answered') args.answeredAt = new Date().toISOString()
+      if (internalStatus === 'completed' || internalStatus === 'no_answer' || internalStatus === 'failed') {
+        args.endedAt = new Date().toISOString()
+        if (parsed.data.CallDuration) args.durationSeconds = parseInt(parsed.data.CallDuration, 10)
+      }
+      const result = await recordCallLifecycle(SYSTEM_CONTEXT, args)
+      if (!result.success) {
+        // eslint-disable-next-line no-console
+        console.error('[twilio webhook] voice status DAL error', result.error)
+      }
+      return NextResponse.json({ ok: true })
+    }
+
+    // Unrecognized — log + 200 per Rule 4
+    // eslint-disable-next-line no-console
+    console.warn('[twilio webhook] unrecognized payload (no CallStatus/RecordingStatus/MessageStatus)', { keys: Object.keys(params) })
+    return NextResponse.json({ ok: true })
+  }
+  catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[twilio webhook] handler threw — returning 200 to avoid retry storm', err)
+    return NextResponse.json({ ok: true })
+  }
+}
+```
+
+> `validateTwilioSignature` is provider-shape-agnostic (validates against URL + params; voice + messaging share the same signing algorithm). Export from the provider barrel (`providers/twilio/index.ts` or per-capability — pick whichever already exists in Task 20's scaffold).
+
+- [ ] **Step 26.3: Point service-layer `statusCallbackUrl` values at the single endpoint**
+
+In `services/voip/voip-calls.service.ts` (Task 22) `placeAgentCall` → `placeCall(...)` args:
+- `statusCallbackUrl: \`${baseUrl}/api/webhooks/twilio\``
+- `recordingStatusCallbackUrl: \`${baseUrl}/api/webhooks/twilio\``
+
+In `services/voip/voip-messages.service.ts` (Task 23) `sendManualSms` → `sendSms(...)` args:
+- `statusCallbackUrl: \`${env.VOIP_WEBHOOK_BASE_URL}/api/webhooks/twilio\``
+
+(Same URL for all three; the route handler discriminates internally on the payload.)
+
+- [ ] **Step 26.4: Configure Twilio Console**
+
+In Twilio Console — all three async callback fields point to the SAME URL:
+- Each in-house DID → **Voice → Status callback URL** → `https://voip.triprosremodeling.com/api/webhooks/twilio`
+- Each in-house DID → **Voice → Recording status callback URL** → `https://voip.triprosremodeling.com/api/webhooks/twilio`
+- Each in-house DID → **Messaging → Status callback URL** → `https://voip.triprosremodeling.com/api/webhooks/twilio`
+
+Inbound webhooks (Voice URL on the TwiML App SID + Messaging URL on each DID) are SYNC and configured in **Task 27** under `/api/voip/twiml/*`.
+
+Document the dashboard config in `docs/plans/voip-in-house/twilio-console-config.md` (committed reference).
+
+- [ ] **Step 26.5: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/app/api/webhooks/twilio/ src/app/api/voip/softphone/ docs/plans/voip-in-house/twilio-console-config.md
+git commit -m "feat(twilio): add single async webhook handler + softphone access-token
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 27: Twilio inbound TwiML handlers (sync namespace)
+
+**Files:**
+- Create: `src/app/api/voip/twiml/voice-inbound/route.ts` — Phase 1 placeholder voicemail TwiML; Phase 3 IVR replaces it
+- Create: `src/app/api/voip/twiml/messaging-inbound/route.ts` — inbound SMS handler (STOP detection + record-inbound + TCPA auto-confirm)
+
+> **Convention:** these endpoints are SYNC request-response — Twilio expects a TwiML XML response body inline. Per [`webhook-routes.md`](../../codebase-conventions/webhook-routes.md) Rule 5, sync endpoints live OUTSIDE `/api/webhooks/` because their semantics are "return business data the caller needs to continue" (TwiML instructions = business data). Namespace: `/api/voip/twiml/*`. Async status callbacks (e.g., the message-status SID lifecycle) are NOT here — they're folded into the single Twilio webhook handler in **Task 26**.
+
+> **Blocked by:** 10DLC Campaign approval for SMS-send verification (Task 36). Routes themselves can land + lint clean before approval. Inbound STOP works even without an approved campaign (Twilio accepts inbound regardless).
+
+- [ ] **Step 27.1: `voice-inbound/route.ts` — Phase 1 placeholder TwiML**
+
+```ts
+// src/app/api/voip/twiml/voice-inbound/route.ts
+import { headers } from 'next/headers'
+import { validateTwilioSignature } from '@/shared/services/providers/twilio'
+import { WEBHOOK_SIGNATURE_HEADER } from '@/shared/services/providers/twilio/constants'
+
+/**
+ * Phase 1: placeholder TwiML — "Thanks for calling, please leave a message."
+ * Twilio expects an XML response body inline. Phase 3 replaces this with the
+ * real IVR (route to live agent / take voicemail / handle after-hours).
+ */
+export async function POST(req: Request) {
+  const url = req.url
+  const formData = await req.formData()
+  const params: Record<string, string> = {}
+  formData.forEach((v, k) => { params[k] = String(v) })
+
+  const signature = (await headers()).get(WEBHOOK_SIGNATURE_HEADER)
+  if (!validateTwilioSignature({ signature, url, params })) {
+    return new Response('Unauthorized', { status: 403 })
+  }
+
+  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="alice">Thanks for calling Tri Pros Remodeling. We can't take your call right now. Please leave a message after the tone, and we will get back to you.</Say>
+  <Record maxLength="180" playBeep="true" trim="trim-silence" />
+  <Hangup />
+</Response>`
+
+  return new Response(twiml, { headers: { 'Content-Type': 'text/xml; charset=utf-8' } })
+}
+```
+
+- [ ] **Step 27.2: `messaging-inbound/route.ts` — inbound SMS + TCPA STOP auto-confirm**
+
+```ts
+// src/app/api/voip/twiml/messaging-inbound/route.ts
+import { headers } from 'next/headers'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { sendSms, validateTwilioSignature } from '@/shared/services/providers/twilio'
+import { WEBHOOK_SIGNATURE_HEADER } from '@/shared/services/providers/twilio/constants'
+import { messagingInboundPayloadSchema } from '@/shared/services/providers/twilio/webhooks/types'
+import { recordInboundMessage } from '@/shared/services/voip/voip-messages.service'
+import env from '@/shared/config/server-env'
+
+const OPT_OUT_CONFIRM_BODY = 'You have been unsubscribed from Tri Pros Remodeling. You will not receive further calls or messages.'
+const EMPTY_TWIML = `<?xml version="1.0" encoding="UTF-8"?><Response/>`
+
+/**
+ * Inbound SMS handler. Twilio POSTs the inbound payload and expects a TwiML
+ * response inline. We respond with empty TwiML (no auto-reply via TwiML
+ * body) and send the TCPA-mandatory STOP confirmation as a separate
+ * outbound SMS via the messaging provider — keeps the auto-confirm in the
+ * normal SMS pipeline so it goes through compliance + DID-aware send.
+ *
+ * The STOP-keyword detection happens INSIDE `recordInboundMessage`, which
+ * routes opt-out bodies to `voip_dnc` and returns `wasOptOut: true`.
+ */
+export async function POST(req: Request) {
+  const url = req.url
+  const formData = await req.formData()
+  const params: Record<string, string> = {}
+  formData.forEach((v, k) => { params[k] = String(v) })
+
+  const signature = (await headers()).get(WEBHOOK_SIGNATURE_HEADER)
+  if (!validateTwilioSignature({ signature, url, params })) {
+    return new Response('Unauthorized', { status: 403 })
+  }
+
+  const parsed = messagingInboundPayloadSchema.safeParse(params)
+  if (!parsed.success) {
+    return new Response(EMPTY_TWIML, { headers: { 'Content-Type': 'text/xml; charset=utf-8' } })
+  }
+
+  const result = await recordInboundMessage(SYSTEM_CONTEXT, {
+    fromE164: parsed.data.From,
+    toE164: parsed.data.To,
+    body: parsed.data.Body,
+    twilioMessageSid: parsed.data.MessageSid,
+  })
+  if (!result.success) {
+    // eslint-disable-next-line no-console
+    console.error('[twiml/messaging-inbound] error', result.error)
+    return new Response(EMPTY_TWIML, { headers: { 'Content-Type': 'text/xml; charset=utf-8' } })
+  }
+
+  // TCPA-mandatory auto-confirm for STOP (sent as a separate outbound, not via TwiML body).
+  if (result.data.wasOptOut) {
+    await sendSms({
+      fromE164: parsed.data.To,  // reply from the DID the customer texted
+      toE164: parsed.data.From,
+      body: OPT_OUT_CONFIRM_BODY,
+      statusCallbackUrl: `${env.VOIP_WEBHOOK_BASE_URL}/api/webhooks/twilio`,
+    })
+  }
+
+  return new Response(EMPTY_TWIML, { headers: { 'Content-Type': 'text/xml; charset=utf-8' } })
+}
+```
+
+- [ ] **Step 27.3: Configure Twilio Console**
+
+For inbound voice + messaging (sync TwiML endpoints):
+- **TwiML App SID → Voice → A CALL COMES IN** → `https://voip.triprosremodeling.com/api/voip/twiml/voice-inbound` (replaces the temporary inline TwiML used during Phase 0 / earlier Phase 1 work)
+- Each in-house DID → **Messaging → A MESSAGE COMES IN** → `https://voip.triprosremodeling.com/api/voip/twiml/messaging-inbound`
+
+(Async status callbacks — voice status, recording status, message status — point to the SINGLE async endpoint configured in Task 26, NOT here.)
+
+Add to `twilio-console-config.md`.
+
+- [ ] **Step 27.4: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/app/api/voip/twiml/
+git commit -m "feat(twilio): add inbound TwiML handlers (voice placeholder + messaging STOP)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 28: VoIP routing endpoints — replace Phase 0 mocks with real impls
+
+**Files:**
+- Create: `src/shared/services/providers/cloudtalk/lib/verify-webhook-secret.ts`
+- **Replace** Phase 0 mock body in: `src/app/api/voip/routing/caller-lookup/route.ts`
+- **Replace** Phase 0 mock body in: `src/app/api/voip/routing/transfer-target/route.ts`
+- **Replace** Phase 0 mock body in: `src/app/api/voip/routing/compliance-check/route.ts`
+
+> **State at task start:** the 3 route files already exist as Phase 0 scaffolds (mocked impls created by voip-campaigns Phase 0 for CloudTalk smoke testing). This task swaps the mock body with the real implementation that calls `voip-routing.service.ts` (Task 24) + verifies the shared secret. **Do not create the files anew — replace the function body.** Path is correct already per [`webhook-routes.md`](../../codebase-conventions/webhook-routes.md) Rule 5 (sync request-response under `/api/voip/routing/`, NOT under `/api/webhooks/`).
+
+> **Provider directory seeding:** This EPIC creates `providers/cloudtalk/` with just `lib/verify-webhook-secret.ts` — the small pure helper that route handlers need to validate inbound CloudTalk traffic. The rest of the CloudTalk provider (`client.ts`, `types.ts`, capability files like `calls.ts` / `sms.ts` / `campaigns.ts`) is voip-campaigns Phase 1 territory. Shape mirrors `providers/notion/` and `providers/zoho-sign/` (each has `client.ts` + `lib/` + `constants/` + `types.ts`).
+
+> **Authoritative contract:** [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md). CloudTalk's Call Flow Designer is configured (in voip-campaigns Phase 0) to fire these mid-call. Each endpoint is auth'd via shared-secret query param (`?secret=<CLOUDTALK_WEBHOOK_SECRET>`) + future IP allowlist (deferred to Phase 4). The SAME `CLOUDTALK_WEBHOOK_SECRET` env var is reused by voip-campaigns Phase 1's post-call webhook handler at `src/app/api/webhooks/cloudtalk/route.ts` — one secret protects both inbound surfaces. Response shapes MUST match the seam doc exactly — drift breaks CloudTalk's Call Flow.
+
+- [ ] **Step 28.1: CloudTalk provider — webhook secret verifier**
+
+Lives in the cloudtalk provider tree (mirrors how `providers/twilio/voice.ts` houses `validateVoiceSignature`). This file is the **seed of `providers/cloudtalk/`** — voip-campaigns Phase 1 adds the rest of the provider (client, types, capability files) alongside it.
+
+```ts
+// src/shared/services/providers/cloudtalk/lib/verify-webhook-secret.ts
+import { timingSafeEqual } from 'node:crypto'
+import env from '@/shared/config/server-env'
+
+/**
+ * Verifies the shared secret CloudTalk passes on inbound traffic to our subdomain.
+ * Used for BOTH surfaces:
+ *   - Mid-call routing endpoints (`/api/voip/routing/*`) — voip-in-house Phase 1 (sync, real impl)
+ *   - Post-call webhook handler (`/api/webhooks/cloudtalk/route.ts`) — voip-campaigns Phase 1 (async event handler)
+ * Both surfaces are CloudTalk → us with the same trust model; one secret value, configured
+ * once into CloudTalk's Call Flow Designer + Webhook dashboard during voip-campaigns Phase 0.
+ */
+export function verifyCloudtalkWebhookSecret(url: string): boolean {
+  try {
+    const u = new URL(url)
+    const provided = u.searchParams.get('secret') ?? ''
+    if (!provided) return false
+    const expected = env.CLOUDTALK_WEBHOOK_SECRET
+    // timing-safe compare requires equal-length buffers; pad both sides + length-check separately.
+    const len = Math.max(provided.length, expected.length)
+    return timingSafeEqual(
+      Buffer.from(provided.padEnd(len, '\0')),
+      Buffer.from(expected.padEnd(len, '\0')),
+    ) && provided.length === expected.length
+  }
+  catch {
+    return false
+  }
+}
+```
+
+- [ ] **Step 28.2: `caller-lookup/route.ts`**
+
+```ts
+// src/app/api/voip/routing/caller-lookup/route.ts
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { lookupCallerContext } from '@/shared/services/voip/voip-routing.service'
+import { verifyCloudtalkWebhookSecret } from '@/shared/services/providers/cloudtalk/lib/verify-webhook-secret'
+
+const bodySchema = z.object({
+  caller_e164: z.string().regex(/^\+[1-9]\d{6,14}$/),
+})
+
+export async function POST(req: Request) {
+  if (!verifyCloudtalkWebhookSecret(req.url)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 403 })
+  }
+  const body = await req.json().catch(() => ({}))
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ customer_id: null }, { status: 200 })  // soft-fail per seam fallback contract
+  }
+
+  const result = await lookupCallerContext(SYSTEM_CONTEXT, parsed.data)
+  if (!result.success) {
+    // soft-fail: CloudTalk falls back to generic greeting per dashboard config
+    return NextResponse.json({ customer_id: null }, { status: 200 })
+  }
+  return NextResponse.json(result.data)
+}
+```
+
+- [ ] **Step 28.3: `transfer-target/route.ts`**
+
+```ts
+// src/app/api/voip/routing/transfer-target/route.ts
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { findTransferTarget } from '@/shared/services/voip/voip-routing.service'
+import { verifyCloudtalkWebhookSecret } from '@/shared/services/providers/cloudtalk/lib/verify-webhook-secret'
+
+const bodySchema = z.object({
+  caller_e164: z.string().regex(/^\+[1-9]\d{6,14}$/),
+  customer_id: z.string().uuid(),
+})
+
+export async function POST(req: Request) {
+  if (!verifyCloudtalkWebhookSecret(req.url)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 403 })
+  }
+  const body = await req.json().catch(() => ({}))
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ target_e164: null, reason: 'no_human_available' }, { status: 200 })
+  }
+
+  const result = await findTransferTarget(SYSTEM_CONTEXT, parsed.data)
+  if (!result.success) {
+    return NextResponse.json({ target_e164: null, reason: 'no_human_available' }, { status: 200 })
+  }
+  return NextResponse.json(result.data)
+}
+```
+
+- [ ] **Step 28.4: `compliance-check/route.ts`**
+
+```ts
+// src/app/api/voip/routing/compliance-check/route.ts
+import { NextResponse } from 'next/server'
+import { z } from 'zod'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { complianceCheckForCampaign } from '@/shared/services/voip/voip-routing.service'
+import { verifyCloudtalkWebhookSecret } from '@/shared/services/providers/cloudtalk/lib/verify-webhook-secret'
+
+const bodySchema = z.object({
+  customer_id: z.string().uuid(),
+  phone_e164: z.string().regex(/^\+[1-9]\d{6,14}$/),
+})
+
+export async function POST(req: Request) {
+  if (!verifyCloudtalkWebhookSecret(req.url)) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 403 })
+  }
+  const body = await req.json().catch(() => ({}))
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    // Soft-fail to allowed per seam §1 row 3 — app-side gate is canonical, this is defense-in-depth.
+    return NextResponse.json({ allowed: true })
+  }
+
+  const result = await complianceCheckForCampaign(SYSTEM_CONTEXT, parsed.data)
+  if (!result.success) return NextResponse.json({ allowed: true })  // soft-fail
+  return NextResponse.json(result.data)
+}
+```
+
+- [ ] **Step 28.5: Document the URLs for voip-campaigns Phase 0**
+
+Append to `docs/plans/voip-in-house/twilio-console-config.md` (or create a dedicated `voip-routing-endpoints.md`):
+
+```markdown
+## voip routing endpoints (consumed by CloudTalk Call Flow Designer)
+
+| Endpoint | URL | Method | Auth | Response on error |
+|---|---|---|---|---|
+| caller-lookup    | `https://voip.triprosremodeling.com/api/voip/routing/caller-lookup?secret=$CLOUDTALK_WEBHOOK_SECRET`    | POST | shared-secret query param | `{customer_id: null}` (soft-fail) |
+| transfer-target  | `https://voip.triprosremodeling.com/api/voip/routing/transfer-target?secret=$CLOUDTALK_WEBHOOK_SECRET`  | POST | shared-secret query param | `{target_e164: null, reason: 'no_human_available'}` |
+| compliance-check | `https://voip.triprosremodeling.com/api/voip/routing/compliance-check?secret=$CLOUDTALK_WEBHOOK_SECRET` | POST | shared-secret query param | `{allowed: true}` (soft-fail; app-side gate is canonical) |
+
+CloudTalk Call Flow Designer must configure FALLBACK BRANCHES per INTEGRATION-SEAM.md §1 for every HTTP Request that calls these endpoints.
+```
+
+- [ ] **Step 28.6: Verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add src/app/api/voip/routing/ docs/plans/voip-in-house/
+git commit -m "feat(voip): replace mocked voip routing endpoints with real impls (caller-lookup, transfer-target, compliance-check)
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 29: Tokenized-link consume route
+
+**Files:**
+- Create: `src/app/api/voip/links/[token]/route.ts`
+- Create: `src/app/(frontend)/d/upload/[slot]/page.tsx` — Phase 1 stub L-DOC landing page
+
+- [ ] **Step 29.1: `route.ts` — validate + redirect**
+
+```ts
+// src/app/api/voip/links/[token]/route.ts
+import { NextResponse } from 'next/server'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { consumeToken } from '@/shared/services/voip/voip-link-tokens.service'
+
+export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
+  const result = await consumeToken(SYSTEM_CONTEXT, token)
+  if (!result.success) {
+    return NextResponse.json({ error: 'internal' }, { status: 500 })
+  }
+  switch (result.data.kind) {
+    case 'ok': {
+      // Route by token type
+      const t = result.data.token
+      if (t.type === 'l_doc') {
+        const payload = t.payload as { type: 'l_doc', uploadSlotId: string }
+        return NextResponse.redirect(new URL(`/d/upload/${payload.uploadSlotId}`, _req.url), 302)
+      }
+      // Future types fall here; for Phase 1, return a generic ack
+      return NextResponse.json({ ok: true, type: t.type })
+    }
+    case 'expired':
+      return NextResponse.json({ error: 'expired' }, { status: 410 })
+    case 'already_used':
+      return NextResponse.json({ error: 'already_used' }, { status: 410 })
+    case 'not_found':
+      return NextResponse.json({ error: 'not_found' }, { status: 404 })
+  }
+}
+```
+
+- [ ] **Step 29.2: `/d/upload/[slot]/page.tsx` — Phase 1 stub**
+
+```tsx
+// src/app/(frontend)/d/upload/[slot]/page.tsx
+interface PageProps { params: Promise<{ slot: string }> }
+
+export default async function UploadStubPage({ params }: PageProps) {
+  const { slot } = await params
+  return (
+    <main className="mx-auto max-w-md p-6 text-center">
+      <h1 className="text-xl font-semibold">Upload landing — Phase 2</h1>
+      <p className="mt-3 text-sm text-muted-foreground">
+        Your document upload link (slot <code>{slot}</code>) is validated. The full upload UI ships in voip-in-house Phase 2.
+      </p>
+      <p className="mt-6 text-xs text-muted-foreground">
+        If you reached this page in error, please reply to the message you received from Tri Pros Remodeling.
+      </p>
+    </main>
   )
 }
 ```
 
-- [ ] **Step 31.2: Access-token endpoint (returns JWT for browser SDK)**
+> Phase 2 replaces this stub with a real upload UI (R2 multipart, file preview, allowed types). The L-DOC plumbing (mint → SMS-send → validate → consume) is what Phase 1 ships and verifies.
 
-```ts
-// app/api/voip/twilio/access-token/route.ts
-import { NextResponse } from 'next/server'
-import { auth } from '@/shared/auth'  // existing better-auth helper; verify exact import path
-import { getVoipProvider } from '@/services/voip/voip-provider.factory'
-
-export async function GET() {
-  const session = await auth.api.getSession({ headers: await import('next/headers').then(m => m.headers()) })
-  if (!session?.user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-
-  const voip = getVoipProvider()
-  const token = await voip.softphoneToken(session.user.id)
-  return NextResponse.json(token)
-}
-```
-
-> If the existing auth import path differs, adapt to match (search codebase for current `auth.api.getSession` usage).
-
-- [ ] **Step 31.3: Status callback (call lifecycle)**
-
-```ts
-// app/api/voip/twilio/status/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { verifyTwilioSignature } from '@/services/voip/twilio-signature-verify'
-import { findDialerAttemptByTwilioSid } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-import { updateDialerAttempt } from '@/shared/entities/dialer-attempts/dal/server/update'
-
-export async function POST(req: Request) {
-  const url = req.url
-  const formData = await req.formData()
-  const params: Record<string, string> = {}
-  formData.forEach((v, k) => { params[k] = String(v) })
-
-  const signature = (await headers()).get('x-twilio-signature')
-  if (!verifyTwilioSignature({ signature, url, params })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const callSid = params.CallSid
-  const callStatus = params.CallStatus
-  if (!callSid || !callStatus) return NextResponse.json({ ok: true })
-
-  // Idempotent: look up by twilio_call_sid; missing rows are logged + dropped
-  const attempt = await findDialerAttemptByTwilioSid(callSid)
-  if (!attempt) {
-    console.warn(`[twilio/status] No dialer_attempt for CallSid ${callSid}`)
-    return NextResponse.json({ ok: true })
-  }
-
-  const patch: Record<string, unknown> = {}
-  if (callStatus === 'answered' || callStatus === 'in-progress') {
-    if (!attempt.answeredAt) patch.answeredAt = new Date().toISOString()
-  }
-  if (callStatus === 'completed') {
-    patch.endedAt = new Date().toISOString()
-    if (params.CallDuration) patch.durationSeconds = parseInt(params.CallDuration, 10)
-  }
-  if (callStatus === 'no-answer' || callStatus === 'busy' || callStatus === 'failed') {
-    patch.endedAt = new Date().toISOString()
-    patch.status = 'no_answer'
-  }
-
-  if (Object.keys(patch).length > 0) {
-    await updateDialerAttempt(attempt.id, patch as never)
-  }
-
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 31.4: Recording callback**
-
-```ts
-// app/api/voip/twilio/recording/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { verifyTwilioSignature } from '@/services/voip/twilio-signature-verify'
-import { findDialerAttemptByTwilioSid } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-import { updateDialerAttempt } from '@/shared/entities/dialer-attempts/dal/server/update'
-
-export async function POST(req: Request) {
-  const url = req.url
-  const formData = await req.formData()
-  const params: Record<string, string> = {}
-  formData.forEach((v, k) => { params[k] = String(v) })
-
-  const signature = (await headers()).get('x-twilio-signature')
-  if (!verifyTwilioSignature({ signature, url, params })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const callSid = params.CallSid
-  const recordingUrl = params.RecordingUrl
-  const recordingDuration = params.RecordingDuration
-
-  if (!callSid || !recordingUrl) return NextResponse.json({ ok: true })
-
-  const attempt = await findDialerAttemptByTwilioSid(callSid)
-  if (!attempt) return NextResponse.json({ ok: true })
-
-  await updateDialerAttempt(attempt.id, {
-    recordingUrl,
-    recordingDurationSeconds: recordingDuration ? parseInt(recordingDuration, 10) : null,
-  } as never)
-
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 31.5: Verify + commit**
+- [ ] **Step 29.3: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/app/api/voip/ src/services/voip/twilio-signature-verify.ts
-git commit -m "feat(dialer): add Twilio voice webhooks (access-token, status, recording)
+git add src/app/api/voip/links/ src/app/\(frontend\)/d/
+git commit -m "feat(voip): add tokenized-link consume route + L-DOC Phase-1 stub page
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 32: Webhook routes — Retell mid-call functions + call-completed
+### Task 30: tRPC routers — wire each entity via `createEntityRouter` + business sub-routers
 
 **Files:**
-- Create: `src/services/ai-voice/retell-signature-verify.ts`
-- Create: `src/app/api/dialer/ai/lead-context/route.ts`
-- Create: `src/app/api/dialer/ai/route-transfer/route.ts`
-- Create: `src/app/api/dialer/ai/log-disposition/route.ts`
-- Create: `src/app/api/dialer/ai/call-completed/route.ts`
+- Create: `src/trpc/routers/voip-calls.router/index.ts` (imports spec from `entities/voip-calls/lib/server-spec.ts`, Task 12)
+- Create: `src/trpc/routers/voip-messages.router/index.ts`
+- Create: `src/trpc/routers/voip-dids.router/index.ts`
+- Create: `src/trpc/routers/voip-dnc.router/index.ts`
+- Create: `src/trpc/routers/voip-link-tokens.router.ts`
+- Create: `src/trpc/routers/voip-user-availability.router.ts`
+- Create: `src/trpc/routers/app-settings.router.ts`
+- Modify: `src/trpc/routers/app.ts` — register all 7 routers
 
-- [ ] **Step 32.1: Retell signature verifier**
+> Use the entity-factory pattern from [`src/trpc/DOCS.md`](../../../src/trpc/DOCS.md). Read [`src/trpc/routers/proposals.router/index.ts`](../../../src/trpc/routers/proposals.router/index.ts) for the canonical wire-up before writing.
 
-```ts
-// services/ai-voice/retell-signature-verify.ts
-import { createHmac, timingSafeEqual } from 'node:crypto'
-
-/**
- * Retell uses HMAC-SHA256 signed webhook payloads (header: `x-retell-signature`).
- * See https://docs.retellai.com/features/webhook-overview for current details.
- */
-export function verifyRetellSignature(args: {
-  signature: string | null
-  body: string
-}): boolean {
-  if (!args.signature) return false
-  const secret = process.env.RETELL_API_KEY!  // retell webhook uses the API key as signing secret per docs
-  const expected = createHmac('sha256', secret).update(args.body).digest('hex')
-  try {
-    return timingSafeEqual(Buffer.from(args.signature, 'hex'), Buffer.from(expected, 'hex'))
-  } catch {
-    return false
-  }
-}
-```
-
-- [ ] **Step 32.2: /lead-context — mid-call function returning lead profile**
+- [ ] **Step 30.1: `voip-calls.router/index.ts`**
 
 ```ts
-// app/api/dialer/ai/lead-context/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { customers, leadSourcesTable } from '@/shared/db/schema'
-import { verifyRetellSignature } from '@/services/ai-voice/retell-signature-verify'
-import { findDialerAttemptByRetellId } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-
-export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = (await headers()).get('x-retell-signature')
-  if (!verifyRetellSignature({ signature, body })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const payload = JSON.parse(body) as { call_id?: string, metadata?: { dialerAttemptId?: string } }
-  const dialerAttemptId = payload.metadata?.dialerAttemptId
-  if (!dialerAttemptId) return NextResponse.json({ error: 'missing dialerAttemptId' }, { status: 400 })
-
-  const attempt = await findDialerAttemptByRetellId(payload.call_id ?? '') ?? null
-  if (!attempt) return NextResponse.json({ error: 'attempt not found' }, { status: 404 })
-
-  const [customer] = await db.select().from(customers).where(eq(customers.id, attempt.customerId)).limit(1)
-  if (!customer) return NextResponse.json({ error: 'customer not found' }, { status: 404 })
-
-  let trade = 'home improvement'
-  let consentContext = 'inquiry'
-  if (customer.leadSourceId) {
-    const [src] = await db.select().from(leadSourcesTable).where(eq(leadSourcesTable.id, customer.leadSourceId)).limit(1)
-    if (src?.dialerConfigJSON) {
-      trade = src.dialerConfigJSON.trade
-      consentContext = src.dialerConfigJSON.consentContext
-    }
-  }
-
-  return NextResponse.json({
-    lead_name: customer.name,
-    trade,
-    consent_context: consentContext,
-    city: customer.city ?? null,
-  })
-}
-```
-
-- [ ] **Step 32.3: /route-transfer — return available human's number + warm-intro**
-
-```ts
-// app/api/dialer/ai/route-transfer/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { verifyRetellSignature } from '@/services/ai-voice/retell-signature-verify'
-import { findDialerAttemptByRetellId } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-import { findAvailableHuman } from '@/services/dialer/transfer-router/find-available-human.service'
-import { buildWarmIntro } from '@/services/dialer/transfer-router/build-warm-intro.service'
-
-export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = (await headers()).get('x-retell-signature')
-  if (!verifyRetellSignature({ signature, body })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const payload = JSON.parse(body) as { call_id?: string }
-  const attempt = await findDialerAttemptByRetellId(payload.call_id ?? '')
-  if (!attempt) return NextResponse.json({ error: 'attempt not found' }, { status: 404 })
-
-  const decision = await findAvailableHuman()
-  if (decision.kind === 'no_one_available') {
-    return NextResponse.json({
-      transfer_to: null,
-      action: 'schedule_callback',
-      message: 'Our advisor is on another call right now — when works for a callback?',
-    })
-  }
-
-  const warmIntro = await buildWarmIntro(attempt.customerId)
-  return NextResponse.json({
-    transfer_to: decision.transferTo,
-    warm_intro: warmIntro,
-  })
-}
-```
-
-- [ ] **Step 32.4: /log-disposition — Retell function for non-transfer outcomes**
-
-```ts
-// app/api/dialer/ai/log-disposition/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { verifyRetellSignature } from '@/services/ai-voice/retell-signature-verify'
-import { findDialerAttemptByRetellId } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-import { recordDisposition } from '@/services/dialer/disposition/record.service'
-import type { DialerDisposition } from '@/shared/constants/enums/dialer'
-
-const ALLOWED: DialerDisposition[] = [
-  'opt_out', 'wrong_number', 'not_interested', 'interested_not_now', 'voicemail',
-]
-
-export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = (await headers()).get('x-retell-signature')
-  if (!verifyRetellSignature({ signature, body })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const payload = JSON.parse(body) as { call_id?: string, disposition?: string }
-  const disposition = payload.disposition as DialerDisposition | undefined
-  if (!disposition || !ALLOWED.includes(disposition)) {
-    return NextResponse.json({ error: 'invalid disposition' }, { status: 400 })
-  }
-
-  const attempt = await findDialerAttemptByRetellId(payload.call_id ?? '')
-  if (!attempt) return NextResponse.json({ error: 'attempt not found' }, { status: 404 })
-
-  await recordDisposition({ dialerAttemptId: attempt.id, disposition })
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 32.5: /call-completed — Retell final webhook**
-
-```ts
-// app/api/dialer/ai/call-completed/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { verifyRetellSignature } from '@/services/ai-voice/retell-signature-verify'
-import { findDialerAttemptByRetellId } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-import { updateDialerAttempt } from '@/shared/entities/dialer-attempts/dal/server/update'
-
-export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = (await headers()).get('x-retell-signature')
-  if (!verifyRetellSignature({ signature, body })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const payload = JSON.parse(body) as {
-    call_id?: string
-    transcript_summary?: string
-    user_sentiment?: string
-    call_analysis?: { call_summary?: string, user_sentiment?: string }
-  }
-
-  const attempt = await findDialerAttemptByRetellId(payload.call_id ?? '')
-  if (!attempt) return NextResponse.json({ ok: true })
-
-  await updateDialerAttempt(attempt.id, {
-    aiSummary: payload.call_analysis?.call_summary ?? payload.transcript_summary ?? null,
-    aiSentiment: payload.call_analysis?.user_sentiment ?? payload.user_sentiment ?? null,
-    endedAt: attempt.endedAt ?? new Date().toISOString(),
-  } as never)
-
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 32.6: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/app/api/dialer/ src/services/ai-voice/retell-signature-verify.ts
-git commit -m "feat(dialer): add Retell AI webhooks (lead-context, route-transfer, log-disposition, call-completed)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 33: Webhook routes — Twilio Messaging (inbound STOP + status)
-
-**Files:**
-- Create: `src/app/api/messaging/twilio/inbound/route.ts`
-- Create: `src/app/api/messaging/twilio/status/route.ts`
-
-- [ ] **Step 33.1: Inbound SMS (STOP handler)**
-
-```ts
-// app/api/messaging/twilio/inbound/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema'
-import { verifyTwilioSignature } from '@/services/voip/twilio-signature-verify'
-import { createDialerMessage } from '@/shared/entities/dialer-messages/dal/server/create'
-import { isOptOutKeyword, recordOptOut } from '@/services/dialer/compliance/opt-out-compliance.service'
-import { twilioMessagingProvider } from '@/services/messaging/twilio.messaging-provider'
-
-export async function POST(req: Request) {
-  const url = req.url
-  const formData = await req.formData()
-  const params: Record<string, string> = {}
-  formData.forEach((v, k) => { params[k] = String(v) })
-
-  const signature = (await headers()).get('x-twilio-signature')
-  if (!verifyTwilioSignature({ signature, url, params })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const from = params.From
-  const body = params.Body ?? ''
-  const messageSid = params.MessageSid
-
-  if (!from || !messageSid) return NextResponse.json({ ok: true })
-
-  // Find customer by phone
-  const [customer] = await db.select().from(customers).where(eq(customers.phone, from)).limit(1)
-  if (!customer) {
-    console.warn(`[messaging/twilio/inbound] No customer for phone ${from}`)
-    // Still log the inbound; just no customer FK
-    return NextResponse.json({ ok: true })
-  }
-
-  // Log inbound
-  await createDialerMessage({
-    customerId: customer.id,
-    direction: 'inbound',
-    channel: 'sms',
-    body,
-    twilioMessageSid: messageSid,
-    status: 'received',
-  } as never)
-
-  // STOP handling
-  if (isOptOutKeyword(body)) {
-    await recordOptOut({
-      customerId: customer.id,
-      source: 'sms_opt_out',
-      reason: `Lead replied "${body.trim()}"`,
-    })
-    // Auto-confirm (TCPA mandatory)
-    await twilioMessagingProvider.send({
-      to: from,
-      body: 'You have been unsubscribed from Tri Pros Remodeling. You will not receive further calls or messages.',
-    })
-  }
-
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 33.2: Twilio message status callback**
-
-```ts
-// app/api/messaging/twilio/status/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { verifyTwilioSignature } from '@/services/voip/twilio-signature-verify'
-import { updateMessageStatusByTwilioSid } from '@/shared/entities/dialer-messages/dal/server/update-status-by-vendor-id'
-import type { DialerMessageStatus } from '@/shared/constants/enums/dialer'
-
-const TWILIO_TO_INTERNAL: Record<string, DialerMessageStatus> = {
-  queued: 'queued',
-  sending: 'queued',
-  sent: 'sent',
-  delivered: 'delivered',
-  failed: 'failed',
-  undelivered: 'undelivered',
-}
-
-export async function POST(req: Request) {
-  const url = req.url
-  const formData = await req.formData()
-  const params: Record<string, string> = {}
-  formData.forEach((v, k) => { params[k] = String(v) })
-
-  const signature = (await headers()).get('x-twilio-signature')
-  if (!verifyTwilioSignature({ signature, url, params })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const sid = params.MessageSid
-  const twilioStatus = params.MessageStatus
-  const internalStatus = twilioStatus ? TWILIO_TO_INTERNAL[twilioStatus] : undefined
-  if (!sid || !internalStatus) return NextResponse.json({ ok: true })
-
-  const timestamps: { deliveredAt?: string, failedAt?: string } = {}
-  if (internalStatus === 'delivered') timestamps.deliveredAt = new Date().toISOString()
-  if (internalStatus === 'failed' || internalStatus === 'undelivered') timestamps.failedAt = new Date().toISOString()
-
-  await updateMessageStatusByTwilioSid(sid, internalStatus, timestamps)
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 33.3: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/app/api/messaging/twilio/
-git commit -m "feat(messaging): add Twilio SMS webhooks (inbound STOP handler + status)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 34: Webhook routes — Sendblue (inbound + status) — **⏸ DEFERRED (2026-05-22)**
-
-> **Status:** DEFERRED with Task 25. Sendblue webhooks have no purpose until Sendblue's `MessagingProvider` impl exists. Skip this task entirely; it's retained as reference for the future Sendblue add.
-
-**Files (deferred):**
-- Create: `src/services/messaging/sendblue-signature-verify.ts`
-- Create: `src/app/api/messaging/sendblue/inbound/route.ts`
-- Create: `src/app/api/messaging/sendblue/status/route.ts`
-
-- [ ] **Step 34.1: Sendblue signature verifier**
-
-```ts
-// services/messaging/sendblue-signature-verify.ts
-import { createHmac, timingSafeEqual } from 'node:crypto'
-
-/**
- * Sendblue webhook signature. Check sendblue.com docs for exact header name + algorithm —
- * adjust if their docs differ (this is the typical HMAC-SHA256 pattern).
- */
-export function verifySendblueSignature(args: { signature: string | null, body: string }): boolean {
-  if (!args.signature) return false
-  const expected = createHmac('sha256', process.env.SENDBLUE_API_SECRET!).update(args.body).digest('hex')
-  try {
-    return timingSafeEqual(Buffer.from(args.signature, 'hex'), Buffer.from(expected, 'hex'))
-  } catch {
-    return false
-  }
-}
-```
-
-- [ ] **Step 34.2: Inbound iMessage**
-
-```ts
-// app/api/messaging/sendblue/inbound/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema'
-import { verifySendblueSignature } from '@/services/messaging/sendblue-signature-verify'
-import { createDialerMessage } from '@/shared/entities/dialer-messages/dal/server/create'
-import { isOptOutKeyword, recordOptOut } from '@/services/dialer/compliance/opt-out-compliance.service'
-import { sendblueMessagingProvider } from '@/services/messaging/sendblue.messaging-provider'
-
-export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = (await headers()).get('sb-signature')
-  if (!verifySendblueSignature({ signature, body })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const payload = JSON.parse(body) as {
-    from_number?: string
-    content?: string
-    message_handle?: string
-  }
-  const from = payload.from_number
-  const content = payload.content ?? ''
-  const messageId = payload.message_handle
-
-  if (!from || !messageId) return NextResponse.json({ ok: true })
-
-  const [customer] = await db.select().from(customers).where(eq(customers.phone, from)).limit(1)
-  if (!customer) return NextResponse.json({ ok: true })
-
-  await createDialerMessage({
-    customerId: customer.id,
-    direction: 'inbound',
-    channel: 'imessage',
-    body: content,
-    sendblueMessageId: messageId,
-    status: 'received',
-  } as never)
-
-  if (isOptOutKeyword(content)) {
-    await recordOptOut({
-      customerId: customer.id,
-      source: 'sms_opt_out',
-      reason: `Lead replied "${content.trim()}" via iMessage`,
-    })
-    await sendblueMessagingProvider.send({
-      to: from,
-      body: 'You have been unsubscribed from Tri Pros Remodeling. You will not receive further calls or messages.',
-    })
-  }
-
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 34.3: Sendblue status callback**
-
-```ts
-// app/api/messaging/sendblue/status/route.ts
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { verifySendblueSignature } from '@/services/messaging/sendblue-signature-verify'
-import { updateMessageStatusBySendblueId } from '@/shared/entities/dialer-messages/dal/server/update-status-by-vendor-id'
-import type { DialerMessageStatus } from '@/shared/constants/enums/dialer'
-
-const SENDBLUE_TO_INTERNAL: Record<string, DialerMessageStatus> = {
-  QUEUED: 'queued',
-  SENT: 'sent',
-  DELIVERED: 'delivered',
-  FAILED: 'failed',
-}
-
-export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = (await headers()).get('sb-signature')
-  if (!verifySendblueSignature({ signature, body })) {
-    return NextResponse.json({ error: 'invalid signature' }, { status: 403 })
-  }
-
-  const payload = JSON.parse(body) as { message_handle?: string, status?: string }
-  const sid = payload.message_handle
-  const internalStatus = payload.status ? SENDBLUE_TO_INTERNAL[payload.status] : undefined
-  if (!sid || !internalStatus) return NextResponse.json({ ok: true })
-
-  const timestamps: { deliveredAt?: string, failedAt?: string } = {}
-  if (internalStatus === 'delivered') timestamps.deliveredAt = new Date().toISOString()
-  if (internalStatus === 'failed') timestamps.failedAt = new Date().toISOString()
-
-  await updateMessageStatusBySendblueId(sid, internalStatus, timestamps)
-  return NextResponse.json({ ok: true })
-}
-```
-
-- [ ] **Step 34.4: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/app/api/messaging/sendblue/ src/services/messaging/sendblue-signature-verify.ts
-git commit -m "feat(messaging): add Sendblue iMessage webhooks (inbound + status)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 35: tRPC routers — dialer-attempts + dialer-messages
-
-**Files:**
-- Create: `src/trpc/routers/dialer-attempts.router.ts`
-- Create: `src/trpc/routers/dialer-messages.router.ts`
-- Modify: `src/trpc/routers/app.ts`
-
-> Both are minimal Phase 1 cuts. Phase 4 expands them significantly. CASL gating enforced via existing `agentProcedure` patterns — read codebase for current pattern, adapt these signatures.
-
-- [ ] **Step 35.1: dialer-attempts router**
-
-```ts
-// trpc/routers/dialer-attempts.router.ts
+// src/trpc/routers/voip-calls.router/index.ts
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { createTRPCRouter, agentProcedure } from '@/trpc/trpc'  // adapt to actual import path
-import { startTestCall } from '@/services/dialer/dispatcher/start-test-call.service'
-import { listRecentDialerAttempts } from '@/shared/entities/dialer-attempts/dal/server/list'
-import { findDialerAttemptById } from '@/shared/entities/dialer-attempts/dal/server/find-by-id'
-import { recordDisposition } from '@/services/dialer/disposition/record.service'
-import { dialerDispositions } from '@/shared/constants/enums/dialer'
+import { createTRPCRouter } from '@/trpc/init'
+import { createCrudRouter } from '@/trpc/lib/create-crud-router'
+import { createEntityRouter } from '@/trpc/lib/create-entity-router'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
+import { voipCallDispositions } from '@/shared/constants/enums'
+import { placeAgentCall, setDisposition } from '@/shared/services/voip/voip-calls.service'
+import { listByCustomerId, listRecent } from '@/shared/entities/voip-calls/dal/server/queries'
+import { voipCallSchemas, voipCallServerSpec } from '@/shared/entities/voip-calls/lib/server-spec'
 
-export const dialerAttemptsRouter = createTRPCRouter({
-  /** Phase 1 manual dial trigger (super_admin only — gated via CASL on the caller side). */
-  startTestCall: agentProcedure
-    .input(z.object({ customerId: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      // CASL gate: ensure caller can `manage` DIALER_ATTEMPT
-      if (!ctx.ability.can('manage', 'DialerAttempt')) {
-        throw new TRPCError({ code: 'FORBIDDEN' })
-      }
-      return startTestCall({ customerId: input.customerId, initiatedByUserId: ctx.session.user.id })
-    }),
+export const voipCallsRouter = createEntityRouter(voipCallServerSpec, (entity) => createTRPCRouter({
+  crud: createCrudRouter({
+    spec: voipCallServerSpec,
+    schemas: { ...voipCallSchemas, id: z.string().uuid() },
+    authedProcedure: entity.authedProcedure,
+    shareableProcedure: entity.shareableProcedure,
+  }),
+  business: createTRPCRouter({
+    placeAgentCall: entity.authedProcedure
+      .input(z.object({ customerId: z.string().uuid() }))
+      .mutation(async ({ ctx, input }) => {
+        return dalToTrpc(await placeAgentCall(ctx, { customerId: input.customerId, agentUserId: ctx.session.user.id }))
+      }),
 
-  list: agentProcedure
-    .input(z.object({ limit: z.number().int().min(1).max(200).default(50) }))
-    .query(async ({ ctx, input }) => {
-      if (!ctx.ability.can('read', 'DialerAttempt')) {
-        throw new TRPCError({ code: 'FORBIDDEN' })
-      }
-      return listRecentDialerAttempts(input.limit)
-    }),
+    setDisposition: entity.authedProcedure
+      .input(z.object({
+        voipCallId: z.string().uuid(),
+        disposition: z.enum(voipCallDispositions),
+        note: z.string().max(1000).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return dalToTrpc(await setDisposition(ctx, input))
+      }),
 
-  getById: agentProcedure
-    .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ ctx, input }) => {
-      const row = await findDialerAttemptById(input.id)
-      if (!row) throw new TRPCError({ code: 'NOT_FOUND' })
-      if (!ctx.ability.can('read', 'DialerAttempt')) {
-        throw new TRPCError({ code: 'FORBIDDEN' })
-      }
-      return row
-    }),
+    listRecent: entity.authedProcedure
+      .input(z.object({ limit: z.number().int().min(1).max(200).default(50) }))
+      .query(async ({ ctx, input }) => dalToTrpc(await listRecent(ctx, input.limit))),
 
-  setDisposition: agentProcedure
-    .input(z.object({
-      dialerAttemptId: z.string().uuid(),
-      disposition: z.enum(dialerDispositions),
+    listByCustomer: entity.authedProcedure
+      .input(z.object({ customerId: z.string().uuid(), limit: z.number().int().min(1).max(200).default(50) }))
+      .query(async ({ ctx, input }) => dalToTrpc(await listByCustomerId(ctx, input.customerId))),
+  }),
+}))
+```
+
+- [ ] **Step 30.2: `voip-messages.router/index.ts`**
+
+Same shape; expose `send`, `listByCustomer` via business sub-router. The send mutation:
+
+```ts
+send: entity.authedProcedure
+  .input(z.object({ customerId: z.string().uuid(), body: z.string().min(1).max(1600) }))
+  .mutation(async ({ ctx, input }) => {
+    return dalToTrpc(await sendManualSms(ctx, {
+      customerId: input.customerId,
+      body: input.body,
+      agentUserId: ctx.session.user.id,
     }))
-    .mutation(async ({ ctx, input }) => {
-      if (!ctx.ability.can('manage', 'DialerAttempt')) {
-        throw new TRPCError({ code: 'FORBIDDEN' })
-      }
-      await recordDisposition({
-        dialerAttemptId: input.dialerAttemptId,
-        disposition: input.disposition,
-        recordedByUserId: ctx.session.user.id,
-      })
-      return { ok: true }
-    }),
-})
+  }),
 ```
 
-- [ ] **Step 35.2: dialer-messages router**
+- [ ] **Step 30.3: `voip-dids.router/index.ts`**
+
+CRUD-only via the factory; no extra business routes in Phase 1 (admin UI for assignment lands in Phase 4).
+
+- [ ] **Step 30.4: `voip-dnc.router/index.ts`**
+
+CRUD + `recordManual` business mutation:
 
 ```ts
-// trpc/routers/dialer-messages.router.ts
-import { z } from 'zod'
-import { TRPCError } from '@trpc/server'
-import { createTRPCRouter, agentProcedure } from '@/trpc/trpc'
-import { sendManualMessage, DncBlockedError } from '@/services/dialer/messaging/send-manual-message.service'
-import { listMessagesByCustomer } from '@/shared/entities/dialer-messages/dal/server/list-by-customer'
+recordManual: entity.authedProcedure
+  .input(z.object({ phoneE164: z.string().regex(/^\+[1-9]\d{6,14}$/), reason: z.string().max(500) }))
+  .mutation(async ({ ctx, input }) => {
+    return dalToTrpc(await recordDnc(ctx, {
+      phoneE164: input.phoneE164,
+      source: 'manual_admin',
+      reason: input.reason,
+      addedByUserId: ctx.session.user.id,
+    }))
+  }),
+```
 
-export const dialerMessagesRouter = createTRPCRouter({
-  send: agentProcedure
+- [ ] **Step 30.5: `voip-link-tokens.router.ts`**
+
+```ts
+// src/trpc/routers/voip-link-tokens.router.ts
+import { z } from 'zod'
+import { createTRPCRouter } from '@/trpc/init'
+import { agentProcedure } from '@/trpc/init'  // adapt import path
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
+import { mintToken } from '@/shared/services/voip/voip-link-tokens.service'
+
+export const voipLinkTokensRouter = createTRPCRouter({
+  mintLDoc: agentProcedure
     .input(z.object({
       customerId: z.string().uuid(),
-      body: z.string().min(1).max(1600),
-      channelPreference: z.enum(['sms', 'imessage', 'auto']),
+      phoneE164: z.string().regex(/^\+[1-9]\d{6,14}$/),
+      uploadSlotId: z.string().uuid(),
+      instructions: z.string().max(500).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      if (!ctx.ability.can('send', 'DialerMessage')) {
-        throw new TRPCError({ code: 'FORBIDDEN' })
-      }
-      try {
-        return await sendManualMessage(input)
-      }
-      catch (e) {
-        if (e instanceof DncBlockedError) {
-          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: e.message })
-        }
-        throw e
-      }
-    }),
-
-  listByCustomer: agentProcedure
-    .input(z.object({ customerId: z.string().uuid(), limit: z.number().int().min(1).max(500).default(100) }))
-    .query(async ({ ctx, input }) => {
-      if (!ctx.ability.can('read', 'DialerMessage')) {
-        throw new TRPCError({ code: 'FORBIDDEN' })
-      }
-      return listMessagesByCustomer(input.customerId, input.limit)
+      return dalToTrpc(await mintToken(ctx, {
+        customerId: input.customerId,
+        phoneE164: input.phoneE164,
+        payload: {
+          type: 'l_doc',
+          uploadSlotId: input.uploadSlotId,
+          instructions: input.instructions,
+        },
+        createdByUserId: ctx.session.user.id,
+      }))
     }),
 })
 ```
 
-- [ ] **Step 35.3: Register in app.ts**
+> The router is a thin flat router (not an entity router) because mint mostly is a service operation. Future variants (`mintLPay`, etc.) add mutations here.
 
-In `src/trpc/routers/app.ts`, add:
+- [ ] **Step 30.6: `voip-user-availability.router.ts`**
 
 ```ts
-import { dialerAttemptsRouter } from './dialer-attempts.router'
-import { dialerMessagesRouter } from './dialer-messages.router'
-
-export const appRouter = createTRPCRouter({
-  // ...existing routers
-  dialerAttempts: dialerAttemptsRouter,
-  dialerMessages: dialerMessagesRouter,
+export const voipUserAvailabilityRouter = createTRPCRouter({
+  getMine: agentProcedure.query(async ({ ctx }) =>
+    dalToTrpc(await findByUserId(ctx, ctx.session.user.id))
+  ),
+  upsertMine: agentProcedure
+    .input(z.object({
+      enrolledForTransfers: z.boolean(),
+      manualStatus: z.enum(voipUserAvailabilities),
+      transferMode: z.enum(voipTransferModes),
+      cellPhoneE164: z.string().regex(/^\+[1-9]\d{6,14}$/).nullable().optional(),
+    }))
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await upsertAvailability(ctx, { userId: ctx.session.user.id, ...input }))
+    ),
+  listAvailable: agentProcedure.query(async ({ ctx }) =>
+    dalToTrpc(await listAvailableTransferHumans(ctx))
+  ),
 })
 ```
 
-Match the existing register pattern (read `app.ts` first).
+- [ ] **Step 30.7: `app-settings.router.ts`**
 
-- [ ] **Step 35.4: Verify + commit**
+```ts
+export const appSettingsRouter = createTRPCRouter({
+  getByFeature: agentProcedure
+    .input(z.object({ feature: z.string() }))
+    .query(async ({ ctx, input }) => dalToTrpc(await getByFeature(ctx, input.feature))),
+
+  update: agentProcedure
+    .input(z.object({ feature: z.string(), configJson: z.unknown() }))
+    .mutation(async ({ ctx, input }) => {
+      // Per-feature validation in service-layer wrapper (e.g., validateVoipInHouseConfig).
+      // CASL gate (in entity ServerSpec): super-admin only.
+      return dalToTrpc(await upsertConfig(ctx, { feature: input.feature, configJson: input.configJson, updatedByUserId: ctx.session.user.id }))
+    }),
+})
+```
+
+- [ ] **Step 30.8: Register all in `app.ts`**
+
+```ts
+import { voipCallsRouter } from './voip-calls.router'
+import { voipMessagesRouter } from './voip-messages.router'
+import { voipDidsRouter } from './voip-dids.router'
+import { voipDncRouter } from './voip-dnc.router'
+import { voipLinkTokensRouter } from './voip-link-tokens.router'
+import { voipUserAvailabilityRouter } from './voip-user-availability.router'
+import { appSettingsRouter } from './app-settings.router'
+
+export const appRouter = createTRPCRouter({
+  // ...existing
+  voipCalls: voipCallsRouter,
+  voipMessages: voipMessagesRouter,
+  voipDids: voipDidsRouter,
+  voipDnc: voipDncRouter,
+  voipLinkTokens: voipLinkTokensRouter,
+  voipUserAvailability: voipUserAvailabilityRouter,
+  appSettings: appSettingsRouter,
+})
+```
+
+- [ ] **Step 30.9: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/trpc/routers/dialer-attempts.router.ts src/trpc/routers/dialer-messages.router.ts src/trpc/routers/app.ts
-git commit -m "feat(dialer): add tRPC routers for dialer-attempts + dialer-messages
+git add src/trpc/routers/
+git commit -m "feat(voip): wire all voip + app-settings tRPC routers (entity factory + business sub-routers)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 36: Browser softphone widget
+### Task 31: ESLint `no-restricted-imports` rule (dependency-direction enforcement)
 
 **Files:**
-- Create: `src/shared/components/dialer/softphone-widget/twilio-device.provider.tsx`
-- Create: `src/shared/components/dialer/softphone-widget/use-twilio-device.ts`
-- Create: `src/shared/components/dialer/softphone-widget/use-softphone-token.ts`
-- Create: `src/shared/components/dialer/softphone-widget/softphone-widget.tsx`
-- Create: `src/shared/components/dialer/softphone-widget/incoming-call-banner.tsx`
-- Create: `src/shared/components/dialer/softphone-widget/call-active-panel.tsx`
-- Create: `src/shared/components/dialer/softphone-widget/index.ts`
+- Modify: `eslint.config.js` (or whatever the project's eslint config file is — read first)
 
-> **If the Task 2 spike chose a 3rd-party wrapper:** adapt these files to compose that wrapper. The structure remains: a Provider, a hook, the visible widget, banner sub-component, active-call sub-component. **If no acceptable wrapper found:** the code below shows the custom hook/provider pattern around `@twilio/voice-sdk` v2.
+> Enforces the dependency direction from [INTEGRATION-SEAM.md "Dependency direction"](../voip/INTEGRATION-SEAM.md#dependency-direction):
+> - Top-level `services/voip/*.ts` may NOT import `services/voip/campaigns/*` or `providers/cloudtalk/*`.
+> - `providers/twilio/*` may NOT import any `services/*` or any DAL.
+>
+> This guards the cross-EPIC boundary at lint time so accidental coupling can't ship.
 
-- [ ] **Step 36.1: Token fetcher hook**
+- [ ] **Step 31.1: Add the rule**
+
+Read `eslint.config.js` first. Then add a `no-restricted-imports` override using ESLint flat-config `files: [...]` patterns:
+
+```js
+// Inside eslint.config.js (flat config; merge with existing structure)
+{
+  files: ['src/shared/services/voip/*.ts'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [
+        {
+          group: ['**/services/voip/campaigns/**', '@/shared/services/voip/campaigns/**'],
+          message: 'Top-level services/voip/*.ts cannot depend on services/voip/campaigns/* — voip-campaigns is the dependent. See docs/plans/voip/INTEGRATION-SEAM.md#dependency-direction',
+        },
+        {
+          group: ['**/providers/cloudtalk/**', '@/shared/services/providers/cloudtalk/**'],
+          message: 'Top-level services/voip/*.ts cannot depend on providers/cloudtalk/* — CloudTalk is voip-campaigns territory. See docs/plans/voip/INTEGRATION-SEAM.md#dependency-direction',
+        },
+      ],
+    }],
+  },
+},
+{
+  files: ['src/shared/services/providers/twilio/**/*.ts'],
+  rules: {
+    'no-restricted-imports': ['error', {
+      patterns: [
+        {
+          group: ['**/services/**', '@/shared/services/**', '**/dal/**', '@/shared/dal/**', '**/entities/**', '@/shared/entities/**'],
+          message: 'providers/twilio/* must not import services, DAL, or entities. Providers are leaf nodes — see docs/codebase-conventions/service-architecture.md',
+        },
+      ],
+    }],
+  },
+},
+```
+
+> When `services/voip/campaigns/` and `providers/cloudtalk/` actually land in voip-campaigns Phase 1, the rule already enforces direction. Until then it's a future-proofing guard against accidental import paths in this EPIC's code.
+
+- [ ] **Step 31.2: Verify the rule fires**
+
+Add a temp test import in `src/shared/services/voip/voip-calls.service.ts`:
 
 ```ts
-// use-softphone-token.ts
+// TEMP — verify ESLint rule fires
+// import { something } from '@/shared/services/voip/campaigns/enrollment.service'
+```
+
+Uncomment, run `pnpm lint` → expect the `no-restricted-imports` error pointing to INTEGRATION-SEAM.md. Re-comment, lint clean. Discard the temp edit.
+
+- [ ] **Step 31.3: Commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add eslint.config.js
+git commit -m "chore(voip): add no-restricted-imports rule enforcing voip dependency direction
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 32: Browser softphone widget
+
+**Files:**
+- Create: `src/features/voip-in-house/ui/components/softphone-widget/twilio-device-provider.tsx`
+- Create: `src/features/voip-in-house/ui/components/softphone-widget/use-twilio-device.ts`
+- Create: `src/features/voip-in-house/ui/components/softphone-widget/use-softphone-token.ts`
+- Create: `src/features/voip-in-house/ui/components/softphone-widget/softphone-widget.tsx`
+- Create: `src/features/voip-in-house/ui/components/softphone-widget/incoming-call-banner.tsx`
+- Create: `src/features/voip-in-house/ui/components/softphone-widget/call-active-panel.tsx`
+
+> Lives under `features/voip-in-house/` (NOT `shared/components/`) because the dashboard layout is the only consumer in Phase 1. If a second feature mounts it later, promote to `shared/components/` per Rule 21. Each file = ONE component (Rule 1). NO file-level constants in component files (Rule 2). Named exports only (Rule 9).
+
+- [ ] **Step 32.1: `use-softphone-token.ts` — token fetcher + auto-refresh**
+
+```ts
 'use client'
 import { useEffect, useState } from 'react'
 
@@ -3329,27 +3608,28 @@ interface TokenPayload { token: string, identity: string, ttlSeconds: number }
 export function useSoftphoneToken() {
   const [token, setToken] = useState<TokenPayload | null>(null)
 
-  async function refresh() {
-    const res = await fetch('/api/voip/twilio/access-token')
-    if (res.ok) setToken(await res.json() as TokenPayload)
-  }
-
   useEffect(() => {
+    let cancelled = false
+    async function refresh() {
+      const res = await fetch('/api/voip/softphone/access-token', { cache: 'no-store' })
+      if (!res.ok) return
+      if (cancelled) return
+      setToken(await res.json() as TokenPayload)
+    }
     refresh()
-    const interval = setInterval(refresh, 50 * 60 * 1000)  // refresh every 50 min (TTL=60min)
-    return () => clearInterval(interval)
+    const interval = setInterval(refresh, 50 * 60 * 1000)  // refresh every 50 min
+    return () => { cancelled = true; clearInterval(interval) }
   }, [])
 
   return token
 }
 ```
 
-- [ ] **Step 36.2: Device hook**
+- [ ] **Step 32.2: `use-twilio-device.ts`**
 
 ```ts
-// use-twilio-device.ts
 'use client'
-import { Device, Call } from '@twilio/voice-sdk'
+import { Call, Device } from '@twilio/voice-sdk'
 import { useEffect, useRef, useState } from 'react'
 
 export interface IncomingCallSummary {
@@ -3358,11 +3638,17 @@ export interface IncomingCallSummary {
   from: string
 }
 
+export interface ActiveCallSummary {
+  call: Call
+  customParameters: Record<string, string>
+  voipCallId: string | null
+}
+
 export function useTwilioDevice(token: string | null) {
   const deviceRef = useRef<Device | null>(null)
   const [status, setStatus] = useState<'idle' | 'registering' | 'registered' | 'error'>('idle')
   const [incomingCall, setIncomingCall] = useState<IncomingCallSummary | null>(null)
-  const [activeCall, setActiveCall] = useState<Call | null>(null)
+  const [activeCall, setActiveCall] = useState<ActiveCallSummary | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -3372,55 +3658,41 @@ export function useTwilioDevice(token: string | null) {
     setStatus('registering')
 
     device.on('registered', () => setStatus('registered'))
-    device.on('error', (err: Error) => {
-      setStatus('error')
-      setErrorMessage(err.message)
-    })
+    device.on('error', (err: Error) => { setStatus('error'); setErrorMessage(err.message) })
     device.on('incoming', (call: Call) => {
       const customParameters: Record<string, string> = {}
-      call.customParameters.forEach((v: string, k: string) => { customParameters[k] = v })
-      setIncomingCall({ call, customParameters, from: call.parameters.From })
+      call.customParameters.forEach((v, k) => { customParameters[k] = v })
+      setIncomingCall({ call, customParameters, from: call.parameters.From ?? '' })
+
       call.on('accept', () => {
-        setActiveCall(call)
+        setActiveCall({ call, customParameters, voipCallId: customParameters.voip_call_id ?? null })
         setIncomingCall(null)
       })
       call.on('cancel', () => setIncomingCall(null))
       call.on('reject', () => setIncomingCall(null))
-      call.on('disconnect', () => {
-        setActiveCall(null)
-        setIncomingCall(null)
-      })
+      call.on('disconnect', () => { setActiveCall(null); setIncomingCall(null) })
     })
 
     device.register()
-
     return () => { device.destroy() }
   }, [token])
 
-  function accept() {
-    incomingCall?.call.accept()
+  return {
+    status,
+    incomingCall,
+    activeCall,
+    errorMessage,
+    accept: () => incomingCall?.call.accept(),
+    reject: () => incomingCall?.call.reject(),
+    hangup: () => activeCall?.call.disconnect(),
+    setMute: (muted: boolean) => activeCall?.call.mute(muted),
   }
-
-  function reject() {
-    incomingCall?.call.reject()
-  }
-
-  function hangup() {
-    activeCall?.disconnect()
-  }
-
-  function setMute(muted: boolean) {
-    activeCall?.mute(muted)
-  }
-
-  return { status, incomingCall, activeCall, errorMessage, accept, reject, hangup, setMute }
 }
 ```
 
-- [ ] **Step 36.3: Provider**
+- [ ] **Step 32.3: `twilio-device-provider.tsx`**
 
 ```tsx
-// twilio-device.provider.tsx
 'use client'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
@@ -3428,12 +3700,11 @@ import { useSoftphoneToken } from './use-softphone-token'
 import { useTwilioDevice } from './use-twilio-device'
 
 type DeviceContextValue = ReturnType<typeof useTwilioDevice>
-
 const DeviceContext = createContext<DeviceContextValue | null>(null)
 
-interface ProviderProps { children: ReactNode }
+interface Props { children: ReactNode }
 
-export function TwilioDeviceProvider({ children }: ProviderProps) {
+export function TwilioDeviceProvider({ children }: Props) {
   const token = useSoftphoneToken()
   const device = useTwilioDevice(token?.token ?? null)
   return <DeviceContext.Provider value={device}>{children}</DeviceContext.Provider>
@@ -3446,37 +3717,33 @@ export function useTwilioDeviceContext() {
 }
 ```
 
-- [ ] **Step 36.4: Incoming-call banner**
+- [ ] **Step 32.4: `incoming-call-banner.tsx`**
 
 ```tsx
-// incoming-call-banner.tsx
 'use client'
-import { useTwilioDeviceContext } from './twilio-device.provider'
-import { Button } from '@/shared/components/ui/button'  // adapt to your existing shadcn button path
+import { Button } from '@/shared/components/ui/button'
+import { useTwilioDeviceContext } from './twilio-device-provider'
 
-interface BannerProps { onAccept?: () => void }
+interface Props { onAccept?: () => void }
 
-export function IncomingCallBanner({ onAccept }: BannerProps) {
+export function IncomingCallBanner({ onAccept }: Props) {
   const { incomingCall, accept, reject } = useTwilioDeviceContext()
   if (!incomingCall) return null
 
   const params = incomingCall.customParameters
-  const leadName = params.lead_name ?? 'Unknown lead'
+  const leadName = params.lead_name ?? 'Unknown caller'
   const trade = params.trade ?? ''
-  const city = params.city ?? ''
-
-  function handleAccept() {
-    accept()
-    onAccept?.()
-  }
+  const city = params.city ?? params.location ?? ''
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-lg border bg-background p-4 shadow-lg">
-      <div className="text-sm font-medium">Incoming transfer</div>
+    <div className="fixed bottom-4 right-4 z-50 rounded-lg border bg-background p-4 shadow-lg" aria-label="Incoming call">
+      <div className="text-sm font-medium">Incoming</div>
       <div className="mt-1 text-lg">{leadName}</div>
-      {(trade || city) && <div className="text-xs text-muted-foreground">{[trade, city].filter(Boolean).join(' • ')}</div>}
+      {(trade || city) && (
+        <div className="text-xs text-muted-foreground">{[trade, city].filter(Boolean).join(' • ')}</div>
+      )}
       <div className="mt-3 flex gap-2">
-        <Button size="sm" onClick={handleAccept}>Accept</Button>
+        <Button size="sm" onClick={() => { accept(); onAccept?.() }}>Accept</Button>
         <Button size="sm" variant="outline" onClick={reject}>Decline</Button>
       </div>
     </div>
@@ -3484,14 +3751,13 @@ export function IncomingCallBanner({ onAccept }: BannerProps) {
 }
 ```
 
-- [ ] **Step 36.5: Active-call panel**
+- [ ] **Step 32.5: `call-active-panel.tsx`**
 
 ```tsx
-// call-active-panel.tsx
 'use client'
 import { useState } from 'react'
-import { useTwilioDeviceContext } from './twilio-device.provider'
 import { Button } from '@/shared/components/ui/button'
+import { useTwilioDeviceContext } from './twilio-device-provider'
 
 export function CallActivePanel() {
   const { activeCall, hangup, setMute } = useTwilioDeviceContext()
@@ -3500,11 +3766,11 @@ export function CallActivePanel() {
 
   function toggleMute() {
     setMute(!muted)
-    setMuted(!muted)
+    setMuted(m => !m)
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 rounded-lg border bg-background p-4 shadow-lg">
+    <div className="fixed bottom-4 right-4 z-50 rounded-lg border bg-background p-4 shadow-lg" aria-label="Active call">
       <div className="text-sm font-medium">On call</div>
       <div className="mt-3 flex gap-2">
         <Button size="sm" variant="outline" onClick={toggleMute}>{muted ? 'Unmute' : 'Mute'}</Button>
@@ -3515,39 +3781,33 @@ export function CallActivePanel() {
 }
 ```
 
-- [ ] **Step 36.6: Main widget (composition)**
+- [ ] **Step 32.6: `softphone-widget.tsx` — composition**
 
 ```tsx
-// softphone-widget.tsx
 'use client'
 import { useState } from 'react'
-import { TwilioDeviceProvider, useTwilioDeviceContext } from './twilio-device.provider'
-import { IncomingCallBanner } from './incoming-call-banner'
+import { CallDispositionPicker } from '@/features/voip-in-house/ui/components/call-disposition-picker/call-disposition-picker'
 import { CallActivePanel } from './call-active-panel'
-import { CallDispositionPicker } from '@/shared/components/dialer/call-disposition-picker'
+import { IncomingCallBanner } from './incoming-call-banner'
+import { TwilioDeviceProvider, useTwilioDeviceContext } from './twilio-device-provider'
 
 function WidgetInner() {
   const { incomingCall, activeCall } = useTwilioDeviceContext()
-  const [pendingDispositionForAttemptId, setPendingDispositionForAttemptId] = useState<string | null>(null)
-  const lastDialerAttemptId = activeCall?.customParameters.get('dialer_attempt_id') ?? null
+  const [pendingDispositionForCallId, setPendingDispositionForCallId] = useState<string | null>(null)
 
   function handleAccept() {
-    if (lastDialerAttemptId) setPendingDispositionForAttemptId(lastDialerAttemptId)
+    if (activeCall?.voipCallId) setPendingDispositionForCallId(activeCall.voipCallId)
   }
-
   function handleClose() {
-    setPendingDispositionForAttemptId(null)
+    setPendingDispositionForCallId(null)
   }
 
   return (
     <>
       {incomingCall && <IncomingCallBanner onAccept={handleAccept} />}
       {activeCall && <CallActivePanel />}
-      {pendingDispositionForAttemptId && !activeCall && (
-        <CallDispositionPicker
-          dialerAttemptId={pendingDispositionForAttemptId}
-          onClose={handleClose}
-        />
+      {pendingDispositionForCallId && !activeCall && (
+        <CallDispositionPicker voipCallId={pendingDispositionForCallId} onClose={handleClose} />
       )}
     </>
   )
@@ -3562,67 +3822,88 @@ export function SoftphoneWidget() {
 }
 ```
 
-- [ ] **Step 36.7: index.ts barrel — NO barrel files in ui/components (per memory)**
+- [ ] **Step 32.7: Public entrypoint**
 
-Skip — per convention `feedback-entity-organization.md` no barrel files in component dirs. Import the widget directly via:
+Create TWO entrypoints per Rule 10 (verified pattern: existing features have `ui/components/index.ts` AND `ui/views/index.ts` separately — never a single top-level `ui/index.ts`):
 
 ```ts
-import { SoftphoneWidget } from '@/shared/components/dialer/softphone-widget/softphone-widget'
+// src/features/voip-in-house/ui/components/index.ts
+export { SoftphoneWidget } from './softphone-widget/softphone-widget'
+export { CallNowButton } from './call-now-button/call-now-button'
+export { SendMessageButton } from './send-message-button/send-message-button'
 ```
 
-- [ ] **Step 36.8: Verify + commit**
+```ts
+// src/features/voip-in-house/ui/views/index.ts
+export { VoipInHouseAdminView } from './voip-in-house-admin-view'
+```
+
+- [ ] **Step 32.8: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/components/dialer/softphone-widget/
-git commit -m "feat(dialer): add browser softphone widget (Twilio Voice SDK)
+git add src/features/voip-in-house/
+git commit -m "feat(voip): browser softphone widget (Twilio Voice JS SDK)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 37: Call disposition picker modal
+### Task 33: Call-disposition picker + click-to-call + send-SMS components
 
 **Files:**
-- Create: `src/shared/components/dialer/call-disposition-picker/call-disposition-picker.tsx`
+- Create: `src/features/voip-in-house/ui/components/call-disposition-picker/call-disposition-picker.tsx`
+- Create: `src/features/voip-in-house/ui/components/call-disposition-picker/constants.ts` (per Rule 2 — extract file-level constants)
+- Create: `src/features/voip-in-house/ui/components/call-now-button/call-now-button.tsx`
+- Create: `src/features/voip-in-house/ui/components/send-message-button/send-message-button.tsx`
 
-- [ ] **Step 37.1: Create the component**
+- [ ] **Step 33.1: Disposition picker constants**
 
-```tsx
-// call-disposition-picker.tsx
-'use client'
-import { useState } from 'react'
-import type { DialerDisposition } from '@/shared/constants/enums/dialer'
-import { Button } from '@/shared/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
-import { useTRPC } from '@/trpc/helpers'
-import { useMutation } from '@tanstack/react-query'
+```ts
+// src/features/voip-in-house/ui/components/call-disposition-picker/constants.ts
+import type { VoipCallDisposition } from '@/shared/constants/enums'
 
-interface PickerProps {
-  dialerAttemptId: string
-  onClose: () => void
+export interface DispositionOption {
+  value: VoipCallDisposition
+  label: string
+  variant?: 'default' | 'outline' | 'destructive'
 }
 
-const OPTIONS: { value: DialerDisposition, label: string, variant?: 'default' | 'destructive' | 'outline' }[] = [
+export const dispositionOptions: DispositionOption[] = [
   { value: 'booked_meeting', label: 'Booked meeting' },
+  { value: 'callback_scheduled', label: 'Callback scheduled', variant: 'outline' },
   { value: 'interested_not_now', label: 'Interested, not now', variant: 'outline' },
   { value: 'not_interested', label: 'Not interested', variant: 'outline' },
   { value: 'wrong_number', label: 'Wrong number', variant: 'outline' },
+  { value: 'voicemail_left', label: 'Voicemail left', variant: 'outline' },
+  { value: 'unreached', label: 'Unreached', variant: 'outline' },
   { value: 'opt_out', label: 'Opt-out — DNC', variant: 'destructive' },
 ]
+```
 
-export function CallDispositionPicker({ dialerAttemptId, onClose }: PickerProps) {
+- [ ] **Step 33.2: Disposition picker component**
+
+```tsx
+'use client'
+import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { Button } from '@/shared/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
+import { useTRPC } from '@/trpc/helpers'
+import { dispositionOptions } from './constants'
+
+interface Props {
+  voipCallId: string
+  onClose: () => void
+}
+
+export function CallDispositionPicker({ voipCallId, onClose }: Props) {
   const trpc = useTRPC()
-  const setMutation = useMutation(trpc.dialerAttempts.setDisposition.mutationOptions({
+  const mutation = useMutation(trpc.voipCalls.business.setDisposition.mutationOptions({
     onSuccess: () => onClose(),
   }))
   const [submitting, setSubmitting] = useState(false)
-
-  async function pick(value: DialerDisposition) {
-    setSubmitting(true)
-    setMutation.mutate({ dialerAttemptId, disposition: value })
-  }
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose() }}>
@@ -3631,13 +3912,13 @@ export function CallDispositionPicker({ dialerAttemptId, onClose }: PickerProps)
           <DialogTitle>Disposition the call</DialogTitle>
         </DialogHeader>
         <div className="mt-4 space-y-2">
-          {OPTIONS.map(opt => (
+          {dispositionOptions.map(opt => (
             <Button
               key={opt.value}
               className="w-full justify-start"
               variant={opt.variant ?? 'default'}
-              disabled={submitting}
-              onClick={() => pick(opt.value)}
+              disabled={submitting || mutation.isPending}
+              onClick={() => { setSubmitting(true); mutation.mutate({ voipCallId, disposition: opt.value }) }}
             >
               {opt.label}
             </Button>
@@ -3649,73 +3930,88 @@ export function CallDispositionPicker({ dialerAttemptId, onClose }: PickerProps)
 }
 ```
 
-- [ ] **Step 37.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/components/dialer/call-disposition-picker/
-git commit -m "feat(dialer): add call disposition picker modal
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 38: Send message button component
-
-**Files:**
-- Create: `src/shared/components/dialer/send-message-button/send-message-button.tsx`
-
-- [ ] **Step 38.1: Create the component**
+- [ ] **Step 33.3: `call-now-button.tsx`**
 
 ```tsx
-// send-message-button.tsx
 'use client'
 import { useState } from 'react'
-import { Button } from '@/shared/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
-import { Textarea } from '@/shared/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useTRPC } from '@/trpc/helpers'
 import { useMutation } from '@tanstack/react-query'
+import { Button } from '@/shared/components/ui/button'
+import { useTRPC } from '@/trpc/helpers'
 
-interface ButtonProps { customerId: string }
+interface Props { customerId: string }
 
-export function SendMessageButton({ customerId }: ButtonProps) {
-  const [open, setOpen] = useState(false)
-  const [body, setBody] = useState('')
-  const [channel, setChannel] = useState<'auto' | 'sms' | 'imessage'>('auto')
+export function CallNowButton({ customerId }: Props) {
   const trpc = useTRPC()
-  const send = useMutation(trpc.dialerMessages.send.mutationOptions({
-    onSuccess: () => {
-      setOpen(false)
-      setBody('')
-    },
+  const [confirmPending, setConfirmPending] = useState(false)
+  const placeCall = useMutation(trpc.voipCalls.business.placeAgentCall.mutationOptions({
+    onSuccess: () => setConfirmPending(false),
   }))
 
-  function handleSubmit() {
-    send.mutate({ customerId, body, channelPreference: channel })
+  function handleClick() {
+    if (!confirmPending) {
+      setConfirmPending(true)
+      setTimeout(() => setConfirmPending(false), 3000)
+      return
+    }
+    placeCall.mutate({ customerId })
   }
 
   return (
+    <Button
+      size="sm"
+      variant={confirmPending ? 'destructive' : 'default'}
+      onClick={handleClick}
+      disabled={placeCall.isPending}
+    >
+      {placeCall.isPending
+        ? 'Calling…'
+        : confirmPending ? 'Confirm — Call now' : 'Call'}
+    </Button>
+  )
+}
+```
+
+> No "Dial now (AI)" copy — this is an agent click-to-call to a customer, not an AI dial. AI dialing is voip-campaigns territory.
+
+- [ ] **Step 33.4: `send-message-button.tsx`**
+
+```tsx
+'use client'
+import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { Button } from '@/shared/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'
+import { Textarea } from '@/shared/components/ui/textarea'
+import { useTRPC } from '@/trpc/helpers'
+
+interface Props { customerId: string }
+
+export function SendMessageButton({ customerId }: Props) {
+  const [open, setOpen] = useState(false)
+  const [body, setBody] = useState('')
+  const trpc = useTRPC()
+  const send = useMutation(trpc.voipMessages.business.send.mutationOptions({
+    onSuccess: () => { setOpen(false); setBody('') },
+  }))
+
+  return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>Send message</Button>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>Send SMS</Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Send message</DialogTitle>
+            <DialogTitle>Send SMS</DialogTitle>
           </DialogHeader>
           <div className="mt-4 space-y-3">
-            <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">Auto (iMessage → SMS)</SelectItem>
-                <SelectItem value="imessage">iMessage</SelectItem>
-                <SelectItem value="sms">SMS</SelectItem>
-              </SelectContent>
-            </Select>
-            <Textarea value={body} onChange={e => setBody(e.target.value)} rows={4} placeholder="Type your message…" />
-            <Button onClick={handleSubmit} disabled={!body.trim() || send.isPending}>
+            <Textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              rows={4}
+              placeholder="Type your message…"
+              maxLength={1600}
+            />
+            <Button onClick={() => send.mutate({ customerId, body })} disabled={!body.trim() || send.isPending}>
               {send.isPending ? 'Sending…' : 'Send'}
             </Button>
             {send.error && <div className="text-sm text-destructive">{send.error.message}</div>}
@@ -3727,150 +4023,76 @@ export function SendMessageButton({ customerId }: ButtonProps) {
 }
 ```
 
-- [ ] **Step 38.2: Verify + commit**
+- [ ] **Step 33.5: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/components/dialer/send-message-button/
-git commit -m "feat(messaging): add send-message-button component
+git add src/features/voip-in-house/ui/components/
+git commit -m "feat(voip): add disposition picker + call-now + send-SMS components
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 39: Call-now button component
+### Task 34: Mount softphone + ship admin view + route
 
 **Files:**
-- Create: `src/shared/components/dialer/call-now-button/call-now-button.tsx`
+- Modify: `src/app/(frontend)/dashboard/layout.tsx`
+- Create: `src/features/voip-in-house/ui/views/voip-in-house-admin-view.tsx`
+- Create: `src/app/(frontend)/dashboard/voip-in-house/page.tsx`
 
-- [ ] **Step 39.1: Create the component**
+> Reminder: dashboard path is `dashboard/`, not `(dashboard)/`. The old plan + EPIC.md had this wrong.
 
-```tsx
-// call-now-button.tsx
-'use client'
-import { useState } from 'react'
-import { Button } from '@/shared/components/ui/button'
-import { useTRPC } from '@/trpc/helpers'
-import { useMutation } from '@tanstack/react-query'
+- [ ] **Step 34.1: Mount softphone widget globally**
 
-interface ButtonProps { customerId: string }
-
-export function CallNowButton({ customerId }: ButtonProps) {
-  const [confirmed, setConfirmed] = useState(false)
-  const trpc = useTRPC()
-  const startCall = useMutation(trpc.dialerAttempts.startTestCall.mutationOptions({
-    onSuccess: () => setConfirmed(false),
-  }))
-
-  function handleClick() {
-    if (!confirmed) {
-      setConfirmed(true)
-      setTimeout(() => setConfirmed(false), 3000)
-      return
-    }
-    startCall.mutate({ customerId })
-  }
-
-  return (
-    <Button
-      size="sm"
-      variant={confirmed ? 'destructive' : 'default'}
-      onClick={handleClick}
-      disabled={startCall.isPending}
-    >
-      {startCall.isPending ? 'Starting…' : confirmed ? 'Confirm — Dial now (AI)' : 'Dial now (AI)'}
-    </Button>
-  )
-}
-```
-
-- [ ] **Step 39.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/components/dialer/call-now-button/
-git commit -m "feat(dialer): add call-now-button placeable component
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 40: Mount softphone widget in dashboard layout
-
-**Files:**
-- Modify: `src/app/(frontend)/(dashboard)/layout.tsx`
-
-> Read the existing layout file first to understand its structure before editing.
-
-- [ ] **Step 40.1: Mount the softphone**
-
-Add to the layout body (somewhere outside the main page content tree so it persists across route changes):
+Read `src/app/(frontend)/dashboard/layout.tsx` first. Add the import + render the widget outside the main content tree (so it persists across route changes):
 
 ```tsx
-import { SoftphoneWidget } from '@/shared/components/dialer/softphone-widget/softphone-widget'
+import { SoftphoneWidget } from '@/features/voip-in-house/ui/components'
 
-// In the layout JSX, after main content:
+// Inside the layout JSX, after the main page tree:
 <SoftphoneWidget />
 ```
 
-The widget self-mounts via `TwilioDeviceProvider`, so the layout just needs to include it. It only fetches a token if the user is logged in (the access-token endpoint returns 401 otherwise).
+The widget self-mounts via `TwilioDeviceProvider` and silently no-ops if `/api/voip/softphone/access-token` returns 401 (unauthenticated user).
 
-- [ ] **Step 40.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/app/(frontend)/(dashboard)/layout.tsx
-git commit -m "feat(dialer): mount softphone widget globally in dashboard layout
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 41: Auto-dialer feature view + dashboard route
-
-**Files:**
-- Create: `src/features/auto-dialer/ui/views/dialer-admin-view.tsx`
-- Create: `src/app/(frontend)/(dashboard)/auto-dialer/page.tsx`
-
-- [ ] **Step 41.1: Create the admin view**
+- [ ] **Step 34.2: Admin view**
 
 ```tsx
-// features/auto-dialer/ui/views/dialer-admin-view.tsx
+// src/features/voip-in-house/ui/views/voip-in-house-admin-view.tsx
 'use client'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useTRPC } from '@/trpc/helpers'
-import { CallNowButton } from '@/shared/components/dialer/call-now-button/call-now-button'
-import { SendMessageButton } from '@/shared/components/dialer/send-message-button/send-message-button'
-import { Input } from '@/shared/components/ui/input'
 import { Card } from '@/shared/components/ui/card'
+import { Input } from '@/shared/components/ui/input'
+import { useTRPC } from '@/trpc/helpers'
+import { CallNowButton } from '../components/call-now-button/call-now-button'
+import { SendMessageButton } from '../components/send-message-button/send-message-button'
 
-export function DialerAdminView() {
+export function VoipInHouseAdminView() {
   const [customerId, setCustomerId] = useState('')
   const trpc = useTRPC()
-  const recent = useQuery(trpc.dialerAttempts.list.queryOptions({ limit: 20 }))
+  const recentCalls = useQuery(trpc.voipCalls.business.listRecent.queryOptions({ limit: 20 }))
 
   return (
     <div className="space-y-6 p-6">
       <header>
-        <h1 className="text-2xl font-bold">Auto-dialer (Phase 1)</h1>
-        <p className="text-sm text-muted-foreground">Manual dial trigger + recent attempts. Super-admin only.</p>
+        <h1 className="text-2xl font-bold">VoIP — In-house (Phase 1)</h1>
+        <p className="text-sm text-muted-foreground">
+          Test surface: click-to-call + send-SMS to a customer + recent activity. Super-admin only.
+          With <code>VOIP_DEV_OVERRIDE_NUMBER</code> set in dev, all outbound is routed to your test phone.
+        </p>
       </header>
 
       <Card className="p-4">
-        <h2 className="font-semibold">Test a call</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Paste a customer ID to trigger a one-off AI dial. With DIALER_DEV_OVERRIDE_NUMBER set,
-          the call routes to your test number instead of the customer's actual phone.
-        </p>
+        <h2 className="font-semibold">Try it</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Paste a customer ID to dial them.</p>
         <div className="mt-3 flex items-center gap-2">
           <Input
             placeholder="Customer ID (UUID)"
             value={customerId}
-            onChange={e => setCustomerId(e.target.value)}
+            onChange={(e) => setCustomerId(e.target.value)}
             className="max-w-md"
           />
           {customerId.length === 36 && (
@@ -3883,24 +4105,21 @@ export function DialerAdminView() {
       </Card>
 
       <Card className="p-4">
-        <h2 className="font-semibold">Recent dialer attempts</h2>
-        {recent.isLoading && <p className="text-sm">Loading…</p>}
-        {recent.data && recent.data.length === 0 && <p className="text-sm text-muted-foreground">No attempts yet.</p>}
-        {recent.data && recent.data.length > 0 && (
-          <ul className="mt-3 space-y-2 text-sm">
-            {recent.data.map(row => (
-              <li key={row.id} className="border-b pb-1">
-                <span className="font-mono text-xs">{row.id.slice(0, 8)}</span>{' '}
-                <span>{row.status}</span>{' '}
-                {row.disposition && <span>→ {row.disposition}</span>}{' '}
-                <span className="text-muted-foreground">{row.initiatedAt}</span>
-                {row.recordingUrl && (
-                  <a
-                    href={row.recordingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-2 text-xs underline"
-                  >
+        <h2 className="font-semibold">Recent calls</h2>
+        {recentCalls.isLoading && <p className="text-sm">Loading…</p>}
+        {recentCalls.data && recentCalls.data.length === 0 && (
+          <p className="text-sm text-muted-foreground">No calls yet.</p>
+        )}
+        {recentCalls.data && recentCalls.data.length > 0 && (
+          <ul className="mt-3 space-y-1 text-sm">
+            {recentCalls.data.map(c => (
+              <li key={c.id} className="border-b py-1">
+                <span className="font-mono text-xs">{c.id.slice(0, 8)}</span>{' '}
+                <span>{c.source}</span>{' '}<span>{c.status}</span>{' '}
+                {c.disposition && <span>→ {c.disposition}</span>}{' '}
+                <span className="text-muted-foreground">{c.initiatedAt}</span>
+                {c.recordingUrl && (
+                  <a href={c.recordingUrl} target="_blank" rel="noreferrer" className="ml-2 text-xs underline">
                     Recording
                   </a>
                 )}
@@ -3914,348 +4133,410 @@ export function DialerAdminView() {
 }
 ```
 
-- [ ] **Step 41.2: Mount the route**
+- [ ] **Step 34.3: Route**
 
 ```tsx
-// app/(frontend)/(dashboard)/auto-dialer/page.tsx
-import { DialerAdminView } from '@/features/auto-dialer/ui/views/dialer-admin-view'
+// src/app/(frontend)/dashboard/voip-in-house/page.tsx
+import { VoipInHouseAdminView } from '@/features/voip-in-house/ui/views'
 
-export default function AutoDialerPage() {
-  return <DialerAdminView />
+export default function VoipInHousePage() {
+  return <VoipInHouseAdminView />
 }
 ```
 
-- [ ] **Step 41.3: Verify + commit**
+- [ ] **Step 34.4: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/features/auto-dialer/ src/app/\(frontend\)/\(dashboard\)/auto-dialer/
-git commit -m "feat(auto-dialer): add admin view + /dashboard/auto-dialer route
+git add src/app/\(frontend\)/dashboard/layout.tsx \
+  src/app/\(frontend\)/dashboard/voip-in-house/ \
+  src/features/voip-in-house/ui/views/
+git commit -m "feat(voip): mount softphone in dashboard + admin view + route
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 42: Seed scripts (DIDs + dialer settings + example lead source config)
+### Task 35: Seed scripts (DIDs + app-settings + example lead-source voipConfig)
 
 **Files:**
-- Create: `scripts/seed-dialer-dids.ts`
-- Create: `scripts/seed-dialer-settings.ts`
-- Create: `scripts/configure-lead-source-dialer.ts`
+- Create: `scripts/seed-voip-dids.ts`
+- Create: `scripts/seed-app-settings-voip.ts`
+- Create: `scripts/configure-lead-source-voip.ts`
 
-> These are one-off bootstrap scripts. Run via `pnpm tsx scripts/<name>.ts` (matches existing script pattern). Use `import './lib/load-env'` (not `'dotenv/config'`) per memory `feedback-scripts-load-env.md`.
+> Use `import './lib/load-env'` (NOT `'dotenv/config'`) per memory `feedback-scripts-load-env.md`. Run via `pnpm tsx scripts/<name>.ts`.
 
-- [ ] **Step 42.1: DID seed**
+- [ ] **Step 35.1: `seed-voip-dids.ts`**
 
 ```ts
-// scripts/seed-dialer-dids.ts
 import './lib/load-env'
 import { db } from '@/shared/db'
-import { dialerDids } from '@/shared/db/schema'
+import { voipDids } from '@/shared/db/schema'
+import env from '@/shared/config/server-env'
 
 interface DidSeed {
-  e164Number: string
-  twilioPhoneSid: string
-  role: 'transfer_target' | 'dial'
+  e164: string
+  twilioSid: string
+  role: 'transfer_target' | 'agent_outbound'
+  assignedUserId: string | null
 }
 
-// Phase 0 pilot DIDs — env-driven so we don't drift from .env.
-// Role is baked into the env var name; pool expansion (to 7-10 DIDs) lands ~1-2 weeks before Phase 2 ramp.
 const SEEDS: DidSeed[] = [
+  // The transfer-target DID (CloudTalk warm-transfers land here + general inbound during pilot).
   {
-    e164Number: process.env.TWILIO_TRANSFER_TARGET_DID_E164!,
-    twilioPhoneSid: process.env.TWILIO_TRANSFER_TARGET_DID_SID!,
+    e164: env.TWILIO_TRANSFER_TARGET_DID_E164,
+    twilioSid: env.TWILIO_TRANSFER_TARGET_DID_SID,
     role: 'transfer_target',
+    assignedUserId: null,
+  },
+  // Per-agent outbound DIDs (Phase 1: unassigned; assign via Phase 4 admin UI when 2nd agent onboards).
+  {
+    e164: env.TWILIO_DID_424_E164,
+    twilioSid: env.TWILIO_DID_424_SID,
+    role: 'agent_outbound',
+    assignedUserId: process.env.SEED_AGENT_USER_ID ?? null,  // optional: pin to a user during dev
   },
   {
-    e164Number: process.env.TWILIO_DID_424_E164!,
-    twilioPhoneSid: process.env.TWILIO_DID_424_SID!,
-    role: 'dial',
-  },
-  {
-    e164Number: process.env.TWILIO_DID_626_E164!,
-    twilioPhoneSid: process.env.TWILIO_DID_626_SID!,
-    role: 'dial',
+    e164: env.TWILIO_DID_626_E164,
+    twilioSid: env.TWILIO_DID_626_SID,
+    role: 'agent_outbound',
+    assignedUserId: null,
   },
 ]
 
-function deriveAreaCode(e164: string): string {
-  // +1AAAXXXXXXX → AAA
-  return e164.slice(2, 5)
-}
+function areaCode(e164: string) { return e164.slice(2, 5) }
 
 async function main() {
-  for (const seed of SEEDS) {
-    if (!seed.e164Number || !seed.twilioPhoneSid) {
-      console.error(`Missing env vars for ${seed.role} DID; aborting.`)
-      process.exit(1)
-    }
+  // eslint-disable-next-line no-console
+  console.log('Seeding voip_dids…')
+  for (const s of SEEDS) {
+    await db.insert(voipDids).values({
+      source: 'in_house',
+      e164Number: s.e164,
+      areaCode: areaCode(s.e164),
+      twilioPhoneSid: s.twilioSid,
+      role: s.role,
+      status: 'active',
+      assignedUserId: s.assignedUserId,
+    }).onConflictDoNothing({ target: voipDids.e164Number })
   }
-
-  console.log('Seeding dialer DIDs…')
-  for (const seed of SEEDS) {
-    const isTransferTarget = seed.role === 'transfer_target'
-    await db.insert(dialerDids).values({
-      e164Number: seed.e164Number,
-      areaCode: deriveAreaCode(seed.e164Number),
-      twilioPhoneSid: seed.twilioPhoneSid,
-      status: isTransferTarget ? 'active' : 'warming',
-      dailyCap: isTransferTarget ? 200 : 20,
-      isTransferTargetDid: isTransferTarget,
-      warmingStartedAt: isTransferTarget ? null : new Date().toISOString(),
-    }).onConflictDoNothing({ target: dialerDids.e164Number })
-  }
-  console.log(`Inserted ${SEEDS.length} DIDs (skipped duplicates). Transfer target = ${SEEDS[0].e164Number}.`)
+  // eslint-disable-next-line no-console
+  console.log(`Inserted ${SEEDS.length} DIDs (skipped duplicates).`)
   process.exit(0)
 }
 
-main().catch(err => { console.error(err); process.exit(1) })
+main().catch((e) => { console.error(e); process.exit(1) })
 ```
 
-> **Before running:** verify `.env` (or `.env.local`) has `TWILIO_TRANSFER_TARGET_DID_{E164,SID}` + `TWILIO_DID_424_{E164,SID}` + `TWILIO_DID_626_{E164,SID}`. Script reads everything from env — no inline edits required. To add pool DIDs in Phase 2, append a new `TWILIO_DID_{areacode}_{E164,SID}` env pair and a corresponding `SEEDS` entry with `role: 'dial'`.
-
-- [ ] **Step 42.2: Settings seed**
+- [ ] **Step 35.2: `seed-app-settings-voip.ts`**
 
 ```ts
-// scripts/seed-dialer-settings.ts
 import './lib/load-env'
-import { upsertDialerSettings } from '@/shared/entities/dialer-settings/dal/server/upsert-singleton'
-import { DEFAULT_DIALER_SETTINGS_CONFIG } from '@/shared/entities/dialer-settings/schemas/config-schema'
+import { db } from '@/shared/db'
+import { appSettings } from '@/shared/db/schema'
+import { DEFAULT_VOIP_IN_HOUSE_CONFIG } from '@/shared/entities/app-settings/schemas/voip-in-house-config-schema'
 
-const ADMIN_USER_ID = process.env.SEED_ADMIN_USER_ID  // set in .env.local to your user ID
+const ADMIN_USER_ID = process.env.SEED_ADMIN_USER_ID
 
 async function main() {
   if (!ADMIN_USER_ID) {
-    console.error('SEED_ADMIN_USER_ID env var required')
-    process.exit(1)
+    // eslint-disable-next-line no-console
+    console.error('SEED_ADMIN_USER_ID env var required'); process.exit(1)
   }
-  console.log('Seeding dialer settings singleton…')
-  await upsertDialerSettings(DEFAULT_DIALER_SETTINGS_CONFIG, ADMIN_USER_ID)
+  // eslint-disable-next-line no-console
+  console.log('Seeding app_settings(feature=voip-in-house)…')
+  await db.insert(appSettings).values({
+    feature: 'voip-in-house',
+    configJson: DEFAULT_VOIP_IN_HOUSE_CONFIG,
+    updatedByUserId: ADMIN_USER_ID,
+  }).onConflictDoNothing({ target: appSettings.feature })
+  // eslint-disable-next-line no-console
   console.log('Done.')
   process.exit(0)
 }
 
-main().catch(err => { console.error(err); process.exit(1) })
+main().catch((e) => { console.error(e); process.exit(1) })
 ```
 
-- [ ] **Step 42.3: Lead source configuration script**
+- [ ] **Step 35.3: `configure-lead-source-voip.ts`**
 
 ```ts
-// scripts/configure-lead-source-dialer.ts
 import './lib/load-env'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema'
-import type { LeadSourceDialerConfig } from '@/shared/entities/lead-sources/schemas/dialer-config-schema'
+import type { LeadSourceVoipConfig } from '@/shared/entities/lead-sources/schemas/voip-config-schema'
 
-// Edit these values before running.
-const LEAD_SOURCE_SLUG = 'meta-roofing-ad'          // existing lead source slug
-const CONFIG: LeadSourceDialerConfig = {
-  enabled: true,
-  retellAgentId: 'agent_xxxxxxxxxxxxxxxxxxxxxxxx', // from Retell dashboard
-  trade: 'roofing',
-  consentContext: 'Meta lead-ad opt-in',
-  aiGreetingOverride: null,
-  warmIntroTemplate: '{name} on the line — interested in {trade} in {city}',
-  cadenceOverrides: null,
-  messageTemplates: null,
+const LEAD_SOURCE_SLUG = 'meta-roofing-ad'  // edit before running
+
+const CONFIG: LeadSourceVoipConfig = {
+  inHouse: {
+    enabled: true,
+    transactionalSmsTemplates: null,
+    callingHoursOverride: null,
+  },
+  // voip-campaigns sub-object — stays disabled until voip-campaigns Phase 1
+  campaigns: { enabled: false },
 }
 
 async function main() {
   const [src] = await db.select().from(leadSourcesTable).where(eq(leadSourcesTable.slug, LEAD_SOURCE_SLUG)).limit(1)
-  if (!src) { console.error(`Lead source slug '${LEAD_SOURCE_SLUG}' not found`); process.exit(1) }
+  if (!src) { console.error(`Lead source '${LEAD_SOURCE_SLUG}' not found`); process.exit(1) }
 
-  await db.update(leadSourcesTable)
-    .set({ dialerConfigJSON: CONFIG })
-    .where(eq(leadSourcesTable.id, src.id))
-
-  console.log(`Configured lead source '${src.name}' (${src.id}) for dialer.`)
+  await db.update(leadSourcesTable).set({ voipConfigJSON: CONFIG }).where(eq(leadSourcesTable.id, src.id))
+  // eslint-disable-next-line no-console
+  console.log(`Configured lead source '${src.name}' (${src.id}) for in-house voip.`)
   process.exit(0)
 }
 
-main().catch(err => { console.error(err); process.exit(1) })
+main().catch((e) => { console.error(e); process.exit(1) })
 ```
 
-- [ ] **Step 42.4: Run all three (with real values)**
+- [ ] **Step 35.4: Run all three**
 
 ```bash
-pnpm tsx scripts/seed-dialer-dids.ts
-pnpm tsx scripts/seed-dialer-settings.ts
-pnpm tsx scripts/configure-lead-source-dialer.ts
+pnpm tsx scripts/seed-voip-dids.ts
+pnpm tsx scripts/seed-app-settings-voip.ts
+pnpm tsx scripts/configure-lead-source-voip.ts
 ```
 
-Verify in DB: `dialer_dids` has 6 rows, `dialer_settings` has 1 row keyed `'singleton'`, `lead_sources.dialer_config_json` set on the configured source.
+Verify in DB: 3 rows in `voip_dids`, 1 row in `app_settings` keyed `'voip-in-house'`, target lead source has `voip_config_json` populated.
 
-- [ ] **Step 42.5: Commit (scripts only — actual values stay in dev DB)**
+- [ ] **Step 35.5: Commit**
 
 ```bash
 pnpm tsc && pnpm lint
-git add scripts/seed-dialer-dids.ts scripts/seed-dialer-settings.ts scripts/configure-lead-source-dialer.ts
-git commit -m "chore(dialer): add seed scripts for DIDs + settings + lead source config
+git add scripts/seed-voip-dids.ts scripts/seed-app-settings-voip.ts scripts/configure-lead-source-voip.ts
+git commit -m "chore(voip): add seed scripts (DIDs + app-settings + example lead-source voipConfig)
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 43: Configure Retell agent (manual — in Retell dashboard)
+### Task 36: End-to-end manual verification
 
-> No code commit. Document the manual setup for the executing developer.
+> Run all checks in order. Any failure = task incomplete; fix + retry. **SMS-send verification (36.5) is gated by 10DLC Campaign approval** — defer that one substep until Twilio Console shows the campaign as approved.
 
-- [ ] **Step 43.1: Create the Retell agent**
-
-In the Retell dashboard:
-
-1. Create a new agent. Give it a name like "Tri Pros — Roofing Lead Followup".
-2. Set the system prompt — owner-managed; this is YOUR script. Include AI disclosure (per spec the system does not enforce, but you should script it).
-3. Add dynamic variables: `{{lead_name}}`, `{{trade}}`, `{{consent_context}}`, `{{city}}`.
-4. Configure mid-call custom functions:
-   - **lead_context** — calls `${DIALER_WEBHOOK_BASE_URL}/api/dialer/ai/lead-context`
-   - **route_transfer** — calls `${DIALER_WEBHOOK_BASE_URL}/api/dialer/ai/route-transfer`. Configure to use the response's `transfer_to` for warm transfer destination.
-   - **log_disposition** — calls `${DIALER_WEBHOOK_BASE_URL}/api/dialer/ai/log-disposition`
-5. Set the call-completed webhook URL: `${DIALER_WEBHOOK_BASE_URL}/api/dialer/ai/call-completed`
-6. Enable voicemail detection. Configure a 12-second drop message (owner-scripted).
-7. Save. Copy the agent ID.
-
-- [ ] **Step 43.2: Update the lead source config**
-
-Edit `scripts/configure-lead-source-dialer.ts`, paste the Retell agent ID into `CONFIG.retellAgentId`, re-run:
+- [ ] **Step 36.1: Pre-flight**
 
 ```bash
-pnpm tsx scripts/configure-lead-source-dialer.ts
-```
-
-- [ ] **Step 43.3: Manual verify**
-
-In Retell dashboard, use the test-call feature with sample dynamic variables to confirm the agent speaks correctly. (Already done in Phase 0 Task 2.3 if you preserved that setup.)
-
-- [ ] **Step 43.4: Document the Retell config**
-
-Optional: capture a screenshot or text dump of the agent's configuration and save to `docs/plans/auto-dialer/retell-agent-config-roofing.md` (not committed if it contains secrets — gitignore if needed).
-
----
-
-### Task 44: End-to-end manual verification
-
-> The Phase 1 acceptance test. Run all of these in sequence. Any failure = task incomplete; debug + retry.
-
-- [ ] **Step 44.1: Pre-flight checks**
-
-```bash
-# Env vars set
+# Env vars present
 echo "TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:0:10}…"
-echo "RETELL_API_KEY: ${RETELL_API_KEY:0:10}…"
-echo "SENDBLUE_API_KEY_ID: ${SENDBLUE_API_KEY_ID:0:10}…"
-echo "DIALER_DEV_OVERRIDE_NUMBER: $DIALER_DEV_OVERRIDE_NUMBER"  # should be YOUR cell
+echo "VOIP_WEBHOOK_BASE_URL: $VOIP_WEBHOOK_BASE_URL"
+echo "VOIP_DEV_OVERRIDE_NUMBER: $VOIP_DEV_OVERRIDE_NUMBER"  # should be your test cell
+echo "CLOUDTALK_WEBHOOK_SECRET: ${CLOUDTALK_WEBHOOK_SECRET:0:6}…"
 
 # DB has seeds
-psql $DATABASE_DEV_URL -c "SELECT count(*) FROM dialer_dids;"  # expect 6
-psql $DATABASE_DEV_URL -c "SELECT id FROM dialer_settings WHERE id='singleton';"  # expect 1 row
+psql "$DATABASE_DEV_URL" -c "SELECT count(*), array_agg(role) FROM voip_dids;"
+psql "$DATABASE_DEV_URL" -c "SELECT feature FROM app_settings WHERE feature = 'voip-in-house';"
 
-# Dev server runs
+# Dev server (worktree port — check .env.local for PORT)
 pnpm dev
-# Open https://destined-emu-bold.ngrok-free.app/dashboard/auto-dialer (or your dev URL)
+# Open https://destined-emu-bold.ngrok-free.app/dashboard/voip-in-house (or your dev URL)
 ```
 
-- [ ] **Step 44.2: Enroll yourself for transfers**
+- [ ] **Step 36.2: Enroll yourself for transfers**
 
-In dev DB, set your user as transfer-enrolled:
+In dev DB:
 
 ```sql
-INSERT INTO dialer_user_availability (user_id, enrolled_for_transfers, manual_status, transfer_mode)
+INSERT INTO voip_user_availability (user_id, enrolled_for_transfers, manual_status, transfer_mode)
 VALUES ('<your-user-id>', true, 'available', 'desktop')
-ON CONFLICT (user_id) DO UPDATE SET
-  enrolled_for_transfers = true,
-  manual_status = 'available',
-  transfer_mode = 'desktop',
-  updated_at = NOW();
+ON CONFLICT (user_id) DO UPDATE
+SET enrolled_for_transfers = true, manual_status = 'available', transfer_mode = 'desktop', updated_at = NOW();
 ```
 
-Reload dashboard. Confirm the softphone widget mounts (no errors in console; widget should be silent until a call arrives).
+Reload the dashboard. The softphone widget should silently register (no console errors). The Twilio Voice SDK will show `device.state === 'registered'` in the dev tools (check via `useTwilioDeviceContext()` returning `status: 'registered'`).
 
-- [ ] **Step 44.3: Pick a test customer**
+- [ ] **Step 36.3: Click-to-call**
 
-Pick (or create) a test customer in the dev DB whose `leadSourceId` references the dialer-enabled lead source from Task 42. Their `phone` will be overridden by `DIALER_DEV_OVERRIDE_NUMBER` so set any valid-looking value.
+In `/dashboard/voip-in-house`, paste a test customer's UUID and click **Call**, then **Confirm — Call now**.
+
+**Expected:**
+- Within 5s your test cell phone (the `VOIP_DEV_OVERRIDE_NUMBER`) rings.
+- Pick up; audio bridges to the browser softphone (you hear yourself on both ends because both legs are your devices).
+- Hang up either end → disposition modal opens.
+- Click "Booked meeting" → modal closes.
 
 ```sql
-SELECT id, name, phone, lead_source_id FROM customers WHERE lead_source_id = '<your-configured-lead-source-id>' LIMIT 5;
+SELECT id, source, status, disposition, twilio_call_sid, recording_url, did_used
+FROM voip_calls ORDER BY initiated_at DESC LIMIT 1;
 ```
 
-Copy a customer UUID.
+Expect: `source='in_house'`, terminal status, `disposition='booked_meeting'`, populated `twilio_call_sid`, `recording_url` populated within ~30s of hang-up.
 
-- [ ] **Step 44.4: Trigger the dial**
-
-In the dashboard at `/dashboard/auto-dialer`, paste the customer UUID, click **Dial now (AI)**, click again to confirm.
-
-**Expected within 5 seconds:** your test cell phone (the `DIALER_DEV_OVERRIDE_NUMBER`) rings.
-
-- [ ] **Step 44.5: Take the AI call**
-
-Answer. Hear the configured Retell agent's greeting. Confirm it has your test customer's name + trade interpolated.
-
-Say "Yes, please transfer me to someone."
-
-**Expected within ~3-5 seconds:** the AI says it's connecting you. The browser softphone widget in your dashboard shows the incoming-call banner with lead context.
-
-- [ ] **Step 44.6: Accept transfer**
-
-Click **Accept** in the browser widget.
-
-**Expected:** audio bridges. You can hear yourself on both your cell (lead side) and your computer mic (human side).
-
-Hang up either end.
-
-**Expected:** disposition modal appears in the browser. Click "Booked meeting." Modal closes.
-
-- [ ] **Step 44.7: Verify persistence**
+- [ ] **Step 36.4: Block via kill switch**
 
 ```sql
-SELECT id, status, disposition, transferred_to_user_id, recording_url FROM dialer_attempts ORDER BY initiated_at DESC LIMIT 1;
+UPDATE app_settings SET config_json = jsonb_set(config_json, '{globalKillSwitch}', 'true')
+WHERE feature = 'voip-in-house';
 ```
 
-Expect:
-- `status` = a terminal value (e.g., `live_transferred` or `no_answer` depending on flow)
-- `disposition` = `booked_meeting`
-- `transferred_to_user_id` = your user ID
-- `recording_url` = a https://api.twilio.com/... URL (may take 30s after hangup to populate; refetch)
+Re-attempt the click-to-call. **Expected:** mutation rejects with `kill_switch_active`; no Twilio call; a `voip_calls` row inserted with `status='skipped_compliance'`, `skip_reason='kill_switch_active'`.
 
-Open the recording URL in browser (you'll be prompted for Twilio auth — log in to Twilio Console to play).
-
-- [ ] **Step 44.8: Verify messaging**
-
-In the auto-dialer admin view, click **Send message** on the same customer. Send a test SMS body. Verify on your test phone.
-
-Reply STOP from your test phone.
-
-Verify in DB:
+Reset:
 
 ```sql
-SELECT phone_e164, source FROM dialer_dnc ORDER BY added_at DESC LIMIT 5;
-SELECT status FROM dialer_lead_states WHERE customer_id = '<test-customer-id>';
--- Should be 'opted_out'
+UPDATE app_settings SET config_json = jsonb_set(config_json, '{globalKillSwitch}', 'false')
+WHERE feature = 'voip-in-house';
 ```
 
-Verify you received a confirmation SMS on your test phone.
+- [ ] **Step 36.5: Send SMS (BLOCKED until 10DLC Campaign approved)**
 
-- [ ] **Step 44.9: Verify iMessage delivery (if iPhone available)**
+Once `TWILIO_10DLC_CAMPAIGN_SID` is set:
 
-From the same Send Message dialog, send with channel = **Auto** to a contact you know is on iPhone.
+In the admin view, click **Send SMS** on a customer, type a body, click Send. Expected: SMS arrives on test phone within 10s. `voip_messages` has a row with `direction='outbound'`, `source='in_house'`, populated `twilio_message_sid`, eventual `status='delivered'`.
 
-Verify they receive a blue-bubble iMessage. Check `dialer_messages.channel` is `imessage`.
+- [ ] **Step 36.6: STOP handler**
 
-If you have access to an Android contact, send with channel **Auto**. Verify SMS fallback works and `channel='fallback_sms'`.
+Reply STOP from the test phone.
 
-- [ ] **Step 44.10: Final Phase 1 acceptance check**
+```sql
+SELECT phone_e164, source, reason FROM voip_dnc ORDER BY added_at DESC LIMIT 3;
+```
+
+Expect: a row with `source='twilio_stop'`. Confirmation SMS arrives on test phone.
+
+Next outbound attempt to the same phone → blocked via DNC gate (`reason: 'dnc'`).
+
+- [ ] **Step 36.7: voip routing endpoints**
 
 ```bash
-pnpm tsc  # clean
+# caller-lookup
+curl -X POST "https://voip.triprosremodeling.com/api/voip/routing/caller-lookup?secret=$CLOUDTALK_WEBHOOK_SECRET" \
+  -H "content-type: application/json" \
+  -d '{"caller_e164": "+1<test-customer-phone>"}'
+
+# transfer-target
+curl -X POST "https://voip.triprosremodeling.com/api/voip/routing/transfer-target?secret=$CLOUDTALK_WEBHOOK_SECRET" \
+  -H "content-type: application/json" \
+  -d '{"caller_e164": "+1...", "customer_id": "<uuid>"}'
+
+# compliance-check (use a DNC'd phone from Step 36.6)
+curl -X POST "https://voip.triprosremodeling.com/api/voip/routing/compliance-check?secret=$CLOUDTALK_WEBHOOK_SECRET" \
+  -H "content-type: application/json" \
+  -d '{"customer_id": "<uuid>", "phone_e164": "<DNC phone>"}'
+```
+
+Verify the response shapes match [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md). Also verify a request with a wrong secret returns 403.
+
+- [ ] **Step 36.8: Tokenized link**
+
+Mint via tRPC (use the `/dashboard/voip-in-house` view's recent-calls panel as the harness — or open browser devtools and call `trpc.voipLinkTokens.mintLDoc.mutate(...)` manually). Open the returned URL in a private window:
+- First visit → 302 redirect to `/d/upload/<slot>` (stub page renders).
+- Second visit → `{"error":"already_used"}` with 410.
+- Visit after 48h (or after manually setting `expires_at` in the past) → `{"error":"expired"}` with 410.
+
+- [ ] **Step 36.9: Lint enforcement of dependency direction**
+
+Run Task 31.2 procedure (temp import, lint fails with expected error message, remove temp). Confirms ESLint rule is firing.
+
+- [ ] **Step 36.10: Final check**
+
+```bash
+pnpm tsc   # clean
 pnpm lint  # clean
 ```
 
-If all 9 manual verifications above passed AND tsc/lint are clean → **Phase 1 is COMPLETE.**
+If all checks above pass → **Phase 1 is COMPLETE.**
 
-Update [EPIC.md](./EPIC.md) phase status: Phase 1 → "Done." Begin writing the Phase 2 plan.
+Move to Task 37 (boundary verification gate) before signing off.
+
+---
+
+### Task 37: Phase 1 → voip-campaigns Phase 1 boundary verification
+
+> Gate before voip-campaigns Phase 1 starts. Confirms the cross-EPIC seam is intact: the table shapes, the source-discriminator values, the voip routing contract, the DNC propagation surface — all match [INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md).
+
+- [ ] **Step 37.1: `voip_dnc` schema matches seam §5**
+
+```sql
+-- Confirm source enum values match exactly
+SELECT enumlabel FROM pg_enum
+WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'voip_dnc_source')
+ORDER BY enumlabel;
+```
+
+Expected output (sorted): `cloudtalk_stop`, `ftc`, `manual_admin`, `twilio_stop`, `voice_request`. If anything differs → fix the enum const array in `src/shared/constants/enums/voip.ts` + re-push schema.
+
+- [ ] **Step 37.2: Forward-compat columns present on shared tables**
+
+```sql
+-- voip_calls — confirm cloudtalk forward-compat
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'voip_calls'
+  AND column_name IN ('source', 'cloudtalk_call_uuid', 'campaign_id', 'transcript_summary', 'sentiment')
+ORDER BY column_name;
+-- Expected: all 5 present
+
+-- voip_messages — confirm cloudtalk forward-compat
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'voip_messages'
+  AND column_name IN ('source', 'cloudtalk_message_id', 'campaign_id', 'template_key')
+ORDER BY column_name;
+-- Expected: all 4 present
+
+-- voip_dids — confirm source discriminator
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'voip_dids' AND column_name = 'source';
+-- Expected: 1 row
+```
+
+- [ ] **Step 37.3: voip routing contract sanity (all 3 endpoints reachable + correct shape)**
+
+Repeat the curls from Step 36.7 against the **production** `voip.triprosremodeling.com` host (NOT the ngrok URL) — voip-campaigns Phase 0 will configure CloudTalk against the prod URL. Document the production-host smoke-test responses in `docs/plans/voip-in-house/voip-routing-endpoints.md`.
+
+- [ ] **Step 37.4: `voip_dnc` propagation contract**
+
+Write a short integration contract doc at `docs/plans/voip-in-house/dnc-propagation-contract.md`:
+
+```markdown
+# DNC propagation contract (Phase 1 hand-off to voip-campaigns)
+
+## Writers
+- `services/voip/voip-messages.service.ts::recordInboundMessage` — STOP from Twilio inbound → source='twilio_stop'
+- `services/voip/voip-dnc.service.ts::recordDnc` — manual admin (via tRPC) → source='manual_admin'
+- Phase 2 cron: FTC DNC scrub → source='ftc'
+- **voip-campaigns Phase 1** (sibling EPIC): CloudTalk webhook handler → source='cloudtalk_stop' or 'voice_request'
+
+## Readers
+- `services/voip/voip-compliance.service.ts::canOutboundTo` — gate before any in-house outbound (this EPIC)
+- `services/voip/voip-routing.service.ts::complianceCheckForCampaign` — voip routing compliance-check endpoint (called by CloudTalk)
+- **voip-campaigns Phase 1**: pre-enrollment guardrail in `enrollment.service.ts` + `dnc-propagation.service.ts` to push back to CloudTalk
+
+## Invariants
+- `voip_dnc.phone_e164` is UNIQUE — ON CONFLICT DO NOTHING.
+- `cloudtalk_synced_at` is populated by voip-campaigns after pushing the entry to CloudTalk contact attribute.
+  NULL for `source='cloudtalk_stop'` (no push needed — CloudTalk already honored it).
+- Compliance gate reads the table directly on every send — no caching.
+```
+
+- [ ] **Step 37.5: Lint rule still enforced**
+
+```bash
+pnpm lint
+# Expect: clean. The no-restricted-imports rule from Task 31 protects the seam.
+```
+
+- [ ] **Step 37.6: Update EPIC status**
+
+In `docs/plans/voip-in-house/EPIC.md` phase status table: change Phase 1 row to `Done (YYYY-MM-DD)`. Add an entry to the Decisions log if any mid-implementation choices were made.
+
+Sign-off: when this task is complete, **voip-campaigns Phase 0 can start** (CloudTalk procurement + dashboard configuration). voip-campaigns Phase 1 (the code work) is unblocked once its Phase 0 completes.
+
+- [ ] **Step 37.7: Commit the seam docs**
+
+```bash
+git add docs/plans/voip-in-house/dnc-propagation-contract.md \
+  docs/plans/voip-in-house/voip-routing-endpoints.md \
+  docs/plans/voip-in-house/twilio-console-config.md \
+  docs/plans/voip-in-house/EPIC.md
+git commit -m "docs(voip): Phase 1 boundary verification + seam handoff to voip-campaigns
+
+Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+```
 
 ---
 
@@ -4263,8 +4544,9 @@ Update [EPIC.md](./EPIC.md) phase status: Phase 1 → "Done." Begin writing the 
 
 When Phase 1 completes:
 
-1. Update `EPIC.md` decisions log if any mid-implementation choices were made (e.g., chosen Twilio Voice SDK wrapper, deviations from the plan).
-2. Verify all `@migration: → Inngest` comments are in place by `grep -r "@migration:" src/`.
-3. Write `phase-2-cadence-and-compliance.md` using this plan as the template + spec §9 Phase 2 as the scope source.
+1. Update [EPIC.md](./EPIC.md) phase status table — Phase 1 → Done.
+2. Verify `@migration: → Inngest` and `@migration: → Ably kernel` comments are placed (search: `grep -rn "@migration:" src/shared/services/voip/ src/shared/services/providers/twilio/`).
+3. Write `phase-2-lifecycle-automation.md` per the stub already in place. Phase 2 scope: lifecycle SMS automation (meeting reminders, proposal links, project status), QStash-driven sends, calendar-aware quiet hours, customer.localTz derivation, FTC DNC scrub cron, recording auto-delete after `recordingRetentionDays`.
 
-The system at end of Phase 1 supports **one button-press dial** and **manual messaging** end-to-end. Phase 2 automates this into a cadence-driven queue with all 10 lifecycle branches.
+The system at end of Phase 1 supports **agent click-to-call** + **agent send-SMS** + **inbound STOP handling** + **voip routing endpoints for CloudTalk** + **L-DOC tokenized links**, all with full DNC + kill-switch gating. Phase 2 layers automated lifecycle SMS on top; Phase 3 adds mobile (cellular) mode; Phase 4 ships the admin observability + kill-switch UI; Phase 5 wires customer-side timeline integration.
+

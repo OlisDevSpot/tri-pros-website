@@ -1,148 +1,155 @@
-# Auto-Dialer Epic — Living Context
+# voip-in-house EPIC — In-house Twilio VoIP for All Comms EXCEPT Lead Conversion
 
-> ## ⏸ DEFERRED — pivoted to CloudTalk on 2026-05-23
->
-> **This EPIC describes a custom Twilio + Retell + Sendblue build that is no longer the active plan.** The user pivoted to **CloudTalk** as the integrated VoIP + AI-voice provider mid-Phase-1A grilling session. CloudTalk replaces Twilio + Retell + Sendblue.
->
-> **What to read instead:** [`docs/plans/voip/HANDOFF-from-twilio-build.md`](../voip/HANDOFF-from-twilio-build.md) — full pivot context, what carries over, what's abandoned, starter sketch for the new CloudTalk EPIC.
->
-> **Why this doc still lives here:** Business-logic decisions, strategic context (spam mitigation rationale, why-not-CloudTalk-originally analysis, owner-managed AI script position, deferred TCPA consult, etc.) are still valid under CloudTalk. The infrastructure-specific bits (Trust Hub, Elastic SIP Trunk, Retell agents, 10DLC) are obsolete but informative for the CloudTalk Phase 0 design.
->
-> **Aborted implementation work:** see git branch `archive/twilio-build-aborted` (5 commits, not merged). Not for use.
->
-> ---
+> **Status:** ACTIVE — Phase 0 substantially complete (Twilio + Trust Hub + 10DLC + 3 DIDs procured; 10DLC Campaign still vetting); Phase 1 ready to start.
+> **Sibling EPIC:** [voip-campaigns](../voip-campaigns/EPIC.md) — CloudTalk-managed lead-to-meeting conversion. Ships **after** this EPIC because CloudTalk depends on the in-house DIDs + DNC table + voip routing endpoints existing.
+> **Cross-system contract:** [INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md) — required reading before touching anything that crosses systems.
+> **Pivot history:** [HANDOFF-from-twilio-build.md](../voip/HANDOFF-from-twilio-build.md) — the 2026-05-23 split: AI-dialer/lead-conversion ⇒ voip-campaigns; everything else ⇒ this EPIC.
+> **Aborted implementation work:** git branch `archive/twilio-build-aborted` (5 commits, not merged) holds the original Phase 1A attempt for the *combined* AI-dialer + in-house build. Reference only.
 
-> **What this is:** The front door for the auto-dialer initiative. Tracks vision, phase status, inter-phase decisions made *during* implementation (vs. up-front design choices, which live in the spec), open questions still to resolve, and links to all related artifacts. Updated as phases ship.
+---
+
+## Relationship to voip-campaigns EPIC
+
+This EPIC is one half of the VoIP planning pair.
+
+**This EPIC owns**: every VoIP touchpoint EXCEPT lead-to-meeting conversion campaigns — agent-mediated customer comms (replacing personal cells), inbound main-line + IVR + voicemail, internal-comm push pipeline, transactional lifecycle SMS (meeting reminders, proposal links, project status, project lifecycle), one-off agent click-to-call / send-SMS, browser softphone widget, mobile (cellular) transfer mode, tokenized-link sends (doc upload, payment, reschedule, e-sign), opt-out compliance, and the core `voip_*` database tables.
+
+**The other EPIC ([voip-campaigns](../voip-campaigns/EPIC.md)) owns**: lead-to-meeting conversion via CloudTalk's managed Campaigns + AI VoiceAgent.
+
+**They interact via**: voip routing endpoints (CloudTalk Call Flow HTTP Request → our app — we **implement** these endpoints in `services/voip/voip-routing.service.ts`), CloudTalk webhooks (we **consume** via voip-campaigns service), DNC propagation (bidirectional through `voip_dnc`), graduation handoff (`meetings.create` → push to CloudTalk via voip-campaigns service), shared tables (`voip_calls`, `voip_messages`, `voip_dnc` with `source='in_house' | 'cloudtalk'` discriminator — schemas live here; voip-campaigns populates `cloudtalk` rows).
+
+**This EPIC ships first.** voip-campaigns depends on infrastructure delivered here.
+
+---
+
+> **What this is:** The front door for the in-house VoIP initiative. Tracks vision, phase status, decisions made *during* implementation, open questions, and links to artifacts.
 >
 > **Distinction from related docs:**
-> - **Spec** (`docs/superpowers/specs/2026-05-21-ai-dialer-design.md`) — immutable design snapshot from brainstorming. Source of truth for "why we made these decisions on 2026-05-21." Updated only with explicit rationale + Git history.
-> - **ADRs** (`docs/adr/`) — single-decision records, one per architectural call. The auto-dialer references existing ADR-0002 (entity server system) and ADR-0003 (service/provider architecture).
-> - **Phase plans** (`./phase-N-*.md`) — actionable, task-by-task implementation plans for each phase.
-> - **This EPIC** — living glue. The thing you read first to understand "where are we, why."
+> - **Original design spec** (`docs/superpowers/specs/2026-05-21-ai-dialer-design.md`) — frozen historical snapshot from when this EPIC was the *combined* "AI-dialer + in-house" build. Much of it is now under voip-campaigns; the in-house-specific bits remain valid context.
+> - **ADRs** (`docs/adr/`) — single-decision records. This EPIC references ADR-0002 (entity server system) and ADR-0003 (service/provider architecture).
+> - **Integration seam** ([`../voip/INTEGRATION-SEAM.md`](../voip/INTEGRATION-SEAM.md)) — cross-system contract; load-bearing.
+> - **Phase plans** (`./phase-N-*.md`) — actionable, task-by-task implementation plans.
+> - **This EPIC** — living glue. Read first to understand "where are we, why."
 
 ---
 
 ## Vision
 
-Tri Pros Remodeling needs to handle thousands of weekly lead-dial attempts with a single human (eventually a small team + VAs). Manual dialing caps the human at ~100 conversations/day; an AI-first dialer that warm-transfers only live, willing leads to the human gets that number to 300-500/day at the same labor cost. The system is built natively into our Next.js + tRPC + Postgres app — no off-the-shelf dialer suite — because the orchestration logic (cadence, compliance, DID rotation, integration with customer entities) is where the long-term competitive value lives.
+Tri Pros agents currently communicate with customers via their **personal cellphones**. The office "main line" is a single physical cellphone. There's no centralized log, no routing, no shared SMS thread, no recordings, no privacy boundary (customers learn the agent's personal number; when an agent leaves, the customer loses contact). This EPIC builds the in-house Twilio-backed VoIP layer that hosts every communication touchpoint except lead-to-meeting conversion — agent ↔ customer, agent ↔ agent, inbound IVR, lifecycle SMS, tokenized link sends, project comms, internal-comm push notifications. It also provides the landing infrastructure (clean Tri Pros DIDs, voip routing endpoints, DNC table) that CloudTalk-side lead conversion warm-transfers and gates against.
 
-## Strategic decisions (immutable; see spec for rationale)
+The architectural payoff:
+- **Centralized control + audit trail** — every call/SMS lives in our `voip_*` tables with full join-ability to customer + project state
+- **Clean Tri Pros DIDs** — each agent gets a Tri Pros-branded DID; customers learn that number, not the agent's personal cell
+- **Agent continuity** — when an agent leaves or rotates, their DID can be reassigned without customer-visible churn
+- **Privacy** — agent personal cellphones stay private
+- **Receives lead conversion handoffs** — CloudTalk warm-transfers land on our DIDs; from that point on, the customer relationship lives here
 
-- **Custom orchestrator over CloudTalk** — our app owns cadence, compliance, DID pool, transfer routing. CloudTalk revisit-trigger: hiring 3rd VA AND queue/coaching becomes blocking.
-- **Vendor stack** — Twilio (backbone, including all Phase-1 messaging) + Retell (AI voice) + ~~Sendblue (iMessage)~~ (deferred post-launch) + Hiya (Phase-2 branded calling).
-- **Vendor abstraction** — every external vendor sits behind an interface in `services/{voip,ai-voice,branded-calling,messaging}/`. Swap = concrete impl swap, no caller changes.
-- **Mobile = cellular routing, not browser WebRTC** — PSTN call to human's cell, PWA only handles dashboard/dispositions.
-- **AI script content is owner-managed** — the system does NOT enforce specific disclosure language. Per-source AI greeting + warm-intro template editable via UI.
+## Strategic decisions
+
+- **Vendor: Twilio** for VoIP backbone + SMS messaging. Most mature browser softphone SDK; Trust Hub for STIR/SHAKEN A-attestation; mature webhook lifecycle.
+- **No formal `VoIPProvider` interface — single-provider commitment to Twilio.** Future swap (e.g., Telnyx for cost) = rewrite `providers/twilio/*` + update services that touch it. Acceptable cost; matches the locked thin-façade decision in [voip-campaigns/EPIC.md](../voip-campaigns/EPIC.md).
+- **Mobile = cellular routing, not browser WebRTC.** iOS Safari + PWA can't reliably handle WebRTC when backgrounded/locked, and lacks CallKit-equivalent native UI. PSTN call to agent's cell; PWA only handles dashboard/dispositions.
+- **Browser softphone for desktop mode** via Twilio Voice JS SDK.
+- **Sticky DID-per-agent (NO `customers.assignedAgentUserId` field).** Customer↔agent association is implicit via which agent DID the customer has interacted with. Customer calls back the DID that called them → routes to that agent. No assignment-state table needed.
+- **AI script content is owner-managed** — applies to any future AI-mediated in-house comms (e.g., meeting confirmation calls). Per-source templates editable via UI; no system-enforced disclosure language. (Most AI-mediated work is in voip-campaigns; this EPIC's AI usage is minimal.)
+- **Tokenized-link sends pattern** — agent triggers SMS containing a single-use, short-lived (default 48h TTL) URL that opens a flow in our app (doc upload, payment, reschedule, e-sign). Generic pattern; first use case in Phase 1 is document upload (L-DOC).
+- **DNC + opt-outs canonical in `voip_dnc`** — both this EPIC and voip-campaigns gate against the same table. STOP replies from either side write here.
+- **Forward-compat schema for voip-campaigns** — `voip_calls` and `voip_messages` schemas include nullable columns (`cloudtalk_call_uuid`, `campaign_id`, `transcript_summary`, `sentiment`, etc.) populated only by voip-campaigns' webhook handler. Documented in DOCS.md.
+- **Two parallel kill switches** — `app_settings` row `feature='voip-in-house'` has a `globalKillSwitch` that halts in-house outbound; voip-campaigns has its own. Emergency-stop = toggle both + pause campaigns in CloudTalk dashboard. Master-kill button is a Phase 2+ enhancement.
 
 ---
 
-## Spam mitigation strategy (LAYERED)
+## Spam mitigation strategy — light-touch for in-house DIDs
 
-**Carrier "Spam Likely" labeling is the #1 risk to dialer effectiveness.** Discovered 2026-05-21 during Phase 0 testing: a fresh Twilio DID with STIR/SHAKEN A-attestation **APPROVED** still rendered as "Spam Likely" on iPhone. STIR/SHAKEN proves *who* is calling (not spoofed) but says nothing about whether the call is *wanted*. The actual verdict comes from three independent carrier analytics engines layered on top:
+**In-house DIDs are low-volume + agent-mediated** — each agent DID places at most a few dozen calls/SMS per day, with high answer rates (customers expect the call) and human-shaped conversation patterns (long durations, no bursts). They are NOT the high-volume conversion DIDs. **High-volume campaign DIDs live in CloudTalk** (voip-campaigns EPIC) and absorb the spam-labeling risk there.
 
-| Engine | Carriers Using It |
-|---|---|
-| **Hiya** | AT&T native + Samsung devices + Hiya app |
-| **TNS** | Verizon native |
-| **First Orion** | T-Mobile / Sprint native |
+For in-house DIDs, we want:
 
-Each engine vets registrations independently and scores reputation by behavior (call duration, hangup rate, complaint rate, volume patterns). Brand-new DIDs with zero history default to skeptical treatment.
+| Layer | When | Cost | Effort |
+|---|---|---|---|
+| **L1 — Free baseline**: CNAM + FreeCallerRegistry + Nomorobo + behavioral hygiene | Phase 0 | Free | 1hr setup + 2-4 week vetting clock |
+| **L2 — Per-DID light monitoring**: track per-DID call count + complaint count in `voip_dids`; auto-alert if a DID is flagged | Phase 1-2 | Free | Built into schema |
+| **L3 — Branded display** (optional, post-launch): Hiya Connect or Verizon BCID — only if observed answer rate <40% on in-house DIDs after FCR vetting completes (unlikely; in-house DIDs are expected to maintain reputation easily) | Phase 3+ trigger | $29-500/mo Hiya | 1-2 weeks setup |
 
-**Mitigation is a layered stack, deployed progressively:**
+**The aggressive 5-layer mitigation stack from the original combined EPIC (DID pool warming, daily caps, automated cooldown, Voice Integrity) is now CloudTalk's concern** — campaign DIDs need that. In-house DIDs don't dial at volumes that trigger the threat model.
 
-| Layer | When | Cost | Effort | Triggers |
-|---|---|---|---|---|
-| **L1 — Free baseline**: CNAM + FreeCallerRegistry + Nomorobo + behavioral hygiene | Phase 0 | Free | 1hr setup + 2-4 week vetting clock | Mandatory; do TODAY |
-| **L2 — DID pool + warming + per-DID health**: 7-10 DIDs in rotation, ≤75 attempts/DID/day, warm-up cadence (week 1: 10-20 → week 3: 75), auto-retire flagged DIDs | Phase 1 (schema) → Phase 2 (orchestrator) | Free (just DID cost ~$1.15/mo each) | Built into `dialer_dids` schema | Mandatory before any production volume |
-| **L3 — Cheap insurance**: Twilio Voice Integrity (managed registration + monitoring) + FCC Reassigned Numbers Database scrub | Phase 1-2 | ~$5-15/DID/mo Voice Integrity + ~$1,300/yr RND | 1 hour | Enable Voice Integrity if FCR alone doesn't clear "Spam Likely" within 4 weeks; RND mandatory for TCPA safe harbor |
-| **L4 — Branded display**: Hiya Connect (AT&T+T-Mobile+Samsung) + Verizon BCID via Numeracle or First Orion as OSP | Phase 2-3 | $29-500/mo Hiya self-serve → $300-800/mo Verizon BCID OSP | 1-2 weeks setup | Volume >3K conversations/mo |
-| **L5 — Continuous monitoring at scale**: Caller ID Reputation (CIDR) + Hiya Reputation API (programmatic spam-status checks baked into dialer) | Phase 3+ | ~$64/mo CIDR + Hiya API quoted | dev integration | DID pool >10 OR sustained answer-rate drop >25% |
-
-**Behavior matters more than registration.** All registration in the world won't save a DID that bursts 200 calls in 30 min with <10s avg duration. The data model bakes this in:
-- `dialer_dids` table tracks per-DID daily call count, complaint count, "spam_likely" detection
-- `dialer_attempts` captures duration, hangup pattern, vendor flags
-- Dispatcher service enforces ≤75 attempts/DID/day cap with rotation
-- Auto-retire flow parks DIDs that cross thresholds (drops >25% week-over-week, or 2-of-3 engines flag) for 60-90 days
-
-**Forward-looking signal:** Verizon BCID went live Sept 2025. By Phase 3, full national branded-calling coverage will require *two* vendors (Hiya for AT&T + Numeracle/First Orion as OSP for Verizon BCID) OR Twilio Branded Calling (currently Public Beta; covers T-Mobile + Verizon, NOT AT&T). Twilio's offering may consolidate this by Phase 3 — revisit then.
+**Forward-looking signal:** Verizon BCID went live Sept 2025. If sustained answer rate ever drops on in-house DIDs, evaluate Hiya Connect + Verizon BCID. Not anticipated in pilot.
 
 ---
 
 ## Phase status
 
-| Phase | Status | Plan | Spec section | Estimated effort |
-|---|---|---|---|---|
-| 0 — External setup (Trust Hub, 10DLC, accounts, DIDs) | **Done (2026-05-22)** — vetting clocks still running in background; see "Phase 0 outcomes" below | [phase-0-setup.md](./phase-0-setup.md) | §9 Phase 0 | 1-2 weeks (mostly waiting) |
-| 1 — MVP end-to-end transfer + messaging foundation | Ready to start (Twilio-only messaging after Sendblue deferral) | [phase-1-mvp.md](./phase-1-mvp.md) | §9 Phase 1 | 2 weeks |
-| 2 — Cadence + compliance + lifecycle branches + auto messaging | Not started | _Pending — written after Phase 1 lands_ | §9 Phase 2 | 1 week |
-| 3 — DID pool + spam mitigation | Not started | _Pending — written after Phase 2 lands_ | §9 Phase 3 | 1 week |
-| 4 — Super-admin config + dashboards + chat UI + mobile mode | Not started | _Pending — written after Phase 3 lands_ | §9 Phase 4 | 1-1.5 weeks |
-| 5 — Customer-side integration + observability | Not started | _Pending — written after Phase 4 lands_ | §9 Phase 5 | 1-2 weeks |
-| 6+ — Triggered optimizations (Hiya, Telnyx, Retell Enterprise, CloudTalk, Inngest, Ably) | Future | _Triggered ad-hoc per observed conditions_ | §9 Phase 6+ | n/a |
+| Phase | Status | Plan | Notes |
+|---|---|---|---|
+| 0 — External setup (Twilio + DIDs + Trust Hub + 10DLC + DNC + webhook subdomain) | **Substantially complete (2026-05-22)** — Campaign vetting still running; FCR vetting still running; both background, don't block Phase 1 design | [phase-0-setup.md](./phase-0-setup.md) | Retell + Sendblue dropped from Phase 0 (per pivot); subdomain renamed `dialer.` → `voip.triprosremodeling.com` |
+| 1 — MVP: softphone + voice + SMS foundation + tokenized-link sends + voip routing endpoints + DNC + kill switch | **Ready to start (2026-05-23 descope rewrite complete)** | [phase-1-mvp.md](./phase-1-mvp.md) — rewritten to reflect in-house-only scope (37 tasks) | 2-3 weeks |
+| 2 — Lifecycle SMS automation + FTC DNC scrub cron + recording auto-delete | Not started | [phase-2-lifecycle-automation.md](./phase-2-lifecycle-automation.md) — stub | 1-2 weeks |
+| 3 — Mobile (cellular) mode + inbound IVR + push pipeline integration | Not started | [phase-3-mobile-mode.md](./phase-3-mobile-mode.md) — stub | 1 week |
+| 4 — Admin / observability surface (call history, message inbox, DID pool, agent availability, settings + kill switch UI) | Not started | [phase-4-admin-observability.md](./phase-4-admin-observability.md) — stub | 1-1.5 weeks |
+| 5 — Customer-side integration polish (conversation tab, timeline integration, pipeline quick actions) | Not started | [phase-5-customer-side-polish.md](./phase-5-customer-side-polish.md) — stub | 1-2 weeks |
+| 6+ — Triggered optimizations (Hiya Connect, Telnyx cost migration, Inngest, Ably realtime) | Future | _Triggered ad-hoc_ | n/a |
 
 ---
 
 ## Inter-phase dependencies
 
 ```
-Phase 0 (procurement) ──► Phase 1 (MVP)
+Phase 0 (procurement) ──► Phase 1 (MVP softphone + voice + SMS + voip routing)
                                   │
-                                  ├──► Phase 2 (cadence + compliance)
+                                  ├──► Phase 2 (lifecycle SMS automation)
                                   │             │
-                                  │             ├──► Phase 3 (DID pool) ─┐
-                                  │             │                        │
-                                  │             └──► Phase 4 ─────────┐  │
-                                  │                  (admin + chat +  │  │
-                                  │                   mobile mode)    │  │
-                                  │                                   │  │
-                                  └────────────────────────────────► Phase 5
-                                                                     (customer-side
-                                                                      integration +
-                                                                      polish)
+                                  │             ├──► Phase 3 (mobile + push + IVR refinement) ─┐
+                                  │             │                                              │
+                                  │             └──► Phase 4 (admin / observability) ──────┐  │
+                                  │                                                        │  │
+                                  └────────────────────────────────────────────────────► Phase 5
+                                                                                          (customer-side
+                                                                                           polish)
 ```
 
-- **Phase 0 → Phase 1**: hard gate. Need Trust Hub approved, 10DLC approved, Retell test call works, 6 DIDs purchased before Phase 1 code is useful.
-- **Phase 1 → Phase 2**: hard gate. MVP must work end-to-end with a single button before automating the lead-selection loop.
-- **Phase 2 → Phase 3**: soft. Phase 3 (DID pool sophistication) could in theory start in parallel after Phase 2's compliance gates are in place — but practically, want one phase to be stable before adding sophistication.
-- **Phase 3 → Phase 4**: soft. Phase 4 (admin UI) reflects what Phase 3 added; minor coupling but mostly independent.
-- **Phase 4 → Phase 5**: soft. Phase 5 (customer integration) imports components built in Phase 4 (`shared/components/dialer/*`).
+- **Phase 0 → Phase 1**: hard gate. Need Twilio account + DIDs + Trust Hub + 10DLC approved + webhook subdomain before Phase 1 code is useful.
+- **Phase 1 → Phase 2**: soft. Lifecycle automation can iterate once foundation works.
+- **Phase 3 → Phase 4**: can run in parallel after Phase 2 lands.
+- **Phase 4 → Phase 5**: soft. Customer-side polish imports components built in Phase 4.
 
-**Parallelization opportunity:** Phase 3 + Phase 4 can largely run in parallel (different parts of the stack) once Phase 2 lands.
+**Cross-EPIC dependency:** voip-campaigns Phase 1 requires this EPIC's Phase 1 complete (voip routing endpoints + voip_dnc + voip_* tables + clean DIDs for transfer targets).
 
 ---
 
 ## Phase 0 outcomes (as of 2026-05-22)
 
-What's in place vs what's still vetting vs what's deferred. Phase 1 code work can start immediately; only specific tasks are gated by vetting clocks.
+What's in place vs what's still vetting vs what's dropped.
 
 ### ✅ Verified working
 - **Twilio account** + **3 DIDs**: `+1 213 XXX XXXX` (transfer-target role), `+1 424 XXX XXXX` (dial), `+1 626 XXX XXXX` (dial)
 - **CNAM** set to `TRI PROS REMODEL` on all 3 DIDs
-- **Trust Hub Business Profile**: APPROVED (`TWILIO_TRUST_PROFILE_SID`)
-- **SHAKEN/STIR**: A-attestation applied automatically to every DID under the approved Trust Hub Business Profile — no per-DID Trust Product or SID env var needed
-- **Twilio API Key + TwiML App**: created, SIDs saved
-- **Elastic SIP Trunk** `tripros-retell-trunk`: all 3 DIDs attached, Termination via credential auth, Origination = `sip:sip.retellai.com`
-- **Retell account**: active, 3 DIDs imported, test agent deployed, outbound PSTN test from 626 → user's cell **SUCCEEDED**. iPhone Live Voicemail "state your name" prompt handled by Retell's built-in feature — no extra prompt engineering needed.
+- **Trust Hub Business Profile**: APPROVED
+- **SHAKEN/STIR**: A-attestation applied automatically to every DID under the approved Trust Hub Business Profile
+- **Twilio API Key + TwiML App**: created
 - **10DLC Brand**: APPROVED
-- **Inngest account**: tri-pros-owned, Olis Solutions invited as admin, Event Key + Signing Key saved
-- **Webhook subdomain**: `https://dialer.triprosremodeling.com` verified (CNAME → cname.vercel-dns.com)
+- **Inngest account**: tri-pros-owned, Olis Solutions invited as admin
+- **Webhook subdomain**: `https://voip.triprosremodeling.com` verified (CNAME → cname.vercel-dns.com) — *renamed from `dialer.` in pivot session 2026-05-23*
 
-### ⏳ Background vetting (does NOT block start of Phase 1)
+### ⏳ Background vetting (does NOT block start of Phase 1 design)
 - **10DLC Campaign**: submitted, vetting 3-14 days. Blocks Phase 1 SMS-send tasks specifically.
 - **FCC DNC SAN**: submitted (5-area-code free tier), 1-2 business days. Blocks Phase 1 DNC-scrub compliance gate specifically.
 - **FreeCallerRegistry**: submitted for all 3 DIDs, 1-4 weeks per engine. Improves answer rate over time; doesn't block code.
 
 ### 📅 Scheduled follow-ups
-- **2026-05-28**: DID reputation baseline check (BatchDialer + Numeracle + CIDR attestation tester) on 213/424/626 — captures starting point so we can verify FCR vetting is processing over coming weeks
-- **End of epic (post-Phase-5)**: TCPA attorney consult (deferred until real production data exists)
+- **2026-05-28**: DID reputation baseline check on 213/424/626 — captures starting point to verify FCR vetting is processing
+- **End of voip-in-house Phase 5 + voip-campaigns Phase 1**: TCPA attorney consult (deferred until real production data exists across both systems)
 
-### ⏸ Deferred (not Phase 1)
-- **Sendblue (iMessage)**: Phase 1 ships Twilio-only messaging via `services/messaging/twilio.ts`. Sendblue drops in later as another `MessagingProvider` concrete impl. See decision log entry "2026-05-21 — Sendblue (iMessage) deferred."
-- **TCPA attorney consult**: see decision log entry "2026-05-22 — TCPA attorney consult deferred to end of epic."
-- **DID pool expansion to 7-10**: defer until ~1-2 weeks before Phase 2 ramp (avoid starting warm-up clock on numbers we won't use for weeks).
-- **Twilio Voice Integrity**: only enable if FCR alone doesn't clear "Spam Likely" within 4 weeks.
+### ❌ Dropped (moved out of scope per 2026-05-23 pivot)
+- **~~Sendblue (iMessage)~~** — entirely out. Decision: not worth the integration cost. Phase 1 ships Twilio-only messaging permanently (revisit only if iMessage UX becomes a material conversion lever).
+- **~~Retell account + agents~~** — entirely out. AI calling is CloudTalk's job (voip-campaigns EPIC).
+- **~~Elastic SIP Trunk + Retell SIP origination~~** — obsolete. Twilio Voice SDK (browser softphone) + PSTN cellular routing covers in-house needs without SIP trunking.
+- **~~Custom AI-dialer dispatcher / cadence engine / lead-state machine~~** — entirely out. CloudTalk owns lead-conversion cadence.
 
-### Env vars now established (Phase 1 implementer relies on these being present)
+### 🔄 Renamed
+- **Subdomain**: `dialer.triprosremodeling.com` → `voip.triprosremodeling.com` (covers both Twilio + CloudTalk webhooks + voip routing endpoints)
+- **Env var**: `DIALER_WEBHOOK_BASE_URL` → `VOIP_WEBHOOK_BASE_URL`
+
+### Env vars (Phase 1 implementer relies on these being present)
 
 ```bash
 # Twilio
@@ -155,25 +162,13 @@ TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_10DLC_CAMPAIGN_SID=CMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # pending campaign approval
 
 # Pilot DIDs — role baked into the env var name.
-# Transfer-target = dedicated DID for the human-leg dial (213 in the pilot).
-# Dial DIDs = rotated for outbound to leads, area-coded.
-# Phase 1 seed script reads these and inserts into dialer_dids with role assignment.
+# Phase 1 seed script reads these and inserts into voip_dids with role assignment.
 TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
 TWILIO_TRANSFER_TARGET_DID_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_424_E164=+1424XXXXXXX
 TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_DID_626_E164=+1626XXXXXXX
 TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# Twilio SIP Trunking
-TWILIO_SIP_TRUNK_DOMAIN=tripros.pstn.twilio.com
-TWILIO_SIP_TRUNK_USERNAME=retell
-TWILIO_SIP_TRUNK_PASSWORD=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-# Retell
-RETELL_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-RETELL_TEST_AGENT_ID=agent_xxxxxxxxxxxxxxxxxxxxxxxxxxxx   # Phase 0 throwaway; replaced by per-source agents in Phase 1
-# RETELL_WEBHOOK_SIGNING_SECRET — captured during Phase 1 webhook wiring
 
 # FCC DNC (SAN pending)
 FTC_DNC_SAN=  # pending 1-2 business days
@@ -184,12 +179,14 @@ FTC_DNC_PASSWORD=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 INNGEST_EVENT_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 INNGEST_SIGNING_KEY=signkey-prod-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-# Webhook base URL
-DIALER_WEBHOOK_BASE_URL=https://dialer.triprosremodeling.com
+# Webhook base URL — covers both Twilio and CloudTalk webhooks + voip routing endpoints
+VOIP_WEBHOOK_BASE_URL=https://voip.triprosremodeling.com
 
-# Dev safety (Phase 1 will enforce)
-DIALER_DEV_OVERRIDE_NUMBER=  # set in dev/preview only; CI gate prevents production
+# Dev safety (Phase 1 will enforce; redirects all outbound voice/SMS to a single test number in dev)
+VOIP_DEV_OVERRIDE_NUMBER=  # set in dev/preview only; CI gate prevents production
 ```
+
+**Dropped env vars** (no longer applicable): `RETELL_*`, `TWILIO_SIP_TRUNK_*`, `SENDBLUE_*`, `DIALER_*` (renamed to `VOIP_*`).
 
 ---
 
@@ -197,67 +194,97 @@ DIALER_DEV_OVERRIDE_NUMBER=  # set in dev/preview only; CI gate prevents product
 
 | Area | Why it matters | Where changes accumulate |
 |---|---|---|
-| `entities/customers/` | Customer is the FK target for everything; add `lib/calling-hours.ts`, `lib/phone.ts`; profile/timeline UI gains dialer integration in Phase 5 | Phase 2 adds entity lib; Phase 5 adds UI consumers |
-| `entities/lead-sources/` | `dialerConfigJSON` added in Phase 1 migration; per-source override UI in Phase 4 | Phase 1 (schema), Phase 4 (UI) |
-| `db/schema/meta.ts` | 9 new pgEnums added in Phase 1 single migration | Phase 1 |
-| `domains/permissions/abilities.ts` | New entity name constants registered for CASL | Phase 1, and incrementally each new entity |
-| `src/app/(frontend)/(dashboard)/layout.tsx` | Softphone widget mounted globally — Phase 4 | Phase 4 |
-| `src/services/` | New directories: voip/, ai-voice/, branded-calling/, messaging/, dialer/{queue,cadence,dispatcher,transfer-router,disposition,did-pool,compliance,messaging} | All phases |
-| `src/app/api/` | New external webhook endpoints under `dialer/ai/*`, `voip/twilio/*`, `messaging/twilio/*`, `messaging/sendblue/*` | Phase 1 (foundation), Phase 2 (lifecycle), Phase 3 (DID health) |
-| `src/trpc/routers/` | 7 new routers: `dialer-attempts`, `dialer-dids`, `dialer-lead-states`, `dialer-dnc`, `dialer-user-availability`, `dialer-settings`, `dialer-messages` | Phase 1 (minimal) → Phase 4 (full) |
-| Push notification pipeline | Reuses existing infra; new push types: disposition-needed, opt-out, did-flagged, inbound-message, kill-switch-toggled | Phase 1 (disposition-needed); Phase 2-4 (others) |
+| `entities/customers/` | Customer is the FK target for everything; add `lib/calling-hours.ts`, `lib/phone.ts`; profile/timeline gains voip integration in Phase 5 | Phase 2 adds entity lib; Phase 5 adds UI consumers |
+| `entities/lead-sources/` | `voipConfigJSON` field added in Phase 1 migration; shared with voip-campaigns per [INTEGRATION-SEAM.md §9](../voip/INTEGRATION-SEAM.md) | Phase 1 (schema) |
+| `db/schema/meta.ts` | New voip pgEnums added in Phase 1 single migration | Phase 1 |
+| `db/schema/voip-*.ts` | `voip_calls`, `voip_messages`, `voip_dids`, `voip_dnc`, `voip_user_availability`, `voip_contact_sync` (cross-EPIC) | Phase 1 |
+| `db/schema/app-settings.ts` | NEW: generic feature-keyed config table; lands with `feature='voip-in-house'` row first | Phase 1 |
+| `domains/permissions/abilities.ts` | New entity name constants registered for CASL (`VOIP_CALL`, `VOIP_MESSAGE`, `VOIP_DID`, `VOIP_DNC`, etc.) | Phase 1 |
+| `src/app/(frontend)/dashboard/layout.tsx` | Softphone widget mounted globally | Phase 1 |
+| `src/shared/services/voip/` | NEW: top-level service tree — `voip-calls`, `voip-messages`, `voip-dids`, `voip-dnc`, `voip-disposition`, `voip-compliance`, `voip-routing`, `voip-user-availability`; subdir `campaigns/` is voip-campaigns's domain | All phases |
+| `src/shared/services/providers/twilio/` | NEW: `client.ts`, `voice.ts`, `messaging.ts`, `webhooks/` (no SIP trunking) | Phase 1 |
+| `src/app/api/twilio/voice/*` | NEW: voice status webhooks | Phase 1 |
+| `src/app/api/twilio/messaging/*` | NEW: inbound SMS + status webhooks | Phase 1 |
+| `src/app/api/voip/routing/*` | NEW: voip routing endpoints (caller-lookup, transfer-target, compliance-check) — implemented here, called by CloudTalk per [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md) | Phase 1 |
+| `src/trpc/routers/` | New routers: `voip-calls`, `voip-messages`, `voip-dids`, `voip-dnc`, `voip-user-availability` | Phase 1 minimal → Phase 4 full |
+| `src/features/voip-in-house/` | NEW feature dir: admin UI (DID pool, kill switch, agent availability, message inbox, call history, send-SMS composer) | Phase 4 |
+| Push notification pipeline | Reuses existing infra; new push types: voicemail-received, customer-sms-reply, disposition-needed, opt-out, kill-switch-toggled | Phase 1 (foundational); Phase 2-4 (added) |
+| Tokenized-link mint endpoint | NEW: `/api/voip/token-mint/*` — generates 48h TTL single-use URLs for doc-upload (L-DOC), payment, reschedule, e-sign | Phase 1 (L-DOC); future variants added per use case |
 
 ---
 
 ## Migration roadmap (`@migration` annotations to watch)
 
-Every `@migration` comment in the dialer code points to a future swap. Searchable via `grep -r "@migration:" src/services/dialer src/services/{voip,ai-voice,branded-calling,messaging} src/entities/dialer-* src/app/api/{dialer,voip,messaging}`.
+Every `@migration` comment in the voip code points to a future swap.
 
 | Annotation | Now | Target | Trigger |
 |---|---|---|---|
-| `@migration: → Inngest` | QStash for queued dispatch + delayed messages | Inngest durable workflows | Inngest provider integration complete |
-| `@migration: → Ably kernel` | TanStack Query polling for dialing indicator, chat updates, availability | Ably realtime kernel subscriptions | Ably kernel ships (per `project-ably-realtime-kernel.md` memory) |
-| `@migration: → Hiya Connect` | `null.branded-calling.ts` no-op | `hiya.branded-calling.ts` concrete impl | Answer rate <15% sustained OR hangup-3s% >25% |
-| `@migration: → Telnyx` | `twilio.voip-provider.ts` | `telnyx.voip-provider.ts` | Monthly Twilio voice spend >$300 |
-| `@migration: → Retell Enterprise` | Retell PAYG | Retell Enterprise ($3K/mo @ $0.05/min) | Monthly Retell spend >$2K |
-| `@migration: → Reassigned Numbers DB` | Skipped in pilot | Add to compliance gate #3 | Lead vintage >12 months |
+| `@migration: → Inngest` | QStash for queued lifecycle SMS + delayed messages | Inngest durable workflows | Inngest provider integration complete |
+| `@migration: → Ably kernel` | TanStack Query polling for softphone presence, chat updates, availability | Ably realtime kernel subscriptions | Ably kernel ships (per `project-ably-realtime-kernel.md` memory) |
+| `@migration: → Telnyx` | `providers/twilio/voice.ts` | `providers/telnyx/voice.ts` | Monthly Twilio voice spend >$300 |
+| `@migration: → Hiya Connect` (in-house) | No branded display | Hiya Connect concrete impl | Sustained answer rate <40% on in-house DIDs (unlikely; not anticipated in pilot) |
+| `@migration: → Reassigned Numbers DB` | Skipped in pilot | Add to compliance gate | Lead vintage >12 months OR TCPA exposure broadens |
 
 ---
 
 ## Decisions log (post-spec, made during implementation)
 
-> Each entry: date, decision, context, link to PR/commit. Append-only. This is where "we decided X mid-Phase-2 because we found Y" gets recorded.
+> Each entry: date, decision, context, link. Append-only.
+
+### 2026-05-24 — Phase 1 plan rewritten (post-pivot descope complete)
+
+**Phase:** 0 → 1 boundary
+**Context:** Following the 2026-05-23 EPIC split, the existing `phase-1-mvp.md` (4,274 lines, 44 tasks) still reflected the old combined AI-dialer + in-house build. Banner descope had been added but tasks themselves were untouched. Coherent implementation required a full rewrite.
+
+**Decision:** Replaced `phase-1-mvp.md` with a fresh 37-task plan focused on the in-house-only scope. Dropped tasks: Twilio Voice React-wrapper spike (already chosen), `dialer_lead_states`, `dialer_settings`, Retell + AI-voice-agent provider, branded-calling provider, Sendblue + iMessage routing, AI-dialer dispatcher (`startTestCall`), Retell mid-call webhooks, Sendblue webhooks, transfer-router service initiating warm-transfers, Retell agent dashboard config. Added: voip routing endpoint backends + routes (caller-lookup, transfer-target, compliance-check), tokenized-link sends (mint via tRPC + consume via API route; L-DOC first use case), generic `app_settings` table + DAL replacing `dialer_settings`, ESLint `no-restricted-imports` rule enforcing the cross-EPIC dependency direction from INTEGRATION-SEAM.md, Phase 1 → voip-campaigns Phase 1 boundary verification task. Renamed all `dialer_*` → `voip_*` and added `source` discriminator + forward-compat nullable columns (`cloudtalk_*`, `campaign_id`, etc.) on shared tables. Stubbed Phase 2-5 plans for forward visibility (full plans written when each prior phase ships).
+
+**Alternative considered:** Edit-in-place patch on the existing 44-task list. Rejected — too many cross-cutting renames + structural changes (entity factory pattern adoption, source discriminator, voip routing endpoint inversion) for clean patches.
+
+**Impact:** Phase 1 unblocked for implementation. Stale `(frontend)/(dashboard)/layout.tsx` path in EPIC.md corrected to `(frontend)/dashboard/layout.tsx`.
+
+**Link:** This commit + [phase-1-mvp.md](./phase-1-mvp.md).
+
+### 2026-05-23 — EPIC split: AI-dialer/lead-conversion → voip-campaigns; in-house comms → this EPIC
+
+**Phase:** 0 → 1 boundary
+**Context:** Mid-grilling-session on the deferred Twilio+Retell+Sendblue Phase 1A, decided to delegate lead-to-meeting conversion entirely to CloudTalk and keep the rest of VoIP in-house. The former monolithic auto-dialer EPIC's content split into two: this EPIC (voip-in-house) covers everything except lead-conversion campaigns; [voip-campaigns](../voip-campaigns/EPIC.md) covers lead conversion via CloudTalk.
+
+**Decision:** Two sibling EPICs with shared infrastructure. Shared `voip_*` tables live in this EPIC's schema with a `source='in_house' | 'cloudtalk'` discriminator. Single `services/voip/` service tree; CloudTalk-side orchestration lives under `services/voip/campaigns/` subdir. CloudTalk is a provider (`providers/cloudtalk/`), not a separate service tree.
+
+**Rationale:** Wall off campaign DIDs (high-volume, spam-flag risk) from in-house DIDs (low-volume, reputation-protected). CloudTalk is purpose-built for the narrow conversion job; we don't out-engineer a managed dialer. In-house Twilio handles the relationship side where business logic + customer state are dense.
+
+**Impact:**
+- This EPIC descoped to remove: AI dialer dispatcher, cadence engine, lead-state machine, Retell integration, Sendblue iMessage, custom branded calling abstraction, multi-vendor messaging routing
+- Schema renamed: `dialer_*` → `voip_*` (with `source` discriminator); `dialer_lead_states` dropped entirely (CloudTalk owns cadence state); `dialer_settings` replaced by generic `app_settings` table keyed by `feature`
+- Subdomain renamed: `dialer.triprosremodeling.com` → `voip.triprosremodeling.com`
+- Env vars renamed: `DIALER_WEBHOOK_BASE_URL` → `VOIP_WEBHOOK_BASE_URL`; `RETELL_*` and `TWILIO_SIP_TRUNK_*` dropped
+- New cross-EPIC contract documented in [INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md)
+
+**Link:** This commit + [HANDOFF-from-twilio-build.md](../voip/HANDOFF-from-twilio-build.md)
 
 ### 2026-05-22 — TCPA attorney consult deferred to end of epic
 
-**Phase:** 0 → end-of-epic
-**Context:** Phase 0 spec listed TCPA attorney consult as "recommended" during procurement. User decision (2026-05-22) to defer all real-world professional/legal consultations to the absolute last task of the auto-dialer epic instead.
-**Decision:** TCPA attorney consult moves from Phase 0 Task 7 to "end of epic, after Phase 5." All other Phase 0 work proceeds without legal sign-off. Existing opt-in language on web forms + Meta lead ads is treated as adequate consent basis for the pilot.
-**Alternative considered:** Standard "upfront legal review before any outbound" approach. Rejected: pilot risk surface is low (only opted-in leads, small volume, owner-managed AI script); consulting once with real operational data is more efficient than hypothetical advice. Treat as deferred risk accepted by ownership.
-**Impact:** Phase 0 gate criteria updated. `phase-0-setup.md` Task 7 marked DEFERRED. If a TCPA-related issue surfaces mid-epic (e.g., a complaint), revisit immediately rather than waiting for end-of-epic.
-**Link:** (this commit)
+**Phase:** 0 → end-of-both-epics
+**Context:** Phase 0 spec listed TCPA attorney consult as "recommended" during procurement. Deferred to after both EPICs are in production with real data — consult once with concrete evidence rather than hypotheticals.
+**Decision:** TCPA attorney consult moves from Phase 0 to "after voip-in-house Phase 5 AND voip-campaigns Phase 1 both shipped." Existing opt-in language on web forms + Meta lead ads is treated as adequate consent basis for the pilot.
+**Alternative considered:** Standard "upfront legal review before any outbound" approach. Rejected: pilot risk surface is low; consulting once with real operational data is more efficient than hypothetical advice.
+**Impact:** Phase 0 gate criteria. If a TCPA issue surfaces mid-epic, revisit immediately.
+**Link:** (prior commit on 2026-05-22)
 
-### 2026-05-21 — Sendblue (iMessage) deferred from Phase 1 to "post-launch enhancement"
+### 2026-05-21 — Sendblue (iMessage) deferred → now dropped entirely (per 2026-05-23 pivot)
 
 **Phase:** 0 → 1 boundary
-**Context:** After completing Retell + Twilio Voice integration (Phase 0 Step 7) and reviewing Sendblue's Phase 0 setup requirements, user decided to defer iMessage entirely and ship Phase 1 with Twilio-only messaging. Rationale: validate the core call+SMS pipeline first; add iMessage premium experience as an upgrade when there's signal it moves conversion.
-**Decision:** Sendblue setup deferred indefinitely (~1-2 weeks post Phase 1 launch, user-initiated). Phase 1 ships with Twilio Programmable Messaging as the sole concrete `MessagingProvider` impl. The `services/messaging/` vendor abstraction stays — Sendblue can drop in later as `sendblue.messaging.ts` with routing logic in `messaging-provider-router.ts` that picks Sendblue for iMessage-capable recipients, falls back to Twilio for everyone else.
-**Alternative considered:** Build Sendblue now to land the full messaging UX at Phase 1 launch. Rejected: adds 1-2 weeks of additional setup + verification + integration time for what is a UX enhancement, not a core capability. SMS via Twilio is sufficient to validate the pipeline.
-**Impact:**
-- `docs/plans/auto-dialer/phase-0-setup.md`: Task 3 (Sendblue) marked DEFERRED
-- `docs/plans/auto-dialer/phase-1-mvp.md`: Sendblue-specific tasks (provider impl, webhooks, routing) marked DEFERRED; Twilio messaging provider becomes sole impl; "iMessage vs SMS" UI distinction in chat UI deferred to post-launch
-- Phase 1 chat UI renders all messages as SMS-style (no blue/green bubble distinction yet — placeholder/future enhancement)
-- **10DLC vetting is now even more critical-path** — it gates ALL Phase 1 messaging, not just SMS fallback. Watch the Campaign approval clock closely.
-**Link:** (this commit)
+**Context:** Original decision (2026-05-21) was to defer Sendblue iMessage from Phase 1 to a post-launch enhancement. Per the 2026-05-23 EPIC split, Sendblue is now **dropped entirely** from this EPIC's roadmap. iMessage premium UX is not a sufficient lever to justify the integration cost given the broader scope reshuffling.
+**Decision:** Twilio Programmable Messaging is the sole concrete impl for all in-house SMS, indefinitely.
+**Alternative considered:** Keep deferred (revisit later). Rejected during 2026-05-23 pivot — keeping a hypothetical future swap doesn't add value when we've made the call to commit single-vendor.
+**Link:** (prior commit on 2026-05-21; superseded by 2026-05-23)
 
-### 2026-05-21 — Layered spam mitigation promoted to Phase 0
+### 2026-05-21 — Layered spam mitigation: now in-house DIDs are low-volume, light-touch
 
 **Phase:** 0 (procurement)
-**Context:** First Phase-0 test call from a fresh Twilio DID (424 area code) with STIR/SHAKEN A-attestation APPROVED rendered as **"Spam Likely"** on iPhone. Research confirmed STIR/SHAKEN is necessary-but-not-sufficient — carriers run independent reputation engines (Hiya/AT&T, TNS/Verizon, First Orion/T-Mobile) on top with their own behavioral models. Brand-new DIDs default to skeptical treatment.
-**Decision:** Add a 5-layer spam mitigation strategy to EPIC (see "Spam mitigation strategy" section above) and promote L1 (free baseline: CNAM + FreeCallerRegistry + Nomorobo + reputation baseline) into Phase 0 as new **Task 1.5**. L2 (DID pool warming + per-DID health) stays in Phase 1-2 as already designed. L3-L5 (Voice Integrity, Hiya Connect, Verizon BCID, CIDR monitoring) deferred to Phase 2-3 with explicit triggers.
-**Alternative considered:** Skip free baseline, go straight to Hiya Connect ($29/mo entry). Rejected: Hiya doesn't cover Verizon, and free baseline must process for 2-4 weeks regardless — starting it on Day 1 means it's complete by the time we're ready to dial production volume. Spending money in Phase 0 before validating that free baseline alone clears the flag is wasteful.
-**Impact:** Phase 0 plan extended with Task 1.5 (~1 hour user effort). Phase 0 gate criteria updated. DID pool plan revised from "5 dial + 1 transfer = 6 numbers" to "3 pilot now, expand to 7-10 before scaling >150 attempts/day". `@migration: → Hiya Connect` trigger condition now formally written as "answer rate <15% sustained AND/OR sustained Spam Likely after 4 weeks of FCR vetting."
-**Link:** (this commit)
+**Context:** Original 5-layer spam mitigation stack was sized for high-volume AI dialing. Per 2026-05-23 pivot, high-volume DIDs live in CloudTalk; in-house DIDs are low-volume agent-mediated. The aggressive stack (L2-L5) is now voip-campaigns's concern.
+**Decision:** This EPIC retains L1 (free baseline: CNAM + FreeCallerRegistry + Nomorobo) for in-house DIDs. L2 (light per-DID monitoring) for visibility. L3 (Hiya Connect) is a Phase 3+ trigger only if sustained answer rate degrades.
+**Link:** (prior commit on 2026-05-21; reframed by 2026-05-23 pivot)
 
 ### Template entry
 
@@ -278,41 +305,44 @@ Every `@migration` comment in the dialer code points to a future swap. Searchabl
 
 | # | Question | Owner | Decide by | Default |
 |---|---|---|---|---|
-| 1 | Exact AI script content + per-source variations | User | Phase 0 (alongside attorney consult) | Owner-managed; no system default text |
-| 2 | Recording disclosure language | User | Phase 0 | Owner-managed within AI greeting |
-| 3 | Specific pilot DID area codes (final 5) | User + research | Phase 0 (after lead geography analysis) | 310, 213, 818, 949, 626 + 1 reserved transfer-target |
-| 4 | TCPA attorney consult — go/no-go? | User | Phase 0 | Recommended, not required |
-| 5 | Auto-enrollment per lead source | User | Phase 4 | Manual-only in pilot |
-| 6 | Multi-seller routing rules when 2nd human onboards | User + product | When 2nd seat added | Round-robin, least-recently-transferred ties broken |
-| 7 | Sunday calling | User | Phase 4 (super-admin config) | Excluded by default |
+| 1 | One DID per agent vs DID pool with agent-routing-on-inbound? | User + product | Phase 2 (when 2nd agent onboards) | One DID per agent (sticky); reassign on agent change |
+| 2 | Tokenized-link TTL default | User | Phase 1 | 48h, single-use, phone-tied |
+| 3 | Lifecycle SMS quiet hours for transactional sends | User | Phase 2 | Same as calling-hours (8am-9pm local TZ) |
+| 4 | Inbound IVR menu options (D1 — main line "press 1 sales / 2 active project / 3 billing") | User | Phase 3 | 3-option menu as default; refine after first month |
+| 5 | After-hours main-line behavior | User | Phase 3 | Voicemail with transcription + push to admin pool |
+| 6 | Sunday calling | User | Phase 4 (admin config) | Excluded by default |
+| 7 | Recording retention policy on in-house calls | User | Phase 4 | 90 days, auto-delete |
 
 ---
 
-## Glossary (quick reference; full glossary in spec §14)
+## Glossary (quick reference)
 
 - **DID** — phone number we own and call from
 - **STIR/SHAKEN A-attestation** — carrier-level identity verification, highest trust
 - **CNAM** — caller ID display name
 - **10DLC** — required B2C SMS registration program
-- **Warm transfer** — AI announces context before bridging (vs cold dump)
-- **Local presence** — caller ID matched to lead's area code
-- **Cadence decay** — diminishing dial frequency over time
 - **PSTN** — regular phone network (vs WebRTC)
+- **voip routing endpoints** — synchronous request-response HTTP endpoints exposed by us under `/api/voip/routing/*`; called by CloudTalk Call Flow Designer mid-call for caller-lookup, transfer-target, and compliance-check. Distinct from async webhook events (which live under `/api/webhooks/<provider>/`). See `docs/codebase-conventions/webhook-routes.md` for the async-vs-sync split.
 - **CASL** — `@casl/ability` (this codebase's auth lib)
+- **Tokenized-link send** — SMS containing a single-use, short-lived URL that opens a flow in our app (doc upload, payment, reschedule, e-sign)
 
 ---
 
 ## Cross-references
 
-- **Spec:** [`docs/superpowers/specs/2026-05-21-ai-dialer-design.md`](../../superpowers/specs/2026-05-21-ai-dialer-design.md)
+- **Sibling EPIC:** [voip-campaigns](../voip-campaigns/EPIC.md) — CloudTalk-managed lead conversion
+- **Integration contract:** [../voip/INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md)
+- **Pivot history:** [../voip/HANDOFF-from-twilio-build.md](../voip/HANDOFF-from-twilio-build.md)
+- **Frozen design spec:** [`docs/superpowers/specs/2026-05-21-ai-dialer-design.md`](../../superpowers/specs/2026-05-21-ai-dialer-design.md) — historical, when this EPIC was the combined build
 - **Phase 0 plan:** [phase-0-setup.md](./phase-0-setup.md)
-- **Phase 1 plan:** [phase-1-mvp.md](./phase-1-mvp.md)
-- **Phase 2+ plans:** Pending — written after each prior phase ships
+- **Phase 1 plan:** [phase-1-mvp.md](./phase-1-mvp.md) — **PENDING DESCOPE REWRITE** (currently shows the old combined AI-dialer plan; will be rewritten before Phase 1 implementation begins)
 - **Related ADRs:**
-  - [ADR-0002 — Entity server system](../../adr/0002-entity-server-system.md) — entity-name colocation pattern + tRPC factories used by all dialer entities
-  - [ADR-0003 — Service / provider architecture](../../adr/0003-service-provider-architecture.md) — service layer pattern used by `services/voip/`, `services/ai-voice/`, etc.
+  - [ADR-0002 — Entity server system](../../adr/0002-entity-server-system.md)
+  - [ADR-0003 — Service / provider architecture](../../adr/0003-service-provider-architecture.md)
 - **Related memory:**
-  - `memory/project-ably-realtime-kernel.md` — future realtime kernel that replaces polling
-  - `memory/pattern-push-notifications.md` — existing push pipeline reused by dialer
-  - `memory/feedback-defaults-with-override.md` — pattern used by `dialer-settings` + per-source overrides
-  - `memory/feedback-entity-organization.md` — flat entity layout enforced for `dialer-*` entities
+  - `memory/project-voip-in-house.md`
+  - `memory/project-voip-campaigns.md`
+  - `memory/project-ably-realtime-kernel.md`
+  - `memory/pattern-push-notifications.md`
+  - `memory/feedback-defaults-with-override.md`
+  - `memory/feedback-entity-organization.md`
