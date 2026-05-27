@@ -164,10 +164,11 @@ export type DalReturn<T>
 export type DalError
   = | { type: 'not-found' }
     | { type: 'forbidden' }
-    | { type: 'create-failed' }
-    | { type: 'duplicate-failed' }
+    | { type: 'create-failed', cause?: unknown }
+    | { type: 'duplicate-failed', cause?: unknown }
     | { type: 'db-error', cause: unknown }
     | { type: 'unknown-error', cause: unknown }
+    | { type: 'precondition-failed', reason: string }
 
 // ── Result Constructors ─────────────────────────────────────────────────
 

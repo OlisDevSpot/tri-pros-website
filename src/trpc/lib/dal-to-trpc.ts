@@ -18,6 +18,8 @@ export function dalToTrpc<T>(result: DalReturn<T>): T {
     case 'create-failed':
     case 'duplicate-failed':
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error.type })
+    case 'precondition-failed':
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: result.error.reason })
     case 'db-error':
     case 'unknown-error':
       throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', cause: result.error.cause })
