@@ -97,6 +97,16 @@ export function EnvelopeCard({
     }),
   )
 
+  const discardDraftContract = useMutation(
+    trpc.proposalsRouter.contracts.discardDraftContract.mutationOptions({
+      onSuccess: () => {
+        invalidate()
+        toast.success('Draft discarded')
+      },
+      onError: err => toast.error(err.message || 'Failed to discard draft'),
+    }),
+  )
+
   const resendContract = useMutation(
     trpc.proposalsRouter.contracts.resendContract.mutationOptions({
       onSuccess: () => {
@@ -108,7 +118,7 @@ export function EnvelopeCard({
     }),
   )
 
-  const isPending = createDraft.isPending || submitContract.isPending || recallContract.isPending || resendContract.isPending
+  const isPending = createDraft.isPending || submitContract.isPending || recallContract.isPending || discardDraftContract.isPending || resendContract.isPending
 
   const ageLockReason = (() => {
     if (isDraftSyncing) {
@@ -136,6 +146,8 @@ export function EnvelopeCard({
         submitContract.mutate({ proposalId })
         break
       case 'discard':
+        discardDraftContract.mutate({ proposalId })
+        break
       case 'recall':
         recallContract.mutate({ proposalId })
         break
@@ -251,7 +263,7 @@ export function EnvelopeCard({
                       icon={<Trash2 className="size-4" />}
                       label="Discard Draft"
                       onClick={() => setConfirmDialog('discard')}
-                      isPending={recallContract.isPending}
+                      isPending={discardDraftContract.isPending}
                       disabled={isPending}
                     />
                   </>
@@ -322,7 +334,7 @@ export function EnvelopeCard({
         confirmLabel="Discard draft"
         confirmVariant="destructive"
         onConfirm={() => runConfirmed('discard')}
-        isPending={recallContract.isPending}
+        isPending={discardDraftContract.isPending}
       />
 
       <ActionConfirmDialog

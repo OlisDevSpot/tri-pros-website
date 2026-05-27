@@ -92,6 +92,17 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         return contractService.recallSigningRequest(ctx, input.proposalId)
       }),
 
+    /**
+     * Discards a draft envelope. Drafts cannot be recalled in Zoho — must be
+     * deleted instead. Use this for the "Discard Draft" UI action; recallContract
+     * stays for in-progress envelopes only.
+     */
+    discardDraftContract: entity.authedProcedure
+      .input(z.object({ proposalId: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        return contractService.discardDraftRequest(ctx, input.proposalId)
+      }),
+
     resendContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {

@@ -134,6 +134,38 @@ function createContractService() {
       return { recalled: true }
     },
 
+    /**
+     * Discards a draft signing request. Drafts cannot be recalled in Zoho
+     * (POST /requests/{id}/recall returns 1015) — they must be deleted via
+     * PUT /requests/{id}/delete. Clears signingRequestId so a fresh draft
+     * can be created.
+     */
+    discardDraftRequest: async (ctx: ScopedContext, proposalId: string) => {
+      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
+      if (!proposal) {
+        throw new Error(`Proposal ${proposalId} not found`)
+      }
+
+      if (!proposal.signingRequestId) {
+        throw new Error(`Proposal ${proposalId} has no draft to discard`)
+      }
+
+      const ok = await zohoSyncService.deleteRequest(proposal.signingRequestId)
+      if (!ok) {
+        throw new Error(`Zoho Sign delete failed for request ${proposal.signingRequestId}`)
+      }
+
+      dalVerifySuccess(await proposalCrud.update(ctx, {
+        id: proposalId,
+        data: {
+          signingRequestId: null,
+          contractSentAt: null,
+        },
+      }))
+
+      return { discarded: true }
+    },
+
     /** Recalls existing request (if any), creates a fresh draft with current data, and submits it. */
     resendSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
       const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
