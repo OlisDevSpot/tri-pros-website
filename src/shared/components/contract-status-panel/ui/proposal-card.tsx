@@ -1,23 +1,31 @@
 'use client'
 
+import type { ProposalStatus } from '@/shared/constants/enums'
+
 import { Mail, Send } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
+
 import { Textarea } from '@/shared/components/ui/textarea'
+import { useSendProposalWithDraft } from '@/shared/entities/proposals/hooks/use-send-proposal-with-draft'
 import { formatDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
+
 import { getProposalStatusBadge } from '../lib/get-status-badge'
 import { ActionButtonWithImpact } from './action-button-with-impact'
 import { ActionConfirmDialog } from './action-confirm-dialog'
+import { SendProposalProgress } from './send-proposal-progress'
 
 interface ProposalCardProps {
-  proposalStatus: string | undefined
-  proposalSentAt: string | null | undefined
+  proposalId: string
+  token: string
   customerName: string | null
-  onSendProposalEmail?: (message: string) => void
-  isSendingEmail: boolean
+  customerEmail: string | null
+  proposalStatus: ProposalStatus | undefined
+  proposalSentAt: string | null | undefined
 }
 
-type ConfirmAction = 'send' | 'resend'
+type ConfirmAction = 'resend'
 
 /**
  * Card 1 of the agreement section: the proposal email lifecycle.
@@ -25,16 +33,25 @@ type ConfirmAction = 'send' | 'resend'
  * The "proposal" here is the interactive document the customer reviews
  * in our app via a tokenized link — separate from the Zoho Sign envelope
  * managed in Card 2. Acting on one card never affects the other.
+ *
+ * Send orchestration: clicking "Send Proposal Email" runs the two-step
+ * `useSendProposalWithDraft` orchestrator — stage 1 prepares the Zoho
+ * draft envelope (idempotent), stage 2 sends the email + marks the
+ * proposal sent. The staged `SendProposalProgress` panel reflects real
+ * hook state, never a faked timer.
+ * see `../../entities/proposals/DOCS.md#proposal-contract-independence`.
  */
 export function ProposalCard({
+  proposalId,
+  token,
+  customerName,
+  customerEmail,
   proposalStatus,
   proposalSentAt,
-  customerName,
-  onSendProposalEmail,
-  isSendingEmail,
 }: ProposalCardProps) {
   const [message, setMessage] = useState('')
   const [confirmDialog, setConfirmDialog] = useState<ConfirmAction | null>(null)
+  const { stage, failedStep, errorMessage, isPending, send } = useSendProposalWithDraft()
 
   const customerLabel = customerName?.trim() || 'the customer'
   const isSent = proposalStatus === 'sent'
@@ -42,10 +59,27 @@ export function ProposalCard({
   const isDeclined = proposalStatus === 'declined'
   const statusBadge = getProposalStatusBadge(proposalStatus)
 
-  function runConfirmed(action: ConfirmAction) {
-    setConfirmDialog(null)
-    if (action === 'send' || action === 'resend') {
-      onSendProposalEmail?.(message)
+  async function runSend(action: 'send' | 'resend') {
+    if (action === 'resend') {
+      setConfirmDialog(null)
+    }
+    if (!customerEmail) {
+      toast.error('Email is not configured')
+      return
+    }
+    try {
+      await send({
+        proposalId,
+        customerName: customerName ?? 'Customer',
+        email: customerEmail,
+        token,
+        message,
+      })
+      toast.success('Proposal sent!')
+    }
+    catch {
+      // Error surface is already in the staged progress panel + hook state.
+      // Toast intentionally omitted to avoid double-reporting.
     }
   }
 
@@ -118,10 +152,17 @@ export function ProposalCard({
               onChange={e => setMessage(e.target.value)}
               rows={3}
               className="resize-none"
-              disabled={isSendingEmail}
+              disabled={isPending}
             />
           </div>
         )}
+
+        {/* Staged progress — visible while sending or after a failure */}
+        <SendProposalProgress
+          stage={stage}
+          failedStep={failedStep}
+          errorMessage={errorMessage}
+        />
 
         {/* Actions */}
         {!isSent && !isApproved && !isDeclined && (
@@ -132,9 +173,9 @@ export function ProposalCard({
               impactCopy={`${customerLabel} will receive an email with the proposal link`}
               icon={<Send className="size-4" />}
               label="Send Proposal Email"
-              onClick={() => setConfirmDialog('send')}
-              isPending={isSendingEmail}
-              disabled={isSendingEmail}
+              onClick={() => runSend('send')}
+              isPending={isPending}
+              disabled={isPending}
             />
           </div>
         )}
@@ -148,36 +189,26 @@ export function ProposalCard({
               icon={<Mail className="size-4" />}
               label="Resend Proposal Email"
               onClick={() => setConfirmDialog('resend')}
-              isPending={isSendingEmail}
-              disabled={isSendingEmail}
+              isPending={isPending}
+              disabled={isPending}
             />
           </div>
         )}
       </div>
 
       <ActionConfirmDialog
-        open={confirmDialog === 'send'}
-        onOpenChange={open => !open && setConfirmDialog(null)}
-        title="Send proposal email?"
-        description={`${customerLabel} will receive an email with a link to view and approve the proposal.`}
-        confirmLabel="Send email"
-        onConfirm={() => runConfirmed('send')}
-        isPending={isSendingEmail}
-      />
-
-      <ActionConfirmDialog
         open={confirmDialog === 'resend'}
         onOpenChange={open => !open && setConfirmDialog(null)}
         title="Resend proposal email?"
-        description={`Send another email to ${customerLabel} with the proposal link.`}
+        description={`Send another email to ${customerLabel} with the proposal link. We'll also make sure the signing envelope is up-to-date.`}
         details={(
           <p className="text-xs text-muted-foreground">
             Use sparingly to avoid bombarding the customer.
           </p>
         )}
         confirmLabel="Resend email"
-        onConfirm={() => runConfirmed('resend')}
-        isPending={isSendingEmail}
+        onConfirm={() => runSend('resend')}
+        isPending={isPending}
       />
     </div>
   )

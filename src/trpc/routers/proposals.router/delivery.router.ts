@@ -1,12 +1,7 @@
 // ─── Delivery Router (Entity Toolkit Pattern) ───────────────────────────────
 // Service-layer sub-router for proposal delivery: send email, record view,
-// get view stats. Receives the entity toolkit from the parent entity router
-// factory — uses entity.authedProcedure / entity.publicProcedure for
-// pre-configured auth + scope middleware.
-//
-// Orchestration pattern: procedure calls pure services (email, notification),
-// generic CRUD DAL (proposalCrud.update), cross-entity DAL, and dispatches jobs.
-// No direct db imports. No deprecated DAL functions.
+// get view stats. Procedures call pure services + generic CRUD DAL; the
+// view-recording path also dispatches a notification job.
 
 import type { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
@@ -21,7 +16,6 @@ import { recordProposalView } from '@/shared/entities/proposals/dal/server/mutat
 import { getFullView, getProposalViews } from '@/shared/entities/proposals/dal/server/queries'
 import { emailService } from '@/shared/services/email.service'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
-import { syncContractDraftJob } from '@/shared/services/providers/upstash/jobs/sync-contract-draft'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
@@ -44,6 +38,12 @@ const recordViewSchema = z.object({
 
 export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServerSpec.table>) {
   return createTRPCRouter({
+    /**
+     * Sends the proposal email and marks the proposal as sent. Does NOT
+     * touch envelope state — see ADR-0004. The client orchestrator
+     * (`useSendProposalWithDraft`) sequences this with `createContractDraft`.
+     * see `src/shared/entities/proposals/DOCS.md#proposal-contract-independence`
+     */
     sendProposalEmail: entity.authedProcedure
       .input(sendEmailSchema)
       .mutation(async ({ ctx, input }) => {
@@ -64,18 +64,13 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
           data: { status: 'sent', sentAt: new Date().toISOString() },
         }))
 
-        // 3. Cross-entity side-effect: derive meeting outcome
+        // 3. Cross-entity side-effect: derive meeting outcome.
         // @migration(meetings-entity-router)
-        // Uses SYSTEM_CONTEXT because this is a system-level side-effect on
-        // the meetings entity, not gated by the agent's proposal visibility.
-        // When meetings migrates to entity router, this call stays the same —
-        // the DAL function already accepts ScopedContext.
+        // SYSTEM_CONTEXT because this is a system-level side-effect on the
+        // meetings entity, not gated by the agent's proposal visibility.
         if (proposal.meetingId) {
           dalToTrpc(await deriveOutcomeOnProposalSent(SYSTEM_CONTEXT, { meetingId: proposal.meetingId }))
         }
-
-        // 4. Dispatch async contract draft sync job
-        await syncContractDraftJob.dispatch({ proposalId: input.proposalId })
 
         return { data, proposal }
       }),

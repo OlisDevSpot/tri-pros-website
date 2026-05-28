@@ -4,22 +4,21 @@ import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import { toast } from 'sonner'
+
 import { customizableSections, generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
-import { useSendProposalEmail } from '@/features/proposal-flow/dal/client/mutations/use-send-proposal-email'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
+
 import { Heading } from './heading'
 
 export function Proposal() {
   const params = useParams() as { proposalId: string }
   const searchParams = useSearchParams()
-  const sendProposalEmail = useSendProposalEmail()
   const proposal = useCurrentProposal()
   const { setRootEl } = useScrollRoot()
   const trpc = useTRPC()
@@ -68,8 +67,7 @@ export function Proposal() {
 
   const proposalData = proposal.data
   const { token, customer } = proposalData
-  const customerEmail = customer?.email ?? ''
-  const customerName = customer?.name ?? 'Customer'
+  const customerEmail = customer?.email ?? null
 
   const viewerRole = ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
   const proposalSteps = generateProposalSteps(viewerRole)
@@ -100,33 +98,14 @@ export function Proposal() {
                   <step.Component
                     proposalId={params.proposalId}
                     token={token ?? undefined}
-                    variant="full"
                     isAgent={viewMode === 'agent'}
                     customerAge={customer?.customerAge ?? null}
-                    customerId={customer?.id ?? null}
                     envelopeDocumentIds={proposalData.formMetaJSON?.envelopeDocumentIds ?? null}
                     proposalKind={proposalData.kind}
                     customerName={customer?.name ?? null}
+                    customerEmail={customerEmail}
                     proposalStatus={proposalData.status}
                     proposalSentAt={proposalData.sentAt}
-                    isSendingEmail={sendProposalEmail.isPending}
-                    onSendProposalEmail={(message: string) => {
-                      if (!customerEmail) {
-                        toast.error('Email is not configured')
-                        return
-                      }
-                      sendProposalEmail.mutate({
-                        proposalId: params.proposalId,
-                        email: customerEmail,
-                        token: token || '',
-                        customerName,
-                        message,
-                      }, {
-                        onSuccess: () => {
-                          toast.success('Proposal sent!')
-                        },
-                      })
-                    }}
                   />
                 )}
                 {!customizableSections.includes(step.accessor) && (

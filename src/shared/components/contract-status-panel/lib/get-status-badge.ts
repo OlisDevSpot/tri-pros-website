@@ -1,3 +1,4 @@
+import type { ProposalStatus } from '@/shared/constants/enums'
 import type { ZohoRequestStatus } from '@/shared/services/providers/zoho-sign/types'
 
 interface StatusBadge {
@@ -5,7 +6,7 @@ interface StatusBadge {
   className: string
 }
 
-export function getEnvelopeStatusBadge(requestStatus: string | undefined): StatusBadge | null {
+export function getEnvelopeStatusBadge(requestStatus: ZohoRequestStatus | undefined): StatusBadge | null {
   switch (requestStatus) {
     case 'draft':
       return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
@@ -24,7 +25,7 @@ export function getEnvelopeStatusBadge(requestStatus: string | undefined): Statu
   }
 }
 
-export function getProposalStatusBadge(proposalStatus: string | undefined): StatusBadge | null {
+export function getProposalStatusBadge(proposalStatus: ProposalStatus | undefined): StatusBadge | null {
   switch (proposalStatus) {
     case 'draft':
       return { label: 'Draft', className: 'bg-muted text-muted-foreground' }
@@ -39,11 +40,6 @@ export function getProposalStatusBadge(proposalStatus: string | undefined): Stat
   }
 }
 
-export function isEnvelopeActive(requestStatus: string | undefined, isDraftSyncing: boolean): boolean {
-  if (isDraftSyncing) {
-    return true
-  }
+export function isEnvelopeActive(requestStatus: ZohoRequestStatus | undefined): boolean {
   return requestStatus === 'draft' || requestStatus === 'inprogress'
 }
-
-export type { ZohoRequestStatus }

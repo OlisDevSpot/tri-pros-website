@@ -1,12 +1,10 @@
-import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
+import type { EnvelopeDocumentId, ProposalKind, ProposalStatus } from '@/shared/constants/enums'
 
 export interface ContractStatusPanelProps {
   proposalId: string
   token?: string
-  variant: 'full' | 'compact'
   isAgent: boolean
   customerAge?: number | null
-  customerId?: string | null
   /**
    * Agent-picked envelope document selection from `formMetaJSON`.
    * Null = not yet configured (gates the agent draft-config form).
@@ -16,8 +14,8 @@ export interface ContractStatusPanelProps {
   proposalKind?: ProposalKind
   /** Customer name for the agent pre-send review summary. */
   customerName?: string | null
-  onSendProposalEmail?: (message: string) => void
-  isSendingEmail?: boolean
-  proposalStatus?: string
+  /** Customer email — used by the agent-side send-proposal flow. */
+  customerEmail?: string | null
+  proposalStatus?: ProposalStatus
   proposalSentAt?: string | null
 }

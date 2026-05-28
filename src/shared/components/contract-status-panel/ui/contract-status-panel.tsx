@@ -8,20 +8,15 @@ import { HomeownerContractView } from './homeowner-contract-view'
 export function ContractStatusPanel({
   proposalId,
   token,
-  variant: _variant,
   isAgent,
   customerAge,
-  customerId,
-  envelopeDocumentIds,
   proposalKind,
   customerName,
-  onSendProposalEmail,
-  isSendingEmail,
+  customerEmail,
   proposalStatus,
   proposalSentAt,
 }: ContractStatusPanelProps) {
-  const isSent = proposalStatus === 'sent'
-  const { data: contractStatus, isLoading, isDraftSyncing } = useContractStatus(proposalId, token, isSent)
+  const { data: contractStatus, isLoading } = useContractStatus(proposalId, token)
 
   if (isLoading) {
     return (
@@ -36,17 +31,13 @@ export function ContractStatusPanel({
     return (
       <AgentContractView
         proposalId={proposalId}
+        token={token ?? ''}
+        customerEmail={customerEmail ?? null}
         contractStatus={contractStatus ?? null}
-        customerAge={customerAge ?? null}
-        customerId={customerId ?? null}
-        envelopeDocumentIds={envelopeDocumentIds ?? null}
         proposalKind={proposalKind}
         customerName={customerName ?? null}
-        onSendProposalEmail={onSendProposalEmail}
-        isSendingEmail={isSendingEmail}
         proposalStatus={proposalStatus}
         proposalSentAt={proposalSentAt}
-        isDraftSyncing={isDraftSyncing}
       />
     )
   }
@@ -57,7 +48,6 @@ export function ContractStatusPanel({
       token={token ?? ''}
       contractStatus={contractStatus ?? null}
       customerAge={customerAge ?? null}
-      customerId={customerId ?? null}
     />
   )
 }

@@ -1,4 +1,3 @@
-import type { AttachFile } from './providers/zoho-sign/client'
 import type { ProposalContext } from './providers/zoho-sign/lib/documents/types'
 import type { ZohoContractStatus, ZohoRequestStatus } from './providers/zoho-sign/types'
 import { zohoSignClient } from './providers/zoho-sign/client'
@@ -16,11 +15,6 @@ interface CreateEnvelopeResult {
   documentIds: string[]
 }
 
-interface DraftResult {
-  requestId: string
-  status: string
-}
-
 // ---------------------------------------------------------------------------
 // Service factory
 // ---------------------------------------------------------------------------
@@ -35,31 +29,6 @@ function createZohoSyncService() {
     /** Delegates to assembleEnvelope (registry path — multi-template mergesend). */
     async createEnvelope(ctx: ProposalContext): Promise<CreateEnvelopeResult> {
       return assembleEnvelope(ctx)
-    },
-
-    /**
-     * Legacy path: single-template createdocument + file attach.
-     * Cleans up on attach failure so QStash retry doesn't inherit a
-     * half-built envelope.
-     */
-    async createLegacyDraft(
-      templateId: string,
-      body: object,
-      files: AttachFile[],
-    ): Promise<DraftResult> {
-      const { requestId, status } = await zohoSignClient.createFromTemplate(templateId, body, false)
-
-      if (files.length > 0) {
-        try {
-          await zohoSignClient.attachFiles(requestId, files)
-        }
-        catch (attachErr) {
-          await zohoSignClient.deleteRequest(requestId).catch(() => {})
-          throw attachErr
-        }
-      }
-
-      return { requestId, status }
     },
 
     /** Submit a draft for signing. */

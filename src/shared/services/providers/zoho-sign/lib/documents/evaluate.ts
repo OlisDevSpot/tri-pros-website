@@ -2,6 +2,14 @@ import type { ProposalContext } from './types'
 import type { EnvelopeDocumentId } from '@/shared/constants/enums'
 import { ENVELOPE_DOCUMENTS } from './registry'
 
+export type AgreementDocStatus = 'required' | 'optional'
+
+export interface AgreementDocProjection {
+  id: EnvelopeDocumentId
+  label: string
+  status: AgreementDocStatus
+}
+
 export interface DocumentEvaluation {
   /** Forced on. Render with check icon, no Switch. */
   required: EnvelopeDocumentId[]
@@ -97,4 +105,60 @@ export function validateEnvelopeSelection(
   if (missing.length > 0 || banned.length > 0) {
     throw new EnvelopeSelectionError({ missing, banned })
   }
+}
+
+/**
+ * Brings a previously-saved selection back into validity after the
+ * source-of-truth (e.g., customer age) has changed. Pure function — does
+ * no I/O, mutates nothing.
+ *
+ * Reconciliation is deliberately silent: no notification is surfaced to
+ * the agent (per the design decision in ADR-0004 amendment — when the
+ * agreement context changes, the system maintains internal consistency
+ * automatically). Required-set additions and forbidden-set removals
+ * happen without the agent having to acknowledge each one.
+ *
+ * Algorithm:
+ *   1. Drop any saved doc that the new evaluation marks `forbidden`.
+ *   2. Add any doc the new evaluation marks `required` that isn't
+ *      already present.
+ *   3. Leave optional choices untouched (whether previously checked or
+ *      unchecked).
+ *
+ * The result is guaranteed to pass `validateEnvelopeSelection` against
+ * the same evaluation — required ⊆ result, result ∩ forbidden = ∅.
+ */
+export function reconcileEnvelopeSelection(
+  currentSelection: readonly EnvelopeDocumentId[],
+  evaluation: DocumentEvaluation,
+): EnvelopeDocumentId[] {
+  const forbiddenSet = new Set(evaluation.forbidden)
+  const requiredSet = new Set(evaluation.required)
+  // Drop forbidden first, then ensure required.
+  const kept = currentSelection.filter(id => !forbiddenSet.has(id))
+  const keptSet = new Set(kept)
+  for (const id of requiredSet) {
+    if (!keptSet.has(id)) {
+      kept.push(id)
+    }
+  }
+  return kept
+}
+
+/**
+ * Shapes the registry-driven evaluation into the agreement-context UI's
+ * docs list — `{ id, label, status }` per (required ∪ optional) document,
+ * preserving registry order. Forbidden docs are filtered out (the UI
+ * hides them entirely).
+ */
+export function projectAgreementDocs(evaluation: DocumentEvaluation): AgreementDocProjection[] {
+  const requiredSet = new Set(evaluation.required)
+  const optionalSet = new Set(evaluation.optional)
+  return ENVELOPE_DOCUMENTS
+    .filter(d => requiredSet.has(d.id) || optionalSet.has(d.id))
+    .map(d => ({
+      id: d.id,
+      label: d.label,
+      status: requiredSet.has(d.id) ? 'required' : 'optional',
+    }))
 }

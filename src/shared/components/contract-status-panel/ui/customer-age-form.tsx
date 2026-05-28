@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 import { useTRPC } from '@/trpc/helpers'
 
 interface CustomerAgeFormProps {
@@ -21,19 +22,19 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
   const { invalidateProposal } = useInvalidation()
 
   const submitAge = useMutation(
-    trpc.customersRouter.submitCustomerAge.mutationOptions({
+    trpc.proposalsRouter.contracts.applyEnvelopeContext.mutationOptions({
       onSuccess: () => {
         invalidateProposal()
         toast.success('Age saved')
       },
-      onError: () => {
-        toast.error('Failed to save age')
+      onError: (err) => {
+        toast.error(err.message || 'Failed to save age')
       },
     }),
   )
 
   const parsedAge = Number.parseInt(age, 10)
-  const isValid = !Number.isNaN(parsedAge) && parsedAge >= 18 && parsedAge <= 120
+  const isValid = !Number.isNaN(parsedAge) && parsedAge >= CUSTOMER_AGE_MIN && parsedAge <= CUSTOMER_AGE_MAX
 
   return (
     <motion.div
@@ -61,8 +62,8 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
           <Input
             id="customer-age"
             type="number"
-            min={18}
-            max={120}
+            min={CUSTOMER_AGE_MIN}
+            max={CUSTOMER_AGE_MAX}
             placeholder="e.g. 42"
             value={age}
             onChange={e => setAge(e.target.value)}
@@ -72,7 +73,7 @@ export function CustomerAgeForm({ proposalId, token }: CustomerAgeFormProps) {
         <Button
           onClick={() => {
             if (isValid) {
-              submitAge.mutate({ proposalId, token, age: parsedAge })
+              submitAge.mutate({ id: proposalId, token, age: parsedAge })
             }
           }}
           disabled={!isValid || submitAge.isPending}

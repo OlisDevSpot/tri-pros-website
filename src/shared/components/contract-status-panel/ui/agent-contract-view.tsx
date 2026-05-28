@@ -1,24 +1,21 @@
 'use client'
 
-import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
+import type { ProposalKind, ProposalStatus } from '@/shared/constants/enums'
 import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { motion } from 'motion/react'
+
 import { EnvelopeCard } from './envelope-card'
 import { ProposalCard } from './proposal-card'
 
 interface AgentContractViewProps {
   proposalId: string
+  token: string
+  customerEmail: string | null
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
-  customerAge: number | null
-  customerId: string | null
-  envelopeDocumentIds: readonly EnvelopeDocumentId[] | null
   proposalKind?: ProposalKind
   customerName?: string | null
-  onSendProposalEmail?: (message: string) => void
-  isSendingEmail?: boolean
-  proposalStatus?: string
+  proposalStatus?: ProposalStatus
   proposalSentAt?: string | null
-  isDraftSyncing?: boolean
 }
 
 /**
@@ -33,19 +30,23 @@ interface AgentContractViewProps {
  * channel. Acting on one card never touches the other — that's the
  * whole point of the split: keep the agent in tight control over what
  * the customer receives, and when.
+ *
+ * The send-proposal flow client-orchestrates the (independent) signing
+ * draft preparation as a first step — owned inside ProposalCard via
+ * `useSendProposalWithDraft`. See
+ * `src/shared/entities/proposals/DOCS.md#proposal-contract-independence`.
+ *
+ * Layout: cards stack on mobile, sit side-by-side on desktop (lg+).
  */
 export function AgentContractView({
   proposalId,
+  token,
+  customerEmail,
   contractStatus,
-  customerAge,
-  envelopeDocumentIds,
   proposalKind,
   customerName,
-  onSendProposalEmail,
-  isSendingEmail,
   proposalStatus,
   proposalSentAt,
-  isDraftSyncing,
 }: AgentContractViewProps) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -58,23 +59,27 @@ export function AgentContractView({
             Agreement
           </h3>
 
-          <ProposalCard
-            proposalStatus={proposalStatus}
-            proposalSentAt={proposalSentAt}
-            customerName={customerName ?? null}
-            onSendProposalEmail={onSendProposalEmail}
-            isSendingEmail={isSendingEmail ?? false}
-          />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
+            <div className="lg:flex-1">
+              <ProposalCard
+                proposalId={proposalId}
+                token={token}
+                customerEmail={customerEmail}
+                customerName={customerName ?? null}
+                proposalStatus={proposalStatus}
+                proposalSentAt={proposalSentAt}
+              />
+            </div>
 
-          <EnvelopeCard
-            proposalId={proposalId}
-            contractStatus={contractStatus}
-            customerAge={customerAge}
-            envelopeDocumentIds={envelopeDocumentIds}
-            customerName={customerName ?? null}
-            proposalKind={proposalKind}
-            isDraftSyncing={isDraftSyncing ?? false}
-          />
+            <div className="lg:flex-1">
+              <EnvelopeCard
+                proposalId={proposalId}
+                contractStatus={contractStatus}
+                customerName={customerName ?? null}
+                proposalKind={proposalKind}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </motion.div>

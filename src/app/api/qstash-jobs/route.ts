@@ -7,7 +7,6 @@ import { initialCalendarSyncJob } from '@/shared/services/providers/upstash/jobs
 import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 import { syncCalendarsJob } from '@/shared/services/providers/upstash/jobs/sync-calendars'
-import { syncContractDraftJob } from '@/shared/services/providers/upstash/jobs/sync-contract-draft'
 import { syncCustomersJob } from '@/shared/services/providers/upstash/jobs/sync-customers'
 import { syncQbInvoiceJob } from '@/shared/services/providers/upstash/jobs/sync-qb-invoice'
 import { syncQbPaymentJob } from '@/shared/services/providers/upstash/jobs/sync-qb-payment'
@@ -27,7 +26,6 @@ const jobs: Job[] = [
   syncQbPaymentJob,
   syncQbInvoiceJob,
   sendViewNotificationJob,
-  syncContractDraftJob,
   syncZohoSignStatusJob,
   syncCalendarsJob,
   initialCalendarSyncJob,

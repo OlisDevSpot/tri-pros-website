@@ -1,6 +1,6 @@
 'use client'
 
-import type { EnvelopeDocumentId, ProposalKind } from '@/shared/constants/enums'
+import type { ProposalKind } from '@/shared/constants/enums'
 import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { useMutation } from '@tanstack/react-query'
 import { FilePlus, RefreshCw, Send, Trash2 } from 'lucide-react'
@@ -14,20 +14,15 @@ import { useCreditCooldown } from '../hooks/use-credit-cooldown'
 import { getEnvelopeStatusBadge, isEnvelopeActive } from '../lib/get-status-badge'
 import { ActionButtonWithImpact } from './action-button-with-impact'
 import { ActionConfirmDialog } from './action-confirm-dialog'
-import { AgentDraftConfigurationForm } from './agent-draft-configuration-form'
 import { EnvelopeConfigurationSection } from './envelope-configuration-section'
 import { EnvelopePreSendReview } from './envelope-pre-send-review'
 import { EnvelopeSignerGrid } from './envelope-signer-grid'
-import { EnvelopeStateDraftSyncing } from './envelope-state-draft-syncing'
 
 interface EnvelopeCardProps {
   proposalId: string
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
-  customerAge: number | null
-  envelopeDocumentIds: readonly EnvelopeDocumentId[] | null
   customerName: string | null
   proposalKind?: ProposalKind
-  isDraftSyncing: boolean
 }
 
 type ConfirmAction = 'createDraft' | 'send' | 'discard' | 'recall' | 'resend' | 'recreate'
@@ -35,33 +30,33 @@ type ConfirmAction = 'createDraft' | 'send' | 'discard' | 'recall' | 'resend' | 
 /**
  * Card 2 of the agreement section: the Zoho Sign envelope lifecycle.
  *
- * Renders one of five states based on `contractStatus` + config:
+ * Renders one of four states based on `contractStatus` + config:
  *   1. Not configured → AgentDraftConfigurationForm
- *   2. Configured, no envelope (idle or syncing) → "Create Draft" CTA / spinner
+ *   2. Configured, no envelope → "Create Draft" CTA
  *   3. Draft ready → PreSendReview + Send/Discard
  *   4. In progress → SignerGrid + Resend/Recall
  *   5. Terminal (signed/declined/recalled/expired) → status + optional Recreate
  *
  * Every action button carries an inline notification-impact line and
  * customer-facing actions are gated by an AlertDialog confirmation.
+ *
+ * Draft creation is synchronous (the QStash auto-trigger was removed —
+ * see ADR-0004). The "draft syncing" intermediate state no longer exists
+ * on this card; either an envelope is loaded or it isn't.
  */
 export function EnvelopeCard({
   proposalId,
   contractStatus,
-  customerAge,
-  envelopeDocumentIds,
   customerName,
   proposalKind,
-  isDraftSyncing,
 }: EnvelopeCardProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
   const { isCoolingDown, remainingSeconds, startCooldown } = useCreditCooldown()
   const [confirmDialog, setConfirmDialog] = useState<ConfirmAction | null>(null)
 
-  const hasConfig = customerAge != null && envelopeDocumentIds != null
   const requestStatus = contractStatus?.requestStatus
-  const isActive = isEnvelopeActive(requestStatus, isDraftSyncing)
+  const isActive = isEnvelopeActive(requestStatus)
   const statusBadge = getEnvelopeStatusBadge(requestStatus)
   const customerLabel = customerName?.trim() || 'the customer'
 
@@ -121,9 +116,6 @@ export function EnvelopeCard({
   const isPending = createDraft.isPending || submitContract.isPending || recallContract.isPending || discardDraftContract.isPending || resendContract.isPending
 
   const ageLockReason = (() => {
-    if (isDraftSyncing) {
-      return 'Draft is being created — wait for it to finish'
-    }
     if (requestStatus === 'draft') {
       return 'Discard the draft envelope to change age'
     }
@@ -183,132 +175,123 @@ export function EnvelopeCard({
       </div>
 
       {/* Body */}
-      {!hasConfig
-        ? (
-            <AgentDraftConfigurationForm proposalId={proposalId} initialAge={customerAge} />
-          )
-        : (
-            <div className="space-y-4">
-              <EnvelopeConfigurationSection
-                proposalId={proposalId}
-                customerAge={customerAge}
-                envelopeDocumentIds={envelopeDocumentIds}
-                ageLocked={isActive || requestStatus === 'completed'}
-                ageLockReason={ageLockReason}
-              />
+      <div className="space-y-4">
+        <EnvelopeConfigurationSection
+          proposalId={proposalId}
+          locked={isActive || requestStatus === 'completed'}
+          lockReason={ageLockReason}
+        />
 
-              {/* State-specific body */}
-              {!contractStatus && isDraftSyncing && <EnvelopeStateDraftSyncing />}
+        {/* State-specific body */}
+        {!contractStatus && (
+          <div className="rounded-lg border border-border bg-muted/30 p-4">
+            <p className="text-sm text-muted-foreground">
+              Configuration ready. Create a draft to prepare the envelope
+              for signing — or sending the proposal will prepare one
+              automatically as its first step.
+            </p>
+          </div>
+        )}
 
-              {!contractStatus && !isDraftSyncing && (
-                <div className="rounded-lg border border-border bg-muted/30 p-4">
-                  <p className="text-sm text-muted-foreground">
-                    Configuration ready. Create a draft to prepare the envelope for signing,
-                    or send the proposal first and a draft will be created automatically.
-                  </p>
-                </div>
-              )}
+        {contractStatus && requestStatus === 'draft' && proposalKind && (
+          <EnvelopePreSendReview
+            proposalKind={proposalKind}
+            customerName={customerName}
+          />
+        )}
 
-              {contractStatus && requestStatus === 'draft' && proposalKind && (
-                <EnvelopePreSendReview
-                  proposalKind={proposalKind}
-                  customerName={customerName}
-                />
-              )}
+        {contractStatus && requestStatus !== 'draft' && (
+          <>
+            <EnvelopeSignerGrid signerStatuses={contractStatus.signerStatuses} />
+            {contractStatus.contractSentAt && (
+              <p className="text-xs text-muted-foreground">
+                Envelope sent
+                {' '}
+                {formatDate(contractStatus.contractSentAt)}
+              </p>
+            )}
+          </>
+        )}
 
-              {contractStatus && requestStatus !== 'draft' && (
-                <>
-                  <EnvelopeSignerGrid signerStatuses={contractStatus.signerStatuses} />
-                  {contractStatus.contractSentAt && (
-                    <p className="text-xs text-muted-foreground">
-                      Envelope sent
-                      {' '}
-                      {formatDate(contractStatus.contractSentAt)}
-                    </p>
-                  )}
-                </>
-              )}
-
-              {/* Actions */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
-                {!contractStatus && !isDraftSyncing && (
-                  <ActionButtonWithImpact
-                    variant="default"
-                    impact="silent"
-                    impactCopy="Prepares envelope in Zoho — no customer notification"
-                    icon={<FilePlus className="size-4" />}
-                    label="Create Draft"
-                    onClick={() => createDraft.mutate({ proposalId })}
-                    isPending={createDraft.isPending}
-                    disabled={isPending}
-                  />
-                )}
-
-                {requestStatus === 'draft' && (
-                  <>
-                    <ActionButtonWithImpact
-                      variant="default"
-                      impact="notifies"
-                      impactCopy="Customer will receive a Zoho Sign email"
-                      icon={<Send className="size-4" />}
-                      label={isCoolingDown ? `Wait ${remainingSeconds}s...` : 'Send for Signing'}
-                      onClick={() => setConfirmDialog('send')}
-                      isPending={submitContract.isPending}
-                      disabled={isPending || isCoolingDown}
-                    />
-                    <ActionButtonWithImpact
-                      variant="destructive"
-                      impact="silent"
-                      impactCopy="Draft is deleted — no customer notification"
-                      icon={<Trash2 className="size-4" />}
-                      label="Discard Draft"
-                      onClick={() => setConfirmDialog('discard')}
-                      isPending={discardDraftContract.isPending}
-                      disabled={isPending}
-                    />
-                  </>
-                )}
-
-                {requestStatus === 'inprogress' && (
-                  <>
-                    <ActionButtonWithImpact
-                      variant="outline"
-                      impact="notifies"
-                      impactCopy="Recalls current envelope and sends a new one — customer gets a new email"
-                      icon={<RefreshCw className="size-4" />}
-                      label={isCoolingDown ? `Wait ${remainingSeconds}s...` : 'Resend Envelope'}
-                      onClick={() => setConfirmDialog('resend')}
-                      isPending={resendContract.isPending}
-                      disabled={isPending || isCoolingDown}
-                    />
-                    <ActionButtonWithImpact
-                      variant="destructive"
-                      impact="destructive"
-                      impactCopy="Customer's signing link goes dead — they'll see it as recalled"
-                      icon={<Trash2 className="size-4" />}
-                      label="Recall Envelope"
-                      onClick={() => setConfirmDialog('recall')}
-                      isPending={recallContract.isPending}
-                      disabled={isPending}
-                    />
-                  </>
-                )}
-
-                {(requestStatus === 'declined' || requestStatus === 'recalled' || requestStatus === 'expired') && (
-                  <ActionButtonWithImpact
-                    variant="default"
-                    impact="notifies"
-                    impactCopy="Creates a fresh envelope and sends — customer gets a new Zoho Sign email"
-                    icon={<RefreshCw className="size-4" />}
-                    label={isCoolingDown ? `Wait ${remainingSeconds}s...` : 'Recreate & Resend'}
-                    onClick={() => setConfirmDialog('recreate')}
-                    isPending={resendContract.isPending}
-                    disabled={isPending || isCoolingDown}
-                  />
-                )}
-              </div>
-            </div>
+        {/* Actions */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+          {!contractStatus && (
+            <ActionButtonWithImpact
+              variant="default"
+              impact="silent"
+              impactCopy="Prepares envelope in Zoho — no customer notification"
+              icon={<FilePlus className="size-4" />}
+              label="Create Draft"
+              onClick={() => createDraft.mutate({ proposalId })}
+              isPending={createDraft.isPending}
+              disabled={isPending}
+            />
           )}
+
+          {requestStatus === 'draft' && (
+            <>
+              <ActionButtonWithImpact
+                variant="default"
+                impact="notifies"
+                impactCopy="Customer will receive a Zoho Sign email"
+                icon={<Send className="size-4" />}
+                label={isCoolingDown ? `Wait ${remainingSeconds}s...` : 'Send for Signing'}
+                onClick={() => setConfirmDialog('send')}
+                isPending={submitContract.isPending}
+                disabled={isPending || isCoolingDown}
+              />
+              <ActionButtonWithImpact
+                variant="destructive"
+                impact="silent"
+                impactCopy="Draft is deleted — no customer notification"
+                icon={<Trash2 className="size-4" />}
+                label="Discard Draft"
+                onClick={() => setConfirmDialog('discard')}
+                isPending={discardDraftContract.isPending}
+                disabled={isPending}
+              />
+            </>
+          )}
+
+          {requestStatus === 'inprogress' && (
+            <>
+              <ActionButtonWithImpact
+                variant="outline"
+                impact="notifies"
+                impactCopy="Recalls current envelope and sends a new one — customer gets a new email"
+                icon={<RefreshCw className="size-4" />}
+                label={isCoolingDown ? `Wait ${remainingSeconds}s...` : 'Resend Envelope'}
+                onClick={() => setConfirmDialog('resend')}
+                isPending={resendContract.isPending}
+                disabled={isPending || isCoolingDown}
+              />
+              <ActionButtonWithImpact
+                variant="destructive"
+                impact="destructive"
+                impactCopy="Customer's signing link goes dead — they'll see it as recalled"
+                icon={<Trash2 className="size-4" />}
+                label="Recall Envelope"
+                onClick={() => setConfirmDialog('recall')}
+                isPending={recallContract.isPending}
+                disabled={isPending}
+              />
+            </>
+          )}
+
+          {(requestStatus === 'declined' || requestStatus === 'recalled' || requestStatus === 'expired') && (
+            <ActionButtonWithImpact
+              variant="default"
+              impact="notifies"
+              impactCopy="Creates a fresh envelope and sends — customer gets a new Zoho Sign email"
+              icon={<RefreshCw className="size-4" />}
+              label={isCoolingDown ? `Wait ${remainingSeconds}s...` : 'Recreate & Resend'}
+              onClick={() => setConfirmDialog('recreate')}
+              isPending={resendContract.isPending}
+              disabled={isPending || isCoolingDown}
+            />
+          )}
+        </div>
+      </div>
 
       {/* Confirmation dialogs */}
       <ActionConfirmDialog
@@ -363,7 +346,7 @@ export function EnvelopeCard({
             Consumes 5 Zoho Sign credits.
           </p>
         )}
-        confirmLabel="Recall &amp; resend"
+        confirmLabel="Recall & resend"
         onConfirm={() => runConfirmed('resend')}
         isPending={resendContract.isPending}
       />
@@ -373,7 +356,7 @@ export function EnvelopeCard({
         onOpenChange={open => !open && setConfirmDialog(null)}
         title="Recreate envelope and send?"
         description={`A new signing envelope will be created and sent to ${customerLabel}. Costs 5 Zoho Sign credits.`}
-        confirmLabel="Recreate &amp; send"
+        confirmLabel="Recreate & send"
         onConfirm={() => runConfirmed('recreate')}
         isPending={resendContract.isPending}
       />

@@ -19,6 +19,7 @@ import {
   roofTypes,
   windowsTypes,
 } from '@/shared/domains/construction/constants/enums'
+import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 
 // HELPER SCHEMA
 export const painSchema = z.object({
@@ -39,7 +40,7 @@ export const customerProfileSchema = z.object({
   decisionTimeline: z.enum(decisionTimelines),
   projectNecessityRating: z.number().int().min(1).max(10),
   ageGroup: z.enum(customerAgeGroups),
-  age: z.number().int().min(18).max(120),
+  age: z.number().int().min(CUSTOMER_AGE_MIN).max(CUSTOMER_AGE_MAX),
 }).partial()
 
 export const propertyProfileSchema = z.object({

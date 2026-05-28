@@ -1,54 +1,39 @@
 import { useQuery } from '@tanstack/react-query'
-import { useRef } from 'react'
 
 import { useTRPC } from '@/trpc/helpers'
 
-const MAX_DRAFT_POLL_ATTEMPTS = 10
-
-export function useContractStatus(proposalId: string, token?: string, isSent?: boolean) {
+/**
+ * Polls Zoho Sign contract status for a proposal.
+ *
+ * **Scope is intentionally narrow**: this hook polls only for signing
+ * lifecycle transitions (`inprogress → completed/declined`). It does NOT
+ * try to detect "a draft is about to be created" — draft creation is now
+ * synchronous (no QStash hop, see ADR-0004 + the proposals DOCS.md on
+ * proposal-contract independence). Once `getContractStatus` returns
+ * `null`, polling stops. The "Create Draft" CTA is the only way back to
+ * an envelope from a null state.
+ */
+export function useContractStatus(proposalId: string, token?: string) {
   const trpc = useTRPC()
-  const draftPollCountRef = useRef(0)
 
-  const query = useQuery({
+  return useQuery({
     ...trpc.proposalsRouter.contracts.getContractStatus.queryOptions({ id: proposalId, token }),
     refetchInterval: (query) => {
       const data = query.state.data
-      const requestStatus = data?.requestStatus
 
       // Webhook persists terminal state — stop polling immediately even if
       // Zoho's live status hasn't caught up.
       if (data?.contractSignedAt || data?.contractDeclinedAt) {
-        draftPollCountRef.current = 0
         return false
       }
 
-      // Once signing is in-progress, fixed 30s polling (existing behavior)
-      if (requestStatus === 'inprogress') {
-        draftPollCountRef.current = 0
+      // Once signing is in-progress, fixed 30s polling for signer-side events.
+      if (data?.requestStatus === 'inprogress') {
         return 30_000
       }
 
-      // Draft arrived or terminal state — stop polling
-      if (data) {
-        draftPollCountRef.current = 0
-        return false
-      }
-
-      // Proposal sent but no contract status yet — QStash job is creating the draft
-      // Exponential backoff: 3s, 4.5s, 6.75s, 10s, 15s... (mirrors image optimization pattern)
-      if (isSent && !data) {
-        if (draftPollCountRef.current >= MAX_DRAFT_POLL_ATTEMPTS) {
-          return false
-        }
-        draftPollCountRef.current++
-        return Math.min(3000 * 1.5 ** (draftPollCountRef.current - 1), 30_000)
-      }
-
+      // Any other state (draft, completed-via-webhook, no envelope) — no poll.
       return false
     },
   })
-
-  const isDraftSyncing = isSent && !query.data && draftPollCountRef.current > 0
-
-  return { ...query, isDraftSyncing }
 }

@@ -17,7 +17,6 @@ interface HomeownerContractViewProps {
   token: string
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
   customerAge: number | null
-  customerId: string | null
 }
 
 export function HomeownerContractView({ proposalId, token, contractStatus, customerAge }: HomeownerContractViewProps) {

@@ -1,13 +1,17 @@
 // ─── Contracts Router (Entity Toolkit Pattern) ──────────────────────────────
-// Service-layer sub-router for proposal contract lifecycle: draft creation,
-// signing submission, recall, resend, status checks, and envelope config.
+// Service-layer sub-router for the agreement section: contract lifecycle
+// (draft creation, signing submission, recall, resend, status checks) plus
+// the agreement-context surface (customer age + envelope document selection).
+//
 // Receives the entity toolkit from the parent entity router factory — uses
 // entity.authedProcedure / entity.shareableProcedure for pre-configured
 // auth + scope middleware.
 //
-// Standalone customer-age submission lives on customersRouter.submitCustomerAge.
-// configureDraftEnvelope orchestrates both customer age + envelope doc selection
-// as a single business action (agent configuring a draft before sending).
+// `applyEnvelopeContext` is the single cross-entity orchestration on this
+// router. It writes to BOTH `customer.customerProfileJSON.age` AND
+// `proposal.formMetaJSON.envelopeDocumentIds` because they're two faces of
+// the same business concept — see DOCS.md anchor below.
+// see `src/shared/entities/proposals/DOCS.md#agreement-context-as-coherent-unit`
 
 import type { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import type { EntityToolkit } from '@/trpc/lib/create-entity-router'
@@ -18,12 +22,12 @@ import z from 'zod'
 import { envelopeDocumentIds } from '@/shared/constants/enums'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
+import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { contractService } from '@/shared/services/contracts.service'
-import { EnvelopeSelectionError, evaluateDocuments, validateEnvelopeSelection } from '@/shared/services/providers/zoho-sign/lib/documents/evaluate'
+import { EnvelopeSelectionError, evaluateDocuments, projectAgreementDocs, reconcileEnvelopeSelection, validateEnvelopeSelection } from '@/shared/services/providers/zoho-sign/lib/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
-import { ENVELOPE_DOCUMENTS } from '@/shared/services/providers/zoho-sign/lib/documents/registry'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
@@ -93,9 +97,10 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
       }),
 
     /**
-     * Discards a draft envelope. Drafts cannot be recalled in Zoho — must be
-     * deleted instead. Use this for the "Discard Draft" UI action; recallContract
-     * stays for in-progress envelopes only.
+     * Discards a draft envelope. Drafts can't be recalled in Zoho — they
+     * must be deleted via `PUT /requests/{id}/delete`. Use this for the
+     * "Discard Draft" UI action; `recallContract` stays for in-progress
+     * envelopes only.
      */
     discardDraftContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
@@ -110,54 +115,15 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
       }),
 
     /**
-     * Drives the agent draft-config form. `ageOverride` previews
-     * senior-vs-non-senior rule changes against an unsaved age.
+     * Returns the current evaluation of the envelope-document registry
+     * against this proposal's state — required / optional given customer
+     * age, proposal kind, and SOW length. Shareable so the homeowner-side
+     * first-time form renders the same evaluation.
      */
-    evaluateEnvelopeDocs: entity.authedProcedure
-      .input(z.object({
-        proposalId: z.string(),
-        ageOverride: z.number().int().min(18).max(120).optional(),
-      }))
+    evaluateEnvelopeContext: entity.shareableProcedure
+      .input(z.object({ id: z.string(), token: z.string().optional() }))
       .query(async ({ ctx, input }) => {
-        const proposal = dalToTrpc(await getFullView(ctx, { id: input.proposalId }))
-        if (!proposal) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-        }
-
-        const proposalCtx = buildProposalContext(proposal, { ageOverride: input.ageOverride })
-        const { required, optional } = evaluateDocuments(proposalCtx)
-        const requiredSet = new Set(required)
-        const optionalSet = new Set(optional)
-        const docs = ENVELOPE_DOCUMENTS
-          .filter(d => requiredSet.has(d.id) || optionalSet.has(d.id))
-          .map(d => ({
-            id: d.id,
-            label: d.label,
-            status: requiredSet.has(d.id) ? ('required' as const) : ('optional' as const),
-          }))
-
-        return {
-          kind: proposalCtx.kind,
-          isSenior: proposalCtx.isSenior,
-          isLongSow: proposalCtx.isLongSow,
-          docs,
-        }
-      }),
-
-    /**
-     * Orchestrates draft envelope configuration: persists customer age AND
-     * proposal envelope-document selection. Single business action — agent
-     * configures a draft before sending. Validates selection against
-     * registry rules with the age override applied.
-     */
-    configureDraftEnvelope: entity.authedProcedure
-      .input(z.object({
-        proposalId: z.string(),
-        age: z.number().int().min(18).max(120),
-        envelopeDocumentIds: z.array(z.enum(envelopeDocumentIds)),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const proposal = dalToTrpc(await getFullView(ctx, { id: input.proposalId }))
+        const proposal = dalToTrpc(await getFullView(ctx, input))
         if (!proposal) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
         }
@@ -165,39 +131,132 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
           throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
         }
 
-        const evalCtx = buildProposalContext(proposal, { ageOverride: input.age })
-        try {
-          validateEnvelopeSelection(evalCtx, input.envelopeDocumentIds)
-        }
-        catch (err) {
-          if (err instanceof EnvelopeSelectionError) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: err.message })
+        const customerAge = proposal.customer.customerAge ?? null
+        const savedSelection = proposal.formMetaJSON?.envelopeDocumentIds ?? []
+
+        // Without an age we can't evaluate registry rules that depend on it.
+        // Surface an empty docs list — UI prompts for the age first.
+        if (customerAge == null) {
+          return {
+            customerAge: null,
+            envelopeDocumentIds: savedSelection,
+            kind: proposal.kind,
+            docs: [],
           }
-          throw err
         }
 
-        // Cross-entity: customer age (SYSTEM_CONTEXT — auth checked by authedProcedure)
-        const existing = dalToTrpc(await customerCrud.getById(SYSTEM_CONTEXT, { id: proposal.customer.id }))
-        if (!existing) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-        }
-        const currentProfile = (existing as Record<string, unknown>).customerProfileJSON as Record<string, unknown> | null
-        dalToTrpc(await customerCrud.update(SYSTEM_CONTEXT, {
-          id: proposal.customer.id,
-          data: { customerProfileJSON: { ...currentProfile, age: input.age } } as Record<string, unknown>,
-        }))
+        const proposalCtx = buildProposalContext(proposal)
+        const evaluation = evaluateDocuments(proposalCtx)
 
-        // Same-entity: proposal envelope docs (user's own ctx — scoped)
-        const updatedFormMeta = {
-          ...proposal.formMetaJSON,
-          envelopeDocumentIds: input.envelopeDocumentIds,
+        return {
+          customerAge,
+          envelopeDocumentIds: savedSelection,
+          kind: proposalCtx.kind,
+          docs: projectAgreementDocs(evaluation),
         }
+      }),
+
+    /**
+     * Single cross-entity mutation for "alter the agreement context."
+     * Both inputs are optional, but at least one must be provided.
+     *
+     *   - `age` → writes `customer.customerProfileJSON.age` AND silently
+     *     reconciles the saved envelope selection against the new age
+     *     (adds new required, drops new forbidden).
+     *   - `envelopeDocumentIds` → replaces the saved selection. Validated
+     *     against the post-reconciliation evaluation.
+     *
+     * **Lock**: refuses to apply while `proposal.signingRequestId != null`.
+     * Once an envelope of any status exists, the agreement context is
+     * frozen — the agent must discard/recall to unlock editing.
+     *
+     * **Atomicity**: customer + proposal writes happen sequentially without
+     * a shared transaction — matches the existing cross-entity pattern in
+     * this codebase. Failure of the proposal write leaves a brief
+     * inconsistency that the next call resolves.
+     */
+    applyEnvelopeContext: entity.shareableProcedure
+      .input(z.object({
+        id: z.string(),
+        token: z.string().optional(),
+        age: z.number().int().min(CUSTOMER_AGE_MIN).max(CUSTOMER_AGE_MAX).optional(),
+        envelopeDocumentIds: z.array(z.enum(envelopeDocumentIds)).optional(),
+      }).refine(
+        v => v.age !== undefined || v.envelopeDocumentIds !== undefined,
+        { message: 'Must provide age or envelopeDocumentIds (or both)' },
+      ))
+      .mutation(async ({ ctx, input }) => {
+        const proposal = dalToTrpc(await getFullView(ctx, { id: input.id }))
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+        }
+        if (!proposal.customer) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
+        }
+
+        if (proposal.signingRequestId != null) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Cannot edit agreement context while an envelope exists. Discard or recall the envelope first.',
+          })
+        }
+
+        // 1. Persist age on the customer (system context — visibility is already
+        // established by getFullView above; the homeowner share-token has no
+        // customer-side scope to use here).
+        if (input.age !== undefined) {
+          const existing = dalToTrpc(await customerCrud.getById(SYSTEM_CONTEXT, { id: proposal.customer.id }))
+          if (!existing) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
+          }
+          const currentProfile = existing.customerProfileJSON ?? {}
+          dalToTrpc(await customerCrud.update(SYSTEM_CONTEXT, {
+            id: proposal.customer.id,
+            data: { customerProfileJSON: { ...currentProfile, age: input.age } },
+          }))
+        }
+
+        // 2. Evaluate docs against the final age (single eval, reused for
+        // reconcile + return payload).
+        const finalAge = input.age ?? proposal.customer.customerAge
+        const evalCtx = finalAge != null
+          ? buildProposalContext(proposal, { ageOverride: finalAge })
+          : null
+        const evaluation = evalCtx ? evaluateDocuments(evalCtx) : null
+
+        // 3. Reconcile the selection (silently add required / drop forbidden).
+        const currentSelection = proposal.formMetaJSON?.envelopeDocumentIds ?? []
+        let finalSelection = input.envelopeDocumentIds ?? currentSelection
+        if (evalCtx && evaluation) {
+          finalSelection = reconcileEnvelopeSelection(finalSelection, evaluation)
+          try {
+            validateEnvelopeSelection(evalCtx, finalSelection)
+          }
+          catch (err) {
+            if (err instanceof EnvelopeSelectionError) {
+              throw new TRPCError({ code: 'BAD_REQUEST', message: err.message })
+            }
+            throw err
+          }
+        }
+
+        // 4. Persist the proposal-side change.
         dalToTrpc(await proposalCrud.update(ctx, {
-          id: input.proposalId,
-          data: { formMetaJSON: updatedFormMeta },
+          id: input.id,
+          data: {
+            formMetaJSON: {
+              ...(proposal.formMetaJSON ?? {}),
+              envelopeDocumentIds: finalSelection,
+            },
+          },
         }))
 
-        return { success: true, age: input.age, envelopeDocumentIds: input.envelopeDocumentIds }
+        return {
+          customerAge: finalAge ?? null,
+          envelopeDocumentIds: finalSelection,
+          kind: proposal.kind,
+          docs: evaluation ? projectAgreementDocs(evaluation) : [],
+        }
       }),
   })
 }

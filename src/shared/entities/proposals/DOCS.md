@@ -177,6 +177,34 @@ Cost helpers return `null` (not 0) when cost data is incomplete — distinguishe
 **Reference impl**: `lib/compute-proposal-cost-totals.ts`
 **Enforced by**: convention
 
+### agreement-context-as-coherent-unit
+
+Customer age (`customer.customerProfileJSON.age`) and the envelope-document selection (`proposal.formMetaJSON.envelopeDocumentIds`) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
+
+- **Single procedure**: `proposalsRouter.contracts.applyEnvelopeContext({ id, token?, age?, envelopeDocumentIds? })` is the only writer for these two fields. Either input is optional; at least one must be present. Server reconciles the saved selection against the (possibly just-applied) age before persisting.
+- **Reconciliation is silent**: on age change, required docs are auto-added and forbidden docs are auto-dropped from the saved selection without surfacing notifications. The reconciled result is returned to the caller so the UI can render it immediately.
+- **Lock**: refuses to apply while `proposal.signingRequestId != null`. Any envelope (draft, in-progress, terminal) freezes the agreement context. To edit, the agent must discard/recall/recreate.
+- **Auth**: shareable procedure — agent (session) and homeowner (proposal token) drive the same writes. The customers entity does not carry its own token; the proposal's token gates writes to the customer-age field through this procedure.
+
+**Why this lives on the proposals router and not the customers router**: the share-token belongs to the proposal. A homeowner can only authenticate against the proposal entity. Routing the customer-age write through the proposal's shareable procedure (with `customerCrud.update` doing the actual single-row write inside) keeps each entity's CRUD pure while exposing a single coherent tokenized surface for the cross-entity update. The retired `customersRouter.submitCustomerAge` violated this by manually re-implementing token validation on the customers router and growing into a cross-entity orchestrator.
+
+**Reference impl**: `src/trpc/routers/proposals.router/contracts.router.ts:applyEnvelopeContext` + `src/shared/services/providers/zoho-sign/lib/documents/evaluate.ts:reconcileEnvelopeSelection` (pure helper).
+**Enforced by**: server-side lock check + `validateEnvelopeSelection` safety net after reconciliation. ADR-0004 (with 2026-05-27 amendment) documents the rationale.
+
+### proposal-contract-independence
+
+The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifecycle (`signingRequestId`, `contractSentAt`, `contractViewedAt`, `contractSignedAt`, `contractDeclinedAt`) are independent. They share a database row for storage convenience, not for coupling. Mutations on one set never derive state for the other.
+
+- **Sending the proposal email** updates only proposal-side columns. It does NOT create, refresh, or touch the Zoho Sign envelope.
+- **Creating / discarding / recalling an envelope** updates only contract-side columns. It does NOT change `proposal.status` or `sentAt`.
+- The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions; the "Send Proposal" action client-orchestrates a one-shot draft preparation before sending the email, but the orchestration lives on the client (see `features/proposal-flow/dal/client/mutations/use-send-proposal-with-draft.ts`), not as a server-side side-effect.
+- Draft creation is **synchronous** — Zoho returns the `request_id` on the create call, so there is no async gap to bridge with QStash or a polling-based "in-flight" signal. The previous `syncContractDraftJob` was removed for this reason.
+
+**Why**: prior implementation dispatched a QStash job from `sendProposalEmail` to auto-create a draft. The async coupling forced the UI to infer "a draft is being created" from `proposal.status === 'sent' && contractStatus == null` — a heuristic that broke immediately after any code path legitimately cleared `signingRequestId` (discard, recall), leaving the UI stuck in an unrecoverable spinner state.
+
+**Reference impl**: `delivery.router.ts:sendProposalEmail` (proposal-only), `contracts.router.ts:createContractDraft` / `discardDraftContract` / `recallContract` (contract-only), `use-send-proposal-with-draft.ts` (client orchestrator), `use-contract-status.ts` (polls only for `inprogress` signing-lifecycle events).
+**Enforced by**: architectural discipline — no shared service writes both column sets in one call. ADR-0004 documents the rationale.
+
 ### duplicate-resets-and-redrives
 
 Duplicating a proposal: status resets to `draft`, ownership reassigns to the current user, token + kind are freshly server-derived via `hooks.create.before` (which fires automatically because duplicate routes through `createImpl`). Only the JSONB content (`formMetaJSON`, `projectJSON`, `fundingJSON`) and `financeOptionId` / `meetingId` are copied via `spec.duplicate.exclude` + `spec.duplicate.overrides`.
@@ -187,6 +215,9 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 
 ## Anti-patterns
 
+- **Inferring contract state from proposal-lifecycle signals.** `proposal.status === 'sent'` says nothing about envelope state. If your code reads like `if (isSent && !contractStatus) → assume sync in flight`, stop — that's exactly the bug ADR-0004 retires. Treat proposal and contract lifecycles as independent (`#proposal-contract-independence`).
+- **Re-introducing server-side side-effects on `sendProposalEmail` that touch envelope state.** The QStash auto-dispatch was deleted for cause. Any future "auto-prepare envelope" feature must be client-orchestrated or a separate explicit mutation.
+- **Branching envelope content on a single dimension (age alone).** The retired `buildSigningRequest` picked tpr-HI base/senior purely from `customer.customerAge >= 65`, which silently shipped tpr-HI envelopes for additional-work proposals (which should ship AWD). All envelope-content decisions must flow through the registry's `applicableKinds` + `perKindRules` (multi-dimensional: kind × age × isLongSow). See ADR-0004 amendment 2026-05-28.
 - **Storing `finalTcp`.** Always derive via `computeFinalTcp` — see `#final-tcp-derived`.
 - **Setting `kind` from client input.** Server-derived; omitted from insert/update schemas.
 - **Replacing `formMetaJSON` / `projectJSON` / `fundingJSON` on update.** They deep-merge — see `#jsonb-merge-on-update`.
@@ -199,6 +230,7 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 ## See also
 
 - ADR-0002 — Entity Server System (server spec, scope/shareable middleware)
+- ADR-0004 — Proposal/Contract Independence + Synchronous Draft Creation
 - [`../../trpc/DOCS.md`](../../trpc/DOCS.md) — tRPC procedures, `shareableMiddleware`, `createCrudRouter` (when written)
 - [`../customers/DOCS.md`](../customers/DOCS.md) — phone-visibility threshold gates on the `sent`-or-later proposal lifecycle (when written)
 - [`../meetings/DOCS.md`](../meetings/DOCS.md) — meeting outcome `converted_to_project` is set by proposal approval (when written)
