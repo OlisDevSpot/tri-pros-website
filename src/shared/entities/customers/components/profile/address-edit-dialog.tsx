@@ -72,7 +72,7 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
       title="Edit address"
     >
       <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
-        <div className="flex flex-col gap-4 pt-1">
+        <div className="flex w-full flex-col gap-4 pt-1">
           <AddressAutocomplete
             defaultValue={defaultAddress}
             onSelect={setPicked}
