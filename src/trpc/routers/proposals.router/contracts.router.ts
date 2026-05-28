@@ -166,6 +166,13 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
      *   - `envelopeDocumentIds` → replaces the saved selection. Validated
      *     against the post-reconciliation evaluation.
      *
+     * **Auth split**: shareable so the homeowner can submit their own
+     * age via the proposal token, but envelope-document selection is
+     * AGENT-ONLY. Token-authenticated callers (homeowner) who pass
+     * `envelopeDocumentIds` are rejected with FORBIDDEN — they have no
+     * legitimate UI surface for that field, and allowing it would let
+     * a homeowner strip optional documents the agent chose to include.
+     *
      * **Lock**: refuses to apply while `proposal.signingRequestId != null`.
      * Once an envelope of any status exists, the agreement context is
      * frozen — the agent must discard/recall to unlock editing.
@@ -186,6 +193,15 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         { message: 'Must provide age or envelopeDocumentIds (or both)' },
       ))
       .mutation(async ({ ctx, input }) => {
+        // Token-path callers (ability is null per shareableMiddleware) can
+        // only submit their own age. envelopeDocumentIds is agent-only.
+        if (ctx.ability == null && input.envelopeDocumentIds !== undefined) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Envelope document selection is agent-only.',
+          })
+        }
+
         const proposal = dalToTrpc(await getFullView(ctx, { id: input.id }))
         if (!proposal) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
