@@ -73,6 +73,20 @@ const LEAD_SOURCES = [
       showMp3Upload: false,
     },
   },
+  {
+    // Public-website lead source — fed by the /contact form's tRPC mutations
+    // (landingRouter.scheduleConsultation / generalInquiry). The form-config
+    // values mirror "Manual" since this source is not used by the token-gated
+    // /intake form.
+    name: 'Website',
+    slug: 'website',
+    formConfigJSON: {
+      mode: 'customer_only' as const,
+      showEmail: true,
+      requireEmail: false,
+      showNotes: true,
+    },
+  },
 ]
 
 async function main() {
