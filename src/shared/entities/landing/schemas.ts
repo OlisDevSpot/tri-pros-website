@@ -19,10 +19,10 @@ export const generalInquiryFormSchema = z.object({
     }).nullable().optional(),
   }).optional(),
   inquiryDescription: z.string().min(1, { message: 'Description is required' }),
-  // Required-true consent satisfies A2P 10DLC express-consent requirement.
-  smsConsent: z.boolean().refine(v => v === true, {
-    message: 'Please agree to receive messages from Tri Pros Remodeling to continue',
-  }),
+  // Both consents are OPTIONAL per TCR — required checkboxes are "forced consent."
+  // SMS and call consent must be separate; do not bundle.
+  smsConsent: z.boolean(),
+  callConsent: z.boolean(),
 })
 
 export type GeneralInquiryFormSchema = z.infer<typeof generalInquiryFormSchema>
@@ -33,6 +33,7 @@ export const generalInquiryDefaultValues: GeneralInquiryFormSchema = {
   phone: '',
   inquiryDescription: '',
   smsConsent: false,
+  callConsent: false,
 }
 
 // --- Schedule Consultation Form ---
@@ -48,10 +49,10 @@ export const scheduleConsultationFormSchema = z.object({
   propertySize: z.string(),
   location: z.string(),
   projectDescription: z.string(),
-  // Required-true consent satisfies A2P 10DLC express-consent requirement.
-  smsConsent: z.boolean().refine(v => v === true, {
-    message: 'Please agree to receive messages from Tri Pros Remodeling to continue',
-  }),
+  // Both consents are OPTIONAL per TCR — required checkboxes are "forced consent."
+  // SMS and call consent must be separate; do not bundle.
+  smsConsent: z.boolean(),
+  callConsent: z.boolean(),
 })
 
 export type ScheduleConsultationFormSchema = z.infer<typeof scheduleConsultationFormSchema>
@@ -68,4 +69,5 @@ export const scheduleConsultationDefaultValues: ScheduleConsultationFormSchema =
   location: '',
   projectDescription: '',
   smsConsent: false,
+  callConsent: false,
 }

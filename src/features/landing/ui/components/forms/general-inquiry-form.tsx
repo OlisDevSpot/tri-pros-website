@@ -128,45 +128,73 @@ export function GeneralInquiryForm() {
               />
             </div>
 
-            {/* SMS consent disclosure must match the registered Twilio A2P 10DLC campaign verbatim. */}
-            <FormField
-              control={form.control}
-              name="smsConsent"
-              render={({ field }) => (
-                <FormItem className="space-y-2 border-t border-border/40 pt-5">
-                  <div className="flex items-start gap-3">
-                    <FormControl>
-                      <Checkbox
-                        id="general-inquiry-sms-consent"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        className="mt-0.5 size-4.5"
-                        aria-required="true"
-                      />
-                    </FormControl>
-                    <div className="flex-1 space-y-1.5">
-                      <FormLabel
-                        htmlFor="general-inquiry-sms-consent"
-                        className="block cursor-pointer text-sm font-normal leading-relaxed text-foreground/90"
-                      >
-                        Yes, I agree to receive calls and text messages from
-                        {' '}
-                        <span className="font-medium text-foreground">Tri Pros Remodeling</span>
-                        {' '}
-                        at the phone number above about my inquiry, including via
-                        automated technology.
-                      </FormLabel>
-                      <p className="text-xs leading-relaxed text-muted-foreground">
-                        Message frequency varies. Message and data rates may apply.
-                        Reply STOP to opt out, HELP for help. Consent is not a
-                        condition of any purchase.
-                      </p>
+            {/* SMS + call consent — BOTH OPTIONAL, must remain separate per TCR.
+                Disclosure text must match the registered carrier campaign verbatim. */}
+            <div className="space-y-4 border-t border-border/40 pt-5">
+              <FormField
+                control={form.control}
+                name="smsConsent"
+                render={({ field }) => (
+                  <FormItem className="space-y-1.5">
+                    <div className="flex items-start gap-3">
+                      <FormControl>
+                        <Checkbox
+                          id="general-inquiry-sms-consent"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="mt-0.5 size-4.5"
+                        />
+                      </FormControl>
+                      <div className="flex-1 space-y-1.5">
+                        <FormLabel
+                          htmlFor="general-inquiry-sms-consent"
+                          className="block cursor-pointer text-sm font-normal leading-relaxed text-foreground/90"
+                        >
+                          By checking, you are allowing to receive transactional/informational
+                          SMS communications regarding scheduling, appointment confirmations and
+                          appointment reminders, etc., from
+                          {' '}
+                          <span className="font-medium text-foreground">Tri Pros Remodeling, Inc.</span>
+                        </FormLabel>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          Message frequency may vary. Message and data rates may apply.
+                          Reply HELP for help or STOP to opt-out.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <FormMessage className="ml-7.5" />
-                </FormItem>
-              )}
-            />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="callConsent"
+                render={({ field }) => (
+                  <FormItem className="space-y-1.5">
+                    <div className="flex items-start gap-3">
+                      <FormControl>
+                        <Checkbox
+                          id="general-inquiry-call-consent"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="mt-0.5 size-4.5"
+                        />
+                      </FormControl>
+                      <FormLabel
+                        htmlFor="general-inquiry-call-consent"
+                        className="block flex-1 cursor-pointer text-sm font-normal leading-relaxed text-foreground/90"
+                      >
+                        By checking, you are allowing call communications from
+                        {' '}
+                        <span className="font-medium text-foreground">Tri Pros Remodeling, Inc.</span>
+                        {' '}
+                        regarding your account and inquiry.
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Button disabled={generalInquiry.isPending}>Submit</Button>
 
