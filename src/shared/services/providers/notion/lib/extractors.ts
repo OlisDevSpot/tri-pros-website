@@ -73,3 +73,10 @@ export function multiSelectNames(props: Props, key: string): string[] {
     throw new Error(`"${key}" is not multi_select`)
   return p.multi_select.map(s => s.name)
 }
+
+export function checkbox(props: Props, key: string): boolean {
+  const p = must(props, key)
+  if (p.type !== 'checkbox')
+    throw new Error(`"${key}" is not checkbox`)
+  return p.checkbox
+}

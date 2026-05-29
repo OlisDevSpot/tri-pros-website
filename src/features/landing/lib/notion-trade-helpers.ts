@@ -14,7 +14,7 @@ export type TradeWithScopes = Trade & {
 
 const PILLAR_TYPE_MAP: Record<PillarSlug, string[]> = {
   'energy-efficient-construction': ['Energy Efficiency'],
-  'luxury-renovations': ['General Construction', 'Structural / Functional'],
+  'luxury-renovations': ['General Construction', 'Structural / Rough'],
 }
 
 export const getCachedTrades = unstable_cache(

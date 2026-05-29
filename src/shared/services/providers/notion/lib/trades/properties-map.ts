@@ -18,4 +18,8 @@ export const TRADE_PROPERTIES_MAP = {
     label: 'Scopes',
     type: 'relation',
   },
+  disabled: {
+    label: 'Disabled',
+    type: 'checkbox',
+  },
 } as const satisfies RawPropertyMap<Omit<Trade, 'slug' | 'coverImageUrl'>>

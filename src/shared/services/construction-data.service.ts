@@ -14,7 +14,13 @@ function createConstructionDataService() {
       const raw = await queryNotionDatabase('trades', {
         sortBy: { property: 'name', direction: 'ascending' },
       })
-      return raw ? raw.map(pageToTrade) : []
+      if (!raw) {
+        return []
+      }
+      return raw.flatMap((page) => {
+        const trade = pageToTrade(page)
+        return trade ? [trade] : []
+      })
     },
 
     getTradesByQuery: async (params: { query: string }): Promise<Trade[]> => {
@@ -23,7 +29,13 @@ function createConstructionDataService() {
         filterProperty: 'name',
         sortBy: { property: 'name', direction: 'ascending' },
       })
-      return raw ? raw.map(pageToTrade) : []
+      if (!raw) {
+        return []
+      }
+      return raw.flatMap((page) => {
+        const trade = pageToTrade(page)
+        return trade ? [trade] : []
+      })
     },
 
     getAllScopes: async (): Promise<ScopeOrAddon[]> => {

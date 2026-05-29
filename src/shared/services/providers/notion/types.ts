@@ -11,7 +11,7 @@ export interface NotionPropDef {
 
 export type RawPropertyMap<T extends Record<string, any>> = Omit<Record<keyof T, NotionPropDef>, 'id'>
 
-export type NotionColumnType = 'title' | 'rich_text' | 'select' | 'multi_select' | 'date' | 'phone_number' | 'relation' | 'people' | 'timestamp'
+export type NotionColumnType = 'title' | 'rich_text' | 'select' | 'multi_select' | 'date' | 'phone_number' | 'relation' | 'people' | 'timestamp' | 'checkbox'
 
 export type NotionDatabaseProperties<T extends NotionDatabaseName> = NotionDatabaseMap[T]['propertiesMap']
 
