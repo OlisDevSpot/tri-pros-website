@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
         Privacy Policy
       </h1>
       <p className="text-muted-foreground mb-10 text-sm">
-        Last updated: March 19, 2026
+        Last updated: May 28, 2026
       </p>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8 [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-semibold">
@@ -66,11 +66,45 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>4. How We Share Your Information</h2>
+          <h2>4. SMS / Text Message Program</h2>
+          <p>
+            When you opt in to text messages from Tri Pros Remodeling on our
+            contact form, we use your mobile phone number to send messages
+            related to your inquiry and project — such as callback scheduling,
+            voicemail follow-ups, appointment confirmations, and proposal-review
+            links. Message frequency varies. Message and data rates may apply.
+          </p>
+          <p>
+            You can opt out at any time by replying
+            {' '}
+            <strong>STOP</strong>
+            {' to any message. Reply '}
+            <strong>HELP</strong>
+            {' for help, or contact us at oliver@triprosremodeling.com.'}
+          </p>
+          <p>
+            <strong>Mobile information sharing.</strong>
+            {' No mobile information will be shared with third parties or affiliates for marketing or promotional purposes. All other categories of personal information exclude text-messaging originator opt-in data and consent; this information will not be shared with any third parties.'}
+          </p>
+          <p>
+            We may share mobile information with service providers (such as our
+            messaging carrier, CRM, and e-signature platform) only as needed to
+            deliver the SMS program, under written confidentiality obligations.
+          </p>
+          <p>
+            We retain SMS opt-in records and consent evidence (including
+            timestamp, IP address, user agent, and the disclosure text shown at
+            opt-in) for the period required by federal and state
+            telecommunications regulations.
+          </p>
+        </section>
+
+        <section>
+          <h2>5. How We Share Your Information</h2>
           <p>
             {'We do '}
             <strong>not</strong>
-            {' sell your personal information. We may share information with:'}
+            {' sell your personal information. Subject to the mobile information sharing restrictions in Section 4 above, we may share other information with:'}
           </p>
           <ul>
             <li>
@@ -89,7 +123,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>5. Cookies &amp; Tracking</h2>
+          <h2>6. Cookies &amp; Tracking</h2>
           <p>
             We use cookies and similar technologies to analyze site traffic and
             improve your experience. You can control cookies through your
@@ -99,7 +133,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>6. Data Security</h2>
+          <h2>7. Data Security</h2>
           <p>
             We implement reasonable technical and organizational measures to
             protect your personal information. However, no method of
@@ -108,7 +142,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>7. Data Retention</h2>
+          <h2>8. Data Retention</h2>
           <p>
             We retain your personal information only as long as necessary to
             fulfill the purposes described in this policy, or as required by
@@ -117,7 +151,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>8. Your Rights</h2>
+          <h2>9. Your Rights</h2>
           <p>
             Depending on your location, you may have the right to:
           </p>
@@ -135,7 +169,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>9. Third-Party Links</h2>
+          <h2>10. Third-Party Links</h2>
           <p>
             Our site may contain links to third-party websites. We are not
             responsible for the privacy practices of those sites.
@@ -143,7 +177,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>10. Children&apos;s Privacy</h2>
+          <h2>11. Children&apos;s Privacy</h2>
           <p>
             Our services are not directed at individuals under 18. We do not
             knowingly collect information from children.
@@ -151,7 +185,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>11. Changes to This Policy</h2>
+          <h2>12. Changes to This Policy</h2>
           <p>
             We may update this policy from time to time. Changes will be posted
             on this page with an updated effective date.
@@ -159,7 +193,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2>12. Contact Us</h2>
+          <h2>13. Contact Us</h2>
           <p>
             If you have questions about this privacy policy or your personal
             data, contact us at:

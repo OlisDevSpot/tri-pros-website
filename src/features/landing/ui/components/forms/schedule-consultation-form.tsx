@@ -5,10 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 
 import { useMutation } from '@tanstack/react-query'
 import { motion } from 'motion/react'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
+import { Checkbox } from '@/shared/components/ui/checkbox'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -55,7 +57,7 @@ export function ScheduleConsultationForm() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
       >
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-card">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6 border border-border/30 shadow p-6 rounded-xl bg-card text-left">
           {/* Personal Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
@@ -212,12 +214,67 @@ export function ScheduleConsultationForm() {
             )}
           />
 
+          {/* SMS consent disclosure must match the registered Twilio A2P 10DLC campaign verbatim. */}
+          <FormField
+            control={form.control}
+            name="smsConsent"
+            render={({ field }) => (
+              <FormItem className="space-y-2 border-t border-border/40 pt-5">
+                <div className="flex items-start gap-3">
+                  <FormControl>
+                    <Checkbox
+                      id="schedule-consultation-sms-consent"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      className="mt-0.5 size-4.5"
+                      aria-required="true"
+                    />
+                  </FormControl>
+                  <div className="flex-1 space-y-1.5">
+                    <FormLabel
+                      htmlFor="schedule-consultation-sms-consent"
+                      className="block cursor-pointer text-sm font-normal leading-relaxed text-foreground/90"
+                    >
+                      Yes, I agree to receive calls and text messages from
+                      {' '}
+                      <span className="font-medium text-foreground">Tri Pros Remodeling</span>
+                      {' '}
+                      at the phone number above about my inquiry, including via
+                      automated technology.
+                    </FormLabel>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Message frequency varies. Message and data rates may apply.
+                      Reply STOP to opt out, HELP for help. Consent is not a
+                      condition of any purchase.
+                    </p>
+                  </div>
+                </div>
+                <FormMessage className="ml-7.5" />
+              </FormItem>
+            )}
+          />
+
           <Button>Submit</Button>
 
-          <p className="text-sm text-muted-foreground text-center">
-            By submitting this form, you agree to be contacted by Tri Pros
-            Remodeling. We respect your privacy and will never share your
-            information.
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            By submitting, you agree to our
+            {' '}
+            <Link
+              href="/privacy"
+              className="underline underline-offset-2 transition-colors hover:text-foreground"
+            >
+              Privacy Policy
+            </Link>
+            {' '}
+            and
+            {' '}
+            <Link
+              href="/terms"
+              className="underline underline-offset-2 transition-colors hover:text-foreground"
+            >
+              Terms of Service
+            </Link>
+            . We never share your mobile information with third parties.
           </p>
         </form>
       </motion.div>

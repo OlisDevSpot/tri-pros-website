@@ -19,6 +19,10 @@ export const generalInquiryFormSchema = z.object({
     }).nullable().optional(),
   }).optional(),
   inquiryDescription: z.string().min(1, { message: 'Description is required' }),
+  // Required-true consent satisfies A2P 10DLC express-consent requirement.
+  smsConsent: z.boolean().refine(v => v === true, {
+    message: 'Please agree to receive messages from Tri Pros Remodeling to continue',
+  }),
 })
 
 export type GeneralInquiryFormSchema = z.infer<typeof generalInquiryFormSchema>
@@ -28,6 +32,7 @@ export const generalInquiryDefaultValues: GeneralInquiryFormSchema = {
   email: '',
   phone: '',
   inquiryDescription: '',
+  smsConsent: false,
 }
 
 // --- Schedule Consultation Form ---
@@ -43,6 +48,10 @@ export const scheduleConsultationFormSchema = z.object({
   propertySize: z.string(),
   location: z.string(),
   projectDescription: z.string(),
+  // Required-true consent satisfies A2P 10DLC express-consent requirement.
+  smsConsent: z.boolean().refine(v => v === true, {
+    message: 'Please agree to receive messages from Tri Pros Remodeling to continue',
+  }),
 })
 
 export type ScheduleConsultationFormSchema = z.infer<typeof scheduleConsultationFormSchema>
@@ -58,4 +67,5 @@ export const scheduleConsultationDefaultValues: ScheduleConsultationFormSchema =
   propertySize: '',
   location: '',
   projectDescription: '',
+  smsConsent: false,
 }
