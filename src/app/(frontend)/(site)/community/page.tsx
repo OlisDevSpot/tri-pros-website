@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { ViewportHero } from '@/shared/components/viewport-hero'
+import { ComingSoonState } from '@/shared/components/states/coming-soon-state'
 
 export const metadata: Metadata = {
   title: 'Community',
@@ -9,8 +9,11 @@ export const metadata: Metadata = {
 
 export default function CommunityPage() {
   return (
-    <ViewportHero>
-      <h1>Community</h1>
-    </ViewportHero>
+    <ComingSoonState
+      size="page"
+      title={'Our community space\nis still being built'}
+      description="A home for partners, neighbors, and homeowners to plug into what we're building across Southern California. We're framing it now — check back soon."
+      homeHref="/"
+    />
   )
 }
