@@ -103,12 +103,10 @@ async function main() {
       .limit(1)
 
     if (existing.length > 0) {
-      // Update formConfigJSON on existing rows to include new fields (e.g. mode)
-      await db
-        .update(leadSourcesTable)
-        .set({ formConfigJSON: source.formConfigJSON })
-        .where(eq(leadSourcesTable.slug, source.slug))
-      console.log(`Updated "${source.name}" — formConfigJSON synced`)
+      // Existing rows are left untouched. Admin-side edits via the dashboard
+      // are the source of truth for formConfigJSON once a row exists. To change
+      // a live row's config, edit it in the admin UI (or via a one-off script).
+      console.log(`Skipped "${source.name}" — already exists, not modified`)
       continue
     }
 
