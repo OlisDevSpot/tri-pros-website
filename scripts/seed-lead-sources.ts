@@ -27,8 +27,13 @@ const LEAD_SOURCES = [
     },
   },
   {
-    name: 'Telemarketing Leads - Philippines',
-    slug: 'telemarketing_leads_philippines',
+    // Slug + name match the canonical prod row created 2026-03-20. A previous
+    // version of this script used 'telemarketing_leads_philippines' and an
+    // accidental prod run on 2026-05-29 created a duplicate row (since
+    // reverted). Keep this slug aligned with prod or the script will
+    // duplicate again.
+    name: 'Telemarketing',
+    slug: 'telemarketing',
     formConfigJSON: {
       mode: 'customer_and_meeting' as const,
       showEmail: false,
