@@ -1,4 +1,6 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
+import type { CustomerConfirmationEmailProps } from '@/shared/services/providers/resend/emails/customer-confirmation-email'
+import { CustomerConfirmationEmail } from '@/shared/services/providers/resend/emails/customer-confirmation-email'
 import { GeneralInquiryEmail } from '@/shared/services/providers/resend/emails/general-inquiry-email'
 import { ProjectEmailTemplate } from '@/shared/services/providers/resend/emails/project-inquiry-email'
 import ProposalEmail from '@/shared/services/providers/resend/emails/proposal-email'
@@ -24,6 +26,10 @@ export function renderScheduleConsultationEmail(data: ScheduleConsultationFormSc
 
 export function renderGeneralInquiryEmail(data: GeneralInquiryFormSchema) {
   return <GeneralInquiryEmail data={data} />
+}
+
+export function renderCustomerConfirmationEmail(params: CustomerConfirmationEmailProps) {
+  return <CustomerConfirmationEmail {...params} />
 }
 
 export function renderProposalViewedEmail(params: {
