@@ -77,4 +77,6 @@ export const marketingNavItems = [
   },
 ] satisfies NavItem[]
 
-export type ServiceSlugs = 'energy-efficient-construction' | 'luxury-renovations' | 'commercial' | 'design-build'
+// Re-export canonical slug union from the services source of truth.
+// Keeping the legacy plural name as a type alias for backwards compatibility.
+export type { ServiceSlug as ServiceSlugs } from '@/shared/constants/company/services'

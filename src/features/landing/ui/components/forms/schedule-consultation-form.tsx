@@ -10,10 +10,11 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@/shared/components/ui/form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { services } from '@/shared/constants/company/services'
 import { scheduleConsultationDefaultValues as defaultValues, scheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -109,22 +110,23 @@ export function ScheduleConsultationForm() {
                   <FormLabel>Project Type *</FormLabel>
                   <FormControl>
                     <Select
-                      onValueChange={(newVal) => {
-                        field.onChange(newVal)
-                      }}
+                      value={field.value}
+                      onValueChange={field.onChange}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select Project Type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="custom-home">Custom Home Construction</SelectItem>
-                        <SelectItem value="renovation">Luxury Renovation</SelectItem>
-                        <SelectItem value="commercial">Commercial Construction</SelectItem>
-                        <SelectItem value="design-build">Design-Build Services</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        {services.map(service => (
+                          <SelectItem key={service.slug} value={service.slug}>
+                            {service.title}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="other">Other / Not Sure</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />

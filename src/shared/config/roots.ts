@@ -1,3 +1,7 @@
+// Type-only import — erased at build time, so this does NOT create a runtime
+// circular dependency with services.ts (which value-imports ROOTS).
+import type { ServiceSlug } from '@/shared/constants/company/services'
+
 export const APP_HOSTS = {
   prod: ['triprosremodeling.com', 'www.triprosremodeling.com'],
   dev: ['localhost:3000', 'localhost:3001', 'localhost:3002'],
@@ -27,8 +31,8 @@ const APP_ROOTS = {
     portfolioProjects: (options?: UrlOptions) => generateUrl('/portfolio/projects', options),
     portfolioTestimonials: (options?: UrlOptions) => generateUrl('/portfolio/testimonials', options),
     services: (options?: UrlOptions) => generateUrl('/services', options),
-    servicesPillar: (pillarSlug: string, options?: UrlOptions) => generateUrl(`/services/${pillarSlug}`, options),
-    servicesTrade: (pillarSlug: string, tradeSlug: string, options?: UrlOptions) => generateUrl(`/services/${pillarSlug}/${tradeSlug}`, options),
+    servicesPillar: (pillarSlug: ServiceSlug, options?: UrlOptions) => generateUrl(`/services/${pillarSlug}`, options),
+    servicesTrade: (pillarSlug: ServiceSlug, tradeSlug: string, options?: UrlOptions) => generateUrl(`/services/${pillarSlug}/${tradeSlug}`, options),
   },
   dashboard: {
     root: '/dashboard',

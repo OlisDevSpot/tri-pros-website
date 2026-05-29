@@ -1,5 +1,12 @@
 import z from 'zod'
-import { projectTypes } from '@/shared/constants/enums'
+import { SERVICE_SLUGS } from '@/shared/constants/company/services'
+
+// Inquiry-form project types: the 4 canonical services + an "other" catch-all
+// for prospects who don't fit cleanly into a service bucket. Single source of
+// truth — adding a service to SERVICE_SLUGS automatically expands this enum.
+export const PROJECT_INQUIRY_TYPES = [...SERVICE_SLUGS, 'other'] as const
+
+export type ProjectInquiryType = (typeof PROJECT_INQUIRY_TYPES)[number]
 
 // --- General Inquiry Form ---
 
@@ -42,7 +49,7 @@ export const scheduleConsultationFormSchema = z.object({
   name: z.string(),
   email: z.email(),
   phone: z.string(),
-  projectType: z.enum(projectTypes),
+  projectType: z.enum(PROJECT_INQUIRY_TYPES),
   timeline: z.string(),
   budget: z.string(),
   propertyType: z.string(),
@@ -61,7 +68,7 @@ export const scheduleConsultationDefaultValues: ScheduleConsultationFormSchema =
   name: '',
   email: '',
   phone: '',
-  projectType: 'general-remodeling',
+  projectType: 'energy-efficient-construction',
   timeline: '',
   budget: '',
   propertyType: '',

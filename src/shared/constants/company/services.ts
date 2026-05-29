@@ -1,8 +1,18 @@
-import type { ServiceSlugs } from '@/shared/constants/nav-items/marketing'
 import { ROOTS } from '@/shared/config/roots'
 
+// Canonical service slugs. Single source of truth for both the service list below
+// and any downstream code that needs the slug union (route params, form enums, etc.).
+export const SERVICE_SLUGS = [
+  'energy-efficient-construction',
+  'luxury-renovations',
+  'commercial',
+  'design-build',
+] as const
+
+export type ServiceSlug = (typeof SERVICE_SLUGS)[number]
+
 interface Service {
-  slug: ServiceSlugs
+  slug: ServiceSlug
   title: string
   subtitle: string
   description: string
