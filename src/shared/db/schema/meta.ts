@@ -15,6 +15,18 @@ import {
   proposalStatuses,
   userRoles,
   viewSources,
+  voipCallDispositions,
+  voipCallStatuses,
+  voipCampaignStatuses,
+  voipDidRoles,
+  voipDidStatuses,
+  voipDncSources,
+  voipLinkTokenTypes,
+  voipMessageDirections,
+  voipMessageStatuses,
+  voipSources,
+  voipTransferModes,
+  voipUserAvailabilities,
 } from '@/shared/constants/enums'
 import {
   constructionTypes,
@@ -53,3 +65,19 @@ export const projectStatusEnum = pgEnum('project_status', projectStatuses)
 
 // LEADS
 export const leadTypeEnum = pgEnum('lead_type', leadTypes)
+
+// VOIP IN-HOUSE (Twilio — agent comms + DIDs + DNC)
+export const voipSourceEnum = pgEnum('voip_source', voipSources)
+export const voipCallStatusEnum = pgEnum('voip_call_status', voipCallStatuses)
+export const voipCallDispositionEnum = pgEnum('voip_call_disposition', voipCallDispositions)
+export const voipDidStatusEnum = pgEnum('voip_did_status', voipDidStatuses)
+export const voipDidRoleEnum = pgEnum('voip_did_role', voipDidRoles)
+export const voipDncSourceEnum = pgEnum('voip_dnc_source', voipDncSources)
+export const voipUserAvailabilityEnum = pgEnum('voip_user_availability', voipUserAvailabilities)
+export const voipTransferModeEnum = pgEnum('voip_transfer_mode', voipTransferModes)
+export const voipMessageDirectionEnum = pgEnum('voip_message_direction', voipMessageDirections)
+export const voipMessageStatusEnum = pgEnum('voip_message_status', voipMessageStatuses)
+export const voipLinkTokenTypeEnum = pgEnum('voip_link_token_type', voipLinkTokenTypes)
+
+// VOIP CAMPAIGNS (CloudTalk-driven lead-to-meeting pipeline)
+export const voipCampaignStatusEnum = pgEnum('voip_campaign_status', voipCampaignStatuses)
