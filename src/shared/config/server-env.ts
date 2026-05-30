@@ -82,17 +82,44 @@ const envSchema = z.object({
 
   // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (CloudTalk).
   // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
-  VOIP_WEBHOOK_BASE_URL: z.string().optional(),
-  // Phase 0 only — mocked transfer-target endpoint returns this E.164 for the smoke test.
-  // Replaced in Phase 1 with the real Twilio in-house DID lookup. Leave empty in prod.
-  CLOUDTALK_PHASE0_TRANSFER_TARGET_E164: z.string().optional(),
+  VOIP_WEBHOOK_BASE_URL: z.string(),
+  // (CLOUDTALK_PHASE0_TRANSFER_TARGET_E164 removed 2026-05-27 — AI VoiceAgent off the table per pivot; no transfer mock needed.)
+  // Dev safety: redirects all outbound voice/SMS to a single test number in dev/preview.
+  // CI gate at bottom of this file prevents this being set in production.
+  VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
+
+  // TWILIO (voip-in-house)
+  TWILIO_ACCOUNT_SID: z.string(),
+  TWILIO_AUTH_TOKEN: z.string(),
+  TWILIO_API_KEY_SID: z.string(),
+  TWILIO_API_KEY_SECRET: z.string(),
+  TWILIO_TWIML_APP_SID: z.string(),
+  TWILIO_TRUST_PROFILE_SID: z.string().optional(), // Trust Hub vetting clock; optional until issued
+  TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(), // 10DLC vetting clock; optional until approval
+
+  // Pilot DIDs (role-named per Phase 0 procurement)
+  TWILIO_TRANSFER_TARGET_DID_E164: z.string(),
+  TWILIO_TRANSFER_TARGET_DID_SID: z.string(),
+  TWILIO_DID_424_E164: z.string(),
+  TWILIO_DID_424_SID: z.string(),
+  TWILIO_DID_626_E164: z.string(),
+  TWILIO_DID_626_SID: z.string(),
+
+  // FCC DNC (SAN pending issuance — optional until Phase 0 completes)
+  FTC_DNC_SAN: z.string().optional(),
+  FTC_DNC_USERNAME: z.string().optional(),
+  FTC_DNC_PASSWORD: z.string().optional(),
 
   // CLOUDTALK (voip-campaigns)
   // HTTP Basic auth — Access Key ID is the username, Access Key Secret is the password.
   CLOUDTALK_ACCESS_KEY_ID: z.string().optional(),
   CLOUDTALK_ACCESS_KEY_SECRET: z.string().optional(),
-  // Long-random shared secret appended as ?secret=<value> on the webhook URL configured in CloudTalk dashboard.
-  CLOUDTALK_WEBHOOK_SECRET: z.string().optional(),
+  // Shared secret protecting BOTH inbound surfaces (CloudTalk → us):
+  //   1. Mid-call routing endpoints (`/api/voip/routing/*`) — voip-in-house Phase 1 (this EPIC)
+  //   2. Async event webhook (`/api/webhooks/cloudtalk/route.ts`) — voip-campaigns Phase 1
+  // Same trust model both surfaces; one secret value, configured once into CloudTalk's dashboard.
+  // Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+  CLOUDTALK_WEBHOOK_SECRET: z.string().min(32),
   // Optional comma-separated CIDRs for Vercel edge allowlist.
   CLOUDTALK_WEBHOOK_IP_ALLOWLIST: z.string().optional(),
 
@@ -123,6 +150,12 @@ catch (e) {
   console.error(z.flattenError(error).fieldErrors)
   // eslint-disable-next-line node/prefer-global/process
   process.exit(1)
+}
+
+// Production safety gate: VOIP_DEV_OVERRIDE_NUMBER reroutes all outbound voice/SMS
+// to a single test number — invaluable in dev/preview, catastrophic in production.
+if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
+  throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
 }
 
 export default env
