@@ -6,6 +6,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PlusIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { parseAsStringEnum, useQueryState } from 'nuqs'
+import { useMemo, useState } from 'react'
 
 import { useEntranceMotion } from '@/features/lead-sources-admin/lib/use-entrance-motion'
 import { AllAnalyticsPanel } from '@/features/lead-sources-admin/ui/components/all-analytics-panel'
@@ -13,17 +14,40 @@ import { AllCustomersSection } from '@/features/lead-sources-admin/ui/components
 import { PerformanceStrip } from '@/features/lead-sources-admin/ui/components/performance-strip'
 import { SourceTabTrigger } from '@/features/lead-sources-admin/ui/components/source-tab-trigger'
 import { Button } from '@/shared/components/ui/button'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/shared/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
 import { Tabs, TabsContent, TabsList } from '@/shared/components/ui/tabs'
 import { useTRPC } from '@/trpc/helpers'
 
 const ALL_TABS = ['customers', 'analytics'] as const
 type AllTab = (typeof ALL_TABS)[number]
 
+interface PickableSource {
+  id: string
+  slug: string
+  name: string
+}
+
 interface AllDetailProps {
   sourceCount: number
   activeChip: TimeRangeChip
   range: { from?: string, to?: string }
-  onAddCustomer: () => void
+  /**
+   * The list of lead sources used to populate the attribution picker. The
+   * aggregate "All" view has no inherent attribution, so the user must
+   * explicitly pick a source before the add-customer sheet opens — otherwise
+   * the router silently defaults to `manual`, which historically caused
+   * misattributed records.
+   */
+  sources: PickableSource[]
+  onAddCustomer: (source: { slug: string, name: string }) => void
 }
 
 /**
@@ -34,12 +58,18 @@ interface AllDetailProps {
  * enum parser falls back to 'customers' when an invalid value (e.g.
  * 'settings') is carried over from a per-source view.
  */
-export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: AllDetailProps) {
+export function AllDetail({ sourceCount, activeChip, range, sources, onAddCustomer }: AllDetailProps) {
   const trpc = useTRPC()
   const entrance = useEntranceMotion()
   const [tab, setTab] = useQueryState(
     'tab',
     parseAsStringEnum([...ALL_TABS]).withDefault('customers'),
+  )
+  const [pickerOpen, setPickerOpen] = useState(false)
+
+  const sortedSources = useMemo(
+    () => [...sources].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+    [sources],
   )
 
   const statsQuery = useQuery({
@@ -72,10 +102,38 @@ export function AllDetail({ sourceCount, activeChip, range, onAddCustomer }: All
           </motion.h2>
         </div>
         <motion.div {...entrance(0.08, 6)} className="shrink-0">
-          <Button size="sm" onClick={onAddCustomer} className="h-11 gap-1.5 sm:h-8">
-            <PlusIcon className="size-4" />
-            Add customer
-          </Button>
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" className="h-11 gap-1.5 sm:h-8">
+                <PlusIcon className="size-4" />
+                Add customer
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-0">
+              <Command>
+                <CommandInput placeholder="Pick a lead source…" />
+                <CommandList>
+                  <CommandEmpty>No lead sources found.</CommandEmpty>
+                  <CommandGroup heading="Attribute new customer to">
+                    {sortedSources.map(source => (
+                      <CommandItem
+                        key={source.id}
+                        // Filter on both name and slug so 'manual', 'fb', etc.
+                        // match without needing the user to type the display name.
+                        value={`${source.name} ${source.slug}`}
+                        onSelect={() => {
+                          setPickerOpen(false)
+                          onAddCustomer({ slug: source.slug, name: source.name })
+                        }}
+                      >
+                        <span className="truncate">{source.name}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </motion.div>
       </header>
 

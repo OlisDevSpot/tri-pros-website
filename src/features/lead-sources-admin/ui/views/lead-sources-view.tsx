@@ -156,7 +156,8 @@ export function LeadSourcesView() {
                     sourceCount={sources?.length ?? 0}
                     activeChip={activeChip}
                     range={range}
-                    onAddCustomer={() => setAddSheetState({})}
+                    sources={sources ?? []}
+                    onAddCustomer={src => setAddSheetState(src)}
                   />
                 )
               : (
