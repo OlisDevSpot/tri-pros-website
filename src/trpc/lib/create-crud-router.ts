@@ -112,12 +112,13 @@ export function createCrudRouter<
     update: updateProcedure
       .input(updateInput)
       .mutation(async ({ ctx, input }) => {
-        if (ctx.ability) {
-          assertCan(ctx.ability, 'update', config.spec)
-        }
         // Cast: Zod 4 can't resolve generic TUpdate output type in z.object({ data: TUpdate }).
         // The schema validates at runtime; this tells TS the shape matches CrudHandlers.
         const { id, data } = input as { id: TId, data: z.output<TUpdate>, token?: string }
+
+        if (ctx.ability) {
+          assertCanUpdateFields(ctx.ability, config.spec, data as Record<string, unknown>)
+        }
 
         const row = dalToTrpc(await handlers.update(ctx, { id, data }))
         return row
@@ -143,12 +144,18 @@ export function createCrudRouter<
 // ── helpers ──────────────────────────────────────────────────────────────
 
 /**
- * CASL permission gate. Accepts ability directly (not ctx) so callers
- * can pass ctx.ability after narrowing — avoids TS not narrowing the
- * full ctx object through a function boundary.
+ * Slot-level CASL gate. Checks the slot's action against the entity subject
+ * with no field arg — appropriate for `getById`, `create`, `delete`, `duplicate`
+ * (row-granular operations). For the `update` slot, use `assertCanUpdateFields`
+ * instead — slot-level checks let field-restricted grants bypass per-field
+ * intent (see `assertCanUpdateFields` JSDoc).
+ *
+ * Accepts ability directly (not ctx) so callers can pass `ctx.ability` after
+ * narrowing — avoids TS not narrowing the full ctx object through a function
+ * boundary.
  */
 function assertCan(
-  ability: { can: (action: AppAction, subject: AppSubject) => boolean },
+  ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },
   slot: SlotName,
   spec: EntityServerSpec,
 ): void {
@@ -158,5 +165,38 @@ function assertCan(
       code: 'FORBIDDEN',
       message: `You do not have permission to ${action} ${spec.entityName}`,
     })
+  }
+}
+
+/**
+ * Field-level CASL gate for the update slot. For every key in `data` whose
+ * value is defined, requires `ability.can('update', subject, field)` to return
+ * true. Throws FORBIDDEN naming the first field that fails.
+ *
+ * CASL semantics:
+ * - Unrestricted grant (`can('update', 'X')` with no `fields`): every field passes.
+ * - Field-restricted grant (`can('update', 'X', ['a', 'b'])`): only 'a' and 'b' pass.
+ * - No grant: every field fails.
+ * - `manage all`: every field passes.
+ *
+ * Undefined values are skipped (Drizzle ignores them anyway). Callers that
+ * pass `data: { phone: undefined }` are treated as "not attempting to write
+ * phone" — same semantics as the input shape itself.
+ */
+function assertCanUpdateFields(
+  ability: { can: (action: AppAction, subject: AppSubject, field?: string) => boolean },
+  spec: EntityServerSpec,
+  data: Record<string, unknown>,
+): void {
+  for (const [field, value] of Object.entries(data)) {
+    if (value === undefined) {
+      continue
+    }
+    if (!ability.can('update', spec.caslSubject, field)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `You do not have permission to update ${spec.entityName}.${field}`,
+      })
+    }
   }
 }
