@@ -1,3 +1,5 @@
+import type { UserRole } from '@/shared/constants/enums'
+
 import type { Pipeline } from '@/shared/constants/enums/pipelines'
 
 import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fresh-pipeline'
@@ -5,12 +7,14 @@ import type { FreshPipelineStage } from '@/shared/domains/pipelines/constants/fr
 import { TRPCError } from '@trpc/server'
 import { and, eq } from 'drizzle-orm'
 
+import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/domains/pipelines/constants/fresh-pipeline'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
+import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 
 interface MoveParams {
@@ -19,16 +23,30 @@ interface MoveParams {
   toStage: string
   pipeline: Pipeline
   userId: string
+  userRole: UserRole
   isOmni?: boolean
 }
 
-export async function moveCustomerPipelineItem({ customerId, fromStage, toStage, pipeline, userId, isOmni = false }: MoveParams): Promise<void> {
-  // Leads pipeline: update customers.pipelineStage directly
+export async function moveCustomerPipelineItem({
+  customerId,
+  fromStage,
+  toStage,
+  pipeline,
+  userId,
+  userRole,
+  isOmni = false,
+}: MoveParams): Promise<void> {
+  // Leads pipeline: update customers.pipelineStage through customerCrud so any
+  // future spec.hooks.update.* fires consistently. The user must be able to see
+  // the customer (meeting-participation visibility) for the write to land.
   if (pipeline === 'leads') {
-    await db
-      .update(customers)
-      .set({ pipelineStage: toStage })
-      .where(eq(customers.id, customerId))
+    const ctx = buildUserContext(userId, userRole, customerServerSpec)
+    dalVerifySuccess(
+      await customerCrud.update(ctx, {
+        id: customerId,
+        data: { pipelineStage: toStage },
+      }),
+    )
     return
   }
 
