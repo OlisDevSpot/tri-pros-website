@@ -24,12 +24,11 @@ import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { getCustomer, listCustomers } from '@/shared/entities/customers/dal/server/queries'
+import { getCustomer } from '@/shared/entities/customers/dal/server/queries'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
-import { geocodeAddress } from '@/shared/services/providers/google-maps/geocode'
 
 import { createTRPCRouter } from '../../init'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
@@ -47,12 +46,6 @@ const intakeRatelimit = new Ratelimit({
 
 export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
   return createTRPCRouter({
-    // Fetch all locally-cached customers
-    getAll: entity.authedProcedure
-      .query(async ({ ctx }) => {
-        return dalToTrpc(await listCustomers(ctx))
-      }),
-
     // Server-paginated customers list. Drives /dashboard/customers and the
     // lead-sources-admin "All customers" pane. Each row carries its joined
     // leadSource (name + slug); NULL joins mean "unknown legacy import".
@@ -263,75 +256,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           updateData.geocodedAt = null
         }
         return dalToTrpc(await customerCrud.update(ctx, { id: customerId, data: updateData }))
-      }),
-
-    // Lazy geocode — returns cached coords or geocodes once, persists, and returns.
-    // Zero Google API calls after the first successful geocode per customer.
-    ensureGeocoded: entity.authedProcedure
-      .input(z.object({ customerId: z.string().uuid() }))
-      .query(async ({ input }) => {
-        const [customer] = await db
-          .select({
-            id: customers.id,
-            name: customers.name,
-            address: customers.address,
-            city: customers.city,
-            state: customers.state,
-            zip: customers.zip,
-            latitude: customers.latitude,
-            longitude: customers.longitude,
-          })
-          .from(customers)
-          .where(eq(customers.id, input.customerId))
-          .limit(1)
-
-        if (!customer) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-        }
-
-        if (customer.latitude != null && customer.longitude != null) {
-          console.warn(`[ensureGeocoded] cache hit for ${customer.name} (${customer.id})`)
-          return { latitude: customer.latitude, longitude: customer.longitude }
-        }
-
-        // Try progressively broader queries. The street address is the most
-        // precise; if Google can't resolve it (typos, unusual format, etc.),
-        // fall back to city+state+zip and finally state+zip so the hero can
-        // still render a useful neighborhood view.
-        const candidates = [
-          [customer.address, customer.city, customer.state, customer.zip].filter(Boolean).join(', '),
-          [customer.city, customer.state, customer.zip].filter(Boolean).join(', '),
-          [customer.state, customer.zip].filter(Boolean).join(' '),
-        ].filter(q => q.length > 0)
-
-        console.warn(`[ensureGeocoded] ${customer.name} — raw fields:`, {
-          address: customer.address,
-          city: customer.city,
-          state: customer.state,
-          zip: customer.zip,
-        })
-        console.warn(`[ensureGeocoded] candidates:`, candidates)
-
-        if (candidates.length === 0) {
-          console.warn(`[ensureGeocoded] no candidates for customer ${customer.id}`)
-          return null
-        }
-
-        const geocoded = await geocodeAddress(candidates)
-        if (!geocoded) {
-          return null
-        }
-
-        await db
-          .update(customers)
-          .set({
-            latitude: geocoded.latitude,
-            longitude: geocoded.longitude,
-            geocodedAt: new Date().toISOString(),
-          })
-          .where(eq(customers.id, input.customerId))
-
-        return geocoded
       }),
 
     // Permanently delete a customer + their meetings, proposals, notes, and
