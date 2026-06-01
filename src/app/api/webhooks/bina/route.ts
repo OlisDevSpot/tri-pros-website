@@ -1,4 +1,6 @@
 import env from '@/shared/config/server-env'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { binaWebhookLogs, customerNotes } from '@/shared/db/schema'
 import { createCustomerFromWebhook } from '@/shared/entities/customers/dal/server/queries'
@@ -100,14 +102,18 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── Create customer + note ────────────────────────────────────────────
   try {
-    const customer = await createCustomerFromWebhook({
-      name: `${firstName} ${lastName}`,
-      phone,
-      email: email || null,
-      city,
-      zip,
-      leadSourceSlug: 'bina',
-    })
+    const customer = dalVerifySuccess(
+      await createCustomerFromWebhook(SYSTEM_CONTEXT, {
+        data: {
+          name: `${firstName} ${lastName}`,
+          phone,
+          email: email || null,
+          city,
+          zip,
+          leadSourceSlug: 'bina',
+        },
+      }),
+    )
 
     // Build formatted note with additional data
     const noteLines: string[] = ['📋 Lead from Bina (GoHighLevel)']
