@@ -15,7 +15,10 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { FRESH_ALLOWED_DRAG_TRANSITIONS } from '@/shared/domains/pipelines/constants/fresh-pipeline'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
-import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
+import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
+import { proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 
 interface MoveParams {
   customerId: string
@@ -24,7 +27,6 @@ interface MoveParams {
   pipeline: Pipeline
   userId: string
   userRole: UserRole
-  isOmni?: boolean
 }
 
 export async function moveCustomerPipelineItem({
@@ -34,7 +36,6 @@ export async function moveCustomerPipelineItem({
   pipeline,
   userId,
   userRole,
-  isOmni = false,
 }: MoveParams): Promise<void> {
   // Leads pipeline: update customers.pipelineStage through customerCrud so any
   // future spec.hooks.update.* fires consistently. The user must be able to see
@@ -99,13 +100,14 @@ export async function moveCustomerPipelineItem({
     || (fromStage === 'follow_up_scheduled' && toStage === 'meeting_completed')
   ) {
     const targetOutcome = toStage === 'meeting_completed' ? 'follow_up_needed' : 'not_set'
+    const ctx = buildUserContext(userId, userRole, meetingServerSpec)
 
     const customerMeetings = await db
       .select({ id: meetings.id })
       .from(meetings)
       .where(and(
         eq(meetings.customerId, customerId),
-        isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
+        ctx.scope ?? undefined,
         eq(meetings.meetingOutcome, 'not_set'),
       ))
       .orderBy(meetings.createdAt)
@@ -118,22 +120,26 @@ export async function moveCustomerPipelineItem({
       })
     }
 
-    await db
-      .update(meetings)
-      .set({ meetingOutcome: targetOutcome as 'not_set' | 'follow_up_needed' })
-      .where(eq(meetings.id, customerMeetings[0].id))
+    dalVerifySuccess(
+      await meetingCrud.update(ctx, {
+        id: customerMeetings[0].id,
+        data: { meetingOutcome: targetOutcome },
+      }),
+    )
 
     return
   }
 
   if (fromStage === 'proposal_sent' && toStage === 'declined') {
+    const ctx = buildUserContext(userId, userRole, proposalServerSpec)
+
     const sentProposals = await db
       .select({ id: proposals.id })
       .from(proposals)
       .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
       .where(and(
         eq(meetings.customerId, customerId),
-        isOmni ? undefined : eq(proposals.ownerId, userId),
+        ctx.scope ?? undefined,
         eq(proposals.status, 'sent'),
       ))
 
@@ -145,10 +151,12 @@ export async function moveCustomerPipelineItem({
     }
 
     for (const p of sentProposals) {
-      await db
-        .update(proposals)
-        .set({ status: 'declined' })
-        .where(eq(proposals.id, p.id))
+      dalVerifySuccess(
+        await proposalCrud.update(ctx, {
+          id: p.id,
+          data: { status: 'declined' },
+        }),
+      )
     }
 
     return

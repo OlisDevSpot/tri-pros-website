@@ -39,12 +39,10 @@ export const customerPipelinesRouter = createTRPCRouter({
       pipeline: z.enum(pipelines).default('fresh'),
     }))
     .mutation(async ({ ctx, input }) => {
-      const isOmni = ctx.ability.can('manage', 'all')
       await moveCustomerPipelineItem({
         ...input,
         userId: ctx.session.user.id,
         userRole: ctx.session.user.role,
-        isOmni,
       })
     }),
 
