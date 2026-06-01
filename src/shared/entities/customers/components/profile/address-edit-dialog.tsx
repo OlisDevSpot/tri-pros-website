@@ -35,7 +35,7 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
   const [picked, setPicked] = useState<AddressFields | null>(null)
 
   const updateContact = useMutation(
-    trpc.customersRouter.business.updateCustomerContact.mutationOptions({
+    trpc.customersRouter.crud.update.mutationOptions({
       onSuccess: () => {
         invalidateCustomer()
         toast.success('Address updated')
@@ -50,11 +50,13 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
       return
     }
     updateContact.mutate({
-      customerId,
-      address: picked.address,
-      city: picked.city,
-      state: picked.state || 'CA',
-      zip: picked.zip,
+      id: customerId,
+      data: {
+        address: picked.address,
+        city: picked.city,
+        state: picked.state || 'CA',
+        zip: picked.zip,
+      },
     })
   }
 

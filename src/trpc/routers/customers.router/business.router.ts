@@ -30,7 +30,6 @@ import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
 
 import { createTRPCRouter } from '../../init'
-import { dalToTrpc } from '../../lib/dal-to-trpc'
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -125,47 +124,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           .from(customers)
           .where(and(textWhere, ctx.scope ?? undefined))
           .limit(10)
-      }),
-
-    // Update top-level contact fields — gated per-field via CASL so the
-    // permission boundary stays in `abilities.ts`. Today only super-admin
-    // (`manage all`) passes; agents are field-restricted to JSONB profile
-    // blobs and so cannot touch any of these top-level columns.
-    updateCustomerContact: entity.authedProcedure
-      .input(z.object({
-        customerId: z.string().uuid(),
-        name: z.string().min(1).optional(),
-        phone: z.string().optional(),
-        email: z.string().email().optional(),
-        address: z.string().optional(),
-        city: z.string().optional(),
-        state: z.string().length(2).optional(),
-        zip: z.string().optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const { customerId, ...fields } = input
-        const updateData: Record<string, unknown> = {}
-        for (const [key, value] of Object.entries(fields)) {
-          if (value === undefined) {
-            continue
-          }
-          if (ctx.ability.cannot('update', 'Customer', key)) {
-            throw new TRPCError({ code: 'FORBIDDEN', message: `You do not have permission to update ${key}.` })
-          }
-          updateData[key] = value
-        }
-        if (Object.keys(updateData).length === 0) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No fields to update' })
-        }
-        // Invalidate cached geocode whenever address components change.
-        // see ../../../shared/entities/customers/DOCS.md#geocoding-stored-on-customer
-        const addressChanged = ['address', 'city', 'state', 'zip'].some(k => k in updateData)
-        if (addressChanged) {
-          updateData.latitude = null
-          updateData.longitude = null
-          updateData.geocodedAt = null
-        }
-        return dalToTrpc(await customerCrud.update(ctx, { id: customerId, data: updateData }))
       }),
 
     // Add a note to a customer — any agent
