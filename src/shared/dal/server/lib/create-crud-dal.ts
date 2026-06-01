@@ -22,7 +22,7 @@ import type {
 } from '../types'
 import type { Insert, Row, Update } from '@/shared/db/types'
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 
@@ -92,6 +92,63 @@ async function createImpl<TTable extends PgTable>(
 
 // ── update ───────────────────────────────────────────────────────────────
 
+/**
+ * Build the Drizzle `.set()` payload for an update, applying JSONB deep-merge
+ * semantics for any column listed in `spec.update.jsonbMergeColumns`.
+ *
+ * Behavior:
+ * - If `spec.update.jsonbMergeColumns` is absent/empty → return `validated`
+ *   unchanged (no-op for entities that haven't opted in).
+ * - Skip keys whose value is `undefined` (partial updates must not clobber
+ *   existing JSONB content when the caller didn't pass that key).
+ * - For each opted-in column whose value is a non-null object, emit
+ *   `COALESCE(<col>, '{}'::jsonb) || <new>::jsonb` so existing keys
+ *   survive and only the provided keys are overwritten.
+ * - All other values pass through unchanged.
+ *
+ * Note on column lookup: Drizzle's `PgColumn.name` is the DB-side name
+ * (snake_case). `validated` is keyed by the TS-side Drizzle property name
+ * (camelCase). We resolve TS-side keys by reference identity against
+ * `spec.table`.
+ *
+ * see ../../../entities/proposals/DOCS.md#jsonb-merge-on-update
+ */
+function buildUpdateSet<TTable extends PgTable>(
+  spec: EntityServerSpec<TTable>,
+  validated: Record<string, unknown>,
+): Record<string, unknown> {
+  const mergeCols = spec.update?.jsonbMergeColumns
+  if (!mergeCols || mergeCols.length === 0) {
+    return validated
+  }
+
+  // Map TS-side property name → PgColumn for opted-in merge columns.
+  // We iterate the table's column entries once and match by reference identity.
+  const mergeByKey = new Map<string, PgColumn>()
+  const mergeColSet = new Set<PgColumn>(mergeCols)
+  const tableCols = spec.table as unknown as Record<string, PgColumn>
+  for (const [tsKey, col] of Object.entries(tableCols)) {
+    if (mergeColSet.has(col)) {
+      mergeByKey.set(tsKey, col)
+    }
+  }
+
+  const out: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(validated)) {
+    if (value === undefined) {
+      continue
+    }
+    const col = mergeByKey.get(key)
+    if (col && value !== null && typeof value === 'object') {
+      out[key] = sql`COALESCE(${col}, '{}'::jsonb) || ${JSON.stringify(value)}::jsonb`
+    }
+    else {
+      out[key] = value
+    }
+  }
+  return out
+}
+
 async function updateImpl<TTable extends PgTable>(
   spec: EntityServerSpec<TTable>,
   pkColumn: PgColumn,
@@ -116,7 +173,7 @@ async function updateImpl<TTable extends PgTable>(
     const where = and(eq(pkColumn, input.id), ctx.scope ?? undefined)
     const [row] = await db
       .update(spec.table as PgTable)
-      .set(validated as Record<string, unknown>)
+      .set(buildUpdateSet(spec, validated as Record<string, unknown>))
       .where(where)
       .returning()
     if (!row) {
