@@ -112,8 +112,8 @@ A customer's lead origin is captured by three fields:
 Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigger a geocode and write these alongside the address. Map surfaces (project showroom, customer pipeline map view) read directly from the columns.
 
 **Why**: geocoding is rate-limited and slow at the Google Maps boundary; caching on the customer row makes the map view a single query without extra API calls.
-**Reference impl**: address-edit handler in customers router business sub-router (see `src/trpc/routers/customers.router/business.router.ts`)
-**Enforced by**: convention (only the address-edit path should write these)
+**Reference impl**: `customerServerSpec.hooks.update.before` at `src/shared/entities/customers/lib/server-spec.ts` — nullifies cached coords whenever the update payload contains any of `address`/`city`/`state`/`zip` AND no explicit `latitude`/`longitude` (the geocode write-back path).
+**Enforced by**: spec hook — fires for every `customerCrud.update` caller (routers, services, jobs). Previously enforced by convention in `business.updateCustomerContact`, which is now deleted; the hook is now the only enforcement point.
 
 ### notion-contact-link
 
