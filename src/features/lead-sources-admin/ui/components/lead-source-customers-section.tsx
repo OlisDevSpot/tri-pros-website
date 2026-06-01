@@ -45,7 +45,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
   )
 
   const updateCreatedAt = useMutation(
-    trpc.customersRouter.business.updateCreatedAt.mutationOptions({
+    trpc.customersRouter.crud.update.mutationOptions({
       onSuccess: () => {
         toast.success('Created date updated')
         invalidateCustomer()
@@ -80,7 +80,7 @@ export function LeadSourceCustomersSection({ leadSourceId }: LeadSourceCustomers
     () => ({
       customerActions: () => actions,
       onUpdateCreatedAt: (customerId, date) =>
-        updateCreatedAt.mutate({ customerId, createdAt: date.toISOString() }),
+        updateCreatedAt.mutate({ id: customerId, data: { createdAt: date.toISOString() } }),
     }),
     [actions, updateCreatedAt],
   )

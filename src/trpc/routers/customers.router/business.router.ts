@@ -127,28 +127,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           .limit(10)
       }),
 
-    // Overwrite a customer's `createdAt` — super-admin only. Legacy Notion
-    // imports land with today's timestamp regardless of when the lead
-    // actually came in, so lead-source stats by range are misleading until
-    // the super-admin corrects them. Lead-source stats depend on this
-    // column, so the caller should invalidate both customer + lead-source
-    // queries on success.
-    updateCreatedAt: entity.authedProcedure
-      .input(z.object({
-        customerId: z.string().uuid(),
-        createdAt: z.string().datetime(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        if (ctx.ability.cannot('update', 'Customer', 'createdAt')) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to edit the created date.' })
-        }
-        const row = dalToTrpc(await customerCrud.update(ctx, {
-          id: input.customerId,
-          data: { createdAt: input.createdAt },
-        }))
-        return { id: row.id, createdAt: row.createdAt }
-      }),
-
     // Reassign a customer's lead source — super-admin only. The leadSourceId
     // column drives every lead-source attribution stat (totals, signed counts,
     // per-source customer lists), so changing it must invalidate both

@@ -1,6 +1,7 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 
 import { eq, inArray } from 'drizzle-orm'
+import { z } from 'zod'
 
 import { db } from '@/shared/db'
 import {
@@ -13,7 +14,14 @@ import {
 import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
 import { customerVisibility } from '@/shared/entities/customers/lib/visibility'
 
-const updateCustomerSchema = insertCustomerSchema.partial()
+// Updates allow `createdAt` (super-admin-only via CASL field gate) — legacy
+// Notion imports land with import-day timestamps and lead-source stats by
+// range stay misleading until the super-admin corrects them. The base insert
+// schema omits `createdAt`, so re-add it here for the update surface.
+// see ../DOCS.md — created-date field gate is enforced by abilities.ts.
+const updateCustomerSchema = insertCustomerSchema
+  .partial()
+  .extend({ createdAt: z.string().datetime().optional() })
 
 export const customerSchemas = {
   insert: insertCustomerSchema,
