@@ -145,28 +145,29 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           .limit(10)
       }),
 
-    // Update customer profile JSONB fields (used during meeting intake)
+    // Update customer profile JSONB fields (used during meeting intake).
+    // Routes through customerCrud.update — spec.update.jsonbMergeColumns
+    // deep-merges customerProfileJSON / propertyProfileJSON /
+    // financialProfileJSON so partial updates don't overwrite existing keys.
+    // see ../../../shared/entities/customers/DOCS.md#three-jsonb-profiles
+    //
+    // Calls customerCrud.update (the DAL function) directly, which bypasses
+    // the omni-gate that sits on the crud sub-router's `update` slot. That
+    // gate protects the public `crud.update` tRPC surface against agent
+    // field-bypass; this procedure is the legitimate agent path for the
+    // three JSONB profile columns and the Zod input schema above already
+    // restricts callers to those exact keys, so per-field CASL is preserved
+    // at the router boundary.
     updateProfile: entity.authedProcedure
       .input(z.object({
-        customerId: z.string(),
+        customerId: z.string().uuid(),
         customerProfileJSON: customerProfileSchema.optional(),
         propertyProfileJSON: propertyProfileSchema.optional(),
         financialProfileJSON: financialProfileSchema.optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { customerId, ...profiles } = input
-
-        const [updated] = await db
-          .update(customers)
-          .set(profiles)
-          .where(eq(customers.id, customerId))
-          .returning()
-
-        if (!updated) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-        }
-
-        return updated
+        return dalToTrpc(await customerCrud.update(ctx, { id: customerId, data: profiles }))
       }),
 
     // Overwrite a customer's `createdAt` — super-admin only. Legacy Notion
@@ -184,18 +185,11 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         if (ctx.ability.cannot('update', 'Customer', 'createdAt')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to edit the created date.' })
         }
-
-        const [updated] = await db
-          .update(customers)
-          .set({ createdAt: input.createdAt })
-          .where(eq(customers.id, input.customerId))
-          .returning({ id: customers.id, createdAt: customers.createdAt })
-
-        if (!updated) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-        }
-
-        return updated
+        const row = dalToTrpc(await customerCrud.update(ctx, {
+          id: input.customerId,
+          data: { createdAt: input.createdAt },
+        }))
+        return { id: row.id, createdAt: row.createdAt }
       }),
 
     // Reassign a customer's lead source — super-admin only. The leadSourceId
@@ -211,40 +205,25 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         if (ctx.ability.cannot('update', 'Customer', 'leadSourceId')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to change the lead source.' })
         }
-
+        // Validate target lead source exists (FK check would also catch it,
+        // but a clean 404 beats a Postgres FK error)
         const [target] = await db
-          .select({ id: leadSourcesTable.id })
+          .select({ name: leadSourcesTable.name, slug: leadSourcesTable.slug })
           .from(leadSourcesTable)
           .where(eq(leadSourcesTable.id, input.leadSourceId))
           .limit(1)
         if (!target) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found' })
         }
-
-        const [updated] = await db
-          .update(customers)
-          .set({ leadSourceId: input.leadSourceId })
-          .where(eq(customers.id, input.customerId))
-          .returning({ id: customers.id, leadSourceId: customers.leadSourceId })
-
-        if (!updated) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-        }
-
-        const [joined] = await db
-          .select({
-            name: leadSourcesTable.name,
-            slug: leadSourcesTable.slug,
-          })
-          .from(leadSourcesTable)
-          .where(eq(leadSourcesTable.id, input.leadSourceId))
-          .limit(1)
-
+        const updated = dalToTrpc(await customerCrud.update(ctx, {
+          id: input.customerId,
+          data: { leadSourceId: input.leadSourceId },
+        }))
         return {
           id: updated.id,
           leadSourceId: updated.leadSourceId,
-          leadSourceName: joined?.name ?? null,
-          leadSourceSlug: joined?.slug ?? null,
+          leadSourceName: target.name,
+          leadSourceSlug: target.slug,
         }
       }),
 
@@ -267,37 +246,26 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         const { customerId, ...fields } = input
         const updateData: Record<string, unknown> = {}
         for (const [key, value] of Object.entries(fields)) {
-          if (value !== undefined) {
-            if (ctx.ability.cannot('update', 'Customer', key)) {
-              throw new TRPCError({ code: 'FORBIDDEN', message: `You do not have permission to update ${key}.` })
-            }
-            updateData[key] = value
+          if (value === undefined) {
+            continue
           }
+          if (ctx.ability.cannot('update', 'Customer', key)) {
+            throw new TRPCError({ code: 'FORBIDDEN', message: `You do not have permission to update ${key}.` })
+          }
+          updateData[key] = value
         }
-
         if (Object.keys(updateData).length === 0) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'No fields to update' })
         }
-
         // Invalidate cached geocode whenever address components change.
+        // see ../../../shared/entities/customers/DOCS.md#geocoding-stored-on-customer
         const addressChanged = ['address', 'city', 'state', 'zip'].some(k => k in updateData)
         if (addressChanged) {
           updateData.latitude = null
           updateData.longitude = null
           updateData.geocodedAt = null
         }
-
-        const [updated] = await db
-          .update(customers)
-          .set(updateData)
-          .where(eq(customers.id, customerId))
-          .returning()
-
-        if (!updated) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-        }
-
-        return updated
+        return dalToTrpc(await customerCrud.update(ctx, { id: customerId, data: updateData }))
       }),
 
     // Lazy geocode — returns cached coords or geocodes once, persists, and returns.
