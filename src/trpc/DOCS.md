@@ -168,6 +168,23 @@ Per-slot handler override is supported: pass `handlers: { create: customCreateDa
 **Reference impl**: `src/trpc/lib/create-crud-router.ts`; `src/shared/dal/server/lib/create-crud-dal.ts`
 **Enforced by**: tsc (CrudHandlers interface has exactly 5 keys); ADR-0002
 
+### field-level-casl-on-update
+
+The `update` slot does NOT use the bare `ability.can('update', subject)`
+check — that would let any field-restricted grant satisfy the gate and
+write any column. Instead, `createCrudRouter.update` iterates the input
+`data` payload and calls `ability.can('update', subject, field)` for each
+defined field, throwing `FORBIDDEN` on the first failure.
+
+Implication: per-entity field-restricted grants in `abilities.ts` are
+enforced automatically. For example, the agent grant
+`can('update', 'Customer', ['customerProfileJSON', 'propertyProfileJSON', 'financialProfileJSON'])`
+means agents can call `crud.update({ data: { customerProfileJSON: {...} } })`
+but NOT `crud.update({ data: { phone: '...' } })` — the gate rejects
+the second call automatically without any per-entity router code.
+
+**Reference impl**: `src/trpc/lib/create-crud-router.ts` — `assertCanUpdateFields` helper.
+
 ### dal-to-trpc-bridge
 
 DAL functions return `DalReturn<T>` (never throw on domain errors). tRPC procedures unwrap with `dalToTrpc()`:

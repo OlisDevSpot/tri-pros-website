@@ -4,6 +4,8 @@ Produced by the docs context-collapse sweep (2026-05-19). This is the actionable
 
 **Status snapshot**: Proposals shipped in PR #207. Customers shipped on branch `refactor/customer-entity-server-spec` (TBD-PR). Phase 0 of the customer migration wired `spec.update.jsonbMergeColumns` into `createCrudDal.updateImpl` — proposals also gained correct deep-merge behavior as a side effect; verify no regression in proposal-flow partial-update paths.
 
+- Customer business mutations collapsed into crud.* on branch `refactor/customer-entity-server-spec` (TBD-PR): 7 redundant wrappers deleted, framework-level field-level CASL added, geocode-reset moved to spec.hooks.update.before.
+
 The four findings categories below describe what's still pre-migration as of `main` after the customer branch lands.
 
 Each ROW is intended to become a GitHub issue (or PR for the smaller ones). Sized rough P0/P1/P2 by blast radius — not deadline urgency.
@@ -65,6 +67,8 @@ Standardized DAL signature is `(ctx: ScopedContext, input: ...) => Promise<DalRe
 - Applies `ctx.scope` to WHERE clauses
 - Callers updated to either `dalToTrpc()` (tRPC) or inspect `DalReturn` directly (services/jobs)
 
+Note: `createFromIntake` in `customers.router/business.router.ts` previously inserted customers via inline `tx.insert(customers)`. Routed through `customerCrud.create(SYSTEM_CONTEXT, ...)` on this branch — no longer a DAL violation.
+
 ### C. Internal services importing `db` directly
 
 Per ADR-0003, internal services never import `db` — they accept `ScopedContext` and forward to DAL. Two violations:
@@ -72,7 +76,7 @@ Per ADR-0003, internal services never import `db` — they accept `ScopedContext
 | File | Priority | Notes |
 |---|---|---|
 | `src/shared/services/notification.service.ts` | P2 | Reads + writes push subscriptions; should use `entities/push-subscriptions/dal/` |
-| `src/shared/services/accounting.service.ts` | P2 | QuickBooks write-back path; should use `entities/customers/dal/` for qbCustomerId updates |
+| ~~`src/shared/services/accounting.service.ts`~~ | ✅ Partial — customer qbCustomerId write now routes through customerCrud.update (this branch). Proposal-side reads still inline. |
 
 **Acceptance criteria**:
 - Service accepts `ScopedContext` (or `SYSTEM_CONTEXT`) and forwards to DAL
@@ -104,7 +108,7 @@ These files have not migrated to using middleware-provided `ctx.scope`. The DAL-
 | `src/trpc/routers/schedule.router/activities.router.ts` | 6 | P2 (rolled into A) |
 | ~~`src/trpc/routers/customers.router/business.router.ts`~~ | ~~5~~ | ✅ Shipped (1 legitimate isOmni retained in `search` for phone-gating + text WHERE — see commit `6f0711f5`) |
 | `src/trpc/routers/customer-pipelines.router.ts` | 5 | P2 (rolled into A) |
-| `src/features/customer-pipelines/dal/server/move-customer-pipeline-item.ts` | 4 | P1 |
+| ~~`src/features/customer-pipelines/dal/server/move-customer-pipeline-item.ts`~~ | 20 | ✅ Partial — leads-pipeline customer write now routes through customerCrud.update (this branch). Meetings/projects/proposals writes still inline (migrate with those entities). |
 | `src/features/agent-dashboard/dal/server/get-action-queue.ts` | 4 | P2 |
 | `src/trpc/routers/dashboard.router.ts` | 2 | P3 (simple — just forwarding) |
 | `src/shared/entities/customers/lib/can-see-phone.ts` | 1 | P3 (client-side render helper; non-blocking) |
