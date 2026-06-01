@@ -22,12 +22,11 @@ import { user } from '@/shared/db/schema/auth'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
-import { meetings } from '@/shared/db/schema/meetings'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
-import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
+import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 
 import { createTRPCRouter } from '../../init'
 
@@ -242,35 +241,27 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
             ownerId = fallbackUser.id
           }
 
-          // TODO: route through meetingCrud.create once meetingServerSpec.hooks.create
-          // no longer hard-codes ctx.session!.user.id (it currently crashes for
-          // unauthenticated public-form callers). Until then, this path is asymmetric:
-          // customer creates fire customerCrud.create's spec hooks, but meeting creates
-          // are inline DAL and bypass any meeting spec hooks.
-          // Wrap meeting insert + owner-participant insert in a transaction so
-          // a meeting never exists without its owner participant (invariant:
-          // every meeting has >=1 owner participant).
-          meetingId = await db.transaction(async (tx) => {
-            const [meeting] = await tx
-              .insert(meetings)
-              .values({
-                ownerId,
-                customerId: customer.id,
-                meetingType: 'Fresh',
-                scheduledFor: customerData.leadMetaJSON?.scheduledFor ?? undefined,
-              })
-              .returning()
-
-            if (!meeting) {
-              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create meeting' })
-            }
-
-            // Mirror ownership in the participant junction table so every
-            // meeting has >=1 owner participant (intake parity with meetings.create).
-            await addParticipant(meeting.id, ownerId!, 'owner', tx)
-
-            return meeting.id
+          // Route through meetingCrud.create — the spec's after hook adds the
+          // owner participant and pushes to GCal using row.ownerId. SYSTEM_CONTEXT
+          // because this is a public-form caller without a session.
+          const meetingResult = await meetingCrud.create(SYSTEM_CONTEXT, {
+            ownerId: ownerId!,
+            customerId: customer.id,
+            meetingType: 'Fresh',
+            scheduledFor: customerData.leadMetaJSON?.scheduledFor ?? undefined,
           })
+
+          if (!meetingResult.success) {
+            // Customer + note already committed. Surface the failure so the
+            // agent can retry from the customer profile.
+            console.error('[createFromIntake] meetingCrud.create failed:', meetingResult.error)
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Customer saved, but the meeting could not be scheduled. Add the meeting manually from the customer profile.',
+            })
+          }
+
+          meetingId = meetingResult.data.id
         }
 
         return { customerId: customer.id, meetingId }
