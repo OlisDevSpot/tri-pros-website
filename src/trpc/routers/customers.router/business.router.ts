@@ -26,7 +26,7 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
-import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
 
 import { createTRPCRouter } from '../../init'
@@ -125,31 +125,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           .from(customers)
           .where(and(textWhere, ctx.scope ?? undefined))
           .limit(10)
-      }),
-
-    // Update customer profile JSONB fields (used during meeting intake).
-    // Routes through customerCrud.update — spec.update.jsonbMergeColumns
-    // deep-merges customerProfileJSON / propertyProfileJSON /
-    // financialProfileJSON so partial updates don't overwrite existing keys.
-    // see ../../../shared/entities/customers/DOCS.md#three-jsonb-profiles
-    //
-    // Calls customerCrud.update (the DAL function) directly, which bypasses
-    // the omni-gate that sits on the crud sub-router's `update` slot. That
-    // gate protects the public `crud.update` tRPC surface against agent
-    // field-bypass; this procedure is the legitimate agent path for the
-    // three JSONB profile columns and the Zod input schema above already
-    // restricts callers to those exact keys, so per-field CASL is preserved
-    // at the router boundary.
-    updateProfile: entity.authedProcedure
-      .input(z.object({
-        customerId: z.string().uuid(),
-        customerProfileJSON: customerProfileSchema.optional(),
-        propertyProfileJSON: propertyProfileSchema.optional(),
-        financialProfileJSON: financialProfileSchema.optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const { customerId, ...profiles } = input
-        return dalToTrpc(await customerCrud.update(ctx, { id: customerId, data: profiles }))
       }),
 
     // Overwrite a customer's `createdAt` — super-admin only. Legacy Notion
