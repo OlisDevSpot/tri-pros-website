@@ -7,6 +7,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
+import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
@@ -164,10 +165,12 @@ function createAccountingService() {
       const qbInvoiceId = newInvoice.Invoice.Id
 
       if (proposalIds[0]) {
-        await db
-          .update(proposals)
-          .set({ qbInvoiceId, qbPaymentStatus: 'unpaid' })
-          .where(eq(proposals.id, proposalIds[0]))
+        dalVerifySuccess(
+          await proposalCrud.update(SYSTEM_CONTEXT, {
+            id: proposalIds[0],
+            data: { qbInvoiceId, qbPaymentStatus: 'unpaid' },
+          }),
+        )
       }
 
       return qbInvoiceId
@@ -216,7 +219,12 @@ function createAccountingService() {
         }
 
         const status = derivePaymentStatus(invoice.Balance, invoice.TotalAmt)
-        await db.update(proposals).set({ qbPaymentStatus: status }).where(eq(proposals.id, proposal.id))
+        dalVerifySuccess(
+          await proposalCrud.update(SYSTEM_CONTEXT, {
+            id: proposal.id,
+            data: { qbPaymentStatus: status },
+          }),
+        )
       }
     },
 
@@ -234,7 +242,12 @@ function createAccountingService() {
       }
 
       const status = derivePaymentStatus(invoice.Balance, invoice.TotalAmt)
-      await db.update(proposals).set({ qbPaymentStatus: status }).where(eq(proposals.id, proposal.id))
+      dalVerifySuccess(
+        await proposalCrud.update(SYSTEM_CONTEXT, {
+          id: proposal.id,
+          data: { qbPaymentStatus: status },
+        }),
+      )
     },
   }
 }
