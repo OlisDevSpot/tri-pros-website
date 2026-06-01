@@ -5,6 +5,7 @@ Produced by the docs context-collapse sweep (2026-05-19). This is the actionable
 **Status snapshot**: Proposals shipped in PR #207. Customers shipped on branch `refactor/customer-entity-server-spec` (TBD-PR). Phase 0 of the customer migration wired `spec.update.jsonbMergeColumns` into `createCrudDal.updateImpl` — proposals also gained correct deep-merge behavior as a side effect; verify no regression in proposal-flow partial-update paths.
 
 - Customer business mutations collapsed into crud.* on branch `refactor/customer-entity-server-spec` (TBD-PR): 7 redundant wrappers deleted, framework-level field-level CASL added, geocode-reset moved to spec.hooks.update.before.
+- Same branch ALSO cleared all DAL bypasses in already-migrated entities (meetings + proposals): `accounting.service.ts` 3 proposal writes + `move-customer-pipeline-item.ts` meetings/proposals branches all route through `meetingCrud.update` / `proposalCrud.update`. Only project-side writes remain inline (projects entity not yet migrated). `customer-pipelines.router.ts` `moveCustomerPipelineItem` drops its `isOmni = ctx.ability.can('manage', 'all')` computation as a side effect.
 
 The four findings categories below describe what's still pre-migration as of `main` after the customer branch lands.
 
@@ -76,7 +77,7 @@ Per ADR-0003, internal services never import `db` — they accept `ScopedContext
 | File | Priority | Notes |
 |---|---|---|
 | `src/shared/services/notification.service.ts` | P2 | Reads + writes push subscriptions; should use `entities/push-subscriptions/dal/` |
-| ~~`src/shared/services/accounting.service.ts`~~ | ✅ Partial — customer qbCustomerId write now routes through customerCrud.update (this branch). Proposal-side reads still inline. |
+| ~~`src/shared/services/accounting.service.ts`~~ | ✅ Partial — customer qbCustomerId + all 3 proposal qb-writes now route through `customerCrud.update` / `proposalCrud.update` (this branch). Only `projects.qbSubCustomerId` write stays inline (`projectCrud` doesn't exist yet — pending projects entity migration). |
 
 **Acceptance criteria**:
 - Service accepts `ScopedContext` (or `SYSTEM_CONTEXT`) and forwards to DAL
@@ -108,7 +109,7 @@ These files have not migrated to using middleware-provided `ctx.scope`. The DAL-
 | `src/trpc/routers/schedule.router/activities.router.ts` | 6 | P2 (rolled into A) |
 | ~~`src/trpc/routers/customers.router/business.router.ts`~~ | ~~5~~ | ✅ Shipped (1 legitimate isOmni retained in `search` for phone-gating + text WHERE — see commit `6f0711f5`) |
 | `src/trpc/routers/customer-pipelines.router.ts` | 5 | P2 (rolled into A) |
-| ~~`src/features/customer-pipelines/dal/server/move-customer-pipeline-item.ts`~~ | 20 | ✅ Partial — leads-pipeline customer write now routes through customerCrud.update (this branch). Meetings/projects/proposals writes still inline (migrate with those entities). |
+| ~~`src/features/customer-pipelines/dal/server/move-customer-pipeline-item.ts`~~ | 20 | ✅ Mostly — leads + meetings + proposals branches all routed through their respective `*Crud.update` (this branch). `isOmni` parameter dropped entirely from `MoveParams`. Only projects branch stays inline (`projectCrud` doesn't exist). Proposals branch's visibility predicate broadened from owner-only to canonical `proposalVisibility` (any meeting participant) — intentional, matches the UI's pipeline-visibility filter. |
 | `src/features/agent-dashboard/dal/server/get-action-queue.ts` | 4 | P2 |
 | `src/trpc/routers/dashboard.router.ts` | 2 | P3 (simple — just forwarding) |
 | `src/shared/entities/customers/lib/can-see-phone.ts` | 1 | P3 (client-side render helper; non-blocking) |
