@@ -83,7 +83,7 @@ function LeadSourceCell({ row, override }: LeadSourceCellProps) {
 
   const handlePick = override
     ?? ((customerId: string, leadSourceId: string) =>
-      defaultMutation.mutate({ customerId, leadSourceId }))
+      defaultMutation.mutate({ id: customerId, data: { leadSourceId } }))
 
   return (
     <LeadSourcePicker

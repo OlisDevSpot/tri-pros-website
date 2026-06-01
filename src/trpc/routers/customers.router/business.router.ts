@@ -127,41 +127,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           .limit(10)
       }),
 
-    // Reassign a customer's lead source — super-admin only. The leadSourceId
-    // column drives every lead-source attribution stat (totals, signed counts,
-    // per-source customer lists), so changing it must invalidate both
-    // customer and lead-source query trees on the client.
-    updateLeadSource: entity.authedProcedure
-      .input(z.object({
-        customerId: z.string().uuid(),
-        leadSourceId: z.string().uuid(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        if (ctx.ability.cannot('update', 'Customer', 'leadSourceId')) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to change the lead source.' })
-        }
-        // Validate target lead source exists (FK check would also catch it,
-        // but a clean 404 beats a Postgres FK error)
-        const [target] = await db
-          .select({ name: leadSourcesTable.name, slug: leadSourcesTable.slug })
-          .from(leadSourcesTable)
-          .where(eq(leadSourcesTable.id, input.leadSourceId))
-          .limit(1)
-        if (!target) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found' })
-        }
-        const updated = dalToTrpc(await customerCrud.update(ctx, {
-          id: input.customerId,
-          data: { leadSourceId: input.leadSourceId },
-        }))
-        return {
-          id: updated.id,
-          leadSourceId: updated.leadSourceId,
-          leadSourceName: target.name,
-          leadSourceSlug: target.slug,
-        }
-      }),
-
     // Update top-level contact fields — gated per-field via CASL so the
     // permission boundary stays in `abilities.ts`. Today only super-admin
     // (`manage all`) passes; agents are field-restricted to JSONB profile
