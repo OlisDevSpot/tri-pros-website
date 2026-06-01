@@ -10,11 +10,13 @@ import z from 'zod'
 import env from '@/shared/config/server-env'
 import { intakeModes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
@@ -395,69 +397,84 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         // Resolve session for meeting owner assignment (null for unauthenticated 3rd party)
         const session = (ctx as { session?: { user: { id: string } } }).session ?? null
 
-        return db.transaction(async (tx) => {
-          // Resolve lead source FK: slug -> id, defaulting to 'manual' when absent.
-          // Public 3rd-party forms pass their own slug; dashboard manual adds omit it.
-          const resolveSlug = leadSourceSlug ?? 'manual'
-          const [leadSourceRow] = await tx
-            .select({ id: leadSourcesTable.id })
-            .from(leadSourcesTable)
-            .where(eq(leadSourcesTable.slug, resolveSlug))
-            .limit(1)
+        // Resolve lead source FK: slug -> id, defaulting to 'manual' when absent.
+        // Public 3rd-party forms pass their own slug; dashboard manual adds omit it.
+        const resolveSlug = leadSourceSlug ?? 'manual'
+        const [leadSourceRow] = await db
+          .select({ id: leadSourcesTable.id })
+          .from(leadSourcesTable)
+          .where(eq(leadSourcesTable.slug, resolveSlug))
+          .limit(1)
 
-          if (!leadSourceRow) {
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: `Lead source "${resolveSlug}" not found. Contact an administrator.`,
-            })
-          }
+        if (!leadSourceRow) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Lead source "${resolveSlug}" not found. Contact an administrator.`,
+          })
+        }
 
-          // 1. Insert customer
-          const [customer] = await tx
-            .insert(customers)
-            .values({
-              ...customerData,
-              zip: customerData.zip || '',
-              leadSourceId: leadSourceRow.id,
-            })
-            .returning()
+        // 1. Create customer through the canonical DAL — fires spec.hooks.create.*
+        //    if defined (none today). SYSTEM_CONTEXT is the correct context label
+        //    for an unauthenticated public-form caller: createImpl in createCrudDal
+        //    has no CASL/scope gates today, but any future create-side gate or hook
+        //    that consults ctx will see a consistent null session/ability.
+        const customer = dalVerifySuccess(
+          await customerCrud.create(SYSTEM_CONTEXT, {
+            ...customerData,
+            zip: customerData.zip || '',
+            leadSourceId: leadSourceRow.id,
+          }),
+        )
 
-          if (!customer) {
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create customer' })
-          }
+        // 2. Insert note (best-effort — no longer atomic with the customer
+        //    insert, but notes are optional and a failed note doesn't justify
+        //    rolling back the customer that the user just successfully submitted).
+        if (notes) {
+          await db.insert(customerNotes).values({
+            customerId: customer.id,
+            content: notes,
+            authorId: session?.user.id ?? null,
+          })
+        }
 
-          // 2. Insert note (if provided)
-          if (notes) {
-            await tx.insert(customerNotes).values({
-              customerId: customer.id,
-              content: notes,
-              authorId: session?.user.id ?? null,
-            })
-          }
+        // 3. Create meeting when mode is customer_and_meeting. Sequential,
+        //    not transactional with the customer/note phase above — the
+        //    customer is already committed, and a meeting failure here
+        //    surfaces as a 500 to the caller without rolling back the
+        //    customer they just submitted.
+        let meetingId: string | null = null
+        if (mode === 'customer_and_meeting') {
+          let ownerId = session?.user.id
 
-          // 3. Create meeting when mode is customer_and_meeting
-          let meetingId: string | null = null
-          if (mode === 'customer_and_meeting') {
-            let ownerId = session?.user.id
+          // Fallback: assign to info@triprosremodeling.com for unauthenticated
+          // submissions. Read-only lookup, no atomicity requirement — stays
+          // outside the meeting/participant transaction below.
+          if (!ownerId) {
+            const [fallbackUser] = await db
+              .select({ id: user.id })
+              .from(user)
+              .where(eq(user.email, 'info@triprosremodeling.com'))
+              .limit(1)
 
-            // Fallback: assign to info@triprosremodeling.com for unauthenticated submissions
-            if (!ownerId) {
-              const [fallbackUser] = await tx
-                .select({ id: user.id })
-                .from(user)
-                .where(eq(user.email, 'info@triprosremodeling.com'))
-                .limit(1)
-
-              if (!fallbackUser) {
-                throw new TRPCError({
-                  code: 'INTERNAL_SERVER_ERROR',
-                  message: 'Fallback meeting owner not found. Contact an administrator.',
-                })
-              }
-
-              ownerId = fallbackUser.id
+            if (!fallbackUser) {
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Fallback meeting owner not found. Contact an administrator.',
+              })
             }
 
+            ownerId = fallbackUser.id
+          }
+
+          // TODO: route through meetingCrud.create once meetingServerSpec.hooks.create
+          // no longer hard-codes ctx.session!.user.id (it currently crashes for
+          // unauthenticated public-form callers). Until then, this path is asymmetric:
+          // customer creates fire customerCrud.create's spec hooks, but meeting creates
+          // are inline DAL and bypass any meeting spec hooks.
+          // Wrap meeting insert + owner-participant insert in a transaction so
+          // a meeting never exists without its owner participant (invariant:
+          // every meeting has >=1 owner participant).
+          meetingId = await db.transaction(async (tx) => {
             const [meeting] = await tx
               .insert(meetings)
               .values({
@@ -474,13 +491,13 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
 
             // Mirror ownership in the participant junction table so every
             // meeting has >=1 owner participant (intake parity with meetings.create).
-            await addParticipant(meeting.id, ownerId, 'owner', tx)
+            await addParticipant(meeting.id, ownerId!, 'owner', tx)
 
-            meetingId = meeting.id
-          }
+            return meeting.id
+          })
+        }
 
-          return { customerId: customer.id, meetingId }
-        })
+        return { customerId: customer.id, meetingId }
       }),
   })
 }
