@@ -28,7 +28,7 @@ export function useCustomerEditForm(customer: Customer) {
   })
 
   const profileMutation = useMutation(
-    trpc.customersRouter.business.updateProfile.mutationOptions({
+    trpc.customersRouter.crud.update.mutationOptions({
       onSuccess: () => invalidateCustomer(),
     }),
   )
@@ -45,10 +45,12 @@ export function useCustomerEditForm(customer: Customer) {
     if (canEditProfiles) {
       promises.push(
         profileMutation.mutateAsync({
-          customerId: customer.id,
-          customerProfileJSON: values.customerProfileJSON,
-          financialProfileJSON: values.financialProfileJSON,
-          propertyProfileJSON: values.propertyProfileJSON,
+          id: customer.id,
+          data: {
+            customerProfileJSON: values.customerProfileJSON,
+            financialProfileJSON: values.financialProfileJSON,
+            propertyProfileJSON: values.propertyProfileJSON,
+          },
         }),
       )
     }
