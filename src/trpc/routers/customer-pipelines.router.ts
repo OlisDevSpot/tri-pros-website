@@ -43,6 +43,7 @@ export const customerPipelinesRouter = createTRPCRouter({
       await moveCustomerPipelineItem({
         ...input,
         userId: ctx.session.user.id,
+        userRole: ctx.session.user.role,
         isOmni,
       })
     }),
