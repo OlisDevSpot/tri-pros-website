@@ -24,7 +24,6 @@ import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { getCustomer } from '@/shared/entities/customers/dal/server/queries'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
@@ -97,13 +96,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
             .offset(input.pagination.offset),
           count: () => db.$count(customers, where),
         })
-      }),
-
-    // Fetch a single customer by internal UUID
-    getById: entity.authedProcedure
-      .input(z.object({ customerId: z.string().uuid() }))
-      .query(async ({ input, ctx }) => {
-        return dalToTrpc(await getCustomer(ctx, { id: input.customerId }))
       }),
 
     // Search customers by name (agents) or name + phone (super-admins). Phone
