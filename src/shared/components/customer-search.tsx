@@ -22,8 +22,8 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
 
   // Pre-populated mode: fetch customer by ID on mount
   const prefillQuery = useQuery(
-    trpc.customersRouter.business.getById.queryOptions(
-      { customerId: prefillCustomerId ?? '' },
+    trpc.customersRouter.crud.getById.queryOptions(
+      { id: prefillCustomerId ?? '' },
       { enabled: !!prefillCustomerId && !selectedId },
     ),
   )
