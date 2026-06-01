@@ -34,17 +34,30 @@ export const meetingServerSpec = {
   },
   hooks: {
     create: {
-      // see ../DOCS.md#meeting-owner-not-just-creator
+      // see ../DOCS.md#meeting-owner-is-creator
+      // Authenticated callers: ownerId is forced to ctx.session.user.id —
+      // prevents wire clients from POSTing { ownerId: <someone-else> } and
+      // creating a meeting owned by another user. SYSTEM_CONTEXT callers
+      // (orchestrators like customers.createFromIntake) have ctx.session ===
+      // null and supply ownerId explicitly — the hook passes their value
+      // through unchanged.
       before(input, ctx) {
-        return { ...input, ownerId: ctx.session!.user.id }
+        if (ctx.session) {
+          return { ...input, ownerId: ctx.session.user.id }
+        }
+        return input
       },
-      // Merged from lifecycle.ts onCreated + onDuplicated (identical behavior)
-      async after(row: Meeting, ctx) {
-        await addParticipant(row.id, ctx.session!.user.id, 'owner')
+      // Merged from lifecycle.ts onCreated + onDuplicated (identical behavior).
+      // Uses row.ownerId (not ctx.session.user.id) so the participant and the
+      // GCal push follow the meeting's actual owner — correct for both the
+      // authed UI path (row.ownerId === session.user.id by virtue of the
+      // before hook) and the SYSTEM_CONTEXT orchestrator path.
+      async after(row: Meeting, _ctx) {
+        await addParticipant(row.id, row.ownerId, 'owner')
 
         if (row.scheduledFor) {
           void schedulingService
-            .pushToGCal(ctx.session!.user.id, 'meeting', row.id)
+            .pushToGCal(row.ownerId, 'meeting', row.id)
             .catch(err => console.error(`[meetings.create] GCal push failed for ${row.id}:`, err))
         }
       },
@@ -89,7 +102,7 @@ export const meetingServerSpec = {
   },
   // see ../DOCS.md#duplicate-cherry-picks-setup-fields
   // Default: copy full row minus PK. Exclude derived/outcome/calendar fields.
-  // Routed through createImpl — create.before stamps ownerId, create.after adds participant.
+  // Routed through createImpl — `overrides` stamps ownerId, create.after adds participant.
   duplicate: {
     exclude: [
       'createdAt',
