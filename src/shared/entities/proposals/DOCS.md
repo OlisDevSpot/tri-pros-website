@@ -93,7 +93,7 @@ When `status` transitions to `approved`, a Project is created automatically and 
 
 **Why**: forms submit partial state across multi-step flows; replacement would wipe prior steps.
 **Reference impl**: `lib/server-spec.ts:update.jsonbMergeColumns`
-**Enforced by**: `createCrudRouter` update handler reads `spec.update.jsonbMergeColumns` and applies merge
+**Enforced by**: `createCrudDal.updateImpl` reads `spec.update.jsonbMergeColumns` and applies a `COALESCE(col, '{}'::jsonb) || $value::jsonb` deep-merge
 
 ### final-tcp-derived
 

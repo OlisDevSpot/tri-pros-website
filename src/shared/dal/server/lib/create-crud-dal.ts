@@ -138,13 +138,27 @@ function buildUpdateSet<TTable extends PgTable>(
     if (value === undefined) {
       continue
     }
-    const col = mergeByKey.get(key)
-    if (col && value !== null && typeof value === 'object') {
-      out[key] = sql`COALESCE(${col}, '{}'::jsonb) || ${JSON.stringify(value)}::jsonb`
+    if (mergeByKey.has(key)) {
+      if (value === null) {
+        // null is legitimate — caller is intentionally clearing the column.
+        out[key] = value
+      }
+      else if (typeof value === 'object' && !Array.isArray(value)) {
+        const col = mergeByKey.get(key)!
+        out[key] = sql`COALESCE(${col}, '{}'::jsonb) || ${JSON.stringify(value)}::jsonb`
+      }
+      else {
+        // Primitives and arrays would silently fall through to plain `.set()`,
+        // violating the merge-not-replace contract for opted-in columns.
+        throw new TypeError(
+          `[create-crud-dal] jsonbMergeColumns entry '${key}' for '${spec.entityName}' `
+          + `received non-object value (${Array.isArray(value) ? 'array' : typeof value}); `
+          + `merge requires a plain object, or null to clear.`,
+        )
+      }
+      continue
     }
-    else {
-      out[key] = value
-    }
+    out[key] = value
   }
   return out
 }
