@@ -1,6 +1,6 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 
-import { inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import {
@@ -48,6 +48,10 @@ export const customerServerSpec = {
       // would orphan rows that surface in lists with no owner. Manually delete
       // proposals → meetings in the same logical step before the customer row
       // is removed. customer_notes and projects cascade via schema FKs.
+      // The cascade tx commits before the parent customer delete runs. If the
+      // parent delete fails after the cascade succeeds, the customer row survives
+      // with children gone — recoverable by retry (the no-children re-run is a
+      // clean no-op).
       // Was previously inlined in dal/server/queries.ts:deleteCustomer.
       async before(id, _ctx) {
         const customerId = String(id)
@@ -55,7 +59,7 @@ export const customerServerSpec = {
           const customerMeetings = await tx
             .select({ id: meetings.id })
             .from(meetings)
-            .where(inArray(meetings.customerId, [customerId]))
+            .where(eq(meetings.customerId, customerId))
           const meetingIds = customerMeetings.map(m => m.id)
           if (meetingIds.length > 0) {
             await tx.delete(proposals).where(inArray(proposals.meetingId, meetingIds))
