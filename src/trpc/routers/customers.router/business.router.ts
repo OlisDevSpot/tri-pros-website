@@ -250,22 +250,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         return dalToTrpc(await customerCrud.update(ctx, { id: customerId, data: updateData }))
       }),
 
-    // Permanently delete a customer + their meetings, proposals, notes, and
-    // projects. CASL-gated to `delete Customer` — only super-admin (`manage all`)
-    // currently has this permission. UI must confirm before invoking.
-    // Cascade (proposals → meetings before customer) runs in
-    // customerServerSpec.hooks.delete.before; customer_notes and projects
-    // cascade via schema FKs.
-    delete: entity.authedProcedure
-      .input(z.object({ customerId: z.string().uuid() }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.ability.cannot('delete', 'Customer')) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to delete customers.' })
-        }
-        dalToTrpc(await customerCrud.delete(ctx, { id: input.customerId }))
-        return { success: true as const }
-      }),
-
     // Add a note to a customer — any agent
     addNote: entity.authedProcedure
       .input(z.object({

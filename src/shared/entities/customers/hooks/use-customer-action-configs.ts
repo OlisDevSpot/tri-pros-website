@@ -65,7 +65,7 @@ export function useCustomerActionConfigs<T extends CustomerEntity>(
           return
         }
         deleteCustomer.mutate(
-          { customerId: entity.id },
+          { id: entity.id },
           { onSuccess: () => overrides.onDeleted?.(entity) },
         )
       },
