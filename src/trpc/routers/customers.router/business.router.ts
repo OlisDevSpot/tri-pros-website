@@ -31,6 +31,7 @@ import { addParticipant } from '@/shared/entities/meetings/dal/server/participan
 import { geocodeAddress } from '@/shared/services/providers/google-maps/geocode'
 
 import { createTRPCRouter } from '../../init'
+import { dalToTrpc } from '../../lib/dal-to-trpc'
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -48,8 +49,7 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
     // Fetch all locally-cached customers
     getAll: entity.authedProcedure
       .query(async ({ ctx }) => {
-        const result = await listCustomers(ctx)
-        return result.success ? result.data : []
+        return dalToTrpc(await listCustomers(ctx))
       }),
 
     // Server-paginated customers list. Drives /dashboard/customers and the
@@ -113,8 +113,7 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
     getById: entity.authedProcedure
       .input(z.object({ customerId: z.string().uuid() }))
       .query(async ({ input, ctx }) => {
-        const result = await getCustomer(ctx, { id: input.customerId })
-        return result.success ? result.data : undefined
+        return dalToTrpc(await getCustomer(ctx, { id: input.customerId }))
       }),
 
     // Search customers by name (agents) or name + phone (super-admins). Phone
@@ -382,10 +381,7 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         if (ctx.ability.cannot('delete', 'Customer')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to delete customers.' })
         }
-        const result = await customerCrud.delete(ctx, { id: input.customerId })
-        if (!result.success) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete customer' })
-        }
+        dalToTrpc(await customerCrud.delete(ctx, { id: input.customerId }))
         return { success: true as const }
       }),
 
