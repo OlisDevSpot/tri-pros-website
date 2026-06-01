@@ -150,11 +150,12 @@ function buildUpdateSet<TTable extends PgTable>(
       else {
         // Primitives and arrays would silently fall through to plain `.set()`,
         // violating the merge-not-replace contract for opted-in columns.
-        throw new TypeError(
-          `[create-crud-dal] jsonbMergeColumns entry '${key}' for '${spec.entityName}' `
-          + `received non-object value (${Array.isArray(value) ? 'array' : typeof value}); `
-          + `merge requires a plain object, or null to clear.`,
-        )
+        throw new ThrowableDalError({
+          type: 'precondition-failed',
+          reason: `[create-crud-dal] jsonbMergeColumns entry '${key}' for '${spec.entityName}' `
+            + `received non-object value (${Array.isArray(value) ? 'array' : typeof value}); `
+            + `merge requires a plain object, or null to clear.`,
+        })
       }
       continue
     }
