@@ -1,9 +1,12 @@
 import type { QBCustomer, QBInvoice, QBInvoiceLine, QBPayment, QBQueryResponse } from '@/shared/services/providers/quickbooks/types'
 import { eq, inArray } from 'drizzle-orm'
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
@@ -72,7 +75,12 @@ function createAccountingService() {
         qbCustomerId = newCustomer.Customer.Id
       }
 
-      await db.update(customers).set({ qbCustomerId }).where(eq(customers.id, customerId))
+      dalVerifySuccess(
+        await customerCrud.update(SYSTEM_CONTEXT, {
+          id: customerId,
+          data: { qbCustomerId },
+        }),
+      )
       return qbCustomerId
     },
 
