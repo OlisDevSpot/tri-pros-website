@@ -23,7 +23,6 @@ import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { getCustomer, listCustomers } from '@/shared/entities/customers/dal/server/queries'
-import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
@@ -63,10 +62,6 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         createdAt: dateRangeSchema.optional(),
       }))
       .query(async ({ ctx, input }) => {
-        const isOmni = ctx.ability.can('manage', 'all')
-        const visibilityWhere = isOmni
-          ? undefined
-          : userCanSeeCustomer(ctx.session.user.id, customers.id)
         const searchWhere = buildSearchWhere(input.search, [customers.name, customers.email])
         const filterWhere = buildFilterWhere(input.filters, {
           pipeline: v => derivedPipelineWhere(v),
@@ -75,7 +70,7 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
             v.to ? lte(customers.createdAt, v.to) : undefined,
           ),
         })
-        const where = and(visibilityWhere, searchWhere, filterWhere)
+        const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
 
         // Pipeline is intentionally not sortable — the registry omits the
         // header click affordance because the visible value is derived,
@@ -122,26 +117,26 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
     search: entity.authedProcedure
       .input(z.object({ query: z.string().min(1) }))
       .query(async ({ input, ctx }) => {
-        const isSuperAdmin = ctx.ability.can('manage', 'all')
+        // isOmni drives the phone-column gating and the agent-vs-super-admin
+        // text WHERE clause — legitimate non-visibility use of ability.can.
+        // see ../../../shared/entities/customers/DOCS.md#phone-visibility-threshold
+        const isOmni = ctx.ability.can('manage', 'all')
         const q = `%${input.query}%`
         // Super-admins can also match by phone — agents cannot (they'd leak
         // which customers exist at which numbers).
-        const textWhere = isSuperAdmin
+        const textWhere = isOmni
           ? or(ilike(customers.name, q), ilike(customers.phone, q))
           : ilike(customers.name, q)
-        const visibilityWhere = isSuperAdmin
-          ? undefined
-          : userCanSeeCustomer(ctx.session.user.id, customers.id)
         return db
           .select({
             id: customers.id,
             name: customers.name,
-            phone: gatedPhoneSql(isSuperAdmin),
+            phone: gatedPhoneSql(isOmni),
             hasSentProposal: hasSentProposalSql(),
             address: customers.address,
           })
           .from(customers)
-          .where(and(textWhere, visibilityWhere))
+          .where(and(textWhere, ctx.scope ?? undefined))
           .limit(10)
       }),
 
