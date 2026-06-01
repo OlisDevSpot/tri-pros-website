@@ -19,11 +19,9 @@ export function useUpdateLeadSourceMutation() {
   const { invalidateCustomer, invalidateLeadSource } = useInvalidation()
 
   return useMutation(
-    trpc.customersRouter.business.updateLeadSource.mutationOptions({
-      onSuccess: (data) => {
-        toast.success(data.leadSourceName
-          ? `Source set to ${data.leadSourceName}`
-          : 'Lead source updated')
+    trpc.customersRouter.crud.update.mutationOptions({
+      onSuccess: () => {
+        toast.success('Lead source updated')
         invalidateCustomer()
         invalidateLeadSource()
       },
