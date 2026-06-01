@@ -34,7 +34,7 @@ export function useCustomerEditForm(customer: Customer) {
   )
 
   const contactMutation = useMutation(
-    trpc.customersRouter.business.updateCustomerContact.mutationOptions({
+    trpc.customersRouter.crud.update.mutationOptions({
       onSuccess: () => invalidateCustomer(),
     }),
   )
@@ -58,14 +58,16 @@ export function useCustomerEditForm(customer: Customer) {
     if (canEditContact) {
       promises.push(
         contactMutation.mutateAsync({
-          customerId: customer.id,
-          name: values.name || undefined,
-          phone: values.phone || undefined,
-          email: values.email || undefined,
-          address: values.address || undefined,
-          city: values.city || undefined,
-          state: values.state || undefined,
-          zip: values.zip || undefined,
+          id: customer.id,
+          data: {
+            name: values.name || undefined,
+            phone: values.phone || undefined,
+            email: values.email || undefined,
+            address: values.address || undefined,
+            city: values.city || undefined,
+            state: values.state || undefined,
+            zip: values.zip || undefined,
+          },
         }),
       )
     }
