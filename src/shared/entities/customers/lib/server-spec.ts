@@ -42,6 +42,34 @@ export const customerServerSpec = {
     ] as const,
   },
   hooks: {
+    update: {
+      // see ../DOCS.md#geocoding-stored-on-customer — when any address
+      // component changes, invalidate the cached lat/lng/geocodedAt so the
+      // map surfaces re-geocode on next read. Guard: skip if the caller is
+      // explicitly setting latitude or longitude in the same update (e.g.,
+      // a geocode write-back path) — otherwise we'd stomp their own write.
+      async before(data, _ctx) {
+        const addressKeys = ['address', 'city', 'state', 'zip'] as const
+        const addressChanged = addressKeys.some(
+          k => k in data && (data as Record<string, unknown>)[k] !== undefined,
+        )
+        if (!addressChanged) {
+          return data
+        }
+        const coordsBeingSet
+          = ('latitude' in data && (data as Record<string, unknown>).latitude !== undefined)
+            || ('longitude' in data && (data as Record<string, unknown>).longitude !== undefined)
+        if (coordsBeingSet) {
+          return data
+        }
+        return {
+          ...data,
+          latitude: null,
+          longitude: null,
+          geocodedAt: null,
+        }
+      },
+    },
     delete: {
       // The schema's FK behavior for meetings.customerId and proposals.meetingId
       // is `set null` on parent delete — without this hook, deleting a customer
