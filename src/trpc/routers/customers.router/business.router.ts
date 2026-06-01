@@ -21,7 +21,8 @@ import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
-import { deleteCustomer, getCustomer, getCustomers } from '@/shared/entities/customers/dal/server/queries'
+import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
+import { getCustomer, listCustomers } from '@/shared/entities/customers/dal/server/queries'
 import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
@@ -47,8 +48,8 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
     // Fetch all locally-cached customers
     getAll: entity.authedProcedure
       .query(async ({ ctx }) => {
-        const isSuperAdmin = ctx.ability.can('manage', 'all')
-        return getCustomers({ userId: ctx.session.user.id, isSuperAdmin })
+        const result = await listCustomers(ctx)
+        return result.success ? result.data : []
       }),
 
     // Server-paginated customers list. Drives /dashboard/customers and the
@@ -112,8 +113,8 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
     getById: entity.authedProcedure
       .input(z.object({ customerId: z.string().uuid() }))
       .query(async ({ input, ctx }) => {
-        const isSuperAdmin = ctx.ability.can('manage', 'all')
-        return getCustomer(input.customerId, { userId: ctx.session.user.id, isSuperAdmin })
+        const result = await getCustomer(ctx, { id: input.customerId })
+        return result.success ? result.data : undefined
       }),
 
     // Search customers by name (agents) or name + phone (super-admins). Phone
@@ -372,13 +373,19 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
     // Permanently delete a customer + their meetings, proposals, notes, and
     // projects. CASL-gated to `delete Customer` — only super-admin (`manage all`)
     // currently has this permission. UI must confirm before invoking.
+    // Cascade (proposals → meetings before customer) runs in
+    // customerServerSpec.hooks.delete.before; customer_notes and projects
+    // cascade via schema FKs.
     delete: entity.authedProcedure
       .input(z.object({ customerId: z.string().uuid() }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.ability.cannot('delete', 'Customer')) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not have permission to delete customers.' })
         }
-        await deleteCustomer(input.customerId)
+        const result = await customerCrud.delete(ctx, { id: input.customerId })
+        if (!result.success) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete customer' })
+        }
         return { success: true as const }
       }),
 

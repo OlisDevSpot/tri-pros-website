@@ -1,5 +1,4 @@
 import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
-import type { CustomersViewer } from '@/shared/entities/customers/dal/server/queries'
 
 import { TRPCError } from '@trpc/server'
 import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
@@ -15,7 +14,17 @@ import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visib
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
-export async function getCustomerProfile(customerId: string, viewer: CustomersViewer): Promise<CustomerProfileData> {
+// Local viewer shape for this DAL. The customers entity used to export a
+// shared `CustomersViewer` interface; that was removed when queries.ts
+// adopted the canonical (ctx: ScopedContext, input) signature. This file is
+// next on the migration list — until then, keep the shape inline so the
+// customer-pipelines router caller stays unchanged.
+interface CustomerProfileViewer {
+  userId: string
+  isSuperAdmin: boolean
+}
+
+export async function getCustomerProfile(customerId: string, viewer: CustomerProfileViewer): Promise<CustomerProfileData> {
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
 
   const [customer] = await db
