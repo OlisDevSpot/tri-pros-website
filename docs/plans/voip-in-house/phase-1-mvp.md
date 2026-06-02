@@ -1555,252 +1555,66 @@ git commit
 
 ### Task 20: Twilio provider scaffold
 
-**Files:**
-- Create: `src/shared/services/providers/twilio/client.ts`
-- Create: `src/shared/services/providers/twilio/voice.ts`
-- Create: `src/shared/services/providers/twilio/messaging.ts`
-- Create: `src/shared/services/providers/twilio/webhooks/types.ts`
-- Create: `src/shared/services/providers/twilio/constants/index.ts`
-- Create: `src/shared/services/providers/twilio/types.ts`
+✅ **DONE** (commit `8d2c476a`, 2026-06-02 — Slug B).
 
-> Mirrors the shape of `providers/notion/` and `providers/zoho-sign/` (verified live): `client.ts` (auth/SDK wrapper), `types.ts`, `constants/`, plus capability-grouped files (`voice.ts`, `messaging.ts`) and a `webhooks/` subdir for inbound payload types. Per the [service-architecture convention](../../codebase-conventions/service-architecture.md), providers expose **typed functions**, not interfaces. NO formal `VoIPProvider` interface — single-provider commit per locked decision.
+> The body below reflects what was actually built. Cross-cutting locks live in [GRILL RESULTS](#-grill-results--2026-05-30) at the top of this doc; this section only documents the shape of the Twilio provider directory.
 
-- [ ] **Step 20.1: `client.ts` — singleton Twilio client + dev-override gate**
+**Files landed** (13 files, 536 lines):
 
-```ts
-// src/shared/services/providers/twilio/client.ts
-import twilio from 'twilio'
-import env from '@/shared/config/server-env'
-
-let cachedClient: ReturnType<typeof twilio> | null = null
-
-export function getTwilioClient() {
-  if (!cachedClient) {
-    cachedClient = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN)
-  }
-  return cachedClient
-}
-
-/**
- * Dev safety: if VOIP_DEV_OVERRIDE_NUMBER is set, replace any outbound `to` E.164 with the override.
- * Production builds reject this env var (Task 1.3 CI gate).
- */
-export function maybeOverrideRecipient(toE164: string): string {
-  const override = env.VOIP_DEV_OVERRIDE_NUMBER
-  if (override && toE164.startsWith('+')) {
-    // Use console here rather than logger because this is a dev-mode safety signal.
-    // eslint-disable-next-line no-console
-    console.warn(`[twilio] DEV OVERRIDE — routing ${toE164} → ${override}`)
-    return override
-  }
-  return toE164
-}
+```
+src/shared/services/providers/twilio/
+  client.ts                  lazy singleton + RestException re-export
+  types.ts                   SDK type re-exports (CallInstance, MessageInstance, IncomingPhoneNumberInstance, + RestException)
+  constants/
+    index.ts                 ACCESS_TOKEN_TTL_SECONDS, ACCESS_TOKEN_IDENTITY_PREFIX, INBOUND_VOICE_TTS_VOICE, PILOT_DIDS, VETTING, VOIP_DEV_OVERRIDE_NUMBER
+  schemas/                   outbound-API request shapes (Zod)
+    primitives.ts            e164Schema, twilioSidSchema, isoDateTimeSchema
+    access-token.ts          mintVoiceAccessTokenInputSchema
+  lib/                       per-capability typed wrappers (1-2 line bodies; provider is a leaf)
+    voice.ts                 placeOutboundCall, fetchCall, hangupCall
+    messaging.ts             sendMessage, fetchMessage
+    numbers.ts               listIncomingPhoneNumbers, fetchIncomingPhoneNumber (admin observability)
+    twiml.ts                 buildInboundVoiceTwiml, buildDialTwiml, buildInboundMessagingTwiml
+    jwt.ts                   mintVoiceAccessToken (browser softphone)
+  webhooks/                  inbound-webhook surface (matches cloudtalk reference)
+    verify.ts                verifyTwilioSignature (HMAC-SHA1 via SDK)
+    voice.ts                 voiceInboundWebhookSchema, voiceStatusCallbackSchema, voiceDialActionSchema, voiceCallStatusSchema
+    messaging.ts             messagingInboundWebhookSchema, messagingStatusCallbackSchema, messagingStatusSchema
 ```
 
-- [ ] **Step 20.2: `voice.ts` — placeCall + endCall + softphone JWT + signature verify**
+**Design rules baked into the scaffold:**
 
-```ts
-// src/shared/services/providers/twilio/voice.ts
-import twilio from 'twilio'
-import env from '@/shared/config/server-env'
-import { getTwilioClient, maybeOverrideRecipient } from './client'
+- **Single vendor.** No abstract `VoIPProvider` interface. Column naming on the consumer side is already vendor-neutral (`provider_call_id`, `provider_message_id`, `provider_did_id`), so a hypothetical future swap rewrites this directory only — schema-stable.
+- **No naked HTTP.** Every Twilio call goes through the typed `twilio` Node SDK (v6.0.2). No `fetch()` to Twilio endpoints.
+- **Provider is a leaf.** No DB writes, no DAL imports, no service imports, no business rules. Function bodies are one-liners that translate caller intent to an SDK call. All orchestration (compliance gate, DNC lookup, recording-retention, STOP-keyword routing, dev-override rewriting) lives in Slug C's `services/voip/*.service.ts`.
+- **SDK types are the source of truth.** `lib/voice.ts` accepts `CallListInstanceCreateOptions` directly; `lib/messaging.ts` accepts `MessageListInstanceCreateOptions`. Callers get the SDK's typing through us, not in parallel.
+- **Webhook payloads are typed at the seam.** Twilio webhooks are form-urlencoded; the SDK does not publish Zod for them. We define Zod in `webhooks/{voice,messaging}.ts` so route handlers in Slug D can `.parse()` once and get a typed `{ CallSid, CallStatus, From, To, ... }` everywhere downstream.
+- **TwiML via fluent builders.** `lib/twiml.ts` wraps `twilio.twiml.VoiceResponse` and `twilio.twiml.MessagingResponse` — never hand-written XML.
+- **Webhook signing uses the account auth token.** No separate `TWILIO_AUTH_TOKEN_FOR_WEBHOOK_VALIDATION` env var — that's Twilio's standard for both REST + webhook validation. JWTs for the browser softphone, in contrast, sign with `TWILIO_API_KEY_SID + SECRET`.
+- **Lazy singleton client.** `twilioClient()` constructs on first call; reused thereafter. Module-load construction breaks edge-runtime static probes and test environments where env may be partially populated.
+- **Errors are propagated, not wrapped.** SDK's `RestException` is re-exported from `client.ts`; callers `instanceof` it for `.code`, `.status`, `.message`, `.moreInfo`.
 
-interface PlaceCallArgs {
-  fromE164: string
-  toE164: string
-  statusCallbackUrl: string
-  recordingStatusCallbackUrl: string
-  customParameters?: Record<string, string>  // surfaced to the answering softphone client
-}
+**Deviations from the original pre-grill spec:**
 
-export async function placeCall(args: PlaceCallArgs): Promise<{ callSid: string }> {
-  const to = maybeOverrideRecipient(args.toE164)
-  const call = await getTwilioClient().calls.create({
-    from: args.fromE164,
-    to,
-    applicationSid: env.TWILIO_TWIML_APP_SID,
-    statusCallback: args.statusCallbackUrl,
-    statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-    statusCallbackMethod: 'POST',
-    record: true,
-    recordingStatusCallback: args.recordingStatusCallbackUrl,
-  })
-  return { callSid: call.sid }
-}
+- Webhook Zod schemas live under `webhooks/` (alongside `verify.ts`) instead of `schemas/`. Matches the `webhooks/` subdir convention in [service-architecture.md](../../codebase-conventions/service-architecture.md) and the cloudtalk reference. `schemas/` now holds outbound-API request shapes only.
+- Capability files live under `lib/` (`lib/voice.ts`, `lib/messaging.ts`, `lib/numbers.ts`) rather than at the provider root — matches the codebase convention's `lib/` group rule.
+- Webhook STOP-keyword auto-footer (`ensureStopFooter`) was removed from the provider. It's business logic, not provider translation — moves into Slug C's `voip-messages.service.ts#sendSms`. Provider's `sendMessage` is pass-through.
+- Dev-override rewriting (`maybeOverrideRecipient`) removed from the provider for the same reason — moves into Slug C's outbound services. Provider stays a leaf.
+- Status→domain enum mapping tables (`twilioVoiceStatusMap`, `twilioMessageStatusMap`) removed from the provider. Domain translation is Slug C's job, not the provider's. The provider returns SDK-typed statuses; the service layer translates to our `voipCallStatuses` / `voipMessageStatuses` enums.
 
-export async function endCall(callSid: string): Promise<void> {
-  await getTwilioClient().calls(callSid).update({ status: 'completed' })
-}
+**Verified:**
+- `pnpm tsc` clean
+- `pnpm lint` clean
+- Sanity-test scratch confirmed the minted JWT decodes to the expected shape (`cty='twilio-fpa;v=1'`, `grants.voice.incoming.allow=true`, `grants.voice.outgoing.application_sid` set, correct iss/sub, TTL applied).
 
-interface SoftphoneTokenArgs { userId: string, ttlSeconds?: number }
-
-export function mintSoftphoneAccessToken(args: SoftphoneTokenArgs): { token: string, identity: string, ttlSeconds: number } {
-  const AccessToken = twilio.jwt.AccessToken
-  const { VoiceGrant } = AccessToken
-  const ttlSeconds = args.ttlSeconds ?? 3600
-  const identity = `agent_${args.userId}`
-
-  const token = new AccessToken(
-    env.TWILIO_ACCOUNT_SID,
-    env.TWILIO_API_KEY_SID,
-    env.TWILIO_API_KEY_SECRET,
-    { identity, ttl: ttlSeconds },
-  )
-  token.addGrant(new VoiceGrant({
-    outgoingApplicationSid: env.TWILIO_TWIML_APP_SID,
-    incomingAllow: true,
-  }))
-  return { token: token.toJwt(), identity, ttlSeconds }
-}
-
-/**
- * Validates the Twilio x-twilio-signature header against the request URL + form params.
- * Returns true if the request is genuinely from Twilio.
- */
-export function validateVoiceSignature(args: {
-  signature: string | null
-  url: string
-  params: Record<string, string>
-}): boolean {
-  if (!args.signature) return false
-  return twilio.validateRequest(env.TWILIO_AUTH_TOKEN, args.signature, args.url, args.params)
-}
-```
-
-- [ ] **Step 20.3: `messaging.ts` — sendSms + signature verify**
-
-```ts
-// src/shared/services/providers/twilio/messaging.ts
-import twilio from 'twilio'
-import env from '@/shared/config/server-env'
-import { getTwilioClient, maybeOverrideRecipient } from './client'
-
-interface SendSmsArgs {
-  fromE164: string
-  toE164: string
-  body: string
-  statusCallbackUrl: string
-}
-
-function ensureStopFooter(body: string): string {
-  if (/reply\s+stop/i.test(body)) return body
-  return `${body.trim()}\n\nReply STOP to opt out.`
-}
-
-export async function sendSms(args: SendSmsArgs): Promise<{ messageSid: string, status: string }> {
-  const to = maybeOverrideRecipient(args.toE164)
-  const m = await getTwilioClient().messages.create({
-    from: args.fromE164,
-    to,
-    body: ensureStopFooter(args.body),
-    statusCallback: args.statusCallbackUrl,
-  })
-  return { messageSid: m.sid, status: m.status }
-}
-
-export function validateMessagingSignature(args: {
-  signature: string | null
-  url: string
-  params: Record<string, string>
-}): boolean {
-  if (!args.signature) return false
-  return twilio.validateRequest(env.TWILIO_AUTH_TOKEN, args.signature, args.url, args.params)
-}
-```
-
-- [ ] **Step 20.4: `webhooks/types.ts` — Zod schemas for inbound payloads**
-
-```ts
-// src/shared/services/providers/twilio/webhooks/types.ts
-import { z } from 'zod'
-
-// Twilio voice status callback params (subset we care about).
-export const voiceStatusPayloadSchema = z.object({
-  CallSid: z.string(),
-  CallStatus: z.enum(['queued', 'initiated', 'ringing', 'in-progress', 'completed', 'busy', 'failed', 'no-answer', 'canceled']),
-  From: z.string().optional(),
-  To: z.string().optional(),
-  CallDuration: z.string().optional(),  // string in webhook; coerce to number
-  Direction: z.string().optional(),
-})
-export type VoiceStatusPayload = z.infer<typeof voiceStatusPayloadSchema>
-
-export const voiceRecordingPayloadSchema = z.object({
-  CallSid: z.string(),
-  RecordingSid: z.string(),
-  RecordingUrl: z.string(),
-  RecordingDuration: z.string().optional(),
-  RecordingStatus: z.enum(['in-progress', 'completed', 'absent', 'failed']).optional(),
-})
-export type VoiceRecordingPayload = z.infer<typeof voiceRecordingPayloadSchema>
-
-export const messagingInboundPayloadSchema = z.object({
-  MessageSid: z.string(),
-  From: z.string(),
-  To: z.string(),
-  Body: z.string(),
-  NumMedia: z.string().optional(),
-})
-export type MessagingInboundPayload = z.infer<typeof messagingInboundPayloadSchema>
-
-export const messagingStatusPayloadSchema = z.object({
-  MessageSid: z.string(),
-  MessageStatus: z.enum(['queued', 'sending', 'sent', 'delivered', 'undelivered', 'failed', 'received']),
-  ErrorCode: z.string().optional(),
-})
-export type MessagingStatusPayload = z.infer<typeof messagingStatusPayloadSchema>
-```
-
-- [ ] **Step 20.5: `constants/index.ts` + `types.ts`**
-
-```ts
-// src/shared/services/providers/twilio/constants/index.ts
-import type { VoipCallStatus, VoipMessageStatus } from '@/shared/constants/enums'
-
-/** Webhook signature header — Twilio HMAC-SHA1 of the URL + form body. */
-export const WEBHOOK_SIGNATURE_HEADER = 'x-twilio-signature'
-
-// Twilio's voice status strings → our voipCallStatuses
-export const twilioVoiceStatusMap: Record<string, VoipCallStatus> = {
-  'queued': 'queued',
-  'initiated': 'initiated',
-  'ringing': 'ringing',
-  'in-progress': 'answered',
-  'completed': 'completed',
-  'no-answer': 'no_answer',
-  'busy': 'no_answer',
-  'failed': 'failed',
-  'canceled': 'failed',
-}
-
-// Twilio's message status strings → our voipMessageStatuses
-export const twilioMessageStatusMap: Record<string, VoipMessageStatus> = {
-  'queued': 'queued',
-  'sending': 'queued',
-  'sent': 'sent',
-  'delivered': 'delivered',
-  'undelivered': 'undelivered',
-  'failed': 'failed',
-  'received': 'received',
-}
-```
-
-> Convention follows `providers/zoho-sign/constants/` which exports `WEBHOOK_SIGNATURE_HEADER` consumed by `src/app/api/webhooks/zoho-sign/route.ts`.
-
-```ts
-// src/shared/services/providers/twilio/types.ts
-export type { VoiceStatusPayload, VoiceRecordingPayload, MessagingInboundPayload, MessagingStatusPayload } from './webhooks/types'
-```
-
-- [ ] **Step 20.6: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/services/providers/twilio/
-git commit -m "feat(twilio): scaffold Twilio provider (client, voice, messaging, webhook types)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
+**What Slug C imports:**
+- `lib/voice.ts` → `voip-calls.service.ts` (placeAgentCall after compliance gate)
+- `lib/messaging.ts` → `voip-messages.service.ts` (sendSms after compliance + 10DLC check)
+- `lib/numbers.ts` → `voip-dids.service.ts` (admin "Resync DIDs" mutation)
+- `lib/jwt.ts` → `voip-routing.service.ts` (`/api/voip/softphone/access-token` route, Slug D)
+- `lib/twiml.ts` → `voip-routing.service.ts` (sync TwiML responder routes, Slug D)
+- `webhooks/verify.ts` + `webhooks/{voice,messaging}.ts` → `/api/webhooks/twilio/route.ts` (Slug D)
+- `constants/index.ts` → various Slug C services (PILOT_DIDS for seeding, VETTING for outbound gates, VOIP_DEV_OVERRIDE_NUMBER for service-level rewriting)
 
 ---
 
