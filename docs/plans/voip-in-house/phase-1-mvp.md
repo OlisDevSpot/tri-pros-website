@@ -1389,7 +1389,13 @@ EOF
 
 ### Tasks 12-18: Backend entity scaffolds (entity-factory pattern per ADR-0002)
 
-> Each task creates ONE entity directory under `src/shared/entities/<entity>/`. The `EntityServerSpec` lives at `entities/<entity>/lib/server-spec.ts` (verified across proposals/meetings/customers). The router (Task 30) imports the spec from there. Phase 1 only needs: DOCS.md, lib/constants.ts, lib/server-spec.ts, schemas/, types.ts, and any custom DAL queries beyond the generic CRUD factory.
+> Post-grill (2026-05-30) count: **5 entities, not 7.** `voip-dnc` is gone — DNC
+> lives as 3 fields on `customers` (compliance.service owns the gate). `voip-user-availability`
+> is gone — the softphone tracks its own connection state in-browser.
+>
+> Each task creates ONE entity directory under `src/shared/entities/<entity>/`.
+> The `EntityServerSpec` lives at `entities/<entity>/lib/server-spec.ts`. The
+> router (Task 30) imports the spec from there.
 >
 > **Read these first:**
 > - [ADR-0002](../../adr/0002-entity-server-system.md) — the EntityServerSpec contract
@@ -1397,563 +1403,89 @@ EOF
 > - [`docs/how-to/add-an-entity.md`](../../how-to/add-an-entity.md) — step-by-step recipe
 > - [`src/shared/entities/proposals/`](../../../src/shared/entities/proposals/) — canonical migrated example
 >
-> **Template — apply to each entity** (substitute `<entity>` + `<EntityName>` + per-entity unique pieces):
+> **Per-entity file layout:**
 >
 > ```
 > src/shared/entities/<entity>/
 >   DOCS.md
->   lib/constants.ts             ← exports the CASL entity-name constant
->   schemas/index.ts             ← re-exports from db schema + any custom Zod
+>   lib/constants.ts             ← exports the CASL entity-name constant (PascalCase)
+>   lib/visibility.ts            ← scope predicate (one fn)
+>   lib/server-spec.ts           ← EntityServerSpec (data + visibility predicate)
+>   schemas/index.ts             ← re-exports from db schema
 >   types.ts                     ← re-exports Drizzle-inferred types
->   dal/server/<query>.ts        ← only when generic CRUD doesn't cover it
-> (router lives at src/trpc/routers/<entity>.router/ — Task 30 — and imports the spec)
 > ```
+>
+> No `dal/server/crud.ts` at scaffold time — `createCrudDal(spec)` lives at the
+> call site in services / routers, not in the entity dir. Add `dal/server/queries.ts`
+> later if a query genuinely doesn't fit through CRUD.
 
 #### Task 12: `entities/voip-calls/`
 
-- [ ] **Step 12.1: Create `DOCS.md`**
+Visibility — `agent_user_id = userId` (agents see only their own calls). Super-admin
+bypasses via the omni-scope path. No `shareable` field — calls aren't customer-facing.
 
-```markdown
-# voip-calls
-
-Per-call lifecycle records. Source-discriminated; both in-house Twilio calls and CloudTalk-originated
-calls (warm-transfer landings, AI-driven outbound) live in this table.
-
-## Invariants
-
-- **VC-1: Idempotency.** `twilio_call_sid` and `cloudtalk_call_uuid` are vendor unique IDs; webhook
-  handlers MUST use them as idempotency keys via `INSERT … ON CONFLICT DO UPDATE`.
-- **VC-2: Source discriminator.** `source='in_house'` rows are populated by Twilio webhooks (Task 23);
-  `source='cloudtalk'` rows are populated by the voip-campaigns webhook handler in its Phase 1. This
-  EPIC's services NEVER write rows with `source='cloudtalk'`.
-- **VC-3: Forward-compat columns.** `cloudtalk_call_uuid`, `campaign_id`, `transcript_summary`,
-  `sentiment` are populated only when `source='cloudtalk'`. Don't reference them from in-house code
-  paths.
-- **VC-4: Disposition lifecycle.** Set post-call. NULL while call is in flight. For in-house: agent
-  picks via UI. For cloudtalk: CloudTalk AI sets via webhook (typed disposition).
-- **VC-5: Recording URL.** Twilio-hosted (in-house) or CloudTalk-hosted (cloudtalk). Access gated by
-  CASL `view_recording` action on the VoipCall subject.
-- **VC-6: Compliance gate.** Outbound `placeAgentCall` checks `voip-compliance.service.ts::canOutboundTo`
-  before inserting a row. Blocked attempts insert a row with `status='skipped_compliance'` + populated
-  `skip_reason` (so admins can audit blocked attempts).
-
-## Forward-compat for voip-campaigns
-
-CloudTalk-source columns (nullable): `cloudtalk_call_uuid` (UNIQUE), `campaign_id`,
-`transcript_summary`, `sentiment`. Populated only when `source='cloudtalk'`. Schema lands in Phase 1;
-writers ship in voip-campaigns Phase 1.
-```
-
-- [ ] **Step 12.2: Create `lib/constants.ts`**
-
-```ts
-export const VOIP_CALL = 'VoipCall' as const
-export type VoipCallEntityName = typeof VOIP_CALL
-```
-
-- [ ] **Step 12.3: Create `schemas/index.ts`**
-
-```ts
-export {
-  selectVoipCallSchema,
-  insertVoipCallSchema,
-} from '@/shared/db/schema/voip-calls'
-```
-
-- [ ] **Step 12.4: Create `types.ts`**
-
-```ts
-export type { VoipCall, InsertVoipCall } from '@/shared/db/schema/voip-calls'
-```
-
-- [ ] **Step 12.5: Create `dal/server/` — three files only**
-
-Per the convention verified across proposals/meetings/customers, DAL files are CONSOLIDATED — `crud.ts` + `queries.ts` + `mutations.ts` (plus domain-specific like `visibility.ts`/`participants.ts` when justified). Do NOT create one file per query. Read [`shared/entities/proposals/dal/server/`](../../../src/shared/entities/proposals/dal/server/) for the canonical layout before writing.
-
-**`dal/server/crud.ts`** — the generic CRUD factory output:
-
-```ts
-import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
-import { voipCallServerSpec } from '@/shared/entities/voip-calls/lib/server-spec'
-
-export const voipCallCrud = createCrudDal(voipCallServerSpec)
-// Generated handlers: getById, create, update, delete, duplicate. All return DalReturn.
-```
-
-**`dal/server/queries.ts`** — DalReturn-shaped reads beyond CRUD:
-
-```ts
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import { desc, eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { voipCalls } from '@/shared/db/schema'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
-import type { VoipCall } from '@/shared/entities/voip-calls/types'
-
-/** Used by Twilio voice status webhook (Task 26) for idempotent upsert. */
-export async function findByTwilioCallSid(
-  ctx: ScopedContext,
-  sid: string,
-): Promise<DalReturn<VoipCall | undefined>> {
-  return dalDbOperation(async () => {
-    const [row] = await db.select().from(voipCalls).where(eq(voipCalls.twilioCallSid, sid)).limit(1)
-    return row
-  })
-}
-
-/** Customer timeline view — unions across both sources via the discriminator column. */
-export async function listByCustomerId(
-  ctx: ScopedContext,
-  customerId: string,
-): Promise<DalReturn<VoipCall[]>> {
-  return dalDbOperation(async () => {
-    return db.select().from(voipCalls)
-      .where(eq(voipCalls.customerId, customerId))
-      .orderBy(desc(voipCalls.initiatedAt))
-  })
-}
-
-/** Admin view — recent calls across all customers. */
-export async function listRecent(ctx: ScopedContext, limit = 50): Promise<DalReturn<VoipCall[]>> {
-  return dalDbOperation(async () => {
-    return db.select().from(voipCalls).orderBy(desc(voipCalls.initiatedAt)).limit(limit)
-  })
-}
-```
-
-**`dal/server/mutations.ts`** — DalReturn-shaped writes beyond CRUD:
-
-```ts
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
-import { voipCalls } from '@/shared/db/schema'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
-import type { InsertVoipCall, VoipCall } from '@/shared/entities/voip-calls/types'
-
-/** Used by `placeAgentCall` to insert the initial row. Skipped-compliance audit rows pass status='skipped_compliance'. */
-export async function createCall(ctx: ScopedContext, input: InsertVoipCall): Promise<DalReturn<VoipCall>> {
-  return dalDbOperation(async () => {
-    const [row] = await db.insert(voipCalls).values(input).returning()
-    if (!row) throw new Error('insert returned no row')
-    return row
-  })
-}
-
-/**
- * Idempotent upsert from Twilio webhook events. Keys on `twilio_call_sid` when provided;
- * falls back to PK lookup via `fallbackById` (used to patch a row pre-webhook with the SID).
- */
-export async function upsertFromTwilioWebhook(
-  ctx: ScopedContext,
-  args: { callSid: string, patch: Partial<VoipCall>, fallbackById?: string },
-): Promise<DalReturn<VoipCall>> {
-  return dalDbOperation(async () => {
-    if (args.callSid) {
-      const [row] = await db.update(voipCalls).set(args.patch).where(eq(voipCalls.twilioCallSid, args.callSid)).returning()
-      if (row) return row
-    }
-    if (args.fallbackById) {
-      const [row] = await db.update(voipCalls).set(args.patch).where(eq(voipCalls.id, args.fallbackById)).returning()
-      if (row) return row
-    }
-    throw new Error('upsertFromTwilioWebhook: no matching row to patch')
-  })
-}
-```
-
-> Visibility predicate (`lib/visibility.ts`) is defined in Step 12.6 below — services + the entity-factory consume it from there, not from DAL files.
-
-- [ ] **Step 12.6: Create `src/shared/entities/voip-calls/lib/visibility.ts`**
-
-```ts
-// src/shared/entities/voip-calls/lib/visibility.ts
-import type { SQL } from 'drizzle-orm'
-import { eq } from 'drizzle-orm'
-import { voipCalls } from '@/shared/db/schema'
-
-/** Agent-visibility predicate. Agents see only calls they're the agent on. */
-export function voipCallVisibility(userId: string): SQL {
-  return eq(voipCalls.agentUserId, userId)
-}
-```
-
-- [ ] **Step 12.7: Create `src/shared/entities/voip-calls/lib/server-spec.ts`**
-
-Mirrors [`src/shared/entities/proposals/lib/server-spec.ts`](../../../src/shared/entities/proposals/lib/server-spec.ts) shape — exports BOTH the concrete schemas object (for `createCrudRouter` type inference) AND the spec.
-
-```ts
-// src/shared/entities/voip-calls/lib/server-spec.ts
-import type { EntityServerSpec } from '@/shared/dal/server/types'
-
-import {
-  insertVoipCallSchema,
-  selectVoipCallSchema,
-  voipCalls,
-} from '@/shared/db/schema'
-import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
-import { voipCallVisibility } from '@/shared/entities/voip-calls/lib/visibility'
-
-const updateVoipCallSchema = insertVoipCallSchema.partial()
-
-/** Concrete schemas for `createCrudRouter` type inference (spec carries type-erased copies). */
-export const voipCallSchemas = {
-  insert: insertVoipCallSchema,
-  update: updateVoipCallSchema,
-}
-
-export const voipCallServerSpec = {
-  entityName: VOIP_CALL,
-  caslSubject: VOIP_CALL,
-  visibility: voipCallVisibility,
-  table: voipCalls,
-  schemas: {
-    insert: insertVoipCallSchema,
-    update: updateVoipCallSchema,
-    select: selectVoipCallSchema,
-  },
-  // No shareable surface in Phase 1 (no tokenized recording playback yet) — omit the field entirely.
-  // No update-time JSONB merge needed (metaJson is owner-replaced, not patched) — omit `update`.
-  // No hooks needed in Phase 1 — disposition side-effects land in Phase 2 via voip-call-disposition.service.
-} satisfies EntityServerSpec<typeof voipCalls>
-```
-
-- [ ] **Step 12.8: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/entities/voip-calls/
-git commit -m "feat(voip): scaffold voip-calls entity (DAL + ServerSpec + visibility)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
+Files:
+- `lib/constants.ts` — `export const VOIP_CALL = 'VoipCall' as const`
+- `lib/visibility.ts` — `eq(voipCalls.agentUserId, userId)`
+- `lib/server-spec.ts` — `EntityServerSpec<typeof voipCalls>`; `update` schema is
+  `insertVoipCallSchema.partial()`
+- `schemas/index.ts` + `types.ts` — re-exports
+- `DOCS.md` — invariants: provider_call_id idempotency, agent-ownership visibility,
+  compliance gate on outbound (skipped_compliance + skip_reason), recording URL access
 
 #### Task 13: `entities/voip-dids/`
 
-Apply Task 12 template. Unique pieces:
+Visibility — `assigned_user_id = userId` (agents see only their own DIDs;
+inbound-only shared DIDs are NULL-assigned and invisible to agents).
 
-- `lib/constants.ts`: `export const VOIP_DID = 'VoipDid' as const`
-- `types.ts`: re-exports `VoipDid`, `InsertVoipDid`
-- `schemas/index.ts`: re-exports `selectVoipDidSchema`, `insertVoipDidSchema`
+Files: same pattern as Task 12. DOCS.md captures the 1:N cardinality rule and the
+partial unique index enforcing exactly one `is_primary=TRUE` per user.
 
-**Backend files** (`dal/server/{crud,queries}.ts` + `lib/visibility.ts`):
-- `crud.ts` — `voipDidCrud = createCrudDal(voipDidServerSpec)`
-- `queries.ts` exports (DalReturn-shaped reads):
-  - `findByE164(ctx, e164)` → `DalReturn<VoipDid | undefined>`
-  - `findStickyForAgent(ctx, userId)` → `DalReturn<VoipDid | undefined>` (returns `source='in_house' AND role='agent_outbound' AND assignedUserId = userId`)
-  - `findTransferTarget(ctx)` → `DalReturn<VoipDid | undefined>` (returns the single `role='transfer_target' AND source='in_house'` DID)
-- `visibility.ts` — admin-only entity; returns `sql\`false\`` so non-admin roles see nothing (admin/super_admin bypass via `manage 'all'` CASL rule)
+#### Task 14: `entities/voip-messages/`
 
-**`DOCS.md`:**
+Visibility — `agent_user_id = userId`. Inbound STOP-keyword SMS to a shared DID
+have NULL agentUserId and are visible only to super-admin.
 
-```markdown
-# voip-dids
+Files: same pattern. DOCS.md captures the composite thread key
+`(voipDidId, remoteE164)`, the STOP-keyword path running under SYSTEM_CONTEXT,
+and the outbound compliance gate via `complianceService.canOutboundTo`.
 
-DID pool with lifecycle state. One row per phone number we own (Twilio-owned or CloudTalk-owned).
+#### Task 15: `entities/voip-link-tokens/`
 
-## Invariants
+Visibility — `created_by_user_id = userId`. Customer consume route bypasses
+session-based scope entirely via `shareable: { tokenColumn: 'token' }`.
 
-- **VD-1: Single transfer-target DID.** At any time, exactly ONE row has `role='transfer_target' AND source='in_house'`. Enforced at seed time (Task 34); admin UI in Phase 4 will block multi-target configs.
-- **VD-2: Sticky DID-per-agent.** `role='agent_outbound' AND source='in_house' AND assigned_user_id = <user>` — exactly one such row per agent. Customers calling back this DID route to that agent (Phase 2 inbound routing).
-- **VD-3: CloudTalk DIDs.** `source='cloudtalk' AND role='campaign_rotation'`. Inserted by voip-campaigns Phase 1; this EPIC does NOT touch them. `twilio_phone_sid` is NULL for cloudtalk DIDs.
-- **VD-4: Status lifecycle.** In-house DIDs typically stay 'active' (low-volume; no warming cycle). Campaign DIDs use 'warming' → 'active' → 'cooldown' | 'flagged' | 'retired'.
+Files: same pattern + spec carries `shareable: { tokenColumn: 'token' }`. DOCS.md
+captures the 48h hard expiry, immutability-except-usedAt invariant, and the
+captured-payload-at-mint pattern.
 
-## Forward-compat for voip-campaigns
+#### Task 16: `entities/app-settings/`
 
-Schema-side only: `source` discriminator + `role='campaign_rotation'` enum value. voip-campaigns Phase 1 inserts campaign DIDs after configuring them in the CloudTalk dashboard.
-```
+Visibility — `sql\`FALSE\`` (admin-only). Spec carries `primaryKey: 'feature'`
+(natural string PK, not `id: uuid`). TId stays the default `string`.
 
-**Spec** (`entities/voip-dids/lib/server-spec.ts`): admin-only entity. Visibility omni for admin/super_admin; no agent scope.
+Files: same pattern + spec `primaryKey: 'feature'`. DOCS.md captures the
+admin-only rule, the natural-PK deviation rationale, and lists initial use cases
+(`'voip-in-house'`, `'voip-campaigns'`, `'compliance'`).
 
-Commit: `feat(voip): scaffold voip-dids entity + ServerSpec`.
+#### Tasks 17 + 18 — DELETED by 2026-05-30 grill
 
-#### Task 14: `entities/voip-dnc/`
-
-Apply template. Unique pieces:
-
-- `lib/constants.ts`: `export const VOIP_DNC = 'VoipDnc' as const`
-- `types.ts`: re-exports `VoipDnc`, `InsertVoipDnc`
-- `schemas/index.ts`: re-exports
-
-**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
-- `crud.ts` — `voipDncCrud = createCrudDal(voipDncServerSpec)`. NB: voip-dnc is append-only — admin UI never calls update/delete; the generic factory output stays available for completeness but won't be wired into the router's `crud` sub-router (Task 30).
-- `queries.ts` exports:
-  - `isOnDnc(ctx, phoneE164)` → `DalReturn<boolean>` (used by compliance gate; uses `SELECT 1 … LIMIT 1`)
-  - `listRecent(ctx, limit)` → `DalReturn<VoipDnc[]>` (admin view)
-- `mutations.ts` exports:
-  - `recordDnc(ctx, { phoneE164, source, reason, addedByUserId? })` → `DalReturn<VoipDnc>`. Uses `INSERT … ON CONFLICT DO NOTHING` keyed on `phone_e164`.
-- `visibility.ts` — admin-only; returns `sql\`false\`` for non-admin roles.
-
-**`DOCS.md`:**
-
-```markdown
-# voip-dnc
-
-Canonical Do-Not-Call registry. Both voip-in-house and voip-campaigns gate against this table; STOP
-replies from either side write here. See [INTEGRATION-SEAM.md §5](../../../../docs/plans/voip/INTEGRATION-SEAM.md#5-dnc-propagation).
-
-## Invariants
-
-- **VDNC-1: Append-only.** Entries are never removed. Admin corrections (rare) create a new entry; the
-  newest wins by `added_at`.
-- **VDNC-2: UNIQUE by phone.** `INSERT … ON CONFLICT DO NOTHING` keyed on `phone_e164`.
-- **VDNC-3: TCPA timing.** Every opt-out is honored within 5 minutes (well inside the 24h legal max).
-  The compliance gate (`voip-compliance.service.ts::canOutboundTo`) reads this table directly — no
-  caching.
-- **VDNC-4: Source values.** Must match [INTEGRATION-SEAM.md §5](../../../../docs/plans/voip/INTEGRATION-SEAM.md):
-  `twilio_stop`, `cloudtalk_stop`, `voice_request`, `manual_admin`, `ftc`. Drift breaks cross-EPIC behavior.
-- **VDNC-5: CloudTalk-sync.** `cloudtalk_synced_at` is populated by voip-campaigns'
-  `dnc-propagation.service.ts` after pushing the entry to CloudTalk. NULL for sources where push isn't
-  needed (`cloudtalk_stop` = CloudTalk already honored on its side).
-```
-
-**Spec**: admin + super_admin can `manage`. Agents have `read`.
-
-Commit: `feat(voip): scaffold voip-dnc entity + ServerSpec`.
-
-#### Task 15: `entities/voip-user-availability/`
-
-Apply template. Unique pieces:
-
-- `lib/constants.ts`: `export const VOIP_USER_AVAILABILITY = 'VoipUserAvailability' as const`
-- `types.ts`: re-exports
-- `schemas/index.ts`: re-exports
-
-**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
-- `crud.ts` — `voipUserAvailabilityCrud = createCrudDal(voipUserAvailabilityServerSpec)`. NB: PK is `userId`, not `id` — set `primaryKey: 'userId'` on the spec.
-- `queries.ts` exports:
-  - `findByUserId(ctx, userId)` → `DalReturn<VoipUserAvailability | undefined>`
-  - `listAvailableForTransfer(ctx)` → `DalReturn<{userId, transferMode, cellPhoneE164, lastTransferredAt}[]>`. Derives by joining against `voip_calls` (filter to rows where `agent_user_id = self AND ended_at IS NULL`) — see VUA-1.
-- `mutations.ts` exports:
-  - `upsert(ctx, input)` → `DalReturn<VoipUserAvailability>`. Uses Postgres ON CONFLICT on `user_id` PK.
-- `visibility.ts` — `eq(voipUserAvailability.userId, userId)` so agents see their own row only.
-
-**`DOCS.md`:**
-
-```markdown
-# voip-user-availability
-
-Transfer-target presence for agents. One row per user who can receive warm transfers from CloudTalk or
-manual in-house transfers.
-
-## Invariants
-
-- **VUA-1: Availability is DERIVED, not stored.** "Available for warm transfer" =
-  `enrolled_for_transfers AND manual_status='available' AND NO active call in voip_calls where
-  agent_user_id = self AND ended_at IS NULL`. Storing a `is_busy` boolean would create webhook-ordering
-  races; the derived check has no race window.
-- **VUA-2: Mobile mode requires phone.** When `transfer_mode='mobile'`, `cell_phone_e164` must be set.
-  Validated at API layer. Phase 1 ships `transfer_mode='desktop'` only — `mobile` writes are blocked
-  at the service layer until Phase 3.
-- **VUA-3: Auto mode resolution.** `transfer_mode='auto'` falls back to desktop in Phase 1 (no mobile
-  routing). Phase 3 resolves it to desktop-if-softphone-registered-else-mobile.
-```
-
-**Spec**: agents `manage` their own row (scoped by `userId`); admin/super_admin `manage` all rows.
-
-Commit: `feat(voip): scaffold voip-user-availability entity + ServerSpec`.
-
-#### Task 16: `entities/voip-messages/`
-
-Apply template. Unique pieces:
-
-- `lib/constants.ts`: `export const VOIP_MESSAGE = 'VoipMessage' as const`
-- `types.ts`: re-exports
-- `schemas/index.ts`: re-exports
-
-**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
-- `crud.ts` — `voipMessageCrud = createCrudDal(voipMessageServerSpec)`
-- `queries.ts` exports:
-  - `findByTwilioMessageSid(ctx, sid)` → `DalReturn<VoipMessage | undefined>`
-  - `listByCustomerId(ctx, customerId, limit)` → `DalReturn<VoipMessage[]>` (threaded view; `order by created_at desc`)
-- `mutations.ts` exports:
-  - `createMessage(ctx, input)` → `DalReturn<VoipMessage>` (single insert; idempotent at the service layer via `findByTwilioMessageSid` pre-check)
-  - `updateStatusByTwilioSid(ctx, { sid, status, timestamps })` → `DalReturn<VoipMessage | undefined>` (idempotent status upsert; used by Task 27 messaging status webhook)
-- `visibility.ts` — `eq(voipMessages.agentUserId, userId)` so agents see only messages they're attached to.
-
-**`DOCS.md`:**
-
-```markdown
-# voip-messages
-
-Every outbound + inbound SMS. Source-discriminated.
-
-## Invariants
-
-- **VM-1: Idempotency.** Status webhooks update via `twilio_message_sid` (in-house) or
-  `cloudtalk_message_id` (cloudtalk). Duplicate webhooks are safe.
-- **VM-2: SMS only.** No iMessage. The `imessage` and `fallback_sms` channel enum values from the
-  pre-pivot plan are gone permanently.
-- **VM-3: STOP triggers DNC.** Inbound rows matching STOP/UNSUB/QUIT/CANCEL/END/REMOVE/OPT-OUT
-  trigger `voip-dnc.service.ts::recordDnc` (source='twilio_stop') + an auto-confirm outbound.
-- **VM-4: Template key.** `'manual'` for ad-hoc agent sends; specific keys for templated
-  (`'meeting_reminder'`, `'proposal_link'`, `'opt_out_confirm'`, etc.). Inbound rows have NULL
-  template_key.
-
-## Forward-compat for voip-campaigns
-
-CloudTalk-source columns (nullable): `cloudtalk_message_id` (UNIQUE), `campaign_id`, `template_key`.
-Populated only when `source='cloudtalk'`.
-```
-
-**Spec**: agents `read` + `send` on their own customers' messages (scoped via `agent_user_id` or via the customer's sticky DID); admin omni.
-
-Commit: `feat(voip): scaffold voip-messages entity + ServerSpec`.
-
-#### Task 17: `entities/voip-link-tokens/`
-
-Apply template. Unique pieces:
-
-- `lib/constants.ts`: `export const VOIP_LINK_TOKEN = 'VoipLinkToken' as const`
-- `types.ts`: re-exports
-- `schemas/index.ts`: re-exports + a `payload-schemas.ts` file with per-type Zod schemas (L-DOC first):
-
-```ts
-// schemas/payload-schemas.ts
-import { z } from 'zod'
-
-export const lDocPayloadSchema = z.object({
-  type: z.literal('l_doc'),
-  uploadSlotId: z.string().uuid(),   // references a future uploadSlots table (Phase 2)
-  instructions: z.string().max(500).optional(),
-  returnUrl: z.string().url().optional(),
-})
-
-// Future use cases (stubbed; not active in Phase 1):
-//   lPayPayloadSchema   — payment-link variant
-//   lCalPayloadSchema   — reschedule-link variant
-//   lEsignPayloadSchema — e-sign-link variant
-
-export const voipLinkTokenPayloadSchema = z.discriminatedUnion('type', [
-  lDocPayloadSchema,
-  // ...future schemas
-])
-export type VoipLinkTokenPayload = z.infer<typeof voipLinkTokenPayloadSchema>
-```
-
-**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
-- `crud.ts` — `voipLinkTokenCrud = createCrudDal(voipLinkTokenServerSpec)`
-- `queries.ts` exports:
-  - `findByToken(ctx, token)` → `DalReturn<VoipLinkToken | undefined>`
-- `mutations.ts` exports:
-  - `createToken(ctx, input)` → `DalReturn<VoipLinkToken>` (token-string + expires_at generated by the service, NOT by the DAL — the DAL just persists what the service produces, so secrets/TTL logic stays in `voip-link-tokens.service.ts` and the DAL stays pure persistence)
-  - `markUsed(ctx, token)` → `DalReturn<VoipLinkToken | undefined>`. Uses `UPDATE … WHERE token = ? AND used_at IS NULL RETURNING *` for race-safety; `undefined` return = lost the race or token didn't exist.
-- `visibility.ts` — `eq(voipLinkTokens.createdByUserId, userId)` so agents see only tokens they minted. (NB: the public consume route uses `SYSTEM_CONTEXT`, not the agent's scope, because the consumer is the customer following the SMS link — they're not authenticated.)
-
-**`DOCS.md`:**
-
-```markdown
-# voip-link-tokens
-
-Single-use, short-lived (48h TTL), phone-tied URLs for customer-side flows triggered by SMS.
-
-## Invariants
-
-- **VLT-1: Single-use.** `markUsed` uses `UPDATE ... WHERE used_at IS NULL` for race safety. A
-  second consume attempt returns "already used" without re-running the underlying flow.
-- **VLT-2: 48h TTL.** `expires_at = created_at + 48h`. The consume route returns 410 GONE if
-  `NOW() > expires_at`. Re-mint requires explicit agent action (no auto-renew).
-- **VLT-3: Phone-tied.** Consume validates that `phone_e164` matches the channel the customer is
-  arriving from when applicable (Phase 1 doesn't enforce this — the SMS link itself is the channel).
-- **VLT-4: Type-specific payload.** Per [voip-link-tokens/schemas/payload-schemas.ts], each `type`
-  has a discriminated Zod schema. Validated at mint AND at consume.
-- **VLT-5: First use case = L-DOC.** Phase 1 ships L-DOC plumbing only; the upload-flow page is a
-  Phase 2 deliverable. Phase 1's consume route validates + 302s to `/d/upload/<uploadSlotId>` which
-  shows a stub "Coming soon" page wired into the voip-in-house feature.
-
-## Forward-compat for voip-campaigns
-
-voip-campaigns may mint tokens via the same surface for campaign-driven SMS variants (e.g., "share
-project photos"). The token type enum is open-ended; new types add schemas to
-`payload-schemas.ts` + a new value to `voipLinkTokenTypes`.
-```
-
-**Spec**: agents `manage` tokens they created (scoped by `created_by_user_id`); admin omni. No
-shareable surface (the token IS the share mechanism — the consume route is public-by-design with
-HMAC-equivalent randomness gating).
-
-Commit: `feat(voip): scaffold voip-link-tokens entity + ServerSpec`.
-
-#### Task 18: `entities/app-settings/`
-
-Apply template. Unique pieces:
-
-- `lib/constants.ts`: `export const APP_SETTING = 'AppSetting' as const`
-- `types.ts`: re-exports
-- `schemas/index.ts`: re-exports + per-feature Zod schemas:
-
-```ts
-// schemas/voip-in-house-config-schema.ts
-import { z } from 'zod'
-
-export const voipInHouseAppSettingsConfigSchema = z.object({
-  globalKillSwitch: z.boolean(),
-  callingHours: z.object({
-    startHourLocal: z.number().int().min(0).max(23),
-    endHourLocal: z.number().int().min(0).max(23),
-    callingDays: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])),
-  }),
-  recordingRetentionDays: z.number().int().min(7).max(365),
-})
-export type VoipInHouseAppSettingsConfig = z.infer<typeof voipInHouseAppSettingsConfigSchema>
-
-export const DEFAULT_VOIP_IN_HOUSE_CONFIG: VoipInHouseAppSettingsConfig = {
-  globalKillSwitch: false,
-  callingHours: {
-    // Tri Pros operates exclusively in PST (SoCal-only market). Hours are 8 AM – 6 PM,
-    // matching agent availability (Oliver + Sean, both online concurrently). Working days
-    // are Sun–Fri (Saturday off — Tri Pros agent rest day; Sunday is a working day).
-    startHourLocal: 8,
-    endHourLocal: 18,
-    callingDays: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri'],
-  },
-  recordingRetentionDays: 90,
-}
-```
-
-**Backend files** (`dal/server/{crud,queries,mutations}.ts` + `lib/visibility.ts`):
-- `crud.ts` — `appSettingCrud = createCrudDal(appSettingServerSpec)`. NB: PK is `feature`, not `id` — set `primaryKey: 'feature'` on the spec.
-- `queries.ts` exports:
-  - `getByFeature(ctx, feature)` → `DalReturn<AppSetting | undefined>`
-- `mutations.ts` exports:
-  - `upsertConfig(ctx, { feature, configJson, updatedByUserId })` → `DalReturn<AppSetting>`. ON CONFLICT on `feature` PK. Per-feature Zod validation of `configJson` happens in the service-layer wrapper (e.g., `voip-compliance.service.ts` loads through a validator), NOT in the DAL.
-- `visibility.ts` — super-admin only; returns `sql\`false\`` for non-super-admin roles (admin gets `read` via CASL `manage 'all'` is NOT granted to admin for AppSetting — see Task 19; admins do NOT see this entity).
-
-**`DOCS.md`:**
-
-```markdown
-# app-settings
-
-Generic feature-keyed config. Row per feature. First feature key = `'voip-in-house'` (this EPIC).
-`'voip-campaigns'` lands in the sibling EPIC's Phase 1.
-
-## Invariants
-
-- **AS-1: Feature key namespace.** `feature` is the primary key; new features create their own row.
-- **AS-2: Per-feature Zod validation.** Each feature's `configJson` is validated by a schema in
-  `schemas/<feature>-config-schema.ts` at the service layer before any write. The DB column is
-  `jsonb` — service layer enforces shape.
-- **AS-3: Fall-back to defaults.** Service-layer loaders (`loadVoipInHouseConfig()`, etc.) return
-  the default config if no row exists yet — no throws at startup.
-- **AS-4: Kill-switch semantics.** Setting `configJson.globalKillSwitch = true` halts all in-house
-  outbound IMMEDIATELY (compliance gate reads on every send; no caching). Phase 4 ships the admin UI
-  to toggle this; Phase 1 manipulation is direct DB UPDATE.
-```
-
-**Spec**: super_admin-only `manage`; admin `read`. No agent access (it's super-admin config).
-
-Commit: `feat(app-settings): scaffold app-settings entity + ServerSpec`.
+- ~~Task 17: `entities/voip-dnc/`~~ — DNC moved to 3 fields on `customers`.
+  `complianceService` (`src/shared/services/compliance.service.ts`) owns the gate.
+- ~~Task 18: `entities/voip-user-availability/`~~ — softphone tracks its own
+  connection state in-browser; no DB table needed.
 
 ---
 
-### Task 19: Register voip entity names in CASL `abilities.ts`
+### Task 19: Register entity names in CASL `abilities.ts`
 
-**Files:**
-- Modify: `src/shared/domains/permissions/abilities.ts`
+**File:** modify `src/shared/domains/permissions/abilities.ts`
 
-> The entity-name colocation pattern is already live (see [`abilities.ts`](../../../src/shared/domains/permissions/abilities.ts)). Verified: it imports `CUSTOMER`, `MEETING`, `PROPOSAL`, `PROJECT`, `ACTIVITY` from each entity's `lib/constants.ts` and builds `ENTITY_NAMES` + `EntityName` from there.
+The entity-name colocation pattern is already live — `abilities.ts` imports each
+entity's identity from `entities/<entity>/lib/constants.ts` and builds
+`ENTITY_NAMES` from there.
 
-- [ ] **Step 19.1: Import the 7 new entity-name constants**
+#### Step 19.1: Import the 5 new entity-name constants
 
 Merge into the existing import block (sorted per perfectionist rule):
 
@@ -1961,65 +1493,62 @@ Merge into the existing import block (sorted per perfectionist rule):
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
 import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
-import { VOIP_DNC } from '@/shared/entities/voip-dnc/lib/constants'
 import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
 import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
-import { VOIP_USER_AVAILABILITY } from '@/shared/entities/voip-user-availability/lib/constants'
 ```
 
-- [ ] **Step 19.2: Add them to `ENTITY_NAMES`**
+#### Step 19.2: Add them to `ENTITY_NAMES`
 
 ```ts
 export const ENTITY_NAMES = [
-  CUSTOMER, MEETING, PROPOSAL, PROJECT, ACTIVITY,
-  VOIP_CALL, VOIP_DID, VOIP_DNC, VOIP_LINK_TOKEN, VOIP_MESSAGE, VOIP_USER_AVAILABILITY,
+  CUSTOMER,
+  MEETING,
+  PROPOSAL,
+  PROJECT,
+  ACTIVITY,
+  VOIP_CALL,
+  VOIP_DID,
+  VOIP_MESSAGE,
+  VOIP_LINK_TOKEN,
   APP_SETTING,
 ] as const
 ```
 
-- [ ] **Step 19.3: Add role rules**
+#### Step 19.3: Per-role rules
 
-Inside each role case block, add `can(action, subject)` lines. The intent (translate to live builder syntax):
-
-**super-admin:** already `can('manage', 'all')` — covers everything new for free.
-
-**admin:**
-```ts
-can(['manage'], VOIP_DNC)
-can(['manage'], VOIP_USER_AVAILABILITY)
-can(['manage'], VOIP_MESSAGE)
-can(['manage'], VOIP_LINK_TOKEN)
-can(['read'], VOIP_CALL)
-can(['read'], VOIP_DID)
-can(['read'], APP_SETTING)
-```
+**super-admin:** already covered by `can('manage', 'all')`.
 
 **agent:**
+
 ```ts
-// Calls: read own; manage means initiate/dispose own
-can(['read', 'manage'], VOIP_CALL, { agentUserId: user.id })
-// Availability: manage own
-can(['manage'], VOIP_USER_AVAILABILITY, { userId: user.id })
-// Messages: read/send for own customers (scoped via service-layer customer-ownership check; CASL gate is by agentUserId)
-can(['read', 'send'], VOIP_MESSAGE, { agentUserId: user.id })
-// Link tokens: mint + read own
-can(['manage'], VOIP_LINK_TOKEN, { createdByUserId: user.id })
-// DIDs + DNC: read-only
-can(['read'], VOIP_DID)
-can(['read'], VOIP_DNC)
-// App settings: no access (super-admin only via above 'all')
+can('read', 'VoipCall')
+can('create', 'VoipCall')      // placeAgentCall via softphone
+
+can('read', 'VoipMessage')
+can('create', 'VoipMessage')   // sendSms via thread UI
+
+can('read', 'VoipDid')         // resolve own sticky DID
+
+can('read', 'VoipLinkToken')
+can('create', 'VoipLinkToken') // mint L-DOC links
 ```
 
-> Match the actual builder syntax in `abilities.ts` (`can(action, subject, conditions)`). If `send` isn't currently in the action union, add it to `types.ts`'s action type.
+Row-level scoping ("only own rows") is enforced by the per-entity visibility
+predicate, not by CASL conditions — CASL just grants verb access. No agent rule
+for `AppSetting` (admin-only via `manage` on `all`).
 
-- [ ] **Step 19.4: Verify + commit**
+**homeowner / user:** no rules for Phase 1. Tokenized customer-side actions use
+the shareable middleware (token-as-credential), not session-based CASL.
+
+#### Step 19.4: Verify + commit
 
 ```bash
 pnpm tsc && pnpm lint
-git add src/shared/domains/permissions/abilities.ts src/shared/domains/permissions/types.ts
-git commit -m "feat(voip): register voip + app-settings entities in CASL
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+git add src/shared/entities/voip-calls src/shared/entities/voip-dids \
+        src/shared/entities/voip-messages src/shared/entities/voip-link-tokens \
+        src/shared/entities/app-settings \
+        src/shared/domains/permissions/abilities.ts
+git commit
 ```
 
 ---

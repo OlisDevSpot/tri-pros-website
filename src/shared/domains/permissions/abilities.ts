@@ -26,12 +26,28 @@ import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 // here is automatically permittable. Adding a new entity is one import +
 // one line in ENTITY_NAMES.
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
+import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
+import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
+import { VOIP_DID } from '@/shared/entities/voip-dids/lib/constants'
+import { VOIP_LINK_TOKEN } from '@/shared/entities/voip-link-tokens/lib/constants'
+import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
 
-export const ENTITY_NAMES = [CUSTOMER, MEETING, PROPOSAL, PROJECT, ACTIVITY] as const
+export const ENTITY_NAMES = [
+  CUSTOMER,
+  MEETING,
+  PROPOSAL,
+  PROJECT,
+  ACTIVITY,
+  VOIP_CALL,
+  VOIP_DID,
+  VOIP_MESSAGE,
+  VOIP_LINK_TOKEN,
+  APP_SETTING,
+] as const
 export type EntityName = (typeof ENTITY_NAMES)[number]
 
 // The user shape we need for permission decisions.
@@ -96,6 +112,22 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'CustomerPipeline')
 
       can('read', 'User')
+
+      // voip-in-house — agent ↔ already-known-customer comms (Phase 1).
+      // Scoping (only see own rows) is enforced by entity visibility predicates;
+      // CASL grants the action verbs the agent can use across them.
+      can('read', 'VoipCall')
+      can('create', 'VoipCall') // placeAgentCall via softphone
+
+      can('read', 'VoipMessage')
+      can('create', 'VoipMessage') // sendSms via thread UI
+
+      can('read', 'VoipDid') // resolve own sticky DID
+
+      can('read', 'VoipLinkToken')
+      can('create', 'VoipLinkToken') // mint L-DOC links
+
+      // No agent rule for AppSetting — super-admin only via the 'manage' on 'all'.
       break
 
     // ── homeowner ─────────────────────────────────────────────────────────
