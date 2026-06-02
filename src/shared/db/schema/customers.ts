@@ -37,14 +37,15 @@ export const customers = pgTable('customers', {
   pipelineStage: text('pipeline_stage'),
   // DNC (Do-Not-Call) — shared canonical registry decorating the customer row.
   // Both voip-in-house (Twilio) and voip-campaigns (CloudTalk) INSERT into it
-  // and gate outbound against it. Owning service: src/shared/services/compliance/.
+  // and gate outbound against it. Owning service: src/shared/services/compliance.service.ts.
   // see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS (2026-05-30)
   // see docs/plans/voip/INTEGRATION-SEAM.md §5 (DNC propagation)
   dncOptedOutAt: timestamp('dnc_opted_out_at', { mode: 'string', withTimezone: true }),
   // Free-text reason tag: 'customer_request' | 'ftc' | 'admin' | 'stop_keyword' | etc.
   // Reason-tagged, not origin-tagged — the registry has no concept of which provider received the STOP.
   dncReason: text('dnc_reason'),
-  dncAddedByUserId: uuid('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  // FK to user.id which is `text` (better-auth string IDs), not uuid.
+  dncAddedByUserId: text('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   syncedAt: timestamp('synced_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   createdAt,
   updatedAt,

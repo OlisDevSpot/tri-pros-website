@@ -24,7 +24,7 @@ export const voipLinkTokens = pgTable('voip_link_tokens', {
   expiresAt: timestamp('expires_at', { mode: 'string', withTimezone: true }).notNull(),
   // Set on first consume. Subsequent visits return "already used".
   usedAt: timestamp('used_at', { mode: 'string', withTimezone: true }),
-  createdByUserId: uuid('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   // Type-specific payload — for L-DOC: { slotId: uuid, instructions?: string }. Zod-validated at mint + consume.
   payloadJson: jsonb('payload_json').notNull(),
   createdAt,

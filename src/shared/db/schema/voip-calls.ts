@@ -34,7 +34,7 @@ export const voipCalls = pgTable('voip_calls', {
   endedAt: timestamp('ended_at', { mode: 'string', withTimezone: true }),
   durationSeconds: integer('duration_seconds'),
   // Who initiated (outbound) or picked up (inbound).
-  agentUserId: uuid('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+  agentUserId: text('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
   createdAt,
   updatedAt,
 }, table => ({

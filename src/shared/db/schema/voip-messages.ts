@@ -29,7 +29,7 @@ export const voipMessages = pgTable('voip_messages', {
   sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
   deliveredAt: timestamp('delivered_at', { mode: 'string', withTimezone: true }),
   failedAt: timestamp('failed_at', { mode: 'string', withTimezone: true }),
-  agentUserId: uuid('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+  agentUserId: text('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
   createdAt,
   updatedAt,
 }, table => ({

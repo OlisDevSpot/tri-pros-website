@@ -1,5 +1,5 @@
 import type z from 'zod'
-import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { user } from './auth'
 
@@ -12,7 +12,7 @@ export const appSettings = pgTable('app_settings', {
   feature: text('feature').primaryKey(),
   configJson: jsonb('config_json').notNull(),
   updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
-  updatedByUserId: uuid('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
 })
 
 export const selectAppSettingSchema = createSelectSchema(appSettings)

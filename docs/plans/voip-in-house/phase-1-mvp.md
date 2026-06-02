@@ -28,7 +28,7 @@ A mid-Phase 1 `grill-with-docs` session against the original task plan revealed 
 | `twilio_call_sid`, `twilio_message_sid`, `twilio_phone_sid` | Vendor-neutral: `provider_call_id`, `provider_message_id`, `provider_did_id` |
 | `voipMessageDirections` enum | Renamed to `voipDirections` (applies to calls AND messages) |
 | `voipLinkTokenTypes` | Narrowed to `['l_doc']` only |
-| `agentUserId: text(...)references(user.id)` | Bug — was `text` referencing a `uuid` PK. Fixed to `uuid` in all schema rewrites |
+| ~~`agentUserId: text(...)references(user.id)`~~ ⚠️ **GRILL ERROR — REVERSED 2026-06-02** | The grill mis-identified this as a bug (claimed `user.id` was `uuid`). It is NOT — `user.id` is `text` (better-auth string IDs). The "fix" to `uuid` broke `db:push:dev` with `incompatible types: uuid and text`. **Correct rule: any FK to `user.id` MUST be `text`.** All voip-in-house schemas reverted to `text` for user FKs. |
 
 ### Surviving enums (Phase 1)
 
@@ -70,7 +70,7 @@ export const voipDids = pgTable('voip_dids', {
   // Freeform internal label — "424 marketing", "Oliver's line", "main reception". Not an enum.
   label: text('label'),
   // Sticky outbound owner. NULL = shared / inbound-only (e.g., main reception fanned out by provider call flow).
-  assignedUserId: uuid('assigned_user_id').references(() => user.id, { onDelete: 'set null' }),
+  assignedUserId: text('assigned_user_id').references(() => user.id, { onDelete: 'set null' }),
   // User's primary outbound DID. At most one TRUE per assignedUserId (partial unique index below).
   // App logic auto-sets TRUE for the first DID assigned to a user; subsequent default FALSE.
   isPrimary: boolean('is_primary').notNull().default(false),
@@ -125,7 +125,7 @@ export const voipCalls = pgTable('voip_calls', {
   endedAt: timestamp('ended_at', { mode: 'string', withTimezone: true }),
   durationSeconds: integer('duration_seconds'),
   // Who initiated (outbound) or picked up (inbound).
-  agentUserId: uuid('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+  agentUserId: text('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
   createdAt,
   updatedAt,
 }, table => ({
@@ -164,7 +164,7 @@ export const voipMessages = pgTable('voip_messages', {
   sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
   deliveredAt: timestamp('delivered_at', { mode: 'string', withTimezone: true }),
   failedAt: timestamp('failed_at', { mode: 'string', withTimezone: true }),
-  agentUserId: uuid('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+  agentUserId: text('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
   createdAt,
   updatedAt,
 }, table => ({
@@ -204,7 +204,7 @@ export const voipLinkTokens = pgTable('voip_link_tokens', {
   expiresAt: timestamp('expires_at', { mode: 'string', withTimezone: true }).notNull(),
   // Set on first consume. Subsequent visits return "already used".
   usedAt: timestamp('used_at', { mode: 'string', withTimezone: true }),
-  createdByUserId: uuid('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   // Type-specific payload — for L-DOC: { slotId: uuid, instructions?: string }. Zod-validated at mint + consume.
   payloadJson: jsonb('payload_json').notNull(),
   createdAt,
@@ -230,7 +230,7 @@ export const appSettings = pgTable('app_settings', {
   // Per-feature Zod schema validates this at write time (in the feature's entity dir).
   configJson: jsonb('config_json').notNull(),
   updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
-  updatedByUserId: uuid('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  updatedByUserId: text('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
 })
 ```
 
@@ -240,7 +240,7 @@ export const appSettings = pgTable('app_settings', {
 // Append to customers table object (DO NOT replace existing columns):
 dncOptedOutAt: timestamp('dnc_opted_out_at', { mode: 'string', withTimezone: true }),
 dncReason: text('dnc_reason'),
-dncAddedByUserId: uuid('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+dncAddedByUserId: text('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
 ```
 
 Owning service: `src/shared/services/compliance.service.ts` (single file — matches codebase convention; every other service in `src/shared/services/` is single-file). Surface:

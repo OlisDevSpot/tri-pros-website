@@ -1,6 +1,6 @@
 import type z from 'zod'
 import { sql } from 'drizzle-orm'
-import { boolean, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
@@ -21,7 +21,7 @@ export const voipDids = pgTable('voip_dids', {
   // Freeform internal label — "424 marketing", "Oliver's line", "main reception". Not an enum.
   label: text('label'),
   // Sticky outbound owner. NULL = shared / inbound-only (e.g., main reception fanned out by provider call flow).
-  assignedUserId: uuid('assigned_user_id').references(() => user.id, { onDelete: 'set null' }),
+  assignedUserId: text('assigned_user_id').references(() => user.id, { onDelete: 'set null' }),
   // User's primary outbound DID. At most one TRUE per assignedUserId (partial unique index below).
   // App logic auto-sets TRUE for the first DID assigned to a user; subsequent default FALSE.
   isPrimary: boolean('is_primary').notNull().default(false),
