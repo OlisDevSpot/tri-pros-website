@@ -13,3 +13,10 @@ export const createdAt = timestamp('created_at', { mode: 'string', withTimezone:
 export const updatedAt = timestamp('updated_at', { mode: 'string', withTimezone: true })
   .defaultNow()
   .notNull()
+  // Auto-bumps on every Drizzle update. Callers MUST NOT set `updatedAt`
+  // manually in `.set(...)` — Drizzle invokes this callback on each update
+  // and writes the result to the column. Applies uniformly to direct
+  // db.update calls and createCrudDal's update.
+  //
+  // see memory/feedback-no-manual-updated-at.md
+  .$onUpdate(() => new Date().toISOString())

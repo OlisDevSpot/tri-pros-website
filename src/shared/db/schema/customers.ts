@@ -37,7 +37,7 @@ export const customers = pgTable('customers', {
   pipelineStage: text('pipeline_stage'),
   // DNC (Do-Not-Call) — shared canonical registry decorating the customer row.
   // Both voip-in-house (Twilio) and voip-campaigns (CloudTalk) INSERT into it
-  // and gate outbound against it. Owning service: src/shared/services/compliance.service.ts.
+  // and gate outbound against it. Owning service: src/shared/services/voip/compliance.service.ts.
   // see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS (2026-05-30)
   // see docs/plans/voip/INTEGRATION-SEAM.md §5 (DNC propagation)
   dncOptedOutAt: timestamp('dnc_opted_out_at', { mode: 'string', withTimezone: true }),
