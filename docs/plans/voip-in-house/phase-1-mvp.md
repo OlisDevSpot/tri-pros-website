@@ -243,11 +243,11 @@ dncReason: text('dnc_reason'),
 dncAddedByUserId: uuid('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
 ```
 
-Owning service: `src/shared/services/compliance/compliance.service.ts`. Surface:
-- `canOutboundTo(phoneE164)` → `{ allowed: boolean, reason?: string }`
-- `addToDnc({ customerId, reason, addedByUserId })` → UPDATE customer row + (if non-cloudtalk_stop reason) trigger `dnc-propagation` push to CT
-- `removeFromDnc({ customerId, removedByUserId })` → UPDATE customer row + trigger CT untag
-- `ftcScrubBatch(phoneE164[])` → in-memory FTC list match → bulk update matching customer rows
+Owning service: `src/shared/services/compliance.service.ts` (single file — matches codebase convention; every other service in `src/shared/services/` is single-file). Surface:
+- `canOutboundTo(phoneE164)` → `boolean` (returns true if safe to outbound; false if any customer with this phone has `dncOptedOutAt` set)
+- `addToDnc({ customerId, reason, addedByUserId })` → idempotent UPDATE on customer row. Cross-system propagation to CloudTalk (`dnc-propagation`) is voip-campaigns Phase 1 work — wired via INTEGRATION-SEAM §5.
+- `removeFromDnc({ customerId })` → admin-only; clears all 3 DNC fields. CT untag propagation also voip-campaigns territory.
+- `ftcScrubBatch()` → stub; real impl gated on FTC SAN issuance (Phase 2+)
 
 ### Enum cleanup commits needed
 

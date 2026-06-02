@@ -102,7 +102,7 @@ Our app pushes to CloudTalk via `providers/cloudtalk/lib/*`. All writes go throu
 
 ### 5. DNC propagation
 
-DNC is a **shared canonical fact decorated on the `customers` row** (3 nullable fields). No separate `voip_dnc` table. Both systems gate against the same column. Owning service: `src/shared/services/compliance/`.
+DNC is a **shared canonical fact decorated on the `customers` row** (3 nullable fields). No separate `voip_dnc` table. Both systems gate against the same column. Owning service: `src/shared/services/compliance.service.ts`.
 
 **Customer-row DNC fields** (see voip-in-house Phase 1 task "Decorate customers with DNC fields"):
 
@@ -121,7 +121,7 @@ DNC is a **shared canonical fact decorated on the `customers` row** (3 nullable 
 | Admin manual DNC entry | tRPC → `compliance.addToDnc(customerId, reason='admin', addedByUserId=admin.id)` → `dnc-propagation` pushes to CloudTalk. |
 | FTC DNC list scrub | Daily cron → in-memory match of FTC list against `customers.phone` → for each match: `compliance.addToDnc(customerId, reason='ftc-scrub', addedByUserId=null)` → `dnc-propagation` pushes to CloudTalk. **Non-matching FTC entries are NOT persisted** — they're only relevant if/when a matching customer row exists (the FTC list is cached for outbound-time double-check on freshly-created customers). |
 
-**Gate consistency rule:** outbound gates (both systems) check `customers.dncOptedOutAt IS NOT NULL` before placing call / sending SMS. `services/compliance/compliance.service.ts#canOutboundTo(phoneE164)` is the single shared gate (resolves phone → customer row → checks the field). CloudTalk Campaign also gates internally (belt-and-suspenders); if our `customers.dncOptedOutAt` and CloudTalk's contact tags ever drift, **our app is authoritative** — fix by re-pushing via `dnc-propagation`.
+**Gate consistency rule:** outbound gates (both systems) check `customers.dncOptedOutAt IS NOT NULL` before placing call / sending SMS. `services/compliance.service.ts#canOutboundTo(phoneE164)` is the single shared gate (resolves phone → customer row → checks the field). CloudTalk Campaign also gates internally (belt-and-suspenders); if our `customers.dncOptedOutAt` and CloudTalk's contact tags ever drift, **our app is authoritative** — fix by re-pushing via `dnc-propagation`.
 
 **Edge case — same phone shared by two customers (couple, family):** the outbound gate queries by phone (`WHERE phone = ? AND dnc_opted_out_at IS NOT NULL LIMIT 1`), so a single opted-out customer row with that phone blocks calls to ANY other customer rows sharing it. Conservative, TCPA-aligned default.
 
