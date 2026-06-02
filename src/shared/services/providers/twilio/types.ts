@@ -1,8 +1,9 @@
-// Re-exports of the SDK's typed resource shapes. Callers in Slug C's
-// services should import from here, not directly from `twilio/lib/...`,
-// so the provider remains the single boundary that knows the SDK.
-
-export { RestException } from './client'
+// Re-exports of the SDK's typed resource shapes. Callers in Slug C's services
+// write signatures like `Promise<CallInstance>` without ever importing from
+// `twilio/lib/...` directly — the provider remains the single boundary that
+// knows the SDK.
+//
+// For ACTIONS + RestException, import from `./client`. This file is types only.
 
 export type {
   CallInstance,

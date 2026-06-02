@@ -44,25 +44,90 @@ Providers are leaves. They don't know about the app's domain. If two providers n
 **Reference impl**: `src/shared/services/contracts.service.ts` → `zoho-sync.service.ts` → `providers/zoho-sign/`
 **Enforced by**: convention (lint rules are a future possibility)
 
+### client-is-the-superset-entry-point
+
+`client.ts` exports a **single factory + singleton** named `<provider>Client`
+that exposes **every interaction** with the provider as a method. The client
+is a *superset of the raw provider SDK* — it bundles the REST surface AND
+local provider-ecosystem helpers (JWT mint, request signing, payload builders,
+signature verification) onto one handle:
+
+```ts
+import { twilioClient } from '@/shared/services/providers/twilio/client'
+
+await twilioClient.placeOutboundCall({ ... })
+const jwt = twilioClient.mintVoiceAccessToken({ identity })
+const ok  = twilioClient.verifyWebhookSignature({ url, signature, params })
+```
+
+```ts
+import { zohoSignClient } from '@/shared/services/providers/zoho-sign/client'
+
+await zohoSignClient.mergesend(body)
+await zohoSignClient.attachFiles(requestId, files)
+```
+
+There is **one import path** for actions per provider. No `lib/voice.ts`, no
+`lib/jwt.ts`, no `webhooks/verify.ts` — every action method hangs off the
+singleton.
+
+**Why uniform**: callers have one mental model + one tab-complete surface
+per provider. Adding a new capability = adding a method to the client, never
+spawning a new import path. Pattern-matching across providers becomes trivial.
+
+**What stays as sibling exports** (NOT methods on the client):
+- **Type re-exports** (`types.ts`) — `CallInstance`, `MessageInstance`, etc. — these are compile-time shapes for callers' signatures, not actions.
+- **Data-shape Zod** (`schemas/`, `webhooks/`) — used at the boundary (`.parse()` in route handlers, request input validation) — values, not actions you "do".
+- **Error class** (`RestException` re-export from `client.ts`) — needed for `instanceof` in catch blocks alongside the client.
+
+**Reference impl**: `src/shared/services/providers/twilio/` (canonical post-2026-06-02), `src/shared/services/providers/zoho-sign/` (older example, same pattern but pre-dating the formal codification).
+
+**Enforced by**: convention + PR review. Slug E of voip-in-house adds an
+ESLint `no-restricted-imports` rule preventing direct `import twilio from 'twilio'`
+outside the provider directory; the rule pattern generalizes to other SDKs.
+
 ### provider-directory-shape
 
-Every provider directory has the same shape:
+Every provider directory has the same shape. `schemas/` is a **sibling** of `lib/` (where `lib/` exists), never nested inside — this matches how entities (`src/shared/entities/<x>/schemas/`) and features (`src/features/<x>/schemas/`) organize. Same mental model everywhere: schemas describe wire/data shapes; the client does the work.
 
 ```
 services/providers/<name>/
-  client.ts               raw HTTP adapter (auth, fetch, response parsing)
-  types.ts                provider-native + shared contract types
-  constants/              URLs, IDs, thresholds
-  lib/
-    map-to-<provider>.ts  domain → provider translator
-    map-from-<provider>.ts provider → domain translator
-    (other helpers, validators, etc.)
+  DOCS.md                   per-provider usage rules + invariants (link from CLAUDE.md if load-bearing)
+  client.ts                 THE entry point — singleton + RestException + per-provider error re-exports
+  types.ts                  SDK type re-exports for caller signatures (CallInstance, MessageInstance, ...)
+  constants/                URLs, IDs, TTLs, thresholds, per-provider env var groupings
+  schemas/                  outbound-API Zod (request shapes — what we send)
+    primitives.ts           shared primitives (E.164, timestamps, IDs)
+    <resource>.ts           per-resource request + response zod schemas
+  webhooks/                 inbound-payload Zod (what the provider sends us)
+    <resource>.ts           per-event-class payload Zod (often discriminated union)
+  lib/                      OPTIONAL — only for pure-local helpers that are large enough to warrant a file
+                            and are NOT actions on the client (e.g., `sanitize-filename.ts`,
+                            `access-token-cache.ts`). Most providers won't need this directory.
+                            Webhook signature verification is NOT here — it's a method on the client.
 ```
 
-A provider always has `client.ts`, even for a one-endpoint integration. Auth lives there.
+A provider always has `client.ts`, even for a one-endpoint integration. Auth + every action lives there.
 
-**Why**: uniform shape; new providers are pattern-matched against existing ones.
-**Reference impl**: `src/shared/services/providers/zoho-sign/`
+**`schemas/` vs `webhooks/`:**
+- `schemas/` — Zod for what WE send to the provider (request shapes, JWT-mint input shapes, etc.)
+- `webhooks/` — Zod for what THE PROVIDER sends to us (inbound webhook form payloads)
+- Both contain zero internal dependencies (other than `schemas/primitives.ts`). They're parsed `.parse()` at the boundary.
+
+**`lib/` is the exception, not the rule:**
+- Most providers don't need a `lib/` directory at all — the client absorbs the action surface; schemas + types live in `schemas/` / `webhooks/` / `types.ts`.
+- A `lib/` file is appropriate ONLY for pure-local helpers that are too large to inline in `client.ts` AND are not invoked as client methods (e.g., a token-refresh cache used internally by the client itself, a filename sanitizer used by call sites that produce multipart bodies).
+- Webhook signature verification, JWT minting, TwiML/payload building are **client methods**, NOT `lib/` files. They are interactions with the provider's ecosystem, even when no HTTP round-trip happens.
+
+**Anti-patterns:**
+- Putting `schemas/` inside `lib/` (e.g. `lib/schemas/`) — nests data definitions inside the directory that consumes them and breaks the cross-codebase parallel.
+- Per-capability action files in `lib/` (e.g. `lib/voice.ts`, `lib/jwt.ts`, `lib/messaging.ts`) — splits the action surface across multiple imports. Use one `client.ts` with all methods.
+- Standalone `webhooks/verify.ts` — should be `<provider>Client.verifyWebhookSignature(...)` on the client.
+
+**Why uniform**: new providers are pattern-matched against existing ones; the same shape exists across providers, entities, features, and domains, so a developer reading the repo never has to relearn it.
+
+**Reference impl**: `src/shared/services/providers/twilio/` (canonical post-2026-06-02), `src/shared/services/providers/zoho-sign/` (basic shape, pre-codification but compliant).
+
 **Enforced by**: convention
 
 ### sync-service-when-2-plus-ops
