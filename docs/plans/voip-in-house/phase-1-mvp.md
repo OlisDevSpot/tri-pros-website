@@ -1,10 +1,295 @@
 # Phase 1 — MVP In-house Twilio VoIP Foundation
 
 > **Parent EPIC:** [EPIC.md](./EPIC.md)
-> **Sibling EPIC:** [voip-campaigns](../voip-campaigns/EPIC.md) — ships **after** this EPIC because CloudTalk depends on the in-house DIDs + DNC table + voip routing endpoints existing.
-> **Cross-system contract:** [../voip/INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md) — load-bearing for anything that touches voip routing endpoints, `voip_dnc` propagation, the `source` discriminator, or webhook routes.
+> **Sibling EPIC:** [voip-campaigns](../voip-campaigns/EPIC.md) — ships **after** this EPIC because CloudTalk depends on the in-house DNC propagation + voip routing endpoints existing.
+> **Cross-system contract:** [../voip/INTEGRATION-SEAM.md](../voip/INTEGRATION-SEAM.md) — load-bearing for anything that touches voip routing endpoints, DNC propagation, or webhook routes.
 > **Prerequisite:** [Phase 0](./phase-0-setup.md) gate satisfied (Twilio + Trust Hub + DIDs + webhook subdomain). 10DLC Campaign vetting and FCC DNC SAN issuance still in background — they gate specific tasks (Task 25, Task 14) but don't block the start of Phase 1.
-> **Status:** Ready to start (2026-05-23 descope rewrite complete).
+> **Status:** In progress. Tasks 0-3 committed. Tasks 2-10 schema content **superseded by GRILL RESULTS 2026-05-30 below** (separation cleanup).
+
+---
+
+## ⚠️ GRILL RESULTS — 2026-05-30 (READ BEFORE IMPLEMENTING ANY SCHEMA TASK)
+
+A mid-Phase 1 `grill-with-docs` session against the original task plan revealed that the schema baked in cross-EPIC fusion (a `source: 'in_house' | 'cloudtalk'` discriminator + forward-compat `cloudtalk_*` columns + a shared `voip_dnc` table). This contradicts the 2026-05-23 total-separation stance. The grill cut the plan down significantly.
+
+**Canonical decisions are in [EPIC.md decisions log 2026-05-30](./EPIC.md#decisions-log-post-spec-made-during-implementation) and [CONTEXT.md](../../../CONTEXT.md).**
+
+### Summary
+
+| Was | Now |
+|---|---|
+| 7 new tables | **5 new tables** |
+| 11 voip enums | **4 voip enums** |
+| Shared tables with `source` discriminator | Total separation; each EPIC owns its own schema |
+| Forward-compat `cloudtalk_*` cols on in-house tables | Removed; voip-campaigns owns its own tables for any CT mirroring |
+| `voip_dnc` table | **DELETED.** DNC = 3 fields on `customers` |
+| `voip_user_availability` table | **DELETED.** Softphone tracks its own connection state in-browser |
+| `voipCallDispositionEnum` (8 lead-conversion values) | **DROPPED.** voip-in-house is post-conversion comms; no disposition vocabulary |
+| `twilio_call_sid`, `twilio_message_sid`, `twilio_phone_sid` | Vendor-neutral: `provider_call_id`, `provider_message_id`, `provider_did_id` |
+| `voipMessageDirections` enum | Renamed to `voipDirections` (applies to calls AND messages) |
+| `voipLinkTokenTypes` | Narrowed to `['l_doc']` only |
+| `agentUserId: text(...)references(user.id)` | Bug — was `text` referencing a `uuid` PK. Fixed to `uuid` in all schema rewrites |
+
+### Surviving enums (Phase 1)
+
+1. `voipCallStatuses` — unchanged
+2. `voipDirections` — renamed from `voipMessageDirections` (PG type `voip_direction`)
+3. `voipMessageStatuses` — unchanged
+4. `voipLinkTokenTypes` — narrowed to `['l_doc']`
+
+### Surviving tables (Phase 1)
+
+1. **`voip_dids`** — 7 cols + partial unique index
+2. **`voip_calls`** — 12 cols + 4 indexes
+3. **`voip_messages`** — 11 cols + 4 indexes (composite thread key `(voipDidId, remoteE164)`)
+4. **`voip_link_tokens`** — 9 cols + 3 indexes
+5. **`app_settings`** — 4 cols
+
+### Decoration patches (additive to existing tables)
+
+- **`customers`** +3 nullable DNC fields: `dncOptedOutAt`, `dncReason`, `dncAddedByUserId`. DNC is a customer-row decoration, NOT its own table.
+- **`lead_sources.voipConfigJSON`** — still happens (Task 11); the `inHouse` sub-object lands here.
+
+### Canonical table shapes
+
+#### `voip_dids` ([src/shared/db/schema/voip-dids.ts](../../../src/shared/db/schema/voip-dids.ts))
+
+```ts
+import { sql } from 'drizzle-orm'
+import { boolean, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { createdAt, id, updatedAt } from '../lib/schema-helpers'
+import { user } from './auth'
+
+export const voipDids = pgTable('voip_dids', {
+  id,
+  e164: text('e164').notNull().unique(),
+  // Provider-neutral opaque ID (Twilio Phone SID today).
+  providerDidId: text('provider_did_id').notNull().unique(),
+  // CNAM display name shown to recipients. Provider dashboard is source of truth; mirrored for queryability.
+  cnamDisplayName: text('cnam_display_name'),
+  // Freeform internal label — "424 marketing", "Oliver's line", "main reception". Not an enum.
+  label: text('label'),
+  // Sticky outbound owner. NULL = shared / inbound-only (e.g., main reception fanned out by provider call flow).
+  assignedUserId: uuid('assigned_user_id').references(() => user.id, { onDelete: 'set null' }),
+  // User's primary outbound DID. At most one TRUE per assignedUserId (partial unique index below).
+  // App logic auto-sets TRUE for the first DID assigned to a user; subsequent default FALSE.
+  isPrimary: boolean('is_primary').notNull().default(false),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt,
+  updatedAt,
+}, table => ({
+  uniqPrimaryPerUser: uniqueIndex('voip_dids_assigned_user_primary_uniq')
+    .on(table.assignedUserId)
+    .where(sql`${table.isPrimary} = TRUE`),
+}))
+```
+
+Service surface (in `src/shared/services/voip/voip-dids.service.ts`):
+- `assignDidToUser({ didId, userId })` — sets `is_primary=TRUE` if user has no other assigned DIDs; FALSE otherwise.
+- `markPrimary({ didId })` — transactional flip (all user's other DIDs `is_primary=FALSE`, this one TRUE).
+- `unassign({ didId })` — `assigned_user_id=NULL, is_primary=FALSE`.
+- `getStickyDidForUser(userId)` — `SELECT ... WHERE assigned_user_id = $userId AND is_active AND is_primary LIMIT 1`.
+
+#### `voip_calls` ([src/shared/db/schema/voip-calls.ts](../../../src/shared/db/schema/voip-calls.ts))
+
+```ts
+import type z from 'zod'
+import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { createdAt, id, updatedAt } from '../lib/schema-helpers'
+import { user } from './auth'
+import { customers } from './customers'
+import { voipCallStatusEnum, voipDirectionEnum } from './meta'
+import { voipDids } from './voip-dids'
+
+export const voipCalls = pgTable('voip_calls', {
+  id,
+  // UNIQUE for webhook idempotency (ON CONFLICT DO UPDATE for lifecycle patches).
+  providerCallId: text('provider_call_id').unique(),
+  // NULL = unknown inbound caller (no customer row exists for that number yet).
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  // Which Tri Pros DID handled this call. NULL preserved if DID is later removed.
+  voipDidId: uuid('voip_did_id').references(() => voipDids.id, { onDelete: 'set null' }),
+  // Other party. Captured at call time; immune to customer.phone updates later.
+  remoteE164: text('remote_e164').notNull(),
+  direction: voipDirectionEnum('direction').notNull(),
+  status: voipCallStatusEnum('status').notNull().default('queued'),
+  // Set only if status='skipped_compliance'. Freeform: 'dnc' | 'outside_calling_hours' | 'kill_switch_active'.
+  skipReason: text('skip_reason'),
+  // Recording (populated post-call when recording enabled on the DID).
+  recordingUrl: text('recording_url'),
+  recordingDurationSeconds: integer('recording_duration_seconds'),
+  // Lifecycle
+  initiatedAt: timestamp('initiated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
+  answeredAt: timestamp('answered_at', { mode: 'string', withTimezone: true }),
+  endedAt: timestamp('ended_at', { mode: 'string', withTimezone: true }),
+  durationSeconds: integer('duration_seconds'),
+  // Who initiated (outbound) or picked up (inbound).
+  agentUserId: uuid('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+  createdAt,
+  updatedAt,
+}, table => ({
+  customerIdx: index('voip_calls_customer_idx').on(table.customerId),
+  agentIdx: index('voip_calls_agent_idx').on(table.agentUserId),
+  didIdx: index('voip_calls_did_idx').on(table.voipDidId),
+  initiatedIdx: index('voip_calls_initiated_idx').on(table.initiatedAt),
+}))
+```
+
+#### `voip_messages` ([src/shared/db/schema/voip-messages.ts](../../../src/shared/db/schema/voip-messages.ts))
+
+```ts
+import type z from 'zod'
+import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { createdAt, id, updatedAt } from '../lib/schema-helpers'
+import { user } from './auth'
+import { customers } from './customers'
+import { voipDirectionEnum, voipMessageStatusEnum } from './meta'
+import { voipDids } from './voip-dids'
+
+export const voipMessages = pgTable('voip_messages', {
+  id,
+  // UNIQUE for webhook idempotency (status callbacks re-deliver).
+  providerMessageId: text('provider_message_id').unique(),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  voipDidId: uuid('voip_did_id').references(() => voipDids.id, { onDelete: 'set null' }),
+  // Other party. Immune to customer.phone updates later.
+  remoteE164: text('remote_e164').notNull(),
+  body: text('body').notNull(),
+  direction: voipDirectionEnum('direction').notNull(),
+  status: voipMessageStatusEnum('status').notNull().default('queued'),
+  // Set when status='failed' | 'undelivered'. Freeform: provider's error code + message.
+  failureReason: text('failure_reason'),
+  sentAt: timestamp('sent_at', { mode: 'string', withTimezone: true }),
+  deliveredAt: timestamp('delivered_at', { mode: 'string', withTimezone: true }),
+  failedAt: timestamp('failed_at', { mode: 'string', withTimezone: true }),
+  agentUserId: uuid('agent_user_id').references(() => user.id, { onDelete: 'set null' }),
+  createdAt,
+  updatedAt,
+}, table => ({
+  customerIdx: index('voip_messages_customer_idx').on(table.customerId),
+  agentIdx: index('voip_messages_agent_idx').on(table.agentUserId),
+  // Primary thread key — `(voipDidId, remoteE164)`. Per-thread queries
+  // AND per-DID list queries are both covered via left-prefix.
+  threadIdx: index('voip_messages_thread_idx').on(table.voipDidId, table.remoteE164),
+  // Cross-DID admin queries ("all messages with Bob across all DIDs").
+  remoteIdx: index('voip_messages_remote_idx').on(table.remoteE164),
+}))
+```
+
+**Thread rule:** A conversation thread is uniquely keyed by `(voipDidId, remoteE164)`. Same customer texting two different Tri Pros DIDs = two separate threads. UI: when an agent opens a customer thread, they see messages on THEIR DID with that customer — not a flat merge across all DIDs.
+
+#### `voip_link_tokens` ([src/shared/db/schema/voip-link-tokens.ts](../../../src/shared/db/schema/voip-link-tokens.ts))
+
+```ts
+import type z from 'zod'
+import { index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { createdAt, id } from '../lib/schema-helpers'
+import { user } from './auth'
+import { customers } from './customers'
+import { voipLinkTokenTypeEnum } from './meta'
+
+export const voipLinkTokens = pgTable('voip_link_tokens', {
+  id,
+  // URL-safe random (~32 chars; base64url of 24 random bytes).
+  token: text('token').notNull().unique(),
+  // Phase 1: only 'l_doc'. Enum framework in place so l_pay/l_cal/l_esign drop in later without migration.
+  type: voipLinkTokenTypeEnum('type').notNull(),
+  customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'set null' }),
+  // Captured at mint time. Immune to customer.phone updates.
+  phoneE164: text('phone_e164').notNull(),
+  // 48h hard expiry per EPIC. Cleanup cron purges expired+unused.
+  expiresAt: timestamp('expires_at', { mode: 'string', withTimezone: true }).notNull(),
+  // Set on first consume. Subsequent visits return "already used".
+  usedAt: timestamp('used_at', { mode: 'string', withTimezone: true }),
+  createdByUserId: uuid('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  // Type-specific payload — for L-DOC: { slotId: uuid, instructions?: string }. Zod-validated at mint + consume.
+  payloadJson: jsonb('payload_json').notNull(),
+  createdAt,
+  // NOTE: no updatedAt — tokens are immutable except for `usedAt` set once.
+}, table => ({
+  customerIdx: index('voip_link_tokens_customer_idx').on(table.customerId),
+  expiresIdx: index('voip_link_tokens_expires_idx').on(table.expiresAt),
+  phoneIdx: index('voip_link_tokens_phone_idx').on(table.phoneE164),
+}))
+```
+
+#### `app_settings` ([src/shared/db/schema/app-settings.ts](../../../src/shared/db/schema/app-settings.ts))
+
+```ts
+import type z from 'zod'
+import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import { user } from './auth'
+
+export const appSettings = pgTable('app_settings', {
+  // Natural PK. Examples: 'voip-in-house', 'voip-campaigns', 'compliance'.
+  feature: text('feature').primaryKey(),
+  // Per-feature Zod schema validates this at write time (in the feature's entity dir).
+  configJson: jsonb('config_json').notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
+  updatedByUserId: uuid('updated_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+})
+```
+
+#### `customers` DNC decoration (additive — modify [src/shared/db/schema/customers.ts](../../../src/shared/db/schema/customers.ts))
+
+```ts
+// Append to customers table object (DO NOT replace existing columns):
+dncOptedOutAt: timestamp('dnc_opted_out_at', { mode: 'string', withTimezone: true }),
+dncReason: text('dnc_reason'),
+dncAddedByUserId: uuid('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+```
+
+Owning service: `src/shared/services/compliance/compliance.service.ts`. Surface:
+- `canOutboundTo(phoneE164)` → `{ allowed: boolean, reason?: string }`
+- `addToDnc({ customerId, reason, addedByUserId })` → UPDATE customer row + (if non-cloudtalk_stop reason) trigger `dnc-propagation` push to CT
+- `removeFromDnc({ customerId, removedByUserId })` → UPDATE customer row + trigger CT untag
+- `ftcScrubBatch(phoneE164[])` → in-memory FTC list match → bulk update matching customer rows
+
+### Enum cleanup commits needed
+
+Tasks 2 and 3 were committed (`28e9b32e`, `d5d973fe`) with all 11 enums + 11 pgEnums. Before any schema files land:
+
+**Commit A (enums):**
+- DELETE from `src/shared/constants/enums/voip.ts`: `voipSources`, `voipCallDispositions`, `voipDidStatuses`, `voipDidRoles`, `voipDncSources`, `voipUserAvailabilities`, `voipTransferModes`.
+- RENAME in `src/shared/constants/enums/voip.ts`: `voipMessageDirections` → `voipDirections`, `VoipMessageDirection` → `VoipDirection`.
+- NARROW in `src/shared/constants/enums/voip.ts`: `voipLinkTokenTypes = ['l_doc'] as const`.
+- (Leave `voipCampaignStatuses` alone — voip-campaigns owns it.)
+
+**Commit B (pgEnums):**
+- DELETE from `src/shared/db/schema/meta.ts`: `voipSourceEnum`, `voipCallDispositionEnum`, `voipDidStatusEnum`, `voipDidRoleEnum`, `voipDncSourceEnum`, `voipUserAvailabilityEnum`, `voipTransferModeEnum` + their imports.
+- RENAME in `src/shared/db/schema/meta.ts`: `voipMessageDirectionEnum` → `voipDirectionEnum` (PG type name `voip_direction`).
+- No `db:push:dev` yet — batched with the schema files in Task 11.
+
+### Implementation order (after the two cleanup commits above)
+
+1. Add DNC fields to `customers` (modify [customers.ts](../../../src/shared/db/schema/customers.ts)) + skeleton compliance service.
+2. Create the 5 new schema files in dependency order: `voip_dids` → `voip_calls` → `voip_messages` → `voip_link_tokens` → `app_settings`.
+3. Update `src/shared/db/schema/index.ts` re-exports.
+4. Task 11 — `lead_sources.voipConfigJSON` with `inHouse` sub-object (Zod schema + column).
+5. Single `pnpm db:push:dev` after everything compiles.
+6. Continue from Task 12 (entity scaffolds) per the existing per-task plan below.
+
+### Tasks below — STALENESS LEVEL
+
+- **Tasks 0, 1** — committed, current.
+- **Task 2 (enums)** — STALE. Use the Commit A recipe above instead of the original block.
+- **Task 3 (pgEnums)** — STALE. Use the Commit B recipe above.
+- **Task 4 (`voip_calls`)** — STALE code block. Use the GRILL RESULTS shape above.
+- **Task 5 (`voip_dids`)** — STALE code block. Use the GRILL RESULTS shape above.
+- **Task 6 (`voip_dnc`)** — DELETED. DNC is now 3 fields on `customers` per above.
+- **Task 7 (`voip_user_availability`)** — DELETED. Softphone tracks its own connection state in-browser.
+- **Task 8 (`voip_messages`)** — STALE code block. Use the GRILL RESULTS shape above.
+- **Task 9 (`voip_link_tokens`)** — STALE code block (small diffs: 3 indexes added, bug fix). Use GRILL RESULTS shape.
+- **Task 10 (`app_settings`)** — STALE code block (only bug fix on `updatedByUserId`). Use GRILL RESULTS shape.
+- **Task 11+ (lead_sources extension and beyond)** — unaffected by grill; review when reached.
+
+The workflow steps in each task (verify with `pnpm tsc && pnpm lint`, commit messages, single-commit-per-task discipline) remain valid. Only the schema code blocks are stale.
+
+---
 
 **Goal:** Ship the in-house VoIP foundation that every other in-house comms feature (lifecycle SMS, mobile mode, admin observability, customer-side timeline) builds on, AND that voip-campaigns Phase 1 depends on.
 
@@ -294,7 +579,7 @@ VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
 
 // CloudTalk webhook secret — single secret protecting BOTH:
 //   1. Mid-call routing endpoints (`/api/voip/routing/*`) — voip-in-house Phase 1 (this EPIC) verifies inbound
-//   2. Post-call webhooks (`/api/cloudtalk/webhook`) — voip-campaigns Phase 1 verifies inbound
+//   2. Post-call webhooks (`/api/webhooks/cloudtalk/route.ts`) — voip-campaigns Phase 1 verifies inbound
 // Both surfaces are CloudTalk → us with the same trust model; one secret is sufficient.
 // voip-in-house Phase 1 implementer generates this (32+ char URL-safe random) and configures into
 // CloudTalk's Call Flow Designer (voip-campaigns Phase 0 dashboard work).
@@ -1615,9 +1900,12 @@ export type VoipInHouseAppSettingsConfig = z.infer<typeof voipInHouseAppSettings
 export const DEFAULT_VOIP_IN_HOUSE_CONFIG: VoipInHouseAppSettingsConfig = {
   globalKillSwitch: false,
   callingHours: {
+    // Tri Pros operates exclusively in PST (SoCal-only market). Hours are 8 AM – 6 PM,
+    // matching agent availability (Oliver + Sean, both online concurrently). Working days
+    // are Sun–Fri (Saturday off — Tri Pros agent rest day; Sunday is a working day).
     startHourLocal: 8,
-    endHourLocal: 21,
-    callingDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'],
+    endHourLocal: 18,
+    callingDays: ['sun', 'mon', 'tue', 'wed', 'thu', 'fri'],
   },
   recordingRetentionDays: 90,
 }
@@ -2048,7 +2336,7 @@ export type ComplianceCheckResult =
  */
 export async function canOutboundTo(
   ctx: ScopedContext,
-  args: { phoneE164: string, enforceHours?: boolean, localTzOffsetMinutes?: number },
+  args: { phoneE164: string, enforceHours?: boolean },
 ): Promise<DalReturn<ComplianceCheckResult>> {
   // 1. E.164 sanity
   if (!/^\+[1-9]\d{6,14}$/.test(args.phoneE164)) {
@@ -2075,12 +2363,17 @@ export async function canOutboundTo(
 
   // 4. Calling hours (default enforce=true; transactional SMS sets enforce=false)
   if (args.enforceHours !== false) {
-    const now = new Date()
-    const tzOffset = args.localTzOffsetMinutes ?? -8 * 60  // default PT; Phase 2 derives from customer.localTz
-    const localMs = now.getTime() + (now.getTimezoneOffset() + tzOffset) * 60_000
-    const local = new Date(localMs)
-    const day = (['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const)[local.getUTCDay()]
-    const hour = local.getUTCHours()
+    // Tri Pros operates exclusively in PST (SoCal-only market). All time
+    // comparisons use `America/Los_Angeles` IANA TZ — handles DST automatically.
+    // No per-customer TZ field — every lead is canonically PST.
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Los_Angeles',
+      hour: 'numeric',
+      hour12: false,
+      weekday: 'short',
+    }).formatToParts(new Date())
+    const day = parts.find(p => p.type === 'weekday')!.value.toLowerCase() as Day // 'mon' | 'tue' | ...
+    const hour = Number.parseInt(parts.find(p => p.type === 'hour')!.value, 10)
 
     if (!config.callingHours.callingDays.includes(day)) {
       return { success: true, data: { allowed: false, reason: 'outside_calling_hours' } }
@@ -4546,7 +4839,7 @@ When Phase 1 completes:
 
 1. Update [EPIC.md](./EPIC.md) phase status table — Phase 1 → Done.
 2. Verify `@migration: → Inngest` and `@migration: → Ably kernel` comments are placed (search: `grep -rn "@migration:" src/shared/services/voip/ src/shared/services/providers/twilio/`).
-3. Write `phase-2-lifecycle-automation.md` per the stub already in place. Phase 2 scope: lifecycle SMS automation (meeting reminders, proposal links, project status), QStash-driven sends, calendar-aware quiet hours, customer.localTz derivation, FTC DNC scrub cron, recording auto-delete after `recordingRetentionDays`.
+3. Write `phase-2-lifecycle-automation.md` per the stub already in place. Phase 2 scope: lifecycle SMS automation (meeting reminders, proposal links, project status), QStash-driven sends, calendar-aware quiet hours, FTC DNC scrub cron, recording auto-delete after `recordingRetentionDays`.
 
 The system at end of Phase 1 supports **agent click-to-call** + **agent send-SMS** + **inbound STOP handling** + **voip routing endpoints for CloudTalk** + **L-DOC tokenized links**, all with full DNC + kill-switch gating. Phase 2 layers automated lifecycle SMS on top; Phase 3 adds mobile (cellular) mode; Phase 4 ships the admin observability + kill-switch UI; Phase 5 wires customer-side timeline integration.
 

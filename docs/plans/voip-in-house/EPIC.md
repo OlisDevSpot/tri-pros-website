@@ -231,6 +231,33 @@ Every `@migration` comment in the voip code points to a future swap.
 
 > Each entry: date, decision, context, link. Append-only.
 
+### 2026-05-30 — Critical scope reduction grill (total separation from voip-campaigns)
+
+**Phase:** Mid-Phase 1 (after Tasks 0-3 committed; before any schema files written)
+**Context:** Mid-implementation grill (via `grill-with-docs` skill) revealed the plan still encoded cross-EPIC fusion via a `source: 'in_house' | 'cloudtalk'` discriminator + forward-compat nullable `cloudtalk_*` columns on shared tables. User pointed out this contradicts the 2026-05-23 separation stance: voip-in-house is for agent ↔ already-known-customer comms (Twilio, clean numbers per human). Lead-to-meeting conversion is voip-campaigns territory (CloudTalk or any future 3rd party). The fusion was a leftover from the original "shared infrastructure" framing.
+
+**Decision:** **Total separation.** No shared tables. No source discriminator. No forward-compat cloudtalk_* columns. Each EPIC owns its own schema namespace. Customer profile UI queries both surfaces and merges client-side (or via thin view).
+
+**Cascading sub-decisions made in the same grill:**
+
+- **DNC = shared canonical fact decorated on `customers`**, not a separate table. Three nullable columns: `dncOptedOutAt`, `dncReason`, `dncAddedByUserId`. Both EPICs gate against the same column. FTC scrub stays cached-in-memory; non-matching entries don't get persisted. Pattern mirrors existing `voipCampaignStatus`, `leadIntakeError` decorations. Owning service lives at `src/shared/services/compliance/`.
+- **Enums reduced 11 → 4.** Survivors: `voipCallStatuses`, `voipDirections` (renamed from `voipMessageDirections` — applies to both calls AND messages), `voipMessageStatuses`, `voipLinkTokenTypes` (narrowed to `['l_doc']`). Dropped: `voipSources`, `voipCallDispositions`, `voipDidStatuses`, `voipDidRoles`, `voipDncSources`, `voipUserAvailabilities`, `voipTransferModes`. Reasons in the grill log; in summary they were either cross-EPIC fusion vocabulary, lead-conversion vocabulary (out of scope), warm-transfer vocabulary (pivot-dead), or campaign-rotation vocabulary (voip-campaigns).
+- **Tables reduced 7 → 5.** Survivors: `voip_calls`, `voip_messages`, `voip_dids`, `voip_link_tokens`, `app_settings`. Dropped: `voip_dnc` (now 3 fields on customers), `voip_user_availability` (warm transfers gone; softphone tracks its own connection state in-browser).
+- **Vendor-neutral column naming.** `twilio_call_sid` → `provider_call_id`, `twilio_message_sid` → `provider_message_id`, `twilio_phone_sid` → `provider_did_id`. No `provider` enum column yet (YAGNI at single-vendor); add when a second vendor is wired in.
+- **`voip_dids` schema kept (was open question).** User pushed back on my "decorate user with voipDidE164" recommendation citing `info@` with multiple DIDs + future inbound source attribution. Cardinality is genuinely 1:N (user → DIDs). Final shape: 7 real cols (`e164`, `provider_did_id`, `cnam_display_name`, `label`, `assigned_user_id`, `is_primary`, `is_active`) + partial unique index ensuring at most one `is_primary=TRUE` per `assigned_user_id`.
+- **Bug fix across schema files.** Several `agentUserId: text('agent_user_id').references(() => user.id, ...)` declarations had `text` referencing a `uuid` PK. Type mismatch. Corrected to `uuid` in all schema rewrites.
+
+**Alternative considered:** Keep the `source` discriminator + forward-compat columns and just document the separation as a service-layer concern. Rejected — the discriminator's whole purpose was data-layer fusion; keeping it without using it is dead weight that misleads future readers.
+
+**Impact:**
+- Phase 1 plan tasks 2-10 substantially rewritten (this commit + follow-up).
+- INTEGRATION-SEAM.md §5, §8 rewritten — §8 (cross-system table conventions with source discriminator) deleted entirely; §5 (DNC propagation) rewritten for shared-canonical-on-customers model.
+- New domain glossary file: `CONTEXT.md` at repo root.
+- voip-campaigns plans (parallel user work in `docs/plans/voip-campaigns/`) get their own clean schema namespace — no `source` field needed there either.
+- Committed enums (Task 2: `28e9b32e`) and pgEnums (Task 3: `d5d973fe`) need cleanup commits removing the dropped values + renaming `voipMessageDirections`.
+
+**Link:** This commit + [phase-1-mvp.md](./phase-1-mvp.md) + [CONTEXT.md](../../../CONTEXT.md).
+
 ### 2026-05-24 — Phase 1 plan rewritten (post-pivot descope complete)
 
 **Phase:** 0 → 1 boundary

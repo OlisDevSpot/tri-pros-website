@@ -48,25 +48,32 @@ Exposed by voip-in-house (`services/voip/voip-routing.service.ts`) at `voip.trip
 | Endpoint | Trigger | Request | Response | MANDATORY fallback branch in CloudTalk |
 |---|---|---|---|---|
 | `/api/voip/routing/caller-lookup` | Inbound or outbound call begins | `{ caller_e164 }` | `{ customer_id, first_name, pipeline_stage, last_interaction_at, language?, open_project? }` or `{ customer_id: null }` | If HTTP fails → CloudTalk plays generic greeting, no screen-pop |
-| `/api/voip/routing/transfer-target` | AI confirms interest; needs warm-transfer target | `{ caller_e164, customer_id }` | `{ target_e164: '<agent in-house DID>', warm_intro: '<≤25 words>', custom_parameters: { dialer_attempt_id, customer_id, trade, location } }` or `{ target_e164: null, reason: 'no_human_available' }`. **Phase 0 mock returns `process.env.CLOUDTALK_PHASE0_TRANSFER_TARGET_E164` (Oliver's cell).** | If HTTP fails or `target_e164: null` → AI says "have someone call you back" + records callback request via webhook |
+| `/api/voip/routing/transfer-target` | **NOT USED for lead conversion as of 2026-05-27 pivot** (AI VoiceAgent off the table; Smart Dialer + human-on-line is the canonical flow, no mid-call warm-transfer). Endpoint remains scaffolded for general-purpose voice routing (future use cases: post-graduation routing, multi-source transfer when more providers are added). | `{ caller_e164, customer_id }` | Phase 0 mock returns `{ target_e164: null, reason: 'phase_0_pivot_no_transfer' }`. Real impl in voip-in-house Phase 1 returns sticky-DID-per-agent if applicable. | Endpoint not in any active CloudTalk Call Flow as of 2026-05-27; no fallback branch needed |
 | `/api/voip/routing/compliance-check` | Optional belt-and-suspenders before Campaign places call | `{ customer_id, phone_e164 }` | `{ allowed: true }` or `{ allowed: false, reason }` | If HTTP fails → treat as allowed; app-side gate is canonical (this is defense-in-depth) |
 
 **Mandatory:** every CloudTalk Call Flow that uses HTTP Request actions MUST have a configured fallback branch in the dashboard. Enforced in voip-campaigns Phase 0 checklist.
 
 ### 2. CloudTalk webhooks (CloudTalk → our app)
 
-Configured in CloudTalk dashboard. Posted to `voip.triprosremodeling.com/api/webhooks/cloudtalk`. Single endpoint handles all 6 events; routing by event-type field in payload.
+**Architecture:** 5 Workflow Automations (corrected 2026-05-31) configured in CT dashboard at Account → Workflow Automations. **NO centralized webhook URL config page.** Each WA is one Object+Action pair with a body-builder template + destination URL. All 5 POST to `voip.triprosremodeling.com/api/webhooks/cloudtalk?secret=...`. CT does not inject `event_type` natively — we hardcode it as the first body key in each WA's body builder.
 
-**Architecture rule:** the route handler at `src/app/api/webhooks/cloudtalk/route.ts` **IS** the orchestrator. It verifies the secret, parses the event type, switches on it, and **directly composes existing services** (`voip-calls`, `voip-messages`, `voip-dnc`, `notifications`). No dedicated webhook-handler service. See `docs/codebase-conventions/webhook-routes.md` for the full rule.
+**Body builder syntax** (CT side): `{{ event.properties.call_uuid }}`, `{{ event.properties.external_number }}`, `{{ event.properties.contacts[0].name }}`, etc. Body is fully shaped on CT's side; the route handler receives our preferred field names directly.
 
-| Event | Route handler dispatches to | App-side action |
-|---|---|---|
-| `call.started` | `voipCalls.recordEvent(...)` | INSERT `voip_calls` row (`source='cloudtalk'`, `status='initiated'`) |
-| `call.answered` | `voipCalls.markAnswered(...)` | UPDATE row → `status='answered'`, `answered_at` |
-| `call.ended` | `voipCalls.complete(...)` (+ optional CI persistence) | UPDATE row → `status='completed'`, `ended_at`, `duration_sec`, `recording_url`, plus disposition + `transcript_summary` + `sentiment` if Conversation Intelligence data attached |
-| `call.missed` | `voipCalls.markMissed(...)` | UPDATE row → `status='no_answer'` or `'voicemail'` per metadata |
-| `voicemail.received` | `voipCalls.markVoicemail(...)` + `notifications.notifyAdminPool(...)` | UPDATE call row + push notification to admin pool |
-| `sms.received` | conditional: `voipDnc.add(...)` on STOP-keyword match, else `voipMessages.recordInbound(...)` + `notifications.notifyLastInteractingAgent(...)` | If body matches STOP/UNSUB/QUIT/CANCEL/END → INSERT `voip_dnc` (`source='cloudtalk_stop'`); CloudTalk auto-honors on its side. Else INSERT `voip_messages` row + push to last-interacting agent. |
+**Architecture rule:** the route handler at `src/app/api/webhooks/cloudtalk/route.ts` **IS** the orchestrator. It verifies the secret, parses the `event_type` field, switches on it, and **directly composes existing services** (`voip-calls`, `voip-messages`, `voip-dnc`, `notifications`). No dedicated webhook-handler service. See `docs/codebase-conventions/webhook-routes.md` for the full rule.
+
+| Our `event_type` | CT Object + Action | Route handler dispatches to | App-side action |
+|---|---|---|---|
+| `call.started` | Call + Started | `voipCalls.recordEvent(...)` | INSERT `voip_calls` row (`source='cloudtalk'`, `status='initiated'`) |
+| `call.answered` | Call + Answered | `voipCalls.markAnswered(...)` + `lifecycle.applyEngagement(...)` | UPDATE row → `status='answered'`, `answered_at`; lifecycle `lead → engaged` |
+| `call.ended` | Call + Ended | `voipCalls.complete(...)` | UPDATE row → `status='completed' \| 'no_answer' \| 'voicemail'` derived from CT's `is_voicemail` flag + presence of `answered_at`; persist `duration_sec`, `recording_url`. **Disposition NOT here — arrives on `call.disposition_set`.** Handler increments app-side attempts counter; if `attempts_per_contact` reached → emit `cadence_exhausted` lifecycle event (CT does not fire an exhausted webhook). |
+| `call.disposition_set` | Call + Modified | `lifecycle.applyDisposition(...)` | Map CT disposition → `voipCampaignStatus` enum transition via `lifecycle-mapper.ts`. `Call.Modified` may fire for other edits (tags, notes) → handler guards on actual disposition delta. **Race-defense:** Ended typically fires first; handler is idempotent + checks current-status-before-transition. |
+| `sms.received` | Messages + Received | conditional: `voipDnc.add(...)` on STOP-keyword match, else `voipMessages.recordInbound(...)` + `notifications.notifyLastInteractingAgent(...)` | If body matches STOP/UNSUB/QUIT/CANCEL/END → INSERT `voip_dnc` (`source='cloudtalk_stop'`); CT auto-honors on its side. Else INSERT `voip_messages` row + push to last-interacting agent. |
+
+**Removed from prior 6-event design (2026-05-31):**
+- ~~`call.missed`~~ — CT does not separate; `Call.Ended` handler derives from metadata.
+- ~~`voicemail.received`~~ — same: `Call.Ended` handler derives `voicemail` status from `is_voicemail` flag. Inbound VM notification is a downstream side-effect, not a separate event.
+
+**Deferred (not Phase 1):** `Messages.Sent` (delivery tracking), `Call.Ringing on agent`, `Call.Survey filled`, `Contact.*`, `User.*`, `Recording.*`, `Transcription.*`.
 
 **Idempotency:** UNIQUE constraint on `voip_calls.cloudtalk_call_uuid` and `voip_messages.cloudtalk_message_id`. Re-deliveries of the same event are no-ops via `INSERT … ON CONFLICT DO UPDATE`.
 
@@ -81,42 +88,71 @@ CloudTalk has NO documented webhook signing (no HMAC). Required defense-in-depth
 
 ### 4. App → CloudTalk push surface
 
-Our app pushes to CloudTalk via `providers/cloudtalk/`. All writes go through `services/voip/campaigns/`. Operations:
+Our app pushes to CloudTalk via `providers/cloudtalk/lib/*`. All writes go through `services/voip/campaigns/*`. Operations (corrected 2026-05-31 — no "enroll" endpoint exists; enrollment = tag-add):
 
-| Operation | Service | Provider call | Trigger |
+| Operation | Service | Provider call(s) | Trigger |
 |---|---|---|---|
-| Enroll lead in campaign | `enrollment.service.ts` | `providers/cloudtalk/contacts.upsert()` + `contacts.tag()` + `campaigns.enroll()` | Lead created with `pipeline ∈ {'lead', 'fresh'}` AND `voipCampaignStatus = 'not_enrolled'` |
-| Sync contact attributes | `contact-sync.service.ts` | `providers/cloudtalk/bulks.batchUpdate()` (≤10 ops/req) | Debounced cron (hourly); on-demand for urgent fields (STOP, graduation) |
-| Graduate contact (meeting booked) | `graduation.service.ts` | `providers/cloudtalk/contacts.untag()` + `contacts.update({ campaign_status: 'graduated' })` | New row in `meetings` table where customer has `voipCampaignStatus='enrolled'` |
-| Push DNC to CloudTalk | `dnc-propagation.service.ts` | `providers/cloudtalk/contacts.tag('do_not_call')` + `contacts.update({ opted_out: true })` | INSERT into `voip_dnc` (any source other than `'cloudtalk_stop'`) |
+| Enroll lead in campaign | `enrollment.service.ts` | `contacts.upsert()` + `contacts.addTags(['Lead', 'Campaign-X'])`. Campaign membership tag loaded from `voip_campaigns.ct_membership_tag` keyed by `source_slug`. CT auto-includes the contact in the matching Campaign because the Campaign is configured to filter by that tag. | Lead created with `pipeline ∈ {'lead', 'fresh'}` AND `voipCampaignStatus = 'not_enrolled'` |
+| Engagement transition | webhook handler (`call.answered`) → `lifecycle.applyEngagement()` | `contacts.removeTags(['Lead'])` + `contacts.addTags(['Engaged'])` | First answered call detected via webhook |
+| Sync contact attributes | `contact-sync.service.ts` | `bulks.batchUpdate()` (≤10 ops/req; `edit_contact` action with `ContactAttribute` references by `attribute_id` from `voip_contact_attributes`) | Debounced cron (hourly); on-demand for urgent fields (STOP, graduation) |
+| Graduate contact (meeting booked) | `graduation.service.ts` | `contacts.removeTags(['Campaign-X', 'Lead', 'Engaged', 'Transferred'])` + `contacts.addTags(['Booked'])` | New row in `meetings` table where customer has `voipCampaignStatus ∈ ('lead','engaged','transferred')`. **REMOVE `Campaign-X`** on terminal state (defense-in-depth against attempts-counter reset; historical "was-in-source-X" persisted in `customers.voipCampaignSource`). |
+| Cadence exhaustion (terminal non-success) | webhook handler (`call.ended`) → `lifecycle.applyExhaustion()` | `contacts.removeTags(['Lead', 'Engaged'])` + `contacts.addTags(['Exhausted'])`. **KEEP `Campaign-X`** (historical; CT internal counter already stopped further dialing). | App-side attempts counter hits `voip_campaigns.attempts_per_contact` |
+| Push DNC to CloudTalk | `dnc-propagation.service.ts` | `contacts.removeTags(['Campaign-X', 'Lead', 'Engaged'])` + `contacts.addTags(['DoNotCall'])` | `customers.dncOptedOutAt` transitions NULL → set (any reason other than `'cloudtalk_stop'`) |
+| Resync CT campaign + attribute IDs | `campaign-sync.service.ts#syncFromCloudtalk()` | `campaigns.list()` + `attributes.list()` → upsert `voip_campaigns` + `voip_contact_attributes` | Admin-triggered button (Phase 1); Phase 2 may add daily cron if drift observed |
 
 ### 5. DNC propagation
 
-The `voip_dnc` table is **app-canonical** and used by both systems' outbound gates.
+DNC is a **shared canonical fact decorated on the `customers` row** (3 nullable fields). No separate `voip_dnc` table. Both systems gate against the same column. Owning service: `src/shared/services/compliance/`.
+
+**Customer-row DNC fields** (see voip-in-house Phase 1 task "Decorate customers with DNC fields"):
+
+| Column | Meaning |
+|---|---|
+| `dncOptedOutAt` | Timestamp set at opt-out. NULL = active. The gate's atomic test. |
+| `dncReason` | Freeform text — e.g., `'customer_request'`, `'ftc-scrub'`, `'admin'`. Not enum-tracked. |
+| `dncAddedByUserId` | Who flipped the bit. NULL for system-triggered (webhook, FTC scrub). |
+
+**Triggers + paths:**
 
 | Trigger | Path |
 |---|---|
-| Customer texts STOP to a CloudTalk DID | CloudTalk auto-honors on its side immediately + fires `sms.received` → app route handler at `api/webhooks/cloudtalk/route.ts` calls `voipDnc.add({ source: 'cloudtalk_stop', cloudtalk_synced_at: NOW() })`. No pushback needed. |
-| Customer texts STOP to an in-house Twilio DID | Twilio webhook → `services/voip/voip-dnc.service.ts` → INSERT `voip_dnc` (`source='twilio_stop'`) → `dnc-propagation.service.ts` pushes to CloudTalk → mark `cloudtalk_synced_at` |
-| Customer says "remove me" on a CloudTalk AI call | AI agent records disposition `opt_out`; webhook handler reads disposition + inserts `voip_dnc` (`source='voice_request'`) |
-| Admin manual DNC entry | tRPC → `voip-dnc.service.ts` → INSERT → `dnc-propagation.service.ts` pushes to CloudTalk |
-| FTC DNC list scrub | Daily cron → `voip-dnc.service.ts` → INSERT batched → `dnc-propagation.service.ts` pushes deltas to CloudTalk |
+| Customer texts STOP to a CloudTalk DID | CloudTalk auto-honors on its side immediately + fires `sms.received` → app route handler at `api/webhooks/cloudtalk/route.ts` calls `compliance.addToDnc(customerId, reason='cloudtalk_stop', addedByUserId=null)`. CloudTalk already honored on its side; no `dnc-propagation` pushback needed. |
+| Customer texts STOP to an in-house Twilio DID | Twilio TwiML handler (`/api/voip/twiml/messaging-inbound`) → `compliance.addToDnc(customerId, reason='customer_request', addedByUserId=null)` → `dnc-propagation.service.ts` pushes to CloudTalk → marks CT contact `opted_out: true`. |
+| Admin manual DNC entry | tRPC → `compliance.addToDnc(customerId, reason='admin', addedByUserId=admin.id)` → `dnc-propagation` pushes to CloudTalk. |
+| FTC DNC list scrub | Daily cron → in-memory match of FTC list against `customers.phone` → for each match: `compliance.addToDnc(customerId, reason='ftc-scrub', addedByUserId=null)` → `dnc-propagation` pushes to CloudTalk. **Non-matching FTC entries are NOT persisted** — they're only relevant if/when a matching customer row exists (the FTC list is cached for outbound-time double-check on freshly-created customers). |
 
-**Gate consistency rule:** outbound gates (both systems) query `voip_dnc` before placing call / sending SMS. `voip-compliance.service.ts` is the single shared gate. CloudTalk Campaign also gates internally (belt-and-suspenders); if our app's `voip_dnc` and CloudTalk's contact tags ever drift, **our app is authoritative** — fix by re-pushing via `dnc-propagation`.
+**Gate consistency rule:** outbound gates (both systems) check `customers.dncOptedOutAt IS NOT NULL` before placing call / sending SMS. `services/compliance/compliance.service.ts#canOutboundTo(phoneE164)` is the single shared gate (resolves phone → customer row → checks the field). CloudTalk Campaign also gates internally (belt-and-suspenders); if our `customers.dncOptedOutAt` and CloudTalk's contact tags ever drift, **our app is authoritative** — fix by re-pushing via `dnc-propagation`.
 
-### 6. Graduation event
+**Edge case — same phone shared by two customers (couple, family):** the outbound gate queries by phone (`WHERE phone = ? AND dnc_opted_out_at IS NOT NULL LIMIT 1`), so a single opted-out customer row with that phone blocks calls to ANY other customer rows sharing it. Conservative, TCPA-aligned default.
 
-**Trigger:** A new row in `meetings` table whose `customer_id` matches a customer with `voipCampaignStatus='enrolled'`.
+### 6. Graduation event — bidirectional convergence
 
-**Hook point:** tRPC mutation post-hook on `meetings.create` (and any equivalent meeting-create path). Calls `services/voip/campaigns/graduation.service.ts`.
+Graduation is the **only** event that moves a customer out of CT's funnel into our app's `fresh` pipeline (app-owned). It is **2-way synced**: either side may initiate it, but both sides must converge to a consistent end state.
 
-**Steps:**
-1. UPDATE `customers.voipCampaignStatus = 'graduated'`, `voipCampaignGraduatedAt = NOW()`
-2. CloudTalk push: untag from active campaign + update contact status attribute
-3. Send the final-beat confirmation SMS via CloudTalk (last campaign action) — confirms meeting; clean campaign exit
+**Convergence service:** `services/voip/campaigns/graduation.service.ts#graduateCustomer(customerId)` is the single function both triggers call. Idempotent — if customer already has `voipCampaignStatus = 'booked'`, no-op.
+
+**Initiator A — App-initiated (the canonical path):**
+1. Sean (or admin) creates a meeting in our app via tRPC mutation
+2. `meetings.create` post-hook calls `graduateCustomer(customerId)`
+3. The service:
+   - UPDATEs `customers.voipCampaignStatus = 'booked'`, `voipCampaignGraduatedAt = NOW()`
+   - Pushes to CloudTalk: `contacts.untag('Lead' | 'Engaged' | 'Transferred')` + `contacts.tag('Booked')` + (optional) sends final-beat confirmation SMS
 4. After this point, ALL further outbound to this customer goes via in-house Twilio (agent-mediated)
 
-**Re-enrollment policy:** If a graduated customer's meeting is later canceled (e.g., they fall back to `pipeline='lead'`), they do **NOT** auto-re-enroll. Admin must explicitly re-enroll via a button on the customer profile. Reasoning: avoid spamming recently-engaged contacts; let humans judge.
+**Initiator B — CT-initiated (edge case — admin uses CT dashboard's disposition UI directly):**
+1. Admin marks the contact as Booked in CT's dashboard (applies `Booked` tag via CT's UI)
+2. CT fires webhook → our route handler at `/api/webhooks/cloudtalk` detects the `Booked` tag transition
+3. Handler calls `graduateCustomer(customerId)` (same service function)
+4. The service:
+   - UPDATEs `customers.voipCampaignStatus = 'booked'`, `voipCampaignGraduatedAt = NOW()`
+   - If no `meetings` row exists for this customer: surface UI prompt for Sean to complete meeting details
+   - Does NOT push to CT (state already converged from CT's side)
+
+**Why bidirectional matters:** CT is the source of truth for lifecycle state per the Data Ownership Model. But meetings are app-territory. The graduation event crosses the boundary in both directions; either system can validly initiate it, and both must stay consistent.
+
+**Re-enrollment policy:** If a graduated customer's meeting is later canceled, they do **NOT** auto-re-enroll. Admin must explicitly re-enroll via a button on the customer profile (push `not_enrolled → lead` + add CT contact back to campaign). Reasoning: avoid spamming recently-engaged contacts; let humans judge.
+
+**Read-only leads kanban:** A consequence of CT-as-SoT: the leads-pipeline UI (`Pipeline[leads]/Kanban/Customer`) is read-only. User-driven stage transitions are disabled. The ONE manual exception is meeting creation (which triggers graduation above). Admin-only "force opt-out" / "force exhaust" actions may be added later, but they push to CT, never write the local cache directly.
 
 ### 7. Pre-enrollment guardrails
 
@@ -133,29 +169,27 @@ Enforced in this order; first failure short-circuits.
 
 ### 8. Cross-system table conventions
 
-The shared tables use a `source` discriminator enum:
+**Deleted 2026-05-30** per the total-separation grill. Originally encoded a `source: 'in_house' | 'cloudtalk'` discriminator + forward-compat `cloudtalk_*` columns on `voip_calls` / `voip_messages` / `voip_dids`, plus a separate `voip_dnc` table with `source` reasoning.
 
-| Table | `source` values | Notes |
-|---|---|---|
-| `voip_calls` | `'in_house'` (Twilio-originated), `'cloudtalk'` (CloudTalk-originated) | Customer timeline queries union across both |
-| `voip_messages` | same | Conversation thread queries union across both |
-| `voip_dids` | same | Pool management is per-source (in-house has agent DIDs; cloudtalk has campaign DIDs) |
-| `voip_dnc` | `'twilio_stop'`, `'cloudtalk_stop'`, `'voice_request'`, `'manual_admin'`, `'ftc'` | Origin tracking; doesn't gate anything |
-
-Source-specific columns (e.g., `cloudtalk_call_uuid`, `twilio_call_sid`, `campaign_id`, `transcript_summary`, `sentiment`) are nullable and populated only by their respective source. **Schemas for these tables land in voip-in-house Phase 1** with forward-compat columns for cloudtalk usage.
+The new model:
+- voip-in-house owns `voip_calls`, `voip_messages`, `voip_dids`, `voip_link_tokens` — only ever holds in-house rows. No `source` column. No `cloudtalk_*` forward-compat columns.
+- voip-campaigns gets its own schema namespace for any CloudTalk-side data it chooses to mirror (e.g., its own `ct_calls`-or-equivalent tables — design TBD in voip-campaigns Phase 1).
+- DNC is decorated on `customers` per §5 above. No separate table.
+- Customer profile UI that wants to show "ALL interactions with this customer" queries BOTH surfaces and merges client-side or via a thin view layer.
 
 ### 9. `lead_sources.voipConfigJSON` shape
 
-Shared config field. Each EPIC owns a sub-object:
+Shared config field. Each EPIC owns a sub-object. **`voipConfigJSON` carries APP-side policy only — not CT-runtime identity.**
 
 ```jsonc
 {
   // voip-campaigns owns:
   "campaigns": {
-    "enabled": true,
-    "cloudtalkCampaignId": "campaign_xxx",
-    "cloudtalkVoiceAgentId": "agent_xxx",
-    "messageTemplateOverrides": { ... }
+    // APP-side policy — prescriptive, owned by us, edited via admin UI
+    "enabled": true,                    // per-source kill switch (gate 6 in enrollment guardrails §7)
+    "autoEnroll": true,                 // bina=true, home_depot=false (manual review per Q9.F)
+    "dailyDialVolumeCap": 300,          // soft cap Q11 — admin-tunable
+    "messageTemplateOverrides": { ... } // optional per-source SMS template variants
   },
   // voip-in-house owns:
   "inHouse": {
@@ -167,6 +201,22 @@ Shared config field. Each EPIC owns a sub-object:
 ```
 
 Validated via Zod schema in `entities/lead-sources/schemas.ts`.
+
+#### What this JSON does NOT carry (corrected 2026-05-31)
+
+The following CT-runtime IDs were previously sketched here as `cloudtalkCampaignId` / `cloudtalkVoiceAgentId`. They have been **moved to dedicated DB tables** because they are runtime data discovered from CT's dashboard, not source-of-truth constants:
+
+| Data | Lives in | Sync mechanism |
+|---|---|---|
+| CT campaign ID + status + membership tag + cadence (10 attempts / 3hr) | `voip_campaigns` table (CT identity bridge — voip-campaigns Phase 1 W2) | Admin-triggered "Resync from CloudTalk" mutation → `GET /campaigns/index.json` → upsert by `source_slug` |
+| CT contact attribute IDs (`lead_source`, `primary_trade`, `trades_interested`) + titles | `voip_contact_attributes` table | Same admin Resync → `GET /contacts/attributes.json` → upsert by `app_key` |
+| ~~CT VoiceAgent ID~~ | N/A | AI VoiceAgent off the table per 2026-05-27 pivot |
+
+**Separation principle:**
+- `voipConfigJSON.campaigns.*` = **APP-side policy** (prescriptive, owned by us, edited via lead-source admin UI). Source-of-truth.
+- `voip_campaigns` row = **CT-side identity** (descriptive, mirrored from CT dashboard, synced not edited). Cache.
+
+A lead source has both: one `lead_sources.voipConfigJSON.campaigns` blob (our policy: enabled, autoEnroll, caps) + one `voip_campaigns` row keyed by the matching `source_slug` (CT's identity: campaign_id, membership_tag). Enrollment service consults BOTH: policy gates run against `voipConfigJSON`; CT API calls use IDs from `voip_campaigns`.
 
 ### 10. Failure modes + recovery
 
@@ -197,7 +247,7 @@ Three semantic buckets, three namespaces:
 | URL | Semantic bucket | Owner |
 |---|---|---|
 | `voip.triprosremodeling.com/api/webhooks/twilio` | Async — ONE route handler for ALL Twilio status callbacks (voice/recording/messaging). Switch on payload discriminant (`CallStatus` vs `MessageStatus` vs `RecordingStatus`). All Twilio dashboard webhook URLs point here. | voip-in-house |
-| `voip.triprosremodeling.com/api/webhooks/cloudtalk` | Async — ONE route handler for ALL 6 CloudTalk events. Switch on event-type field in payload. | voip-campaigns |
+| `voip.triprosremodeling.com/api/webhooks/cloudtalk` | Async — ONE route handler receives ALL 5 CloudTalk Workflow Automations (`call.started`, `call.answered`, `call.ended`, `call.disposition_set`, `sms.received`). Switch on `event_type` field we inject in each WA's body builder (CT does not inject it natively). | voip-campaigns |
 | `voip.triprosremodeling.com/api/voip/routing/caller-lookup` | Sync — voip routing (mid-call enrichment) (returns customer data) | voip-in-house |
 | `voip.triprosremodeling.com/api/voip/routing/transfer-target` | Sync — voip routing (mid-call) (returns `target_e164`) | voip-in-house (Phase 0 mocked; Phase 1 real) |
 | `voip.triprosremodeling.com/api/voip/routing/compliance-check` | Sync — belt-and-suspenders gate before placing call | voip-in-house |
