@@ -35,3 +35,10 @@ export * from './lead-sources'
 export * from './qb-auth-tokens'
 export * from './bina-webhook-logs'
 export * from './push-subscriptions'
+
+// voip-in-house (Twilio)
+export * from './voip-dids'
+export * from './voip-calls'
+export * from './voip-messages'
+export * from './voip-link-tokens'
+export * from './app-settings'
