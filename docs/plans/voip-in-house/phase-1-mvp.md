@@ -1638,758 +1638,145 @@ That single-import-path-for-actions rule is enforced in Slug E via ESLint `no-re
 
 ---
 
-### Task 21: `services/voip/` — DNC + compliance + DIDs + user-availability
+### Tasks 21-25: Service layer — ✅ DONE (Slug C, 2026-06-02)
 
-> All four are pure data + gate functions; no Twilio interaction. They live in `src/shared/services/voip/` (top-level, owned by this EPIC). Per [INTEGRATION-SEAM.md "Dependency direction"](../voip/INTEGRATION-SEAM.md#dependency-direction), top-level voip services MUST NOT import `services/voip/campaigns/*` or `providers/cloudtalk/*` (lint-enforced in Task 33).
+> Original Tasks 21-25 (pre-grill: 750 lines) replaced by this consolidated
+> as-built block. Per [GRILL RESULTS](#-grill-results--2026-05-30), Task 21's
+> separate `voip-dnc` + `voip-compliance` + `voip-user-availability` services
+> were merged/dropped — DNC lives on `customers` (3 fields) owned by
+> [`complianceService`](../../../src/shared/services/compliance.service.ts);
+> user-availability dropped entirely (softphone tracks own state in-browser).
 
-**Files:**
-- Create: `src/shared/services/voip/voip-dnc.service.ts`
-- Create: `src/shared/services/voip/voip-compliance.service.ts`
-- Create: `src/shared/services/voip/voip-dids.service.ts`
-- Create: `src/shared/services/voip/voip-user-availability.service.ts`
+#### Files landed (5 services + 4 entity DAL modules + 2 query modules)
 
-- [ ] **Step 21.1: `voip-dnc.service.ts`**
+```
+src/shared/services/voip/
+  voip-calls.service.ts          placeAgentCall, recordInboundCall,
+                                 applyStatusCallback, getCallById,
+                                 getCallByIdSystem
+  voip-messages.service.ts       sendSms, recordInboundMessage,
+                                 applyStatusCallback, fetchThread,
+                                 getMessageById  + isOptOutKeyword export
+  voip-routing.service.ts        mintSoftphoneToken, resolveInboundDial,
+                                 buildInboundVoiceResponse,
+                                 buildOutboundDialResponse,
+                                 buildInboundMessagingResponse,
+                                 applyDevOverride, checkOutboundReadiness
+  voip-dids.service.ts           assignDidToUser, markPrimary, unassignDid,
+                                 resyncFromTwilio  + read passthroughs
+                                 (getStickyDidForUser, getDidByE164,
+                                 getDidByProviderId, getDidByIdSystem,
+                                 canAgentOutbound, requireStickyDid)
+  voip-link-tokens.service.ts    mintToken, resolveToken, markUsed,
+                                 purgeExpired
+
+src/shared/entities/voip-calls/dal/server/         crud.ts (createCrudDal)
+src/shared/entities/voip-messages/dal/server/      crud.ts
+src/shared/entities/voip-dids/dal/server/          crud.ts + queries.ts
+                                                   (getStickyDidForUser,
+                                                    getDidByE164,
+                                                    getDidByProviderId)
+src/shared/entities/voip-link-tokens/dal/server/   crud.ts + queries.ts
+                                                   (getTokenByValue,
+                                                    markTokenUsed)
+```
+
+Commits: `f4a9156d` (C.1 voip-calls), `3cc8b233` (C.2 messages/routing/dids),
+`378a49eb` (C.3 voip-link-tokens).
+
+#### Test of the superset `twilioClient` API
+
+Every method on the client has a service consumer demonstrating the
+single-entry-point pattern:
+
+| `twilioClient` method | Service consumer | Use case |
+|---|---|---|
+| `placeOutboundCall` | voip-calls | server-initiated outbound (click-to-dial) |
+| `fetchCall` | voip-calls (capability available) | webhook drift reconciliation |
+| `hangupCall` | voip-calls (capability available) | force-terminate when softphone disconnect fails to propagate |
+| `sendMessage` | voip-messages | outbound SMS |
+| `fetchMessage` | voip-messages (capability available) | status drift reconciliation |
+| `listIncomingPhoneNumbers` | voip-dids | admin "Resync from Twilio" |
+| `fetchIncomingPhoneNumber` | voip-dids | single-SID reconciliation |
+| `mintVoiceAccessToken` | voip-routing | softphone bootstrap |
+| `buildInboundVoiceTwiml` | voip-routing | inbound-call TwiML responder |
+| `buildDialTwiml` | voip-routing | outbound-dial TwiML responder (softphone-initiated) |
+| `buildInboundMessagingTwiml` | voip-routing | inbound-SMS TwiML responder |
+| `verifyWebhookSignature` | route handlers (Slug D — boundary call, not service-wrapped) | async webhook authentication |
+| `RestException` re-export | voip-calls, voip-messages | `instanceof` for `.code`/`.status` |
+
+#### Three-tier discipline holds throughout
+
+- Services depend on the SINGLE `twilioClient` (per the post-refactor
+  [`client-is-the-superset-entry-point`](../../codebase-conventions/service-architecture.md#client-is-the-superset-entry-point)
+  rule). No service imports `twilio` directly. No service imports
+  per-capability `lib/voice` / `lib/jwt` / etc. — those files don't exist.
+- Provider knows nothing about compliance, DNC, sticky DIDs, dev-override,
+  10DLC vetting, STOP keywords. All policy lives in the service layer.
+- Services do NOT depend on tRPC, route handlers, or UI surfaces.
+- Direct `db` writes are limited to the two cases generic CRUD can't cover:
+  ON CONFLICT idempotent upserts (`provider_call_id` / `provider_message_id`)
+  and webhook-driven status patches keyed by provider id.
+
+#### Orchestration baked into the service surface
+
+- **Compliance gate** — every outbound entry point calls
+  `complianceService.canOutboundTo(remoteE164)`; false ⇒ insert row with
+  `status='skipped_compliance'` (calls) or `status='failed'` (messages),
+  audit trail preserved even when no Twilio call fires.
+- **Sticky DID resolution** — outbound services require a primary DID,
+  surface `precondition-failed` when missing.
+- **Dev-override rewriting** — `VOIP_DEV_OVERRIDE_NUMBER` rewrites only the
+  Twilio dial leg; the row's `remoteE164` keeps the intended target for
+  audit fidelity. Production gate in `server-env.ts` ensures override is
+  empty in prod.
+- **10DLC vetting** — outbound SMS in production requires
+  `TWILIO_10DLC_CAMPAIGN_SID`. Dev/preview can send without (Twilio's
+  trial-account limits still apply).
+- **STOP-keyword detection** — `isOptOutKeyword(body)` exported alongside
+  `voipMessagesService`; route handlers call BEFORE persistence to short-
+  circuit a normal thread insert and route to `complianceService.addToDnc`.
+- **Composite thread key** — `(voipDidId, remoteE164)` queries via the
+  indexed access path; same customer texting two DIDs = two threads.
+- **Idempotent upserts** — webhook re-delivery is safe (ON CONFLICT on
+  `provider_call_id` / `provider_message_id`; `usedAt IS NULL` guard on
+  link tokens).
+
+#### What Slug D imports
 
 ```ts
-// src/shared/services/voip/voip-dnc.service.ts
-import type { VoipDncSource } from '@/shared/constants/enums'
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import { isOnDnc } from '@/shared/entities/voip-dnc/dal/server/queries'
-import { recordDnc as recordDncDal } from '@/shared/entities/voip-dnc/dal/server/mutations'
-
-const STOP_KEYWORDS = /^(STOP|UNSUBSCRIBE|QUIT|CANCEL|END|REMOVE|OPT[\s-]?OUT)$/i
-
-export function isOptOutKeyword(body: string): boolean {
-  return STOP_KEYWORDS.test(body.trim())
-}
-
-/** Append a DNC row. Idempotent via UNIQUE(phone_e164) + ON CONFLICT DO NOTHING. */
-export async function recordDnc(
-  ctx: ScopedContext,
-  args: { phoneE164: string, source: VoipDncSource, reason?: string, addedByUserId?: string },
-): Promise<DalReturn<void>> {
-  return recordDncDal(ctx, args).then(r => r.success ? { success: true, data: undefined } : r)
-}
-
-/** Cheap boolean check — used by compliance gate. */
-export async function lookupDnc(ctx: ScopedContext, phoneE164: string): Promise<DalReturn<boolean>> {
-  return isOnDnc(ctx, phoneE164)
-}
-```
-
-- [ ] **Step 21.2: `voip-compliance.service.ts`**
-
-```ts
-// src/shared/services/voip/voip-compliance.service.ts
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import { getByFeature } from '@/shared/entities/app-settings/dal/server/queries'
-import { DEFAULT_VOIP_IN_HOUSE_CONFIG, voipInHouseAppSettingsConfigSchema } from '@/shared/entities/app-settings/schemas/voip-in-house-config-schema'
-import { lookupDnc } from './voip-dnc.service'
-
-export type ComplianceCheckResult =
-  | { allowed: true }
-  | { allowed: false, reason: 'dnc' | 'kill_switch_active' | 'outside_calling_hours' | 'invalid_phone' }
-
-/**
- * Single gate for ALL outbound voice + SMS in this EPIC.
- *   1. Phone must be E.164.
- *   2. Kill switch must be off (app_settings(feature='voip-in-house').configJson.globalKillSwitch).
- *   3. DNC must be clean (voip_dnc table).
- *   4. (Soft) calling hours — if `enforceHours: true` (default true for voice; false for transactional SMS).
- */
-export async function canOutboundTo(
-  ctx: ScopedContext,
-  args: { phoneE164: string, enforceHours?: boolean },
-): Promise<DalReturn<ComplianceCheckResult>> {
-  // 1. E.164 sanity
-  if (!/^\+[1-9]\d{6,14}$/.test(args.phoneE164)) {
-    return { success: true, data: { allowed: false, reason: 'invalid_phone' } }
-  }
-
-  // 2. Load config (defaults to DEFAULT_VOIP_IN_HOUSE_CONFIG if no row)
-  const settingsResult = await getByFeature(ctx, 'voip-in-house')
-  if (!settingsResult.success) return settingsResult
-  const config = settingsResult.data
-    ? voipInHouseAppSettingsConfigSchema.parse(settingsResult.data.configJson)
-    : DEFAULT_VOIP_IN_HOUSE_CONFIG
-
-  if (config.globalKillSwitch) {
-    return { success: true, data: { allowed: false, reason: 'kill_switch_active' } }
-  }
-
-  // 3. DNC
-  const dncResult = await lookupDnc(ctx, args.phoneE164)
-  if (!dncResult.success) return dncResult
-  if (dncResult.data) {
-    return { success: true, data: { allowed: false, reason: 'dnc' } }
-  }
-
-  // 4. Calling hours (default enforce=true; transactional SMS sets enforce=false)
-  if (args.enforceHours !== false) {
-    // Tri Pros operates exclusively in PST (SoCal-only market). All time
-    // comparisons use `America/Los_Angeles` IANA TZ — handles DST automatically.
-    // No per-customer TZ field — every lead is canonically PST.
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Los_Angeles',
-      hour: 'numeric',
-      hour12: false,
-      weekday: 'short',
-    }).formatToParts(new Date())
-    const day = parts.find(p => p.type === 'weekday')!.value.toLowerCase() as Day // 'mon' | 'tue' | ...
-    const hour = Number.parseInt(parts.find(p => p.type === 'hour')!.value, 10)
-
-    if (!config.callingHours.callingDays.includes(day)) {
-      return { success: true, data: { allowed: false, reason: 'outside_calling_hours' } }
-    }
-    if (hour < config.callingHours.startHourLocal || hour >= config.callingHours.endHourLocal) {
-      return { success: true, data: { allowed: false, reason: 'outside_calling_hours' } }
-    }
-  }
-
-  return { success: true, data: { allowed: true } }
-}
-```
-
-> **Note on `enforceHours`:** calling-hours is enforced for voice + cold SMS. Transactional SMS (e.g., meeting reminders the customer expects) sets `enforceHours: false` — those land in Phase 2 (`services/voip/voip-lifecycle-sms.service.ts`).
-
-- [ ] **Step 21.3: `voip-dids.service.ts`**
-
-```ts
-// src/shared/services/voip/voip-dids.service.ts
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import { findStickyForAgent, findTransferTarget as findTransferTargetDal } from '@/shared/entities/voip-dids/dal/server/queries'
-import type { VoipDid } from '@/shared/entities/voip-dids/types'
-
-/**
- * Returns the agent's sticky outbound DID. Phase 1: returns the single in_house+agent_outbound DID
- * assigned to this user. If none assigned (pilot agents share DIDs initially), returns the
- * unassigned dial DID (the agent's first-call assignment); future Phase 2 will introduce explicit
- * sticky assignment via admin UI.
- */
-export async function getStickyDidForAgent(
-  ctx: ScopedContext,
-  userId: string,
-): Promise<DalReturn<VoipDid>> {
-  const result = await findStickyForAgent(ctx, userId)
-  if (!result.success) return result
-  if (!result.data) {
-    return { success: false, error: { type: 'precondition-failed', reason: `No sticky DID assigned to user ${userId}` } }
-  }
-  return { success: true, data: result.data }
-}
-
-/** Returns the single transfer-target DID for warm-transfers landing from CloudTalk. */
-export async function getTransferTargetDid(ctx: ScopedContext): Promise<DalReturn<VoipDid>> {
-  const result = await findTransferTargetDal(ctx)
-  if (!result.success) return result
-  if (!result.data) {
-    return { success: false, error: { type: 'precondition-failed', reason: 'No transfer-target DID configured' } }
-  }
-  return { success: true, data: result.data }
-}
-```
-
-- [ ] **Step 21.4: `voip-user-availability.service.ts`**
-
-```ts
-// src/shared/services/voip/voip-user-availability.service.ts
-import type { VoipTransferMode, VoipUserAvailability } from '@/shared/constants/enums'
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import { listAvailableForTransfer } from '@/shared/entities/voip-user-availability/dal/server/queries'
-import { upsert as upsertDal } from '@/shared/entities/voip-user-availability/dal/server/mutations'
-
-export async function upsertAvailability(
-  ctx: ScopedContext,
-  args: {
-    userId: string
-    enrolledForTransfers: boolean
-    manualStatus: VoipUserAvailability
-    transferMode: VoipTransferMode
-    cellPhoneE164?: string | null
-  },
-): Promise<DalReturn<void>> {
-  // Phase 1 guard: mobile transfer mode is not yet wired; block writes here until Phase 3.
-  if (args.transferMode === 'mobile') {
-    return { success: false, error: { type: 'precondition-failed', reason: 'mobile transfer_mode is a Phase 3 feature' } }
-  }
-  const result = await upsertDal(ctx, args)
-  return result.success ? { success: true, data: undefined } : result
-}
-
-export async function listAvailableTransferHumans(ctx: ScopedContext): Promise<DalReturn<{
-  userId: string
-  transferMode: VoipTransferMode
-  cellPhoneE164: string | null
-  lastTransferredAt: string | null
-}[]>> {
-  return listAvailableForTransfer(ctx)
-}
-```
-
-- [ ] **Step 21.5: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/services/voip/voip-dnc.service.ts \
-  src/shared/services/voip/voip-compliance.service.ts \
-  src/shared/services/voip/voip-dids.service.ts \
-  src/shared/services/voip/voip-user-availability.service.ts
-git commit -m "feat(voip): add DNC + compliance + DIDs + availability services
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 22: `services/voip/voip-calls.service.ts`
-
-**Files:**
-- Create: `src/shared/services/voip/voip-calls.service.ts`
-
-> The agent click-to-call flow: dial the customer FROM the agent's sticky DID, with the agent's softphone identity as the bridge endpoint. The compliance gate is the first thing the function does. CASL is enforced upstream in the tRPC procedure.
-
-- [ ] **Step 22.1: Create the service**
-
-```ts
-// src/shared/services/voip/voip-calls.service.ts
-import type { VoipCallDisposition } from '@/shared/constants/enums'
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import env from '@/shared/config/server-env'
-import { findByTwilioCallSid } from '@/shared/entities/voip-calls/dal/server/queries'
-import { createCall, upsertFromTwilioWebhook } from '@/shared/entities/voip-calls/dal/server/mutations'
-import { findCustomerById } from '@/shared/entities/customers/dal/server/queries'
-import { placeCall } from '@/shared/services/providers/twilio/voice'
-import { canOutboundTo } from './voip-compliance.service'
-import { getStickyDidForAgent } from './voip-dids.service'
-
-/**
- * Agent click-to-call. Dials the customer from the agent's sticky in-house DID.
- * The customer-side leg connects to the agent's browser softphone (TwiML app routes "client:agent_<userId>").
- */
-export async function placeAgentCall(
-  ctx: ScopedContext,
-  args: { customerId: string, agentUserId: string },
-): Promise<DalReturn<{ voipCallId: string, twilioCallSid: string }>> {
-  const customerResult = await findCustomerById(ctx, { id: args.customerId })
-  if (!customerResult.success) return customerResult
-  const customer = customerResult.data
-  if (!customer?.phone) {
-    return { success: false, error: { type: 'precondition-failed', reason: `Customer ${args.customerId} has no phone` } }
-  }
-
-  // Compliance gate
-  const compliance = await canOutboundTo(ctx, { phoneE164: customer.phone })
-  if (!compliance.success) return compliance
-  if (!compliance.data.allowed) {
-    // Log blocked attempt for audit
-    const blocked = await createCall(ctx, {
-      source: 'in_house',
-      customerId: customer.id,
-      direction: 'outbound',
-      didUsed: '',                  // not chosen yet
-      remoteE164: customer.phone,
-      status: 'skipped_compliance',
-      skipReason: compliance.data.reason,
-      agentUserId: args.agentUserId,
-    })
-    if (!blocked.success) return blocked
-    return { success: false, error: { type: 'precondition-failed', reason: `blocked: ${compliance.data.reason}` } }
-  }
-
-  // Get sticky DID
-  const didResult = await getStickyDidForAgent(ctx, args.agentUserId)
-  if (!didResult.success) return didResult
-  const did = didResult.data
-
-  // Insert initial row (status='initiated'); Twilio webhook will update lifecycle
-  const baseUrl = env.VOIP_WEBHOOK_BASE_URL
-
-  const created = await createCall(ctx, {
-    source: 'in_house',
-    customerId: customer.id,
-    direction: 'outbound',
-    didUsed: did.e164Number,
-    remoteE164: customer.phone,
-    status: 'initiated',
-    agentUserId: args.agentUserId,
-  })
-  if (!created.success) return created
-  const row = created.data
-
-  // Place the call
-  const { callSid } = await placeCall({
-    fromE164: did.e164Number,
-    toE164: customer.phone,
-    statusCallbackUrl: `${baseUrl}/api/webhooks/twilio`,
-    recordingStatusCallbackUrl: `${baseUrl}/api/webhooks/twilio`,
-    customParameters: {
-      voip_call_id: row.id,
-      customer_id: customer.id,
-      agent_user_id: args.agentUserId,
-      lead_name: customer.name,
-    },
-  })
-
-  // Patch the row with the Twilio SID for webhook idempotency
-  const patched = await upsertFromTwilioWebhook(ctx, {
-    callSid,
-    patch: { twilioCallSid: callSid },
-    // ensure existing row at row.id is what gets updated; falls back to looking up by ID if SID empty.
-    fallbackById: row.id,
-  })
-  if (!patched.success) return patched
-
-  return { success: true, data: { voipCallId: row.id, twilioCallSid: callSid } }
-}
-
-/** Idempotent lifecycle update from Twilio status webhook. */
-export async function recordCallLifecycle(
-  ctx: ScopedContext,
-  args: {
-    twilioCallSid: string
-    status: 'queued' | 'initiated' | 'ringing' | 'answered' | 'completed' | 'no_answer' | 'failed'
-    answeredAt?: string
-    endedAt?: string
-    durationSeconds?: number
-  },
-): Promise<DalReturn<void>> {
-  const patch: Record<string, unknown> = { status: args.status }
-  if (args.answeredAt) patch.answeredAt = args.answeredAt
-  if (args.endedAt) patch.endedAt = args.endedAt
-  if (args.durationSeconds !== undefined) patch.durationSeconds = args.durationSeconds
-  const result = await upsertFromTwilioWebhook(ctx, { callSid: args.twilioCallSid, patch })
-  return result.success ? { success: true, data: undefined } : result
-}
-
-export async function setDisposition(
-  ctx: ScopedContext,
-  args: { voipCallId: string, disposition: VoipCallDisposition, note?: string },
-): Promise<DalReturn<void>> {
-  // Direct DAL update; future side effect (e.g., opt_out → DNC) handled by the disposition picker UI which
-  // routes 'opt_out' through voip-dnc.service. Service layer here is intentionally minimal.
-  // (Full side-effect-from-disposition logic lands in Phase 2 lifecycle service.)
-  const result = await upsertFromTwilioWebhook(ctx, {
-    callSid: '',                          // not used here; falls back to ID lookup
-    fallbackById: args.voipCallId,
-    patch: { disposition: args.disposition, dispositionNote: args.note ?? null },
-  })
-  return result.success ? { success: true, data: undefined } : result
-}
-```
-
-> **Note:** `createCall` is the export from `entities/voip-calls/dal/server/mutations.ts` (Task 12.5). Thin DAL wrapper around `db.insert(voipCalls).values(input).returning()` inside `dalDbOperation`.
-
-- [ ] **Step 22.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/services/voip/voip-calls.service.ts \
-  src/shared/entities/voip-calls/dal/server/mutations.ts
-git commit -m "feat(voip): add voip-calls service (placeAgentCall, recordCallLifecycle, setDisposition)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 23: `services/voip/voip-messages.service.ts`
-
-**Files:**
-- Create: `src/shared/services/voip/voip-messages.service.ts`
-
-- [ ] **Step 23.1: Create the service**
-
-```ts
-// src/shared/services/voip/voip-messages.service.ts
-import type { VoipMessageStatus } from '@/shared/constants/enums'
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import env from '@/shared/config/server-env'
-import { findByTwilioMessageSid } from '@/shared/entities/voip-messages/dal/server/queries'
-import { createMessage } from '@/shared/entities/voip-messages/dal/server/mutations'
-import { updateStatusByTwilioSid } from '@/shared/entities/voip-messages/dal/server/mutations'
-import { findCustomerById, findCustomerByPhone } from '@/shared/entities/customers/dal/server/queries'
-import { sendSms } from '@/shared/services/providers/twilio/messaging'
-import { canOutboundTo } from './voip-compliance.service'
-import { getStickyDidForAgent } from './voip-dids.service'
-import { isOptOutKeyword, recordDnc } from './voip-dnc.service'
-
-export async function sendManualSms(
-  ctx: ScopedContext,
-  args: { customerId: string, body: string, agentUserId: string },
-): Promise<DalReturn<{ voipMessageId: string }>> {
-  const customerResult = await findCustomerById(ctx, args.customerId)
-  if (!customerResult.success) return customerResult
-  const customer = customerResult.data
-  if (!customer?.phone) {
-    return { success: false, error: { type: 'precondition-failed', reason: `Customer ${args.customerId} has no phone` } }
-  }
-
-  // Compliance — for SMS, calling-hours is NOT enforced (transactional sends can land any time).
-  const compliance = await canOutboundTo(ctx, { phoneE164: customer.phone, enforceHours: false })
-  if (!compliance.success) return compliance
-  if (!compliance.data.allowed) {
-    return { success: false, error: { type: 'precondition-failed', reason: `blocked: ${compliance.data.reason}` } }
-  }
-
-  const didResult = await getStickyDidForAgent(ctx, args.agentUserId)
-  if (!didResult.success) return didResult
-  const did = didResult.data
-
-  const { messageSid, status } = await sendSms({
-    fromE164: did.e164Number,
-    toE164: customer.phone,
-    body: args.body,
-    statusCallbackUrl: `${env.VOIP_WEBHOOK_BASE_URL}/api/webhooks/twilio`,
-  })
-
-  const created = await createMessage(ctx, {
-    source: 'in_house',
-    customerId: customer.id,
-    direction: 'outbound',
-    didUsed: did.e164Number,
-    remoteE164: customer.phone,
-    body: args.body,
-    status: status === 'sent' ? 'sent' : 'queued',
-    twilioMessageSid: messageSid,
-    agentUserId: args.agentUserId,
-    templateKey: 'manual',
-    sentAt: new Date().toISOString(),
-  })
-  if (!created.success) return created
-
-  return { success: true, data: { voipMessageId: created.data.id } }
-}
-
-/** Inbound SMS handler — triggered by Twilio messaging inbound webhook (Task 24). */
-export async function recordInboundMessage(
-  ctx: ScopedContext,
-  args: { fromE164: string, toE164: string, body: string, twilioMessageSid: string },
-): Promise<DalReturn<{ wasOptOut: boolean }>> {
-  // Find customer by phone (may be null — STOP from non-customer still gets DNC'd)
-  const customerResult = await findCustomerByPhone(ctx, args.fromE164)
-  if (!customerResult.success) return customerResult
-  const customer = customerResult.data
-
-  // Log the inbound (idempotent on twilio_message_sid)
-  const existing = await findByTwilioMessageSid(ctx, args.twilioMessageSid)
-  if (existing.success && existing.data) {
-    // already processed
-    return { success: true, data: { wasOptOut: false } }
-  }
-
-  await createMessage(ctx, {
-    source: 'in_house',
-    customerId: customer?.id ?? null,
-    direction: 'inbound',
-    didUsed: args.toE164,
-    remoteE164: args.fromE164,
-    body: args.body,
-    status: 'received',
-    twilioMessageSid: args.twilioMessageSid,
-    templateKey: null,
-  })
-
-  // STOP handling
-  if (isOptOutKeyword(args.body)) {
-    await recordDnc(ctx, {
-      phoneE164: args.fromE164,
-      source: 'twilio_stop',
-      reason: `Inbound STOP via Twilio: "${args.body.trim()}"`,
-    })
-    return { success: true, data: { wasOptOut: true } }
-  }
-
-  return { success: true, data: { wasOptOut: false } }
-}
-
-export async function recordMessageStatus(
-  ctx: ScopedContext,
-  args: { twilioMessageSid: string, status: VoipMessageStatus },
-): Promise<DalReturn<void>> {
-  const result = await updateStatusByTwilioSid(ctx, args)
-  return result.success ? { success: true, data: undefined } : result
-}
-```
-
-> **Note on customer DAL:** The existing `customers/dal/server/queries.ts` returns BARE values (not `DalReturn<T>`) — older pattern from before the migration. Phase 1 adds two NEW exports there that DO return `DalReturn<T>` so voip services compose cleanly:
->
-> ```ts
-> // src/shared/entities/customers/dal/server/queries.ts (additions)
-> import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-> import { eq } from 'drizzle-orm'
-> import { db } from '@/shared/db'
-> import { customers } from '@/shared/db/schema'
-> import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
-> import type { Customer } from '@/shared/entities/customers/types'
->
-> export async function findCustomerById(ctx: ScopedContext, id: string): Promise<DalReturn<Customer | undefined>> {
->   return dalDbOperation(async () => {
->     const [row] = await db.select().from(customers).where(eq(customers.id, id)).limit(1)
->     return row
->   })
-> }
->
-> export async function findCustomerByPhone(ctx: ScopedContext, phoneE164: string): Promise<DalReturn<Customer | undefined>> {
->   return dalDbOperation(async () => {
->     const [row] = await db.select().from(customers).where(eq(customers.phone, phoneE164)).limit(1)
->     return row
->   })
-> }
-> ```
->
-> Keep the older `getCustomer(customerId, viewer)` etc. functions in place — they're consumed by un-migrated callers. The two new functions are pure additions, no migration risk.
-
-- [ ] **Step 23.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/services/voip/voip-messages.service.ts \
-  src/shared/entities/voip-messages/dal/server/mutations.ts \
-  src/shared/entities/customers/dal/server/queries.ts
-git commit -m "feat(voip): add voip-messages service (sendManualSms, recordInboundMessage, recordMessageStatus)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 24: `services/voip/voip-routing.service.ts` (voip routing endpoint backend)
-
-**Files:**
-- Create: `src/shared/services/voip/voip-routing.service.ts`
-
-> Backends the three voip routing endpoints (Task 26). Response shapes match [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md) exactly. Auth + the HTTP envelope is handled in the route file; this service is pure business logic.
-
-- [ ] **Step 24.1: Create the service**
-
-```ts
-// src/shared/services/voip/voip-routing.service.ts
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import { findCustomerByPhone } from '@/shared/entities/customers/dal/server/queries'
-import { canOutboundTo } from './voip-compliance.service'
-import { getTransferTargetDid } from './voip-dids.service'
-import { listAvailableTransferHumans } from './voip-user-availability.service'
-
-// Response shape per INTEGRATION-SEAM.md §1, table row 1.
-export type CallerLookupResponse =
-  | {
-    customer_id: string
-    first_name: string
-    last_name: string | null
-    pipeline_stage: string | null
-    last_interaction_at: string | null
-    language: string | null
-    open_project: { id: string, name: string } | null
-  }
-  | { customer_id: null }
-
-export async function lookupCallerContext(
-  ctx: ScopedContext,
-  args: { caller_e164: string },
-): Promise<DalReturn<CallerLookupResponse>> {
-  const result = await findCustomerByPhone(ctx, args.caller_e164)
-  if (!result.success) return result
-  if (!result.data) return { success: true, data: { customer_id: null } }
-
-  const c = result.data
-  return {
-    success: true,
-    data: {
-      customer_id: c.id,
-      first_name: c.firstName ?? c.name ?? '',
-      last_name: c.lastName ?? null,
-      pipeline_stage: c.pipeline ?? null,
-      last_interaction_at: c.lastInteractionAt ?? null,
-      language: c.preferredLanguage ?? null,
-      open_project: null,  // Phase 2 joins active project; Phase 1 = always null
-    },
-  }
-}
-
-// Response shape per INTEGRATION-SEAM.md §1, table row 2.
-export type TransferTargetResponse =
-  | {
-    target_e164: string
-    warm_intro: string
-    custom_parameters: {
-      dialer_attempt_id?: string
-      customer_id: string
-      trade?: string
-      location?: string
-    }
-  }
-  | { target_e164: null, reason: 'no_human_available' | 'no_transfer_target_configured' }
-
-export async function findTransferTarget(
-  ctx: ScopedContext,
-  args: { caller_e164: string, customer_id: string },
-): Promise<DalReturn<TransferTargetResponse>> {
-  // 1. Is anyone available?
-  const availableResult = await listAvailableTransferHumans(ctx)
-  if (!availableResult.success) return availableResult
-  if (availableResult.data.length === 0) {
-    return { success: true, data: { target_e164: null, reason: 'no_human_available' } }
-  }
-
-  // 2. Get the dedicated transfer-target DID (CloudTalk dials INTO this DID; CloudTalk Call Flow
-  //    bridges the customer's leg to this number, which routes via Twilio TwiML to whichever
-  //    softphone is registered.)
-  const didResult = await getTransferTargetDid(ctx)
-  if (!didResult.success) {
-    return { success: true, data: { target_e164: null, reason: 'no_transfer_target_configured' } }
-  }
-
-  // 3. Build warm-intro (≤25 words per INTEGRATION-SEAM.md §1)
-  const customerResult = await findCustomerByPhone(ctx, args.caller_e164)
-  const name = customerResult.success && customerResult.data?.name ? customerResult.data.name : 'Lead'
-  const warmIntro = `${name} on the line — interested in remodeling. Coming over now.`.slice(0, 150)
-
-  return {
-    success: true,
-    data: {
-      target_e164: didResult.data.e164Number,
-      warm_intro: warmIntro,
-      custom_parameters: {
-        customer_id: args.customer_id,
-      },
-    },
-  }
-}
-
-// Response shape per INTEGRATION-SEAM.md §1, table row 3.
-export async function complianceCheckForCampaign(
-  ctx: ScopedContext,
-  args: { customer_id: string, phone_e164: string },
-): Promise<DalReturn<{ allowed: true } | { allowed: false, reason: string }>> {
-  const result = await canOutboundTo(ctx, { phoneE164: args.phone_e164, enforceHours: false })
-  if (!result.success) return result
-  if (result.data.allowed) return { success: true, data: { allowed: true } }
-  return { success: true, data: { allowed: false, reason: result.data.reason } }
-}
-```
-
-- [ ] **Step 24.2: Verify + commit**
-
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/services/voip/voip-routing.service.ts
-git commit -m "feat(voip): add voip-routing service (voip routing endpoint backend per INTEGRATION-SEAM.md §1)
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
-
----
-
-### Task 25: `services/voip/voip-link-tokens.service.ts`
-
-**Files:**
-- Create: `src/shared/services/voip/voip-link-tokens.service.ts`
-
-- [ ] **Step 25.1: Create the service**
-
-```ts
-// src/shared/services/voip/voip-link-tokens.service.ts
-import { randomBytes } from 'node:crypto'
-import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import env from '@/shared/config/server-env'
-import { findByToken } from '@/shared/entities/voip-link-tokens/dal/server/queries'
-import { createToken, markUsed } from '@/shared/entities/voip-link-tokens/dal/server/mutations'
+// All route handlers consume services, not the provider directly:
+import { voipCallsService } from '@/shared/services/voip/voip-calls.service'
+import { voipMessagesService, isOptOutKeyword } from '@/shared/services/voip/voip-messages.service'
+import { voipRoutingService } from '@/shared/services/voip/voip-routing.service'
+import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
+import { voipLinkTokensService } from '@/shared/services/voip/voip-link-tokens.service'
+
+// Webhook signature verify is intentionally NOT service-wrapped — one-line
+// boundary call:
+import { twilioClient } from '@/shared/services/providers/twilio/client'
+
+// Webhook payload Zod for `.parse()` at the seam:
 import {
-  voipLinkTokenPayloadSchema,
-  type VoipLinkTokenPayload,
-} from '@/shared/entities/voip-link-tokens/schemas/payload-schemas'
-
-const TTL_HOURS = 48
-
-function generateToken(): string {
-  return randomBytes(24).toString('base64url')   // ~32 URL-safe chars
-}
-
-export async function mintToken(
-  ctx: ScopedContext,
-  args: {
-    customerId: string
-    phoneE164: string
-    payload: VoipLinkTokenPayload
-    createdByUserId: string
-  },
-): Promise<DalReturn<{ token: string, url: string, expiresAt: string }>> {
-  // Validate payload shape (defense in depth — caller should already have validated)
-  voipLinkTokenPayloadSchema.parse(args.payload)
-
-  const token = generateToken()
-  const expiresAt = new Date(Date.now() + TTL_HOURS * 60 * 60 * 1000).toISOString()
-
-  const result = await createToken(ctx, {
-    token,
-    type: args.payload.type,
-    customerId: args.customerId,
-    phoneE164: args.phoneE164,
-    expiresAt,
-    payloadJson: args.payload,
-    createdByUserId: args.createdByUserId,
-  })
-  if (!result.success) return result
-
-  const url = `${env.VOIP_WEBHOOK_BASE_URL}/api/voip/links/${token}`
-  return { success: true, data: { token, url, expiresAt } }
-}
-
-export type ConsumeTokenResult =
-  | { kind: 'ok', token: { type: string, payload: VoipLinkTokenPayload, customerId: string | null } }
-  | { kind: 'expired' }
-  | { kind: 'already_used' }
-  | { kind: 'not_found' }
-
-/** Validates and consumes a token. Single-use; concurrent attempts race-safely yield 'already_used' for losers. */
-export async function consumeToken(
-  ctx: ScopedContext,
-  token: string,
-): Promise<DalReturn<ConsumeTokenResult>> {
-  const found = await findByToken(ctx, token)
-  if (!found.success) return found
-  if (!found.data) return { success: true, data: { kind: 'not_found' } }
-
-  if (new Date(found.data.expiresAt).getTime() < Date.now()) {
-    return { success: true, data: { kind: 'expired' } }
-  }
-  if (found.data.usedAt) {
-    return { success: true, data: { kind: 'already_used' } }
-  }
-
-  const marked = await markUsed(ctx, token)
-  if (!marked.success) return marked
-  if (!marked.data) {
-    // Race condition lost — another consumer won.
-    return { success: true, data: { kind: 'already_used' } }
-  }
-
-  return {
-    success: true,
-    data: {
-      kind: 'ok',
-      token: {
-        type: marked.data.type,
-        payload: marked.data.payloadJson as VoipLinkTokenPayload,
-        customerId: marked.data.customerId,
-      },
-    },
-  }
-}
+  voiceInboundWebhookSchema, voiceStatusCallbackSchema, voiceDialActionSchema,
+} from '@/shared/services/providers/twilio/webhooks/voice'
+import {
+  messagingInboundWebhookSchema, messagingStatusCallbackSchema,
+} from '@/shared/services/providers/twilio/webhooks/messaging'
 ```
 
-- [ ] **Step 25.2: Verify + commit**
+#### Verified
 
-```bash
-pnpm tsc && pnpm lint
-git add src/shared/services/voip/voip-link-tokens.service.ts \
-  src/shared/entities/voip-link-tokens/dal/
-git commit -m "feat(voip): add voip-link-tokens service (mint + consume; 48h TTL, single-use, race-safe)
+- `pnpm tsc` clean across all 3 incremental commits
+- `pnpm lint` clean across all 3 incremental commits
+- The original sanity-test scratch (JWT mint) still works after the refactor;
+  the new service layer is wired into the same singleton.
 
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
-```
+#### Deferred to Slug D
 
----
+- ESLint `no-restricted-imports` rule preventing `import twilio from 'twilio'`
+  outside the provider directory. Currently enforced by convention + PR review.
+
 
 ### Task 26: Twilio async webhook handler (ONE route) + softphone access-token
 
