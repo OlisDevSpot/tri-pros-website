@@ -15,18 +15,11 @@ import {
   proposalStatuses,
   userRoles,
   viewSources,
-  voipCallDispositions,
   voipCallStatuses,
   voipCampaignStatuses,
-  voipDidRoles,
-  voipDidStatuses,
-  voipDncSources,
+  voipDirections,
   voipLinkTokenTypes,
-  voipMessageDirections,
   voipMessageStatuses,
-  voipSources,
-  voipTransferModes,
-  voipUserAvailabilities,
 } from '@/shared/constants/enums'
 import {
   constructionTypes,
@@ -66,16 +59,10 @@ export const projectStatusEnum = pgEnum('project_status', projectStatuses)
 // LEADS
 export const leadTypeEnum = pgEnum('lead_type', leadTypes)
 
-// VOIP IN-HOUSE (Twilio — agent comms + DIDs + DNC)
-export const voipSourceEnum = pgEnum('voip_source', voipSources)
+// VOIP IN-HOUSE (Twilio — agent ↔ already-known-customer comms)
+// 4 enums per 2026-05-30 grill. See docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS.
 export const voipCallStatusEnum = pgEnum('voip_call_status', voipCallStatuses)
-export const voipCallDispositionEnum = pgEnum('voip_call_disposition', voipCallDispositions)
-export const voipDidStatusEnum = pgEnum('voip_did_status', voipDidStatuses)
-export const voipDidRoleEnum = pgEnum('voip_did_role', voipDidRoles)
-export const voipDncSourceEnum = pgEnum('voip_dnc_source', voipDncSources)
-export const voipUserAvailabilityEnum = pgEnum('voip_user_availability', voipUserAvailabilities)
-export const voipTransferModeEnum = pgEnum('voip_transfer_mode', voipTransferModes)
-export const voipMessageDirectionEnum = pgEnum('voip_message_direction', voipMessageDirections)
+export const voipDirectionEnum = pgEnum('voip_direction', voipDirections)
 export const voipMessageStatusEnum = pgEnum('voip_message_status', voipMessageStatuses)
 export const voipLinkTokenTypeEnum = pgEnum('voip_link_token_type', voipLinkTokenTypes)
 
