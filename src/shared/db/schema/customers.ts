@@ -4,6 +4,7 @@ import { doublePrecision, jsonb, pgTable, text, timestamp, uuid, varchar } from 
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
+import { user } from './auth'
 import { leadSourcesTable } from './lead-sources'
 import { customerPipelineEnum, leadTypeEnum } from './meta'
 
@@ -34,6 +35,16 @@ export const customers = pgTable('customers', {
   // Lead-funnel stage for customers in the `leads` derived pipeline (no meetings yet).
   // see src/shared/entities/customers/DOCS.md#pipeline-stage-only-for-leads
   pipelineStage: text('pipeline_stage'),
+  // DNC (Do-Not-Call) — shared canonical registry decorating the customer row.
+  // Both voip-in-house (Twilio) and voip-campaigns (CloudTalk) INSERT into it
+  // and gate outbound against it. Owning service: src/shared/services/compliance/.
+  // see docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS (2026-05-30)
+  // see docs/plans/voip/INTEGRATION-SEAM.md §5 (DNC propagation)
+  dncOptedOutAt: timestamp('dnc_opted_out_at', { mode: 'string', withTimezone: true }),
+  // Free-text reason tag: 'customer_request' | 'ftc' | 'admin' | 'stop_keyword' | etc.
+  // Reason-tagged, not origin-tagged — the registry has no concept of which provider received the STOP.
+  dncReason: text('dnc_reason'),
+  dncAddedByUserId: uuid('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
   syncedAt: timestamp('synced_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   createdAt,
   updatedAt,
