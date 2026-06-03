@@ -1,6 +1,6 @@
 import type { MeetingForGCal } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
 
-import { eq, isNotNull } from 'drizzle-orm'
+import { and, eq, isNotNull } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -66,6 +66,23 @@ export async function getAllMeetingsWithSchedule(): Promise<{ id: string }[]> {
     .where(isNotNull(meetings.scheduledFor))
 }
 
+/**
+ * Find meetings of a single customer that have an existing GCal event.
+ * Used by `schedulingService.propagateCustomerChange` to re-sync the
+ * customer's event projections after any customer mutation.
+ */
+export async function getMeetingsForCustomerWithGCalEvent(
+  customerId: string,
+): Promise<{ id: string }[]> {
+  return db
+    .select({ id: meetings.id })
+    .from(meetings)
+    .where(and(
+      eq(meetings.customerId, customerId),
+      isNotNull(meetings.gcalEventId),
+    ))
+}
+
 export async function getMeetingByGCalEventId(gcalEventId: string) {
   return db.query.meetings.findFirst({
     where: eq(meetings.gcalEventId, gcalEventId),
@@ -104,7 +121,7 @@ export async function clearAllMeetingGCalFields(): Promise<void> {
 
 export async function updateMeetingScheduledFor(
   meetingId: string,
-  scheduledFor: string | null,
+  scheduledFor: string,
 ): Promise<void> {
   await db.update(meetings)
     .set({ scheduledFor })
