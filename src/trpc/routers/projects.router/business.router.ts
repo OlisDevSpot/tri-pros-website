@@ -1,11 +1,13 @@
 import { TRPCError } from '@trpc/server'
 import { eq } from 'drizzle-orm'
+import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
-import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { x_projectScopes } from '@/shared/db/schema/x-project-scopes'
+import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { createProjectFormSchema } from '@/shared/entities/projects/schemas'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
@@ -60,11 +62,19 @@ export const businessRouter = createTRPCRouter({
         })
         .returning()
 
-      // 5. Link meeting to project and set outcome
-      await db
-        .update(meetings)
-        .set({ projectId: project.id, meetingOutcome: 'converted_to_project' })
-        .where(eq(meetings.id, input.meetingId))
+      // 5. Link meeting to project and set outcome — through meetingCrud so the
+      //    entity update hook fires (sync to GCal with the new project prefix
+      //    + color, broadcast Ably refresh). `projectId` is now in the GCal
+      //    trigger set in meetingServerSpec.hooks.update.after.
+      const meetingCtx = buildUserContext(
+        ctx.session.user.id,
+        ctx.session.user.role,
+        meetingServerSpec,
+      )
+      dalVerifySuccess(await meetingCrud.update(meetingCtx, {
+        id: input.meetingId,
+        data: { projectId: project.id, meetingOutcome: 'converted_to_project' },
+      }))
 
       // 6. Extract scope IDs from proposals' SOWs and link to project
       const scopeIds = new Set<string>()

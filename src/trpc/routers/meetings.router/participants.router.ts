@@ -214,10 +214,10 @@ export function createParticipantsRouter(entity: EntityToolkit<PgTable>) {
           }
         }
 
-        // Push updated attendee list to Google Calendar
-        const systemOwnerId = await getSystemOwnerId()
+        // Push updated attendee list to Google Calendar. The system-owner swap
+        // happens inside syncMeeting — caller doesn't need to pass owner.
         await schedulingService
-          .pushToGCal(systemOwnerId, 'meeting', meetingId)
+          .syncMeeting(meetingId)
           .catch(err => console.error(`[manageParticipants] GCal push failed for ${meetingId}:`, err))
 
         return { success: true }

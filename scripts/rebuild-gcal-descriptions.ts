@@ -39,7 +39,6 @@
 import './lib/load-env'
 import { isNotNull } from 'drizzle-orm'
 import { clearMeetingGCalFields, updateMeetingGCalFields } from '@/shared/entities/meetings/dal/server/google-calendar'
-import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema/meetings'
 import { schedulingService } from '@/shared/services/scheduling.service'
@@ -74,8 +73,6 @@ async function main() {
   console.log(`DB host:  ${host}`)
   console.log('')
 
-  const systemOwnerId = await getSystemOwnerId()
-
   const rows = await db
     .select({ id: meetings.id })
     .from(meetings)
@@ -100,7 +97,7 @@ async function main() {
 
   for (const [index, m] of rows.entries()) {
     try {
-      await schedulingService.pushToGCal(systemOwnerId, 'meeting', m.id)
+      await schedulingService.syncMeeting(m.id)
       success += 1
     }
     catch (err) {

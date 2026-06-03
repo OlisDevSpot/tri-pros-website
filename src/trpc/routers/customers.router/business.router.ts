@@ -169,6 +169,18 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
         }
 
+        // Server-side guard: meetings.scheduled_for is NOT NULL and the central-
+        // calendar push hook needs a real time. The intake form's Zod schema
+        // already enforces this for the customer_and_meeting mode; this guards
+        // direct API hits where someone POSTs without scheduledFor.
+        if (mode === 'customer_and_meeting' && !customerData.leadMetaJSON?.scheduledFor) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'A meeting must have a scheduled date.',
+          })
+        }
+        const scheduledFor = customerData.leadMetaJSON?.scheduledFor
+
         // Resolve session for meeting owner assignment (null for unauthenticated 3rd party)
         const session = (ctx as { session?: { user: { id: string } } }).session ?? null
 
@@ -248,7 +260,10 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
             ownerId: ownerId!,
             customerId: customer.id,
             meetingType: 'Fresh',
-            scheduledFor: customerData.leadMetaJSON?.scheduledFor ?? undefined,
+            // Non-null-asserted: the BAD_REQUEST guard at the top of this
+            // mutation rejects customer_and_meeting submissions without
+            // scheduledFor, so we've already returned by now if it was missing.
+            scheduledFor: scheduledFor!,
           })
 
           if (!meetingResult.success) {
