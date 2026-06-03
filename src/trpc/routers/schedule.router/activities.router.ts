@@ -133,7 +133,7 @@ export const activitiesRouter = createTRPCRouter({
         && !!created.scheduledFor
       if (isSyncable) {
         await schedulingService
-          .pushToGCal(ctx.session.user.id, 'activity', created.id)
+          .syncActivity(ctx.session.user.id, created.id)
           .catch(() => {})
       }
 
@@ -182,7 +182,7 @@ export const activitiesRouter = createTRPCRouter({
       }
 
       await schedulingService
-        .pushToGCal(ctx.session.user.id, 'activity', updated.id)
+        .syncActivity(ctx.session.user.id, updated.id)
         .catch(() => {})
 
       return updated

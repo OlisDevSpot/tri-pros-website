@@ -35,9 +35,15 @@ export const meetingFlowRouter = createTRPCRouter({
         id: customerId,
         data: profiles,
       }))
-      void ably.channels.get(`meeting:${meetingId}`).publish('meeting.updated', {
-        fields: Object.keys(profiles),
-      })
+      // Inline await — ephemeral realtime fan-out is the explicit exception
+      // to background-side-effects-via-qstash-jobs (routing through QStash
+      // would defeat sub-100ms broadcast). Failure is logged, not surfaced —
+      // an unsubscribed channel or transient Ably 5xx shouldn't fail the
+      // profile-save mutation.
+      await ably.channels
+        .get(`meeting:${meetingId}`)
+        .publish('meeting.updated', { fields: Object.keys(profiles) })
+        .catch(err => console.warn('[meeting-flow] ably publish failed:', err))
       return updated
     }),
 

@@ -3,6 +3,8 @@ import type { EntityServerSpec } from '@/shared/dal/server/types'
 import { eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 
+import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import {
   customers,
@@ -13,6 +15,8 @@ import {
 } from '@/shared/db/schema'
 import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
 import { customerVisibility } from '@/shared/entities/customers/lib/visibility'
+import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { propagateCustomerChangeJob } from '@/shared/services/providers/upstash/jobs/propagate-customer-change'
 
 // Updates allow `createdAt` (super-admin-only via CASL field gate) — legacy
 // Notion imports land with import-day timestamps and lead-source stats by
@@ -77,31 +81,72 @@ export const customerServerSpec = {
           geocodedAt: null,
         }
       },
+      // Propagate every customer update to the customer's downstream
+      // projections — today: GCal events for the customer's meetings (name,
+      // address, phone, email are rendered into the event summary/location/
+      // description). No field filter on purpose: `propagateCustomerChange`
+      // short-circuits inside the job handler when the customer has zero
+      // meetings with gcalEventId, so the cost on irrelevant updates is one
+      // QStash enqueue + one cheap DB read inside the job. Field-CASL on
+      // crud.update already restricts agents to JSON profile columns, so the
+      // vast majority of writes won't reach the system-calendar-auth path.
+      //
+      // Strict dispatch: a missed enqueue means every synced GCal event
+      // continues rendering stale customer data with no recovery hook —
+      // surface as a 500 instead.
+      //
+      // @migration(ably-realtime-kernel) — when the Ably realtime kernel
+      // lands, also publish a `customer:<row.id>` channel event inline (NOT
+      // via QStash — ephemeral realtime fan-out is the same exception as
+      // meeting.updated in meetings/lib/server-spec.ts):
+      //   await ably.channels.get(`customer:${row.id}`).publish(
+      //     'customer.updated', { fields: Object.keys(meta.input) })
+      //
+      // see docs/codebase-conventions/service-architecture.md#background-side-effects-via-qstash-jobs
+      async after(row, _ctx, _meta) {
+        await propagateCustomerChangeJob.dispatchOrThrow({ customerId: row.id })
+      },
     },
     delete: {
       // The schema's FK behavior for meetings.customerId and proposals.meetingId
       // is `set null` on parent delete — without this hook, deleting a customer
       // would orphan rows that surface in lists with no owner. Manually delete
-      // proposals → meetings in the same logical step before the customer row
-      // is removed. customer_notes and projects cascade via schema FKs.
-      // The cascade tx commits before the parent customer delete runs. If the
-      // parent delete fails after the cascade succeeds, the customer row survives
-      // with children gone — recoverable by retry (the no-children re-run is a
-      // clean no-op).
-      // Was previously inlined in dal/server/queries.ts:deleteCustomer.
+      // proposals → meetings before the customer row is removed. customer_notes
+      // and projects cascade via schema FKs.
+      //
+      // Meeting deletes go through `meetingCrud.delete` so each meeting's
+      // `delete` hook fires — that hook is responsible for one-way GCal event
+      // cleanup. SYSTEM_CONTEXT because the caller has already passed
+      // `delete:Customer` (super-admin manage:all) at the tRPC layer; the
+      // cascade should not be re-gated by per-row participation.
+      //
+      // No transaction wraps the cascade: meetingCrud.delete is not tx-aware,
+      // and the original "atomic cascade" comment was tolerant of partial
+      // failure anyway. Partial failure mode: some meetings deleted (with their
+      // GCal events) before a later failure leaves the rest plus the customer
+      // intact — retry is a clean no-op for already-deleted meetings.
+      //
+      // Proposals are still cleared with a raw `db.delete` because the proposal
+      // delete hook (if any) wouldn't cascade to GCal — only meetings do.
+      // When proposalServerSpec grows a delete hook with cross-system effects,
+      // revisit and route through proposalCrud.delete per row.
       async before(id, _ctx) {
         const customerId = String(id)
-        await db.transaction(async (tx) => {
-          const customerMeetings = await tx
-            .select({ id: meetings.id })
-            .from(meetings)
-            .where(eq(meetings.customerId, customerId))
-          const meetingIds = customerMeetings.map(m => m.id)
-          if (meetingIds.length > 0) {
-            await tx.delete(proposals).where(inArray(proposals.meetingId, meetingIds))
-            await tx.delete(meetings).where(inArray(meetings.id, meetingIds))
-          }
-        })
+        const customerMeetings = await db
+          .select({ id: meetings.id })
+          .from(meetings)
+          .where(eq(meetings.customerId, customerId))
+
+        if (customerMeetings.length === 0) {
+          return
+        }
+
+        const meetingIds = customerMeetings.map(m => m.id)
+        await db.delete(proposals).where(inArray(proposals.meetingId, meetingIds))
+
+        for (const m of customerMeetings) {
+          dalVerifySuccess(await meetingCrud.delete(SYSTEM_CONTEXT, { id: m.id }))
+        }
       },
     },
   },
