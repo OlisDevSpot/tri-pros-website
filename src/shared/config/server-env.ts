@@ -82,28 +82,35 @@ const envSchema = z.object({
 
   // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (CloudTalk).
   // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
-  VOIP_WEBHOOK_BASE_URL: z.string(),
+  //
+  // All VoIP env vars in this section (VOIP_*, TWILIO_*, CLOUDTALK_*) are
+  // OPTIONAL during schema validation — same precedent as the VAPID block below.
+  // The consuming code (Twilio client factories, CloudTalk webhook receivers)
+  // asserts non-null at the point of use. Build environments without VoIP
+  // credentials (CI, prod-before-VoIP-launches, fresh dev clones) parse the
+  // schema cleanly; only environments actively using VoIP features need them.
+  VOIP_WEBHOOK_BASE_URL: z.string().optional(),
   // (CLOUDTALK_PHASE0_TRANSFER_TARGET_E164 removed 2026-05-27 — AI VoiceAgent off the table per pivot; no transfer mock needed.)
   // Dev safety: redirects all outbound voice/SMS to a single test number in dev/preview.
   // CI gate at bottom of this file prevents this being set in production.
   VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
 
-  // TWILIO (voip-in-house)
-  TWILIO_ACCOUNT_SID: z.string(),
-  TWILIO_AUTH_TOKEN: z.string(),
-  TWILIO_API_KEY_SID: z.string(),
-  TWILIO_API_KEY_SECRET: z.string(),
-  TWILIO_TWIML_APP_SID: z.string(),
+  // TWILIO (voip-in-house) — all optional per the VoIP-section policy above.
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_API_KEY_SID: z.string().optional(),
+  TWILIO_API_KEY_SECRET: z.string().optional(),
+  TWILIO_TWIML_APP_SID: z.string().optional(),
   TWILIO_TRUST_PROFILE_SID: z.string().optional(), // Trust Hub vetting clock; optional until issued
   TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(), // 10DLC vetting clock; optional until approval
 
-  // Pilot DIDs (role-named per Phase 0 procurement)
-  TWILIO_TRANSFER_TARGET_DID_E164: z.string(),
-  TWILIO_TRANSFER_TARGET_DID_SID: z.string(),
-  TWILIO_DID_424_E164: z.string(),
-  TWILIO_DID_424_SID: z.string(),
-  TWILIO_DID_626_E164: z.string(),
-  TWILIO_DID_626_SID: z.string(),
+  // Pilot DIDs (role-named per Phase 0 procurement) — all optional.
+  TWILIO_TRANSFER_TARGET_DID_E164: z.string().optional(),
+  TWILIO_TRANSFER_TARGET_DID_SID: z.string().optional(),
+  TWILIO_DID_424_E164: z.string().optional(),
+  TWILIO_DID_424_SID: z.string().optional(),
+  TWILIO_DID_626_E164: z.string().optional(),
+  TWILIO_DID_626_SID: z.string().optional(),
 
   // FCC DNC (SAN pending issuance — optional until Phase 0 completes)
   FTC_DNC_SAN: z.string().optional(),
@@ -119,7 +126,8 @@ const envSchema = z.object({
   //   2. Async event webhook (`/api/webhooks/cloudtalk/route.ts`) — voip-campaigns Phase 1
   // Same trust model both surfaces; one secret value, configured once into CloudTalk's dashboard.
   // Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
-  CLOUDTALK_WEBHOOK_SECRET: z.string().min(32),
+  // Optional per the VoIP-section policy; min(32) still enforced when present so a half-set secret can't slip through.
+  CLOUDTALK_WEBHOOK_SECRET: z.string().min(32).optional(),
   // Optional comma-separated CIDRs for Vercel edge allowlist.
   CLOUDTALK_WEBHOOK_IP_ALLOWLIST: z.string().optional(),
 
