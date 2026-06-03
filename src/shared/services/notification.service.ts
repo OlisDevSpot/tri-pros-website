@@ -155,7 +155,12 @@ function createNotificationService() {
       meetingId: string
       newScheduledFor: string | null
       oldScheduledFor: string | null
-      excludeUserId: string
+      /**
+       * Skip notifying this user. Optional so SYSTEM_CONTEXT callers
+       * (e.g., inbound GCal sync) can notify every participant — there
+       * is no "actor" to exclude in those flows.
+       */
+      excludeUserId?: string
     }) => {
       const [meeting] = await db
         .select({
@@ -178,7 +183,7 @@ function createNotificationService() {
         .from(meetingParticipants)
         .where(and(
           eq(meetingParticipants.meetingId, params.meetingId),
-          ne(meetingParticipants.userId, params.excludeUserId),
+          params.excludeUserId ? ne(meetingParticipants.userId, params.excludeUserId) : undefined,
         ))
 
       if (recipients.length === 0) {

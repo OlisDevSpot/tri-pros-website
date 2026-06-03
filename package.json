@@ -33,6 +33,8 @@
     "migrate:proposal-kind:dev": "tsx scripts/migrate-proposal-kind.ts",
     "rebuild:gcal": "NODE_ENV=production NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "rebuild:gcal:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
+    "gcal:cron:setup": "NODE_ENV=production NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-gcal-cron.ts",
+    "gcal:cron:setup:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-gcal-cron.ts",
     "meta": "tsx scripts/meta/index.ts",
     "dispatch": "bash scripts/dispatch.sh",
     "tunnel": "node scripts/tunnel.mjs",

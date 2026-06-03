@@ -26,6 +26,7 @@ import {
   getAllMeetingsWithSchedule,
   getMeetingByGCalEventId,
   getMeetingForGCal,
+  getMeetingsForCustomerWithGCalEvent,
   updateMeetingGCalFields,
   updateMeetingScheduledFor,
 } from '@/shared/entities/meetings/dal/server/google-calendar'
@@ -112,7 +113,12 @@ async function performInboundSync(userId: string): Promise<void> {
       const winner = resolveConflict(linkedMeeting.updatedAt, gcalEvent.updated)
       if (winner === 'remote') {
         const local = gcalEventToLocal(gcalEvent)
-        await updateMeetingScheduledFor(linkedMeeting.id, local.scheduledFor)
+        // meetings.scheduled_for is NOT NULL — if the remote event lacks
+        // dateTime/date (rare, e.g. malformed event), preserve the existing
+        // local scheduledFor rather than blanking it.
+        if (local.scheduledFor) {
+          await updateMeetingScheduledFor(linkedMeeting.id, local.scheduledFor)
+        }
         await updateMeetingGCalFields(linkedMeeting.id, {
           gcalEtag: local.gcalEtag,
           gcalSyncedAt: new Date().toISOString(),
@@ -175,6 +181,80 @@ async function performInboundSync(userId: string): Promise<void> {
 
   if (eventList.nextSyncToken) {
     await updateAccountGCalFields(acct.id, { gcalSyncToken: eventList.nextSyncToken })
+  }
+}
+
+/**
+ * Resolve the system-owner's Google Calendar credentials + target calendar
+ * for any meeting-side outbound write. Returns null (with a console.error)
+ * when the system owner hasn't connected their calendar yet — callers
+ * treat that as a no-op rather than a thrown error so a missing setup
+ * doesn't break unrelated mutations.
+ */
+async function resolveSystemCalendarAuth(): Promise<{
+  auth: { accessToken: string, account: AccountRow }
+  calendarId: string
+} | null> {
+  const systemUserId = await getSystemOwnerId()
+  const auth = await getAccessTokenForUser(systemUserId)
+  if (!auth) {
+    console.error('[scheduling] No Google account linked for system owner')
+    return null
+  }
+  if (!auth.account.gcalCalendarId) {
+    console.error('[scheduling] No calendar ID for system owner')
+    return null
+  }
+  return { auth, calendarId: auth.account.gcalCalendarId }
+}
+
+/**
+ * Shared meeting-event push logic. Three branches:
+ * - payload null + existing event → delete (event becomes stale)
+ * - existing event → patch with etag (optimistic concurrency)
+ * - no event → create + persist new gcal_event_id + etag
+ *
+ * The "payload null" branch covers a legacy case (meeting without
+ * scheduledFor) that is unreachable today because the column is NOT NULL —
+ * kept for defense and so the `deleteMeetingEvent` exit on stale linkage
+ * can compose with this without a separate code path.
+ */
+async function pushMeetingEventToCalendar(
+  auth: { accessToken: string },
+  calendarId: string,
+  meetingId: string,
+  meeting: NonNullable<Awaited<ReturnType<typeof getMeetingForGCal>>>,
+): Promise<void> {
+  const payload = meetingToGCalEvent(meeting)
+
+  if (!payload) {
+    if (meeting.gcalEventId) {
+      await googleCalendarClient.deleteEvent(auth.accessToken, calendarId, meeting.gcalEventId)
+      await clearMeetingGCalFields(meetingId)
+    }
+    return
+  }
+
+  if (meeting.gcalEventId) {
+    const updated = await googleCalendarClient.updateEvent(
+      auth.accessToken,
+      calendarId,
+      meeting.gcalEventId,
+      payload,
+      meeting.gcalEtag ?? undefined,
+    )
+    await updateMeetingGCalFields(meetingId, {
+      gcalEtag: updated.etag,
+      gcalSyncedAt: new Date().toISOString(),
+    })
+  }
+  else {
+    const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, payload)
+    await updateMeetingGCalFields(meetingId, {
+      gcalEventId: created.id,
+      gcalEtag: created.etag,
+      gcalSyncedAt: new Date().toISOString(),
+    })
   }
 }
 
@@ -277,63 +357,90 @@ function createSchedulingService() {
       await clearAllActivityGCalFieldsForUser(userId)
     },
 
-    pushToGCal: async (userId: string, entityType: 'meeting' | 'activity', entityId: string): Promise<void> => {
-      if (entityType === 'meeting') {
-        // Meetings always push to the centralized info@ system calendar
-        const systemUserId = await getSystemOwnerId()
-        const auth = await getAccessTokenForUser(systemUserId)
-        if (!auth) {
-          console.error('[pushToGCal] No Google account linked for system owner')
-          return
-        }
-
-        const acct = auth.account
-        if (!acct.gcalCalendarId) {
-          console.error('[pushToGCal] No calendar ID for system owner')
-          return
-        }
-
-        const calendarId = acct.gcalCalendarId
-        const meeting = await getMeetingForGCal(entityId)
-        if (!meeting) {
-          return
-        }
-
-        const payload = meetingToGCalEvent(meeting)
-
-        if (!payload) {
-          if (meeting.gcalEventId) {
-            await googleCalendarClient.deleteEvent(auth.accessToken, calendarId, meeting.gcalEventId)
-            await clearMeetingGCalFields(entityId)
-          }
-          return
-        }
-
-        if (meeting.gcalEventId) {
-          const updated = await googleCalendarClient.updateEvent(
-            auth.accessToken,
-            calendarId,
-            meeting.gcalEventId,
-            payload,
-            meeting.gcalEtag ?? undefined,
-          )
-          await updateMeetingGCalFields(entityId, {
-            gcalEtag: updated.etag,
-            gcalSyncedAt: new Date().toISOString(),
-          })
-        }
-        else {
-          const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, payload)
-          await updateMeetingGCalFields(entityId, {
-            gcalEventId: created.id,
-            gcalEtag: created.etag,
-            gcalSyncedAt: new Date().toISOString(),
-          })
-        }
+    /**
+     * Sync a single meeting to the centralized info@ calendar.
+     * Creates the event if `gcal_event_id` is null, updates it otherwise.
+     * Caller passes meetingId only — the owner-of-the-calendar is always
+     * the system owner (info@), not the meeting's row.ownerId. No-ops if
+     * the system owner's Google account isn't linked yet.
+     */
+    syncMeeting: async (meetingId: string): Promise<void> => {
+      const ctx = await resolveSystemCalendarAuth()
+      if (!ctx) {
         return
       }
+      const meeting = await getMeetingForGCal(meetingId)
+      if (!meeting) {
+        return
+      }
+      await pushMeetingEventToCalendar(ctx.auth, ctx.calendarId, meetingId, meeting)
+    },
 
-      // Activities continue to use the per-user calendar
+    /**
+     * One-way delete of a GCal event when its meeting row is being deleted.
+     * Takes the event identifier directly (not a meetingId) because the
+     * row may no longer exist when this fires. Idempotent against 404s
+     * (event already gone in GCal) — Google returns 410 GONE for those;
+     * we swallow it.
+     */
+    deleteMeetingEvent: async (input: { gcalEventId: string }): Promise<void> => {
+      const ctx = await resolveSystemCalendarAuth()
+      if (!ctx) {
+        return
+      }
+      await googleCalendarClient
+        .deleteEvent(ctx.auth.accessToken, ctx.calendarId, input.gcalEventId)
+        .catch((err) => {
+          console.error(`[scheduling] deleteMeetingEvent failed for ${input.gcalEventId}:`, err)
+        })
+    },
+
+    /**
+     * Re-sync every meeting of a customer that already has a GCal event,
+     * so customer-derived fields embedded in the event (name, phone,
+     * email, address) reflect the latest customer row. Called from
+     * `customerServerSpec.hooks.update.after`. Per-meeting failures are
+     * logged and the loop continues — one Google API hiccup shouldn't
+     * abort the rest of the customer's projections.
+     *
+     * @migration(ably-realtime-kernel) — when the Ably kernel lands, this
+     * service (or the customer update hook calling it) should also publish
+     * a `customer:<id>` channel event so open meeting cards refresh their
+     * rendered customer fields without a full refetch.
+     */
+    propagateCustomerChange: async (customerId: string): Promise<void> => {
+      // Short-circuit if no synced events exist for this customer — avoids
+      // the system-calendar-auth resolve (and its console.error noise when
+      // the system owner isn't connected in dev) on every customer update.
+      const customerMeetings = await getMeetingsForCustomerWithGCalEvent(customerId)
+      if (customerMeetings.length === 0) {
+        return
+      }
+      const ctx = await resolveSystemCalendarAuth()
+      if (!ctx) {
+        return
+      }
+      for (const { id: meetingId } of customerMeetings) {
+        const meeting = await getMeetingForGCal(meetingId)
+        if (!meeting) {
+          continue
+        }
+        try {
+          await pushMeetingEventToCalendar(ctx.auth, ctx.calendarId, meetingId, meeting)
+        }
+        catch (err) {
+          console.error(`[scheduling] propagateCustomerChange: meeting ${meetingId} failed:`, err)
+        }
+      }
+    },
+
+    /**
+     * Sync a single activity to its OWNER's per-user calendar. Activities
+     * are not centralized like meetings — each agent's tasks/events live
+     * on their own connected calendar. No-ops if the user isn't connected
+     * or the activity type isn't in `gcalSyncableActivityTypes`.
+     */
+    syncActivity: async (userId: string, activityId: string): Promise<void> => {
       const auth = await getAccessTokenForUser(userId)
       if (!auth) {
         return
@@ -345,7 +452,7 @@ function createSchedulingService() {
       }
 
       const calendarId = acct.gcalCalendarId
-      const activity = await getActivityById(entityId)
+      const activity = await getActivityById(activityId)
       if (!activity) {
         return
       }
@@ -362,7 +469,7 @@ function createSchedulingService() {
       if (!payload) {
         if (activity.gcalEventId) {
           await googleCalendarClient.deleteEvent(auth.accessToken, calendarId, activity.gcalEventId)
-          await clearActivityGCalFields(entityId)
+          await clearActivityGCalFields(activityId)
         }
         return
       }
@@ -375,14 +482,14 @@ function createSchedulingService() {
           payload,
           activity.gcalEtag ?? undefined,
         )
-        await updateActivityGCalFields(entityId, {
+        await updateActivityGCalFields(activityId, {
           gcalEtag: updated.etag,
           gcalSyncedAt: new Date().toISOString(),
         })
       }
       else {
         const created = await googleCalendarClient.createEvent(auth.accessToken, calendarId, payload)
-        await updateActivityGCalFields(entityId, {
+        await updateActivityGCalFields(activityId, {
           gcalEventId: created.id,
           gcalEtag: created.etag,
           gcalSyncedAt: new Date().toISOString(),

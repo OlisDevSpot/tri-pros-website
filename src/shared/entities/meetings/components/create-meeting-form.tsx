@@ -84,7 +84,10 @@ export function CreateMeetingForm({
   )
 
   const isPending = createMutation.isPending || updateMutation.isPending
-  const canSubmit = meetingType && (!isProjectType || projectId) && !isPending
+  // scheduledFor is required — a meeting without a time isn't a meeting. The
+  // central-calendar push hook also depends on it. Gating here keeps the rule
+  // visible at the surface; server schema + DB NOT NULL enforce it for real.
+  const canSubmit = meetingType && !!scheduledFor && (!isProjectType || projectId) && !isPending
 
   function handleSubmit() {
     if (!canSubmit) {
@@ -96,7 +99,7 @@ export function CreateMeetingForm({
         id: editMeetingId,
         data: {
           meetingType,
-          scheduledFor: scheduledFor?.toISOString(),
+          scheduledFor: scheduledFor.toISOString(),
           flowStateJSON: tradeSelections.length > 0
             ? { tradeSelections }
             : undefined,
@@ -107,7 +110,7 @@ export function CreateMeetingForm({
       createMutation.mutate({
         customerId,
         meetingType,
-        scheduledFor: scheduledFor?.toISOString(),
+        scheduledFor: scheduledFor.toISOString(),
         flowStateJSON: tradeSelections.length > 0
           ? { tradeSelections }
           : undefined,
@@ -190,7 +193,7 @@ export function CreateMeetingForm({
         <Label>
           Date & time
           {' '}
-          <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+          <span className="text-destructive">*</span>
         </Label>
         <DateTimePicker
           value={scheduledFor}

@@ -2,12 +2,16 @@ import type { Job, JobMap } from '@/shared/services/providers/upstash/types'
 import { Receiver } from '@upstash/qstash'
 import env from '@/shared/config/server-env'
 import { createQbRecordsJob } from '@/shared/services/providers/upstash/jobs/create-qb-records'
+import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { generateAISummaryJob } from '@/shared/services/providers/upstash/jobs/generate-ai-summary'
 import { initialCalendarSyncJob } from '@/shared/services/providers/upstash/jobs/initial-calendar-sync'
+import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
+import { propagateCustomerChangeJob } from '@/shared/services/providers/upstash/jobs/propagate-customer-change'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 import { syncCalendarsJob } from '@/shared/services/providers/upstash/jobs/sync-calendars'
 import { syncCustomersJob } from '@/shared/services/providers/upstash/jobs/sync-customers'
+import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { syncQbInvoiceJob } from '@/shared/services/providers/upstash/jobs/sync-qb-invoice'
 import { syncQbPaymentJob } from '@/shared/services/providers/upstash/jobs/sync-qb-payment'
 import { syncZohoSignStatusJob } from '@/shared/services/providers/upstash/jobs/sync-zoho-sign-status'
@@ -29,6 +33,10 @@ const jobs: Job[] = [
   syncZohoSignStatusJob,
   syncCalendarsJob,
   initialCalendarSyncJob,
+  syncMeetingToGcalJob,
+  deleteMeetingEventJob,
+  propagateCustomerChangeJob,
+  notifyMeetingTimeChangedJob,
 ]
 
 /**
