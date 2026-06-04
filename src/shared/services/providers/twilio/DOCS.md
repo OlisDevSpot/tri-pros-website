@@ -48,7 +48,9 @@ twilio/
   client.ts             ← THE entry point (twilioClient + RestException + TwilioClient type)
   types.ts              SDK type re-exports (CallInstance, MessageInstance, ...)
   constants/
-    index.ts            TTLs, PILOT_DIDS, VETTING, ACCESS_TOKEN_IDENTITY_PREFIX, ...
+    index.ts            TTLs, VETTING, ACCESS_TOKEN_IDENTITY_PREFIX, INBOUND_VOICE_TTS_VOICE, ...
+  lib/
+    config.ts           getTwilioConfig() + twilioEnvFragment — internal env-narrowing helper (NOT a client method; the documented `lib/` exception per service-architecture.md)
   schemas/              outbound-API Zod (request shapes for typed inputs)
     primitives.ts       e164Schema, twilioSidSchema, isoDateTimeSchema
     access-token.ts     mintVoiceAccessTokenInputSchema
@@ -127,7 +129,10 @@ Reads (via `@/shared/config/server-env`):
 - `TWILIO_TWIML_APP_SID` — granted on minted JWTs for outbound dial
 - `TWILIO_TRUST_PROFILE_SID` (optional — Trust Hub pending)
 - `TWILIO_10DLC_CAMPAIGN_SID` (optional — 10DLC pending)
-- Pilot DIDs (`TWILIO_TRANSFER_TARGET_DID_*`, `TWILIO_DID_424_*`, `TWILIO_DID_626_*`)
+
+DID env vars do not exist. DIDs live in the `voip_dids` table, populated via
+`voipDidsService.resyncFromTwilio` (admin sweep that calls
+`twilioClient.listIncomingPhoneNumbers` against the live account).
 
 Webhook signing uses `TWILIO_AUTH_TOKEN` — that's Twilio's standard signing
 key for both REST + webhook callbacks. There is no separate

@@ -204,13 +204,9 @@ TWILIO_TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_10DLC_CAMPAIGN_SID=CMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # pending campaign approval
 
-# Pilot DIDs
-TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
-TWILIO_TRANSFER_TARGET_DID_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_DID_424_E164=+1424XXXXXXX
-TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_DID_626_E164=+1626XXXXXXX
-TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Pilot DIDs: NO env vars. The 3 numbers procured in Phase 0 live in the Twilio
+# account; the `voip_dids` table is the local source of truth (populated via
+# `voipDidsService.resyncFromTwilio` — admin sweep that reads the live account).
 
 # FCC DNC (SAN pending)
 FTC_DNC_SAN=  # pending 1-2 business days

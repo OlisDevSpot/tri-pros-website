@@ -161,14 +161,10 @@ TWILIO_TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_TRUST_PROFILE_SID=BUxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_10DLC_CAMPAIGN_SID=CMxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  # pending campaign approval
 
-# Pilot DIDs — role baked into the env var name.
-# Phase 1 seed script reads these and inserts into voip_dids with role assignment.
-TWILIO_TRANSFER_TARGET_DID_E164=+1213XXXXXXX
-TWILIO_TRANSFER_TARGET_DID_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_DID_424_E164=+1424XXXXXXX
-TWILIO_DID_424_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_DID_626_E164=+1626XXXXXXX
-TWILIO_DID_626_SID=PNxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Pilot DIDs: NOT env vars. The `voip_dids` table is the source of truth,
+# populated via `voipDidsService.resyncFromTwilio` (admin mutation that reads
+# the live Twilio account). DID roles + assignments live in DB columns, not
+# env-var names.
 
 # FCC DNC (SAN pending)
 FTC_DNC_SAN=  # pending 1-2 business days
@@ -240,7 +236,7 @@ Every `@migration` comment in the voip code points to a future swap.
 
 **Cascading sub-decisions made in the same grill:**
 
-- **DNC = shared canonical fact decorated on `customers`**, not a separate table. Three nullable columns: `dncOptedOutAt`, `dncReason`, `dncAddedByUserId`. Both EPICs gate against the same column. FTC scrub stays cached-in-memory; non-matching entries don't get persisted. Pattern mirrors existing `voipCampaignStatus`, `leadIntakeError` decorations. Owning service lives at `src/shared/services/compliance.service.ts` (single file — matches codebase convention; no nested directory).
+- **DNC = shared canonical fact decorated on `customers`**, not a separate table. Three nullable columns: `dncOptedOutAt`, `dncReason`, `dncAddedByUserId`. Both EPICs gate against the same column. FTC scrub stays cached-in-memory; non-matching entries don't get persisted. Owning service lives at `src/shared/services/voip/compliance.service.ts` (single file — matches codebase convention; no nested directory). _(Correction 2026-06-04: this entry originally cited "existing `voipCampaignStatus`, `leadIntakeError` decorations" as precedent — those columns never landed and are NOT needed. Under perfect separation, voip-campaigns mirrors NO lifecycle status on `customers`; CloudTalk owns it. The only campaign field on `customers` is `voipCampaignAttempts` (dial counter). See voip-campaigns phase-1-implementation.md W2.)_
 - **Enums reduced 11 → 4.** Survivors: `voipCallStatuses`, `voipDirections` (renamed from `voipMessageDirections` — applies to both calls AND messages), `voipMessageStatuses`, `voipLinkTokenTypes` (narrowed to `['l_doc']`). Dropped: `voipSources`, `voipCallDispositions`, `voipDidStatuses`, `voipDidRoles`, `voipDncSources`, `voipUserAvailabilities`, `voipTransferModes`. Reasons in the grill log; in summary they were either cross-EPIC fusion vocabulary, lead-conversion vocabulary (out of scope), warm-transfer vocabulary (pivot-dead), or campaign-rotation vocabulary (voip-campaigns).
 - **Tables reduced 7 → 5.** Survivors: `voip_calls`, `voip_messages`, `voip_dids`, `voip_link_tokens`, `app_settings`. Dropped: `voip_dnc` (now 3 fields on customers), `voip_user_availability` (warm transfers gone; softphone tracks its own connection state in-browser).
 - **Vendor-neutral column naming.** `twilio_call_sid` → `provider_call_id`, `twilio_message_sid` → `provider_message_id`, `twilio_phone_sid` → `provider_did_id`. No `provider` enum column yet (YAGNI at single-vendor); add when a second vendor is wired in.

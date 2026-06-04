@@ -557,13 +557,9 @@ TWILIO_TWIML_APP_SID: z.string(),
 TWILIO_TRUST_PROFILE_SID: z.string().optional(),
 TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(),  // gated by 10DLC vetting; optional until approval
 
-// Pilot DIDs (role-named per Phase 0 procurement)
-TWILIO_TRANSFER_TARGET_DID_E164: z.string(),
-TWILIO_TRANSFER_TARGET_DID_SID: z.string(),
-TWILIO_DID_424_E164: z.string(),
-TWILIO_DID_424_SID: z.string(),
-TWILIO_DID_626_E164: z.string(),
-TWILIO_DID_626_SID: z.string(),
+// NB: No per-DID env vars. DIDs live in the `voip_dids` table; populate via
+// `voipDidsService.resyncFromTwilio` (admin mutation reads the live Twilio
+// account). See `chore(voip-in-house): drop dead TWILIO_DID_* env vars` 2026-06-04.
 
 // FCC DNC (SAN pending — optional until Phase 0 issuance)
 FTC_DNC_SAN: z.string().optional(),
@@ -1568,7 +1564,9 @@ src/shared/services/providers/twilio/
   types.ts                   SDK type re-exports (CallInstance, MessageInstance, IncomingPhoneNumberInstance)
   constants/
     index.ts                 ACCESS_TOKEN_TTL_SECONDS, ACCESS_TOKEN_IDENTITY_PREFIX,
-                             INBOUND_VOICE_TTS_VOICE, PILOT_DIDS, VETTING, VOIP_DEV_OVERRIDE_NUMBER
+                             INBOUND_VOICE_TTS_VOICE, VETTING, VOIP_DEV_OVERRIDE_NUMBER
+  lib/
+    config.ts                getTwilioConfig() + twilioEnvFragment — internal env-narrowing helper
   schemas/                   outbound-API Zod (what we send to Twilio)
     primitives.ts            e164Schema, twilioSidSchema, isoDateTimeSchema
     access-token.ts          mintVoiceAccessTokenInputSchema
@@ -1577,7 +1575,7 @@ src/shared/services/providers/twilio/
     messaging.ts             messagingInboundWebhookSchema, messagingStatusCallbackSchema
 ```
 
-**No `lib/`. No per-capability action files.** Everything you can do with Twilio is a method on `twilioClient`.
+**No per-capability action files.** Everything you can do with Twilio is a method on `twilioClient`. The one `lib/config.ts` file is the **documented exception** from [service-architecture.md `provider-directory-shape`](../../codebase-conventions/service-architecture.md#provider-directory-shape) — pure-local env-narrowing helper used internally by `client.ts`, NOT a client method (mirrors zoho-sign's internal token-refresh cache pattern).
 
 **The action surface — all on `twilioClient`:**
 
@@ -1631,7 +1629,7 @@ import { twilioClient, RestException } from '@/shared/services/providers/twilio/
 // Types/schemas where they're needed at the seam:
 import type { CallInstance } from '@/shared/services/providers/twilio/types'
 import { voiceStatusCallbackSchema } from '@/shared/services/providers/twilio/webhooks/voice'
-import { PILOT_DIDS, VETTING } from '@/shared/services/providers/twilio/constants'
+import { VETTING } from '@/shared/services/providers/twilio/constants'
 ```
 
 That single-import-path-for-actions rule is enforced in Slug E via ESLint `no-restricted-imports` against any `import twilio from 'twilio'` outside this directory.
@@ -3212,65 +3210,44 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 35.1: `seed-voip-dids.ts`**
 
+> Phase 0's procured DIDs already exist in the Twilio account. The seed step
+> is a one-shot invocation of `voipDidsService.resyncFromTwilio`, which lists
+> incoming phone numbers from the live account (via `twilioClient.listIncomingPhoneNumbers`)
+> and upserts each into `voip_dids` (matched by `provider_did_id`). No hardcoded
+> env-var list — DIDs procured later land in the table on the next resync.
+>
+> CASL note: the resync mutation requires an authenticated `agentProcedure`
+> ctx. The seed script builds a system-actor ctx via the same path the QStash
+> jobs use (see `dispatching-parallel-agents`'s `build-agent-ctx.ts` for the
+> pattern). The `SEED_ADMIN_USER_ID` env var pins which user the audit trail
+> attributes the resync to.
+
 ```ts
 import './lib/load-env'
-import { db } from '@/shared/db'
-import { voipDids } from '@/shared/db/schema'
-import env from '@/shared/config/server-env'
-
-interface DidSeed {
-  e164: string
-  twilioSid: string
-  role: 'transfer_target' | 'agent_outbound'
-  assignedUserId: string | null
-}
-
-const SEEDS: DidSeed[] = [
-  // The transfer-target DID (CloudTalk warm-transfers land here + general inbound during pilot).
-  {
-    e164: env.TWILIO_TRANSFER_TARGET_DID_E164,
-    twilioSid: env.TWILIO_TRANSFER_TARGET_DID_SID,
-    role: 'transfer_target',
-    assignedUserId: null,
-  },
-  // Per-agent outbound DIDs (Phase 1: unassigned; assign via Phase 4 admin UI when 2nd agent onboards).
-  {
-    e164: env.TWILIO_DID_424_E164,
-    twilioSid: env.TWILIO_DID_424_SID,
-    role: 'agent_outbound',
-    assignedUserId: process.env.SEED_AGENT_USER_ID ?? null,  // optional: pin to a user during dev
-  },
-  {
-    e164: env.TWILIO_DID_626_E164,
-    twilioSid: env.TWILIO_DID_626_SID,
-    role: 'agent_outbound',
-    assignedUserId: null,
-  },
-]
-
-function areaCode(e164: string) { return e164.slice(2, 5) }
+import { buildSystemActorCtx } from '@/trpc/lib/build-agent-ctx'
+import { voipDidsService } from '@/shared/services/voip/voip-dids.service'
 
 async function main() {
-  // eslint-disable-next-line no-console
-  console.log('Seeding voip_dids…')
-  for (const s of SEEDS) {
-    await db.insert(voipDids).values({
-      source: 'in_house',
-      e164Number: s.e164,
-      areaCode: areaCode(s.e164),
-      twilioPhoneSid: s.twilioSid,
-      role: s.role,
-      status: 'active',
-      assignedUserId: s.assignedUserId,
-    }).onConflictDoNothing({ target: voipDids.e164Number })
+  const adminUserId = process.env.SEED_ADMIN_USER_ID
+  if (!adminUserId) {
+    console.error('SEED_ADMIN_USER_ID env var required (admin user to attribute the resync audit row to)')
+    process.exit(1)
   }
-  // eslint-disable-next-line no-console
-  console.log(`Inserted ${SEEDS.length} DIDs (skipped duplicates).`)
+
+  const ctx = await buildSystemActorCtx(adminUserId)
+
+  console.log('Resyncing voip_dids from Twilio account…')
+  const result = await voipDidsService.resyncFromTwilio(ctx)
+  console.log(`Resync complete: inserted=${result.inserted} updated=${result.updated} unchanged=${result.unchanged}`)
   process.exit(0)
 }
 
 main().catch((e) => { console.error(e); process.exit(1) })
 ```
+
+After the resync, DIDs land with default role / unassigned. Per-DID assignment
+(`assignedUserId`, `isPrimary`) is a separate admin action via the Phase 4
+admin UI — NOT bundled into the seed.
 
 - [ ] **Step 35.2: `seed-app-settings-voip.ts`**
 
@@ -3344,7 +3321,7 @@ pnpm tsx scripts/seed-app-settings-voip.ts
 pnpm tsx scripts/configure-lead-source-voip.ts
 ```
 
-Verify in DB: 3 rows in `voip_dids`, 1 row in `app_settings` keyed `'voip-in-house'`, target lead source has `voip_config_json` populated.
+Verify in DB: one row per active DID in `voip_dids` (3 rows after Phase 0's procurement: transfer-target, 424, 626 — but the resync mirrors whatever's live in Twilio, so additional DIDs procured later show up automatically), 1 row in `app_settings` keyed `'voip-in-house'`, target lead source has `voip_config_json` populated.
 
 - [ ] **Step 35.5: Commit**
 
