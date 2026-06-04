@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
-import { NotConfiguredError } from '@/shared/config/not-configured-error'
-import env from '@/shared/config/server-env'
+import { createProviderConfig } from '@/shared/config/create-provider-config'
 
 /**
  * Cloudflare R2 env var schema fragment + runtime-config builder + accessor.
@@ -9,8 +8,9 @@ import env from '@/shared/config/server-env'
  * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * Note: R2_TOKEN and R2_JURISDICTION were previously in server-env but had
- * zero consumers — removed as part of this migration. R2 uses AWS S3-compat
- * credentials (access key id + secret) and an account-scoped endpoint URL.
+ * zero consumers — removed during the Phase 2 migration. R2 uses AWS S3-
+ * compat credentials (access key id + secret) and an account-scoped
+ * endpoint URL derived from R2_ACCOUNT_ID.
  */
 export const r2EnvFragment = z.object({
   R2_ACCOUNT_ID: z.string().optional(),
@@ -27,45 +27,22 @@ export interface R2RuntimeConfig {
   endpoint: string
 }
 
-const REQUIRED_KEYS = [
-  'R2_ACCOUNT_ID',
-  'R2_ACCESS_KEY_ID',
-  'R2_SECRET_ACCESS_KEY',
-] as const satisfies ReadonlyArray<keyof ParsedR2Env>
+const helpers = createProviderConfig({
+  provider: 'r2',
+  fragment: r2EnvFragment,
+  requiredKeys: ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY'],
+  toConfig: (parsed): R2RuntimeConfig => {
+    const accountId = parsed.R2_ACCOUNT_ID!
+    return {
+      accountId,
+      accessKeyId: parsed.R2_ACCESS_KEY_ID!,
+      secretAccessKey: parsed.R2_SECRET_ACCESS_KEY!,
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    }
+  },
+})
 
-function listMissingR2(): string[] {
-  return REQUIRED_KEYS.filter(k => !env[k])
-}
-
-export function buildR2Config(parsed: ParsedR2Env): R2RuntimeConfig {
-  const missing = REQUIRED_KEYS.filter(k => !parsed[k])
-  if (missing.length > 0) {
-    throw new NotConfiguredError('r2', missing)
-  }
-  const accountId = parsed.R2_ACCOUNT_ID!
-  return {
-    accountId,
-    accessKeyId: parsed.R2_ACCESS_KEY_ID!,
-    secretAccessKey: parsed.R2_SECRET_ACCESS_KEY!,
-    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-  }
-}
-
-let _cache: R2RuntimeConfig | null = null
-export function getR2Config(): R2RuntimeConfig {
-  if (_cache) {
-    return _cache
-  }
-  _cache = buildR2Config(env)
-  return _cache
-}
-
-export function isR2Configured(): boolean {
-  return listMissingR2().length === 0
-}
-
-export const r2ConfigMeta = {
-  service: 'r2' as const,
-  isConfigured: isR2Configured,
-  listMissing: listMissingR2,
-} as const
+export const buildR2Config = helpers.build
+export const getR2Config = helpers.get
+export const isR2Configured = helpers.isConfigured
+export const r2ConfigMeta = helpers.configMeta

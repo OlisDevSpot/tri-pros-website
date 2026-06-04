@@ -1,10 +1,9 @@
 import { z } from 'zod'
 
-import { NotConfiguredError } from '@/shared/config/not-configured-error'
-import env from '@/shared/config/server-env'
+import { createProviderConfig } from '@/shared/config/create-provider-config'
 
 /**
- * Env story for two distinct services that historically live under
+ * Env story for two distinct providers that historically live under
  * `providers/upstash/`:
  *   1. QStash (Upstash's task queue / scheduled jobs) — publisher + receiver
  *   2. Ably (realtime pub/sub) — NOT an Upstash product
@@ -12,8 +11,7 @@ import env from '@/shared/config/server-env'
  * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
  * Note: QSTASH_URL was previously in server-env but had zero consumers
- * (the qstash client hardcodes its baseUrl) — removed as part of this
- * migration.
+ * (the qstash client hardcodes its baseUrl) — removed during Phase 2.
  */
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -34,55 +32,30 @@ export interface QstashRuntimeConfig {
   nextSigningKey: string
 }
 
-const QSTASH_REQUIRED_KEYS = [
-  'QSTASH_TOKEN',
-  'QSTASH_CURRENT_SIGNING_KEY',
-  'QSTASH_NEXT_SIGNING_KEY',
-] as const satisfies ReadonlyArray<keyof ParsedQstashEnv>
-
-function listMissingQstash(): string[] {
-  return QSTASH_REQUIRED_KEYS.filter(k => !env[k])
-}
-
-export function buildQstashConfig(parsed: ParsedQstashEnv): QstashRuntimeConfig {
-  const missing = QSTASH_REQUIRED_KEYS.filter(k => !parsed[k])
-  if (missing.length > 0) {
-    throw new NotConfiguredError('qstash', missing)
-  }
-  return {
+const qstashHelpers = createProviderConfig({
+  provider: 'qstash',
+  fragment: qstashEnvFragment,
+  requiredKeys: ['QSTASH_TOKEN', 'QSTASH_CURRENT_SIGNING_KEY', 'QSTASH_NEXT_SIGNING_KEY'],
+  toConfig: (parsed): QstashRuntimeConfig => ({
     token: parsed.QSTASH_TOKEN!,
     currentSigningKey: parsed.QSTASH_CURRENT_SIGNING_KEY!,
     nextSigningKey: parsed.QSTASH_NEXT_SIGNING_KEY!,
-  }
-}
+  }),
+})
 
-let _qstashCache: QstashRuntimeConfig | null = null
-export function getQstashConfig(): QstashRuntimeConfig {
-  if (_qstashCache) {
-    return _qstashCache
-  }
-  _qstashCache = buildQstashConfig(env)
-  return _qstashCache
-}
-
-export function isQstashConfigured(): boolean {
-  return listMissingQstash().length === 0
-}
-
-export const qstashConfigMeta = {
-  service: 'qstash' as const,
-  isConfigured: isQstashConfigured,
-  listMissing: listMissingQstash,
-} as const
+export const buildQstashConfig = qstashHelpers.build
+export const getQstashConfig = qstashHelpers.get
+export const isQstashConfigured = qstashHelpers.isConfigured
+export const qstashConfigMeta = qstashHelpers.configMeta
 
 // ────────────────────────────────────────────────────────────────────────────
 // Ably
 //
 // TODO (backlog): move this section + `../realtime.ts` to `providers/ably/`.
-// Ably is not an Upstash product; it lives here by historical accident. The
-// Phase 2 migration keeps it physically co-located but exposes it as a peer
-// service in the boot banner (its own meta). When Ably is split out, this
-// block + the realtime.ts client move to `providers/ably/{lib/config.ts,client.ts}`
+// Ably is not an Upstash product; it lives here by historical accident.
+// Phase 2 kept it physically co-located but exposes it as a peer provider
+// in the boot banner (its own meta). When Ably is split out, this block +
+// the realtime.ts client move to `providers/ably/{lib/config.ts,client.ts}`
 // and consumers update their import paths.
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -96,37 +69,16 @@ export interface AblyRuntimeConfig {
   apiKey: string
 }
 
-const ABLY_REQUIRED_KEYS = ['ABLY_API_KEY'] as const satisfies ReadonlyArray<keyof ParsedAblyEnv>
-
-function listMissingAbly(): string[] {
-  return ABLY_REQUIRED_KEYS.filter(k => !env[k])
-}
-
-export function buildAblyConfig(parsed: ParsedAblyEnv): AblyRuntimeConfig {
-  const missing = ABLY_REQUIRED_KEYS.filter(k => !parsed[k])
-  if (missing.length > 0) {
-    throw new NotConfiguredError('ably', missing)
-  }
-  return {
+const ablyHelpers = createProviderConfig({
+  provider: 'ably',
+  fragment: ablyEnvFragment,
+  requiredKeys: ['ABLY_API_KEY'],
+  toConfig: (parsed): AblyRuntimeConfig => ({
     apiKey: parsed.ABLY_API_KEY!,
-  }
-}
+  }),
+})
 
-let _ablyCache: AblyRuntimeConfig | null = null
-export function getAblyConfig(): AblyRuntimeConfig {
-  if (_ablyCache) {
-    return _ablyCache
-  }
-  _ablyCache = buildAblyConfig(env)
-  return _ablyCache
-}
-
-export function isAblyConfigured(): boolean {
-  return listMissingAbly().length === 0
-}
-
-export const ablyConfigMeta = {
-  service: 'ably' as const,
-  isConfigured: isAblyConfigured,
-  listMissing: listMissingAbly,
-} as const
+export const buildAblyConfig = ablyHelpers.build
+export const getAblyConfig = ablyHelpers.get
+export const isAblyConfigured = ablyHelpers.isConfigured
+export const ablyConfigMeta = ablyHelpers.configMeta

@@ -136,62 +136,45 @@ A provider always has `client.ts`, even for a one-endpoint integration. Auth + e
 
 For any provider whose env vars are **NOT app-core-required** — meaning the app should boot and function for paths that don't touch this provider, even if its keys are missing — env-var handling lives in the provider's own `lib/config.ts`, NOT inline in `server-env.ts`. The boundary: app-core env (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_BASE_URL`, `NODE_ENV`) stays inline in `server-env` as required. Everything else — every provider, every cross-provider domain like voip — uses this pattern.
 
-**The contract — five exports per provider `lib/config.ts`:**
+**The contract — five exports per provider `lib/config.ts`, produced by the [`createProviderConfig`](../../src/shared/config/create-provider-config.ts) factory:**
 
 ```ts
 // src/shared/services/providers/<name>/lib/config.ts
 import { z } from 'zod'
-import env from '@/shared/config/server-env'
-import { NotConfiguredError } from '@/shared/config/not-configured-error'
+import { createProviderConfig } from '@/shared/config/create-provider-config'
 
 // 1. Schema fragment — every field .optional()
 export const xEnvFragment = z.object({
   X_API_KEY: z.string().optional(),
   X_CLIENT_ID: z.string().optional(),
-  // ...
 })
 
 // 2. Runtime config type — required types, what callers receive
+export type ParsedXEnv = z.infer<typeof xEnvFragment>
 export interface XRuntimeConfig {
   apiKey: string
   clientId: string
 }
 
-// 3. Pure builder — throws NotConfiguredError with every missing var
-export function buildXConfig(parsed: z.infer<typeof xEnvFragment>): XRuntimeConfig {
-  const missing: string[] = []
-  if (!parsed.X_API_KEY) missing.push('X_API_KEY')
-  if (!parsed.X_CLIENT_ID) missing.push('X_CLIENT_ID')
-  if (missing.length > 0) throw new NotConfiguredError('x', missing)
-  return { apiKey: parsed.X_API_KEY!, clientId: parsed.X_CLIENT_ID! }
-}
+// 3. Factory call — produces build / get / isConfigured / configMeta in one go.
+//    `provider` is the canonical identifier (twilio, cloudtalk, resend, ...).
+const helpers = createProviderConfig({
+  provider: 'x',
+  fragment: xEnvFragment,
+  requiredKeys: ['X_API_KEY', 'X_CLIENT_ID'],
+  toConfig: (parsed): XRuntimeConfig => ({
+    apiKey: parsed.X_API_KEY!,
+    clientId: parsed.X_CLIENT_ID!,
+  }),
+})
 
-// 4. Cached accessor — provider's public surface for callers
-let _cache: XRuntimeConfig | null = null
-export function getXConfig(): XRuntimeConfig {
-  if (_cache) return _cache
-  _cache = buildXConfig(env)
-  return _cache
-}
-
-// 5. isConfigured + meta — never throws; for feature gates + boot banner
-function listMissingX(): string[] {
-  const missing: string[] = []
-  if (!env.X_API_KEY) missing.push('X_API_KEY')
-  if (!env.X_CLIENT_ID) missing.push('X_CLIENT_ID')
-  return missing
-}
-
-export function isXConfigured(): boolean {
-  return listMissingX().length === 0
-}
-
-export const xConfigMeta = {
-  service: 'x' as const,
-  isConfigured: isXConfigured,
-  listMissing: listMissingX,
-}
+export const buildXConfig = helpers.build           // pure builder, throws NotConfiguredError
+export const getXConfig = helpers.get                // cached lazy accessor
+export const isXConfigured = helpers.isConfigured    // boolean peek (never throws)
+export const xConfigMeta = helpers.configMeta        // boot-banner registry entry
 ```
+
+The pre-factory shape (hand-rolled `let _cache`, `listMissingX`, explicit `buildXConfig`) is the same contract — the factory just removes the boilerplate. See `createProviderConfig` source for what it generates.
 
 **Three invariants that make this work as a unit:**
 
@@ -222,8 +205,8 @@ if (env.NODE_ENV !== 'production') {
   const metas = [twilioConfigMeta /* , cloudtalkConfigMeta, ... */]
   for (const meta of metas) {
     const missing = meta.listMissing()
-    if (missing.length === 0) console.log(`  ✅ ${meta.service}`)
-    else console.log(`  ❌ ${meta.service}  missing: ${missing.join(', ')}`)
+    if (missing.length === 0) console.log(`  ✅ ${meta.provider}`)
+    else console.log(`  ❌ ${meta.provider}  missing: ${missing.join(', ')}`)
   }
 }
 
@@ -232,7 +215,7 @@ if (env.NODE_ENV !== 'production') {
 
 **Import order is safe**: provider's `lib/config.ts` may `import env from '@/shared/config/server-env'` at the top, but must only READ `env` inside function bodies (getter / listMissing). ESM bootstrap order resolves cleanly — by the time `getXConfig()` is called, server-env has finished parsing.
 
-**Service-domain mirror**: when env vars are consumed by a domain-shared service (e.g., `services/voip/*.service.ts` reading `VOIP_*` vars that span Twilio + CloudTalk), use the same pattern at `services/<domain>/lib/config.ts`. Same five exports; only the `service` name in the meta differs. The `services/` namespace itself is reserved for actual service code — the `lib/` subdirectory hosts the config (same rule as the `lib/` exception in [provider-directory-shape](#provider-directory-shape)).
+**Service-domain mirror**: when env vars are consumed by a domain-shared service (e.g., `services/voip/*.service.ts` reading `VOIP_*` vars that span Twilio + CloudTalk), the same pattern applies at `services/<domain>/lib/config.ts` — but note that "provider" in the `configMeta.provider` field becomes a slight terminology stretch. Acceptable for now: voip-shared registers as a peer in the banner. If/when the mismatch becomes load-bearing, introduce a parallel `createServiceConfig` factory or generalize the field name. The `services/` namespace itself is reserved for actual service code — the `lib/` subdirectory hosts the config (same rule as the `lib/` exception in [provider-directory-shape](#provider-directory-shape)).
 
 **When NOT to use this pattern:**
 - App-core env (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_BASE_URL`, `NODE_ENV`). These are required at boot; a missing value SHOULD crash the import — that's the correct failure mode for "the app can't start at all." Keep them inline as `z.string()`.

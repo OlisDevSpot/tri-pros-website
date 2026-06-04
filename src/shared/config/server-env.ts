@@ -198,14 +198,14 @@ const PROVIDER_METAS = [
 
 if (env.NODE_ENV !== 'production') {
   // eslint-disable-next-line no-console
-  console.log('[server-env] Configured services:')
+  console.log('[server-env] Configured providers:')
   for (const meta of PROVIDER_METAS) {
     const missing = meta.listMissing()
     // eslint-disable-next-line no-console
     console.log(
       missing.length === 0
-        ? `  ✅ ${meta.service}`
-        : `  ❌ ${meta.service}  missing: ${missing.join(', ')}`,
+        ? `  ✅ ${meta.provider}`
+        : `  ❌ ${meta.provider}  missing: ${missing.join(', ')}`,
     )
   }
 }

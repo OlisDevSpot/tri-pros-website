@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
-import { NotConfiguredError } from '@/shared/config/not-configured-error'
-import env from '@/shared/config/server-env'
+import { createProviderConfig } from '@/shared/config/create-provider-config'
 
 /**
  * Notion env var schema fragment + runtime-config builder + accessor.
@@ -18,37 +17,16 @@ export interface NotionRuntimeConfig {
   apiKey: string
 }
 
-const REQUIRED_KEYS = ['NOTION_API_KEY'] as const satisfies ReadonlyArray<keyof ParsedNotionEnv>
-
-function listMissingNotion(): string[] {
-  return REQUIRED_KEYS.filter(k => !env[k])
-}
-
-export function buildNotionConfig(parsed: ParsedNotionEnv): NotionRuntimeConfig {
-  const missing = REQUIRED_KEYS.filter(k => !parsed[k])
-  if (missing.length > 0) {
-    throw new NotConfiguredError('notion', missing)
-  }
-  return {
+const helpers = createProviderConfig({
+  provider: 'notion',
+  fragment: notionEnvFragment,
+  requiredKeys: ['NOTION_API_KEY'],
+  toConfig: (parsed): NotionRuntimeConfig => ({
     apiKey: parsed.NOTION_API_KEY!,
-  }
-}
+  }),
+})
 
-let _cache: NotionRuntimeConfig | null = null
-export function getNotionConfig(): NotionRuntimeConfig {
-  if (_cache) {
-    return _cache
-  }
-  _cache = buildNotionConfig(env)
-  return _cache
-}
-
-export function isNotionConfigured(): boolean {
-  return listMissingNotion().length === 0
-}
-
-export const notionConfigMeta = {
-  service: 'notion' as const,
-  isConfigured: isNotionConfigured,
-  listMissing: listMissingNotion,
-} as const
+export const buildNotionConfig = helpers.build
+export const getNotionConfig = helpers.get
+export const isNotionConfigured = helpers.isConfigured
+export const notionConfigMeta = helpers.configMeta
