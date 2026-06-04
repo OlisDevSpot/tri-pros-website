@@ -5,6 +5,7 @@ import { expand } from 'dotenv-expand'
 
 import z from 'zod'
 
+import { cloudtalkConfigMeta, cloudtalkEnvFragment } from '@/shared/services/providers/cloudtalk/lib/config'
 import { twilioConfigMeta, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
 
 // Load .env.local first (dispatch worktree overrides), then .env as fallback.
@@ -122,19 +123,12 @@ const envSchema = z.object({
   FTC_DNC_USERNAME: z.string().optional(),
   FTC_DNC_PASSWORD: z.string().optional(),
 
-  // CLOUDTALK (voip-campaigns)
-  // HTTP Basic auth — Access Key ID is the username, Access Key Secret is the password.
-  CLOUDTALK_ACCESS_KEY_ID: z.string().optional(),
-  CLOUDTALK_ACCESS_KEY_SECRET: z.string().optional(),
-  // Shared secret protecting BOTH inbound surfaces (CloudTalk → us):
-  //   1. Mid-call routing endpoints (`/api/voip/routing/*`) — voip-in-house Phase 1 (this EPIC)
-  //   2. Async event webhook (`/api/webhooks/cloudtalk/route.ts`) — voip-campaigns Phase 1
-  // Same trust model both surfaces; one secret value, configured once into CloudTalk's dashboard.
-  // Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
-  // Optional per the VoIP-section policy; min(32) still enforced when present so a half-set secret can't slip through.
-  CLOUDTALK_WEBHOOK_SECRET: z.string().min(32).optional(),
-  // Optional comma-separated CIDRs for Vercel edge allowlist.
-  CLOUDTALK_WEBHOOK_IP_ALLOWLIST: z.string().optional(),
+  // CLOUDTALK (voip-campaigns) — schema fragment lives at
+  // `src/shared/services/providers/cloudtalk/lib/config.ts` and is spread
+  // in here. Runtime narrowing happens via `getCloudtalkConfig()`, imported
+  // by consumers directly from the provider's lib/config.
+  // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
+  ...cloudtalkEnvFragment.shape,
 
   // WEB PUSH (VAPID)
   // Generate with `node scripts/generate-vapid-keys.mjs`. The public key is
@@ -189,6 +183,7 @@ if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
 
 const PROVIDER_METAS = [
   twilioConfigMeta,
+  cloudtalkConfigMeta,
 ] as const
 
 if (env.NODE_ENV !== 'production') {

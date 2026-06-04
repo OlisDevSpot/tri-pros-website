@@ -1,7 +1,9 @@
 import env from '@/shared/config/server-env'
+import { getCloudtalkConfig, isCloudtalkConfigured } from '@/shared/services/providers/cloudtalk/lib/config'
 
 // see docs/codebase-conventions/webhook-routes.md
 // see docs/plans/voip/INTEGRATION-SEAM.md#2-cloudtalk-webhooks-cloudtalk--our-app
+// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
 /**
  * CloudTalk webhook receiver — single endpoint for all 6 events.
@@ -22,22 +24,24 @@ import env from '@/shared/config/server-env'
  */
 export async function POST(request: Request): Promise<Response> {
   // ── Auth: shared-secret query param (CloudTalk has no HMAC signing) ──
-  const url = new URL(request.url)
-  const providedSecret = url.searchParams.get('secret')
-  const expectedSecret = env.CLOUDTALK_WEBHOOK_SECRET
-
-  if (expectedSecret) {
-    if (providedSecret !== expectedSecret) {
+  // Pre-check via isCloudtalkConfigured() to branch into a misconfigured
+  // response in prod / accept-with-warning in dev — without letting
+  // getCloudtalkConfig() throw NotConfiguredError.
+  if (!isCloudtalkConfigured()) {
+    if (env.NODE_ENV === 'production') {
+      console.error('[cloudtalk webhook] CloudTalk not configured in production — refusing webhook')
+      return new Response('Server misconfigured', { status: 500 })
+    }
+    console.warn('[cloudtalk webhook] CloudTalk not configured — accepting (dev only)')
+  }
+  else {
+    const url = new URL(request.url)
+    const providedSecret = url.searchParams.get('secret')
+    const { webhookSecret } = getCloudtalkConfig()
+    if (providedSecret !== webhookSecret) {
       console.warn('[cloudtalk webhook] invalid or missing secret')
       return new Response('Unauthorized', { status: 401 })
     }
-  }
-  else if (env.NODE_ENV === 'production') {
-    console.error('[cloudtalk webhook] CLOUDTALK_WEBHOOK_SECRET not configured in production')
-    return new Response('Server misconfigured', { status: 500 })
-  }
-  else {
-    console.warn('[cloudtalk webhook] no CLOUDTALK_WEBHOOK_SECRET set — accepting (dev only)')
   }
 
   // ── Parse body ────────────────────────────────────────────────────────

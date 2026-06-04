@@ -2083,69 +2083,34 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 ### Task 28: VoIP routing endpoints — replace Phase 0 mocks with real impls
 
 **Files:**
-- Create: `src/shared/services/providers/cloudtalk/lib/verify-webhook-secret.ts`
 - **Replace** Phase 0 mock body in: `src/app/api/voip/routing/caller-lookup/route.ts`
 - **Replace** Phase 0 mock body in: `src/app/api/voip/routing/transfer-target/route.ts`
 - **Replace** Phase 0 mock body in: `src/app/api/voip/routing/compliance-check/route.ts`
 
+> NB: no separate webhook-verifier file. `cloudtalkClient.verifyWebhookSecret({ url })` is a method on the superset client (already shipped). Each route calls it.
+
 > **State at task start:** the 3 route files already exist as Phase 0 scaffolds (mocked impls created by voip-campaigns Phase 0 for CloudTalk smoke testing). This task swaps the mock body with the real implementation that calls `voip-routing.service.ts` (Task 24) + verifies the shared secret. **Do not create the files anew — replace the function body.** Path is correct already per [`webhook-routes.md`](../../codebase-conventions/webhook-routes.md) Rule 5 (sync request-response under `/api/voip/routing/`, NOT under `/api/webhooks/`).
 
-> **Provider directory seeding:** This EPIC creates `providers/cloudtalk/` with just `lib/verify-webhook-secret.ts` — the small pure helper that route handlers need to validate inbound CloudTalk traffic. The rest of the CloudTalk provider (`client.ts`, `types.ts`, capability files like `calls.ts` / `sms.ts` / `campaigns.ts`) is voip-campaigns Phase 1 territory. Shape mirrors `providers/notion/` and `providers/zoho-sign/` (each has `client.ts` + `lib/` + `constants/` + `types.ts`).
+> **Provider directory state:** `providers/cloudtalk/` already exists post-Phase-0-of-provider-env-config-when-optional. The provider's full env story — `cloudtalkEnvFragment` + `getCloudtalkConfig` + `isCloudtalkConfigured` + `cloudtalkConfigMeta` — lives at [`providers/cloudtalk/lib/config.ts`](../../../src/shared/services/providers/cloudtalk/lib/config.ts) per [`provider-env-config-when-optional`](../../codebase-conventions/service-architecture.md#provider-env-config-when-optional). Route handlers use `cloudtalkClient.verifyWebhookSecret({ url })` (a method on the superset client) — there is NO standalone `lib/verify-webhook-secret.ts` file; per [`client-is-the-superset-entry-point`](../../codebase-conventions/service-architecture.md#client-is-the-superset-entry-point), webhook signature/secret verification is a CLIENT method, not a per-capability lib helper.
 
-> **Authoritative contract:** [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md). CloudTalk's Call Flow Designer is configured (in voip-campaigns Phase 0) to fire these mid-call. Each endpoint is auth'd via shared-secret query param (`?secret=<CLOUDTALK_WEBHOOK_SECRET>`) + future IP allowlist (deferred to Phase 4). The SAME `CLOUDTALK_WEBHOOK_SECRET` env var is reused by voip-campaigns Phase 1's post-call webhook handler at `src/app/api/webhooks/cloudtalk/route.ts` — one secret protects both inbound surfaces. Response shapes MUST match the seam doc exactly — drift breaks CloudTalk's Call Flow.
+> **Authoritative contract:** [INTEGRATION-SEAM.md §1](../voip/INTEGRATION-SEAM.md). CloudTalk's Call Flow Designer is configured (in voip-campaigns Phase 0) to fire these mid-call. Each endpoint is auth'd via shared-secret query param (`?secret=<CLOUDTALK_WEBHOOK_SECRET>`) + future IP allowlist (deferred to Phase 4). The SAME secret protects both inbound surfaces (these mid-call routing endpoints AND the async webhook at `/api/webhooks/cloudtalk/route.ts`) — one value, configured once into CloudTalk's dashboard. Response shapes MUST match the seam doc exactly — drift breaks CloudTalk's Call Flow.
 
-- [ ] **Step 28.1: CloudTalk provider — webhook secret verifier**
-
-Lives in the cloudtalk provider tree (mirrors how `providers/twilio/voice.ts` houses `validateVoiceSignature`). This file is the **seed of `providers/cloudtalk/`** — voip-campaigns Phase 1 adds the rest of the provider (client, types, capability files) alongside it.
-
-```ts
-// src/shared/services/providers/cloudtalk/lib/verify-webhook-secret.ts
-import { timingSafeEqual } from 'node:crypto'
-import env from '@/shared/config/server-env'
-
-/**
- * Verifies the shared secret CloudTalk passes on inbound traffic to our subdomain.
- * Used for BOTH surfaces:
- *   - Mid-call routing endpoints (`/api/voip/routing/*`) — voip-in-house Phase 1 (sync, real impl)
- *   - Post-call webhook handler (`/api/webhooks/cloudtalk/route.ts`) — voip-campaigns Phase 1 (async event handler)
- * Both surfaces are CloudTalk → us with the same trust model; one secret value, configured
- * once into CloudTalk's Call Flow Designer + Webhook dashboard during voip-campaigns Phase 0.
- */
-export function verifyCloudtalkWebhookSecret(url: string): boolean {
-  try {
-    const u = new URL(url)
-    const provided = u.searchParams.get('secret') ?? ''
-    if (!provided) return false
-    const expected = env.CLOUDTALK_WEBHOOK_SECRET
-    // timing-safe compare requires equal-length buffers; pad both sides + length-check separately.
-    const len = Math.max(provided.length, expected.length)
-    return timingSafeEqual(
-      Buffer.from(provided.padEnd(len, '\0')),
-      Buffer.from(expected.padEnd(len, '\0')),
-    ) && provided.length === expected.length
-  }
-  catch {
-    return false
-  }
-}
-```
-
-- [ ] **Step 28.2: `caller-lookup/route.ts`**
+- [ ] **Step 28.1: `caller-lookup/route.ts`**
 
 ```ts
 // src/app/api/voip/routing/caller-lookup/route.ts
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
 import { lookupCallerContext } from '@/shared/services/voip/voip-routing.service'
-import { verifyCloudtalkWebhookSecret } from '@/shared/services/providers/cloudtalk/lib/verify-webhook-secret'
 
 const bodySchema = z.object({
   caller_e164: z.string().regex(/^\+[1-9]\d{6,14}$/),
 })
 
 export async function POST(req: Request) {
-  if (!verifyCloudtalkWebhookSecret(req.url)) {
+  if (!cloudtalkClient.verifyWebhookSecret({ url: req.url })) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 403 })
   }
   const body = await req.json().catch(() => ({}))
@@ -2163,15 +2128,15 @@ export async function POST(req: Request) {
 }
 ```
 
-- [ ] **Step 28.3: `transfer-target/route.ts`**
+- [ ] **Step 28.2: `transfer-target/route.ts`**
 
 ```ts
 // src/app/api/voip/routing/transfer-target/route.ts
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
 import { findTransferTarget } from '@/shared/services/voip/voip-routing.service'
-import { verifyCloudtalkWebhookSecret } from '@/shared/services/providers/cloudtalk/lib/verify-webhook-secret'
 
 const bodySchema = z.object({
   caller_e164: z.string().regex(/^\+[1-9]\d{6,14}$/),
@@ -2179,7 +2144,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(req: Request) {
-  if (!verifyCloudtalkWebhookSecret(req.url)) {
+  if (!cloudtalkClient.verifyWebhookSecret({ url: req.url })) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 403 })
   }
   const body = await req.json().catch(() => ({}))
@@ -2196,15 +2161,15 @@ export async function POST(req: Request) {
 }
 ```
 
-- [ ] **Step 28.4: `compliance-check/route.ts`**
+- [ ] **Step 28.3: `compliance-check/route.ts`**
 
 ```ts
 // src/app/api/voip/routing/compliance-check/route.ts
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
 import { complianceCheckForCampaign } from '@/shared/services/voip/voip-routing.service'
-import { verifyCloudtalkWebhookSecret } from '@/shared/services/providers/cloudtalk/lib/verify-webhook-secret'
 
 const bodySchema = z.object({
   customer_id: z.string().uuid(),
@@ -2212,7 +2177,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(req: Request) {
-  if (!verifyCloudtalkWebhookSecret(req.url)) {
+  if (!cloudtalkClient.verifyWebhookSecret({ url: req.url })) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 403 })
   }
   const body = await req.json().catch(() => ({}))
@@ -2228,7 +2193,7 @@ export async function POST(req: Request) {
 }
 ```
 
-- [ ] **Step 28.5: Document the URLs for voip-campaigns Phase 0**
+- [ ] **Step 28.4: Document the URLs for voip-campaigns Phase 0**
 
 Append to `docs/plans/voip-in-house/twilio-console-config.md` (or create a dedicated `voip-routing-endpoints.md`):
 
@@ -2244,7 +2209,7 @@ Append to `docs/plans/voip-in-house/twilio-console-config.md` (or create a dedic
 CloudTalk Call Flow Designer must configure FALLBACK BRANCHES per INTEGRATION-SEAM.md §1 for every HTTP Request that calls these endpoints.
 ```
 
-- [ ] **Step 28.6: Verify + commit**
+- [ ] **Step 28.5: Verify + commit**
 
 ```bash
 pnpm tsc && pnpm lint
