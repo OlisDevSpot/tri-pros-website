@@ -1,6 +1,5 @@
 import type { Job, JobMap } from '@/shared/services/providers/upstash/types'
 import { Receiver } from '@upstash/qstash'
-import env from '@/shared/config/server-env'
 import { createQbRecordsJob } from '@/shared/services/providers/upstash/jobs/create-qb-records'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { generateAISummaryJob } from '@/shared/services/providers/upstash/jobs/generate-ai-summary'
@@ -15,6 +14,7 @@ import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/s
 import { syncQbInvoiceJob } from '@/shared/services/providers/upstash/jobs/sync-qb-invoice'
 import { syncQbPaymentJob } from '@/shared/services/providers/upstash/jobs/sync-qb-payment'
 import { syncZohoSignStatusJob } from '@/shared/services/providers/upstash/jobs/sync-zoho-sign-status'
+import { getQstashConfig, isQstashConfigured } from '@/shared/services/providers/upstash/lib/config'
 
 /** Allow up to 60s for image optimization jobs (default is 10s on Hobby plan) */
 export const maxDuration = 60
@@ -49,10 +49,23 @@ for (const job of jobs) {
   registry.set(job.key, job.handler)
 }
 
-const receiver = new Receiver({
-  currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY!,
-  nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY!,
-})
+// Lazy-construct the Receiver — first request reads config + caches.
+// Returns null if QStash isn't configured so the route can short-circuit
+// to a clean 500 instead of crashing on `env.X!` assertions.
+let _receiver: Receiver | undefined
+function getReceiver(): Receiver | null {
+  if (!isQstashConfigured()) {
+    return null
+  }
+  if (!_receiver) {
+    const config = getQstashConfig()
+    _receiver = new Receiver({
+      currentSigningKey: config.currentSigningKey,
+      nextSigningKey: config.nextSigningKey,
+    })
+  }
+  return _receiver
+}
 
 /**
  * Next.js route handler.
@@ -77,6 +90,11 @@ export async function POST(request: Request) {
 
   if (!signature || !key) {
     return new Response('Missing signature or job key', { status: 403 })
+  }
+
+  const receiver = getReceiver()
+  if (!receiver) {
+    return new Response('QStash receiver not configured', { status: 500 })
   }
 
   const valid = await receiver.verify({

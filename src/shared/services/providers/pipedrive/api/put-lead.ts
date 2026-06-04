@@ -4,11 +4,11 @@ import {
   // LeadsApi,
   PersonsApi,
 } from 'pipedrive/v2'
-import { pipedriveConfig } from '../client'
+import { getPipedriveSdkConfig } from '../client'
 
 export async function putLead(input: GeneralInquiryFormSchema) {
-  const personApi = new PersonsApi(pipedriveConfig)
-  // const leadsApi = new LeadsApi(pipedriveConfig)
+  const personApi = new PersonsApi(getPipedriveSdkConfig())
+  // const leadsApi = new LeadsApi(getPipedriveSdkConfig())
 
   try {
     const { data: newPerson, success: personSuccess } = await personApi.addPerson({

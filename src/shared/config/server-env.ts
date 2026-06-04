@@ -6,7 +6,12 @@ import { expand } from 'dotenv-expand'
 import z from 'zod'
 
 import { cloudtalkConfigMeta, cloudtalkEnvFragment } from '@/shared/services/providers/cloudtalk/lib/config'
+import { notionConfigMeta, notionEnvFragment } from '@/shared/services/providers/notion/lib/config'
+import { pipedriveConfigMeta, pipedriveEnvFragment } from '@/shared/services/providers/pipedrive/lib/config'
+import { r2ConfigMeta, r2EnvFragment } from '@/shared/services/providers/r2/lib/config'
+import { resendConfigMeta, resendEnvFragment } from '@/shared/services/providers/resend/lib/config'
 import { twilioConfigMeta, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
+import { ablyConfigMeta, ablyEnvFragment, qstashConfigMeta, qstashEnvFragment } from '@/shared/services/providers/upstash/lib/config'
 
 // Load .env.local first (dispatch worktree overrides), then .env as fallback.
 // dotenv won't overwrite already-set vars, so .env.local wins.
@@ -42,15 +47,15 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string(),
   GOOGLE_CLIENT_SECRET: z.string(),
 
-  // RESEND
-  RESEND_API_KEY: z.string(),
+  // RESEND — fragment lives at providers/resend/lib/config.ts
+  ...resendEnvFragment.shape,
 
   // MONDAY
   MONDAY_API_TOKEN: z.string(),
 
-  // PIPEDRIVE
-  PIPEDRIVE_BASE_URL: z.string(),
-  PIPEDRIVE_API_KEY: z.string(),
+  // PIPEDRIVE — fragment lives at providers/pipedrive/lib/config.ts
+  // (PIPEDRIVE_BASE_URL removed 2026-06-05 — was dead env, no consumers)
+  ...pipedriveEnvFragment.shape,
 
   // ZOHO SIGN
   ZOHO_SIGN_DEV_TOKEN: z.string().optional(),
@@ -65,29 +70,28 @@ const envSchema = z.object({
   QB_REDIRECT_URI: z.string(),
   QB_WEBHOOK_VERIFIER_TOKEN: z.string(),
 
-  // NOTION
-  NOTION_API_KEY: z.string(),
+  // NOTION — fragment lives at providers/notion/lib/config.ts
+  ...notionEnvFragment.shape,
 
-  // CLOUDFLARE R2
-  R2_ACCOUNT_ID: z.string(),
-  R2_TOKEN: z.string(),
-  R2_ACCESS_KEY_ID: z.string(),
-  R2_SECRET_ACCESS_KEY: z.string(),
-  R2_JURISDICTION: z.string(),
+  // CLOUDFLARE R2 — fragment lives at providers/r2/lib/config.ts
+  // (R2_TOKEN + R2_JURISDICTION removed 2026-06-05 — were dead env, no consumers)
+  ...r2EnvFragment.shape,
 
-  // UPSTASH
-  QSTASH_URL: z.string(),
-  QSTASH_TOKEN: z.string(),
-  QSTASH_CURRENT_SIGNING_KEY: z.string(),
-  QSTASH_NEXT_SIGNING_KEY: z.string(),
+  // UPSTASH QSTASH — fragment lives at providers/upstash/lib/config.ts
+  // (QSTASH_URL removed 2026-06-05 — was dead env, qstash-client hardcodes baseUrl)
+  ...qstashEnvFragment.shape,
+  // UPSTASH REDIS — consumed inline by routers via `new Ratelimit({ url, token })`;
+  // NOT routed through a provider directory. Backlog item: consolidate into
+  // providers/upstash-redis/ (or similar) to align with the convention.
   UPSTASH_REDIS_REST_URL: z.string(),
   UPSTASH_REDIS_REST_TOKEN: z.string(),
 
   // BINA (GoHighLevel webhook)
   BINA_WEBHOOK_SECRET: z.string().optional(),
 
-  // ABLY
-  ABLY_API_KEY: z.string(),
+  // ABLY — fragment lives at providers/upstash/lib/config.ts (TODO backlog:
+  // move to providers/ably/ — see upstash/lib/config.ts header note)
+  ...ablyEnvFragment.shape,
 
   // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (CloudTalk).
   // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
@@ -184,6 +188,12 @@ if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
 const PROVIDER_METAS = [
   twilioConfigMeta,
   cloudtalkConfigMeta,
+  resendConfigMeta,
+  notionConfigMeta,
+  pipedriveConfigMeta,
+  r2ConfigMeta,
+  qstashConfigMeta,
+  ablyConfigMeta,
 ] as const
 
 if (env.NODE_ENV !== 'production') {

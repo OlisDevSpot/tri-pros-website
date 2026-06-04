@@ -1,5 +1,8 @@
 import * as Ably from 'ably'
-import env from '@/shared/config/server-env'
+
+import { lazyProxy } from '@/shared/config/lazy-proxy'
+
+import { getAblyConfig } from './lib/config'
 
 // HOW REALTIME SYNC WORKS:
 // 1. A tRPC mutation writes to Postgres
@@ -15,5 +18,10 @@ import env from '@/shared/config/server-env'
 // Ably REST client is used server-side (short-lived HTTP POST to publish, no persistent
 // connection). The client-side uses Ably Realtime (WebSocket, managed by Ably's infra —
 // no Vercel function time consumed for the connection).
+//
+// Lazy-constructed via `lazyProxy` so missing ABLY_API_KEY doesn't crash app boot —
+// first call to `ably.channels.get(...).publish(...)` throws `NotConfiguredError`.
+//
+// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
-export const ably = new Ably.Rest({ key: env.ABLY_API_KEY })
+export const ably = lazyProxy(() => new Ably.Rest({ key: getAblyConfig().apiKey }))
