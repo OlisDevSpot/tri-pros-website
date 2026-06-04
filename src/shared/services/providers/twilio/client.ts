@@ -7,9 +7,8 @@ import type { MintVoiceAccessTokenInput } from './schemas/access-token'
 
 import twilio, { RestException as TwilioRestException } from 'twilio'
 
-import env from '@/shared/config/server-env'
-
 import { ACCESS_TOKEN_TTL_SECONDS, INBOUND_VOICE_TTS_VOICE } from './constants'
+import { getTwilioConfig } from './lib/config'
 
 // ---------------------------------------------------------------------------
 // twilioClient — the single, uniform entry point for every Twilio interaction.
@@ -88,7 +87,8 @@ function createTwilioClient() {
   let _sdk: Twilio | undefined
   function sdk(): Twilio {
     if (!_sdk) {
-      _sdk = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN)
+      const config = getTwilioConfig()
+      _sdk = twilio(config.accountSid, config.authToken)
     }
     return _sdk
   }
@@ -184,13 +184,14 @@ function createTwilioClient() {
      * our configured TwiML App).
      */
     mintVoiceAccessToken(input: MintVoiceAccessTokenInput): string {
+      const config = getTwilioConfig()
       const { AccessToken } = twilio.jwt
       const { VoiceGrant } = AccessToken
 
       const token = new AccessToken(
-        env.TWILIO_ACCOUNT_SID,
-        env.TWILIO_API_KEY_SID,
-        env.TWILIO_API_KEY_SECRET,
+        config.accountSid,
+        config.apiKeySid,
+        config.apiKeySecret,
         {
           identity: input.identity,
           ttl: input.ttlSeconds ?? ACCESS_TOKEN_TTL_SECONDS,
@@ -199,7 +200,7 @@ function createTwilioClient() {
 
       token.addGrant(new VoiceGrant({
         incomingAllow: true,
-        outgoingApplicationSid: env.TWILIO_TWIML_APP_SID,
+        outgoingApplicationSid: config.twimlAppSid,
         outgoingApplicationParams: input.outgoingApplicationParams,
       }))
 
@@ -291,7 +292,7 @@ function createTwilioClient() {
      */
     verifyWebhookSignature(input: VerifyWebhookSignatureInput): boolean {
       return twilio.validateRequest(
-        env.TWILIO_AUTH_TOKEN,
+        getTwilioConfig().authToken,
         input.signature,
         input.url,
         input.params,
