@@ -35,21 +35,43 @@ src/trpc/
 
 ## Rules
 
-### three-base-procedure-types
+### base-procedure-types
 
-`src/trpc/init.ts` exports three base procedures:
+`src/trpc/init.ts` exports a four-rung procedure ladder, each rung extending the one above it (so session/ability/guards accumulate):
 
-| Procedure | Auth | Ctx after |
+| Procedure | Guard | Ctx after |
 |---|---|---|
 | `baseProcedure` | None | `session: null, ability: null, scope: null` |
-| `agentProcedure` | Throws UNAUTHORIZED if no session; builds `ability` from session role | `session: non-null, ability: non-null, scope: null` (until scope middleware) |
-| `payloadProcedure` | None | Injects Payload CMS client into ctx (CMS reads only) |
+| `protectedProcedure` | Throws UNAUTHORIZED if no session; builds CASL `ability` from session role | `session: non-null, ability: non-null, scope: null` |
+| `agentProcedure` | Extends protected; FORBIDDEN unless `ability.can('access', 'Dashboard')` (internal users) | same as protected |
+| `superAdminProcedure` | Extends agent; FORBIDDEN unless `ability.can('manage', 'all')` (super-admin omni grant) | same as protected |
 
 Entity routers **never** call `agentProcedure` directly inside the factory — they use the entity toolkit (`entity.authedProcedure` / `entity.shareableProcedure`) which has scope middleware baked in.
 
 **Why**: scope middleware injects `ctx.scope` (the per-user visibility predicate). Bypassing it means agents could read rows they shouldn't.
 **Reference impl**: `src/trpc/init.ts`
 **Enforced by**: tsc (different procedure-builder types) + convention
+
+### superadmin-procedure
+
+**Gate super-admin-only endpoints at the procedure, not in the handler body.** Use `superAdminProcedure` instead of an inline `if (ctx.session.user.role !== 'super-admin') throw` (or a per-router `requireSuperAdmin(role)` helper — both were removed 2026-06-04 in favor of this).
+
+```ts
+// ✅ procedure-level gate — visible in the procedure signature, one source of truth
+disqualify: superAdminProcedure.input(...).mutation(...)
+
+// ❌ inline role check — easy to forget, invisible at the call/registration site
+disqualify: agentProcedure.input(...).mutation(async ({ ctx }) => {
+  requireSuperAdmin(ctx.session.user.role) // don't
+  ...
+})
+```
+
+`superAdminProcedure` checks the centralized CASL ability (`can('manage', 'all')`), consistent with `agentProcedure`'s `can('access', 'Dashboard')` — not a hardcoded role string.
+
+**Migration status**: `lead-sources` + `voip-campaigns` routers use this. Other routers still carry inline role checks (e.g. CASL `can('manage', 'all')` peeks in `customer-pipelines.router.ts`); they should migrate to `superAdminProcedure` as they're touched.
+**Reference impl**: `src/trpc/init.ts`, `src/trpc/routers/lead-sources.router.ts`
+**Enforced by**: convention
 
 ### entity-router-via-factory
 

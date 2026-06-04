@@ -24,15 +24,9 @@ import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-t
 import { generateToken } from '@/shared/lib/generate-token'
 import { slugify } from '@/shared/lib/slugify'
 
-import { agentProcedure, createTRPCRouter } from '../init'
+import { createTRPCRouter, superAdminProcedure } from '../init'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
-function requireSuperAdmin(role: string): void {
-  if (role !== 'super-admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Super-admin access required.' })
-  }
-}
 
 async function generateUniqueSlug(base: string): Promise<string> {
   const root = slugify(base, { maxLen: 64 }) || 'source'
@@ -140,14 +134,13 @@ export const leadSourcesRouter = createTRPCRouter({
   // The optional time range scopes `leadsInRange` so the list reacts to the
   // global time picker in the page header. When absent, `leadsInRange`
   // degrades to `totalLeads`.
-  list: agentProcedure
+  list: superAdminProcedure
     .input(z.object({
       includeInactive: z.boolean().default(true),
       from: z.string().datetime().optional(),
       to: z.string().datetime().optional(),
     }).optional())
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .query(async ({ input }) => {
       const includeInactive = input?.includeInactive ?? true
 
       const rangePredicates = customerCreatedAtInRange(input?.from, input?.to)
@@ -180,10 +173,9 @@ export const leadSourcesRouter = createTRPCRouter({
       return rows
     }),
 
-  getById: agentProcedure
+  getById: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .query(async ({ input }) => {
       const [row] = await db
         .select()
         .from(leadSourcesTable)
@@ -198,10 +190,9 @@ export const leadSourcesRouter = createTRPCRouter({
   // Performance stats for a single lead source over a time range.
   // Stats: total leads (all-time), leads within range, signed customers (all-time).
   // "Signed" is defined by `isSignedCustomerSql` (customer has ≥1 project).
-  getStats: agentProcedure
+  getStats: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }).merge(timeRangeInput))
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .query(async ({ input }) => {
       const [src] = await db
         .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
@@ -248,11 +239,9 @@ export const leadSourcesRouter = createTRPCRouter({
   // panes. `total` counts every customer (including legacy NULL-source rows);
   // `range` applies the time window; `signedCustomers` counts customers with
   // at least one project (see `isSignedCustomerSql`).
-  getAggregateStats: agentProcedure
+  getAggregateStats: superAdminProcedure
     .input(timeRangeInput)
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
-
+    .query(async ({ input }) => {
       const rangeClauses = customerCreatedAtInRange(input.from, input.to)
       const rangeWhere = rangeClauses.length > 0 ? and(...rangeClauses) : undefined
 
@@ -267,9 +256,8 @@ export const leadSourcesRouter = createTRPCRouter({
 
   // Dynamic list of years with at least one customer for any lead source.
   // Used to build time-range chips (2026, 2025, …).
-  getYearsWithActivity: agentProcedure
-    .query(async ({ ctx }) => {
-      requireSuperAdmin(ctx.session.user.role)
+  getYearsWithActivity: superAdminProcedure
+    .query(async () => {
       const rows = await db
         .select({
           year: sql<number>`EXTRACT(YEAR FROM ${customers.createdAt})::int`,
@@ -285,7 +273,7 @@ export const leadSourcesRouter = createTRPCRouter({
   // `pipelines` enum), `createdAt` (date range). Top-level `segment` narrows
   // results to 'all' | 'active' | 'signed' | 'dead' without exposing the
   // control in the QueryToolbar filter row.
-  getCustomers: agentProcedure
+  getCustomers: superAdminProcedure
     .input(paginatedQueryInput({
       pipeline: z.array(z.enum(pipelines)).optional(),
       createdAt: dateRangeSchema.optional(),
@@ -293,8 +281,7 @@ export const leadSourcesRouter = createTRPCRouter({
       id: z.string().uuid(),
       segment: z.enum(customerSegments).optional(),
     }))
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .query(async ({ input }) => {
       const [src] = await db
         .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
@@ -351,10 +338,9 @@ export const leadSourcesRouter = createTRPCRouter({
       })
     }),
 
-  getStatusCounts: agentProcedure
+  getStatusCounts: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .query(async ({ input }) => {
       const [src] = await db
         .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
@@ -378,14 +364,13 @@ export const leadSourcesRouter = createTRPCRouter({
   // Funnel + trend for the Analytics tab. One round-trip — both visualizations
   // share the same (lead-source, range) scope. Trend buckets are picked
   // server-side so axis labels and tooltips stay consistent across renders.
-  getAnalytics: agentProcedure
+  getAnalytics: superAdminProcedure
     .input(z.object({
       id: z.string().uuid(),
       from: z.string().datetime().optional(),
       to: z.string().datetime().optional(),
     }))
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .query(async ({ input }) => {
       const [src] = await db
         .select({ id: leadSourcesTable.id })
         .from(leadSourcesTable)
@@ -582,11 +567,9 @@ export const leadSourcesRouter = createTRPCRouter({
 
   // Aggregate analytics across ALL customers (no lead-source filter). Mirrors
   // getAnalytics shape so the same client AnalyticsContent can render either.
-  getAggregateAnalytics: agentProcedure
+  getAggregateAnalytics: superAdminProcedure
     .input(timeRangeInput)
-    .query(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
-
+    .query(async ({ input }) => {
       let resolvedFrom = input.from
       const resolvedTo = input.to ?? new Date().toISOString()
       if (!resolvedFrom) {
@@ -724,10 +707,9 @@ export const leadSourcesRouter = createTRPCRouter({
       }
     }),
 
-  create: agentProcedure
+  create: superAdminProcedure
     .input(createInput)
-    .mutation(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .mutation(async ({ input }) => {
       const slug = await generateUniqueSlug(input.name)
       const token = generateToken()
       const [created] = await db
@@ -740,10 +722,9 @@ export const leadSourcesRouter = createTRPCRouter({
       return created
     }),
 
-  update: agentProcedure
+  update: superAdminProcedure
     .input(updateInput)
-    .mutation(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .mutation(async ({ input }) => {
       const { id, slug, ...rest } = input
 
       const patch: Partial<typeof leadSourcesTable.$inferInsert> = { ...rest }
@@ -797,10 +778,9 @@ export const leadSourcesRouter = createTRPCRouter({
       return updated
     }),
 
-  rotateToken: agentProcedure
+  rotateToken: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .mutation(async ({ input }) => {
       const [updated] = await db
         .update(leadSourcesTable)
         .set({ token: generateToken() })
@@ -812,10 +792,9 @@ export const leadSourcesRouter = createTRPCRouter({
       return updated
     }),
 
-  archive: agentProcedure
+  archive: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .mutation(async ({ input }) => {
       const [updated] = await db
         .update(leadSourcesTable)
         .set({ archivedAt: new Date().toISOString() })
@@ -827,10 +806,9 @@ export const leadSourcesRouter = createTRPCRouter({
       return updated
     }),
 
-  duplicate: agentProcedure
+  duplicate: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .mutation(async ({ input }) => {
       const [source] = await db
         .select()
         .from(leadSourcesTable)
@@ -857,10 +835,9 @@ export const leadSourcesRouter = createTRPCRouter({
       return created
     }),
 
-  delete: agentProcedure
+  delete: superAdminProcedure
     .input(z.object({ id: z.string().uuid() }))
-    .mutation(async ({ ctx, input }) => {
-      requireSuperAdmin(ctx.session.user.role)
+    .mutation(async ({ input }) => {
       const attachedCount = await db.$count(customers, customersMatchingSource(input.id))
       if (attachedCount > 0) {
         throw new TRPCError({

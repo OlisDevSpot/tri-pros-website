@@ -6,17 +6,27 @@ tRPC is the client-to-server typesafe glue layer. Procedures are thin — they d
 
 ### base-procedure-types
 
-Three base procedure types in `src/trpc/init.ts`:
+A four-rung procedure ladder in `src/trpc/init.ts`, each rung extending the one above:
 
-| Procedure | Auth | Use |
+| Procedure | Guard | Use |
 |---|---|---|
 | `baseProcedure` | None | Public endpoints (landing forms, public proposal view by token) |
-| `agentProcedure` | Throws UNAUTHORIZED if no session | Agent-facing admin operations |
-| `payloadProcedure` | None | Injects Payload CMS into context for CMS reads |
+| `protectedProcedure` | UNAUTHORIZED if no session; attaches CASL `ability` | Any authenticated user (e.g. a homeowner viewing their own proposal) |
+| `agentProcedure` | Extends protected; FORBIDDEN unless `can('access', 'Dashboard')` | Agent-facing admin/CRM operations |
+| `superAdminProcedure` | Extends agent; FORBIDDEN unless `can('manage', 'all')` | Super-admin-only ops (lead-source admin, campaign binding, disqualify) |
 
-**Why**: explicit auth shape per procedure — no "is this protected?" guessing.
+**Why**: explicit auth shape per procedure — no "is this protected?" guessing. Gate roles at the procedure, not with inline checks in the handler body (see `superadmin-gating-at-the-procedure`).
 **Reference impl**: `src/trpc/init.ts`
 **Enforced by**: tsc (procedure builders return different ctx shapes)
+
+### superadmin-gating-at-the-procedure
+
+Super-admin-only endpoints use `superAdminProcedure` — **never** an inline `if (ctx.session.user.role !== 'super-admin') throw` or a per-router `requireSuperAdmin(role)` helper (both removed 2026-06-04). The gate belongs in the procedure signature so it's visible where the procedure is registered, checked via the centralized CASL ability (`can('manage', 'all')`) rather than a hardcoded role string.
+
+**Migration status**: `lead-sources` + `voip-campaigns` use `superAdminProcedure`. Remaining routers with inline role/ability peeks (e.g. `customer-pipelines.router.ts`) should migrate as they're touched — the goal is zero inline role checks.
+**Why**: one source of truth per endpoint; a forgotten inline check is an IDOR (the `voip-campaigns.disqualify` SYSTEM_CONTEXT bug, 2026-06-04).
+**Reference impl**: `src/trpc/routers/lead-sources.router.ts`
+**Enforced by**: convention
 
 ### entity-procedures-from-factory
 

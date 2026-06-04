@@ -68,3 +68,25 @@ export const agentProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 
   return await next({ ctx })
 })
+
+// ── superAdminProcedure ────────────────────────────────────────────────────
+// Super-admin only. Extends agentProcedure, so session + ability + the
+// Dashboard guard are already in place. Use this for privileged,
+// cross-source/global operations (resync, campaign binding, disqualify,
+// destructive lead-source admin) INSTEAD of an inline
+// `if (ctx.session.user.role !== 'super-admin') throw` in the handler body —
+// procedure-level gating is the convention. see DOCS.md#superadmin-procedure
+//
+// Uses the centralized CASL ability (`can('manage', 'all')` is super-admin's
+// omni grant — see domains/permissions/abilities.ts) rather than a hardcoded
+// role string, mirroring agentProcedure's `can('access', 'Dashboard')`.
+export const superAdminProcedure = agentProcedure.use(async ({ ctx, next }) => {
+  if (ctx.ability.cannot('manage', 'all')) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Super-admin access required.',
+    })
+  }
+
+  return await next({ ctx })
+})
