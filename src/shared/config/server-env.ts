@@ -8,10 +8,12 @@ import z from 'zod'
 import { cloudtalkConfigMeta, cloudtalkEnvFragment } from '@/shared/services/providers/cloudtalk/lib/config'
 import { notionConfigMeta, notionEnvFragment } from '@/shared/services/providers/notion/lib/config'
 import { pipedriveConfigMeta, pipedriveEnvFragment } from '@/shared/services/providers/pipedrive/lib/config'
+import { quickbooksConfigMeta, quickbooksEnvFragment } from '@/shared/services/providers/quickbooks/lib/config'
 import { r2ConfigMeta, r2EnvFragment } from '@/shared/services/providers/r2/lib/config'
 import { resendConfigMeta, resendEnvFragment } from '@/shared/services/providers/resend/lib/config'
 import { twilioConfigMeta, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
 import { ablyConfigMeta, ablyEnvFragment, qstashConfigMeta, qstashEnvFragment } from '@/shared/services/providers/upstash/lib/config'
+import { webPushConfigMeta, webPushEnvFragment } from '@/shared/services/providers/web-push/lib/config'
 
 // Load .env.local first (dispatch worktree overrides), then .env as fallback.
 // dotenv won't overwrite already-set vars, so .env.local wins.
@@ -64,11 +66,11 @@ const envSchema = z.object({
   ZOHO_SIGN_REFRESH_TOKEN: z.string().optional(),
   ZOHO_SIGN_WEBHOOK_SECRET: z.string().optional(),
 
-  // QUICKBOOKS
-  QB_CLIENT_ID: z.string(),
-  QB_CLIENT_SECRET: z.string(),
-  QB_REDIRECT_URI: z.string(),
-  QB_WEBHOOK_VERIFIER_TOKEN: z.string(),
+  // QUICKBOOKS — fragment lives at providers/quickbooks/lib/config.ts
+  // (migrated 2026-06-05: was required inline; now optional fragment + factory.
+  // QB isn't app-core — boot succeeds without it, NotConfiguredError surfaces
+  // at the call site via getQuickbooksConfig().)
+  ...quickbooksEnvFragment.shape,
 
   // NOTION — fragment lives at providers/notion/lib/config.ts
   ...notionEnvFragment.shape,
@@ -136,14 +138,14 @@ const envSchema = z.object({
 
   // WEB PUSH (VAPID)
   // Generate with `node scripts/generate-vapid-keys.mjs`. The public key is
-  // exposed to the client via NEXT_PUBLIC_*; the private key signs JWT auth
-  // headers to push services and must stay server-only. The subject is a
-  // contact URL/email Apple/Google can reach you at if the keys misbehave.
-  // ALL three are optional so existing dev environments don't fail validation
-  // — push features no-op gracefully when missing.
+  // exposed to the client via NEXT_PUBLIC_* and stays inline here (NEXT_PUBLIC
+  // vars don't live in a server-side provider fragment). The two server-only
+  // keys (private key + subject) live in the web-push fragment at
+  // providers/web-push/lib/config.ts. All remain optional so dev environments
+  // without keys validate cleanly — push features no-op gracefully when missing
+  // (getVapidDetails() returns null rather than throwing).
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
-  VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_SUBJECT: z.string().optional(),
+  ...webPushEnvFragment.shape,
 })
 
 export type env = z.infer<typeof envSchema>
@@ -162,6 +164,17 @@ catch (e) {
   // eslint-disable-next-line node/prefer-global/process
   process.exit(1)
 }
+
+// Publish the default export BEFORE the boot banner runs. The banner calls
+// `meta.listMissing()`, which reads `env` through the circular import in
+// `create-provider-config.ts` (provider config → factory → back to this file's
+// default export). Webpack compiles `export default env` into a `const` that's
+// in the temporal dead zone until its declaration executes — so if this sits at
+// the bottom (after the banner), `listMissing()` throws
+// "Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization".
+// Assigning it here, before the banner, breaks that TDZ cycle. `env` is fully
+// parsed at this point and never reassigned, so the exported value is stable.
+export default env
 
 // Production safety gate: VOIP_DEV_OVERRIDE_NUMBER reroutes all outbound voice/SMS
 // to a single test number — invaluable in dev/preview, catastrophic in production.
@@ -191,9 +204,11 @@ const PROVIDER_METAS = [
   resendConfigMeta,
   notionConfigMeta,
   pipedriveConfigMeta,
+  quickbooksConfigMeta,
   r2ConfigMeta,
   qstashConfigMeta,
   ablyConfigMeta,
+  webPushConfigMeta,
 ] as const
 
 if (env.NODE_ENV !== 'production') {
@@ -209,5 +224,3 @@ if (env.NODE_ENV !== 'production') {
     )
   }
 }
-
-export default env

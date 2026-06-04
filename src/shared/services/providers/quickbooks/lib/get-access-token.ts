@@ -1,8 +1,8 @@
 import type { QBTokenResponse } from '../types'
 import { Buffer } from 'node:buffer'
-import env from '@/shared/config/server-env'
 import { QB_TOKEN_URL } from '../constants'
 import { getStoredTokens, upsertTokens } from './access-token-cache'
+import { getQuickbooksConfig } from './config'
 
 let inflightRefresh: Promise<{ accessToken: string, realmId: string }> | null = null
 
@@ -20,7 +20,8 @@ async function refreshToken(): Promise<{ accessToken: string, realmId: string }>
     return { accessToken: stored.accessToken, realmId: stored.realmId }
   }
 
-  const credentials = Buffer.from(`${env.QB_CLIENT_ID}:${env.QB_CLIENT_SECRET}`).toString('base64')
+  const { clientId, clientSecret } = getQuickbooksConfig()
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
 
   const res = await fetch(QB_TOKEN_URL, {
     method: 'POST',

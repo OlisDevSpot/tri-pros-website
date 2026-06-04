@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto'
-import env from '@/shared/config/server-env'
+import { getQuickbooksConfig } from '@/shared/services/providers/quickbooks/lib/config'
 import { syncQbInvoiceJob } from '@/shared/services/providers/upstash/jobs/sync-qb-invoice'
 import { syncQbPaymentJob } from '@/shared/services/providers/upstash/jobs/sync-qb-payment'
 
@@ -20,7 +20,7 @@ interface QBWebhookPayload {
 }
 
 function verifyWebhookSignature(payload: string, signature: string): boolean {
-  const hash = createHmac('sha256', env.QB_WEBHOOK_VERIFIER_TOKEN)
+  const hash = createHmac('sha256', getQuickbooksConfig().webhookVerifierToken)
     .update(payload)
     .digest('base64')
   return hash === signature

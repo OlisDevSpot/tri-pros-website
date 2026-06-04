@@ -1,9 +1,9 @@
 import type { QBTokenResponse } from '@/shared/services/providers/quickbooks/types'
 import { Buffer } from 'node:buffer'
 import { NextResponse } from 'next/server'
-import env from '@/shared/config/server-env'
 import { QB_TOKEN_URL } from '@/shared/services/providers/quickbooks/constants'
 import { upsertTokens } from '@/shared/services/providers/quickbooks/lib/access-token-cache'
+import { getQuickbooksConfig } from '@/shared/services/providers/quickbooks/lib/config'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -17,8 +17,9 @@ export async function GET(request: Request) {
     )
   }
 
+  const { clientId, clientSecret, redirectUri } = getQuickbooksConfig()
   const credentials = Buffer.from(
-    `${env.QB_CLIENT_ID}:${env.QB_CLIENT_SECRET}`,
+    `${clientId}:${clientSecret}`,
   ).toString('base64')
 
   const res = await fetch(QB_TOKEN_URL, {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
     body: new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: env.QB_REDIRECT_URI,
+      redirect_uri: redirectUri,
     }),
   })
 
