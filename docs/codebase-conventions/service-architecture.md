@@ -134,87 +134,120 @@ A provider always has `client.ts`, even for a one-endpoint integration. Auth + e
 
 ### provider-env-config-when-optional
 
-When a provider's env vars must be **optional** at the schema layer (e.g., a Vercel boot must still succeed before the feature is configured — see `commit da028029` for the voip precedent), the provider owns a `lib/config.ts` that exports two things:
+For any provider whose env vars are **NOT app-core-required** — meaning the app should boot and function for paths that don't touch this provider, even if its keys are missing — env-var handling lives in the provider's own `lib/config.ts`, NOT inline in `server-env.ts`. The boundary: app-core env (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_BASE_URL`, `NODE_ENV`) stays inline in `server-env` as required. Everything else — every provider, every cross-provider domain like voip — uses this pattern.
 
-1. A Zod object — the provider's env var schema fragment — e.g., `twilioEnvFragment`.
-2. A pure builder — e.g., `buildTwilioConfig(parsedEnv): TwilioRuntimeConfig` — that narrows `string | undefined` to `string` for every required field, throwing once with all missing vars listed if any are unset.
-
-The central `src/shared/config/server-env.ts` spreads `xEnvFragment.shape` into its main Zod schema and exposes a cached `getXConfig()` accessor that wraps `buildXConfig(env)`. **Consumers — including the provider's own `client.ts` — always import the accessor from `server-env`**, never from the provider's `lib/config.ts` directly.
-
-The rule:
-- **Definition** of "what env vars does this provider need" is **localized to the provider**.
-- **Import surface** for the typed config is **centralized at `server-env`**.
+**The contract — five exports per provider `lib/config.ts`:**
 
 ```ts
-// src/shared/services/providers/twilio/lib/config.ts
-export const twilioEnvFragment = z.object({
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
+// src/shared/services/providers/<name>/lib/config.ts
+import { z } from 'zod'
+import env from '@/shared/config/server-env'
+import { NotConfiguredError } from '@/shared/config/not-configured-error'
+
+// 1. Schema fragment — every field .optional()
+export const xEnvFragment = z.object({
+  X_API_KEY: z.string().optional(),
+  X_CLIENT_ID: z.string().optional(),
   // ...
 })
 
-export interface TwilioRuntimeConfig { accountSid: string, authToken: string /* ... */ }
+// 2. Runtime config type — required types, what callers receive
+export interface XRuntimeConfig {
+  apiKey: string
+  clientId: string
+}
 
-export function buildTwilioConfig(env: z.infer<typeof twilioEnvFragment>): TwilioRuntimeConfig {
+// 3. Pure builder — throws NotConfiguredError with every missing var
+export function buildXConfig(parsed: z.infer<typeof xEnvFragment>): XRuntimeConfig {
   const missing: string[] = []
-  if (!env.TWILIO_ACCOUNT_SID) missing.push('TWILIO_ACCOUNT_SID')
-  // ... collect all missing ...
-  if (missing.length > 0) {
-    throw new Error(`Twilio is not configured. Missing env vars: ${missing.join(', ')}.`)
-  }
-  return { accountSid: env.TWILIO_ACCOUNT_SID!, authToken: env.TWILIO_AUTH_TOKEN!, /* ... */ }
+  if (!parsed.X_API_KEY) missing.push('X_API_KEY')
+  if (!parsed.X_CLIENT_ID) missing.push('X_CLIENT_ID')
+  if (missing.length > 0) throw new NotConfiguredError('x', missing)
+  return { apiKey: parsed.X_API_KEY!, clientId: parsed.X_CLIENT_ID! }
+}
+
+// 4. Cached accessor — provider's public surface for callers
+let _cache: XRuntimeConfig | null = null
+export function getXConfig(): XRuntimeConfig {
+  if (_cache) return _cache
+  _cache = buildXConfig(env)
+  return _cache
+}
+
+// 5. isConfigured + meta — never throws; for feature gates + boot banner
+function listMissingX(): string[] {
+  const missing: string[] = []
+  if (!env.X_API_KEY) missing.push('X_API_KEY')
+  if (!env.X_CLIENT_ID) missing.push('X_CLIENT_ID')
+  return missing
+}
+
+export function isXConfigured(): boolean {
+  return listMissingX().length === 0
+}
+
+export const xConfigMeta = {
+  service: 'x' as const,
+  isConfigured: isXConfigured,
+  listMissing: listMissingX,
 }
 ```
+
+**Three invariants that make this work as a unit:**
+
+1. **Schema layer is permissive** — every field on the fragment is `.optional()`. `pnpm dev` / `pnpm build` / Vercel boot succeed regardless of which providers are configured. The only required env stays in `server-env`'s app-core section.
+
+2. **Builder enforces required** — `buildXConfig` asserts non-null per field the runtime actually needs and throws a single [`NotConfiguredError`](../../src/shared/config/not-configured-error.ts) listing every absent key. Optional-for-this-runtime fields (e.g., `TWILIO_TRUST_PROFILE_SID` — a vetting clock the SDK doesn't need to operate) live on the fragment for visibility but are excluded from the runtime config type.
+
+3. **Accessor is the provider's surface, not server-env's** — consumers `import { getXConfig } from '@/shared/services/providers/<x>/lib/config'`, never from `server-env`. `server-env`'s role is bootstrap orchestration only: spread fragments into the schema, validate at boot, print the dev-only boot banner via registered `<x>ConfigMeta` entries.
+
+**Server-env stays thin**:
 
 ```ts
 // src/shared/config/server-env.ts
-import { buildTwilioConfig, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
+import { twilioEnvFragment, twilioConfigMeta } from '@/shared/services/providers/twilio/lib/config'
+// ...one import line per provider as it migrates...
 
 const envSchema = z.object({
-  // ... base fields ...
-  ...twilioEnvFragment.shape, // ← provider fragment spread in
+  // app-core required (DATABASE_URL, NODE_ENV, NEXT_PUBLIC_BASE_URL, BETTER_AUTH_SECRET, ...)
+  ...twilioEnvFragment.shape,
+  // ...other provider fragments spread in...
 })
 
-let _twilioConfigCache: ReturnType<typeof buildTwilioConfig> | null = null
-export function getTwilioConfig() {
-  if (!_twilioConfigCache) _twilioConfigCache = buildTwilioConfig(env)
-  return _twilioConfigCache
+const env = envSchema.parse(process.env)
+export default env
+
+// Boot banner (dev only)
+if (env.NODE_ENV !== 'production') {
+  const metas = [twilioConfigMeta /* , cloudtalkConfigMeta, ... */]
+  for (const meta of metas) {
+    const missing = meta.listMissing()
+    if (missing.length === 0) console.log(`  ✅ ${meta.service}`)
+    else console.log(`  ❌ ${meta.service}  missing: ${missing.join(', ')}`)
+  }
 }
+
+// Production safety gates stay here too.
 ```
 
-```ts
-// src/shared/services/providers/twilio/client.ts
-import { getTwilioConfig } from '@/shared/config/server-env' // ← NOT from './lib/config'
+**Import order is safe**: provider's `lib/config.ts` may `import env from '@/shared/config/server-env'` at the top, but must only READ `env` inside function bodies (getter / listMissing). ESM bootstrap order resolves cleanly — by the time `getXConfig()` is called, server-env has finished parsing.
 
-mintVoiceAccessToken(input) {
-  const config = getTwilioConfig() // every field typed as `string`, not `string | undefined`
-  return new AccessToken(config.accountSid, config.apiKeySid, config.apiKeySecret, { ... }).toJwt()
-}
-```
+**Service-domain mirror**: when env vars are consumed by a domain-shared service (e.g., `services/voip/*.service.ts` reading `VOIP_*` vars that span Twilio + CloudTalk), use the same pattern at `services/<domain>/lib/config.ts`. Same five exports; only the `service` name in the meta differs. The `services/` namespace itself is reserved for actual service code — the `lib/` subdirectory hosts the config (same rule as the `lib/` exception in [provider-directory-shape](#provider-directory-shape)).
 
-**Why this shape:**
-- One throw site per provider — every missing-config failure collapses into a single error message listing every absent var. Easier to act on than five separate stack traces.
-- The type system carries the contract: after `getXConfig()` returns, every field is `string`. No `!` assertions sprinkled at call sites; no per-call-site `if (!env.X) throw` repeated five times.
-- The provider's directory still owns the answer to "what env vars does this need?" — colocated with the client that uses them.
-- `server-env` remains the single import surface for env-derived configuration. Consumers never need to know which provider colocates its definition where.
-- No circular import: the provider's `lib/config.ts` depends only on `zod`; `server-env.ts` imports the provider fragment + builder; the consumer imports the accessor from `server-env`.
-
-**When to use:**
-- The provider's env vars must be optional at the schema layer (CI, prod-before-feature-launches, fresh dev clones).
-- The provider's consuming code structurally requires them to be `string` (passes them to an SDK constructor, signs a request, builds a JWT, etc.).
-
-**When NOT to use:**
-- Env vars that are genuinely required at app startup (database URL, auth secret) — keep them inline in `server-env`'s base schema as `z.string()` (no `.optional()`); a missing value crashes the import, which is the correct failure mode.
-- Env vars that are read in exactly one place and naturally tolerate `string | undefined` (a feature flag with a default) — no helper needed.
+**When NOT to use this pattern:**
+- App-core env (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_BASE_URL`, `NODE_ENV`). These are required at boot; a missing value SHOULD crash the import — that's the correct failure mode for "the app can't start at all." Keep them inline as `z.string()`.
+- Env vars read in exactly one place that naturally tolerate `string | undefined` (a feature flag with a default). No fragment needed.
 
 **Anti-patterns:**
-- Defining the provider's env vars inline in `server-env` while the provider's client.ts asserts them with `!` — drift between the schema and the call site; future field additions hit two files instead of one.
-- Importing the provider's `lib/config.ts` directly from consumer code — bypasses the central import surface. The provider's `lib/config.ts` is an implementation detail of how it plugs into `server-env`, not a public API.
-- Re-exporting `env.TWILIO_X` etc. from `server-env` as individual constants — leaks `string | undefined` to call sites and defeats the narrowing.
+- Hosting `getXConfig()` in `server-env.ts` and re-exporting — defeats "one import path per provider" from [client-is-the-superset-entry-point](#client-is-the-superset-entry-point) and re-couples server-env to every provider.
+- Reading `env.X_FOO` at **module scope** inside any provider file (`client.ts`, `constants/*.ts`, etc.). The schema makes it `string | undefined`; the read captures the value once, downstream surprise. All env reads in providers must be lazy — inside function bodies.
+- Throwing plain `Error` from the builder — callers can't `instanceof NotConfiguredError` to map configured-vs-misconfigured into distinct error responses.
+- Required fields on the fragment (`z.string()` not `z.string().optional()`) — defeats boot resilience.
+- Adding a provider's env vars inline in server-env while the provider's `client.ts` reads them with `!` assertions — drift between schema and call site; new fields hit two files.
 
-**Reference impl**: `src/shared/services/providers/twilio/lib/config.ts` + `src/shared/config/server-env.ts` (the `getTwilioConfig` accessor).
+**Reference impl**: [`src/shared/services/providers/twilio/lib/config.ts`](../../src/shared/services/providers/twilio/lib/config.ts) (canonical post-2026-06-05). [Migration matrix](../plans/voip-in-house/EPIC.md) tracks remaining providers to retrofit.
 
-**Enforced by**: convention + PR review.
+**Enforced by**: convention + PR review. ESLint `no-restricted-imports` (per `client-is-the-superset-entry-point`) already prevents consumers from importing raw `serverEnv.X_FOO` inside provider directories; this rule extends the discipline to require lazy reads only.
 
 ### sync-service-when-2-plus-ops
 

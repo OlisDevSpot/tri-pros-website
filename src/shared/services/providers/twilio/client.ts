@@ -7,9 +7,8 @@ import type { MintVoiceAccessTokenInput } from './schemas/access-token'
 
 import twilio, { RestException as TwilioRestException } from 'twilio'
 
-import { getTwilioConfig } from '@/shared/config/server-env'
-
 import { ACCESS_TOKEN_TTL_SECONDS, INBOUND_VOICE_TTS_VOICE } from './constants'
+import { getTwilioConfig } from './lib/config'
 
 // ---------------------------------------------------------------------------
 // twilioClient — the single, uniform entry point for every Twilio interaction.

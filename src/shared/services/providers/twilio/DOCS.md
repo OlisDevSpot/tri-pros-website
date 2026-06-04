@@ -121,16 +121,43 @@ catch (e) {
 Do NOT wrap `RestException` in a provider-specific error class — the SDK's
 shape is the source of truth.
 
-## Env var surface
+## Env config
 
-Reads (via `@/shared/config/server-env`):
+All Twilio env handling — schema fragment, runtime config builder, cached
+accessor, and configured-status helpers — lives in
+[`lib/config.ts`](./lib/config.ts). Consumers import directly from there,
+NOT from `@/shared/config/server-env`. Per
+[`provider-env-config-when-optional`](../../../../../docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional).
+
+**The five exports:**
+
+```ts
+import {
+  twilioEnvFragment,   // Zod fragment — every field .optional() — server-env spreads this
+  buildTwilioConfig,   // pure builder (env) → TwilioRuntimeConfig; throws NotConfiguredError
+  getTwilioConfig,     // cached accessor — the call-site entry point
+  isTwilioConfigured,  // boolean peek — never throws; for feature gates
+  twilioConfigMeta,    // boot-banner registry entry
+} from '@/shared/services/providers/twilio/lib/config'
+```
+
+**Env vars consumed:**
 - `TWILIO_ACCOUNT_SID` + `TWILIO_AUTH_TOKEN` — REST client + webhook signature validation
 - `TWILIO_API_KEY_SID` + `TWILIO_API_KEY_SECRET` — JWT signing (NOT the auth token)
 - `TWILIO_TWIML_APP_SID` — granted on minted JWTs for outbound dial
-- `TWILIO_TRUST_PROFILE_SID` (optional — Trust Hub pending)
-- `TWILIO_10DLC_CAMPAIGN_SID` (optional — 10DLC pending)
+- `TWILIO_TRUST_PROFILE_SID` (vetting clock — present on fragment for visibility, NOT required by runtime)
+- `TWILIO_10DLC_CAMPAIGN_SID` (vetting clock — same)
 
-DID env vars do not exist. DIDs live in the `voip_dids` table, populated via
+Every var is `.optional()` at the schema layer. `getTwilioConfig()` throws
+[`NotConfiguredError`](../../../config/not-configured-error.ts) with every
+missing required key listed if invoked before the env is configured.
+Vetting-clock vars (`TWILIO_TRUST_PROFILE_SID`, `TWILIO_10DLC_CAMPAIGN_SID`)
+ride along on the fragment but are excluded from `TwilioRuntimeConfig` — the
+SDK and signature-verify paths don't need them. Read those via the lazy
+`getVetting()` helper in [`constants/index.ts`](./constants/index.ts) when
+runtime gates need them.
+
+DID env vars do NOT exist. DIDs live in the `voip_dids` table, populated via
 `voipDidsService.resyncFromTwilio` (admin sweep that calls
 `twilioClient.listIncomingPhoneNumbers` against the live account).
 

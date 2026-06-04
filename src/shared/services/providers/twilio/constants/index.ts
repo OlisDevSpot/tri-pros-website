@@ -25,10 +25,17 @@ export const INBOUND_VOICE_TTS_VOICE = 'Polly.Joanna-Neural' as const
 // can guard outbound capabilities behind their availability without re-reading
 // process.env. The voip-messages service will refuse outbound SMS in production
 // when TWILIO_10DLC_CAMPAIGN_SID is unset.
-export const VETTING = {
-  trustProfileSid: serverEnv.TWILIO_TRUST_PROFILE_SID,
-  tenDlcCampaignSid: serverEnv.TWILIO_10DLC_CAMPAIGN_SID,
-} as const
+//
+// Lazy getter (NOT a module-scope const) per `provider-env-config-when-optional`
+// — both fields are .optional() on the schema, so a module-scope read would
+// capture `undefined` permanently and downstream "is vetting complete?" checks
+// would be stale if env were hot-swapped. (It isn't, but consistency.)
+export function getVetting(): { trustProfileSid: string | undefined, tenDlcCampaignSid: string | undefined } {
+  return {
+    trustProfileSid: serverEnv.TWILIO_TRUST_PROFILE_SID,
+    tenDlcCampaignSid: serverEnv.TWILIO_10DLC_CAMPAIGN_SID,
+  }
+}
 
 // Dev-only outbound redirect. When set in dev/preview, services route every
 // outbound call/SMS to this single number. server-env.ts already enforces

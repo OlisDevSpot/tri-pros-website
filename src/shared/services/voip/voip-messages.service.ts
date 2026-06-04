@@ -9,7 +9,7 @@ import { voipMessageCrud } from '@/shared/entities/voip-messages/dal/server/crud
 import { patchMessageStatusByProviderId, upsertInboundMessage } from '@/shared/entities/voip-messages/dal/server/mutations'
 import { fetchThread as fetchThreadDal } from '@/shared/entities/voip-messages/dal/server/queries'
 import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
-import { VETTING, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
+import { getVetting, VOIP_DEV_OVERRIDE_NUMBER } from '@/shared/services/providers/twilio/constants'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ function createVoipMessagesService() {
       }
 
       // 2. 10DLC vetting check (production only).
-      if (env.NODE_ENV === 'production' && !VETTING.tenDlcCampaignSid) {
+      if (env.NODE_ENV === 'production' && !getVetting().tenDlcCampaignSid) {
         return dalError({
           type: 'precondition-failed',
           reason: '10DLC campaign approval pending — outbound SMS disabled in production',

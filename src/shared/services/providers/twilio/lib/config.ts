@@ -1,22 +1,23 @@
 import { z } from 'zod'
 
+import { NotConfiguredError } from '@/shared/config/not-configured-error'
+import env from '@/shared/config/server-env'
+
 /**
- * Twilio env var schema fragment + runtime-config builder.
+ * Twilio env var schema fragment + runtime-config builder + accessor.
  *
  * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
  *
- * Why this file exists: the underlying TWILIO_* vars are `.optional()` at
- * the schema layer (commit `da028029`) so a Vercel boot without voip
- * configured still parses cleanly. Consumers need them as `string`, not
- * `string | undefined`. This file is the single seam where the narrowing
- * happens — and it is the *definition*, not the import path. The
- * aggregated parsed env + the cached `getTwilioConfig()` accessor live
- * in `@/shared/config/server-env`, which spreads `twilioEnvFragment`
- * into the central schema and re-exports a getter. Consumers always
- * import from server-env.
+ * Why this file owns ALL of Twilio's env story (not just the fragment):
+ * server-env imports `twilioEnvFragment` to spread into the central schema,
+ * and that's the ONLY thing it imports. Consumers (twilioClient, services,
+ * routes) `import { getTwilioConfig } from '...twilio/lib/config'` — one
+ * import surface per provider (mirrors `client-is-the-superset-entry-point`).
  *
- * Mirror this pattern in any other provider whose env vars are optional
- * at the schema layer but structurally required when used.
+ * ESM bootstrap order: server-env imports this file for the fragment; this
+ * file imports `env` from server-env. Safe because every `env` read here
+ * is inside a function body, not at module scope — by the time getXConfig()
+ * or isXConfigured() is called, server-env has finished parsing.
  */
 export const twilioEnvFragment = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
@@ -39,48 +40,77 @@ export interface TwilioRuntimeConfig {
 }
 
 /**
- * Narrow the parsed env (with TWILIO_* as `string | undefined`) into a
- * runtime config (with every required field as `string`), throwing once
- * with all missing vars listed if any are unset.
- *
- * Pure function. Called by the cached `getTwilioConfig()` accessor in
- * server-env.ts; do not call directly from consumer code.
- *
- * Note: `TWILIO_TRUST_PROFILE_SID` and `TWILIO_10DLC_CAMPAIGN_SID` are
- * intentionally excluded from `TwilioRuntimeConfig` — they ride along
- * in the schema for vetting-clock visibility but the runtime client
- * doesn't structurally require them.
+ * Required env keys for Twilio's runtime to operate. Excludes vetting-clock
+ * vars (`TWILIO_TRUST_PROFILE_SID`, `TWILIO_10DLC_CAMPAIGN_SID`) which ride
+ * along on the schema for visibility but aren't structurally required by
+ * the SDK or webhook validation paths.
  */
-export function buildTwilioConfig(env: ParsedTwilioEnv): TwilioRuntimeConfig {
-  const missing: string[] = []
-  if (!env.TWILIO_ACCOUNT_SID) {
-    missing.push('TWILIO_ACCOUNT_SID')
-  }
-  if (!env.TWILIO_AUTH_TOKEN) {
-    missing.push('TWILIO_AUTH_TOKEN')
-  }
-  if (!env.TWILIO_API_KEY_SID) {
-    missing.push('TWILIO_API_KEY_SID')
-  }
-  if (!env.TWILIO_API_KEY_SECRET) {
-    missing.push('TWILIO_API_KEY_SECRET')
-  }
-  if (!env.TWILIO_TWIML_APP_SID) {
-    missing.push('TWILIO_TWIML_APP_SID')
-  }
+const REQUIRED_KEYS = [
+  'TWILIO_ACCOUNT_SID',
+  'TWILIO_AUTH_TOKEN',
+  'TWILIO_API_KEY_SID',
+  'TWILIO_API_KEY_SECRET',
+  'TWILIO_TWIML_APP_SID',
+] as const satisfies ReadonlyArray<keyof ParsedTwilioEnv>
 
+function listMissingTwilio(): string[] {
+  return REQUIRED_KEYS.filter(k => !env[k])
+}
+
+/**
+ * Narrow the parsed env (Twilio fields as `string | undefined`) into a
+ * runtime config (every required field as `string`). Throws once with all
+ * missing vars listed if any are unset.
+ *
+ * Pure function — does not read process.env. Use `getTwilioConfig()` for
+ * the cached, env-bound accessor.
+ */
+export function buildTwilioConfig(parsed: ParsedTwilioEnv): TwilioRuntimeConfig {
+  const missing = REQUIRED_KEYS.filter(k => !parsed[k])
   if (missing.length > 0) {
-    throw new Error(
-      `Twilio is not configured for this environment. Missing env vars: ${missing.join(', ')}. `
-      + `Set them in Vercel or .env.local to enable Twilio-backed voip features.`,
-    )
+    throw new NotConfiguredError('twilio', missing)
   }
-
   return {
-    accountSid: env.TWILIO_ACCOUNT_SID!,
-    authToken: env.TWILIO_AUTH_TOKEN!,
-    apiKeySid: env.TWILIO_API_KEY_SID!,
-    apiKeySecret: env.TWILIO_API_KEY_SECRET!,
-    twimlAppSid: env.TWILIO_TWIML_APP_SID!,
+    accountSid: parsed.TWILIO_ACCOUNT_SID!,
+    authToken: parsed.TWILIO_AUTH_TOKEN!,
+    apiKeySid: parsed.TWILIO_API_KEY_SID!,
+    apiKeySecret: parsed.TWILIO_API_KEY_SECRET!,
+    twimlAppSid: parsed.TWILIO_TWIML_APP_SID!,
   }
 }
+
+/**
+ * Cached accessor — the public entry point for every consumer that needs
+ * Twilio config. Lazy: doesn't read env until first call.
+ *
+ * Throws `NotConfiguredError` if any required Twilio env var is missing —
+ * tRPC error formatters / route handlers can `instanceof` to translate
+ * into a structured "service unavailable" response.
+ */
+let _cache: TwilioRuntimeConfig | null = null
+export function getTwilioConfig(): TwilioRuntimeConfig {
+  if (_cache) {
+    return _cache
+  }
+  _cache = buildTwilioConfig(env)
+  return _cache
+}
+
+/**
+ * Feature-gate helper. Never throws. Use to short-circuit UI affordances
+ * ("don't show the Call button if Twilio isn't configured") and to drive
+ * the boot banner in server-env.
+ */
+export function isTwilioConfigured(): boolean {
+  return listMissingTwilio().length === 0
+}
+
+/**
+ * Boot-banner registry entry. server-env iterates the set of provider
+ * `<x>ConfigMeta` entries after parse and prints one line per service.
+ */
+export const twilioConfigMeta = {
+  service: 'twilio' as const,
+  isConfigured: isTwilioConfigured,
+  listMissing: listMissingTwilio,
+} as const

@@ -543,47 +543,35 @@ pnpm add -D @types/twilio
 
 `twilio` is the server SDK. `@twilio/voice-sdk` is the browser SDK. **No** retell-sdk, **no** sendblue dependencies — those vendors are out of scope for this EPIC per the 2026-05-23 pivot.
 
-- [ ] **Step 1.2: Register env vars in `server-env.ts`**
+- [ ] **Step 1.2: Register env vars via per-provider fragments + boot banner**
 
-Read `src/shared/config/server-env.ts` first; merge the additions into the existing `envSchema`. Add (matching existing comment-block style):
+Per [`provider-env-config-when-optional`](../../codebase-conventions/service-architecture.md#provider-env-config-when-optional), each provider owns its env story in `lib/config.ts` (fragment + builder + accessor + isConfigured + meta). `server-env.ts` is a thin coordinator — spreads fragments + parses + prints a dev-only boot banner. **No provider env vars are declared inline in server-env.**
+
+Twilio's fragment lives at [`src/shared/services/providers/twilio/lib/config.ts`](../../../src/shared/services/providers/twilio/lib/config.ts) — already in place from Phase 0 of this convention. Adding a new provider follows the same template.
+
+`server-env.ts` already imports `twilioEnvFragment` + `twilioConfigMeta` and spreads/registers them. Adding cross-provider VoIP env (`VOIP_WEBHOOK_BASE_URL`, `VOIP_DEV_OVERRIDE_NUMBER`) follows the same shape but at the service-domain layer:
 
 ```ts
-// TWILIO (voip-in-house)
-TWILIO_ACCOUNT_SID: z.string(),
-TWILIO_AUTH_TOKEN: z.string(),
-TWILIO_API_KEY_SID: z.string(),
-TWILIO_API_KEY_SECRET: z.string(),
-TWILIO_TWIML_APP_SID: z.string(),
-TWILIO_TRUST_PROFILE_SID: z.string().optional(),
-TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(),  // gated by 10DLC vetting; optional until approval
+// src/shared/services/voip/lib/config.ts  (new — created when first needed)
+export const voipSharedEnvFragment = z.object({
+  VOIP_WEBHOOK_BASE_URL: z.string().optional(),
+  VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
+  CLOUDTALK_WEBHOOK_SECRET: z.string().min(32).optional(),  // both surfaces (in-house + campaigns) consume this
+  FTC_DNC_SAN: z.string().optional(),
+  FTC_DNC_USERNAME: z.string().optional(),
+  FTC_DNC_PASSWORD: z.string().optional(),
+})
 
-// NB: No per-DID env vars. DIDs live in the `voip_dids` table; populate via
-// `voipDidsService.resyncFromTwilio` (admin mutation reads the live Twilio
-// account). See `chore(voip-in-house): drop dead TWILIO_DID_* env vars` 2026-06-04.
-
-// FCC DNC (SAN pending — optional until Phase 0 issuance)
-FTC_DNC_SAN: z.string().optional(),
-FTC_DNC_USERNAME: z.string().optional(),
-FTC_DNC_PASSWORD: z.string().optional(),
-
-// Shared VoIP webhook base URL (covers Twilio + future CloudTalk webhooks + voip routing endpoints)
-VOIP_WEBHOOK_BASE_URL: z.string(),
-
-// Dev safety: redirects all outbound voice/SMS to a single test number in dev/preview.
-// CI gate (Step 1.4) prevents this being set in production.
-VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
-
-// CloudTalk webhook secret — single secret protecting BOTH:
-//   1. Mid-call routing endpoints (`/api/voip/routing/*`) — voip-in-house Phase 1 (this EPIC) verifies inbound
-//   2. Post-call webhooks (`/api/webhooks/cloudtalk/route.ts`) — voip-campaigns Phase 1 verifies inbound
-// Both surfaces are CloudTalk → us with the same trust model; one secret is sufficient.
-// voip-in-house Phase 1 implementer generates this (32+ char URL-safe random) and configures into
-// CloudTalk's Call Flow Designer (voip-campaigns Phase 0 dashboard work).
-// Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
-CLOUDTALK_WEBHOOK_SECRET: z.string().min(32),
+export function getVoipSharedConfig(): { webhookBaseUrl: string, /* ... */ } { /* throws NotConfiguredError */ }
+export function isVoipSharedConfigured(): boolean { /* ... */ }
+export const voipSharedConfigMeta = { service: 'voip-shared', isConfigured: isVoipSharedConfigured, listMissing: /* ... */ }
 ```
 
-> **Removed vars (per 2026-05-23 pivot):** `RETELL_*`, `TWILIO_SIP_TRUNK_*`, `SENDBLUE_*`, `DIALER_*`. If any of these were stubbed in `server-env.ts` from the aborted Phase 1A branch, delete them as part of this change. Search: `grep -E "RETELL_|SENDBLUE_|SIP_TRUNK_|DIALER_" src/shared/config/server-env.ts`.
+`server-env.ts` then spreads `...voipSharedEnvFragment.shape` and pushes `voipSharedConfigMeta` into `PROVIDER_METAS`. Production safety gate (`VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production`) stays as a top-level invariant in server-env.
+
+**CloudTalk migration** (Slug D dependency) creates `src/shared/services/providers/cloudtalk/lib/config.ts` with the same five exports. server-env adds an import line + a `cloudtalkConfigMeta` entry to `PROVIDER_METAS`. The boot banner reports it.
+
+> **Removed vars (per 2026-05-23 pivot):** `RETELL_*`, `TWILIO_SIP_TRUNK_*`, `SENDBLUE_*`, `DIALER_*`. If any of these were stubbed in `server-env.ts` from the aborted Phase 1A branch, delete them as part of any future server-env edit.
 
 - [ ] **Step 1.3: Add CI gate for production env**
 
@@ -1564,9 +1552,14 @@ src/shared/services/providers/twilio/
   types.ts                   SDK type re-exports (CallInstance, MessageInstance, IncomingPhoneNumberInstance)
   constants/
     index.ts                 ACCESS_TOKEN_TTL_SECONDS, ACCESS_TOKEN_IDENTITY_PREFIX,
-                             INBOUND_VOICE_TTS_VOICE, VETTING, VOIP_DEV_OVERRIDE_NUMBER
+                             INBOUND_VOICE_TTS_VOICE, getVetting(), VOIP_DEV_OVERRIDE_NUMBER
   lib/
-    config.ts                getTwilioConfig() + twilioEnvFragment — internal env-narrowing helper
+    config.ts                Twilio's full env story — twilioEnvFragment, buildTwilioConfig,
+                             getTwilioConfig (cached accessor — provider's single import surface
+                             for config), isTwilioConfigured, twilioConfigMeta (registered in
+                             server-env's boot banner). Throws NotConfiguredError from
+                             @/shared/config/not-configured-error. See `provider-env-config-when-optional`
+                             in service-architecture.md.
   schemas/                   outbound-API Zod (what we send to Twilio)
     primitives.ts            e164Schema, twilioSidSchema, isoDateTimeSchema
     access-token.ts          mintVoiceAccessTokenInputSchema

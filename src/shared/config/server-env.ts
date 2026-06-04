@@ -5,7 +5,7 @@ import { expand } from 'dotenv-expand'
 
 import z from 'zod'
 
-import { buildTwilioConfig, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
+import { twilioConfigMeta, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
 
 // Load .env.local first (dispatch worktree overrides), then .env as fallback.
 // dotenv won't overwrite already-set vars, so .env.local wins.
@@ -105,8 +105,11 @@ const envSchema = z.object({
 
   // TWILIO (voip-in-house) — schema fragment lives at
   // `src/shared/services/providers/twilio/lib/config.ts` and is spread in
-  // here. Runtime narrowing happens via the `getTwilioConfig()` accessor
-  // re-exported below.
+  // here. Runtime narrowing happens via the `getTwilioConfig()` accessor,
+  // imported by consumers DIRECTLY from the provider's lib/config — NOT
+  // re-exported from this file. server-env's role is bootstrap orchestration
+  // (schema spread + parse + boot banner + production gates).
+  // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
   ...twilioEnvFragment.shape,
 
   // Pilot DID env vars removed 2026-06-04 — DID source of truth is now the
@@ -169,25 +172,37 @@ if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
 }
 
 // -----------------------------------------------------------------------------
-// Per-provider config accessors
+// Boot banner — dev-only configured-service report.
 // -----------------------------------------------------------------------------
-// Each provider with optional env vars exposes a cached accessor here. The
-// accessor calls the provider's `build*Config()` builder, which throws once
-// with all missing vars listed if any are unset.
+// Each provider / domain-shared config exports a `<x>ConfigMeta` object from
+// its `lib/config.ts`. server-env aggregates them here, queries each
+// `listMissing()`, and prints one line per service. Surfaces "twilio is up
+// but cloudtalk isn't" at boot rather than hidden behind a runtime error
+// the first time a feature is exercised.
 //
-// Consumers always import the accessor from THIS file, not from the
-// provider's `lib/config.ts`. That keeps server-env as the single import
-// surface for env-derived configuration while letting each provider own its
-// own env definition.
+// Production omits the banner (clean logs); the typed runtime checks from
+// `NotConfiguredError` still kick in if a misconfigured service is called.
+//
+// To register a newly-migrated provider: add its `<x>ConfigMeta` import at
+// the top of this file and append to `PROVIDER_METAS` below.
 // see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
-let _twilioConfigCache: ReturnType<typeof buildTwilioConfig> | null = null
+const PROVIDER_METAS = [
+  twilioConfigMeta,
+] as const
 
-export function getTwilioConfig(): ReturnType<typeof buildTwilioConfig> {
-  if (!_twilioConfigCache) {
-    _twilioConfigCache = buildTwilioConfig(env)
+if (env.NODE_ENV !== 'production') {
+  // eslint-disable-next-line no-console
+  console.log('[server-env] Configured services:')
+  for (const meta of PROVIDER_METAS) {
+    const missing = meta.listMissing()
+    // eslint-disable-next-line no-console
+    console.log(
+      missing.length === 0
+        ? `  ✅ ${meta.service}`
+        : `  ❌ ${meta.service}  missing: ${missing.join(', ')}`,
+    )
   }
-  return _twilioConfigCache
 }
 
 export default env
