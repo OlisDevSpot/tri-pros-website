@@ -28,18 +28,20 @@
  *   ... -- --apply --force                 # bypass dupe guard
  *
  * URL resolution:
- *   Uses `getPublicBaseUrl()` — the canonical helper from public-url.ts.
- *   That returns `NGROK_URL ?? NEXT_PUBLIC_BASE_URL`. In dev, NGROK_URL is
- *   set in .env.local and the cron fires against the tunnel (QStash needs
- *   a public HTTPS destination — localhost can't work). In prod NGROK_URL
- *   is unset and we fall through to NEXT_PUBLIC_BASE_URL.
+ *   - NODE_ENV=production → uses `PROD_BASE_URL` from roots.ts (the
+ *     canonical constant derived from `APP_HOSTS.prod[0]`). Bypasses
+ *     getPublicBaseUrl() entirely so this script can be run from a dev
+ *     box (where NGROK_URL or a dev NEXT_PUBLIC_BASE_URL would otherwise
+ *     leak in) and still target the real prod endpoint.
+ *   - NODE_ENV=development → uses `getPublicBaseUrl()`, which returns
+ *     `NGROK_URL ?? NEXT_PUBLIC_BASE_URL`. The dev script runs through
+ *     ngrok so QStash can deliver to the local app.
  *
  * Safety guards:
  *   - QSTASH_TOKEN unset → server-env.ts crashes the import, before any call.
  *   - NODE_ENV=production AND resolved URL contains "ngrok"|"localhost"|
- *     "127.0.0.1" → refuse. Defends against the prod-script-invoked-from-
- *     dev-worktree footgun (where .env.local would otherwise leak NGROK_URL
- *     into a prod schedule).
+ *     "127.0.0.1" → refuse. Defends against future changes to APP_HOSTS.prod
+ *     that would put a non-public host into PROD_BASE_URL.
  *   - dev mode AND resolved URL is plain http://localhost → refuse with a
  *     hint to start ngrok. QStash cannot deliver to localhost.
  *
@@ -51,6 +53,7 @@
 import './lib/load-env'
 
 import { getPublicBaseUrl } from '@/shared/config/public-url'
+import { PROD_BASE_URL } from '@/shared/config/roots'
 import { qstashClient } from '@/shared/services/providers/upstash/qstash-client'
 
 const CRON = '0 */12 * * *'
@@ -79,8 +82,10 @@ async function main() {
   const apply = process.argv.includes('--apply')
   const force = process.argv.includes('--force')
 
-  const baseUrl = getPublicBaseUrl()
   const isProd = process.env.NODE_ENV === 'production'
+  // Prod path skips getPublicBaseUrl() so dev-box invocations don't pick up
+  // NGROK_URL or a dev-shaped NEXT_PUBLIC_BASE_URL from .env.local.
+  const baseUrl = isProd ? PROD_BASE_URL : getPublicBaseUrl()
   const destination = `${baseUrl}/api/qstash-jobs?job=${JOB_KEY}`
 
   console.log('--- SETUP GCAL RENEWAL CRON ---')

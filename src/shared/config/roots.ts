@@ -8,7 +8,7 @@ export const APP_HOSTS = {
   tunnel: ['destined-emu-bold.ngrok-free.app'],
 } as const
 
-const PROD_BASE_URL = `https://${APP_HOSTS.prod[0]}`
+export const PROD_BASE_URL = `https://${APP_HOSTS.prod[0]}`
 
 interface UrlOptions {
   absolute?: boolean
