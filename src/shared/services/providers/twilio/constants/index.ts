@@ -16,23 +16,10 @@ export const ACCESS_TOKEN_IDENTITY_PREFIX
 // neural voice that doesn't require additional vendor wiring.
 export const INBOUND_VOICE_TTS_VOICE = 'Polly.Joanna-Neural' as const
 
-// Provider-level pilot DID env vars — exposed as a typed grouping so service
-// layers don't have to know individual env var names. Slug C's voip-dids
-// service will read this to seed/sync the `voip_dids` table.
-export const PILOT_DIDS = {
-  transferTarget: {
-    e164: serverEnv.TWILIO_TRANSFER_TARGET_DID_E164,
-    sid: serverEnv.TWILIO_TRANSFER_TARGET_DID_SID,
-  },
-  did424: {
-    e164: serverEnv.TWILIO_DID_424_E164,
-    sid: serverEnv.TWILIO_DID_424_SID,
-  },
-  did626: {
-    e164: serverEnv.TWILIO_DID_626_E164,
-    sid: serverEnv.TWILIO_DID_626_SID,
-  },
-} as const
+// PILOT_DIDS removed 2026-06-04 — DID source of truth is now the `voip_dids`
+// table. Services resolve DIDs via DAL queries (getStickyDidForUser,
+// getDidByE164, getDidByProviderId). Admin "Resync from Twilio" populates +
+// reconciles the table via voipDidsService.resyncFromTwilio.
 
 // Vetting-clock env vars (optional; Phase 0 still pending). Exposed so callers
 // can guard outbound capabilities behind their availability without re-reading

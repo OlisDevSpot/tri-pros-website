@@ -104,13 +104,10 @@ const envSchema = z.object({
   TWILIO_TRUST_PROFILE_SID: z.string().optional(), // Trust Hub vetting clock; optional until issued
   TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(), // 10DLC vetting clock; optional until approval
 
-  // Pilot DIDs (role-named per Phase 0 procurement) — all optional.
-  TWILIO_TRANSFER_TARGET_DID_E164: z.string().optional(),
-  TWILIO_TRANSFER_TARGET_DID_SID: z.string().optional(),
-  TWILIO_DID_424_E164: z.string().optional(),
-  TWILIO_DID_424_SID: z.string().optional(),
-  TWILIO_DID_626_E164: z.string().optional(),
-  TWILIO_DID_626_SID: z.string().optional(),
+  // Pilot DID env vars removed 2026-06-04 — DID source of truth is now the
+  // `voip_dids` table, populated by `voipDidsService.resyncFromTwilio` (admin
+  // mutation that reads the live Twilio account). Services resolve DIDs via
+  // DAL queries (getStickyDidForUser, getDidByE164, getDidByProviderId).
 
   // FCC DNC (SAN pending issuance — optional until Phase 0 completes)
   FTC_DNC_SAN: z.string().optional(),
