@@ -5,10 +5,18 @@ import { expand } from 'dotenv-expand'
 
 import z from 'zod'
 
+import { buildTwilioConfig, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
+
 // Load .env.local first (dispatch worktree overrides), then .env as fallback.
 // dotenv won't overwrite already-set vars, so .env.local wins.
 config({ path: '.env.local' })
 expand(config({ path: '.env' }))
+
+// Per-provider env var fragments. Each provider defines its own env-var
+// shape + runtime-config builder in its `lib/config.ts`; this file spreads
+// those fragments into the central schema and re-exports cached getters so
+// consumers always import config from one place.
+// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
 
 const envSchema = z.object({
   // General
@@ -95,14 +103,11 @@ const envSchema = z.object({
   // CI gate at bottom of this file prevents this being set in production.
   VOIP_DEV_OVERRIDE_NUMBER: z.string().optional(),
 
-  // TWILIO (voip-in-house) — all optional per the VoIP-section policy above.
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_API_KEY_SID: z.string().optional(),
-  TWILIO_API_KEY_SECRET: z.string().optional(),
-  TWILIO_TWIML_APP_SID: z.string().optional(),
-  TWILIO_TRUST_PROFILE_SID: z.string().optional(), // Trust Hub vetting clock; optional until issued
-  TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(), // 10DLC vetting clock; optional until approval
+  // TWILIO (voip-in-house) — schema fragment lives at
+  // `src/shared/services/providers/twilio/lib/config.ts` and is spread in
+  // here. Runtime narrowing happens via the `getTwilioConfig()` accessor
+  // re-exported below.
+  ...twilioEnvFragment.shape,
 
   // Pilot DID env vars removed 2026-06-04 — DID source of truth is now the
   // `voip_dids` table, populated by `voipDidsService.resyncFromTwilio` (admin
@@ -161,6 +166,28 @@ catch (e) {
 // to a single test number — invaluable in dev/preview, catastrophic in production.
 if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
   throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
+}
+
+// -----------------------------------------------------------------------------
+// Per-provider config accessors
+// -----------------------------------------------------------------------------
+// Each provider with optional env vars exposes a cached accessor here. The
+// accessor calls the provider's `build*Config()` builder, which throws once
+// with all missing vars listed if any are unset.
+//
+// Consumers always import the accessor from THIS file, not from the
+// provider's `lib/config.ts`. That keeps server-env as the single import
+// surface for env-derived configuration while letting each provider own its
+// own env definition.
+// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
+
+let _twilioConfigCache: ReturnType<typeof buildTwilioConfig> | null = null
+
+export function getTwilioConfig(): ReturnType<typeof buildTwilioConfig> {
+  if (!_twilioConfigCache) {
+    _twilioConfigCache = buildTwilioConfig(env)
+  }
+  return _twilioConfigCache
 }
 
 export default env

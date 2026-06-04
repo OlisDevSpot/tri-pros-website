@@ -1,6 +1,36 @@
-import env from '@/shared/config/server-env'
+import { z } from 'zod'
 
-interface TwilioRuntimeConfig {
+/**
+ * Twilio env var schema fragment + runtime-config builder.
+ *
+ * see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
+ *
+ * Why this file exists: the underlying TWILIO_* vars are `.optional()` at
+ * the schema layer (commit `da028029`) so a Vercel boot without voip
+ * configured still parses cleanly. Consumers need them as `string`, not
+ * `string | undefined`. This file is the single seam where the narrowing
+ * happens — and it is the *definition*, not the import path. The
+ * aggregated parsed env + the cached `getTwilioConfig()` accessor live
+ * in `@/shared/config/server-env`, which spreads `twilioEnvFragment`
+ * into the central schema and re-exports a getter. Consumers always
+ * import from server-env.
+ *
+ * Mirror this pattern in any other provider whose env vars are optional
+ * at the schema layer but structurally required when used.
+ */
+export const twilioEnvFragment = z.object({
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_API_KEY_SID: z.string().optional(),
+  TWILIO_API_KEY_SECRET: z.string().optional(),
+  TWILIO_TWIML_APP_SID: z.string().optional(),
+  TWILIO_TRUST_PROFILE_SID: z.string().optional(), // Trust Hub vetting clock; optional until issued
+  TWILIO_10DLC_CAMPAIGN_SID: z.string().optional(), // 10DLC vetting clock; optional until approval
+})
+
+export type ParsedTwilioEnv = z.infer<typeof twilioEnvFragment>
+
+export interface TwilioRuntimeConfig {
   accountSid: string
   authToken: string
   apiKeySid: string
@@ -8,30 +38,20 @@ interface TwilioRuntimeConfig {
   twimlAppSid: string
 }
 
-let cached: TwilioRuntimeConfig | null = null
-
 /**
- * Resolve and validate the Twilio runtime config.
+ * Narrow the parsed env (with TWILIO_* as `string | undefined`) into a
+ * runtime config (with every required field as `string`), throwing once
+ * with all missing vars listed if any are unset.
  *
- * `server-env.ts` keeps the underlying TWILIO_* vars optional so a Vercel
- * boot without voip configured still succeeds (commit `da028029`). This
- * helper is the single seam where "module-level optional" narrows to
- * "method-level required" — every twilioClient call site reads through
- * `getTwilioConfig()` and gets `string`, not `string | undefined`.
+ * Pure function. Called by the cached `getTwilioConfig()` accessor in
+ * server-env.ts; do not call directly from consumer code.
  *
- * Failure mode: throws ONCE with every missing var listed at the call
- * site that needs them — not as a cryptic `undefined is not assignable`
- * downstream, nor a Twilio-side 401 surprise in prod.
- *
- * Mirror this pattern in any other provider whose env vars are optional
- * at the schema layer but structurally required at the provider's call
- * sites (e.g., cloudtalk's `CLOUDTALK_WEBHOOK_SECRET`).
+ * Note: `TWILIO_TRUST_PROFILE_SID` and `TWILIO_10DLC_CAMPAIGN_SID` are
+ * intentionally excluded from `TwilioRuntimeConfig` — they ride along
+ * in the schema for vetting-clock visibility but the runtime client
+ * doesn't structurally require them.
  */
-export function getTwilioConfig(): TwilioRuntimeConfig {
-  if (cached) {
-    return cached
-  }
-
+export function buildTwilioConfig(env: ParsedTwilioEnv): TwilioRuntimeConfig {
   const missing: string[] = []
   if (!env.TWILIO_ACCOUNT_SID) {
     missing.push('TWILIO_ACCOUNT_SID')
@@ -56,12 +76,11 @@ export function getTwilioConfig(): TwilioRuntimeConfig {
     )
   }
 
-  cached = {
+  return {
     accountSid: env.TWILIO_ACCOUNT_SID!,
     authToken: env.TWILIO_AUTH_TOKEN!,
     apiKeySid: env.TWILIO_API_KEY_SID!,
     apiKeySecret: env.TWILIO_API_KEY_SECRET!,
     twimlAppSid: env.TWILIO_TWIML_APP_SID!,
   }
-  return cached
 }

@@ -13,9 +13,11 @@ All env vars are declared with Zod in two files:
 
 Import the validated `env` object from these files — never `process.env.X` directly in app code.
 
-**Why**: typos in env var names fail loudly at startup, not silently at runtime.
-**Reference impl**: `src/shared/config/server-env.ts`
-**Enforced by**: Zod (startup throws on missing required var)
+When a provider's env vars must be `.optional()` (feature ships before it's configured everywhere — see the voip precedent in `commit da028029`), the provider colocates a `lib/config.ts` that exports a Zod fragment + runtime-config builder; `server-env` spreads the fragment into its central schema and re-exports a cached `getXConfig()` accessor. Consumers import the accessor from `server-env`, never from the provider's `lib/config.ts` directly. Full pattern at [service-architecture.md#provider-env-config-when-optional](service-architecture.md).
+
+**Why**: typos in env var names fail loudly at startup, not silently at runtime; provider-optional env vars get a single seam where `string | undefined` narrows to `string` instead of leaking the optionality to every call site.
+**Reference impl**: `src/shared/config/server-env.ts` + `src/shared/services/providers/twilio/lib/config.ts`
+**Enforced by**: Zod (startup throws on missing required var) + convention (provider-optional pattern)
 
 ### use-getpublicbaseurl-for-external-urls
 

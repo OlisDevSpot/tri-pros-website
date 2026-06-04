@@ -103,8 +103,10 @@ services/providers/<name>/
     <resource>.ts           per-event-class payload Zod (often discriminated union)
   lib/                      OPTIONAL — only for pure-local helpers that are large enough to warrant a file
                             and are NOT actions on the client (e.g., `sanitize-filename.ts`,
-                            `access-token-cache.ts`). Most providers won't need this directory.
-                            Webhook signature verification is NOT here — it's a method on the client.
+                            `access-token-cache.ts`, `config.ts` when env vars are optional —
+                            see `provider-env-config-when-optional` below). Most providers won't
+                            need this directory. Webhook signature verification is NOT here — it's
+                            a method on the client.
 ```
 
 A provider always has `client.ts`, even for a one-endpoint integration. Auth + every action lives there.
@@ -116,7 +118,7 @@ A provider always has `client.ts`, even for a one-endpoint integration. Auth + e
 
 **`lib/` is the exception, not the rule:**
 - Most providers don't need a `lib/` directory at all — the client absorbs the action surface; schemas + types live in `schemas/` / `webhooks/` / `types.ts`.
-- A `lib/` file is appropriate ONLY for pure-local helpers that are too large to inline in `client.ts` AND are not invoked as client methods (e.g., a token-refresh cache used internally by the client itself, a filename sanitizer used by call sites that produce multipart bodies).
+- A `lib/` file is appropriate ONLY for pure-local helpers that are too large to inline in `client.ts` AND are not invoked as client methods (e.g., a token-refresh cache used internally by the client itself, a filename sanitizer used by call sites that produce multipart bodies, a `config.ts` that hosts the provider's env var fragment + runtime-config builder — see `provider-env-config-when-optional` below).
 - Webhook signature verification, JWT minting, TwiML/payload building are **client methods**, NOT `lib/` files. They are interactions with the provider's ecosystem, even when no HTTP round-trip happens.
 
 **Anti-patterns:**
@@ -129,6 +131,90 @@ A provider always has `client.ts`, even for a one-endpoint integration. Auth + e
 **Reference impl**: `src/shared/services/providers/twilio/` (canonical post-2026-06-02), `src/shared/services/providers/zoho-sign/` (basic shape, pre-codification but compliant).
 
 **Enforced by**: convention
+
+### provider-env-config-when-optional
+
+When a provider's env vars must be **optional** at the schema layer (e.g., a Vercel boot must still succeed before the feature is configured — see `commit da028029` for the voip precedent), the provider owns a `lib/config.ts` that exports two things:
+
+1. A Zod object — the provider's env var schema fragment — e.g., `twilioEnvFragment`.
+2. A pure builder — e.g., `buildTwilioConfig(parsedEnv): TwilioRuntimeConfig` — that narrows `string | undefined` to `string` for every required field, throwing once with all missing vars listed if any are unset.
+
+The central `src/shared/config/server-env.ts` spreads `xEnvFragment.shape` into its main Zod schema and exposes a cached `getXConfig()` accessor that wraps `buildXConfig(env)`. **Consumers — including the provider's own `client.ts` — always import the accessor from `server-env`**, never from the provider's `lib/config.ts` directly.
+
+The rule:
+- **Definition** of "what env vars does this provider need" is **localized to the provider**.
+- **Import surface** for the typed config is **centralized at `server-env`**.
+
+```ts
+// src/shared/services/providers/twilio/lib/config.ts
+export const twilioEnvFragment = z.object({
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  // ...
+})
+
+export interface TwilioRuntimeConfig { accountSid: string, authToken: string /* ... */ }
+
+export function buildTwilioConfig(env: z.infer<typeof twilioEnvFragment>): TwilioRuntimeConfig {
+  const missing: string[] = []
+  if (!env.TWILIO_ACCOUNT_SID) missing.push('TWILIO_ACCOUNT_SID')
+  // ... collect all missing ...
+  if (missing.length > 0) {
+    throw new Error(`Twilio is not configured. Missing env vars: ${missing.join(', ')}.`)
+  }
+  return { accountSid: env.TWILIO_ACCOUNT_SID!, authToken: env.TWILIO_AUTH_TOKEN!, /* ... */ }
+}
+```
+
+```ts
+// src/shared/config/server-env.ts
+import { buildTwilioConfig, twilioEnvFragment } from '@/shared/services/providers/twilio/lib/config'
+
+const envSchema = z.object({
+  // ... base fields ...
+  ...twilioEnvFragment.shape, // ← provider fragment spread in
+})
+
+let _twilioConfigCache: ReturnType<typeof buildTwilioConfig> | null = null
+export function getTwilioConfig() {
+  if (!_twilioConfigCache) _twilioConfigCache = buildTwilioConfig(env)
+  return _twilioConfigCache
+}
+```
+
+```ts
+// src/shared/services/providers/twilio/client.ts
+import { getTwilioConfig } from '@/shared/config/server-env' // ← NOT from './lib/config'
+
+mintVoiceAccessToken(input) {
+  const config = getTwilioConfig() // every field typed as `string`, not `string | undefined`
+  return new AccessToken(config.accountSid, config.apiKeySid, config.apiKeySecret, { ... }).toJwt()
+}
+```
+
+**Why this shape:**
+- One throw site per provider — every missing-config failure collapses into a single error message listing every absent var. Easier to act on than five separate stack traces.
+- The type system carries the contract: after `getXConfig()` returns, every field is `string`. No `!` assertions sprinkled at call sites; no per-call-site `if (!env.X) throw` repeated five times.
+- The provider's directory still owns the answer to "what env vars does this need?" — colocated with the client that uses them.
+- `server-env` remains the single import surface for env-derived configuration. Consumers never need to know which provider colocates its definition where.
+- No circular import: the provider's `lib/config.ts` depends only on `zod`; `server-env.ts` imports the provider fragment + builder; the consumer imports the accessor from `server-env`.
+
+**When to use:**
+- The provider's env vars must be optional at the schema layer (CI, prod-before-feature-launches, fresh dev clones).
+- The provider's consuming code structurally requires them to be `string` (passes them to an SDK constructor, signs a request, builds a JWT, etc.).
+
+**When NOT to use:**
+- Env vars that are genuinely required at app startup (database URL, auth secret) — keep them inline in `server-env`'s base schema as `z.string()` (no `.optional()`); a missing value crashes the import, which is the correct failure mode.
+- Env vars that are read in exactly one place and naturally tolerate `string | undefined` (a feature flag with a default) — no helper needed.
+
+**Anti-patterns:**
+- Defining the provider's env vars inline in `server-env` while the provider's client.ts asserts them with `!` — drift between the schema and the call site; future field additions hit two files instead of one.
+- Importing the provider's `lib/config.ts` directly from consumer code — bypasses the central import surface. The provider's `lib/config.ts` is an implementation detail of how it plugs into `server-env`, not a public API.
+- Re-exporting `env.TWILIO_X` etc. from `server-env` as individual constants — leaks `string | undefined` to call sites and defeats the narrowing.
+
+**Reference impl**: `src/shared/services/providers/twilio/lib/config.ts` + `src/shared/config/server-env.ts` (the `getTwilioConfig` accessor).
+
+**Enforced by**: convention + PR review.
 
 ### sync-service-when-2-plus-ops
 
