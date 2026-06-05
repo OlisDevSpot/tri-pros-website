@@ -17,11 +17,22 @@ diverge significantly from actual payload behavior.
 | Documented name | Actual name sent | Our mapping |
 |---|---|---|
 | `RequestRecipientViewed` | `RequestViewed` | `viewed` → `contractViewedAt` |
-| `RequestCompleted` | `RequestSigningSuccess` | `completed` → `contractSignedAt` + auto-approve |
+| `RequestCompleted` | `RequestSigningSuccess` | `completed` (gated — see below) → `contractSignedAt` + auto-approve |
 | `RequestRejected` | `RequestRejected` or `RequestDeclined` | `declined` → `contractDeclinedAt` |
 
 Both documented and observed names are mapped in
 `src/shared/entities/proposals/lib/contract-events.ts` for resilience.
+
+**⚠️ `RequestSigningSuccess` is per-signer, not per-envelope.** It fires once
+for **each** signer that signs. On a Contractor + Homeowner envelope it arrives
+when the contractor signs while the homeowner is still pending — at that point
+the payload's `requests.request_status` is still `inprogress`. Mapping it to
+`completed` only records "a signing happened"; the sync job
+(`sync-zoho-sign-status.ts`) then fetches the live envelope and requires **all**
+signer roles to be `SIGNED` (`isEnvelopeFullySigned`) before writing the
+terminal `contractSignedAt` / auto-approving. Single-signer (Homeowner-only)
+envelopes complete on the first signing because the envelope has only one
+required action. The original 2026-05-04 single-signer test couldn't catch this.
 
 ## HMAC signature verification
 

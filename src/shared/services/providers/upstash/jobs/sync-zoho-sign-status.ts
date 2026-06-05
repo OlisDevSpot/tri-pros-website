@@ -1,5 +1,5 @@
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { mapZohoOperationToContractEvent, shouldNotifyOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
+import { isEnvelopeFullySigned, mapZohoOperationToContractEvent, shouldNotifyOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
 import { contractService } from '@/shared/services/contracts.service'
 import { notificationService } from '@/shared/services/notification.service'
 import { createJob } from '../lib/create-job'
@@ -22,6 +22,20 @@ export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
     const event = mapZohoOperationToContractEvent(operationType)
     if (!event) {
       return
+    }
+
+    // Zoho fires the signing-success op once PER SIGNER. Derive true
+    // completion from live signer statuses before treating the envelope as
+    // signed — otherwise the first party (contractor) marks the whole
+    // contract signed while the homeowner is still pending. A non-terminal
+    // signing is a no-op here; `contractSignedAt` stays null so the read path
+    // keeps showing live per-signer progress until everyone has signed.
+    // see entities/proposals/DOCS.md#contract-events-from-zoho
+    if (event === 'completed') {
+      const status = await contractService.getSigningStatus(signingRequestId)
+      if (!isEnvelopeFullySigned(status)) {
+        return
+      }
     }
 
     const updated = await contractService.applyContractEvent(SYSTEM_CONTEXT, { signingRequestId, event, performedAt })

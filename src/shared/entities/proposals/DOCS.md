@@ -126,10 +126,14 @@ Project start date must respect the California Civil Code §1689.6/§1689.7 resc
 
 ### contract-events-from-zoho
 
-Zoho Sign webhooks deliver `operation_type` strings mapped to three internal events: `viewed`, `completed`, `declined`. The mapper handles Zoho's docs-vs-actual divergence (docs say `RequestCompleted`; actual payload says `RequestSigningSuccess` — both accepted). Unrecognized operations are no-oped. Confirmed via live webhook test 2026-05-04.
+Zoho Sign webhooks deliver `operation_type` strings mapped to three internal events: `viewed`, `completed`, `declined`. The mapper handles Zoho's docs-vs-actual divergence (docs say `RequestCompleted`; actual payload says `RequestSigningSuccess` — both accepted). Unrecognized operations are no-oped.
 
-**Reference impl**: `lib/contract-events.ts:mapZohoOperationToContractEvent`
-**Enforced by**: convention (contracts service routes all webhook ops through this mapper)
+**`completed` is derived, never assumed.** `RequestSigningSuccess` fires once **per signer**, not once per envelope. On a two-party envelope (Contractor + Homeowner) Zoho emits it when the contractor signs while the homeowner is still pending — so the op alone only means "a signing happened." The sync job therefore fetches the live envelope and requires **every** signer role to be `SIGNED` (`isEnvelopeFullySigned`) before stamping `contractSignedAt` / auto-approving / notifying. A non-terminal signing is a no-op: `contractSignedAt` stays null, and the read path keeps surfacing live per-signer progress until all parties sign. The envelope's own `actions` define the required set, so single-signer (Homeowner-only) envelopes complete on the first signing as expected.
+
+> Historical note: the 2026-05-04 single-signer live test couldn't observe the per-signer behavior (one signer ⇒ `RequestSigningSuccess` and envelope-completion coincide). The premature-completion bug surfaced only on Contractor + Homeowner envelopes.
+
+**Reference impl**: `lib/contract-events.ts:mapZohoOperationToContractEvent`, `lib/contract-events.ts:isEnvelopeFullySigned`, `services/providers/upstash/jobs/sync-zoho-sign-status.ts`
+**Enforced by**: convention (contracts service routes all webhook ops through this mapper; the sync job gates `completed` on `isEnvelopeFullySigned`)
 
 ### contract-event-idempotency
 
