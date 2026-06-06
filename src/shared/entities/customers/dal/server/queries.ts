@@ -3,12 +3,12 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Customer } from '@/shared/db/schema/customers'
 import type { Contact } from '@/shared/services/providers/notion/lib/contacts/schema'
 
-import { and, eq, getTableColumns } from 'drizzle-orm'
+import { and, count, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
-import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { queryNotionDatabase } from '@/shared/services/providers/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/providers/notion/lib/contacts/adapter'
@@ -49,6 +49,89 @@ export async function getCustomer(
       .from(customers)
       .where(and(eq(customers.id, input.id), ctx.scope ?? undefined))
     return customer as CustomerWithPhoneGate | undefined
+  })
+}
+
+/**
+ * Resolve a customer by exact phone (E.164). SYSTEM-level read — ungated,
+ * returns the raw row (no phone-gating; callers are webhooks/jobs, never UI).
+ * Phones can be shared across household members; returns the first match.
+ * Used by the CloudTalk webhook to resolve an inbound STOP's customer.
+ */
+export async function findCustomerByPhone(phoneE164: string): Promise<DalReturn<Customer | null>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.phone, phoneE164))
+      .limit(1)
+    return row ?? null
+  })
+}
+
+/**
+ * Is this customer in the derived `leads` pipeline (pre-meeting: active, no
+ * project, no meeting)? Used by the enrollment gate chain. SYSTEM-level read.
+ */
+export async function isCustomerInLeads(customerId: string): Promise<DalReturn<boolean>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(and(eq(customers.id, customerId), derivedPipelineWhere(['leads'])))
+      .limit(1)
+    return row !== undefined
+  })
+}
+
+/**
+ * Enrollment-eligible leads for a lead source (bulk "enroll all"): in the
+ * `leads` pipeline, not DNC'd, with a phone. The per-customer "already
+ * enrolled?" gate is applied downstream by the enroll op (idempotent skip).
+ * SYSTEM-level read — returns raw rows (no phone-gating; job-only).
+ */
+export async function listEnrollableLeadsBySource(
+  leadSourceId: string,
+): Promise<DalReturn<Customer[]>> {
+  return dalDbOperation(async () => {
+    return db
+      .select()
+      .from(customers)
+      .where(and(
+        eq(customers.leadSourceId, leadSourceId),
+        isNull(customers.dncOptedOutAt),
+        isNotNull(customers.phone),
+        derivedPipelineWhere(['leads']),
+      ))
+  })
+}
+
+/**
+ * Count enrollment-eligible leads grouped by lead source id (leads pipeline,
+ * not DNC'd, has phone). Powers the Campaigns Control Center "eligible" badge.
+ * Does NOT subtract already-enrolled customers — that "active enrollment" gate
+ * is per-customer and lives in the enroll op; this is the upper-bound pool.
+ */
+export async function countEligibleLeadsBySource(): Promise<DalReturn<Record<string, number>>> {
+  return dalDbOperation(async () => {
+    const rows = await db
+      .select({ leadSourceId: customers.leadSourceId, n: count() })
+      .from(customers)
+      .where(and(
+        isNotNull(customers.leadSourceId),
+        isNull(customers.dncOptedOutAt),
+        isNotNull(customers.phone),
+        derivedPipelineWhere(['leads']),
+      ))
+      .groupBy(customers.leadSourceId)
+
+    const out: Record<string, number> = {}
+    for (const row of rows) {
+      if (row.leadSourceId) {
+        out[row.leadSourceId] = row.n
+      }
+    }
+    return out
   })
 }
 
@@ -144,44 +227,6 @@ export async function findOrCreateCustomerFromHomeowner(
         state: data.state ?? null,
         zip: data.zip ?? '',
         syncedAt: new Date().toISOString(),
-      })
-      .returning()
-    return customer
-  })
-}
-
-interface WebhookCustomerData {
-  name: string
-  phone: string
-  email?: string | null
-  city: string
-  zip: string
-  state?: string | null
-  leadSourceSlug: string
-}
-
-export async function createCustomerFromWebhook(
-  _ctx: ScopedContext,
-  input: { data: WebhookCustomerData },
-): Promise<DalReturn<Customer>> {
-  return dalDbOperation(async () => {
-    const { data } = input
-    const { leadSourceSlug, ...customerData } = data
-    const [leadSource] = await db
-      .select({ id: leadSourcesTable.id })
-      .from(leadSourcesTable)
-      .where(eq(leadSourcesTable.slug, leadSourceSlug))
-      .limit(1)
-    if (!leadSource) {
-      throw new Error(`Lead source "${leadSourceSlug}" not found`)
-    }
-    const [customer] = await db
-      .insert(customers)
-      .values({
-        ...customerData,
-        email: customerData.email ?? null,
-        state: customerData.state ?? 'CA',
-        leadSourceId: leadSource.id,
       })
       .returning()
     return customer
