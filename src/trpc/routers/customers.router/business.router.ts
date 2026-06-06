@@ -10,7 +10,6 @@ import z from 'zod'
 import env from '@/shared/config/server-env'
 import { intakeModes } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
-import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
@@ -22,11 +21,11 @@ import { user } from '@/shared/db/schema/auth'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
-import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
-import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { constructionDataService } from '@/shared/services/construction-data.service'
+import { customerIntakeService } from '@/shared/services/customer-intake.service'
 
 import { createTRPCRouter } from '../../init'
 
@@ -144,7 +143,7 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         return note
       }),
 
-    // Public intake form submission — creates customer + optional note
+    // Public intake form submission — creates customer + optional note (+ meeting)
     createFromIntake: entity.publicProcedure
       .input(z.object({
         name: z.string().min(1),
@@ -169,117 +168,70 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
         }
 
-        // Server-side guard: meetings.scheduled_for is NOT NULL and the central-
-        // calendar push hook needs a real time. The intake form's Zod schema
-        // already enforces this for the customer_and_meeting mode; this guards
-        // direct API hits where someone POSTs without scheduledFor.
         if (mode === 'customer_and_meeting' && !customerData.leadMetaJSON?.scheduledFor) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'A meeting must have a scheduled date.',
-          })
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'A meeting must have a scheduled date.' })
         }
-        const scheduledFor = customerData.leadMetaJSON?.scheduledFor
 
-        // Resolve session for meeting owner assignment (null for unauthenticated 3rd party)
         const session = (ctx as { session?: { user: { id: string } } }).session ?? null
 
-        // Resolve lead source FK: slug -> id, defaulting to 'manual' when absent.
-        // Public 3rd-party forms pass their own slug; dashboard manual adds omit it.
-        const resolveSlug = leadSourceSlug ?? 'manual'
-        const [leadSourceRow] = await db
-          .select({ id: leadSourcesTable.id })
-          .from(leadSourcesTable)
-          .where(eq(leadSourcesTable.slug, resolveSlug))
-          .limit(1)
-
-        if (!leadSourceRow) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: `Lead source "${resolveSlug}" not found. Contact an administrator.`,
-          })
+        // Resolve picked app-trade ids → human-readable NAMES for the envelope
+        // (D10). Exact lookup (the human picked real app trades), not fuzzy.
+        const pickedTradeIds = customerData.leadMetaJSON?.requestedTrades?.map(t => t.tradeId) ?? []
+        let interestedTradesRaw: string[] | undefined
+        if (pickedTradeIds.length > 0) {
+          const allTrades = await constructionDataService.getTrades()
+          const nameById = new Map(allTrades.map(t => [t.id, t.name]))
+          interestedTradesRaw = pickedTradeIds.map(id => nameById.get(id)).filter((n): n is string => Boolean(n))
         }
 
-        // 1. Create customer through the canonical DAL — fires spec.hooks.create.*
-        //    if defined (none today). SYSTEM_CONTEXT is the correct context label
-        //    for an unauthenticated public-form caller: createImpl in createCrudDal
-        //    has no CASL/scope gates today, but any future create-side gate or hook
-        //    that consults ctx will see a consistent null session/ability.
-        const customer = dalVerifySuccess(
-          await customerCrud.create(SYSTEM_CONTEXT, {
-            ...customerData,
-            zip: customerData.zip || '',
-            leadSourceId: leadSourceRow.id,
-          }),
-        )
+        const leadMeta = customerData.leadMetaJSON
+          ? { ...customerData.leadMetaJSON, ...(interestedTradesRaw ? { interestedTradesRaw } : {}) }
+          : (interestedTradesRaw ? { interestedTradesRaw } : undefined)
 
-        // 2. Insert note (best-effort — no longer atomic with the customer
-        //    insert, but notes are optional and a failed note doesn't justify
-        //    rolling back the customer that the user just successfully submitted).
-        if (notes) {
-          await db.insert(customerNotes).values({
-            customerId: customer.id,
-            content: notes,
-            authorId: session?.user.id ?? null,
-          })
-        }
-
-        // 3. Create meeting when mode is customer_and_meeting. Sequential,
-        //    not transactional with the customer/note phase above — the
-        //    customer is already committed, and a meeting failure here
-        //    surfaces as a 500 to the caller without rolling back the
-        //    customer they just submitted.
-        let meetingId: string | null = null
+        // Resolve meeting owner (session, else info@ fallback) — business rule
+        // with session context stays in the router.
+        let meeting: { ownerId: string } | null = null
         if (mode === 'customer_and_meeting') {
           let ownerId = session?.user.id
-
-          // Fallback: assign to info@triprosremodeling.com for unauthenticated
-          // submissions. Read-only lookup, no atomicity requirement — stays
-          // outside the meeting/participant transaction below.
           if (!ownerId) {
             const [fallbackUser] = await db
               .select({ id: user.id })
               .from(user)
               .where(eq(user.email, 'info@triprosremodeling.com'))
               .limit(1)
-
             if (!fallbackUser) {
-              throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Fallback meeting owner not found. Contact an administrator.',
-              })
+              throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Fallback meeting owner not found. Contact an administrator.' })
             }
-
             ownerId = fallbackUser.id
           }
-
-          // Route through meetingCrud.create — the spec's after hook adds the
-          // owner participant and pushes to GCal using row.ownerId. SYSTEM_CONTEXT
-          // because this is a public-form caller without a session.
-          const meetingResult = await meetingCrud.create(SYSTEM_CONTEXT, {
-            ownerId: ownerId!,
-            customerId: customer.id,
-            meetingType: 'Fresh',
-            // Non-null-asserted: the BAD_REQUEST guard at the top of this
-            // mutation rejects customer_and_meeting submissions without
-            // scheduledFor, so we've already returned by now if it was missing.
-            scheduledFor: scheduledFor!,
-          })
-
-          if (!meetingResult.success) {
-            // Customer + note already committed. Surface the failure so the
-            // agent can retry from the customer profile.
-            console.error('[createFromIntake] meetingCrud.create failed:', meetingResult.error)
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'Customer saved, but the meeting could not be scheduled. Add the meeting manually from the customer profile.',
-            })
-          }
-
-          meetingId = meetingResult.data.id
+          meeting = { ownerId: ownerId! }
         }
 
-        return { customerId: customer.id, meetingId }
+        const result = await customerIntakeService.ingestLead(SYSTEM_CONTEXT, {
+          core: {
+            name: customerData.name,
+            phone: customerData.phone,
+            email: customerData.email ?? null,
+            address: customerData.address ?? null,
+            city: customerData.city,
+            state: customerData.state ?? null,
+            zip: customerData.zip,
+            leadSourceSlug: leadSourceSlug ?? 'manual',
+          },
+          leadMeta,
+          note: notes ?? null,
+          meeting,
+        })
+
+        if (!result.success) {
+          if (result.error.type === 'not-found') {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Lead source "${leadSourceSlug ?? 'manual'}" not found. Contact an administrator.` })
+          }
+          console.error('[createFromIntake] ingest failed:', result.error)
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Customer could not be saved (or the meeting could not be scheduled). Add it manually from the customer profile.' })
+        }
+
+        return { customerId: result.data.customer.id, meetingId: result.data.meetingId }
       }),
   })
 }
