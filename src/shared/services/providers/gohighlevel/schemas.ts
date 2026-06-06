@@ -12,21 +12,34 @@ import {
 // ---------------------------------------------------------------------------
 
 export const binaAdditionalDataSchema = z.object({
-  budgetSolution: z.string(),
-  rebateAmount: z.string(),
+  // Existing fields. GHL sends literal "null" strings for empties — coalesced
+  // downstream by `ghlString` in the normalizer. Kept permissive (.optional()).
+  budgetSolution: z.string().optional(),
+  rebateAmount: z.string().optional(),
   trades: z.string().optional(),
+  // Self-booking time → reused as leadMeta.scheduledFor (no new field).
+  selfBookingDateTime: z.string().optional(),
+  // Campaign-specific capture (energy-efficiency vs bathroom/kitchen). The
+  // "master payload" carries whichever the running Bina campaign populated.
+  bathroomAge: z.string().optional(),
+  bathroomSize: z.string().optional(),
+  bathroomScope: z.string().optional(),
+  kitchenAge: z.string().optional(),
+  kitchenSize: z.string().optional(),
+  kitchenScope: z.string().optional(),
 })
 
 /**
- * Bina sends a custom GHL workflow webhook with flat contact fields
- * at the top level + nested additionalData object:
- *   { firstName, lastName, email, phone, city, zip, additionalData: {...} }
+ * Bina sends a custom GHL workflow webhook with flat contact fields at the top
+ * level + nested additionalData object:
+ *   { firstName, lastName, email, phone, address?, city, zip, additionalData: {...} }
  */
 export const binaContactPayloadSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),
   email: z.string(),
   phone: z.string(),
+  address: z.string().optional(),
   city: z.string(),
   zip: z.string(),
   additionalData: binaAdditionalDataSchema,
