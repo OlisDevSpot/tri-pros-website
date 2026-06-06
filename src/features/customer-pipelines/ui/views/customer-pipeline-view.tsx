@@ -164,7 +164,7 @@ export function CustomerPipelineView() {
       className="w-full h-full flex flex-col gap-4 overflow-hidden"
     >
       <div className="flex flex-col lg:flex-row lg:items-end gap-4 justify-between shrink-0">
-        <CustomerPipelineMetricsBar items={pipelineQuery.data} isLoading={isSwitching} />
+        <CustomerPipelineMetricsBar items={pipelineQuery.data} pipeline={pipeline} isLoading={isSwitching} />
         <div className="flex w-full items-center justify-between gap-2 lg:w-auto lg:justify-end">
           {canManagePipeline && <PipelineSelect value={pipeline} onChange={setPipeline} />}
           <KanbanColumnFilter
