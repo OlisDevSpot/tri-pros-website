@@ -40,18 +40,28 @@ export const voipLinkTokenTypes = ['l_doc'] as const
 export type VoipLinkTokenType = (typeof voipLinkTokenTypes)[number]
 
 // ── voip-campaigns (CloudTalk) ──────────────────────────────────────────────
-// 8-tier pipeline status — 1:1 with CT tag set (see lib/types.ts cloudtalkTagNames).
-// 'not_enrolled' is local-only (no CT counterpart). Replaces customers.pipelineStage.
-// see docs/plans/voip-campaigns/EPIC.md decisions log 2026-05-28/29 (Q9.F lock)
-// see src/shared/services/providers/cloudtalk/webhooks/lifecycle-mapper.ts
-export const voipCampaignStatuses = [
-  'not_enrolled',
-  'lead',
-  'engaged',
-  'transferred',
-  'booked',
-  'do_not_call',
-  'exhausted',
-  'bad_number',
-] as const
-export type VoipCampaignStatus = (typeof voipCampaignStatuses)[number]
+// NO local campaign-status enum. Under the perfect-separation decision
+// (voip-in-house EPIC.md "2026-05-30 total separation" + confirmed 2026-06-04),
+// CloudTalk is the sole source of truth for the lead-to-appointment lifecycle,
+// INCLUDING its own pipeline tags. We never compute, store, or push a campaign
+// status — on a `meeting_booked` disposition CT hands the lead off to the normal
+// app flow (meeting creation → existing derived customer pipeline). The only
+// voip-campaigns persistence is the CT identity bridges (voip_campaigns,
+// voip_contact_attributes), the per-customer participation record
+// (voip_campaign_contacts — enrollment + dial attempts + CT identity + sync),
+// and the shared DNC fields on customers. NO voipCampaign* fields on customers.
+// (Former `voipCampaignStatuses` enum + `voipCampaignStatusEnum` pgEnum +
+// lifecycle-mapper.ts deleted 2026-06-04.)
+
+// WHY a contact left a campaign — recorded on voip_campaign_contacts.unenroll_reason
+// when we unenroll. Attribution of OUR action (not a CT lifecycle status):
+//   - graduated:    meeting booked (positive exit). app meeting-create OR CT meeting_booked.
+//   - opted_out:    STOP/opt-out (compliance). Also writes DNC.
+//   - disqualified: manual "stop calling / bad lead, no meeting". UI button OR CT
+//                   not_interested/wrong_number disposition.
+//   - removed:      neutral manual unenroll — pulled from the campaign with the
+//                   intent to re-enroll later / into a different campaign. NOT a
+//                   bad lead (≠ disqualified), NO DNC (≠ opted_out). Re-enrollable.
+// Not a pgEnum (kept lightweight as a typed text column); add a pgEnum only if it grows.
+export const voipUnenrollReasons = ['graduated', 'opted_out', 'disqualified', 'removed'] as const
+export type VoipUnenrollReason = (typeof voipUnenrollReasons)[number]
