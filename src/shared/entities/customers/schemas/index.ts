@@ -64,12 +64,44 @@ export type PropertyProfile = z.infer<typeof propertyProfileSchema>
 export type FinancialProfile = z.infer<typeof financialProfileSchema>
 
 export const leadMetaSchema = z.object({
+  // ── operational (unchanged) ──
   mp3RecordingKey: z.string().optional(),
   closedBy: z.string().optional(),
-  scheduledFor: z.string().optional(),
+  scheduledFor: z.string().optional(), // also receives Bina selfBookingDateTime
+
+  // ── normalized envelope (source-AGNOSTIC; identical keys for every source) ──
+  // Raw, human-readable interested-trade strings. Bina → split campaign trades;
+  // in-app form → resolved picked-trade NAMES. Downstream (CT attributes, SMS
+  // merge) reads ONLY the envelope — never branches on `source.kind`.
+  interestedTradesRaw: z.array(z.string()).optional(),
+  // Origin-campaign ATTRIBUTION — free string off the lead-source origin + intake
+  // form. Descriptive/immutable; distinct from the OPERATIONAL enrolled campaign
+  // (voip_campaign_contacts.voip_campaign_id). Does NOT drive routing.
+  originCampaign: z.string().optional(),
+  // OPTIONAL human-confirmed app-trade link, filled later by an agent. The
+  // envelope's interestedTradesRaw is the cross-source truth; this is the
+  // structured link to real app trades/scopes once a human confirms it.
   requestedTrades: z.array(z.object({
     tradeId: z.string(),
     scopeIds: z.array(z.string()),
   })).optional(),
+
+  // ── typed source capture (discriminated union; kind = payload SHAPE, decoupled
+  //    from the dynamic lead-source slug). Raw provider fields verbatim, for
+  //    human/agent context. NEVER read by the generic dial/SMS path. ──
+  source: z.discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('bina'),
+      budgetSolution: z.string().nullable(),
+      rebateAmount: z.string().nullable(),
+      bathroomAge: z.string().nullable(),
+      bathroomSize: z.string().nullable(),
+      bathroomScope: z.string().nullable(),
+      kitchenAge: z.string().nullable(),
+      kitchenSize: z.string().nullable(),
+      kitchenScope: z.string().nullable(),
+    }),
+    z.object({ kind: z.literal('generic') }),
+  ]).optional(),
 })
 export type LeadMeta = z.infer<typeof leadMetaSchema>
