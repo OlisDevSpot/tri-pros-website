@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { RefreshCwIcon } from 'lucide-react'
 
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
-import { CampaignBindingRow } from '@/features/campaigns-admin/ui/components/campaign-binding-row'
+import { CampaignBindingRow } from '@/features/campaigns-admin/ui/components/setup/campaign-binding-row'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Skeleton } from '@/shared/components/ui/skeleton'

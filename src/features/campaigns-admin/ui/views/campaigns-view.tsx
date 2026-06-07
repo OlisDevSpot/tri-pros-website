@@ -5,7 +5,7 @@ import { MegaphoneIcon } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
 
 import { CampaignSourceList } from '@/features/campaigns-admin/ui/components/campaign-source-list'
-import { CloudtalkSyncCard } from '@/features/campaigns-admin/ui/components/cloudtalk-sync-card'
+import { CloudtalkSyncCard } from '@/features/campaigns-admin/ui/components/setup/cloudtalk-sync-card'
 import { SourceEnrollmentPanel } from '@/features/campaigns-admin/ui/components/source-enrollment-panel'
 import { useTRPC } from '@/trpc/helpers'
 
