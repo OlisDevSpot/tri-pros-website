@@ -55,7 +55,7 @@ export function TimelineEventItem({ event, expanded }: Props) {
         <Icon className={`mt-0.5 size-3.5 shrink-0 ${config.color}`} />
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex items-start justify-between gap-2">
-            <span className="text-sm font-medium text-foreground">{event.title}</span>
+            <span className="min-w-0 flex-1 whitespace-pre-wrap wrap-break-word text-sm font-medium text-foreground">{event.title}</span>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
