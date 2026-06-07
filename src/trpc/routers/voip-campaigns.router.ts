@@ -2,7 +2,7 @@ import z from 'zod'
 
 import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { countEligibleLeadsBySource } from '@/shared/entities/customers/dal/server/queries'
+import { countDncBySource, countEligibleLeadsBySource } from '@/shared/entities/customers/dal/server/queries'
 import { setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { countActiveEnrollmentsBySource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
@@ -49,6 +49,7 @@ export const voipCampaignsRouter = createTRPCRouter({
    */
   getSourceCampaignSummaries: agentProcedure.query(async () => {
     const sources = dalToTrpc(await listLeadSources())
+    const dncById = dalToTrpc(await countDncBySource())
     const eligibleById = dalToTrpc(await countEligibleLeadsBySource())
     const enrolledBySlug = dalToTrpc(await countActiveEnrollmentsBySource())
     return sources.map(source => ({
@@ -56,8 +57,10 @@ export const voipCampaignsRouter = createTRPCRouter({
       name: source.name,
       isActive: source.isActive,
       defaultCampaignId: source.voipConfigJSON?.campaigns?.defaultCampaignId ?? null,
+      dncCount: dncById[source.id] ?? 0,
       eligibleCount: eligibleById[source.id] ?? 0,
       enrolledCount: enrolledBySlug[source.slug] ?? 0,
+      needsBinding: (eligibleById[source.id] ?? 0) > 0 && !source.voipConfigJSON?.campaigns?.defaultCampaignId,
     }))
   }),
 

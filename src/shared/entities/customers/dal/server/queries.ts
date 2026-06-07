@@ -135,6 +135,31 @@ export async function countEligibleLeadsBySource(): Promise<DalReturn<Record<str
   })
 }
 
+/**
+ * Count DNC'd customers grouped by lead source id. Drives the Overview DNC
+ * stat in the Campaigns Control Center.
+ */
+export async function countDncBySource(): Promise<DalReturn<Record<string, number>>> {
+  return dalDbOperation(async () => {
+    const rows = await db
+      .select({ leadSourceId: customers.leadSourceId, n: count() })
+      .from(customers)
+      .where(and(
+        isNotNull(customers.leadSourceId),
+        isNotNull(customers.dncOptedOutAt),
+      ))
+      .groupBy(customers.leadSourceId)
+
+    const out: Record<string, number> = {}
+    for (const row of rows) {
+      if (row.leadSourceId) {
+        out[row.leadSourceId] = row.n
+      }
+    }
+    return out
+  })
+}
+
 /** Phone-gated list of all customers visible to ctx. */
 export async function listCustomers(
   ctx: ScopedContext,
