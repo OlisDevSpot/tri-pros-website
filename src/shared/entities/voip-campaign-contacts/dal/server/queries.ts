@@ -253,7 +253,11 @@ export async function listLeadsPaginated(
             leadSourceId: customers.leadSourceId,
           })
           .from(voipCampaignContacts)
-          .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
+          // leftJoin (not inner): a 'removed' row is archival history; keep it
+          // visible even if its campaign was later deleted/rebound (campaignName
+          // is nullable). The sourceSlug/campaignId filters still exclude such
+          // rows when a filter is applied, but they remain in the all-source view.
+          .leftJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
           .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
           .where(baseWhere)
           .orderBy(desc(voipCampaignContacts.unenrolledAt))
@@ -263,7 +267,7 @@ export async function listLeadsPaginated(
           const [row] = await db
             .select({ n: count() })
             .from(voipCampaignContacts)
-            .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
+            .leftJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
             .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
             .where(baseWhere)
           return row?.n ?? 0
