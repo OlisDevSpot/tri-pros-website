@@ -33,6 +33,22 @@ Everything else (the cadence cleverness, the AI's conversational ability, carrie
 
 ## Data ownership model — CT is source-of-truth for the pre-meeting funnel
 
+> 🚨 **CORRECTION 2026-06-04 — perfect separation (supersedes the mechanics below).**
+> The **thesis of this section still holds**: CloudTalk is the source of truth for
+> lead lifecycle. **What's removed is the "cache it locally" mechanism.** We do NOT
+> keep a denormalized status cache. There is no `customers.voipCampaignStatus`, no
+> `customers.voipLifecycleTags`, no `voipCampaignStatuses` enum, no `lifecycle-mapper.ts`
+> (all deleted 2026-06-04). CT webhooks do NOT write `voip_calls` / `voip_messages`
+> rows (those are voip-in-house-only; see INTEGRATION-SEAM §8). On `meeting_booked`,
+> CT hands off to the normal app flow (meeting creation → existing derived pipeline).
+>
+> **What voip-campaigns actually persists:** `voip_campaigns` + `voip_contact_attributes`
+> (CT identity bridges), **`voip_campaign_contacts`** (per-customer participation record:
+> CT contact id + `enrolled_at`/`unenrolled_at` membership + `dial_attempts` + sync
+> metadata), and the shared DNC fields on `customers`. Nothing else. The tables/rows
+> below that mention a status cache, `voip_dnc`, or `voip_calls` writes from CT are
+> STALE — read this banner first. See Decisions log 2026-06-04.
+
 This is foundational. Every downstream architectural decision flows from it.
 
 **Tri Pros will never build the auto-dialer in-house.** Lead-conversion is always delegated to a managed provider (CloudTalk today; could be RingCentral or another in the future). Because the provider executes the cadence + workflows + state transitions, **the provider IS the source of truth for lead lifecycle state in the pre-meeting funnel.** Our app reads that state via webhooks and caches it locally for fast querying, JOIN-ability with our customer data, and outage tolerance.
@@ -56,23 +72,27 @@ This is foundational. Every downstream architectural decision flows from it.
 - **The lifecycle vocabulary is shaped by the provider's capabilities.** CloudTalk has 6 dispositions; RingCentral might have 8. The provider's vocabulary IS the lifecycle. Forcing our app to define a custom vocabulary that maps "correctly" to whatever provider is plugged in is a constant translation tax.
 - **Migration is cheaper when the provider owns its own data.** When we swap to RingCentral, we don't migrate state — we just point the webhook adapter at RC's tag vocabulary and remap to our normalized enum. Our app's lifecycle-reading code doesn't care which provider wrote the cache row.
 
-### What this means for our schema + UI
+### What this means for our schema + UI (corrected 2026-06-04)
 
-- **`customers.voipCampaignStatus`** (existing enum) is a **denormalized cache** of CT's tag-driven lifecycle state, normalized to a provider-agnostic enum. **Never the source of truth.**
-- **`customers.voipLifecycleTags`** (new JSONB, planned Phase 1) stores the raw CT tag snapshot for debugging + UI granularity.
-- **Leads kanban / list UI** reads from the cache. Slight lag (target <5 seconds end-to-end via webhook) is acceptable; no live-state requirement.
-- **Daily reconciliation cron is mandatory, not optional.** Polls CT's `contacts.list` + `calls.list` APIs and backfills any drift via idempotent upserts. Detects + alerts on persistent mismatch.
+- **No local lifecycle cache.** There is NO `customers.voipCampaignStatus` and NO
+  `customers.voipLifecycleTags`. To display lifecycle state, the UI reads CloudTalk
+  directly (on-demand API call / reconciliation read), or shows only what we DO own:
+  enrollment membership (`voip_campaign_contacts.enrolled_at`/`unenrolled_at`) and the
+  normal app pipeline post-graduation.
+- **What we persist per customer:** the `voip_campaign_contacts` row — CT contact id,
+  enrollment membership, dial attempts, attribute hash. No status, no tag snapshot.
+- **Reconciliation** (ring 2+) reconciles **membership + attributes** (did the CT
+  contact still carry its membership tag; did attributes drift), NOT a status cache —
+  there's no status to reconcile.
 
-### Provider-agnostic abstraction
+### Provider-agnostic abstraction (corrected 2026-06-04)
 
-Provider-specific tag → normalized enum mapping lives in **the provider's webhook adapter file** (e.g., `providers/cloudtalk/webhooks/lifecycle-mapper.ts`). The rest of our app (queries, UI, services) reads only the normalized state. When the provider changes:
-1. New provider client lands at `providers/<new-name>/`
-2. New webhook adapter at `providers/<new-name>/webhooks/lifecycle-mapper.ts` maps new vocab → same normalized enum
-3. Switch the route handler at `src/app/api/webhooks/<new-name>/route.ts` to import the new adapter
-4. Re-point CT's customers to the new provider via a one-shot migration script
-5. Everything downstream is unchanged
-
-This is the value the data-ownership model buys.
+The provider swap story is now simpler because there is no lifecycle-mapper to port:
+state lives in the provider. When the provider changes, the new client lands at
+`providers/<new-name>/`, its webhook route at `src/app/api/webhooks/<new-name>/route.ts`
+drives the same two persisted concerns (DNC + enrollment membership), and the
+enrollment/campaign-sync services swap their provider client. No normalized-enum
+remap, because we never normalized a status locally.
 
 ## Strategic decisions
 
@@ -178,31 +198,43 @@ src/app/api/voip/routing/transfer-target/route.ts
 src/app/api/voip/routing/compliance-check/route.ts
 ```
 
-### Data model additions
+### Data model additions (corrected 2026-06-04)
 
-This EPIC introduces a **single new table** + a few customer/lead-source fields. Everything else uses voip-in-house's tables with `source='cloudtalk'`.
+This EPIC introduces **three tables** + the shared `lead_sources.voipConfigJSON`.
+It adds **NO** `voipCampaign*` fields to `customers` (only the shared DNC fields,
+written by both EPICs). It does **NOT** use voip-in-house's `voip_calls`/`voip_messages`
+tables and there is **no `source='cloudtalk'` discriminator** (perfect separation).
 
 ```sql
-CREATE TABLE voip_contact_sync (
+-- 1. Per-customer CloudTalk participation record (renamed from voip_contact_sync 2026-06-04).
+CREATE TABLE voip_campaign_contacts (
   customer_id uuid PRIMARY KEY REFERENCES customers(id) ON DELETE CASCADE,
-  cloudtalk_contact_id text UNIQUE NOT NULL,
+  cloudtalk_contact_id text UNIQUE NOT NULL,   -- CT identity
+  voip_campaign_id uuid REFERENCES voip_campaigns(id) ON DELETE SET NULL,  -- the ONE campaign this customer is in
+  enrolled_at   timestamptz,                   -- null = never enrolled
+  unenrolled_at timestamptz,                   -- set on unenroll; row + contact persist for re-enroll
+  dial_attempts integer NOT NULL DEFAULT 0,    -- moved off customers; logic ring-2
+  attribute_hash text NOT NULL,                -- delta-push skip
   last_synced_at timestamptz NOT NULL DEFAULT now(),
-  attribute_hash text NOT NULL,
   last_sync_error text,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
+-- Enrolled now = row exists AND unenrolled_at IS NULL. The membership tag to add/remove
+-- is read from the linked voip_campaigns row, NOT derived from the lead source.
 
-ALTER TABLE customers ADD COLUMN voip_campaign_status voip_campaign_status_enum DEFAULT 'not_enrolled';
-ALTER TABLE customers ADD COLUMN voip_campaign_enrolled_at timestamptz;
-ALTER TABLE customers ADD COLUMN voip_campaign_graduated_at timestamptz;
+-- 2. voip_campaigns — CT campaign-id ↔ source_slug bridge (+ membership tag, cadence).
+--    source_slug is NULLABLE + NOT unique: sync upserts campaigns unbound (NULL);
+--    an admin binds each to a lead source via the Resync UI. One source owns many campaigns.
+-- 3. voip_contact_attributes — CT attribute-id ↔ app-key bridge.
+--    (full DDL in phase-1-implementation.md W2)
 
-ALTER TABLE lead_sources ADD COLUMN voip_config_json jsonb;  -- shared with voip-in-house (per INTEGRATION-SEAM.md §9)
+ALTER TABLE lead_sources ADD COLUMN voip_config_json jsonb;  -- shared (INTEGRATION-SEAM §9)
+
+-- NOT added (perfect separation, 2026-06-04): voip_campaign_status enum + column,
+-- voip_campaign_enrolled_at/graduated_at on customers, voipLifecycleTags. CloudTalk
+-- owns lifecycle. No forward-compat cloudtalk_* columns on voip_calls/voip_messages.
 ```
-
-Enum: `voip_campaign_status_enum = ['not_enrolled', 'enrolled', 'graduated', 'opted_out', 'exhausted']`.
-
-**Forward-compat columns** on `voip_calls` + `voip_messages` (`source`, `campaign_id`, `transcript_summary`, `sentiment`, `cloudtalk_call_uuid`, `cloudtalk_message_id`) — these land in **voip-in-house Phase 1 schema** (it ships first); we populate them in our Phase 1.
 
 ### CASL abilities
 
@@ -282,6 +314,46 @@ voip-in-house Phase 1 (in-house DIDs + voip routing infrastructure + voip_* tabl
 ---
 
 ## Decisions log
+
+### 2026-06-04 — Perfect separation: NO local lifecycle cache + thin persistence + table rename (grill-with-docs session)
+
+**Phase:** 1 (Section C design finalization) — supersedes the "denormalized cache" mechanics in the Data ownership model section above.
+**Context:** Verifying the 2026-06-03 handoff against code surfaced that the claimed `customers.voipCampaignStatus`/`enrolled_at`/`graduated_at`/`lead_intake_error` columns never existed, and the `voipCampaignStatuses` enum + `voipCampaignStatusEnum` pgEnum + `lifecycle-mapper.ts` were orphaned (zero runtime consumers). User confirmed: under the voip-in-house "2026-05-30 total separation" stance, CloudTalk is the **sole** source of truth for the lead-to-appointment lifecycle **including its own pipeline tags** — we cache **nothing** locally.
+
+**Decisions:**
+1. **No local lifecycle cache.** Deleted `voipCampaignStatuses` const + `voipCampaignStatusEnum` pgEnum + `lifecycle-mapper.ts`. The "2026-05-27 inversion" thesis (CT owns lifecycle) stands; the "read via webhook + cache locally" half is removed. We never normalize or store CT's lifecycle status.
+2. **We push NO lifecycle tags.** CloudTalk applies/swaps its own pipeline tags. The ONLY tag write we perform is the **membership tag** on enrollment (`addTags([Campaign-X])`).
+3. **Thin persistence — complete list:** `voip_campaigns` + `voip_contact_attributes` (CT identity bridges), `voip_campaign_contacts` (per-customer participation), shared DNC fields on `customers`. Nothing else. No `voip_calls`/`voip_messages` shadow rows, no `source` discriminator, no forward-compat `cloudtalk_*` columns.
+4. **`customers` carries NO `voipCampaign*` fields.** Migrated all per-customer campaign state into `voip_campaign_contacts`. DNC stays on `customers` (shared compliance, written by both EPICs).
+5. **Renamed `voip_contact_sync` → `voip_campaign_contacts`** to reflect its expanded role (CT identity + enrollment membership + dial attempts + sync), and added `enrolled_at` / `unenrolled_at` (membership; "enrolled now" = row exists AND `unenrolled_at IS NULL`) + `dial_attempts` (moved off customers; logic deferred to ring 2). Unenroll = `removeTags` + set `unenrolled_at`; row + `cloudtalk_contact_id` persist so re-enroll reuses the CT contact. **Guarantees a customer is always unenrollable.**
+6. **Enrollment membership is ours; lifecycle is CT's.** Membership (enroll/unenroll, an action we drive) is distinct from lifecycle status (an outcome CT drives). Tracking membership locally does NOT violate perfect separation.
+7. **A lead source owns MANY campaigns; a customer is enrolled in exactly ONE at a time.** Therefore `voip_campaigns.source_slug` is NOT unique (many campaigns share a slug), and the customer's campaign is **recorded** on `voip_campaign_contacts.voip_campaign_id` (FK → voip_campaigns), **not derived** from the lead source. The membership tag to add/remove is read from that campaign row. Re-enroll may point at a different campaign. (Which campaign a new lead routes into when its source has >1 — resolved in #10 below.)
+8. **Campaign → lead-source binding is admin-set via UI, NOT inferred from CT campaign names.** `campaign-sync` upserts CT campaigns with `source_slug = NULL` (unbound); an admin binds each to an existing synced lead source in the Resync UI. Hence `voip_campaigns.source_slug` is **nullable**; an unbound campaign is not eligible for enrollment routing. Rejected naming-convention auto-binding — too fragile to rely on for enrollment correctness.
+9. **Two distinct campaign concepts — do not conflate:**
+   - **Origin campaign** (attribution) = which campaign/ad the lead came from. Captured at intake as a free **string** in `customers.leadMetaJSON.originCampaign`. Immutable, descriptive. **Does NOT drive enrollment routing** (that would re-introduce name-reliance rejected in #8). For reporting/attribution + future smart-routing.
+   - **Enrolled campaign** (operations) = which CT campaign we're currently dialing them in. `voip_campaign_contacts.voip_campaign_id`. Mutable.
+10. **Enrollment routing = per-source default + bulk picker (Q4: (b)+(c)).** Auto-enroll of a new lead routes to its source's **default campaign** (`lead_sources.voipConfigJSON.campaigns.defaultCampaignId`); if unset, auto-enroll is inert (no guessing). Bulk "enroll all per source" presents a **campaign picker** in the UI (default pre-selected) — a deliberate human action chooses the batch's campaign. UI is a first-class deliverable, not an afterthought.
+11. **Bulk "enroll all" is a QStash background job, not a synchronous call (Q5: (b)).** The button enqueues an `enroll-source-batch` job; it chunks eligible customers through CloudTalk's bulk API (≤10 ops/request, `CLOUDTALK_BULK_MAX_OPS_PER_REQUEST`) with 429 backoff, writing `voip_campaign_contacts` rows as it goes and recording per-customer `last_sync_error` on failure. Idempotent re-runs. **Skip rules:** skip customers with an active enrollment (`unenrolled_at IS NULL`); re-enroll customers whose row is unenrolled (clear `unenrolled_at`, set new `enrolled_at`, possibly a different `voip_campaign_id`); **skip DNC'd customers** (`dncOptedOutAt IS NOT NULL`) entirely. Ring-1 status surface can be minimal (toast + enrolled-count badge on refetch); richer progress UI is fast-follow.
+
+12. **Graduation fires from BOTH triggers, ring 1 (not deferred).** Since the CloudTalk webhook endpoint must be built + registered in the CT dashboard as part of preparing the app anyway, there's no value deferring it. Graduation = an **idempotent unenroll** (`removeTags([membershipTag])` + set `unenrolled_at`) reachable from (a) **app-side meeting creation** — a `graduate-from-campaign` QStash job (`dispatchOrThrow`; stopping a dial is not cosmetic) dispatched on meeting create — and (b) the **CT `meeting_booked` disposition** webhook (arrives via the disposition-set / `Call.Modified` event). Same code path; if already unenrolled, no-op. Ring-1 action is **unenroll-only**; agent notification on graduation is an optional fast-follow.
+
+13. **SMS is CloudTalk-native campaign cadence, NOT app-triggered.** Every CT Campaign sends its own SMS (Opener on enrollment, mid-cadence nudge, Day-10 final) via CT dashboard templates with `{{first_name}}`/`{{city}}`/`{{primary_trade}}` merge fields. Now deliverable (A2P passed 2026-06-04). **App responsibility is only:** (a) sync the merge-field attributes on enrollment (`enrollment.service` → `voip_contact_attributes` mapping + built-in name/city), and (b) handle inbound **STOP → DNC** via the webhook. We do NOT call `cloudtalkClient.sendSms` for campaign comms — that would split CT's comms ownership. (`sendSms` stays available for future one-off/transactional needs only.) Open CT-dashboard verification (user's parallel work): confirm CT merges `{{first_name}}`/`{{city}}` against built-in Contact fields vs custom attributes (per-lead-source-content.md "V1 verification").
+14. **All new voip-campaigns services are ORCHESTRATORS (per ADR-0003 + `services-orchestrate-dal-implements`).** `enrollment.service`, `campaign-sync.service`, `graduation`/unenroll, and any sibling: they compose `cloudtalkClient` (provider) + entity DAL mutations (`voip_campaign_contacts`, `customers`, `voip_campaigns`) + sibling services + QStash job dispatch. They contain **NO raw `db.insert/update/transaction`** — every write goes through `entities/<x>/dal/server/mutations.ts`. The enrollment service "feels like": resolve eligibility (DAL read) → `cloudtalkClient.upsertContact` + `addTags` (provider) → write `voip_campaign_contacts` row (DAL mutation) → optionally dispatch follow-up jobs. Pure orchestration, no persistence logic inline.
+
+15. **Enrollment eligibility = a gate chain; rehash deferred.** Per-customer chain (first failure short-circuits): (1) source `enabled`, (2) a dialable target campaign (bound `source_slug` + `ct_status='active'`; auto-enroll uses `defaultCampaignId`, bulk uses the picked campaign), (3) **pre-meeting lead** (`derivedPipelineWhere('leads')` — reused, not reinvented), (4) not DNC (`dncOptedOutAt IS NULL`), (5) usable E.164 phone, (6) not already actively enrolled (`unenrolled_at IS NULL`). **Rehash re-dialing is deferred** — mark the slot with `// @migration:` in the enrollment service when written; do not build it ring 1.
+16. **Business-logic rules are small isolated pure functions, orchestrated by services (or `client.ts` if provider-specific).** The eligibility gates, the unenroll/re-enroll decision rules, etc. should each be a pure function (args → result, no I/O) living in `lib/` — `services/voip/campaigns/lib/` for app rules, near the provider for CT-specific rules. Services compose them. **Full extraction is deferred for ring 1** (don't over-engineer the first cut), but the service must be structured so that adding a new business rule is "just another function call from this service or a sibling" — never inlined, branching, untestable logic. This is the standing target for every voip-campaigns service.
+
+18. **Three exit paths, one idempotent unenroll, each reachable from BOTH UI and CT webhook.** Unenrolling is `removeTags([membershipTag])` + set `unenrolled_at` + `unenroll_reason`. The reason (`voip_campaign_contacts.unenroll_reason` — `graduated | opted_out | disqualified`) distinguishes:
+   - **graduated** — meeting booked. Triggers: app meeting-create job + CT `meeting_booked` disposition.
+   - **opted_out** — STOP/opt-out. Triggers: `sms.received` STOP + CT `opt_out` disposition. Also writes DNC.
+   - **disqualified** — manual "stop calling / bad lead, no meeting." Triggers: **admin/agent UI button** (single + bulk) + CT `not_interested` / `wrong_number` dispositions.
+   `enrollment.service.unenroll(ctx, { customerId, reason })` is the single op; idempotent (no active enrollment → no-op). Re-enroll clears `unenrolled_at` + reason. (DNC'd contacts stay un-re-enrollable via the DNC gate; `disqualified` contacts MAY be re-enrolled later.)
+19. **All 3 new tables get full entity scaffolds (mirroring voip-in-house Slug A).** `entities/voip-campaigns/`, `entities/voip-contact-attributes/`, `entities/voip-campaign-contacts/` each with `dal/server/{crud,queries,mutations}`, `schemas/`, `lib/{constants,server-spec,visibility}`, `DOCS.md`, types, + a CASL subject. The DAL mutations are what the services orchestrate (#14's "DAL implements" half); server-spec + CASL give the admin UI surfaces (campaign-binding screen, enroll-all panel, enrolled-count badges) gated reads via the tRPC entity router. Service verbs (`enroll`/`unenroll`/`graduate`) live in `services/voip/campaigns/`, composing these DAL mutations — NOT as generic CRUD.
+
+**Ship plan (revised — webhook is ring-1 infra):**
+- **Ring 1 (the semi-working product):** campaign-sync (+ admin bind UI) + enrollment (auto + bulk "enroll all" QStash job) + graduation (both triggers) + the **rewritten CT webhook handler** with its two non-negotiable arms: `sms.received` STOP → DNC, and `meeting_booked` disposition → graduate/unenroll. CT auto-dials enrolled leads; converts stop dialing; STOPs are honored.
+- **Deferred (ring 2+):** `call.ended` attempt counting → `cadence_exhausted`, voicemail handling, analytics, richer enroll-progress UI, reconciliation cron, holiday-pause cron.
+- **SMS (A2P now passed):** wired per the CloudTalk SMS decision (next grill item).
 
 ### 2026-05-27 — Architectural inversion: CT owns pre-meeting lifecycle as source-of-truth (grill-me session)
 

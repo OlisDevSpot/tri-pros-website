@@ -193,7 +193,7 @@ VOIP_DEV_OVERRIDE_NUMBER=  # set in dev/preview only; CI gate prevents productio
 | `entities/customers/` | Customer is the FK target for everything; add `lib/calling-hours.ts`, `lib/phone.ts`; profile/timeline gains voip integration in Phase 5 | Phase 2 adds entity lib; Phase 5 adds UI consumers |
 | `entities/lead-sources/` | `voipConfigJSON` field added in Phase 1 migration; shared with voip-campaigns per [INTEGRATION-SEAM.md §9](../voip/INTEGRATION-SEAM.md) | Phase 1 (schema) |
 | `db/schema/meta.ts` | New voip pgEnums added in Phase 1 single migration | Phase 1 |
-| `db/schema/voip-*.ts` | `voip_calls`, `voip_messages`, `voip_dids`, `voip_dnc`, `voip_user_availability`, `voip_contact_sync` (cross-EPIC) | Phase 1 |
+| `db/schema/voip-*.ts` | `voip_calls`, `voip_messages`, `voip_dids`, `voip_link_tokens`, `app_settings` (as-built). _(Corrected 2026-06-04: `voip_dnc` + `voip_user_availability` were dropped in the 2026-05-30 separation grill — DNC is 3 fields on `customers`. `voip_campaign_contacts` is voip-campaigns-owned, NOT cross-EPIC.)_ | Phase 1 |
 | `db/schema/app-settings.ts` | NEW: generic feature-keyed config table; lands with `feature='voip-in-house'` row first | Phase 1 |
 | `domains/permissions/abilities.ts` | New entity name constants registered for CASL (`VOIP_CALL`, `VOIP_MESSAGE`, `VOIP_DID`, `VOIP_DNC`, etc.) | Phase 1 |
 | `src/app/(frontend)/dashboard/layout.tsx` | Softphone widget mounted globally | Phase 1 |

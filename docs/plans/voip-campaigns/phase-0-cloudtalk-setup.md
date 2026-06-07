@@ -108,10 +108,16 @@ For each lead source we want to convert via CloudTalk:
 **Owner:** User + agent
 **Estimated effort:** 30 min + back-and-forth with CloudTalk support
 
-- [ ] In dashboard → **Account → Integrations → Webhooks**
-- [ ] Configure single webhook URL: `https://voip.triprosremodeling.com/api/webhooks/cloudtalk?secret=<long-random>` — matches the `api/webhooks/<provider>/` convention used by `bina/`, `quickbooks/`, `zoho-sign/`. Per `docs/codebase-conventions/webhook-routes.md`, this is **the only URL CloudTalk fires to**; the route handler switches on event-type internally.
+- [ ] In dashboard → **Account → Workflow Automations** (CloudTalk has **NO centralized webhook-config page** — corrected 2026-05-31). Each event is its own Workflow Automation (one Object+Action pair) with a body-builder template + destination URL.
+- [ ] All WAs POST to the same destination URL: `https://voip.triprosremodeling.com/api/webhooks/cloudtalk?secret=<long-random>` — matches the `api/webhooks/<provider>/` convention used by `bina/`, `quickbooks/`, `zoho-sign/`. Per `docs/codebase-conventions/webhook-routes.md`, the route handler switches on the `event_type` field internally.
 - [ ] Generate a `CLOUDTALK_WEBHOOK_SECRET` env var (long-random; rotate quarterly)
-- [ ] Subscribe to all 6 documented events: `call.started`, `call.answered`, `call.ended`, `call.missed`, `voicemail.received`, `sms.received`
+- [ ] Create **5 Workflow Automations** (NOT 6 events — `call.missed` + `voicemail.received` are derived inside the `call.ended` handler from `is_voicemail` + `answered_at`; disposition arrives separately on `Call.Modified`):
+  - `Call + Started` → `event_type: "call.started"`
+  - `Call + Answered` → `event_type: "call.answered"`
+  - `Call + Ended` → `event_type: "call.ended"`
+  - `Call + Modified` → `event_type: "call.disposition_set"`
+  - `Messages + Received` → `event_type: "sms.received"`
+- [ ] **Hardcode `event_type` as the first body-builder field of each WA** — CT does not inject it natively. Then template the remaining fields. **Payloads MUST be FLAT** (no nested objects). Exact per-WA body specs: see `src/shared/services/providers/cloudtalk/webhooks/events.ts` (the zod schemas are the source of truth).
 - [ ] **Confirm with CloudTalk support: do they publish static webhook IPs?** If yes, add IP allowlist at Vercel edge (env var `CLOUDTALK_WEBHOOK_IP_ALLOWLIST`)
 - [ ] **Confirm with CloudTalk support: do they support custom request headers on webhooks?** If yes, switch from query-string secret to header secret (less log leakage)
 - [ ] Test webhook delivery by triggering a test call

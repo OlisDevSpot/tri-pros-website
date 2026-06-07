@@ -46,8 +46,8 @@ The generated client + a thin wrapper at `providers/cloudtalk/client.ts` (auth, 
 
 ### Webhooks: yes, but limited
 
-- Configured in **dashboard at Account → Integrations → Webhooks** — NOT via API and NOT in the OpenAPI spec.
-- **Available events:** `call.started`, `call.answered`, `call.ended`, `call.missed`, `voicemail.received`, `sms.received`.
+- Configured in **dashboard at Account → Workflow Automations** (corrected 2026-05-31 — there is **NO centralized webhook-config page**) — NOT via API and NOT in the OpenAPI spec. Each event = one Workflow Automation (Object+Action) with a body-builder template + destination URL; all POST to the same `/api/webhooks/cloudtalk` URL.
+- **5 Workflow Automations** (corrected from the earlier 6-event sketch): `call.started`, `call.answered`, `call.ended`, `call.disposition_set` (Call+Modified), `sms.received`. `call.missed` + `voicemail.received` are NOT separate WAs — they're derived inside the `call.ended` handler from `is_voicemail` + `answered_at`. We hardcode `event_type` as the first body field of each WA (CT doesn't inject it). Payloads must be FLAT. Source of truth: `src/shared/services/providers/cloudtalk/webhooks/events.ts`.
 - **Not available as events:** agent lifecycle, contact lifecycle, number changes. These require polling the corresponding `index.json` endpoints on a schedule.
 - **No webhook signing/HMAC is documented.** Need to secure the webhook endpoint via IP allowlist, shared-secret query param, or proxy through something like Svix. **Confirm with CloudTalk support before prod.**
 
@@ -57,7 +57,7 @@ Fires inline during a call at specified points with full call context. Replaces 
 
 ## Recommended architecture (for the Phase 1 implementer)
 
-1. **Real-time ingestion** — Dashboard webhooks → Next.js Route Handler at `src/app/api/webhooks/cloudtalk/route.ts`. The route handler **is** the orchestrator: verifies the shared secret, parses the event type, switches on it, and directly composes existing `services/voip/*` (`voip-calls`, `voip-messages`, `voip-dnc`, `notifications`) — see `docs/codebase-conventions/webhook-routes.md` for the rule.
+1. **Real-time ingestion** — Workflow-Automation webhooks → Next.js Route Handler at `src/app/api/webhooks/cloudtalk/route.ts`. The route handler **is** the orchestrator: verifies the shared secret, parses the `event_type`, switches on it, and directly composes existing services. Under perfect separation (2026-06-04) it persists exactly two things — DNC (`complianceService.addToDnc`) and unenroll (`campaignEnrollmentService.unenroll`) — plus a cosmetic agent-notify. **No shadow `voip_calls`/`voip_messages` rows.** See `docs/codebase-conventions/webhook-routes.md`.
 2. **Backfill / non-call entities** — Scheduled polling (Vercel Cron or Inngest) hitting list endpoints with pagination via `providers/cloudtalk/*.list()`
 3. **Outbound writes** — Generated typed client used from `services/voip/campaigns/*`
 4. **Mid-call enrichment (voip routing)** — Call Flow Designer HTTP Request action calling into our app's `voip-routing.service.ts` endpoints (lives in voip-in-house)
