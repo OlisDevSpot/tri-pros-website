@@ -2,7 +2,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 
-import { OverviewTotalsStrip } from '@/features/campaigns-admin/ui/components/overview/overview-totals-strip'
+import { partitionSourceSummaries } from '@/features/campaigns-admin/lib/partition-source-summaries'
+import { IdleSourcesList } from '@/features/campaigns-admin/ui/components/overview/idle-sources-list'
+import { OverviewSummaryBar } from '@/features/campaigns-admin/ui/components/overview/overview-summary-bar'
 import { SourceRollupCard } from '@/features/campaigns-admin/ui/components/overview/source-rollup-card'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
@@ -23,10 +25,12 @@ export function CampaignsOverviewView() {
     { dnc: 0, eligible: 0, enrolled: 0 },
   )
 
+  const { actionable, idle } = partitionSourceSummaries(summaries)
+
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-4 overflow-y-auto">
-        <Skeleton className="h-24 w-full" />
+      <div className="flex flex-col gap-5 overflow-y-auto">
+        <Skeleton className="h-12 w-full" />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton
@@ -41,20 +45,34 @@ export function CampaignsOverviewView() {
   }
 
   return (
-    <div className="flex flex-col gap-4 overflow-y-auto">
-      <OverviewTotalsStrip
+    <div className="flex flex-col gap-5 overflow-y-auto">
+      <OverviewSummaryBar
         dnc={totals.dnc}
         eligible={totals.eligible}
         enrolled={totals.enrolled}
       />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {summaries.map(s => (
-          <SourceRollupCard
-            key={s.sourceSlug}
-            summary={s}
-          />
-        ))}
-      </div>
+
+      {actionable.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {`Needs action · ${actionable.length}`}
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {actionable.map(s => (
+              <SourceRollupCard
+                key={s.sourceSlug}
+                summary={s}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <IdleSourcesList summaries={idle} />
+
+      {summaries.length === 0 && (
+        <p className="text-sm text-muted-foreground">No lead sources found.</p>
+      )}
     </div>
   )
 }
