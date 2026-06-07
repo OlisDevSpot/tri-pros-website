@@ -4,13 +4,16 @@
 
 import type { DalReturn } from '@/shared/dal/server/types'
 
-import { and, count, desc, eq, isNull } from 'drizzle-orm'
+import { and, count, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { paginate } from '@/shared/dal/server/lib/query/output'
+import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
+import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 
 export interface ActiveEnrollment {
   customerId: string
@@ -147,5 +150,194 @@ export async function countActiveEnrollmentsBySource(): Promise<DalReturn<Record
       }
     }
     return out
+  })
+}
+
+// ── Unified leads list (Campaigns Control Center) ─────────────────────────────
+
+export type LeadStatus = 'eligible' | 'enrolled' | 'removed' | 'dnc'
+
+export interface CampaignLeadRow {
+  customerId: string
+  name: string
+  status: LeadStatus
+  campaignId: string | null
+  campaignName: string | null
+  enrolledAt: string | null
+  leadSourceId: string | null
+}
+
+export interface ListLeadsArgs {
+  status: LeadStatus
+  sourceSlug?: string
+  campaignId?: string
+  search?: string
+  limit: number
+  offset: number
+}
+
+/**
+ * Unified paginated query powering the Leads tab in the Campaigns Control Center.
+ * Returns one status bucket at a time (eligible | enrolled | removed | dnc).
+ *
+ * - enrolled: active participation rows (unenrolledAt IS NULL), joined to campaign.
+ * - removed:  unenrolled rows with reason = 'removed' (neutral pull, re-enrollable).
+ * - eligible: customers in the `leads` pipeline, not DNC'd, with a phone + leadSourceId,
+ *             with NO active participation row. Canonical gate reused verbatim.
+ * - dnc:      customers with dncOptedOutAt IS NOT NULL.
+ *
+ * see ../../DOCS.md and docs/plans/voip-campaigns/EPIC.md
+ */
+export async function listLeadsPaginated(
+  args: ListLeadsArgs,
+): Promise<DalReturn<{ rows: CampaignLeadRow[], total: number }>> {
+  return dalDbOperation(async () => {
+    const searchWhere = buildSearchWhere(args.search, [customers.name, customers.phone])
+
+    if (args.status === 'enrolled') {
+      const baseWhere = and(
+        isNull(voipCampaignContacts.unenrolledAt),
+        args.sourceSlug ? eq(voipCampaigns.sourceSlug, args.sourceSlug) : undefined,
+        args.campaignId ? eq(voipCampaignContacts.voipCampaignId, args.campaignId) : undefined,
+        searchWhere,
+      )
+
+      return paginate({
+        query: () => db
+          .select({
+            customerId: voipCampaignContacts.customerId,
+            name: customers.name,
+            status: sql<LeadStatus>`'enrolled'`,
+            campaignId: voipCampaignContacts.voipCampaignId,
+            campaignName: voipCampaigns.ctCampaignName,
+            enrolledAt: voipCampaignContacts.enrolledAt,
+            leadSourceId: customers.leadSourceId,
+          })
+          .from(voipCampaignContacts)
+          .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
+          .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+          .where(baseWhere)
+          .orderBy(desc(voipCampaignContacts.enrolledAt))
+          .limit(args.limit)
+          .offset(args.offset),
+        count: async () => {
+          const [row] = await db
+            .select({ n: count() })
+            .from(voipCampaignContacts)
+            .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
+            .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+            .where(baseWhere)
+          return row?.n ?? 0
+        },
+      })
+    }
+
+    if (args.status === 'removed') {
+      const baseWhere = and(
+        isNotNull(voipCampaignContacts.unenrolledAt),
+        eq(voipCampaignContacts.unenrollReason, 'removed'),
+        args.sourceSlug ? eq(voipCampaigns.sourceSlug, args.sourceSlug) : undefined,
+        args.campaignId ? eq(voipCampaignContacts.voipCampaignId, args.campaignId) : undefined,
+        searchWhere,
+      )
+
+      return paginate({
+        query: () => db
+          .select({
+            customerId: voipCampaignContacts.customerId,
+            name: customers.name,
+            status: sql<LeadStatus>`'removed'`,
+            campaignId: voipCampaignContacts.voipCampaignId,
+            campaignName: voipCampaigns.ctCampaignName,
+            enrolledAt: voipCampaignContacts.enrolledAt,
+            leadSourceId: customers.leadSourceId,
+          })
+          .from(voipCampaignContacts)
+          .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
+          .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+          .where(baseWhere)
+          .orderBy(desc(voipCampaignContacts.unenrolledAt))
+          .limit(args.limit)
+          .offset(args.offset),
+        count: async () => {
+          const [row] = await db
+            .select({ n: count() })
+            .from(voipCampaignContacts)
+            .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
+            .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+            .where(baseWhere)
+          return row?.n ?? 0
+        },
+      })
+    }
+
+    if (args.status === 'eligible') {
+      // Canonical eligibility gate: leads pipeline + not DNC'd + has phone + has leadSourceId
+      // + NOT currently enrolled in any active participation row.
+      const NOT_ENROLLED = sql`NOT EXISTS (
+        SELECT 1 FROM voip_campaign_contacts vcc
+        WHERE vcc.customer_id = ${customers.id}
+        AND vcc.unenrolled_at IS NULL
+      )`
+      const baseWhere = and(
+        derivedPipelineWhere(['leads']),
+        isNull(customers.dncOptedOutAt),
+        isNotNull(customers.phone),
+        isNotNull(customers.leadSourceId),
+        NOT_ENROLLED,
+        args.sourceSlug
+          ? sql`EXISTS (
+              SELECT 1 FROM lead_sources ls
+              WHERE ls.id = ${customers.leadSourceId}
+              AND ls.slug = ${args.sourceSlug}
+            )`
+          : undefined,
+        searchWhere,
+      )
+
+      return paginate({
+        query: () => db
+          .select({
+            customerId: customers.id,
+            name: customers.name,
+            status: sql<LeadStatus>`'eligible'`,
+            campaignId: sql<null>`NULL`,
+            campaignName: sql<null>`NULL`,
+            enrolledAt: sql<null>`NULL`,
+            leadSourceId: customers.leadSourceId,
+          })
+          .from(customers)
+          .where(baseWhere)
+          .orderBy(desc(customers.createdAt))
+          .limit(args.limit)
+          .offset(args.offset),
+        count: () => db.$count(customers, baseWhere),
+      })
+    }
+
+    // dnc branch
+    const baseWhere = and(
+      isNotNull(customers.dncOptedOutAt),
+      searchWhere,
+    )
+
+    return paginate({
+      query: () => db
+        .select({
+          customerId: customers.id,
+          name: customers.name,
+          status: sql<LeadStatus>`'dnc'`,
+          campaignId: sql<null>`NULL`,
+          campaignName: sql<null>`NULL`,
+          enrolledAt: sql<null>`NULL`,
+          leadSourceId: customers.leadSourceId,
+        })
+        .from(customers)
+        .where(baseWhere)
+        .orderBy(desc(customers.dncOptedOutAt))
+        .limit(args.limit)
+        .offset(args.offset),
+      count: () => db.$count(customers, baseWhere),
+    })
   })
 }

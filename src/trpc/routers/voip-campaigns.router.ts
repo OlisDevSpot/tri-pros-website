@@ -1,10 +1,11 @@
 import z from 'zod'
 
+import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { countEligibleLeadsBySource } from '@/shared/entities/customers/dal/server/queries'
 import { setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
-import { countActiveEnrollmentsBySource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import { countActiveEnrollmentsBySource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { voipCampaignCrud } from '@/shared/entities/voip-campaigns/dal/server/crud'
 import { listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
 import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
@@ -65,6 +66,29 @@ export const voipCampaignsRouter = createTRPCRouter({
     .input(z.object({ sourceSlug: z.string() }))
     .query(async ({ input }) => {
       return dalToTrpc(await listEnrolledLeadsBySource(input.sourceSlug))
+    }),
+
+  /**
+   * Unified paginated leads list for the Campaigns Control Center Leads tab.
+   * Returns one status bucket at a time (eligible | enrolled | removed | dnc).
+   * Filters: status (required), sourceSlug, campaignId. Free-text search on name/phone.
+   * see docs/plans/voip-campaigns/EPIC.md + docs/superpowers/specs/2026-06-04-campaigns-control-center-design.md
+   */
+  listLeads: superAdminProcedure
+    .input(paginatedQueryInput({
+      status: z.enum(['eligible', 'enrolled', 'removed', 'dnc']),
+      sourceSlug: z.string().optional(),
+      campaignId: z.string().uuid().optional(),
+    }))
+    .query(async ({ input }) => {
+      return dalToTrpc(await listLeadsPaginated({
+        status: input.filters?.status ?? 'eligible',
+        sourceSlug: input.filters?.sourceSlug,
+        campaignId: input.filters?.campaignId,
+        search: input.search,
+        limit: input.pagination.limit,
+        offset: input.pagination.offset,
+      }))
     }),
 
   // ── Resync + binding (super-admin) ─────────────────────────────────────────
