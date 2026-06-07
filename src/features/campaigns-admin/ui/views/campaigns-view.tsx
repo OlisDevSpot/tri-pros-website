@@ -1,16 +1,17 @@
 'use client'
 
-import { parseAsStringLiteral, useQueryState } from 'nuqs'
+import type { CampaignTab } from '@/features/campaigns-admin/constants/query-parsers'
 
+import { useQueryState } from 'nuqs'
+
+import { campaignTabParser } from '@/features/campaigns-admin/constants/query-parsers'
 import { CampaignsLeadsView } from '@/features/campaigns-admin/ui/views/campaigns-leads-view'
 import { CampaignsOverviewView } from '@/features/campaigns-admin/ui/views/campaigns-overview-view'
 import { CampaignsSetupView } from '@/features/campaigns-admin/ui/views/campaigns-setup-view'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 
-const TABS = ['overview', 'leads', 'setup'] as const
-
 export function CampaignsView() {
-  const [tab, setTab] = useQueryState('tab', parseAsStringLiteral(TABS).withDefault('overview'))
+  const [tab, setTab] = useQueryState('tab', campaignTabParser)
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
@@ -21,7 +22,7 @@ export function CampaignsView() {
         </p>
       </header>
 
-      <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={v => setTab(v as typeof TABS[number])} value={tab}>
+      <Tabs className="flex min-h-0 flex-1 flex-col" onValueChange={v => setTab(v as CampaignTab)} value={tab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="leads">Leads</TabsTrigger>
