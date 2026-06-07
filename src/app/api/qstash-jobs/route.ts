@@ -2,8 +2,11 @@ import type { Job, JobMap } from '@/shared/services/providers/upstash/types'
 import { Receiver } from '@upstash/qstash'
 import { createQbRecordsJob } from '@/shared/services/providers/upstash/jobs/create-qb-records'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
+import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/enroll-source-batch'
 import { generateAISummaryJob } from '@/shared/services/providers/upstash/jobs/generate-ai-summary'
+import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { initialCalendarSyncJob } from '@/shared/services/providers/upstash/jobs/initial-calendar-sync'
+import { notifyLastInteractingAgentJob } from '@/shared/services/providers/upstash/jobs/notify-last-interacting-agent'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
 import { propagateCustomerChangeJob } from '@/shared/services/providers/upstash/jobs/propagate-customer-change'
@@ -37,6 +40,9 @@ const jobs: Job[] = [
   deleteMeetingEventJob,
   propagateCustomerChangeJob,
   notifyMeetingTimeChangedJob,
+  enrollSourceBatchJob,
+  graduateFromCampaignJob,
+  notifyLastInteractingAgentJob,
 ]
 
 /**

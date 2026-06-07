@@ -88,6 +88,10 @@ export function useInvalidation() {
     void qc.invalidateQueries(trpc.leadSourcesRouter.pathFilter())
   }
 
+  function invalidateVoipCampaigns() {
+    void qc.invalidateQueries(trpc.voipCampaignsRouter.pathFilter())
+  }
+
   return {
     invalidateCustomer,
     invalidateMeeting,
@@ -96,5 +100,6 @@ export function useInvalidation() {
     invalidateActivities,
     invalidateAgentSettings,
     invalidateLeadSource,
+    invalidateVoipCampaigns,
   }
 }

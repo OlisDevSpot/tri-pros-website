@@ -14,6 +14,7 @@ import { addParticipant } from '@/shared/entities/meetings/dal/server/participan
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { meetingVisibility } from '@/shared/entities/meetings/lib/visibility'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
+import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { ably } from '@/shared/services/providers/upstash/realtime'
@@ -64,6 +65,14 @@ export const meetingServerSpec = {
 
         if (row.scheduledFor) {
           await syncMeetingToGcalJob.dispatchOrThrow({ meetingId: row.id })
+        }
+
+        // Graduation handoff (voip-campaigns decision #12): a booked meeting
+        // means CloudTalk's conversion job is done — stop dialing by unenrolling
+        // the customer from any active campaign. Idempotent + no-op if never
+        // enrolled. dispatchOrThrow: stopping a live dial is not cosmetic.
+        if (row.customerId) {
+          await graduateFromCampaignJob.dispatchOrThrow({ customerId: row.customerId })
         }
       },
     },
