@@ -33,7 +33,7 @@ export function CloudtalkSyncCard() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="flex flex-col gap-1">
           <CardTitle className="text-base">CloudTalk Sync &amp; Binding</CardTitle>
           <CardDescription>
@@ -61,35 +61,37 @@ export function CloudtalkSyncCard() {
                 </p>
               )
             : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Campaign</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Membership tag</TableHead>
-                      <TableHead>Lead source</TableHead>
-                      <TableHead>Default</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {campaigns.map(campaign => (
-                      <CampaignBindingRow
-                        key={campaign.id}
-                        campaign={campaign}
-                        sources={sourceOptions}
-                        isDefault={
-                          campaign.sourceSlug != null
-                          && defaultBySlug.get(campaign.sourceSlug) === campaign.id
-                        }
-                        busy={busy}
-                        onBind={(campaignId, sourceSlug) =>
-                          bindCampaignToSource.mutate({ campaignId, sourceSlug })}
-                        onToggleDefault={(sourceSlug, campaignId, makeDefault) =>
-                          setDefaultCampaign.mutate({ sourceSlug, campaignId: makeDefault ? campaignId : null })}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="overflow-x-auto">
+                  <Table className="min-w-160">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Campaign</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Membership tag</TableHead>
+                        <TableHead>Lead source</TableHead>
+                        <TableHead>Default</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {campaigns.map(campaign => (
+                        <CampaignBindingRow
+                          key={campaign.id}
+                          campaign={campaign}
+                          sources={sourceOptions}
+                          isDefault={
+                            campaign.sourceSlug != null
+                            && defaultBySlug.get(campaign.sourceSlug) === campaign.id
+                          }
+                          busy={busy}
+                          onBind={(campaignId, sourceSlug) =>
+                            bindCampaignToSource.mutate({ campaignId, sourceSlug })}
+                          onToggleDefault={(sourceSlug, campaignId, makeDefault) =>
+                            setDefaultCampaign.mutate({ sourceSlug, campaignId: makeDefault ? campaignId : null })}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
       </CardContent>
     </Card>
