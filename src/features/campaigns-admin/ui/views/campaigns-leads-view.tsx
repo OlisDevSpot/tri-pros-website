@@ -67,7 +67,7 @@ export function CampaignsLeadsView() {
   const tableRows = useMemo(() => pagination.rows.map(toTableRow), [pagination.rows])
 
   const [drawerRow, setDrawerRow] = useState<CampaignLeadRow | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
