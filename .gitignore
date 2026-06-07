@@ -3,6 +3,11 @@
 # ignore projects photos
 /public/portfolio-photos/projects/
 
+# Playwright MCP auth session (live super-admin credential — never commit)
+/.playwright/
+# Playwright MCP run artifacts (console logs, page snapshots)
+/.playwright-mcp/
+
 # dependencies
 /node_modules
 /.pnp
