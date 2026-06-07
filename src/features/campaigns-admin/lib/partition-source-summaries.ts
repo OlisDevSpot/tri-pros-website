@@ -9,7 +9,7 @@ export interface PartitionedSummaries {
 
 /**
  * Split source summaries into actionable (has eligible leads) and idle (none).
- * Actionable sources are sorted by eligible count desc so the most urgent lead.
+ * Actionable sources are sorted by eligible count desc so the most urgent lead the list.
  */
 export function partitionSourceSummaries(summaries: SourceSummary[]): PartitionedSummaries {
   const actionable: SourceSummary[] = []
