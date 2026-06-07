@@ -3,19 +3,21 @@
 // see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
+import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 
 /**
- * Append a note to a customer. `authorId` null = system/webhook-originated note.
- * Replaces the two inline `db.insert(customerNotes)` copies (Bina route +
- * createFromIntake) — both now flow through the intake service.
+ * Append a note to a customer. `authorId` null = system/webhook-originated note
+ * (Bina ingest); an agent id when authored from the UI. The single write path
+ * for customer notes — the intake service, the Bina ingest, and the agent
+ * `addNote` procedure all route through here (no inline `db.insert`).
  */
 export async function addCustomerNote(
   input: { customerId: string, content: string, authorId?: string | null },
-): Promise<DalReturn<{ id: string }>> {
+): Promise<DalReturn<CustomerNote>> {
   return dalDbOperation(async () => {
     const [note] = await db
       .insert(customerNotes)
@@ -24,7 +26,7 @@ export async function addCustomerNote(
         content: input.content,
         authorId: input.authorId ?? null,
       })
-      .returning({ id: customerNotes.id })
+      .returning()
     return note!
   })
 }

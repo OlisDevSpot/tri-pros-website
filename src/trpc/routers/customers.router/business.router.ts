@@ -18,9 +18,9 @@ import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
-import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
+import { addCustomerNote } from '@/shared/entities/customers/dal/server/mutations'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
@@ -131,16 +131,15 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         content: z.string().min(1).max(2000),
       }))
       .mutation(async ({ input, ctx }) => {
-        const [note] = await db
-          .insert(customerNotes)
-          .values({
-            customerId: input.customerId,
-            content: input.content,
-            authorId: ctx.session.user.id,
-          })
-          .returning()
-
-        return note
+        const result = await addCustomerNote({
+          customerId: input.customerId,
+          content: input.content,
+          authorId: ctx.session.user.id,
+        })
+        if (!result.success) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to add note.' })
+        }
+        return result.data
       }),
 
     // Public intake form submission — creates customer + optional note (+ meeting)
