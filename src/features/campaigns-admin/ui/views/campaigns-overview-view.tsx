@@ -57,14 +57,13 @@ export function CampaignsOverviewView() {
           <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {`Needs action · ${actionable.length}`}
           </h2>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
             {actionable.map(s => (
-              <SourceRollupCard
-                key={s.sourceSlug}
-                summary={s}
-              />
+              <li key={s.sourceSlug}>
+                <SourceRollupCard summary={s} />
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )}
 

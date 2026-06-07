@@ -47,7 +47,7 @@ export function CloudtalkSyncCard() {
           disabled={resync.isPending}
           onClick={() => resync.mutate()}
         >
-          <RefreshCwIcon className={resync.isPending ? 'size-4 animate-spin' : 'size-4'} />
+          <RefreshCwIcon aria-hidden="true" className={resync.isPending ? 'size-4 animate-spin' : 'size-4'} />
           {resync.isPending ? 'Resyncing…' : 'Resync from CloudTalk'}
         </Button>
       </CardHeader>
@@ -61,7 +61,7 @@ export function CloudtalkSyncCard() {
                 </p>
               )
             : (
-                <div className="overflow-x-auto">
+                <div aria-label="Synced campaigns" className="overflow-x-auto" role="region" tabIndex={0}>
                   <Table className="min-w-160">
                     <TableHeader>
                       <TableRow>
