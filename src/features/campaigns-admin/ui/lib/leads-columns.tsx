@@ -17,6 +17,13 @@ export interface LeadsTableMeta {
   toggleSelectAll: (rowIds: string[], checked: boolean) => void
 }
 
+/**
+ * `DataTable` requires `TData extends { id: string }`. `CampaignLeadRow` uses
+ * `customerId` as its primary key, so we alias it as `id` before passing rows
+ * to the table. `customerId` is preserved for all column cell accessors.
+ */
+export type LeadTableRow = CampaignLeadRow & { id: string }
+
 function formatEnrolledAt(iso: string | null): string {
   if (!iso) {
     return '—'
@@ -24,7 +31,7 @@ function formatEnrolledAt(iso: string | null): string {
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export function buildLeadsColumns(): ColumnDef<CampaignLeadRow>[] {
+export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
   return [
     {
       cell: ({ row, table }) => <LeadSelectCell row={row.original} table={table} />,

@@ -2,12 +2,11 @@
 
 import type { Table } from '@tanstack/react-table'
 
-import type { LeadsTableMeta } from '@/features/campaigns-admin/ui/lib/leads-columns'
-import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import type { LeadsTableMeta, LeadTableRow } from '@/features/campaigns-admin/ui/lib/leads-columns'
 
 import { Checkbox } from '@/shared/components/ui/checkbox'
 
-export function LeadSelectCell({ row, table }: { row: CampaignLeadRow, table: Table<CampaignLeadRow> }) {
+export function LeadSelectCell({ row, table }: { row: LeadTableRow, table: Table<LeadTableRow> }) {
   const meta = table.options.meta as LeadsTableMeta
   return (
     <Checkbox
