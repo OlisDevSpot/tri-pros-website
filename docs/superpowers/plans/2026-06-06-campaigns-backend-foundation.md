@@ -2,9 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the tRPC + provider + DAL surface the redesigned Campaigns Control Center consumes — a unified paginated `listLeads` query, an on-demand `getLeadCtActivity` (live CloudTalk signals, unstored), an extended overview summary, and the new mutations (cherry-pick bulk enroll, bulk remove, first-class DNC, switch-campaign).
+**Goal:** Build the tRPC + DAL surface the redesigned Campaigns Control Center consumes. **~90% is already wired** — this plan adds exactly one real new query (`listLeads`) plus thin wrappers around existing service/compliance methods.
 
-**Architecture:** Additive to the existing voip-campaigns stack (perfect separation unchanged). New reads/mutations live in the existing `voipCampaignsRouter` (glue), composing entity DAL queries/mutations (`voip-campaign-contacts`, `customers`) + the `cloudtalkClient` provider + the `complianceService`. The one live-read path (`getContactActivity`) derives from the existing `listCalls` capability — it never persists. The unified `listLeads` uses the existing query toolkit (`paginatedQueryInput` / `paginate`).
+> ## Scope decision (refined 2026-06-07)
+> The page ships in **two phases**, split so the one CloudTalk-API unknown is OFF the critical path:
+> - **Phase 1 (this plan's core — Tasks 4–9): everything the page needs to ship, zero CloudTalk-verification dependency.** The unified `listLeads`, the overview extension, and the trivial mutations (cherry-pick bulk enroll, bulk remove, first-class DNC, switch-campaign). The lead drawer ships **DB-first** (identity + enrolled campaign/date + actions).
+> - **Phase 2 (fast-follow — Tasks 0–3, DEFERRED): the live "Live from CloudTalk" drawer block + per-row live-signal cell.** Gated on the Task 0 CloudTalk verification (needs live CT creds + a known enrolled contact). Build right after Phase 1 lands. The drawer + table are designed to slot this in without rework.
+>
+> **Reality check on "new" backend:** of Phase 1, only `listLeads` is genuinely new logic — it assembles *existing* predicates (`derivedPipelineWhere(['leads'])`, the participation joins) into the *existing* `paginate()` toolkit. `enrollSelected`/`removeBulk`/`markDnc`/`removeDnc` are loops/wrappers over existing `enroll`/`unenroll`/`complianceService`. `switchCampaign` composes existing `removeTags`+`addTags`. Single `enroll`, `enrollAll`, `disqualify*`, `removeFromCampaign`, all summaries, resync/bind/default — **already exist.**
+
+**Architecture:** Additive to the existing voip-campaigns stack (perfect separation unchanged). New reads/mutations live in the existing `voipCampaignsRouter` (glue), composing entity DAL queries/mutations (`voip-campaign-contacts`, `customers`) + the `complianceService`. The unified `listLeads` uses the existing query toolkit (`paginatedQueryInput` / `paginate`). Phase 2's one live-read path (`getContactActivity`) derives from the existing `listCalls` capability — it never persists.
 
 **Tech Stack:** Next.js 15 App Router + tRPC, Drizzle (Postgres/Neon), Zod, the shared query toolkit (`src/shared/dal/server/lib/query/`). **No test runner exists** — verification per task is `pnpm tsc` + `pnpm lint` + targeted manual checks. **Never run `pnpm build`.** No schema/DB changes (all reads/mutations hit existing tables).
 
@@ -27,7 +34,9 @@
 
 ---
 
-## Task 0: Verify CloudTalk contact-scoped call history (Phase 0 spike — GATES the drawer)
+> **⏸ TASKS 0–3 ARE PHASE 2 (DEFERRED FAST-FOLLOW).** Skip them for the v1 ship. Start implementation at **Task 4** (Phase 1). Come back to Tasks 0–3 once Phase 1 + the frontend have landed and you have live CloudTalk creds to run the Task 0 verification. The Leads table omits the live-signal column and the drawer omits the "Live from CloudTalk" block until then — both designed to slot in without rework.
+
+## Task 0 — PHASE 2 (DEFERRED): Verify CloudTalk contact-scoped call history (spike — GATES the live block)
 
 **Why:** `getContactActivity` derives the drawer's live signals (last disposition, attempts, last-contacted, DID, recording) from CloudTalk call records. `listCalls` already exists, but we must confirm CT can return calls **scoped to one contact**, and that `Disposition` is present on list rows. This is the one real unknown.
 
