@@ -111,6 +111,60 @@ export function useCampaignMutations() {
     }),
   )
 
+  const enrollSelected = useMutation(
+    trpc.voipCampaignsRouter.enrollSelected.mutationOptions({
+      onSuccess: (res) => {
+        invalidateVoipCampaigns()
+        toast.success(`Enrolled ${res.enrolled} of ${res.requested} lead(s)`, {
+          description: res.enrolled < res.requested
+            ? 'Some were skipped — check eligibility (already enrolled / DNC / no phone).'
+            : undefined,
+        })
+      },
+      onError: err => toast.error(err.message || 'Failed to enroll selected leads'),
+    }),
+  )
+
+  const removeBulk = useMutation(
+    trpc.voipCampaignsRouter.removeBulk.mutationOptions({
+      onSuccess: (res) => {
+        invalidateVoipCampaigns()
+        toast.success(`Removed ${res.removed} of ${res.requested} lead(s) — re-enrollable`)
+      },
+      onError: err => toast.error(err.message || 'Failed to remove leads'),
+    }),
+  )
+
+  const switchCampaign = useMutation(
+    trpc.voipCampaignsRouter.switchCampaign.mutationOptions({
+      onSuccess: () => {
+        invalidateVoipCampaigns()
+        toast.success('Lead moved to the new campaign')
+      },
+      onError: err => toast.error(err.message || 'Failed to switch campaign'),
+    }),
+  )
+
+  const markDnc = useMutation(
+    trpc.voipCampaignsRouter.markDnc.mutationOptions({
+      onSuccess: (res) => {
+        invalidateVoipCampaigns()
+        toast.success(`Marked ${res.count} lead(s) Do-Not-Call — unenrolled`)
+      },
+      onError: err => toast.error(err.message || 'Failed to mark DNC'),
+    }),
+  )
+
+  const removeDnc = useMutation(
+    trpc.voipCampaignsRouter.removeDnc.mutationOptions({
+      onSuccess: () => {
+        invalidateVoipCampaigns()
+        toast.success('DNC cleared — lead can be contacted again')
+      },
+      onError: err => toast.error(err.message || 'Failed to clear DNC'),
+    }),
+  )
+
   return {
     resync,
     bindCampaignToSource,
@@ -121,5 +175,10 @@ export function useCampaignMutations() {
     disqualifyBulk,
     removeFromCampaign,
     enroll,
+    enrollSelected,
+    removeBulk,
+    switchCampaign,
+    markDnc,
+    removeDnc,
   }
 }
