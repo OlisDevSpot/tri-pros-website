@@ -12,6 +12,7 @@ import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attrib
 import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/enroll-source-batch'
 import { campaignSyncService } from '@/shared/services/voip/campaigns/campaign-sync.service'
 import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
+import { complianceService } from '@/shared/services/voip/compliance.service'
 
 import { agentProcedure, createTRPCRouter, superAdminProcedure } from '../init'
 import { dalToTrpc } from '../lib/dal-to-trpc'
@@ -185,6 +186,60 @@ export const voipCampaignsRouter = createTRPCRouter({
         }
       }
       return { requested: input.customerIds.length, unenrolled }
+    }),
+
+  /** Enroll an explicit set of customers into one campaign (cherry-pick bulk). */
+  enrollSelected: superAdminProcedure
+    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1), campaignId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      let enrolled = 0
+      for (const customerId of input.customerIds) {
+        const r = await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, { customerId, campaignId: input.campaignId })
+        if (r.success) {
+          enrolled++
+        }
+      }
+      return { requested: input.customerIds.length, enrolled }
+    }),
+
+  /** Bulk neutral remove (reason 'removed' — re-enrollable). */
+  removeBulk: superAdminProcedure
+    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1) }))
+    .mutation(async ({ input }) => {
+      let removed = 0
+      for (const customerId of input.customerIds) {
+        const r = await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, { customerId, reason: 'removed' })
+        if (r.success && r.data.unenrolled) {
+          removed++
+        }
+      }
+      return { requested: input.customerIds.length, removed }
+    }),
+
+  /** Move a customer to a different campaign (drawer/bulk). */
+  switchCampaign: superAdminProcedure
+    .input(z.object({ customerId: z.string().uuid(), toCampaignId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return dalToTrpc(await campaignEnrollmentService.switchCampaign(ctx, input))
+    }),
+
+  /** Mark customer(s) DNC (reason 'admin') + unenroll. Single or bulk. */
+  markDnc: superAdminProcedure
+    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      for (const customerId of input.customerIds) {
+        await complianceService.addToDnc({ customerId, reason: 'admin', addedByUserId: ctx.session.user.id })
+        await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, { customerId, reason: 'opted_out' })
+      }
+      return { count: input.customerIds.length }
+    }),
+
+  /** Clear DNC (admin opt-back-in). */
+  removeDnc: superAdminProcedure
+    .input(z.object({ customerId: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      await complianceService.removeFromDnc({ customerId: input.customerId })
+      return { ok: true }
     }),
 
   /** Per-source "Unenroll all" (admin). Reason = disqualified (manual stop). */
