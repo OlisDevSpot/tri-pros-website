@@ -16,7 +16,6 @@ import {
   userRoles,
   viewSources,
   voipCallStatuses,
-  voipCampaignStatuses,
   voipDirections,
   voipLinkTokenTypes,
   voipMessageStatuses,
@@ -66,5 +65,6 @@ export const voipDirectionEnum = pgEnum('voip_direction', voipDirections)
 export const voipMessageStatusEnum = pgEnum('voip_message_status', voipMessageStatuses)
 export const voipLinkTokenTypeEnum = pgEnum('voip_link_token_type', voipLinkTokenTypes)
 
-// VOIP CAMPAIGNS (CloudTalk-driven lead-to-meeting pipeline)
-export const voipCampaignStatusEnum = pgEnum('voip_campaign_status', voipCampaignStatuses)
+// VOIP CAMPAIGNS (CloudTalk): no local status pgEnum — CloudTalk is the sole
+// source of truth for lead lifecycle (perfect separation, confirmed 2026-06-04).
+// voip_campaign_status enum deleted 2026-06-04; see constants/enums/voip.ts.

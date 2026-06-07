@@ -46,6 +46,11 @@ export const customers = pgTable('customers', {
   dncReason: text('dnc_reason'),
   // FK to user.id which is `text` (better-auth string IDs), not uuid.
   dncAddedByUserId: text('dnc_added_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  // NOTE: voip-campaigns adds NO fields here. All per-customer CloudTalk state
+  // (enrollment membership, dial attempts, CT identity, sync) lives in
+  // `voip_campaign_contacts` (1:1, customer_id PK). The DNC fields above are the
+  // exception — they are SHARED compliance, written by both EPICs.
+  // see docs/plans/voip-campaigns/EPIC.md decisions log 2026-06-04
   syncedAt: timestamp('synced_at', { mode: 'string', withTimezone: true }).defaultNow().notNull(),
   createdAt,
   updatedAt,

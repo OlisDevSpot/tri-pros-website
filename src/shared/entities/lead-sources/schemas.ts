@@ -27,6 +27,11 @@ export type LeadSourceFormConfig = z.infer<typeof leadSourceFormConfigSchema>
 export const voipCampaignsPolicySchema = z.object({
   enabled: z.boolean().default(true), // per-source kill switch
   autoEnroll: z.boolean().default(false), // bina=true, home_depot=false
+  // Default CT campaign for AUTO-enroll of new leads from this source (a source
+  // owns many campaigns). Holds a `voip_campaigns.id`. If unset, auto-enroll for
+  // this source is inert (no guessing). Bulk "enroll all" overrides via a UI picker.
+  // see voip-campaigns EPIC decisions log 2026-06-04 (Q4 — enrollment routing)
+  defaultCampaignId: z.string().uuid().optional(),
   dailyDialVolumeCap: z.number().int().positive().optional(),
   messageTemplateOverrides: z.record(z.string(), z.string()).optional(),
 })
