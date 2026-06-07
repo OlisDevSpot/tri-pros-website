@@ -315,9 +315,17 @@ export async function listLeadsPaginated(
       })
     }
 
-    // dnc branch
+    // dnc branch — respects the sourceSlug filter (DNC'd customers retain their
+    // leadSourceId); campaignId has no meaning here (DNC'd leads aren't enrolled).
     const baseWhere = and(
       isNotNull(customers.dncOptedOutAt),
+      args.sourceSlug
+        ? sql`EXISTS (
+            SELECT 1 FROM lead_sources ls
+            WHERE ls.id = ${customers.leadSourceId}
+            AND ls.slug = ${args.sourceSlug}
+          )`
+        : undefined,
       searchWhere,
     )
 
