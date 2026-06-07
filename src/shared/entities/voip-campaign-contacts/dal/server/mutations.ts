@@ -101,6 +101,29 @@ export async function markUnenrolled(
 }
 
 /**
+ * Atomically re-point an active enrollment to a different campaign. Updates
+ * ONLY the `voip_campaign_id` FK on the currently-active row
+ * (`unenrolled_at IS NULL`). Caller must have already swapped the membership
+ * tags on CloudTalk (removeTags old → addTags new) before calling this.
+ * Returns `void`; the service detects the no-op case upstream.
+ *
+ * `updatedAt` auto-bumps via the schema-helper `$onUpdate` — do not set it.
+ */
+export async function repointCampaign(
+  input: { customerId: string, toCampaignId: string },
+): Promise<DalReturn<void>> {
+  return dalDbOperation(async () => {
+    await db
+      .update(voipCampaignContacts)
+      .set({ voipCampaignId: input.toCampaignId })
+      .where(and(
+        eq(voipCampaignContacts.customerId, input.customerId),
+        isNull(voipCampaignContacts.unenrolledAt),
+      ))
+  })
+}
+
+/**
  * Record a per-customer sync error (used by the bulk enroll-all job when a
  * single customer's CT push fails). No-op when the row doesn't exist yet —
  * a never-enrolled customer has nowhere to attach the error, so the caller

@@ -25,7 +25,7 @@ import type { CloudtalkContactAttributeAppKey } from '@/shared/services/provider
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { getCustomer, isCustomerInLeads } from '@/shared/entities/customers/dal/server/queries'
 import { getLeadSourceById } from '@/shared/entities/lead-sources/dal/server/queries'
-import { markUnenrolled, upsertEnrolled } from '@/shared/entities/voip-campaign-contacts/dal/server/mutations'
+import { markUnenrolled, repointCampaign, upsertEnrolled } from '@/shared/entities/voip-campaign-contacts/dal/server/mutations'
 import { findActiveEnrollment } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { getVoipCampaignById } from '@/shared/entities/voip-campaigns/dal/server/queries'
 import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
@@ -232,6 +232,74 @@ function createCampaignEnrollmentService() {
         return marked
       }
       return dalSuccess({ unenrolled: marked.data.rowsAffected > 0 })
+    },
+
+    /**
+     * Atomically move an actively-enrolled customer from their current campaign
+     * to `toCampaignId`. Swaps the CloudTalk membership tags (remove old, add
+     * new) then re-points the FK via the DAL.
+     *
+     * Precondition-failed reasons:
+     *   - `not_actively_enrolled` — no active row (or missing CT contact id)
+     *   - `unknown_target_campaign` — campaign not found or has no membership tag
+     *   - `ct_api_failure` — CloudTalk tag swap threw
+     */
+    async switchCampaign(
+      _ctx: ScopedContext,
+      input: { customerId: string, toCampaignId: string },
+    ): Promise<DalReturn<{ switched: boolean }>> {
+      // ── 1. Resolve current active enrollment ─────────────────────────────
+      const activeResult = await findActiveEnrollment(input.customerId)
+      if (!activeResult.success) {
+        return activeResult
+      }
+      const active = activeResult.data
+      if (!active || !active.cloudtalkContactId) {
+        return dalError({ type: 'precondition-failed', reason: 'not_actively_enrolled' })
+      }
+
+      // ── 2. Read target campaign (need its membership tag) ─────────────────
+      const campaignResult = await getVoipCampaignById(input.toCampaignId)
+      if (!campaignResult.success) {
+        return campaignResult
+      }
+      const targetCampaign = campaignResult.data
+      if (!targetCampaign || !targetCampaign.ctMembershipTag) {
+        return dalError({ type: 'precondition-failed', reason: 'unknown_target_campaign' })
+      }
+
+      // ── 3. Swap membership tags on CloudTalk ─────────────────────────────
+      try {
+        if (active.ctMembershipTag) {
+          await cloudtalkClient.removeTags({
+            contactId: active.cloudtalkContactId,
+            tags: [active.ctMembershipTag],
+          })
+        }
+        await cloudtalkClient.addTags({
+          contactId: active.cloudtalkContactId,
+          tags: [targetCampaign.ctMembershipTag],
+        })
+      }
+      catch (err) {
+        console.error('[enrollment] CloudTalk tag swap failed during switchCampaign', {
+          customerId: input.customerId,
+          toCampaignId: input.toCampaignId,
+          err: err instanceof Error ? err.message : String(err),
+        })
+        return reject('ct_api_failure')
+      }
+
+      // ── 4. Re-point the FK in our DB ─────────────────────────────────────
+      const repointed = await repointCampaign({
+        customerId: input.customerId,
+        toCampaignId: input.toCampaignId,
+      })
+      if (!repointed.success) {
+        return repointed
+      }
+
+      return dalSuccess({ switched: true })
     },
   }
 }
