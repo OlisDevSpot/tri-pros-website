@@ -76,6 +76,7 @@ const APP_ROOTS = {
     },
     settings: (options?: UrlOptions) => generateUrl('/dashboard/settings', options),
     leadSources: (options?: UrlOptions) => generateUrl('/dashboard/lead-sources', options),
+    campaigns: (options?: UrlOptions) => generateUrl('/dashboard/campaigns', options),
     team: (options?: UrlOptions) => generateUrl('/dashboard/team', options),
     analytics: (options?: UrlOptions) => generateUrl('/dashboard/analytics', options),
   },

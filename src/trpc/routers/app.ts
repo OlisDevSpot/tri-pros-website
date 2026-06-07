@@ -15,6 +15,7 @@ import { projectsRouter } from './projects.router'
 import { proposalsRouter } from './proposals.router'
 import { pushRouter } from './push.router'
 import { scheduleRouter } from './schedule.router'
+import { voipCampaignsRouter } from './voip-campaigns.router'
 
 export const appRouter = createTRPCRouter({
   healthcheck: baseProcedure.query(() => 'ok'),
@@ -33,6 +34,7 @@ export const appRouter = createTRPCRouter({
   projectsRouter,
   pushRouter,
   scheduleRouter,
+  voipCampaignsRouter,
 })
 
 export type AppRouter = typeof appRouter
