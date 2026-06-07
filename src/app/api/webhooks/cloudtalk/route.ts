@@ -1,108 +1,125 @@
-import env from '@/shared/config/server-env'
-import { getCloudtalkConfig, isCloudtalkConfigured } from '@/shared/services/providers/cloudtalk/lib/config'
+import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
+import { cloudtalkEventSchema } from '@/shared/services/providers/cloudtalk/webhooks/events'
+import { notifyLastInteractingAgentJob } from '@/shared/services/providers/upstash/jobs/notify-last-interacting-agent'
+import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
+import { isStopKeyword } from '@/shared/services/voip/campaigns/lib/is-stop-keyword'
+import { resolveCustomerByCtContactId, resolveCustomerByPhone } from '@/shared/services/voip/campaigns/lib/resolve-customer'
+import { ctDispositionToUnenrollReason } from '@/shared/services/voip/campaigns/lib/unenroll-reason'
+import { complianceService } from '@/shared/services/voip/compliance.service'
 
-// see docs/codebase-conventions/webhook-routes.md
-// see docs/plans/voip/INTEGRATION-SEAM.md#2-cloudtalk-webhooks-cloudtalk--our-app
-// see docs/codebase-conventions/service-architecture.md#provider-env-config-when-optional
+// CloudTalk webhook receiver — single endpoint, route handler IS the orchestrator.
+// Per docs/codebase-conventions/webhook-routes.md: verify secret, parse the
+// envelope, switch on event-type, compose existing services directly. No wrapper
+// service.
+//
+// PERFECT SEPARATION (EPIC 2026-06-04): CloudTalk owns the lead lifecycle +
+// its own pipeline tags. Ring-1 persists exactly TWO things from CT events:
+//   1. DNC      — on STOP SMS / opt_out disposition (→ complianceService.addToDnc)
+//   2. Unenroll — terminal dispositions exit the campaign via the single
+//                 idempotent campaignEnrollmentService.unenroll (decision #18)
+// No status writes, no voip_calls/voip_messages shadow rows, no tag pushback,
+// no attempt counting (deferred ring-2), no after() (cosmetic notify → QStash).
+//
+// Failure policy (convention rule 4): 401 bad secret · 400 bad envelope ·
+// 200 once secret+envelope valid, even if a switch arm throws (logged).
+//
+// see docs/plans/voip-campaigns/phase-1-implementation.md#w3
+// see docs/plans/voip-campaigns/EPIC.md decisions log 2026-06-04 (#18)
 
-/**
- * CloudTalk webhook receiver — single endpoint for all 6 events.
- *
- * Per the webhook-routes convention: this route handler IS the orchestrator.
- * It verifies the shared secret, switches on event-type, and (in Phase 1)
- * will directly compose existing services/voip/* services. Phase 0 logs only.
- *
- * Events: call.started, call.answered, call.ended, call.missed,
- *         voicemail.received, sms.received.
- *
- * Failure policy (per convention Rule 4):
- *   - 401 on bad/missing secret
- *   - 400 on malformed envelope
- *   - 200 always once secret + envelope are valid, even if a switch arm throws
- *     (durable failure log goes to voip_webhook_errors when that table lands
- *     in voip-in-house Phase 1; Phase 0 logs to console only — no Sentry yet).
- */
-export async function POST(request: Request): Promise<Response> {
-  // ── Auth: shared-secret query param (CloudTalk has no HMAC signing) ──
-  // Pre-check via isCloudtalkConfigured() to branch into a misconfigured
-  // response in prod / accept-with-warning in dev — without letting
-  // getCloudtalkConfig() throw NotConfiguredError.
-  if (!isCloudtalkConfigured()) {
-    if (env.NODE_ENV === 'production') {
-      console.error('[cloudtalk webhook] CloudTalk not configured in production — refusing webhook')
-      return new Response('Server misconfigured', { status: 500 })
-    }
-    console.warn('[cloudtalk webhook] CloudTalk not configured — accepting (dev only)')
-  }
-  else {
-    const url = new URL(request.url)
-    const providedSecret = url.searchParams.get('secret')
-    const { webhookSecret } = getCloudtalkConfig()
-    if (providedSecret !== webhookSecret) {
-      console.warn('[cloudtalk webhook] invalid or missing secret')
-      return new Response('Unauthorized', { status: 401 })
-    }
+export async function POST(req: Request): Promise<Response> {
+  // 1. Secret — client method, no separate verify.ts. CloudTalk has no HMAC;
+  //    the ?secret= query param is the integrity check (constant-time compared).
+  if (!cloudtalkClient.verifyWebhookSecret({ url: req.url })) {
+    return new Response('unauthorized', { status: 401 })
   }
 
-  // ── Parse body ────────────────────────────────────────────────────────
-  let raw: unknown
+  // 2. Envelope. 400 on schema failure.
+  let event
   try {
-    raw = await request.json()
+    event = cloudtalkEventSchema.parse(await req.json())
   }
   catch {
-    return new Response('Malformed JSON', { status: 400 })
+    return new Response('bad request', { status: 400 })
   }
 
-  // ── Extract event type (Phase 0: loose typing; Phase 1 wires Zod) ────
-  const event = (raw as { event_type?: string, type?: string } | null)?.event_type
-    ?? (raw as { event_type?: string, type?: string } | null)?.type
-  if (!event || typeof event !== 'string') {
-    console.warn('[cloudtalk webhook] missing event_type in payload', { keys: raw && Object.keys(raw) })
-    return new Response('Bad request — missing event_type', { status: 400 })
-  }
-
-  // ── Dispatch ──────────────────────────────────────────────────────────
-  // Phase 0: log only. Phase 1 fills each arm with the orchestrated
-  // service calls per docs/plans/voip/INTEGRATION-SEAM.md §2.
+  // 3. Dispatch. 200 always once secret + envelope valid.
   try {
-    switch (event) {
-      case 'call.started':
-        // Phase 1: voipCalls.recordEvent({ ...payload, source: 'cloudtalk', status: 'initiated' })
-        console.warn('[cloudtalk webhook] call.started', { raw })
+    switch (event.event_type) {
+      case 'sms.received': {
+        if (isStopKeyword(event.text)) {
+          // STOP → DNC + unenroll(opted_out). Both idempotent.
+          const customer = await resolveCustomerByPhone(event.from_e164)
+          if (customer) {
+            // NOTE: addToDnc signature is (input) — NOT (ctx, input). DncReason
+            // has no 'opt_out' literal; 'stop_keyword' is the inbound-STOP reason.
+            await complianceService.addToDnc({
+              customerId: customer.id,
+              reason: 'stop_keyword',
+              addedByUserId: null,
+            })
+            await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
+              customerId: customer.id,
+              reason: 'opted_out',
+            })
+          }
+        }
+        else {
+          // Cosmetic — QStash job, NOT after(). Silent loss acceptable; CT keeps
+          // the SMS record (we don't persist it — INTEGRATION-SEAM §8).
+          void notifyLastInteractingAgentJob.dispatch({
+            customerPhoneE164: event.from_e164,
+            body: event.text,
+          })
+        }
         break
-      case 'call.answered':
-        // Phase 1: voipCalls.markAnswered({ ...payload })
-        console.warn('[cloudtalk webhook] call.answered', { raw })
+      }
+
+      // Disposition arrives on the disposition-set / Call.Modified event. Three
+      // terminal dispositions exit the campaign (decision #18); each maps to an
+      // unenroll reason via a pure lib fn. Non-terminal → null → keep dialing.
+      case 'call.disposition_set': {
+        const reason = ctDispositionToUnenrollReason(event.disposition)
+        if (reason) {
+          // contact_id is injected (flat) by the Call.Modified WA body-builder
+          // (Phase-0 CT dashboard config). Absent → can't resolve → keep dialing (safe).
+          const customer = await resolveCustomerByCtContactId(event.contact_id ?? '')
+          if (customer) {
+            if (reason === 'opted_out') {
+              await complianceService.addToDnc({
+                customerId: customer.id,
+                reason: 'stop_keyword',
+                addedByUserId: null,
+              })
+            }
+            await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
+              customerId: customer.id,
+              reason,
+            })
+          }
+          else {
+            console.warn('[cloudtalk webhook] terminal disposition with unresolvable contact', {
+              disposition: event.disposition,
+              contactId: event.contact_id ?? null,
+            })
+          }
+        }
         break
-      case 'call.ended':
-        // Phase 1: voipCalls.complete({ ...payload }) + optional CI transcript persistence
-        console.warn('[cloudtalk webhook] call.ended', { raw })
-        break
-      case 'call.missed':
-        // Phase 1: voipCalls.markMissed({ ...payload })
-        console.warn('[cloudtalk webhook] call.missed', { raw })
-        break
-      case 'voicemail.received':
-        // Phase 1: voipCalls.markVoicemail(...) + notifications.notifyAdminPool(...)
-        console.warn('[cloudtalk webhook] voicemail.received', { raw })
-        break
-      case 'sms.received':
-        // Phase 1: if STOP keyword → voipDnc.add({ source: 'cloudtalk_stop' })
-        //         else → voipMessages.recordInbound(...) + notifications.notifyLastInteractingAgent(...)
-        console.warn('[cloudtalk webhook] sms.received', { raw })
-        break
+      }
+
+      // Deferred to ring 2 — no-op for now (handler stays stable for expansion):
+      // call.started, call.answered, call.ended (attempt counter → cadence_exhausted),
+      // voicemail.
       default:
-        console.warn('[cloudtalk webhook] unknown event_type', { event, raw })
+        break
     }
   }
   catch (err) {
-    // TODO(voip-in-house Phase 1): insert into voip_webhook_errors table.
-    // No Sentry yet — console.error is the durable failure record until both land.
-    console.error('[cloudtalk webhook] handler threw — returning 200 anyway to avoid retry storm', {
-      event,
-      err: err instanceof Error ? { message: err.message, stack: err.stack } : err,
+    console.error('[cloudtalk webhook] handler error — returning 200 to avoid retry storm', {
+      eventType: event.event_type,
+      err: err instanceof Error ? err.message : String(err),
     })
   }
 
-  return new Response('OK', { status: 200 })
+  return Response.json({ ok: true })
 }
