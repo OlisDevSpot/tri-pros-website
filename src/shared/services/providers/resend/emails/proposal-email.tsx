@@ -11,6 +11,7 @@ import {
   Section,
   Text,
 } from '@react-email/components'
+import { Fragment } from 'react'
 import { ROOTS } from '@/shared/config/roots'
 
 const styles = {
@@ -168,7 +169,14 @@ export default function ProposalEmail({
             ? (
                 <Section style={styles.repNoteSection}>
                   <Text style={styles.repNoteLabel}>A personal note from your rep</Text>
-                  <Text style={styles.repNoteText}>{repMessage}</Text>
+                  <Text style={styles.repNoteText}>
+                    {repMessage.split('\n').map((line, i) => (
+                      <Fragment key={i}>
+                        {i > 0 && <br />}
+                        {line}
+                      </Fragment>
+                    ))}
+                  </Text>
                 </Section>
               )
             : (
