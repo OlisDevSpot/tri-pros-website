@@ -11,6 +11,7 @@ import { paginate } from '@/shared/dal/server/lib/query/output'
 import { buildSearchWhere } from '@/shared/dal/server/lib/query/search'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
+import { leadSourcesTable as leadSources } from '@/shared/db/schema/lead-sources'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
 import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
@@ -165,6 +166,13 @@ export interface CampaignLeadRow {
   campaignName: string | null
   enrolledAt: string | null
   leadSourceId: string | null
+  // ── Enrichment (Q4) ──
+  phone: string | null
+  leadSourceName: string | null
+  dialAttempts: number
+  createdAt: string | null
+  unenrollReason: string | null
+  lastSyncError: string | null
 }
 
 export interface ListLeadsArgs {
@@ -212,10 +220,17 @@ export async function listLeadsPaginated(
             campaignName: voipCampaigns.ctCampaignName,
             enrolledAt: voipCampaignContacts.enrolledAt,
             leadSourceId: customers.leadSourceId,
+            phone: customers.phone,
+            leadSourceName: leadSources.name,
+            dialAttempts: voipCampaignContacts.dialAttempts,
+            createdAt: customers.createdAt,
+            unenrollReason: voipCampaignContacts.unenrollReason,
+            lastSyncError: voipCampaignContacts.lastSyncError,
           })
           .from(voipCampaignContacts)
           .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
           .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+          .leftJoin(leadSources, eq(customers.leadSourceId, leadSources.id))
           .where(baseWhere)
           .orderBy(desc(voipCampaignContacts.enrolledAt))
           .limit(args.limit)
@@ -251,6 +266,12 @@ export async function listLeadsPaginated(
             campaignName: voipCampaigns.ctCampaignName,
             enrolledAt: voipCampaignContacts.enrolledAt,
             leadSourceId: customers.leadSourceId,
+            phone: customers.phone,
+            leadSourceName: leadSources.name,
+            dialAttempts: voipCampaignContacts.dialAttempts,
+            createdAt: customers.createdAt,
+            unenrollReason: voipCampaignContacts.unenrollReason,
+            lastSyncError: voipCampaignContacts.lastSyncError,
           })
           .from(voipCampaignContacts)
           // leftJoin (not inner): a 'removed' row is archival history; keep it
@@ -259,6 +280,7 @@ export async function listLeadsPaginated(
           // rows when a filter is applied, but they remain in the all-source view.
           .leftJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
           .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+          .leftJoin(leadSources, eq(customers.leadSourceId, leadSources.id))
           .where(baseWhere)
           .orderBy(desc(voipCampaignContacts.unenrolledAt))
           .limit(args.limit)
@@ -309,8 +331,15 @@ export async function listLeadsPaginated(
             campaignName: sql<null>`NULL`,
             enrolledAt: sql<null>`NULL`,
             leadSourceId: customers.leadSourceId,
+            phone: customers.phone,
+            leadSourceName: leadSources.name,
+            dialAttempts: sql<number>`0`,
+            createdAt: customers.createdAt,
+            unenrollReason: sql<string | null>`NULL`,
+            lastSyncError: sql<string | null>`NULL`,
           })
           .from(customers)
+          .leftJoin(leadSources, eq(customers.leadSourceId, leadSources.id))
           .where(baseWhere)
           .orderBy(desc(customers.createdAt))
           .limit(args.limit)
@@ -343,8 +372,15 @@ export async function listLeadsPaginated(
           campaignName: sql<null>`NULL`,
           enrolledAt: sql<null>`NULL`,
           leadSourceId: customers.leadSourceId,
+          phone: customers.phone,
+          leadSourceName: leadSources.name,
+          dialAttempts: sql<number>`0`,
+          createdAt: customers.createdAt,
+          unenrollReason: sql<string | null>`NULL`,
+          lastSyncError: sql<string | null>`NULL`,
         })
         .from(customers)
+        .leftJoin(leadSources, eq(customers.leadSourceId, leadSources.id))
         .where(baseWhere)
         .orderBy(desc(customers.dncOptedOutAt))
         .limit(args.limit)
