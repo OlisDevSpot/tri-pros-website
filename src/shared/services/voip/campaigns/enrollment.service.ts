@@ -33,13 +33,17 @@ import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attrib
 import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
 
 import { buildContactAttributes } from './lib/build-contact-attributes'
-import { isCampaignDialable, isDncBlocked, isSourceEnabled, normalizeToE164 } from './lib/eligibility'
+import { isCampaignDialable, isDncBlocked, normalizeToE164 } from './lib/eligibility'
 
 interface EnrollInput {
   customerId: string
   // Explicit target campaign (bulk "enroll all" picker). When omitted, the
-  // source's defaultCampaignId is used (auto-enroll).
+  // source's defaultCampaignId is used (auto-enroll — not yet wired).
   campaignId?: string
+  // Single manual enroll (one named customer) authorizes re-dialing a cold or
+  // stalled non-lead, so it bypasses the is-a-lead gate. Bulk paths leave this
+  // false — they operate on the eligible (leads) pool.
+  allowNonLead?: boolean
 }
 
 interface UnenrollInput {
@@ -87,8 +91,10 @@ function createCampaignEnrollmentService() {
       const leadSource = sourceResult.data
       const policy = leadSource?.voipConfigJSON?.campaigns
 
-      // ── Gate 1: source enabled ───────────────────────────────────────────
-      if (!leadSource || !isSourceEnabled(policy)) {
+      // ── Source must exist (for attribute build), but a source being
+      // "disabled" no longer blocks a manual enroll — that flag is reserved for
+      // the future auto-enroll-on-ingest flow. ──────────────────────────────
+      if (!leadSource) {
         return reject('source_disabled')
       }
 
@@ -106,13 +112,15 @@ function createCampaignEnrollmentService() {
         return reject('no_dialable_campaign')
       }
 
-      // ── Gate 3: pre-meeting lead ─────────────────────────────────────────
-      const isLeadResult = await isCustomerInLeads(input.customerId)
-      if (!isLeadResult.success) {
-        return isLeadResult
-      }
-      if (!isLeadResult.data) {
-        return reject('not_a_lead')
+      // ── Gate: pre-meeting lead (single manual enroll may bypass) ──────────
+      if (!input.allowNonLead) {
+        const isLeadResult = await isCustomerInLeads(input.customerId)
+        if (!isLeadResult.success) {
+          return isLeadResult
+        }
+        if (!isLeadResult.data) {
+          return reject('not_a_lead')
+        }
       }
 
       // ── Gate 4: DNC ──────────────────────────────────────────────────────
