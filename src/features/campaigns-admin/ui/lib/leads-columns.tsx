@@ -2,6 +2,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 
+import { LeadCampaignCell } from '@/features/campaigns-admin/ui/components/leads/lead-campaign-cell'
 import { LeadRowActions } from '@/features/campaigns-admin/ui/components/leads/lead-row-actions'
 import { LeadSelectCell } from '@/features/campaigns-admin/ui/components/leads/lead-select-cell'
 import { LeadSelectHeader } from '@/features/campaigns-admin/ui/components/leads/lead-select-header'
@@ -61,16 +62,34 @@ export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
       id: 'name',
     },
     {
-      cell: ({ row }) => (
-        <span className="text-sm text-muted-foreground">{row.original.campaignName ?? '—'}</span>
-      ),
+      cell: ({ row }) => <span className="text-sm tabular-nums">{row.original.phone ?? '—'}</span>,
+      header: 'Phone',
+      id: 'phone',
+    },
+    {
+      cell: ({ row }) => <LeadCampaignCell row={row.original} />,
       header: 'Campaign',
       id: 'campaign',
+    },
+    {
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.leadSourceName ?? '—'}</span>,
+      header: 'Source',
+      id: 'source',
     },
     {
       cell: ({ row }) => <LeadStatusBadge status={row.original.status} />,
       header: 'Status',
       id: 'status',
+    },
+    {
+      cell: ({ row }) => <span className="text-sm tabular-nums text-muted-foreground">{row.original.dialAttempts}</span>,
+      header: 'Attempts',
+      id: 'attempts',
+    },
+    {
+      cell: ({ row }) => <span className="text-sm tabular-nums text-muted-foreground">{formatEnrolledAt(row.original.createdAt)}</span>,
+      header: 'Age',
+      id: 'createdAt',
     },
     {
       cell: ({ row }) => (
