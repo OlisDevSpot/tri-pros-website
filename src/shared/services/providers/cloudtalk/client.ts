@@ -25,12 +25,12 @@ import {
   ctCampaignListResponseSchema,
 } from './schemas/campaign'
 import {
-  ctActivityAddResponseSchema,
   ctAttributesListResponseSchema,
   ctContactAddResponseSchema,
   ctContactListResponseSchema,
   ctContactShowResponseSchema,
   ctContactTagsResponseSchema,
+  ctNoteAddResponseSchema,
 } from './schemas/contact'
 
 // ---------------------------------------------------------------------------
@@ -388,26 +388,25 @@ function createCloudtalkClient() {
     },
 
     /**
-     * Attach an Activity (note) to a contact — the faithful CT-UI "note" agents
-     * see on the contact card. Used by enrollment to push the lead-detail
-     * summary (trades + kitchen/bath detail). `type` is a required CT enum;
-     * 'other' = a generic note. Fire-and-forget: caller treats failure as
-     * non-fatal. PUT /activity/add/{contactId}.json (swagger-verified).
+     * Attach a Note to a contact — the "Notes" surface agents read on the CT
+     * contact card (distinct from the Activities timeline). Used by enrollment
+     * to push the lead-detail summary (trades + kitchen/bath detail).
+     * Fire-and-forget: caller treats failure as non-fatal.
+     * PUT /notes/add/{contactId}.json (swagger-verified).
+     *
+     * NOTE: CloudTalk flattens whitespace (newlines → spaces) and strips emoji
+     * on store, so callers should pre-flatten multi-line text to an inline
+     * single-line form before passing it here.
      */
-    async addContactActivity(
-      input: { contactId: string, name: string, description?: string },
-    ): Promise<{ activityId: string | null }> {
-      const body = {
-        type: 'other',
-        name: input.name,
-        description: input.description,
-      }
+    async addContactNote(
+      input: { contactId: string, note: string },
+    ): Promise<{ noteId: string | null }> {
       const res = await request<unknown>(
         'PUT',
-        `/activity/add/${encodeURIComponent(input.contactId)}.json`,
-        { body, schema: ctActivityAddResponseSchema },
+        `/notes/add/${encodeURIComponent(input.contactId)}.json`,
+        { body: { note: input.note }, schema: ctNoteAddResponseSchema },
       ) as { data?: { id?: string } }
-      return { activityId: res.data?.id ?? null }
+      return { noteId: res.data?.id ?? null }
     },
 
     /**

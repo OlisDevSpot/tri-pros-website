@@ -147,12 +147,12 @@ export const ctContactTagsResponseSchema = z.object({
   }).optional(),
 })
 
-// PUT /activity/add/{contactId}.json — attach an Activity (note) to a contact.
-// Body requires `name` + `type` (enum: order|task|chat|ticket|other|invoice|
-// proforma|estimate|cancel); `description` is the body text. Response 201:
+// PUT /notes/add/{contactId}.json — attach a Note to a contact. This is the
+// "Notes" surface agents read on the CT contact card (distinct from the
+// Activities timeline). Body requires `note` (the text). Response 201:
 // { status, data: { id } }. Kept lenient (id optional) — the note is
-// fire-and-forget, we don't depend on the returned activity id.
-export const ctActivityAddResponseSchema = z.object({
+// fire-and-forget, we don't depend on the returned note id.
+export const ctNoteAddResponseSchema = z.object({
   status: ctNumberSchema.optional(),
   message: z.string().optional(),
   data: z.object({ id: ctIdSchema.optional() }).optional(),

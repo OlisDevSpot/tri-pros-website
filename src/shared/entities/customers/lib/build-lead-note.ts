@@ -32,8 +32,12 @@ export function buildLeadNote(leadMeta: LeadMeta | null | undefined): string | n
     lines.push(`Trades: ${trades.join(', ')}`)
   }
 
-  if (leadMeta.scheduledFor) {
-    lines.push(`Appointment: ${leadMeta.scheduledFor}`)
+  // Only emit an appointment line for a real datetime. Bina sometimes sends
+  // punctuation-only junk (e.g. " • ") in selfBookingDateTime; a real time
+  // always carries a digit, so that's a clean guard against "Appointment:  • ".
+  const scheduledFor = leadMeta.scheduledFor?.trim()
+  if (scheduledFor && /\d/.test(scheduledFor)) {
+    lines.push(`Appointment: ${scheduledFor}`)
   }
 
   const source = leadMeta.source

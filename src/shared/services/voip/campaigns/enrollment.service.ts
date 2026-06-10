@@ -176,20 +176,21 @@ function createCampaignEnrollmentService() {
         return reject('ct_api_failure')
       }
 
-      // ── Push the lead-detail note as a CT Activity (NON-FATAL) ───────────
-      // Agents see trades + kitchen/bath detail on the contact card. A failed
-      // note must never fail the enrollment — the lead is already enrolled.
+      // ── Push the lead-detail note to the CT contact card (NON-FATAL) ─────
+      // Agents read this in the contact's "Notes" section. A failed note must
+      // never fail the enrollment — the lead is already enrolled. CloudTalk
+      // flattens newlines on store, so we inline the multi-line note with ' · '
+      // separators to keep it readable on the card.
       const leadNote = buildLeadNote(customer.leadMetaJSON)
       if (leadNote) {
         try {
-          await cloudtalkClient.addContactActivity({
+          await cloudtalkClient.addContactNote({
             contactId: cloudtalkContactId,
-            name: 'Lead details',
-            description: leadNote,
+            note: leadNote.replace(/\n/g, ' · '),
           })
         }
         catch (err) {
-          console.error('[enrollment] CloudTalk addContactActivity failed (non-fatal)', {
+          console.error('[enrollment] CloudTalk addContactNote failed (non-fatal)', {
             customerId: input.customerId,
             err: err instanceof Error ? err.message : String(err),
           })
