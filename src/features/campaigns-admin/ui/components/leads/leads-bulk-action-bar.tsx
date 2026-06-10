@@ -3,12 +3,9 @@
 import { AnimatePresence, motion } from 'motion/react'
 
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
+import { BulkEnrollPopover } from '@/features/campaigns-admin/ui/components/leads/bulk-enroll-popover'
 import { Button } from '@/shared/components/ui/button'
 import { useConfirm } from '@/shared/hooks/use-confirm'
-
-// Bulk-enroll-with-campaign-picker is intentionally omitted here — cherry-pick
-// single enroll (per-row) covers the primary use-case; a bulk-enroll popover
-// (enrollSelected + campaign picker) can be added as a follow-up.
 
 interface LeadsBulkActionBarProps {
   onClear: () => void
@@ -43,6 +40,10 @@ export function LeadsBulkActionBar({ onClear, selectedIds }: LeadsBulkActionBarP
               selected
             </span>
             <span className="mx-1 h-4 w-px bg-border" />
+            <BulkEnrollPopover
+              selectedIds={selectedIds}
+              onDone={onClear}
+            />
             <Button
               onClick={() => {
                 removeBulk.mutate({ customerIds: selectedIds }, { onSuccess: settle })
