@@ -23,6 +23,17 @@ export function useCampaignMutations() {
         toast.success(
           `Synced ${res.campaignsSynced} campaign(s), ${res.attributesSynced} attribute(s)`,
         )
+        // Explain any campaign that didn't sync so "2 of 3" isn't a mystery.
+        const noTag = res.skippedCampaigns
+          .filter(c => c.reason === 'no_membership_tag')
+          .map(c => c.name)
+        if (noTag.length > 0) {
+          toast.warning(
+            `Skipped ${noTag.length} campaign(s) with no membership tag: ${noTag.join(', ')}. `
+            + 'Add a contact-list tag to the campaign in CloudTalk, then resync.',
+            { duration: 12000 },
+          )
+        }
       },
       onError: err => toast.error(err.message || 'Resync failed'),
     }),

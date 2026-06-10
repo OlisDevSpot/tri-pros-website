@@ -26,9 +26,23 @@ import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
 
 import { mapAttributeTitleToAppKey } from './lib/attribute-title-map'
 
+// Why a CT campaign didn't make it into voip_campaigns. 'no_membership_tag' is
+// the actionable one — the admin must configure a contact-list tag on the
+// campaign in CloudTalk before our tag-driven enrollment can target it.
+export type SkippedCampaignReason = 'no_membership_tag' | 'upsert_failed'
+
+export interface SkippedCampaign {
+  ctCampaignId: string
+  name: string
+  reason: SkippedCampaignReason
+}
+
 export interface ResyncResult {
   campaignsSynced: number
-  campaignsSkipped: number // no membership tag → not an enrollment target
+  campaignsSkipped: number // = skippedCampaigns.length
+  // Named + reasoned so the admin UI can explain "synced 2 of 3" instead of
+  // silently dropping the third. Surfaced in the resync toast.
+  skippedCampaigns: SkippedCampaign[]
   attributesSynced: number
   attributesSkipped: number // title not one of our 3 app keys
 }
@@ -42,7 +56,7 @@ function createCampaignSyncService() {
      */
     async resyncFromCloudtalk(_ctx: ScopedContext): Promise<DalReturn<ResyncResult>> {
       let campaignsSynced = 0
-      let campaignsSkipped = 0
+      const skippedCampaigns: SkippedCampaign[] = []
       let attributesSynced = 0
       let attributesSkipped = 0
 
@@ -51,8 +65,13 @@ function createCampaignSyncService() {
       for (const row of campaigns) {
         const membershipTag = row.membershipTagName
         if (!membershipTag) {
-          // No tag configured in CT → can't be an enrollment target. Skip.
-          campaignsSkipped++
+          // No tag configured in CT → can't be an enrollment target. Skip, but
+          // record it so the admin sees WHY it didn't sync (and how to fix it).
+          skippedCampaigns.push({
+            ctCampaignId: row.campaign.id,
+            name: row.campaign.name,
+            reason: 'no_membership_tag',
+          })
           console.warn('[campaign-sync] campaign has no membership tag — skipped', {
             ctCampaignId: row.campaign.id,
             ctCampaignName: row.campaign.name,
@@ -69,7 +88,11 @@ function createCampaignSyncService() {
           campaignsSynced++
         }
         else {
-          campaignsSkipped++
+          skippedCampaigns.push({
+            ctCampaignId: row.campaign.id,
+            name: row.campaign.name,
+            reason: 'upsert_failed',
+          })
           console.error('[campaign-sync] campaign upsert failed', {
             ctCampaignId: row.campaign.id,
             error: result.error,
@@ -104,7 +127,8 @@ function createCampaignSyncService() {
 
       return dalSuccess({
         campaignsSynced,
-        campaignsSkipped,
+        campaignsSkipped: skippedCampaigns.length,
+        skippedCampaigns,
         attributesSynced,
         attributesSkipped,
       })
