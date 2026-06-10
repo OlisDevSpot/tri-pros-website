@@ -86,19 +86,20 @@ export const voipCampaignsRouter = createTRPCRouter({
 
   /**
    * Unified paginated leads list for the Campaigns Control Center Leads tab.
-   * Returns one status bucket at a time (eligible | enrolled | removed | dnc).
-   * Filters: status (required), sourceSlug, campaignId. Free-text search on name/phone.
+   * 'all' (the default when the status filter is cleared) returns every relevant
+   * customer with a derived status; the other four return one bucket each.
+   * Filters: status, sourceSlug, campaignId. Free-text search on name/phone.
    * see docs/plans/voip-campaigns/EPIC.md + docs/superpowers/specs/2026-06-04-campaigns-control-center-design.md
    */
   listLeads: superAdminProcedure
     .input(paginatedQueryInput({
-      status: z.enum(['eligible', 'enrolled', 'removed', 'dnc']),
+      status: z.enum(['all', 'eligible', 'enrolled', 'removed', 'dnc']),
       sourceSlug: z.string().optional(),
       campaignId: z.string().uuid().optional(),
     }))
     .query(async ({ input }) => {
       return dalToTrpc(await listLeadsPaginated({
-        status: input.filters?.status ?? 'eligible',
+        status: input.filters?.status ?? 'all',
         sourceSlug: input.filters?.sourceSlug,
         campaignId: input.filters?.campaignId,
         search: input.search,
