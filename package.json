@@ -35,6 +35,7 @@
     "backfill:trades:dev": "tsx scripts/backfill-interested-trades-raw.ts",
     "seed:bina-contacts": "NODE_ENV=production tsx scripts/seed-bina-contacts.ts",
     "seed:bina-contacts:dev": "tsx scripts/seed-bina-contacts.ts",
+    "verify:ct-activity": "tsx scripts/verify-ct-activity.ts",
     "rebuild:gcal": "NODE_ENV=production NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "rebuild:gcal:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/rebuild-gcal-descriptions.ts",
     "gcal:cron:setup": "NODE_ENV=production NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/setup-gcal-cron.ts",

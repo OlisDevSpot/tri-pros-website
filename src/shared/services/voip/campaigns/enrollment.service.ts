@@ -24,6 +24,7 @@ import type { CloudtalkContactAttributeAppKey } from '@/shared/services/provider
 
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { getCustomer, isCustomerInLeads } from '@/shared/entities/customers/dal/server/queries'
+import { buildLeadNote } from '@/shared/entities/customers/lib/build-lead-note'
 import { getLeadSourceById } from '@/shared/entities/lead-sources/dal/server/queries'
 import { markUnenrolled, repointCampaign, upsertEnrolled } from '@/shared/entities/voip-campaign-contacts/dal/server/mutations'
 import { findActiveEnrollment } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
@@ -173,6 +174,26 @@ function createCampaignEnrollmentService() {
           err: err instanceof Error ? err.message : String(err),
         })
         return reject('ct_api_failure')
+      }
+
+      // ── Push the lead-detail note as a CT Activity (NON-FATAL) ───────────
+      // Agents see trades + kitchen/bath detail on the contact card. A failed
+      // note must never fail the enrollment — the lead is already enrolled.
+      const leadNote = buildLeadNote(customer.leadMetaJSON)
+      if (leadNote) {
+        try {
+          await cloudtalkClient.addContactActivity({
+            contactId: cloudtalkContactId,
+            name: 'Lead details',
+            description: leadNote,
+          })
+        }
+        catch (err) {
+          console.error('[enrollment] CloudTalk addContactActivity failed (non-fatal)', {
+            customerId: input.customerId,
+            err: err instanceof Error ? err.message : String(err),
+          })
+        }
       }
 
       // ── Persist participation (DAL implements the write) ─────────────────

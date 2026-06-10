@@ -25,6 +25,7 @@ import {
   ctCampaignListResponseSchema,
 } from './schemas/campaign'
 import {
+  ctActivityAddResponseSchema,
   ctAttributesListResponseSchema,
   ctContactAddResponseSchema,
   ctContactListResponseSchema,
@@ -384,6 +385,29 @@ function createCloudtalkClient() {
         `/contacts/edit/${encodeURIComponent(input.contactId)}.json`,
         { body },
       )
+    },
+
+    /**
+     * Attach an Activity (note) to a contact — the faithful CT-UI "note" agents
+     * see on the contact card. Used by enrollment to push the lead-detail
+     * summary (trades + kitchen/bath detail). `type` is a required CT enum;
+     * 'other' = a generic note. Fire-and-forget: caller treats failure as
+     * non-fatal. PUT /activity/add/{contactId}.json (swagger-verified).
+     */
+    async addContactActivity(
+      input: { contactId: string, name: string, description?: string },
+    ): Promise<{ activityId: string | null }> {
+      const body = {
+        type: 'other',
+        name: input.name,
+        description: input.description,
+      }
+      const res = await request<unknown>(
+        'PUT',
+        `/activity/add/${encodeURIComponent(input.contactId)}.json`,
+        { body, schema: ctActivityAddResponseSchema },
+      ) as { data?: { id?: string } }
+      return { activityId: res.data?.id ?? null }
     },
 
     /**

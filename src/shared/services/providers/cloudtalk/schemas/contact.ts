@@ -147,6 +147,17 @@ export const ctContactTagsResponseSchema = z.object({
   }).optional(),
 })
 
+// PUT /activity/add/{contactId}.json — attach an Activity (note) to a contact.
+// Body requires `name` + `type` (enum: order|task|chat|ticket|other|invoice|
+// proforma|estimate|cancel); `description` is the body text. Response 201:
+// { status, data: { id } }. Kept lenient (id optional) — the note is
+// fire-and-forget, we don't depend on the returned activity id.
+export const ctActivityAddResponseSchema = z.object({
+  status: ctNumberSchema.optional(),
+  message: z.string().optional(),
+  data: z.object({ id: ctIdSchema.optional() }).optional(),
+})
+
 // GET /contacts/attributes.json — `responseData` is a BARE ARRAY of attribute
 // definitions, each wrapped in a `ContactAttribute` key (verified live
 // 2026-06-04 — NOT a `{ data: [...] }` envelope like the other /index endpoints).
