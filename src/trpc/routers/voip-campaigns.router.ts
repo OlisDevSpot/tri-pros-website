@@ -1,3 +1,4 @@
+import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
@@ -7,15 +8,26 @@ import { setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/serve
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { countActiveEnrollmentsBySource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { voipCampaignCrud } from '@/shared/entities/voip-campaigns/dal/server/crud'
-import { listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
+import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
 import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
 import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/enroll-source-batch'
 import { campaignSyncService } from '@/shared/services/voip/campaigns/campaign-sync.service'
 import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
+import { isCampaignDialable } from '@/shared/services/voip/campaigns/lib/eligibility'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 
 import { agentProcedure, createTRPCRouter, superAdminProcedure } from '../init'
 import { dalToTrpc } from '../lib/dal-to-trpc'
+
+async function assertCampaignDialable(campaignId: string) {
+  const result = await getVoipCampaignById(campaignId)
+  if (!result.success || !isCampaignDialable(result.data)) {
+    throw new TRPCError({
+      code: 'PRECONDITION_FAILED',
+      message: 'That campaign is not active in CloudTalk — resync or pick another.',
+    })
+  }
+}
 
 // voip-campaigns admin/ops router (ring 1). Resync + campaign binding + bulk
 // enroll-all + the three-reason unenroll (decision #18). Service verbs
@@ -125,6 +137,7 @@ export const voipCampaignsRouter = createTRPCRouter({
       return dalToTrpc(await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, {
         customerId: input.customerId,
         campaignId: input.campaignId,
+        allowNonLead: true,
       }))
     }),
 
@@ -132,6 +145,7 @@ export const voipCampaignsRouter = createTRPCRouter({
   enrollAll: superAdminProcedure
     .input(z.object({ sourceSlug: z.string(), campaignId: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
+      await assertCampaignDialable(input.campaignId)
       void enrollSourceBatchJob.dispatch({
         sourceSlug: input.sourceSlug,
         campaignId: input.campaignId,
@@ -192,6 +206,7 @@ export const voipCampaignsRouter = createTRPCRouter({
   enrollSelected: superAdminProcedure
     .input(z.object({ customerIds: z.array(z.string().uuid()).min(1), campaignId: z.string().uuid() }))
     .mutation(async ({ input }) => {
+      await assertCampaignDialable(input.campaignId)
       let enrolled = 0
       for (const customerId of input.customerIds) {
         const r = await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, { customerId, campaignId: input.campaignId })
