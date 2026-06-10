@@ -27,14 +27,16 @@ export function isSourceEnabled(policy: VoipCampaignsPolicy | undefined): boolea
 }
 
 /**
- * Gate 2 — the target campaign is dialable: bound to a source (source_slug set)
- * AND CT-active. An unbound or paused campaign is not an enrollment target.
+ * Gate — the target campaign is dialable: it is CT-active. Campaigns are pools,
+ * NOT owned by a lead source (the catch-all belongs to none), so source binding
+ * is intentionally NOT checked. A campaign always has a membership tag (the sync
+ * skips tagless ones), so CT-active is the only runtime requirement.
  */
 export function isCampaignDialable(campaign: VoipCampaign | null): boolean {
   if (!campaign) {
     return false
   }
-  return campaign.sourceSlug !== null && campaign.ctStatus === 'active'
+  return campaign.ctStatus === 'active'
 }
 
 /** Gate 4 — DNC. A customer with `dncOptedOutAt` set is never enrollable. */
