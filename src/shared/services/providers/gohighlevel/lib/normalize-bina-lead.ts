@@ -2,6 +2,8 @@ import type { BinaContactPayload } from '../types'
 
 import type { LeadMeta } from '@/shared/entities/customers/schemas'
 
+import { buildLeadNote } from '@/shared/entities/customers/lib/build-lead-note'
+
 // Pure translator: provider-native Bina payload → app-domain { core, leadMeta }.
 // This is the ONLY place that knows Bina/GHL field names. No I/O. See
 // service-architecture.md#providers-have-no-domain-types-in-signatures — domain
@@ -36,7 +38,18 @@ export interface NormalizedBinaLead {
 export function normalizeBinaLead(payload: BinaContactPayload): NormalizedBinaLead {
   const a = payload.additionalData
 
-  const interestedTradesRaw = ghlString(a.trades)?.split(',').map(s => s.trim()).filter(Boolean) ?? []
+  // Energy campaign carries a comma-separated `trades` list. The kitchen/bath
+  // campaign leaves `trades` empty and fills kitchen*/bathroom* instead — so
+  // derive a trade from those fields' presence. De-duped, derived appended last.
+  const baseTrades = ghlString(a.trades)?.split(',').map(s => s.trim()).filter(Boolean) ?? []
+  const derivedTrades: string[] = []
+  if (ghlString(a.kitchenSize) || ghlString(a.kitchenScope) || ghlString(a.kitchenAge)) {
+    derivedTrades.push('Kitchen Renovation')
+  }
+  if (ghlString(a.bathroomSize) || ghlString(a.bathroomScope) || ghlString(a.bathroomAge)) {
+    derivedTrades.push('Bathroom Renovation')
+  }
+  const interestedTradesRaw = [...new Set([...baseTrades, ...derivedTrades])]
 
   const core: IntakeCore = {
     address: ghlString(payload.address),
@@ -65,35 +78,5 @@ export function normalizeBinaLead(payload: BinaContactPayload): NormalizedBinaLe
     },
   }
 
-  return { core, leadMeta, note: formatBinaNote(payload) }
-}
-
-/** Human-readable summary of the master payload, stored as a customer note. */
-export function formatBinaNote(payload: BinaContactPayload): string | null {
-  const a = payload.additionalData
-  const lines: string[] = ['📋 Lead from Bina (GoHighLevel)']
-
-  const push = (label: string, value: string | null) => {
-    if (value) {
-      lines.push(`${label}: ${value}`)
-    }
-  }
-
-  push('Budget Solution', ghlString(a.budgetSolution))
-  const rebate = ghlString(a.rebateAmount)
-  if (rebate) {
-    lines.push(`Rebate Amount: $${rebate}`)
-  }
-  push('Trades', ghlString(a.trades))
-  push('Self-booking', ghlString(a.selfBookingDateTime))
-  push(
-    'Bathroom (age/size/scope)',
-    [ghlString(a.bathroomAge), ghlString(a.bathroomSize), ghlString(a.bathroomScope)].filter(Boolean).join(' · ') || null,
-  )
-  push(
-    'Kitchen (age/size/scope)',
-    [ghlString(a.kitchenAge), ghlString(a.kitchenSize), ghlString(a.kitchenScope)].filter(Boolean).join(' · ') || null,
-  )
-
-  return lines.length > 1 ? lines.join('\n') : null
+  return { core, leadMeta, note: buildLeadNote(leadMeta) }
 }

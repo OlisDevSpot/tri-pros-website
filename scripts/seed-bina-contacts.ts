@@ -31,7 +31,7 @@ import type { BinaContactPayload } from '@/shared/services/providers/gohighlevel
 import type { LeadMeta } from '@/shared/entities/customers/schemas'
 
 import { readFileSync } from 'node:fs'
-import { eq } from 'drizzle-orm'
+import { eq, like, or } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
@@ -220,6 +220,15 @@ async function main() {
   }
   console.log(`[seed:bina] loaded ${existing.length} customers (${byPhone.size} distinct phones)`)
 
+  // Customers that already carry a lead note — dedupe so re-runs add none.
+  // Matches the current "📋 Lead details" header and the legacy "📋 Lead from Bina".
+  const notedRows = await db
+    .select({ customerId: customerNotes.customerId })
+    .from(customerNotes)
+    .where(or(like(customerNotes.content, '📋 Lead details%'), like(customerNotes.content, '📋 Lead from Bina%')))
+  const customersWithNote = new Set(notedRows.map(r => r.customerId))
+  console.log(`[seed:bina] ${customersWithNote.size} customers already have a lead note`)
+
   const records = toRecords(readFileSync(fileArg, 'utf8'))
   console.log(`[seed:bina] parsed ${records.length} CSV rows`)
 
@@ -227,6 +236,8 @@ async function main() {
   let updated = 0
   let noop = 0
   let inserted = 0
+  let tradesAdded = 0
+  let notesAdded = 0
   let skippedIncomplete = 0
   let skippedAmbiguous = 0
   let parseErrors = 0
@@ -259,8 +270,21 @@ async function main() {
       matched++
       const c = matches[0]
       const patch: { address?: string, email?: string, leadMetaJSON?: LeadMeta } = {}
+      let tradesAddedThis = false
+      const newTrades = leadMeta.interestedTradesRaw ?? []
       if (c.leadMetaJSON == null) {
         patch.leadMetaJSON = leadMeta
+        tradesAddedThis = newTrades.length > 0
+      }
+      else if ((c.leadMetaJSON.interestedTradesRaw ?? []).length === 0 && newTrades.length > 0) {
+        // Existing meta but no trades (kitchen/bath leads) — graft on the derived
+        // trades, preserving everything else. Set-if-empty: never overwrite trades.
+        patch.leadMetaJSON = {
+          ...c.leadMetaJSON,
+          interestedTradesRaw: newTrades,
+          source: c.leadMetaJSON.source ?? leadMeta.source,
+        }
+        tradesAddedThis = true
       }
       if (!c.address && core.address) {
         patch.address = core.address
@@ -268,18 +292,30 @@ async function main() {
       if (!c.email && core.email) {
         patch.email = core.email
       }
-      const fields = Object.keys(patch)
-      if (fields.length === 0) {
+      const needsNote = note != null && !customersWithNote.has(c.id)
+      const changes = [...Object.keys(patch), ...(needsNote ? ['note'] : [])]
+      if (changes.length === 0) {
         noop++
         console.log(`  noop ${core.name} ${tail}`)
         continue
       }
-      console.log(`  ${COMMIT ? 'updated' : 'would-update'} ${core.name} ${tail} → ${fields.join(', ')}`)
+      console.log(`  ${COMMIT ? 'updated' : 'would-update'} ${core.name} ${tail} → ${changes.join(', ')}`)
       if (COMMIT) {
-        // updatedAt auto-bumps via schema-helper $onUpdate — never set it.
-        await db.update(customers).set(patch).where(eq(customers.id, c.id))
+        if (Object.keys(patch).length > 0) {
+          // updatedAt auto-bumps via schema-helper $onUpdate — never set it.
+          await db.update(customers).set(patch).where(eq(customers.id, c.id))
+        }
+        if (needsNote) {
+          await db.insert(customerNotes).values({ customerId: c.id, content: note, authorId: null })
+        }
       }
       updated++
+      if (tradesAddedThis) {
+        tradesAdded++
+      }
+      if (needsNote) {
+        notesAdded++
+      }
       continue
     }
 
@@ -315,6 +351,12 @@ async function main() {
       }
     }
     inserted++
+    if (note != null) {
+      notesAdded++
+    }
+    if ((leadMeta.interestedTradesRaw ?? []).length > 0) {
+      tradesAdded++
+    }
   }
 
   console.log('[seed:bina] summary', {
@@ -323,6 +365,8 @@ async function main() {
     [COMMIT ? 'updated' : 'wouldUpdate']: updated,
     noop,
     [COMMIT ? 'inserted' : 'wouldInsert']: inserted,
+    [COMMIT ? 'tradesAdded' : 'wouldAddTrades']: tradesAdded,
+    [COMMIT ? 'notesAdded' : 'wouldAddNotes']: notesAdded,
     skippedIncomplete,
     skippedAmbiguous,
     parseErrors,
