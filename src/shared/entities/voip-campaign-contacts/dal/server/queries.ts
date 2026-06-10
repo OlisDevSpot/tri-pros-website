@@ -176,7 +176,7 @@ export interface CampaignLeadRow {
 }
 
 export interface ListLeadsArgs {
-  status: LeadStatus
+  status: LeadStatus | 'all'
   sourceSlug?: string
   campaignId?: string
   search?: string
@@ -201,6 +201,90 @@ export async function listLeadsPaginated(
 ): Promise<DalReturn<{ rows: CampaignLeadRow[], total: number }>> {
   return dalDbOperation(async () => {
     const searchWhere = buildSearchWhere(args.search, [customers.name, customers.phone])
+
+    if (args.status === 'all') {
+      // Customer-anchored derived status. The LATERAL grabs the single most
+      // relevant participation row per customer: an active row (unenrolled_at
+      // NULL) sorts first, else the most recent. Derived status priority:
+      // enrolled > dnc > removed > eligible. Customers matching none (e.g. a
+      // graduated lead with no active/removed row, not DNC, no longer a lead)
+      // are excluded by the WHERE.
+      //
+      // NOTE: the `customers` table is NOT aliased here. `derivedPipelineWhere`
+      // emits hard-coded `"customers"."…"` column refs; aliasing the table
+      // (`FROM customers c`) hides the table name in Postgres and those refs
+      // fail to resolve. Keeping `FROM customers` (unqualified) lets both the
+      // helper's refs and the local `customers.`-qualified refs resolve.
+      const sourceFilter = args.sourceSlug
+        ? sql`AND ls.slug = ${args.sourceSlug}`
+        : sql``
+      const campaignFilter = args.campaignId
+        ? sql`AND part.voip_campaign_id = ${args.campaignId}`
+        : sql``
+      const searchFilter = args.search
+        ? sql`AND (customers.name ILIKE ${`%${args.search}%`} OR customers.phone ILIKE ${`%${args.search}%`})`
+        : sql``
+
+      const eligibleLeads = derivedPipelineWhere(['leads'])
+
+      const fromAndWhere = sql`
+        FROM customers
+        LEFT JOIN lead_sources ls ON ls.id = customers.lead_source_id
+        LEFT JOIN LATERAL (
+          SELECT vcc.voip_campaign_id, vcc.enrolled_at, vcc.unenrolled_at,
+                 vcc.unenroll_reason, vcc.dial_attempts, vcc.last_sync_error,
+                 TRUE AS matched
+          FROM voip_campaign_contacts vcc
+          WHERE vcc.customer_id = customers.id
+          ORDER BY (vcc.unenrolled_at IS NULL) DESC, vcc.enrolled_at DESC NULLS LAST
+          LIMIT 1
+        ) part ON TRUE
+        LEFT JOIN voip_campaigns vc ON vc.id = part.voip_campaign_id
+        WHERE (
+          (part.matched AND part.unenrolled_at IS NULL)
+          OR customers.dnc_opted_out_at IS NOT NULL
+          OR (part.matched AND part.unenrolled_at IS NOT NULL AND part.unenroll_reason = 'removed')
+          OR (${eligibleLeads} AND customers.phone IS NOT NULL AND customers.lead_source_id IS NOT NULL)
+        )
+        ${sourceFilter}
+        ${campaignFilter}
+        ${searchFilter}
+      `
+
+      return paginate({
+        query: async () => {
+          const result = await db.execute(sql`
+            SELECT
+              customers.id AS "customerId",
+              customers.name AS name,
+              CASE
+                WHEN part.matched AND part.unenrolled_at IS NULL THEN 'enrolled'
+                WHEN customers.dnc_opted_out_at IS NOT NULL THEN 'dnc'
+                WHEN part.matched AND part.unenroll_reason = 'removed' THEN 'removed'
+                ELSE 'eligible'
+              END AS status,
+              part.voip_campaign_id AS "campaignId",
+              vc.ct_campaign_name AS "campaignName",
+              part.enrolled_at AS "enrolledAt",
+              customers.lead_source_id AS "leadSourceId",
+              customers.phone AS phone,
+              ls.name AS "leadSourceName",
+              COALESCE(part.dial_attempts, 0) AS "dialAttempts",
+              customers.created_at AS "createdAt",
+              part.unenroll_reason AS "unenrollReason",
+              part.last_sync_error AS "lastSyncError"
+            ${fromAndWhere}
+            ORDER BY customers.created_at DESC
+            LIMIT ${args.limit} OFFSET ${args.offset}
+          `)
+          return result.rows as unknown as CampaignLeadRow[]
+        },
+        count: async () => {
+          const result = await db.execute(sql`SELECT COUNT(*)::int AS n ${fromAndWhere}`)
+          return (result.rows[0] as { n: number } | undefined)?.n ?? 0
+        },
+      })
+    }
 
     if (args.status === 'enrolled') {
       const baseWhere = and(
