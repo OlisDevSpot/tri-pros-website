@@ -22,8 +22,11 @@ export const ctCampaignSchema = z.object({
   // 'active' | 'inactive' — `inactive` is the pause state.
   status: z.string().optional(),
   has_schedule_date: z.boolean().optional(),
-  schedule_start_date: z.string().optional(),
-  schedule_start_time: z.string().optional(),
+  // CT returns these as `null` (not omitted) when `has_schedule_date` is false,
+  // so they must be nullish — a bare `.optional()` rejects the null and fails
+  // the whole list parse. Verified live 2026-06-09.
+  schedule_start_date: z.string().nullish(),
+  schedule_start_time: z.string().nullish(),
   // Cadence config — we mirror these into voip_campaigns table during Resync.
   answer_wait_time: ctNumberSchema.optional(),
   after_call_dialing_auto: z.boolean().optional(),
