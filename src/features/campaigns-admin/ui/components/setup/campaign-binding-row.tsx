@@ -2,14 +2,12 @@
 
 import type { VoipCampaign } from '@/shared/db/schema/voip-campaigns'
 
+import { useState } from 'react'
+
 import { Badge } from '@/shared/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Switch } from '@/shared/components/ui/switch'
 import { TableCell, TableRow } from '@/shared/components/ui/table'
-
-// Sentinel for the "unbound" option — shadcn SelectItem cannot use an empty
-// string value, so we map this token to `null` at the boundary.
-const UNBOUND_VALUE = '__unbound__'
 
 interface SourceOption {
   sourceSlug: string
@@ -19,23 +17,28 @@ interface SourceOption {
 interface CampaignBindingRowProps {
   campaign: VoipCampaign
   sources: SourceOption[]
-  /** Is this campaign currently the default for its bound source? */
-  isDefault: boolean
+  /**
+   * Map of sourceSlug → its default campaignId.
+   * Used to derive whether this campaign is the default for the selected source.
+   */
+  defaultBySlug: Map<string, string | null>
   busy: boolean
-  onBind: (campaignId: string, sourceSlug: string | null) => void
   onToggleDefault: (sourceSlug: string, campaignId: string, makeDefault: boolean) => void
 }
 
 export function CampaignBindingRow({
   campaign,
   sources,
-  isDefault,
+  defaultBySlug,
   busy,
-  onBind,
   onToggleDefault,
 }: CampaignBindingRowProps) {
   const isActive = campaign.ctStatus === 'active'
-  const boundSlug = campaign.sourceSlug
+  // Local: which source the admin wants to set/clear the default for.
+  const [selectedSource, setSelectedSource] = useState<string | null>(null)
+
+  // This campaign is the default for the selected source iff the map says so.
+  const isDefault = selectedSource != null && defaultBySlug.get(selectedSource) === campaign.id
 
   return (
     <TableRow>
@@ -48,15 +51,14 @@ export function CampaignBindingRow({
       <TableCell className="font-mono text-xs text-muted-foreground">{campaign.ctMembershipTag}</TableCell>
       <TableCell>
         <Select
-          value={boundSlug ?? UNBOUND_VALUE}
+          value={selectedSource ?? ''}
           disabled={busy}
-          onValueChange={value => onBind(campaign.id, value === UNBOUND_VALUE ? null : value)}
+          onValueChange={value => setSelectedSource(value || null)}
         >
           <SelectTrigger className="h-8 w-44 text-xs">
-            <SelectValue placeholder="Unbound" />
+            <SelectValue placeholder="Pick source…" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={UNBOUND_VALUE}>Unbound</SelectItem>
             {sources.map(source => (
               <SelectItem key={source.sourceSlug} value={source.sourceSlug}>
                 {source.name}
@@ -69,12 +71,13 @@ export function CampaignBindingRow({
         <div className="flex items-center gap-2">
           <Switch
             checked={isDefault}
-            disabled={busy || !boundSlug}
-            onCheckedChange={checked => boundSlug && onToggleDefault(boundSlug, campaign.id, checked)}
-            aria-label="Set as default campaign for this source"
+            disabled={busy || selectedSource == null}
+            onCheckedChange={checked =>
+              selectedSource && onToggleDefault(selectedSource, campaign.id, checked)}
+            aria-label="Set as default campaign for the selected source"
           />
           <span className="text-xs text-muted-foreground">
-            {boundSlug ? (isDefault ? 'Default' : 'Set default') : '—'}
+            {selectedSource == null ? '—' : (isDefault ? 'Default' : 'Set default')}
           </span>
         </div>
       </TableCell>

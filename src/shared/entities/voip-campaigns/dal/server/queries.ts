@@ -32,14 +32,3 @@ export async function getVoipCampaignById(id: string): Promise<DalReturn<VoipCam
     return row ?? null
   })
 }
-
-/** Campaigns bound to a given lead source. Used by the per-source enroll-all panel. */
-export async function listVoipCampaignsBySource(sourceSlug: string): Promise<DalReturn<VoipCampaign[]>> {
-  return dalDbOperation(async () => {
-    return db
-      .select()
-      .from(voipCampaigns)
-      .where(eq(voipCampaigns.sourceSlug, sourceSlug))
-      .orderBy(asc(voipCampaigns.ctCampaignName))
-  })
-}

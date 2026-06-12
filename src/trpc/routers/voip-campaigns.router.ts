@@ -6,7 +6,6 @@ import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
-import { voipCampaignCrud } from '@/shared/entities/voip-campaigns/dal/server/crud'
 import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
 import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
 import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/enroll-source-batch'
@@ -118,16 +117,6 @@ export const voipCampaignsRouter = createTRPCRouter({
   resyncFromCloudtalk: superAdminProcedure.mutation(async ({ ctx }) => {
     return dalToTrpc(await campaignSyncService.resyncFromCloudtalk(ctx))
   }),
-
-  /** Bind a synced campaign to a lead source (decision #8). */
-  bindCampaignToSource: superAdminProcedure
-    .input(z.object({ campaignId: z.string().uuid(), sourceSlug: z.string().nullable() }))
-    .mutation(async ({ ctx, input }) => {
-      return dalToTrpc(await voipCampaignCrud.update(ctx, {
-        id: input.campaignId,
-        data: { sourceSlug: input.sourceSlug },
-      }))
-    }),
 
   /** Set (or clear) a source's default campaign for auto-enroll (decision #10). */
   setDefaultCampaign: superAdminProcedure

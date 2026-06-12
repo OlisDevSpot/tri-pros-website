@@ -39,16 +39,6 @@ export function useCampaignMutations() {
     }),
   )
 
-  const bindCampaignToSource = useMutation(
-    trpc.voipCampaignsRouter.bindCampaignToSource.mutationOptions({
-      onSuccess: () => {
-        invalidateVoipCampaigns()
-        toast.success('Campaign binding updated')
-      },
-      onError: err => toast.error(err.message || 'Failed to bind campaign'),
-    }),
-  )
-
   const setDefaultCampaign = useMutation(
     trpc.voipCampaignsRouter.setDefaultCampaign.mutationOptions({
       onSuccess: () => {
@@ -178,7 +168,6 @@ export function useCampaignMutations() {
 
   return {
     resync,
-    bindCampaignToSource,
     setDefaultCampaign,
     enrollAll,
     unenrollAll,

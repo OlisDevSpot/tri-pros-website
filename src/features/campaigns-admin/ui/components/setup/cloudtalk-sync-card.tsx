@@ -13,12 +13,12 @@ import { useTRPC } from '@/trpc/helpers'
 
 /**
  * Global CloudTalk identity panel: a Resync button + the synced-campaigns
- * binding table (bind each campaign to a lead source, mark a source's default).
+ * table with a per-source "set as default" control for each campaign.
  * Lives at the top of the Campaigns Control Center.
  */
 export function CloudtalkSyncCard() {
   const trpc = useTRPC()
-  const { resync, bindCampaignToSource, setDefaultCampaign } = useCampaignMutations()
+  const { resync, setDefaultCampaign } = useCampaignMutations()
 
   const campaignsQuery = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
   const summariesQuery = useQuery(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
@@ -29,15 +29,15 @@ export function CloudtalkSyncCard() {
   // sourceSlug → its default campaign id (to render the per-row default switch).
   const defaultBySlug = new Map(summaries.map(s => [s.sourceSlug, s.defaultCampaignId]))
 
-  const busy = resync.isPending || bindCampaignToSource.isPending || setDefaultCampaign.isPending
+  const busy = resync.isPending || setDefaultCampaign.isPending
 
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="flex flex-col gap-1">
-          <CardTitle className="text-base">CloudTalk Sync &amp; Binding</CardTitle>
+          <CardTitle className="text-base">CloudTalk Sync &amp; Campaigns</CardTitle>
           <CardDescription>
-            Pull campaigns from CloudTalk, then bind each to a lead source and pick its default.
+            Pull campaigns from CloudTalk, then pick a source to set each campaign as its default.
           </CardDescription>
         </div>
         <Button
@@ -68,7 +68,7 @@ export function CloudtalkSyncCard() {
                         <TableHead>Campaign</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Membership tag</TableHead>
-                        <TableHead>Lead source</TableHead>
+                        <TableHead>Source (for default)</TableHead>
                         <TableHead>Default</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -78,13 +78,8 @@ export function CloudtalkSyncCard() {
                           key={campaign.id}
                           campaign={campaign}
                           sources={sourceOptions}
-                          isDefault={
-                            campaign.sourceSlug != null
-                            && defaultBySlug.get(campaign.sourceSlug) === campaign.id
-                          }
+                          defaultBySlug={defaultBySlug}
                           busy={busy}
-                          onBind={(campaignId, sourceSlug) =>
-                            bindCampaignToSource.mutate({ campaignId, sourceSlug })}
                           onToggleDefault={(sourceSlug, campaignId, makeDefault) =>
                             setDefaultCampaign.mutate({ sourceSlug, campaignId: makeDefault ? campaignId : null })}
                         />
