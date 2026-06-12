@@ -1,6 +1,7 @@
 'use client'
 
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
 
 import { LeadDrawerActions } from '@/features/campaigns-admin/ui/components/leads/lead-drawer-actions'
 import { LeadDrawerIdentity } from '@/features/campaigns-admin/ui/components/leads/lead-drawer-identity'
@@ -9,12 +10,13 @@ import { Button } from '@/shared/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/components/ui/sheet'
 
 interface LeadDrawerProps {
+  campaigns: VoipCampaign[]
   onOpenChange: (open: boolean) => void
   onOpenProfile: (customerId: string) => void
   row: CampaignLeadRow | null
 }
 
-export function LeadDrawer({ onOpenChange, onOpenProfile, row }: LeadDrawerProps) {
+export function LeadDrawer({ campaigns, onOpenChange, onOpenProfile, row }: LeadDrawerProps) {
   return (
     <Sheet onOpenChange={onOpenChange} open={row !== null}>
       <SheetContent className="flex w-full flex-col gap-5 sm:max-w-md" side="right">
@@ -44,7 +46,7 @@ export function LeadDrawer({ onOpenChange, onOpenProfile, row }: LeadDrawerProps
             */}
 
             <div className="mt-auto border-t border-border pt-4">
-              <LeadDrawerActions row={row} />
+              <LeadDrawerActions campaigns={campaigns} row={row} />
             </div>
           </>
         )}

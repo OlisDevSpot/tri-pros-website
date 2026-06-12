@@ -1,29 +1,21 @@
 'use client'
 
 import type { LeadTableRow } from '@/features/campaigns-admin/ui/lib/leads-columns'
-
-import { useQuery } from '@tanstack/react-query'
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
 
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useTRPC } from '@/trpc/helpers'
+import { CampaignSelect } from '@/features/campaigns-admin/ui/components/shared/campaign-select'
 
-const REMOVE_VALUE = '__remove__'
+interface LeadCampaignCellProps {
+  campaigns: VoipCampaign[]
+  row: LeadTableRow
+}
 
-export function LeadCampaignCell({ row }: { row: LeadTableRow }) {
-  const trpc = useTRPC()
+export function LeadCampaignCell({ campaigns, row }: LeadCampaignCellProps) {
   const { enroll, switchCampaign, removeFromCampaign } = useCampaignMutations()
-  const { data } = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
-  const campaigns = data ?? []
-
   const isEnrolled = row.status === 'enrolled'
-  const current = row.campaignId ?? undefined
 
   function handleChange(next: string) {
-    if (next === REMOVE_VALUE) {
-      removeFromCampaign.mutate({ customerId: row.customerId })
-      return
-    }
     if (isEnrolled) {
       switchCampaign.mutate({ customerId: row.customerId, toCampaignId: next })
       return
@@ -32,18 +24,13 @@ export function LeadCampaignCell({ row }: { row: LeadTableRow }) {
   }
 
   return (
-    <Select value={current} onValueChange={handleChange}>
-      <SelectTrigger className="h-8 w-44 text-sm">
-        <SelectValue placeholder="—" />
-      </SelectTrigger>
-      <SelectContent>
-        {campaigns.map(c => (
-          <SelectItem key={c.id} value={c.id}>{c.ctCampaignName}</SelectItem>
-        ))}
-        {isEnrolled && (
-          <SelectItem value={REMOVE_VALUE}>Remove from campaign</SelectItem>
-        )}
-      </SelectContent>
-    </Select>
+    <CampaignSelect
+      campaigns={campaigns}
+      onChange={handleChange}
+      onRemove={isEnrolled ? () => removeFromCampaign.mutate({ customerId: row.customerId }) : undefined}
+      placeholder="—"
+      triggerClassName="h-8 w-44 text-sm"
+      value={row.campaignId ?? undefined}
+    />
   )
 }

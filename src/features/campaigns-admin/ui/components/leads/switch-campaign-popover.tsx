@@ -1,26 +1,24 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
+
 import { useState } from 'react'
 
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
+import { CampaignSelect } from '@/features/campaigns-admin/ui/components/shared/campaign-select'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useTRPC } from '@/trpc/helpers'
 
 interface SwitchCampaignPopoverProps {
+  campaigns: VoipCampaign[]
   currentCampaignId: string | null
   customerId: string
 }
 
-export function SwitchCampaignPopover({ currentCampaignId, customerId }: SwitchCampaignPopoverProps) {
-  const trpc = useTRPC()
+export function SwitchCampaignPopover({ campaigns, currentCampaignId, customerId }: SwitchCampaignPopoverProps) {
   const { switchCampaign } = useCampaignMutations()
   const [open, setOpen] = useState(false)
   const [toCampaignId, setToCampaignId] = useState<string | null>(null)
-  const { data } = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
-  const campaigns = (data ?? []).filter(c => c.id !== currentCampaignId)
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
@@ -28,14 +26,13 @@ export function SwitchCampaignPopover({ currentCampaignId, customerId }: SwitchC
         <Button size="sm" variant="outline">Switch campaign</Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="flex w-72 flex-col gap-3">
-        <Select onValueChange={setToCampaignId} value={toCampaignId ?? undefined}>
-          <SelectTrigger><SelectValue placeholder="Move to…" /></SelectTrigger>
-          <SelectContent>
-            {campaigns.map(c => (
-              <SelectItem key={c.id} value={c.id}>{c.ctCampaignName}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <CampaignSelect
+          campaigns={campaigns}
+          excludeId={currentCampaignId}
+          onChange={setToCampaignId}
+          placeholder="Move to…"
+          value={toCampaignId ?? undefined}
+        />
         <Button
           disabled={!toCampaignId || switchCampaign.isPending}
           onClick={() => {

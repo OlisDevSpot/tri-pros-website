@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table'
 
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
 
 import { formatDistanceToNow } from 'date-fns'
 
@@ -13,6 +14,7 @@ import { Button } from '@/shared/components/ui/button'
 import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 export interface LeadsTableMeta {
+  campaigns: VoipCampaign[]
   onEnroll: (customerId: string) => void
   onOpenProfile: (customerId: string) => void
   pageRowIds: string[]
@@ -77,7 +79,10 @@ export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
       id: 'phone',
     },
     {
-      cell: ({ row }) => <LeadCampaignCell row={row.original} />,
+      cell: ({ row, table }) => {
+        const meta = table.options.meta as LeadsTableMeta
+        return <LeadCampaignCell campaigns={meta.campaigns} row={row.original} />
+      },
       header: 'Campaign',
       id: 'campaign',
     },

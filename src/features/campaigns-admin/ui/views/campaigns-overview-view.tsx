@@ -14,7 +14,9 @@ export function CampaignsOverviewView() {
   const { data, isLoading } = useQuery(
     trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions(),
   )
+  const { data: campaignsData } = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
   const summaries = data ?? []
+  const campaigns = campaignsData ?? []
 
   const totals = summaries.reduce(
     (acc, s) => ({
@@ -60,7 +62,7 @@ export function CampaignsOverviewView() {
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" role="list">
             {actionable.map(s => (
               <li key={s.sourceSlug}>
-                <SourceRollupCard summary={s} />
+                <SourceRollupCard campaigns={campaigns} summary={s} />
               </li>
             ))}
           </ul>

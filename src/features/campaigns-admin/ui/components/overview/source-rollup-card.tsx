@@ -1,6 +1,7 @@
 'use client'
 
 import type { SourceSummary } from '@/features/campaigns-admin/lib/partition-source-summaries'
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
 
 import { useQueryState } from 'nuqs'
 
@@ -10,7 +11,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Card } from '@/shared/components/ui/card'
 import { cn } from '@/shared/lib/utils'
 
-export function SourceRollupCard({ summary }: { summary: SourceSummary }) {
+export function SourceRollupCard({ campaigns, summary }: { campaigns: VoipCampaign[], summary: SourceSummary }) {
   const [, setTab] = useQueryState('tab', campaignTabParser)
 
   const stats = [
@@ -70,6 +71,7 @@ export function SourceRollupCard({ summary }: { summary: SourceSummary }) {
 
       <div className="mt-auto pt-1">
         <EnrollAllPopover
+          campaigns={campaigns}
           defaultCampaignId={summary.defaultCampaignId}
           eligibleCount={summary.eligibleCount}
           sourceSlug={summary.sourceSlug}

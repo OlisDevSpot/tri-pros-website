@@ -1,5 +1,7 @@
 'use client'
 
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
+
 import { AnimatePresence, motion } from 'motion/react'
 
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
@@ -8,11 +10,12 @@ import { Button } from '@/shared/components/ui/button'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
 interface LeadsBulkActionBarProps {
+  campaigns: VoipCampaign[]
   onClear: () => void
   selectedIds: string[]
 }
 
-export function LeadsBulkActionBar({ onClear, selectedIds }: LeadsBulkActionBarProps) {
+export function LeadsBulkActionBar({ campaigns, onClear, selectedIds }: LeadsBulkActionBarProps) {
   const { disqualifyBulk, markDnc, removeBulk } = useCampaignMutations()
   const [ConfirmDialog, confirm] = useConfirm({
     message: 'This affects every selected lead and stops/curates their CloudTalk calls.',
@@ -41,6 +44,7 @@ export function LeadsBulkActionBar({ onClear, selectedIds }: LeadsBulkActionBarP
             </span>
             <span className="mx-1 h-4 w-px bg-border" />
             <BulkEnrollPopover
+              campaigns={campaigns}
               selectedIds={selectedIds}
               onDone={onClear}
             />

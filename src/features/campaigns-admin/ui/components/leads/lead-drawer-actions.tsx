@@ -1,13 +1,14 @@
 'use client'
 
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
 
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
 import { SwitchCampaignPopover } from '@/features/campaigns-admin/ui/components/leads/switch-campaign-popover'
 import { Button } from '@/shared/components/ui/button'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
-export function LeadDrawerActions({ row }: { row: CampaignLeadRow }) {
+export function LeadDrawerActions({ campaigns, row }: { campaigns: VoipCampaign[], row: CampaignLeadRow }) {
   const { disqualify, enroll, markDnc, removeDnc, removeFromCampaign } = useCampaignMutations()
   const [ConfirmDialog, confirm] = useConfirm({ message: 'Apply this action to the lead?', title: 'Confirm' })
   const id = row.customerId
@@ -23,7 +24,7 @@ export function LeadDrawerActions({ row }: { row: CampaignLeadRow }) {
           <Button onClick={() => enroll.mutate({ customerId: id })} size="sm">Re-enroll</Button>
         )}
         {row.status === 'enrolled' && (
-          <SwitchCampaignPopover currentCampaignId={row.campaignId} customerId={id} />
+          <SwitchCampaignPopover campaigns={campaigns} currentCampaignId={row.campaignId} customerId={id} />
         )}
         {row.status === 'enrolled' && (
           <Button onClick={() => removeFromCampaign.mutate({ customerId: id })} size="sm" variant="outline">Remove</Button>

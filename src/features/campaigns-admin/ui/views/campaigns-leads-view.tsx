@@ -34,11 +34,12 @@ export function CampaignsLeadsView() {
 
   const summariesQuery = useQuery(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
   const campaignsQuery = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
+  const campaigns = useMemo(() => campaignsQuery.data ?? [], [campaignsQuery.data])
 
   const filterConfig = useMemo(
     () =>
       buildLeadsFilterConfig({
-        campaigns: (campaignsQuery.data ?? []).map(c => ({
+        campaigns: campaigns.map(c => ({
           label: c.ctCampaignName,
           value: c.id,
         })),
@@ -47,7 +48,7 @@ export function CampaignsLeadsView() {
           value: s.sourceSlug,
         })),
       }),
-    [campaignsQuery.data, summariesQuery.data],
+    [campaigns, summariesQuery.data],
   )
 
   // `listLeads.queryOptions` narrows `filters` to its literal enum shape, but
@@ -111,6 +112,7 @@ export function CampaignsLeadsView() {
 
   const meta = useMemo<LeadsTableMeta>(
     () => ({
+      campaigns,
       onEnroll: (customerId: string) => enroll.mutate({ customerId }),
       onOpenProfile: handleOpenProfile,
       pageRowIds,
@@ -118,7 +120,7 @@ export function CampaignsLeadsView() {
       toggleSelect,
       toggleSelectAll,
     }),
-    [enroll, handleOpenProfile, pageRowIds, selectedIds, toggleSelect, toggleSelectAll],
+    [campaigns, enroll, handleOpenProfile, pageRowIds, selectedIds, toggleSelect, toggleSelectAll],
   )
 
   return (
@@ -138,11 +140,13 @@ export function CampaignsLeadsView() {
       </div>
 
       <LeadsBulkActionBar
+        campaigns={campaigns}
         onClear={() => setSelectedIds(new Set())}
         selectedIds={[...selectedIds]}
       />
 
       <LeadDrawer
+        campaigns={campaigns}
         onOpenChange={(open) => {
           if (!open) {
             setDrawerRow(null)

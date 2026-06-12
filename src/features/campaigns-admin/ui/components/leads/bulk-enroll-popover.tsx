@@ -1,24 +1,22 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import type { VoipCampaign } from '@/shared/entities/voip-campaigns/types'
+
 import { useState } from 'react'
 
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
+import { CampaignSelect } from '@/features/campaigns-admin/ui/components/shared/campaign-select'
 import { Button } from '@/shared/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useTRPC } from '@/trpc/helpers'
 
 interface BulkEnrollPopoverProps {
+  campaigns: VoipCampaign[]
   onDone: () => void
   selectedIds: string[]
 }
 
-export function BulkEnrollPopover({ onDone, selectedIds }: BulkEnrollPopoverProps) {
-  const trpc = useTRPC()
+export function BulkEnrollPopover({ campaigns, onDone, selectedIds }: BulkEnrollPopoverProps) {
   const { enrollSelected } = useCampaignMutations()
-  const { data } = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
-  const campaigns = data ?? []
   const [campaignId, setCampaignId] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
 
@@ -40,24 +38,11 @@ export function BulkEnrollPopover({ onDone, selectedIds }: BulkEnrollPopoverProp
         className="flex w-72 flex-col gap-3"
       >
         <p className="text-sm font-medium">Enroll into campaign</p>
-        <Select
+        <CampaignSelect
+          campaigns={campaigns}
+          onChange={setCampaignId}
           value={campaignId ?? undefined}
-          onValueChange={setCampaignId}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select campaign…" />
-          </SelectTrigger>
-          <SelectContent>
-            {campaigns.map(c => (
-              <SelectItem
-                key={c.id}
-                value={c.id}
-              >
-                {c.ctCampaignName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
         <Button
           disabled={!campaignId || enrollSelected.isPending}
           size="sm"
