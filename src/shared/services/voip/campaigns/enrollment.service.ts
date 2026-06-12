@@ -157,6 +157,7 @@ function createCampaignEnrollmentService() {
         interestedTradesRaw: customer.leadMetaJSON?.interestedTradesRaw,
         name: customer.name,
         city: customer.city,
+        zip: customer.zip,
         attributeIdByKey,
       })
 

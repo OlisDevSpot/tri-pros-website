@@ -26,9 +26,10 @@ interface BuildContactAttributesInput {
   leadSourceSlug: string
   interestedTradesRaw?: string[]
   // Built-in fields — not written as custom attributes, but folded into the
-  // hash so a name/city change still invalidates the delta-skip.
+  // hash so a name/city/zip change still invalidates the delta-skip.
   name: string
   city: string
+  zip: string
   attributeIdByKey: Partial<Record<CloudtalkContactAttributeAppKey, string>>
 }
 
@@ -57,7 +58,7 @@ export function buildContactAttributes(
     }
   }
 
-  const hashSource = JSON.stringify({ name: input.name, city: input.city, values: valueByKey })
+  const hashSource = JSON.stringify({ name: input.name, city: input.city, zip: input.zip, values: valueByKey })
   const attributeHash = createHash('sha1').update(hashSource).digest('hex')
 
   return { attributes, attributeHash }
