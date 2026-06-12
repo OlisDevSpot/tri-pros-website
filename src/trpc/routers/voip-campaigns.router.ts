@@ -8,6 +8,9 @@ import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queri
 import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
 import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
+import { bulkDncJob } from '@/shared/services/providers/upstash/jobs/bulk-dnc'
+import { bulkEnrollJob } from '@/shared/services/providers/upstash/jobs/bulk-enroll'
+import { bulkUnenrollJob } from '@/shared/services/providers/upstash/jobs/bulk-unenroll'
 import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/enroll-source-batch'
 import { campaignSyncService } from '@/shared/services/voip/campaigns/campaign-sync.service'
 import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enrollment.service'
@@ -167,50 +170,46 @@ export const voipCampaignsRouter = createTRPCRouter({
       }))
     }),
 
-  /** Bulk disqualify selected leads (super-admin). */
+  /**
+   * Bulk disqualify selected leads (super-admin). Dispatches a background job —
+   * each enroll/unenroll is ~3-4 CloudTalk calls, so a large selection would
+   * blow the request timeout if run inline. Returns immediately; the leads list
+   * refetches on a short delay (see use-campaign-mutations).
+   */
   disqualifyBulk: superAdminProcedure
-    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1) }))
-    .mutation(async ({ input }) => {
-      let unenrolled = 0
-      for (const customerId of input.customerIds) {
-        const result = await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
-          customerId,
-          reason: 'disqualified',
-        })
-        if (result.success && result.data.unenrolled) {
-          unenrolled++
-        }
-      }
-      return { requested: input.customerIds.length, unenrolled }
+    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000) }))
+    .mutation(async ({ ctx, input }) => {
+      void bulkUnenrollJob.dispatch({
+        customerIds: input.customerIds,
+        reason: 'disqualified',
+        requestedByUserId: ctx.session.user.id,
+      })
+      return { queued: input.customerIds.length }
     }),
 
   /** Enroll an explicit set of customers into one campaign (cherry-pick bulk). */
   enrollSelected: superAdminProcedure
-    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1), campaignId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000), campaignId: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
       await assertCampaignDialable(input.campaignId)
-      let enrolled = 0
-      for (const customerId of input.customerIds) {
-        const r = await campaignEnrollmentService.enroll(SYSTEM_CONTEXT, { customerId, campaignId: input.campaignId })
-        if (r.success) {
-          enrolled++
-        }
-      }
-      return { requested: input.customerIds.length, enrolled }
+      void bulkEnrollJob.dispatch({
+        customerIds: input.customerIds,
+        campaignId: input.campaignId,
+        requestedByUserId: ctx.session.user.id,
+      })
+      return { queued: input.customerIds.length }
     }),
 
   /** Bulk neutral remove (reason 'removed' — re-enrollable). */
   removeBulk: superAdminProcedure
-    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1) }))
-    .mutation(async ({ input }) => {
-      let removed = 0
-      for (const customerId of input.customerIds) {
-        const r = await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, { customerId, reason: 'removed' })
-        if (r.success && r.data.unenrolled) {
-          removed++
-        }
-      }
-      return { requested: input.customerIds.length, removed }
+    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000) }))
+    .mutation(async ({ ctx, input }) => {
+      void bulkUnenrollJob.dispatch({
+        customerIds: input.customerIds,
+        reason: 'removed',
+        requestedByUserId: ctx.session.user.id,
+      })
+      return { queued: input.customerIds.length }
     }),
 
   /** Move a customer to a different campaign (drawer/bulk). */
@@ -220,15 +219,15 @@ export const voipCampaignsRouter = createTRPCRouter({
       return dalToTrpc(await campaignEnrollmentService.switchCampaign(ctx, input))
     }),
 
-  /** Mark customer(s) DNC (reason 'admin') + unenroll. Single or bulk. */
+  /** Mark customer(s) DNC (reason 'admin') + unenroll. Dispatches a background job. */
   markDnc: superAdminProcedure
-    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1) }))
+    .input(z.object({ customerIds: z.array(z.string().uuid()).min(1).max(1000) }))
     .mutation(async ({ ctx, input }) => {
-      for (const customerId of input.customerIds) {
-        await complianceService.addToDnc({ customerId, reason: 'admin', addedByUserId: ctx.session.user.id })
-        await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, { customerId, reason: 'opted_out' })
-      }
-      return { count: input.customerIds.length }
+      void bulkDncJob.dispatch({
+        customerIds: input.customerIds,
+        requestedByUserId: ctx.session.user.id,
+      })
+      return { queued: input.customerIds.length }
     }),
 
   /** Clear DNC (admin opt-back-in). */
@@ -239,21 +238,22 @@ export const voipCampaignsRouter = createTRPCRouter({
       return { ok: true }
     }),
 
-  /** Per-source "Unenroll all" (admin). Reason = disqualified (manual stop). */
+  /**
+   * Per-source "Unenroll all" (admin). Reason = disqualified (manual stop).
+   * Resolves the active set, then dispatches the same background unenroll job
+   * the bulk action bar uses.
+   */
   unenrollAll: superAdminProcedure
     .input(z.object({ sourceSlug: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const ids = dalToTrpc(await listActiveCustomerIdsBySource(input.sourceSlug))
-      let unenrolled = 0
-      for (const customerId of ids) {
-        const result = await campaignEnrollmentService.unenroll(SYSTEM_CONTEXT, {
-          customerId,
+      if (ids.length > 0) {
+        void bulkUnenrollJob.dispatch({
+          customerIds: ids,
           reason: 'disqualified',
+          requestedByUserId: ctx.session.user.id,
         })
-        if (result.success && result.data.unenrolled) {
-          unenrolled++
-        }
       }
-      return { active: ids.length, unenrolled }
+      return { queued: ids.length }
     }),
 })

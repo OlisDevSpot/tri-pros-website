@@ -1,5 +1,8 @@
 import type { Job, JobMap } from '@/shared/services/providers/upstash/types'
 import { Receiver } from '@upstash/qstash'
+import { bulkDncJob } from '@/shared/services/providers/upstash/jobs/bulk-dnc'
+import { bulkEnrollJob } from '@/shared/services/providers/upstash/jobs/bulk-enroll'
+import { bulkUnenrollJob } from '@/shared/services/providers/upstash/jobs/bulk-unenroll'
 import { createQbRecordsJob } from '@/shared/services/providers/upstash/jobs/create-qb-records'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/enroll-source-batch'
@@ -41,6 +44,9 @@ const jobs: Job[] = [
   propagateCustomerChangeJob,
   notifyMeetingTimeChangedJob,
   enrollSourceBatchJob,
+  bulkEnrollJob,
+  bulkUnenrollJob,
+  bulkDncJob,
   graduateFromCampaignJob,
   notifyLastInteractingAgentJob,
 ]

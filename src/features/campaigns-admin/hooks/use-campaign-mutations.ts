@@ -16,6 +16,16 @@ export function useCampaignMutations() {
   const trpc = useTRPC()
   const { invalidateVoipCampaigns } = useInvalidation()
 
+  // Bulk ops dispatch background QStash jobs — the leads list won't reflect
+  // results synchronously, and there's no realtime kernel yet. Invalidate on a
+  // short delay (+ a retry) so a slightly-later refetch picks up progress as the
+  // job runs. No optimistic status: the per-lead gate chain skips some leads, so
+  // optimism would lie.
+  const scheduleBulkRefetch = () => {
+    setTimeout(() => invalidateVoipCampaigns(), 2000)
+    setTimeout(() => invalidateVoipCampaigns(), 5000)
+  }
+
   const resync = useMutation(
     trpc.voipCampaignsRouter.resyncFromCloudtalk.mutationOptions({
       onSuccess: (res) => {
@@ -65,8 +75,12 @@ export function useCampaignMutations() {
   const unenrollAll = useMutation(
     trpc.voipCampaignsRouter.unenrollAll.mutationOptions({
       onSuccess: (res) => {
-        invalidateVoipCampaigns()
-        toast.success(`Unenrolled ${res.unenrolled} of ${res.active} lead(s)`)
+        if (res.queued === 0) {
+          toast.info('No active leads to unenroll')
+          return
+        }
+        toast.success(`Unenrolling ${res.queued} lead(s) in the background…`)
+        scheduleBulkRefetch()
       },
       onError: err => toast.error(err.message || 'Failed to unenroll'),
     }),
@@ -85,8 +99,8 @@ export function useCampaignMutations() {
   const disqualifyBulk = useMutation(
     trpc.voipCampaignsRouter.disqualifyBulk.mutationOptions({
       onSuccess: (res) => {
-        invalidateVoipCampaigns()
-        toast.success(`Disqualified ${res.unenrolled} of ${res.requested} lead(s)`)
+        toast.success(`Disqualifying ${res.queued} lead(s) in the background…`)
+        scheduleBulkRefetch()
       },
       onError: err => toast.error(err.message || 'Failed to disqualify leads'),
     }),
@@ -115,12 +129,10 @@ export function useCampaignMutations() {
   const enrollSelected = useMutation(
     trpc.voipCampaignsRouter.enrollSelected.mutationOptions({
       onSuccess: (res) => {
-        invalidateVoipCampaigns()
-        toast.success(`Enrolled ${res.enrolled} of ${res.requested} lead(s)`, {
-          description: res.enrolled < res.requested
-            ? 'Some were skipped — check eligibility (already enrolled / DNC / no phone).'
-            : undefined,
+        toast.success(`Enrolling ${res.queued} lead(s) in the background…`, {
+          description: 'Some may be skipped — already enrolled / DNC / no phone.',
         })
+        scheduleBulkRefetch()
       },
       onError: err => toast.error(err.message || 'Failed to enroll selected leads'),
     }),
@@ -129,8 +141,8 @@ export function useCampaignMutations() {
   const removeBulk = useMutation(
     trpc.voipCampaignsRouter.removeBulk.mutationOptions({
       onSuccess: (res) => {
-        invalidateVoipCampaigns()
-        toast.success(`Removed ${res.removed} of ${res.requested} lead(s) — re-enrollable`)
+        toast.success(`Removing ${res.queued} lead(s) in the background — re-enrollable`)
+        scheduleBulkRefetch()
       },
       onError: err => toast.error(err.message || 'Failed to remove leads'),
     }),
@@ -149,8 +161,8 @@ export function useCampaignMutations() {
   const markDnc = useMutation(
     trpc.voipCampaignsRouter.markDnc.mutationOptions({
       onSuccess: (res) => {
-        invalidateVoipCampaigns()
-        toast.success(`Marked ${res.count} lead(s) Do-Not-Call — unenrolled`)
+        toast.success(`Marking ${res.queued} lead(s) Do-Not-Call in the background…`)
+        scheduleBulkRefetch()
       },
       onError: err => toast.error(err.message || 'Failed to mark DNC'),
     }),
