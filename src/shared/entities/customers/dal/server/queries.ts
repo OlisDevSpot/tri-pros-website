@@ -3,7 +3,7 @@ import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Customer } from '@/shared/db/schema/customers'
 import type { Contact } from '@/shared/services/providers/notion/lib/contacts/schema'
 
-import { and, count, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
+import { and, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
@@ -103,60 +103,6 @@ export async function listEnrollableLeadsBySource(
         isNotNull(customers.phone),
         derivedPipelineWhere(['leads']),
       ))
-  })
-}
-
-/**
- * Count enrollment-eligible leads grouped by lead source id (leads pipeline,
- * not DNC'd, has phone). Powers the Campaigns Control Center "eligible" badge.
- * Does NOT subtract already-enrolled customers — that "active enrollment" gate
- * is per-customer and lives in the enroll op; this is the upper-bound pool.
- */
-export async function countEligibleLeadsBySource(): Promise<DalReturn<Record<string, number>>> {
-  return dalDbOperation(async () => {
-    const rows = await db
-      .select({ leadSourceId: customers.leadSourceId, n: count() })
-      .from(customers)
-      .where(and(
-        isNotNull(customers.leadSourceId),
-        isNull(customers.dncOptedOutAt),
-        isNotNull(customers.phone),
-        derivedPipelineWhere(['leads']),
-      ))
-      .groupBy(customers.leadSourceId)
-
-    const out: Record<string, number> = {}
-    for (const row of rows) {
-      if (row.leadSourceId) {
-        out[row.leadSourceId] = row.n
-      }
-    }
-    return out
-  })
-}
-
-/**
- * Count DNC'd customers grouped by lead source id. Drives the Overview DNC
- * stat in the Campaigns Control Center.
- */
-export async function countDncBySource(): Promise<DalReturn<Record<string, number>>> {
-  return dalDbOperation(async () => {
-    const rows = await db
-      .select({ leadSourceId: customers.leadSourceId, n: count() })
-      .from(customers)
-      .where(and(
-        isNotNull(customers.leadSourceId),
-        isNotNull(customers.dncOptedOutAt),
-      ))
-      .groupBy(customers.leadSourceId)
-
-    const out: Record<string, number> = {}
-    for (const row of rows) {
-      if (row.leadSourceId) {
-        out[row.leadSourceId] = row.n
-      }
-    }
-    return out
   })
 }
 

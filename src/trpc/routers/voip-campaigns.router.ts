@@ -3,10 +3,9 @@ import z from 'zod'
 
 import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { countDncBySource, countEligibleLeadsBySource } from '@/shared/entities/customers/dal/server/queries'
 import { setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
-import { countActiveEnrollmentsBySource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { voipCampaignCrud } from '@/shared/entities/voip-campaigns/dal/server/crud'
 import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
 import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
@@ -50,30 +49,37 @@ export const voipCampaignsRouter = createTRPCRouter({
     return dalToTrpc(await listVoipContactAttributes())
   }),
 
-  /** Per-source active enrolled counts → badges. */
+  /**
+   * Per-source active enrolled counts → badges. Keyed by lead_source_id (uuid).
+   * Derived from the consolidated countLeadsByStatusPerSource so the number is
+   * consistent with the other rollup badges (eligible already subtracts enrolled).
+   */
   getEnrollmentCounts: agentProcedure.query(async () => {
-    return dalToTrpc(await countActiveEnrollmentsBySource())
+    const byId = dalToTrpc(await countLeadsByStatusPerSource())
+    const out: Record<string, number> = {}
+    for (const [id, c] of Object.entries(byId)) {
+      out[id] = c.enrolled
+    }
+    return out
   }),
 
   /**
    * Per-source summary rows for the control-center left rail: source identity +
-   * its default campaign + eligible (upper-bound pool) + active-enrolled counts.
-   * Composes three DAL reads (router-as-glue).
+   * its default campaign + eligible (canonical pool, enrolled excluded) + enrolled
+   * + DNC counts. Single DAL pass via countLeadsByStatusPerSource.
    */
   getSourceCampaignSummaries: agentProcedure.query(async () => {
     const sources = dalToTrpc(await listLeadSources())
-    const dncById = dalToTrpc(await countDncBySource())
-    const eligibleById = dalToTrpc(await countEligibleLeadsBySource())
-    const enrolledBySlug = dalToTrpc(await countActiveEnrollmentsBySource())
+    const counts = dalToTrpc(await countLeadsByStatusPerSource())
     return sources.map(source => ({
       sourceSlug: source.slug,
       name: source.name,
       isActive: source.isActive,
       defaultCampaignId: source.voipConfigJSON?.campaigns?.defaultCampaignId ?? null,
-      dncCount: dncById[source.id] ?? 0,
-      eligibleCount: eligibleById[source.id] ?? 0,
-      enrolledCount: enrolledBySlug[source.slug] ?? 0,
-      needsBinding: (eligibleById[source.id] ?? 0) > 0 && !source.voipConfigJSON?.campaigns?.defaultCampaignId,
+      dncCount: counts[source.id]?.dnc ?? 0,
+      eligibleCount: counts[source.id]?.eligible ?? 0,
+      enrolledCount: counts[source.id]?.enrolled ?? 0,
+      needsBinding: (counts[source.id]?.eligible ?? 0) > 0 && !source.voipConfigJSON?.campaigns?.defaultCampaignId,
     }))
   }),
 

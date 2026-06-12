@@ -4,7 +4,7 @@
 
 import type { DalReturn } from '@/shared/dal/server/types'
 
-import { and, count, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { paginate } from '@/shared/dal/server/lib/query/output'
@@ -125,28 +125,34 @@ export async function listEnrolledLeadsBySource(
   })
 }
 
-/**
- * Count active enrollments grouped by the bound campaign's lead source.
- * Drives the per-source enrolled-count badges in the ring-1 admin UI.
- * Only counts rows whose campaign is bound to a source (source_slug NOT NULL).
- */
-export async function countActiveEnrollmentsBySource(): Promise<DalReturn<Record<string, number>>> {
-  return dalDbOperation(async () => {
-    const rows = await db
-      .select({
-        sourceSlug: voipCampaigns.sourceSlug,
-        n: count(),
-      })
-      .from(voipCampaignContacts)
-      .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
-      .where(isNull(voipCampaignContacts.unenrolledAt))
-      .groupBy(voipCampaigns.sourceSlug)
+export interface LeadStatusCounts {
+  eligible: number
+  enrolled: number
+  removed: number
+  dnc: number
+}
 
-    const out: Record<string, number> = {}
+/**
+ * Per-source, per-status counts in ONE pass — the single source of truth for
+ * every rollup badge. Keyed by lead_source_id (uuid). Uses the canonical status
+ * CASE so the four numbers always partition that source's campaign-leads.
+ */
+export async function countLeadsByStatusPerSource(): Promise<DalReturn<Record<string, LeadStatusCounts>>> {
+  return dalDbOperation(async () => {
+    const rows = (await db.execute(sql`
+      SELECT customers.lead_source_id AS "leadSourceId",
+             ${leadStatusCaseSql()} AS status,
+             COUNT(*)::int AS n
+      FROM customers
+      WHERE customers.lead_source_id IS NOT NULL AND ${isCampaignLeadSql()}
+      GROUP BY customers.lead_source_id, status
+    `)).rows as { leadSourceId: string, status: keyof LeadStatusCounts, n: number }[]
+
+    const out: Record<string, LeadStatusCounts> = {}
     for (const row of rows) {
-      if (row.sourceSlug) {
-        out[row.sourceSlug] = row.n
-      }
+      const bucket = out[row.leadSourceId] ?? { eligible: 0, enrolled: 0, removed: 0, dnc: 0 }
+      bucket[row.status] = row.n
+      out[row.leadSourceId] = bucket
     }
     return out
   })
