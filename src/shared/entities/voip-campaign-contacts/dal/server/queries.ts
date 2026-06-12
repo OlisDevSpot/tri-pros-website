@@ -4,12 +4,11 @@
 
 import type { DalReturn } from '@/shared/dal/server/types'
 
-import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { db } from '@/shared/db'
-import { customers } from '@/shared/db/schema/customers'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
 import { isCampaignLeadSql, isDncSql, isEligibleSql, isEnrolledSql, isRemovedSql, leadStatusCaseSql } from '@/shared/entities/voip-campaign-contacts/lib/lead-campaign-status'
@@ -72,21 +71,20 @@ export async function findCustomerIdByCtContactId(
 }
 
 /**
- * Active-enrollment customer ids for a given lead source (via the bound
- * campaign). Drives the per-source "Unenroll all" admin action.
+ * Active-enrollment customer ids for a given lead source (anchored to the
+ * customer's lead source, not the campaign's sourceSlug). Drives the per-source
+ * "Unenroll all" admin action.
  */
 export async function listActiveCustomerIdsBySource(
   sourceSlug: string,
 ): Promise<DalReturn<string[]>> {
   return dalDbOperation(async () => {
-    const rows = await db
-      .select({ customerId: voipCampaignContacts.customerId })
-      .from(voipCampaignContacts)
-      .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
-      .where(and(
-        isNull(voipCampaignContacts.unenrolledAt),
-        eq(voipCampaigns.sourceSlug, sourceSlug),
-      ))
+    const rows = (await db.execute(sql`
+      SELECT customers.id AS "customerId"
+      FROM customers
+      JOIN lead_sources ls ON ls.id = customers.lead_source_id
+      WHERE ls.slug = ${sourceSlug} AND ${isEnrolledSql()}
+    `)).rows as { customerId: string }[]
     return rows.map(r => r.customerId)
   })
 }
@@ -99,29 +97,29 @@ export interface EnrolledLeadRow {
 }
 
 /**
- * Active enrolled leads for a lead source (via the bound campaign), joined to
- * the customer name + campaign name. Powers the Campaigns Control Center
- * enrolled-leads list. `name` is non-PII (no phone) — safe to surface.
+ * Active enrolled leads for a lead source (anchored to the customer's lead
+ * source, not the campaign's sourceSlug), joined to the customer name +
+ * campaign name. Powers the Campaigns Control Center enrolled-leads list.
+ * `name` is non-PII (no phone) — safe to surface.
  */
 export async function listEnrolledLeadsBySource(
   sourceSlug: string,
 ): Promise<DalReturn<EnrolledLeadRow[]>> {
   return dalDbOperation(async () => {
-    return db
-      .select({
-        customerId: voipCampaignContacts.customerId,
-        name: customers.name,
-        enrolledAt: voipCampaignContacts.enrolledAt,
-        campaignName: voipCampaigns.ctCampaignName,
-      })
-      .from(voipCampaignContacts)
-      .innerJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
-      .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
-      .where(and(
-        isNull(voipCampaignContacts.unenrolledAt),
-        eq(voipCampaigns.sourceSlug, sourceSlug),
-      ))
-      .orderBy(desc(voipCampaignContacts.enrolledAt))
+    const rows = (await db.execute(sql`
+      SELECT
+        customers.id AS "customerId",
+        customers.name AS name,
+        vcc.enrolled_at AS "enrolledAt",
+        vc.ct_campaign_name AS "campaignName"
+      FROM customers
+      JOIN lead_sources ls ON ls.id = customers.lead_source_id
+      JOIN voip_campaign_contacts vcc ON vcc.customer_id = customers.id AND vcc.unenrolled_at IS NULL
+      LEFT JOIN voip_campaigns vc ON vc.id = vcc.voip_campaign_id
+      WHERE ls.slug = ${sourceSlug} AND ${isEnrolledSql()}
+      ORDER BY vcc.enrolled_at DESC
+    `)).rows as unknown as EnrolledLeadRow[]
+    return rows
   })
 }
 
