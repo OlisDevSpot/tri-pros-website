@@ -168,6 +168,7 @@ function createCampaignEnrollmentService() {
           phoneE164,
           name: customer.name,
           city: customer.city,
+          zip: customer.zip,
           attributes,
         })
         cloudtalkContactId = upserted.contactId

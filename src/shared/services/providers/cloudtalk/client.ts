@@ -197,6 +197,7 @@ interface UpsertContactInput {
   phoneE164: string
   name: string
   city?: string
+  zip?: string
   attributes?: { attributeId: string, value: string }[]
 }
 
@@ -204,6 +205,7 @@ interface EditContactInput {
   contactId: string
   name: string
   city?: string
+  zip?: string
   attributes?: { attributeId: string, value: string }[]
 }
 
@@ -281,6 +283,7 @@ function createCloudtalkClient() {
           contactId: existing.contactId,
           name: input.name,
           city: input.city,
+          zip: input.zip,
           attributes: input.attributes,
         })
         return existing
@@ -289,6 +292,7 @@ function createCloudtalkClient() {
       const body = {
         name: input.name,
         city: input.city,
+        zip: input.zip,
         ContactNumber: [{ public_number: input.phoneE164 }],
         ContactAttribute: (input.attributes ?? []).map(a => ({
           attribute_id: a.attributeId,
@@ -356,6 +360,7 @@ function createCloudtalkClient() {
       const body = {
         name: input.name,
         city: input.city,
+        zip: input.zip,
         ContactAttribute: (input.attributes ?? []).map(a => ({
           attribute_id: a.attributeId,
           value: a.value,
