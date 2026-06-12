@@ -91,8 +91,8 @@ export const voipCampaignsRouter = createTRPCRouter({
       sourceSlug: z.string().optional(),
       campaignId: z.string().uuid().optional(),
     }))
-    .query(async ({ input }) => {
-      return dalToTrpc(await listLeadsPaginated({
+    .query(async ({ ctx, input }) => {
+      return dalToTrpc(await listLeadsPaginated(ctx, {
         status: input.filters?.status ?? 'all',
         sourceSlug: input.filters?.sourceSlug,
         campaignId: input.filters?.campaignId,

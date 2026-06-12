@@ -2,7 +2,7 @@
 // see ../../DOCS.md for business rules + the membership state model.
 // All DAL conventions: see docs/codebase-conventions/dal-conventions.md
 
-import type { DalReturn } from '@/shared/dal/server/types'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
@@ -11,6 +11,7 @@ import { paginate } from '@/shared/dal/server/lib/query/output'
 import { db } from '@/shared/db'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
+import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { isCampaignLeadSql, isDncSql, isEligibleSql, isEnrolledSql, isRemovedSql, leadStatusCaseSql } from '@/shared/entities/voip-campaign-contacts/lib/lead-campaign-status'
 
 export interface ActiveEnrollment {
@@ -199,9 +200,15 @@ export interface ListLeadsArgs {
  * see ../../DOCS.md and docs/plans/voip-campaigns/EPIC.md
  */
 export async function listLeadsPaginated(
+  ctx: ScopedContext,
   args: ListLeadsArgs,
 ): Promise<DalReturn<{ rows: CampaignLeadRow[], total: number }>> {
   return dalDbOperation(async () => {
+    // Phone is gated at the DAL (customers DOCS#phone-visibility-threshold) so a
+    // leaked query can't expose it. Today the only caller is superAdminProcedure
+    // (isOmni → raw phone), but the gate makes a future scoped caller leak-proof.
+    const isOmni = ctx.ability == null || ctx.ability.can('manage', 'all')
+
     const statusPredicate
       = args.status === 'all'
         ? isCampaignLeadSql()
@@ -219,6 +226,8 @@ export async function listLeadsPaginated(
     const campaignFilter = args.campaignId
       ? sql`AND part.voip_campaign_id = ${args.campaignId}`
       : sql``
+    // Super-admin-only surface, so raw-phone search is acceptable; if a scoped
+    // caller is ever added, gate this ILIKE too (or it leaks phone existence).
     const searchFilter = args.search
       ? sql`AND (customers.name ILIKE ${`%${args.search}%`} OR customers.phone ILIKE ${`%${args.search}%`})`
       : sql``
@@ -256,7 +265,7 @@ export async function listLeadsPaginated(
             vc.ct_campaign_name AS "campaignName",
             part.enrolled_at AS "enrolledAt",
             customers.lead_source_id AS "leadSourceId",
-            customers.phone AS phone,
+            ${gatedPhoneSql(isOmni)} AS phone,
             ls.name AS "leadSourceName",
             COALESCE(part.dial_attempts, 0) AS "dialAttempts",
             customers.created_at AS "createdAt",
