@@ -49,20 +49,6 @@ export const voipCampaignsRouter = createTRPCRouter({
   }),
 
   /**
-   * Per-source active enrolled counts → badges. Keyed by lead_source_id (uuid).
-   * Derived from the consolidated countLeadsByStatusPerSource so the number is
-   * consistent with the other rollup badges (eligible already subtracts enrolled).
-   */
-  getEnrollmentCounts: agentProcedure.query(async () => {
-    const byId = dalToTrpc(await countLeadsByStatusPerSource())
-    const out: Record<string, number> = {}
-    for (const [id, c] of Object.entries(byId)) {
-      out[id] = c.enrolled
-    }
-    return out
-  }),
-
-  /**
    * Per-source summary rows for the control-center left rail: source identity +
    * its default campaign + eligible (canonical pool, enrolled excluded) + enrolled
    * + DNC counts. Single DAL pass via countLeadsByStatusPerSource.

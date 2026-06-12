@@ -26,13 +26,9 @@ interface UpsertCampaignByCtIdInput {
 
 /**
  * Idempotent upsert keyed on the unique `ct_campaign_id`. Called per-row by
- * `campaign-sync.service.resyncFromCloudtalk`.
- *
- * CRITICAL: the conflict branch does NOT touch `source_slug`. Binding a
- * campaign to a lead source is an admin action (decision #8) — a Resync must
- * never clobber an existing binding. Newly-synced campaigns insert with
- * `source_slug = NULL` (the column default), staying unbound until an admin
- * binds them via the Resync UI.
+ * `campaign-sync.service.resyncFromCloudtalk`. Refreshes CT identity (name / tag
+ * / status / cadence) only — campaigns are pools, not source-owned (the
+ * `source_slug` ownership column was removed 2026-06-11; see ../../DOCS.md#admin-binding).
  *
  * `updatedAt` auto-bumps via the schema-helper `$onUpdate` — do not set it.
  */

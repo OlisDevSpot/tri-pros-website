@@ -11,20 +11,27 @@ into which campaign" without hardcoding CT-assigned ids as env vars.
 
 ## Invariants
 
-### Source binding is admin-set, never inferred (`#admin-binding`)
+### Campaigns are pools, not source-owned (`#admin-binding`)
 
-`source_slug` is **nullable + not unique**. `campaign-sync.resyncFromCloudtalk`
-upserts campaigns with `source_slug = NULL` (unbound). An admin binds each
-campaign to a lead source via the Resync UI. A single lead source owns MANY
-campaigns. We do NOT parse CT campaign names to infer the source — too fragile
-to rely on for enrollment correctness. An unbound campaign is not eligible for
-enrollment routing.
+A campaign is a **pool** any customer (from any lead source) can be enrolled
+into — membership is per-customer (`voip_campaign_contacts`), never per-source.
+The old `source_slug` "ownership binding" column was **removed 2026-06-11**
+(per-customer membership redesign). A campaign is dialable iff it is CT-active
+(`isCampaignDialable` → `ct_status === 'active'`); there is NO source-binding
+requirement. The catch-all ("General Reaching Out") deliberately belongs to no
+source.
 
-### Resync never clobbers a binding (`#resync-preserves-binding`)
+A lead source's **default** campaign — used to pre-select the campaign in
+"Enroll all" (and, in future, auto-enroll-on-ingest) — lives on
+`lead_sources.voipConfigJSON.campaigns.defaultCampaignId`, set via the Setup tab.
+That is a *default*, not ownership: one campaign can be the default for zero, one,
+or many sources.
 
-`upsertCampaignByCtId` upserts on the unique `ct_campaign_id` and the conflict
-branch intentionally omits `source_slug`. Re-running Resync refreshes name / tag
-/ status / cadence but preserves the admin's source binding.
+### Resync only refreshes CT identity (`#resync-preserves-binding`)
+
+`upsertCampaignByCtId` upserts on the unique `ct_campaign_id`; re-running Resync
+refreshes name / tag / status / cadence. There is no source binding to preserve
+(removed 2026-06-11).
 
 ### Membership tag is the enrollment mechanism (`#membership-tag`)
 
