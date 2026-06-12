@@ -1,5 +1,5 @@
 import type z from 'zod'
-import { index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 
@@ -9,9 +9,10 @@ import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 // a daily cron if drift is observed in practice.
 //
 // CT-assigned IDs are runtime data, not source-code constants — they are NOT
-// env vars. The `source_slug` joins to `lead_sources.slug`; APP-side policy
-// (enabled / autoEnroll / dailyDialVolumeCap) lives in
+// env vars. APP-side policy (enabled / autoEnroll / dailyDialVolumeCap) lives in
 // `lead_sources.voipConfigJSON.campaigns`, while CT identity lives here.
+// source_slug binding was removed — campaign-to-lead-source join is now via
+// `lead_sources.voipConfigJSON.campaigns[].ctCampaignId` (see ADR-0002 decisions log).
 //
 // see docs/plans/voip-campaigns/EPIC.md decisions log 2026-05-31
 // see docs/plans/voip-campaigns/phase-1-implementation.md#w2
@@ -22,17 +23,8 @@ export const voipCampaigns = pgTable(
   {
     id,
     // CT-assigned campaign ID (mirrored from GET /campaigns/index.json). The stable
-    // natural key — sync upserts on this. `source_slug` is an APP-side binding applied later.
+    // natural key — sync upserts on this.
     ctCampaignId: text('ct_campaign_id').notNull().unique(),
-    // Which lead source this campaign serves — joins to `lead_sources.slug`.
-    // NULLABLE + NOT unique. We do NOT infer it from CT campaign names: sync
-    // upserts campaigns with source_slug = NULL (unbound); an admin binds each
-    // campaign to an existing synced lead source via the Resync UI (decision (b),
-    // 2026-06-04). A single lead source owns MANY campaigns (e.g. bina →
-    // energy-saver + monthly-special). The specific campaign a customer is enrolled
-    // in is recorded on `voip_campaign_contacts.voip_campaign_id`. An unbound
-    // campaign (source_slug NULL) is not eligible for enrollment routing.
-    sourceSlug: text('source_slug'),
     ctCampaignName: text('ct_campaign_name').notNull(),
     // 'Campaign-MetaAds' | 'Campaign-HomeDepot' — addTags target for enrollment.
     // CT auto-includes any contact carrying this tag in the matching campaign.
@@ -54,7 +46,6 @@ export const voipCampaigns = pgTable(
     createdAt,
     updatedAt,
   },
-  table => [index('voip_campaigns_source_slug_idx').on(table.sourceSlug)],
 )
 
 export const selectVoipCampaignSchema = createSelectSchema(voipCampaigns)
