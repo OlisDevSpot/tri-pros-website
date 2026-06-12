@@ -2,12 +2,15 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 
+import { formatDistanceToNow } from 'date-fns'
+
 import { LeadCampaignCell } from '@/features/campaigns-admin/ui/components/leads/lead-campaign-cell'
 import { LeadRowActions } from '@/features/campaigns-admin/ui/components/leads/lead-row-actions'
 import { LeadSelectCell } from '@/features/campaigns-admin/ui/components/leads/lead-select-cell'
 import { LeadSelectHeader } from '@/features/campaigns-admin/ui/components/leads/lead-select-header'
 import { LeadStatusBadge } from '@/features/campaigns-admin/ui/components/leads/lead-status-badge'
 import { Button } from '@/shared/components/ui/button'
+import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 export interface LeadsTableMeta {
   onEnroll: (customerId: string) => void
@@ -30,6 +33,13 @@ function formatEnrolledAt(iso: string | null): string {
     return '—'
   }
   return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function formatRelativeAge(iso: string | null): string {
+  if (!iso) {
+    return '—'
+  }
+  return formatDistanceToNow(new Date(iso), { addSuffix: true })
 }
 
 export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
@@ -62,7 +72,7 @@ export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
       id: 'name',
     },
     {
-      cell: ({ row }) => <span className="text-sm tabular-nums">{row.original.phone ?? '—'}</span>,
+      cell: ({ row }) => <span className="text-sm tabular-nums">{row.original.phone ? formatAsPhoneNumber(row.original.phone) : '—'}</span>,
       header: 'Phone',
       id: 'phone',
     },
@@ -87,7 +97,7 @@ export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
       id: 'attempts',
     },
     {
-      cell: ({ row }) => <span className="text-sm tabular-nums text-muted-foreground">{formatEnrolledAt(row.original.createdAt)}</span>,
+      cell: ({ row }) => <span className="text-sm text-muted-foreground">{formatRelativeAge(row.original.createdAt)}</span>,
       header: 'Age',
       id: 'createdAt',
     },
