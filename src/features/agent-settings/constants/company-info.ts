@@ -1,8 +1,10 @@
+import { companyInfo, contactInfo, licenses } from '@/shared/constants/company'
+
 export const COMPANY_INFO = {
-  name: 'Tri Pros Remodeling',
-  license: 'CSLB #1234567',
-  phone: '(555) 123-4567',
-  email: 'info@triprosremodeling.com',
+  name: companyInfo.name,
+  license: `CSLB #${licenses[0].licenseNumber}`,
+  phone: contactInfo.find(info => info.accessor === 'phone')!.value,
+  email: contactInfo.find(info => info.accessor === 'email')!.value,
   website: 'https://triprosremodeling.com',
 } as const
 

@@ -6,11 +6,11 @@ import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import { companyInfo } from '@/features/landing/data/company'
 import { TopSpacer } from '@/shared/components/top-spacer'
 import { Button } from '@/shared/components/ui/button'
 import { ViewportHero } from '@/shared/components/viewport-hero'
 import { ROOTS } from '@/shared/config/roots'
+import { companyInfo } from '@/shared/constants/company'
 
 const FADE_UP = {
   hidden: { opacity: 0, y: 24 },

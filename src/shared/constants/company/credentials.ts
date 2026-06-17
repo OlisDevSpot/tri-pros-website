@@ -1,24 +1,23 @@
+import { awards } from './awards'
+import { certifications } from './certifications'
+import { insurances } from './insurances'
+import { licenses } from './licenses'
+
+// Derived from the sibling canonical files — never hardcode license numbers,
+// coverage amounts, or award names here. Industry memberships have no other
+// home, so this file is their canonical source.
 export const credentials = [
   {
     category: 'Licenses & Certifications',
     items: [
-      'Licensed General Contractor (State of California - License #123456)',
-      'NARI Certified Professional (National Association of the Remodeling Industry)',
-      'LEED Accredited Professional (Green Building)',
-      'OSHA 30-Hour Construction Safety Certification',
-      'EPA Lead-Safe Certified',
+      ...licenses.map(l => `Licensed General Contractor (State of California - License #${l.licenseNumber})`),
+      ...certifications.map(c => c.label),
     ],
     icon: '📋',
   },
   {
     category: 'Insurance Coverage',
-    items: [
-      'General Liability Insurance - $2M Coverage',
-      'Workers\' Compensation Insurance - Full Coverage',
-      'Professional Liability Insurance - $1M Coverage',
-      'Bonded for Projects up to $5M',
-      'Commercial Auto Insurance',
-    ],
+    items: insurances.map(i => `${i.label} - ${i.coverage}`),
     icon: '🛡️',
   },
   {
@@ -34,13 +33,7 @@ export const credentials = [
   },
   {
     category: 'Awards & Recognition',
-    items: [
-      '2023 Best Luxury Home Builder - Local Business Awards',
-      '2022 Excellence in Construction - AGC Chapter',
-      '2021 Customer Choice Award - Home Improvement',
-      '2020 Green Building Excellence Award',
-      'Multiple Parade of Homes Awards (2018-2023)',
-    ],
+    items: awards.map(a => a.label),
     icon: '🏆',
   },
 ]

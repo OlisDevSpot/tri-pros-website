@@ -3,10 +3,9 @@
 import { motion, useInView } from 'motion/react'
 
 import { useRef } from 'react'
-import { credentials } from '@/features/landing/data/company/credentials'
-import { stats } from '@/features/landing/data/company/stats'
 import DecorativeLine from '@/shared/components/decorative-line'
 import { ROOTS } from '@/shared/config/roots'
+import { credentials, stats } from '@/shared/constants/company'
 
 export function CredentialsSection() {
   const ref = useRef(null)

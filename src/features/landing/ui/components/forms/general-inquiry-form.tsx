@@ -17,6 +17,7 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { contactInfo } from '@/shared/constants/company'
 import { generalInquiryDefaultValues as defaultValues, generalInquiryFormSchema } from '@/shared/entities/landing/schemas'
 import { useTRPC } from '@/trpc/helpers'
 import { InquirySuccessCard } from './inquiry-success-card'
@@ -40,7 +41,7 @@ export function GeneralInquiryForm() {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Something went wrong sending your inquiry. Please try again or call (818) 470-7656.',
+          : `Something went wrong sending your inquiry. Please try again or call ${contactInfo.find(info => info.accessor === 'phone')!.value}.`,
       )
     }
   }

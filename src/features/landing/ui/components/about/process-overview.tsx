@@ -4,6 +4,7 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 
 import { useRef } from 'react'
+import { companyInfo } from '@/shared/constants/company'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { cn } from '@/shared/lib/utils'
 
@@ -136,7 +137,11 @@ export function ProcessOverview({ className }: Props) {
             <span className="text-secondary">Process</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            A systematic approach refined over 25 years to ensure exceptional
+            A systematic approach refined over
+            {' '}
+            {companyInfo.combinedYearsExperience}
+            {' '}
+            years of combined experience to ensure exceptional
             results, clear communication, and complete client satisfaction.
           </p>
         </motion.div>

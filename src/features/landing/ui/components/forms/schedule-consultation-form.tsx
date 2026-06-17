@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { contactInfo } from '@/shared/constants/company'
 import { services } from '@/shared/constants/company/services'
 import { scheduleConsultationDefaultValues as defaultValues, scheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
 import { formatProjectType } from '@/shared/services/providers/resend/lib/format-project-type'
@@ -41,7 +42,7 @@ export function ScheduleConsultationForm() {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Something went wrong sending your inquiry. Please try again or call (818) 470-7656.',
+          : `Something went wrong sending your inquiry. Please try again or call ${contactInfo.find(info => info.accessor === 'phone')!.value}.`,
       )
     }
   }

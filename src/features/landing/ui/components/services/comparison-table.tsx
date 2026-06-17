@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/ui/table'
+import { companyInfo, insurances } from '@/shared/constants/company'
 
 const COMPARISON_ROWS = [
   {
@@ -29,7 +30,7 @@ const COMPARISON_ROWS = [
     otherNote: null,
   },
   {
-    label: 'General Liability ($2M)',
+    label: `General Liability (${insurances.find(i => i.label === 'General Liability Insurance')!.coverage.split(' ')[0]})`,
     triPros: true,
     triProsNote: null,
     other: false,
@@ -59,7 +60,7 @@ const COMPARISON_ROWS = [
   {
     label: 'Contractor Experience',
     triPros: true,
-    triProsNote: '15+ years',
+    triProsNote: `${companyInfo.combinedYearsExperience}+ years combined`,
     other: false,
     otherNote: '3 years or less',
   },

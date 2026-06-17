@@ -1,4 +1,5 @@
 import type { PillarSlug } from '@/features/landing/lib/notion-trade-helpers'
+import { companyInfo } from '@/shared/constants/company'
 
 interface PillarStat {
   value: string
@@ -60,8 +61,8 @@ export const pillarConfigs: Record<PillarSlug, PillarConfig> = {
     heroSubheadline: 'Kitchens, bathrooms, flooring, additions, outdoor living, and more. Every project backed by a licensed team, proper permits, and a written warranty.',
     stats: [
       { value: '60–80%', label: 'Kitchen Remodel ROI' },
-      { value: '520+', label: 'Projects Completed' },
-      { value: '98%', label: 'Client Satisfaction' },
+      { value: `${companyInfo.numProjects}+`, label: 'Projects Completed' },
+      { value: `${companyInfo.clientSatisfaction * 100}%`, label: 'Client Satisfaction' },
     ],
     defaultHeroImage: '/services/luxury-renovations-hero.jpg',
     emotionalDriver: 'pride-of-ownership',

@@ -4,11 +4,11 @@ import { motion, useInView } from 'motion/react'
 
 import Link from 'next/link'
 import { useRef } from 'react'
-import { companyInfo } from '@/features/landing/data/company'
 import { valueProps } from '@/features/landing/data/value-prop'
 import DecorativeLine from '@/shared/components/decorative-line'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
+import { companyInfo } from '@/shared/constants/company'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 
 export function ValuePropositions() {

@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { companyInfo } from '@/features/landing/data/company'
+import { companyInfo } from '@/shared/constants/company'
 import { formatAsPhoneNumber } from '@/shared/lib/formatters'
 
 const offices = [

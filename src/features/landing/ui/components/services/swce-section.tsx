@@ -5,14 +5,18 @@ import { motion, useInView } from 'motion/react'
 
 import { useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { companyInfo, insurances } from '@/shared/constants/company'
 import { cn } from '@/shared/lib/utils'
+
+// e.g. '$1M Coverage' -> '$1M'
+const generalLiabilityAmount = insurances.find(i => i.label === 'General Liability Insurance')!.coverage.split(' ')[0]
 
 const SWCE_CARDS = [
   {
     icon: Shield,
     headline: 'You\'re Protected',
     description:
-      'Licensed, bonded, and carrying $2M in general liability insurance. Your home and investment are fully covered from day one.',
+      `Licensed, bonded, and carrying ${generalLiabilityAmount} in general liability insurance. Your home and investment are fully covered from day one.`,
   },
   {
     icon: Award,
@@ -28,17 +32,17 @@ const SWCE_CARDS = [
   },
   {
     icon: TrendingUp,
-    headline: '520+ Projects. Zero Shortcuts.',
+    headline: `${companyInfo.numProjects}+ Projects. Zero Shortcuts.`,
     description:
-      'Over 15 years and 520+ completed projects across Southern California. Our reputation is built on results, not promises.',
+      `${companyInfo.combinedYearsExperience}+ years of combined experience and ${companyInfo.numProjects}+ completed projects across Southern California. Our reputation is built on results, not promises.`,
   },
 ] as const
 
 const COMPACT_BADGES = [
   'Licensed & Bonded',
-  '$2M Insured',
+  `${generalLiabilityAmount} Insured`,
   'Written Warranty',
-  '15+ Years Experience',
+  `${companyInfo.combinedYearsExperience}+ Years Combined Experience`,
 ] as const
 
 interface SwceSectionProps {

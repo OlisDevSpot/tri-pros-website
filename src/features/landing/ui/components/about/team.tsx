@@ -5,10 +5,9 @@ import { motion, useInView } from 'motion/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRef } from 'react'
-import { companyInfo } from '@/features/landing/data/company'
-import { teamMembers } from '@/features/landing/data/company/team-members'
 import { MotionButton } from '@/shared/components/buttons/motion-button'
 import DecorativeLine from '@/shared/components/decorative-line'
+import { companyInfo, teamMembers } from '@/shared/constants/company'
 
 export function TeamSection() {
   const ref = useRef(null)
@@ -151,7 +150,8 @@ export function TeamSection() {
           <div className="flex flex-col lg:flex-row w-full gap-8 [&>div]:flex-1">
             <div>
               <p className="text-3xl lg:text-4xl font-bold">
-                25+
+                {companyInfo.teamInfo.numEmployees}
+                +
               </p>
               <div className="text-sm">Team Members</div>
             </div>
