@@ -3,19 +3,35 @@
 // Composed by the enrollment service, which supplies the app_key → ct_attribute_id
 // bridge (synced into voip_contact_attributes).
 //
-// Built-in `name` + `city` go to CT's first-class Contact fields via
-// upsertContact — NOT through this list. This builds the 3 custom attributes:
+// Built-in `name` + `city` + `zip` go to CT's first-class Contact fields via
+// upsertContact — NOT through this list. This builds the custom attributes:
 //   - lead_source       : the source slug (drives CT segmentation/templating)
 //   - primary_trade     : the lead's first interested trade (human-readable)
 //   - trades_interested : alpha-sorted, deduped interested trades (human-readable)
+//   - lead_created_at   : when the lead was added to our system (PST date-time)
 //
-// Values come from leadMetaJSON.interestedTradesRaw — already human-readable for
-// every source (Bina: raw campaign trade strings; in-app form: resolved trade
-// names). No ID→label lookup needed.
+// Trade values come from leadMetaJSON.interestedTradesRaw — already
+// human-readable for every source (Bina: raw campaign trade strings; in-app
+// form: resolved trade names). No ID→label lookup needed.
 
 import type { CloudtalkContactAttributeAppKey } from '@/shared/services/providers/cloudtalk/constants'
 
 import { createHash } from 'node:crypto'
+
+// Lead-created timestamp as a human-readable Pacific date-time for the CT agent
+// view (e.g. "Jun 17, 2026, 2:30 PM"). Written once at enroll and absolute (not
+// relative) so it never goes stale.
+function formatLeadCreatedAt(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Los_Angeles',
+  })
+}
 
 export interface ContactAttributeWrite {
   attributeId: string
@@ -30,6 +46,8 @@ interface BuildContactAttributesInput {
   name: string
   city: string
   zip: string
+  // ISO timestamp of when the lead row was created (customers.createdAt).
+  leadCreatedAt: string
   attributeIdByKey: Partial<Record<CloudtalkContactAttributeAppKey, string>>
 }
 
@@ -48,6 +66,7 @@ export function buildContactAttributes(
     lead_source: input.leadSourceSlug,
     primary_trade: trades[0] ?? '',
     trades_interested: sortedTrades.join(', '),
+    lead_created_at: formatLeadCreatedAt(input.leadCreatedAt),
   }
 
   const attributes: ContactAttributeWrite[] = []

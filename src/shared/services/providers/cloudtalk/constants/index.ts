@@ -78,13 +78,16 @@ export const cloudtalkDispositions = [
 export type CloudtalkDisposition = (typeof cloudtalkDispositions)[number]
 
 // ── Custom contact attribute keys ───────────────────────────────────────────
-// 3 custom attributes per 2026-05-31 lock (built-in `name` + `city` use CT's
-// first-class Contact fields, NOT custom attributes).
-// `voip_contact_attributes.app_key` constrained to these literals.
+// Custom attributes (built-in `name` + `city` + `zip` use CT's first-class
+// Contact fields, NOT custom attributes).
+// `voip_contact_attributes.app_key` constrained to these literals. Each must
+// have a matching title entry in lib/attribute-title-map.ts AND a custom
+// attribute created in the CloudTalk dashboard with that title.
 export const cloudtalkContactAttributeAppKeys = [
   'lead_source',
   'primary_trade',
   'trades_interested',
+  'lead_created_at',
 ] as const
 
 export type CloudtalkContactAttributeAppKey

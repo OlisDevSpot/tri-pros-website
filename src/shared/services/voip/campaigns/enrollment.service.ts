@@ -64,12 +64,12 @@ function createCampaignEnrollmentService() {
      * and writes the participation row. First gate failure short-circuits.
      */
     async enroll(
-      _ctx: ScopedContext,
+      ctx: ScopedContext,
       input: EnrollInput,
     ): Promise<DalReturn<{ enrolled: true, cloudtalkContactId: string }>> {
       // ── Load customer (SYSTEM read — ungated phone) ──────────────────────
       const customerResult = await getCustomer(
-        { session: null, ability: null, scope: null },
+        ctx,
         { id: input.customerId },
       )
       if (!customerResult.success) {
@@ -158,6 +158,7 @@ function createCampaignEnrollmentService() {
         name: customer.name,
         city: customer.city,
         zip: customer.zip,
+        leadCreatedAt: customer.createdAt,
         attributeIdByKey,
       })
 
