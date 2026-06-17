@@ -6,6 +6,8 @@
 > **API research foundation:** [cloudtalk-api-research.md](./cloudtalk-api-research.md) — CloudTalk API patterns, auth, rate limits, quirks. Foundational for `providers/cloudtalk/client.ts`.
 > **Pivot history:** [HANDOFF-from-twilio-build.md](../voip/HANDOFF-from-twilio-build.md) — why we abandoned the custom Twilio+Retell+Sendblue lead-conversion build (2026-05-23) and pivoted to CloudTalk.
 
+> ⚠️ **SUPERSEDED IN PART (2026-06-11): AI VoiceAgent dropped for cost.** The AI VoiceAgent outbound model (minimal qualifier → warm-transfer, see "Q1 — AI VoiceAgent scope" below) is **no longer the active plan** — it got too expensive in practice. **Current model: live human agents dial CloudTalk leads and run the full conversation end-to-end, including booking the meeting on the call.** The operational script for that human-run call is [energy-bina-booking-call-script.md](./energy-bina-booking-call-script.md). Everything in this EPIC that assumes "the AI does outbound / minimal qualify / warm-transfer to Sean" is stale; the CloudTalk Campaigns/DID/cadence/webhook infrastructure described here still stands — only the *who-talks-to-the-lead* layer changed from AI to human. Re-scope this EPIC before trusting its task list.
+
 ---
 
 ## Relationship to voip-in-house EPIC
@@ -389,7 +391,7 @@ voip-in-house Phase 1 (in-house DIDs + voip routing infrastructure + voip_* tabl
 **Phase:** 0 (dashboard configuration)
 **Context:** Grilling-me session to lock the operational shape of CloudTalk dashboard configuration before Phase 0 Tasks 4–7. Three foundational decisions made in this turn (AI scope, multi-source segmentation, DID strategy).
 
-**Q1 — AI VoiceAgent scope: A (minimal qualifier).**
+**Q1 — AI VoiceAgent scope: A (minimal qualifier).** ⚠️ **SUPERSEDED 2026-06-11 — AI VoiceAgent dropped for cost. Outbound is now live-human; the human runs full discovery + books the meeting (the rejected option C, essentially), guided by [energy-bina-booking-call-script.md](./energy-bina-booking-call-script.md). The cost-discipline rationale below no longer governs.**
 - AI's job in the live conversation window (~15–30s): verify person identity, confirm interest, transfer. No discovery, no objection-handling, no meeting-booking.
 - AI's broader role: handle cadence execution, voicemail drops, auto-SMS on unanswered calls, status updates, workflow activation. The AI is the *workflow engine*, not the *discovery engine*.
 - AI personalization data per call (sourced from contact attributes synced by `contact-sync.service.ts`): `first_name`, `last_name`, `zip`, `primary_trade_label`, `lead_source_label`, plus source-specific inquiry context (campaign-dependent).
