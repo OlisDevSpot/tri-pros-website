@@ -1,9 +1,13 @@
 'use client'
 
+import type { VoipCampaign } from '@/shared/db/schema/voip-campaigns'
+
 import { useQuery } from '@tanstack/react-query'
 import { RefreshCwIcon } from 'lucide-react'
 
+import { useState } from 'react'
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
+import { CampaignCadenceDialog } from '@/features/campaigns-admin/ui/components/setup/campaign-cadence-dialog'
 import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -20,6 +24,7 @@ import { useTRPC } from '@/trpc/helpers'
 export function SyncedCampaignsCard() {
   const trpc = useTRPC()
   const { resync } = useCampaignMutations()
+  const [editing, setEditing] = useState<VoipCampaign | null>(null)
 
   const campaignsQuery = useQuery(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
   const campaigns = campaignsQuery.data ?? []
@@ -52,39 +57,72 @@ export function SyncedCampaignsCard() {
                 </p>
               )
             : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Campaign</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Membership tag</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {campaigns.map((campaign) => {
-                      const isActive = campaign.ctStatus === 'active'
-                      return (
-                        <TableRow key={campaign.id}>
-                          <TableCell className="font-medium text-foreground">{campaign.ctCampaignName}</TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center gap-1.5 text-sm">
-                              <span
-                                aria-hidden="true"
-                                className={isActive ? 'size-1.5 rounded-full bg-success' : 'size-1.5 rounded-full bg-muted-foreground/40'}
-                              />
-                              <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
-                                {isActive ? 'Active' : 'Inactive'}
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Campaign</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Membership tag</TableHead>
+                        <TableHead>Cadence</TableHead>
+                        <TableHead />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {campaigns.map((campaign) => {
+                        const isActive = campaign.ctStatus === 'active'
+                        const c = campaign.smsCadence
+                        const on = Boolean(c?.enabled)
+                        const n = c?.messages.length ?? 0
+                        return (
+                          <TableRow key={campaign.id}>
+                            <TableCell className="font-medium text-foreground">{campaign.ctCampaignName}</TableCell>
+                            <TableCell>
+                              <span className="inline-flex items-center gap-1.5 text-sm">
+                                <span
+                                  aria-hidden="true"
+                                  className={isActive ? 'size-1.5 rounded-full bg-success' : 'size-1.5 rounded-full bg-muted-foreground/40'}
+                                />
+                                <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
+                                  {isActive ? 'Active' : 'Inactive'}
+                                </span>
                               </span>
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <code translate="no" className="font-mono text-xs text-muted-foreground">{campaign.ctMembershipTag}</code>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
+                            </TableCell>
+                            <TableCell>
+                              <code translate="no" className="font-mono text-xs text-muted-foreground">{campaign.ctMembershipTag}</code>
+                            </TableCell>
+                            <TableCell>
+                              {on && n > 0
+                                ? (
+                                    <span className="inline-flex items-center gap-1.5 text-sm">
+                                      <span aria-hidden="true" className="size-1.5 rounded-full bg-success" />
+                                      <span className="tabular-nums text-foreground">{n}</span>
+                                      <span className="text-foreground"> msgs&nbsp;·&nbsp;on</span>
+                                    </span>
+                                  )
+                                : (
+                                    <span className="text-sm text-muted-foreground">— off</span>
+                                  )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="outline" size="sm" onClick={() => setEditing(campaign)}>
+                                Edit cadence
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                  <CampaignCadenceDialog
+                    campaign={editing}
+                    open={editing !== null}
+                    onOpenChange={(open) => {
+                      if (!open)
+                        setEditing(null)
+                    }}
+                  />
+                </>
               )}
       </CardContent>
     </Card>
