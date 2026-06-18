@@ -3,7 +3,7 @@ import z from 'zod'
 
 import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/server/mutations'
+import { setVoipCampaignsPolicy, setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
@@ -63,7 +63,9 @@ export const voipCampaignsRouter = createTRPCRouter({
       sourceSlug: source.slug,
       name: source.name,
       isActive: source.isActive,
+      autoEnroll: source.voipConfigJSON?.campaigns?.autoEnroll ?? false,
       defaultCampaignId: source.voipConfigJSON?.campaigns?.defaultCampaignId ?? null,
+      enabled: source.voipConfigJSON?.campaigns?.enabled ?? true,
       dncCount: counts[source.id]?.dnc ?? 0,
       eligibleCount: counts[source.id]?.eligible ?? 0,
       enrolledCount: counts[source.id]?.enrolled ?? 0,
@@ -112,6 +114,20 @@ export const voipCampaignsRouter = createTRPCRouter({
     .input(z.object({ sourceSlug: z.string(), campaignId: z.string().uuid().nullable() }))
     .mutation(async ({ input }) => {
       return dalToTrpc(await setVoipDefaultCampaign(input.sourceSlug, input.campaignId))
+    }),
+
+  /** Patch a source's campaigns policy (default campaign + enabled + autoEnroll). */
+  setSourcePolicy: superAdminProcedure
+    .input(z.object({
+      sourceSlug: z.string(),
+      patch: z.object({
+        autoEnroll: z.boolean().optional(),
+        defaultCampaignId: z.string().uuid().nullable().optional(),
+        enabled: z.boolean().optional(),
+      }),
+    }))
+    .mutation(async ({ input }) => {
+      return dalToTrpc(await setVoipCampaignsPolicy(input.sourceSlug, input.patch))
     }),
 
   // ── Enrollment ─────────────────────────────────────────────────────────────
