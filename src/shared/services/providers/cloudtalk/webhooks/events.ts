@@ -81,7 +81,7 @@ export const cloudtalkCallStartedSchema = z.object({
   event_type: z.literal('call.started'),
   call_uuid: z.string(),
   caller_e164: e164Schema, // mapped from event.properties.external_number
-  did_e164: e164Schema.optional(), // mapped from event.properties.internal_number
+  internal_number_e164: e164Schema.optional(), // mapped from event.properties.internal_number
   // REQUIRED — CT reliably emits direction on call start; ring-2 attempt
   // counting must trust it (only outbound increments). Normalized incoming→inbound.
   direction: ctDirectionSchema,
@@ -127,7 +127,12 @@ export const cloudtalkCallEndedSchema = z.object({
   // outbound dials. Tighten to required once the token is confirmed.
   direction: ctDirectionSchema.optional(),
   // Stringified-boolean safe (see ctBooleanSchema) — CT may emit "true"/"false".
-  is_voicemail: ctBooleanSchema,
+  // Relaxed to optional (2026-06-17): unused by v1 SMS cadence; a missing value
+  // must not 400 the whole event. Future voicemail handling will tighten this.
+  is_voicemail: ctBooleanSchema.optional(),
+  // Our campaign DID for this call — the SMS `from`. Mapped from CT's
+  // event.properties.internal_number. Optional: inbound/manual calls may omit it.
+  internal_number_e164: e164Schema.optional(),
   // Always template the contact id for deterministic customer resolution.
   contact_id: ctContactIdSchema,
   contact_name: ctContactNameSchema,
