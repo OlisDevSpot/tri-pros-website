@@ -17,6 +17,8 @@
 
 Verify: `ls src/shared/domains/funnels/{hooks/use-funnel-engine.ts,ui/funnel-engine.tsx,lib/step-registry.ts}`. If missing, STOP — 2a must land first.
 
+> **RECONCILE FIRST (read the landed 2a `types.ts`).** 2a finalized `StepProps` as `{ step, funnelContent: FunnelContent, content?: StepContent, value, onChange, onAdvance, onBack, isFirst }` and `FunnelContent` as the four hero fields + a `steps` map. This plan's snippets show only the fields they add (`answers`, `setAnswers`); when implementing, treat the **landed** `StepProps`/`FunnelContent`/`FunnelStep` as source of truth and merge these additions in (per-step `content` is optional → use `content?.x`). `FunnelContent` is owned by 2a — do not redefine it; only extend `FunnelSpec` with `offer` and add the new step kinds.
+
 ## Locked decisions (from brainstorm)
 
 - **One lead source:** `branded-meta-ads` (name "Branded Meta Ads") — the channel = our in-app funnels engine. NOT per-trade, NOT per-offer.

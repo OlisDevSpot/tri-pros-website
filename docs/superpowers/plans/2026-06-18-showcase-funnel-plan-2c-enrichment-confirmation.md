@@ -16,6 +16,8 @@
 
 Verify: `ls src/shared/domains/funnels/ui/steps/{location-step.tsx,pii-form-step.tsx}` and that `pii-form-step.tsx` writes `customerId` into answers on success. If PII does not yet persist `customerId` into `answers`, add that first (Task 1).
 
+> **RECONCILE FIRST (read the landed 2a/2b contracts).** Treat the landed `StepProps` (`{ step, funnelContent, content?, answers, setAnswers, value, onChange, onAdvance, onBack, isFirst }`) and the landed `leadMetaSchema` `funnel` source variant as source of truth; this plan's snippets show only the deltas they add. Per-step `content` is optional → use `content?.x`. `FunnelContent`/`FunnelAnswers` are owned by 2a — extend the step union + content via the established pattern, don't redefine the base types.
+
 ## Locked decisions
 
 - **Enrichment:** age/condition, project scope, timeline (card-selects). `ownership` (own/rent) is NOT here — it's qualification, already collected pre-PII in 2a.

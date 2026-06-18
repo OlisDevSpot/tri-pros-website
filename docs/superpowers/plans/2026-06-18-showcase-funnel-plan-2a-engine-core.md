@@ -72,7 +72,16 @@ Route page (`src/app/(frontend)/funnels/[trade]/page.tsx`) is modified to render
 
 - [ ] **Step 1: Replace the stubbed step/content internals with the finalized contracts**
 
-Keep the architecture's `FunnelSpec` field names (`slug`, `content`, `theme`, `steps`, `flow`, `pixel`); fill in the internals it left as stubs. Add to `types.ts`:
+**Reconcile against the LANDED foundation `types.ts`** (verified 2026-06-18). The foundation defines `FunnelContent = { title, headline, subhead, scarcityLine }`, `FunnelTheme = { accent: string }`, `FunnelStep = { id }`, `FunnelAnswers = Partial<Record<StepId, unknown>>`, `flow: (answers) => StepId | null`, and `FunnelSpec` with inline `pixel: { contentCategory: string }`. Plan 2 fills the "Plan 2 extends this" seams the foundation left:
+
+- **EXTEND** `FunnelContent`: keep the four hero fields; ADD a per-step `steps` map.
+- **REPLACE** `FunnelStep` (`{ id }` stub) with the discriminated union.
+- **NARROW** `FunnelAnswers` to a `field`-keyed record.
+- **ADD** the currentStepId param to `FunnelSpec.flow` (the stubs' `() => null` stay assignable).
+- **ADD** `StepContent`/`OptionContent`/`StepProps`/`StepComponent`/`StepKind`.
+- **LEAVE** `FunnelTheme = { accent: string }` as-is — per-trade accent tuning is Plan 5; the 2a engine uses the brand default and only stamps `data-funnel={slug}` for later theming.
+
+Apply to `types.ts`:
 
 ```ts
 import type { ComponentType } from 'react'
@@ -81,31 +90,15 @@ import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 /** A step's stable identifier, unique within a funnel. */
 export type StepId = string
 
-/** Accumulated answers across the funnel, keyed by the answering step's `field`. */
+/** Accumulated answers, keyed by the answering step's `field` (e.g. 'layout',
+ *  'ownership', 'zip', 'city'). NARROWS the foundation's Partial<Record<StepId,unknown>>. */
 export type FunnelAnswers = Record<string, string | string[] | null>
 
-/** Per-trade accent tokens, applied by the engine as inline CSS variables. */
-export interface FunnelTheme {
-  primary: string // any CSS color string (oklch/hex/hsl)
-  accent: string
-}
+// ── Step variants (discriminated by `kind`) — REPLACES the `{ id }` stub ──
+interface BaseStep { id: StepId }
 
-/** Pixel parameters carried on the single shared Meta dataset. */
-export interface FunnelPixel {
-  contentCategory: string
-}
-
-// ── Step variants (discriminated by `kind`) ───────────────────────────────
-// STRUCTURE only. Copy/labels live in FunnelContent, keyed by step id.
-
-interface BaseStep {
-  id: StepId
-}
-
-/** Informational / hero step — no input; a CTA advances. */
-export interface InfoStep extends BaseStep {
-  kind: 'info'
-}
+/** Informational / hero step — no input; a CTA advances. Renders funnel-level hero copy. */
+export interface InfoStep extends BaseStep { kind: 'info' }
 
 /** Single-select branded cards. `field` is the answers key; `optionIds` order the cards. */
 export interface CardSelectStep extends BaseStep {
@@ -114,76 +107,60 @@ export interface CardSelectStep extends BaseStep {
   optionIds: string[]
 }
 
-/** The step union. New step kinds (location, pii-form, datetime, confirmation)
- *  are added here in Plans 2b/2c. */
+/** The step union. New kinds (location, pii-form, datetime, confirmation) added in 2b/2c. */
 export type FunnelStep = InfoStep | CardSelectStep
-
 export type StepKind = FunnelStep['kind']
 
-// ── Content (the lift-to-DB-later seam) ───────────────────────────────────
-// Pure copy/media/labels, addressable by step id. The engine reads this; its
-// SOURCE (code today, DB/CMS later) is invisible to the engine and steps.
-
+// ── Per-step content (the lift-to-DB-later seam) ──
 export interface OptionContent {
   label: string
-  /** Optional icon key resolved by the step to an SVG (see Plan 2c trade icons). */
   icon?: string
   description?: string
 }
 
 export interface StepContent {
-  /** Headline shown above the step body. */
+  /** Step heading (input steps). The hero ignores this and uses funnel-level copy. */
   title: string
   subtitle?: string
-  /** CTA label (info step button; advance button on input steps). */
+  /** CTA label. */
   cta?: string
-  /** For card-select: option id → its copy. */
+  /** card-select: option id → its copy. */
   options?: Record<string, OptionContent>
 }
 
+// ── EXTEND the landed FunnelContent: keep the four hero fields, ADD `steps` ──
 export interface FunnelContent {
-  /** Funnel-level copy (hero brand line, scarcity text, etc.). */
-  brandName: string
-  scarcity?: string
-  /** Per-step copy, keyed by StepId. */
-  steps: Record<StepId, StepContent>
+  title: string         // existing — hero + document title
+  headline: string      // existing — hero headline
+  subhead: string       // existing — hero subhead
+  scarcityLine: string  // existing — scarcity line
+  steps: Record<StepId, StepContent>  // NEW (Plan 2) — per-step copy
 }
 
-// ── Step component contract ───────────────────────────────────────────────
-// Every step component in the library implements this. Engine owns nav;
-// steps are presentational and report their value via onChange.
-
+// ── Step component contract ──
 export interface StepProps<S extends FunnelStep = FunnelStep> {
   step: S
-  content: StepContent
-  /** This step's current answer (from engine state), or null. */
+  /** Funnel-level copy — the hero step reads headline/subhead/scarcityLine from here. */
+  funnelContent: FunnelContent
+  /** Per-step copy (input steps). Undefined for the hero (uses funnelContent). */
+  content?: StepContent
   value: string | string[] | null
-  /** Report a new value for this step's `field` (no-op for info steps). */
   onChange: (value: string | string[]) => void
-  /** Advance: engine evaluates spec.flow(answers) to pick the next step. */
   onAdvance: () => void
-  /** Go back one step (disabled on the first step). */
   onBack: () => void
-  /** True when this is the first step (Back hidden). */
   isFirst: boolean
 }
 
 export type StepComponent<S extends FunnelStep = FunnelStep> = ComponentType<StepProps<S>>
-
-// ── The finalized spec (architecture stub fields retained) ────────────────
-export interface FunnelSpec {
-  slug: FunnelSlug
-  content: FunnelContent
-  theme: FunnelTheme
-  steps: FunnelStep[]
-  /** Branching as CODE: given current answers, return the next step id, or
-   *  null when the funnel is complete. Engine never hard-codes order. */
-  flow: (answers: FunnelAnswers, currentStepId: StepId) => StepId | null
-  pixel: FunnelPixel
-}
 ```
 
-> If the architecture's `types.ts` already declared `FunnelSpec`/`FunnelTheme`/`FunnelPixel`, replace those declarations with the above (do not duplicate). Keep the file a single source of truth.
+Then update the landed `FunnelSpec.flow` signature in place (leave its other fields and `FunnelTheme` untouched):
+
+```ts
+  flow: (answers: FunnelAnswers, currentStepId: StepId) => StepId | null
+```
+
+> The foundation's `FunnelStep`, `FunnelContent`, `FunnelAnswers` declarations are REPLACED (same names, new bodies); `FunnelTheme`, `FunnelSpec`'s field list, and the inline `pixel` shape are UNCHANGED.
 
 - [ ] **Step 2: Type-check**
 
@@ -371,18 +348,22 @@ git commit -m "feat(funnels): engine state machine hook (nav + branching + resum
 
 - [ ] **Step 1: `info-step.tsx`** (hero / informational; CTA advances)
 
+The hero reads **funnel-level** copy (`funnelContent.headline/subhead/scarcityLine`); the CTA label comes from the optional per-step `content?.cta`.
+
 ```tsx
 // src/shared/domains/funnels/ui/steps/info-step.tsx
 import { Button } from '@/shared/components/ui/button'
 import type { InfoStep, StepProps } from '@/shared/domains/funnels/types'
 
-export function InfoStepView({ step, content, onAdvance }: StepProps<InfoStep>) {
-  void step
+export function InfoStepView({ funnelContent, content, onAdvance }: StepProps<InfoStep>) {
   return (
     <div className="flex flex-col items-center gap-6 text-center">
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{content.title}</h1>
-      {content.subtitle ? <p className="text-muted-foreground max-w-prose">{content.subtitle}</p> : null}
-      <Button size="lg" onClick={onAdvance}>{content.cta ?? 'Continue'}</Button>
+      {funnelContent.scarcityLine
+        ? <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-sm font-medium">{funnelContent.scarcityLine}</span>
+        : null}
+      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{funnelContent.headline}</h1>
+      {funnelContent.subhead ? <p className="text-muted-foreground max-w-prose">{funnelContent.subhead}</p> : null}
+      <Button size="lg" onClick={onAdvance}>{content?.cta ?? 'Continue'}</Button>
     </div>
   )
 }
@@ -406,12 +387,12 @@ export function CardSelectStepView({ step, content, value, onChange, onAdvance, 
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
-        <h2 className="text-2xl font-semibold">{content.title}</h2>
-        {content.subtitle ? <p className="text-muted-foreground mt-1">{content.subtitle}</p> : null}
+        <h2 className="text-2xl font-semibold">{content?.title ?? ''}</h2>
+        {content?.subtitle ? <p className="text-muted-foreground mt-1">{content.subtitle}</p> : null}
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {step.optionIds.map((optionId) => {
-          const option = content.options?.[optionId]
+          const option = content?.options?.[optionId]
           const selected = value === optionId
           return (
             <button
@@ -506,7 +487,6 @@ import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engin
 import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/lib/funnel-motion'
 import { STEP_REGISTRY } from '@/shared/domains/funnels/lib/step-registry'
 import { FunnelProgress } from '@/shared/domains/funnels/ui/funnel-progress'
-import type { CSSProperties } from 'react'
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
 
 export function FunnelEngine({ spec }: { spec: FunnelSpec }) {
@@ -514,17 +494,14 @@ export function FunnelEngine({ spec }: { spec: FunnelSpec }) {
   const reduceMotion = useReducedMotion()
 
   const StepView = STEP_REGISTRY[engine.step.kind]
-  const stepContent = spec.content.steps[engine.step.id]
+  const stepContent = spec.content.steps[engine.step.id]  // undefined for the hero (uses funnelContent)
   const currentIndex = spec.steps.findIndex(s => s.id === engine.step.id)
 
-  // Per-trade theme as inline CSS variables (config-as-code; no globals.css edits).
-  const themeStyle = {
-    '--primary': spec.theme.primary,
-    '--accent': spec.theme.accent,
-  } as CSSProperties
-
+  // `data-funnel` is stamped for later per-trade theming (Plan 5); the 2a
+  // engine uses the brand default tokens and injects no custom colors
+  // (FunnelTheme is just `{ accent: string }` today).
   return (
-    <div data-funnel={spec.slug} style={themeStyle} className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-8 px-5 py-10">
+    <div data-funnel={spec.slug} className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-8 px-5 py-10">
       <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
       <AnimatePresence mode="wait">
         <motion.div
@@ -537,6 +514,7 @@ export function FunnelEngine({ spec }: { spec: FunnelSpec }) {
         >
           <StepView
             step={engine.step}
+            funnelContent={spec.content}
             content={stepContent}
             value={engine.value}
             onChange={engine.setAnswer}
@@ -573,7 +551,7 @@ git commit -m "feat(funnels): engine shell + progress (theme, animated step disp
 
 - [ ] **Step 1: Fill the kitchen spec (hero → layout → own/rent), linear flow**
 
-Replace the stub body of `kitchens.ts` — it stays a plain `export const kitchensFunnel` (the registry's static map already references it; no `registerFunnel` call). The remaining steps (location, pii, enrichment, datetime, confirmation) arrive in Plans 2b/2c.
+**EXTEND** the landed `kitchens.ts` stub — keep its existing `content` hero fields (`title`/`headline`/`subhead`/`scarcityLine`) and `theme: { accent: 'primary' }`; ADD the `steps` array, `flow`, `STEP_ORDER`, and the `content.steps` map. It stays a plain `export const kitchensFunnel` (the registry's static map references it). Remaining steps (location, pii, enrichment, datetime, confirmation) arrive in Plans 2b/2c.
 
 ```ts
 // src/shared/domains/funnels/constants/kitchens.ts
@@ -583,7 +561,7 @@ const STEP_ORDER: StepId[] = ['hero', 'layout', 'ownership']
 
 export const kitchensFunnel: FunnelSpec = {
   slug: 'kitchens',
-  theme: { primary: 'oklch(0.62 0.16 250)', accent: 'oklch(0.72 0.14 250)' },
+  theme: { accent: 'primary' },              // unchanged from foundation; Plan 5 tunes per-trade accent
   pixel: { contentCategory: 'kitchen' },
   steps: [
     { id: 'hero', kind: 'info' },
@@ -596,14 +574,16 @@ export const kitchensFunnel: FunnelSpec = {
     return i >= 0 && i < STEP_ORDER.length - 1 ? STEP_ORDER[i + 1] : null
   },
   content: {
-    brandName: 'Tri Pros Remodeling',
-    scarcity: "We're selecting 5 kitchens to transform at Showcase pricing.",
+    // ── existing hero fields (keep the foundation's copy) ──
+    title: 'Kitchen Showcase',
+    headline: 'Get a AAA-grade kitchen remodel — at a Showcase price.',
+    subhead: 'See if your home qualifies for one of our Showcase kitchens.',
+    scarcityLine: 'We’re selecting 5 kitchens in your area.',
+    // ── per-step copy (NEW) ──
     steps: {
-      hero: {
-        title: "We're selecting 5 kitchens to transform — at Showcase pricing.",
-        subtitle: 'In exchange for featuring the finished kitchen in our portfolio, chosen homeowners get our best work at a reduced rate. See if your kitchen qualifies — takes 60 seconds.',
-        cta: 'See if my kitchen qualifies →',
-      },
+      // Hero copy comes from the funnel-level fields above; this entry only
+      // supplies the hero CTA label.
+      hero: { title: 'Kitchen Showcase', cta: 'See if my kitchen qualifies →' },
       layout: {
         title: 'Which best describes your kitchen?',
         options: {
@@ -627,8 +607,6 @@ export const kitchensFunnel: FunnelSpec = {
   },
 }
 ```
-
-> Theme oklch values are placeholders consistent with the brand `--primary` (`oklch(0.6231 0.188 259.8145)` in `globals.css`); Plan 5 (polish) tunes per-trade accents. They are valid CSS now.
 
 - [ ] **Step 2: Render the engine from the route page**
 
