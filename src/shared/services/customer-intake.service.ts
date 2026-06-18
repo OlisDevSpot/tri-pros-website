@@ -8,6 +8,7 @@ import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { addCustomerNote } from '@/shared/entities/customers/dal/server/mutations'
 import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/queries'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { enrollLeadJob } from '@/shared/services/providers/upstash/jobs/enroll-lead'
 
 // ---------------------------------------------------------------------------
 // customerIntakeService — channel-agnostic lead ingestion (DRY across the Bina
@@ -62,6 +63,16 @@ function createCustomerIntakeService() {
         return created
       }
       const customer = created.data
+
+      // ── Auto-enroll (best-effort, fire-and-forget) ─────────────────────────
+      // Source-anchored policy gates here; enrollLeadJob is a dumb executor.
+      // A dropped enqueue only means the lead isn't auto-dialed (admin can still
+      // "Enroll all"), so best-effort `dispatch` — never breaks ingest.
+      // see docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md
+      const voipPolicy = sourceResult.data.voipConfigJSON?.campaigns
+      if (voipPolicy?.enabled && voipPolicy.autoEnroll && voipPolicy.defaultCampaignId) {
+        void enrollLeadJob.dispatch({ customerId: customer.id })
+      }
 
       // ── 2. Optional note (best-effort — never rolls back the customer) ──────
       if (input.note) {
