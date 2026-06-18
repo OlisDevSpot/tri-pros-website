@@ -92,6 +92,16 @@ const LEAD_SOURCES = [
       showNotes: true,
     },
   },
+  {
+    name: 'Branded Meta Ads',
+    slug: 'branded-meta-ads',
+    formConfigJSON: {
+      mode: 'customer_only' as const,
+      showEmail: true,
+      requireEmail: false,
+      showNotes: true,
+    },
+  },
 ]
 
 async function main() {
