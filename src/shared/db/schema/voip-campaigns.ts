@@ -1,5 +1,6 @@
 import type z from 'zod'
-import { integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import type { SmsCadence } from '@/shared/entities/voip-campaigns/schemas/sms-cadence'
+import { integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 
@@ -39,6 +40,9 @@ export const voipCampaigns = pgTable(
     // App-side exhaustion detection counts `call.ended` events to this cap.
     attemptsPerContact: integer('attempts_per_contact').notNull().default(10),
     hoursBetweenAttempts: integer('hours_between_attempts').notNull().default(3),
+    // App-authored SMS cadence config (NOT CT-mirrored). Resync-safe:
+    // upsertCampaignByCtId never writes this column. Shape = smsCadenceSchema.
+    smsCadence: jsonb('sms_cadence').$type<SmsCadence>(),
     // Updated on each successful admin Resync.
     lastSyncedAt: timestamp('last_synced_at', { mode: 'string', withTimezone: true })
       .defaultNow()

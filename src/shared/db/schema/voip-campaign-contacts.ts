@@ -58,8 +58,16 @@ export const voipCampaignContacts = pgTable(
     // WHY we unenrolled — 'graduated' | 'opted_out' | 'disqualified' (typed via
     // voipUnenrollReasons). Set alongside unenrolled_at; null while enrolled.
     unenrollReason: text('unenroll_reason').$type<VoipUnenrollReason>(),
-    // Dial-attempt counter (logic deferred to ring 2). Resets on re-enrollment.
+    // ── Current-enrollment progress (all reset on re-enrollment) ──────────────
+    // Dial-attempt counter — app-side cadence_exhausted at attempts_per_contact.
     dialAttempts: integer('dial_attempts').notNull().default(0),
+    // call_uuid of the most recent counted call.ended. Powers exactly-once
+    // attempt dedup (atomic conditional UPDATE). Null until first counted call.
+    lastCallUuid: text('last_call_uuid'),
+    // Auto-SMS cadence progress — also the next message index (strict ladder).
+    autoSmsSentCount: integer('auto_sms_sent_count').notNull().default(0),
+    // Timestamp of the last auto-SMS — drives the ≤1/day gate.
+    lastAutoSmsAt: timestamp('last_auto_sms_at', { mode: 'string', withTimezone: true }),
     attributeHash: text('attribute_hash').notNull(),
     lastSyncedAt: timestamp('last_synced_at', { mode: 'string', withTimezone: true })
       .defaultNow()
