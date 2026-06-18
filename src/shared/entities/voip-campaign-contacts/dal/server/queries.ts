@@ -83,6 +83,8 @@ export interface SmsCadenceContext {
   customerName: string
   customerPhone: string | null
   customerCity: string
+  customerState: string
+  customerZip: string
   interestedTradesRaw: string[]
   // Campaign cadence config (null when no campaign / unconfigured).
   smsCadence: SmsCadence | null
@@ -107,6 +109,8 @@ export async function findSmsCadenceContextByCtContactId(
         customerName: customers.name,
         customerPhone: customers.phone,
         customerCity: customers.city,
+        customerState: customers.state,
+        customerZip: customers.zip,
         leadMetaJSON: customers.leadMetaJSON,
         smsCadence: voipCampaigns.smsCadence,
       })
@@ -128,6 +132,8 @@ export async function findSmsCadenceContextByCtContactId(
       customerName: row.customerName,
       customerPhone: row.customerPhone,
       customerCity: row.customerCity,
+      customerState: row.customerState ?? 'CA',
+      customerZip: row.customerZip,
       interestedTradesRaw: row.leadMetaJSON?.interestedTradesRaw ?? [],
       smsCadence: row.smsCadence ?? null,
     }

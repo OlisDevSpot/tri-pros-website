@@ -1,23 +1,16 @@
-import { pickPrimaryTrade } from './pick-primary-trade'
+import type { SmsMergeVars } from '@/shared/entities/voip-campaigns/lib/sms-merge-tokens'
+
+import { SMS_MERGE_TOKENS } from '@/shared/entities/voip-campaigns/lib/sms-merge-tokens'
 
 // Pure {{token}} substitution for campaign SMS bodies. Renders in-app because
-// CloudTalk's /sms/send takes a literal body (no contact merge). Supported
-// tokens: {{first_name}}, {{city}}, {{primary_trade}}. Unknown tokens are left
-// untouched. No I/O.
+// CloudTalk's /sms/send takes a literal body (no contact merge). Tokens come
+// from the shared registry; unknown tokens are left untouched. No I/O.
 
-interface RenderSmsTemplateVars {
-  name: string
-  city: string
-  interestedTradesRaw: string[]
-}
+const RESOLVERS = new Map(SMS_MERGE_TOKENS.map(t => [t.token, t.resolve]))
 
-export function renderSmsTemplate(body: string, vars: RenderSmsTemplateVars): string {
-  const firstName = vars.name.trim().split(/\s+/)[0] ?? ''
-  const replacements: Record<string, string> = {
-    first_name: firstName,
-    city: vars.city,
-    primary_trade: pickPrimaryTrade(vars.interestedTradesRaw),
-  }
-  return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) =>
-    key in replacements ? replacements[key]! : match)
+export function renderSmsTemplate(body: string, vars: SmsMergeVars): string {
+  return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
+    const resolve = RESOLVERS.get(key)
+    return resolve ? resolve(vars) : match
+  })
 }

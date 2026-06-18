@@ -64,6 +64,8 @@ function createSmsCadenceService() {
       const text = renderSmsTemplate(decision.message.body, {
         name: ctx.customerName,
         city: ctx.customerCity,
+        state: ctx.customerState,
+        zip: ctx.customerZip,
         interestedTradesRaw: ctx.interestedTradesRaw,
       })
 
