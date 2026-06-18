@@ -1,4 +1,6 @@
 import type { CardSelectStep, StepProps } from '@/shared/domains/funnels/types'
+import Image from 'next/image'
+import { OPTION_ICONS } from '@/shared/domains/funnels/constants/option-assets'
 import { cn } from '@/shared/lib/utils'
 
 export function CardSelectStepView({ step, content, value, isAnswered, setValue, advance }: StepProps<CardSelectStep>) {
@@ -34,6 +36,15 @@ export function CardSelectStepView({ step, content, value, isAnswered, setValue,
                 selected ? 'border-primary bg-primary/5' : 'border-border',
               )}
             >
+              {option?.asset?.kind === 'icon' && OPTION_ICONS[option.asset.name]
+                ? (() => {
+                    const Icon = OPTION_ICONS[option.asset.name]
+                    return <Icon className="text-primary mb-2 size-6" />
+                  })()
+                : null}
+              {option?.asset?.kind === 'image'
+                ? <Image src={option.asset.src} alt={option.asset.alt} width={48} height={48} className="mb-2" />
+                : null}
               <span className="block font-medium">{option?.label ?? optionId}</span>
               {option?.description
                 ? <span className="text-muted-foreground mt-1 block text-sm">{option.description}</span>

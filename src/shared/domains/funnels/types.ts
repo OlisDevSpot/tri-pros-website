@@ -31,7 +31,10 @@ export type FunnelAnswers = Partial<Record<StepId, AnswerValue>>
 
 // ── Per-kind content (no shared kitchen-sink type) ──
 
-export interface OptionContent { label: string, icon?: string, description?: string }
+export type OptionAsset
+  = { kind: 'icon', name: string }
+    | { kind: 'image', src: string, alt: string }
+export interface OptionContent { label: string, description?: string, asset?: OptionAsset }
 export interface HeroMedia { kind: 'image', src: string, alt: string }
 export interface HeroContent {
   headline: string
