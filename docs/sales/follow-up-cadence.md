@@ -24,7 +24,7 @@ Most contracts are not signed on the first attempt. Research across home improve
 
 > "Hi [Name] — great meeting you today. Your proposal is on its way to your inbox. Take a look when you get a chance, and let me know if anything needs clarification. I'll follow up with you [day/time we agreed on]."
 
-**CRM action**: Move Pipedrive deal to "Proposal Sent." Create Monday follow-up task for Day 1.
+**CRM action**: Move the TPR CRM deal to "Proposal Sent." Create Monday follow-up task for Day 1.
 
 ---
 
@@ -95,7 +95,7 @@ Options:
 - New promotions as they become available
 - Relevant project photos or company news
 
-**CRM action**: Tag deal in Pipedrive as "Nurture" — set automated reminder tasks for monthly follow-up.
+**CRM action**: Tag the deal in the TPR CRM as "Nurture" — set automated reminder tasks for monthly follow-up.
 
 > The goal here is to stay present so that when they're ready — and many do eventually come back — you're the first person they call.
 
@@ -132,13 +132,13 @@ Agent notification is sent via email when a proposal is viewed (see `src/shared/
 
 | Day | Action | CRM Update |
 |---|---|---|
-| 0 | Send proposal | Pipedrive: "Proposal Sent"; Monday: create follow-up task |
-| 1 | Call on view trigger | Pipedrive: log call; Monday: mark task complete |
-| 3 | Value-add touch | Pipedrive: log contact; Monday: create Day 7 task |
-| 7 | Urgency close attempt | Pipedrive: log; update deal probability |
-| 14+ | Monthly nurture | Pipedrive: tag "Nurture"; set recurring reminder |
-| Close | Signed | Pipedrive: "Won"; Monday: project kickoff |
-| No | Not interested | Pipedrive: "Lost" with reason; tag for future reactivation |
+| 0 | Send proposal | TPR CRM: "Proposal Sent"; Monday: create follow-up task |
+| 1 | Call on view trigger | TPR CRM: log call; Monday: mark task complete |
+| 3 | Value-add touch | TPR CRM: log contact; Monday: create Day 7 task |
+| 7 | Urgency close attempt | TPR CRM: log; update deal probability |
+| 14+ | Monthly nurture | TPR CRM: tag "Nurture"; set recurring reminder |
+| Close | Signed | TPR CRM: "Won"; Monday: project kickoff |
+| No | Not interested | TPR CRM: "Lost" with reason; tag for future reactivation |
 
 ---
 

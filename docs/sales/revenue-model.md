@@ -142,7 +142,7 @@ For proposal creation guidance, see `proposal/creation-guide.md`.
 
 | System | Role |
 |---|---|
-| Pipedrive | Deal pipeline (stages, activities, forecasting) |
+| TPR CRM | Deal pipeline (customer stages, activity logging, follow-up) |
 | Monday.com | Task management, project tracking, lead follow-up |
 | DocuSign | E-signature for contracts |
 | TPR Proposal System | Proposal creation, delivery, view tracking |
