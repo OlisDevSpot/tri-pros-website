@@ -22,8 +22,12 @@ requirement. The catch-all ("General Reaching Out") deliberately belongs to no
 source.
 
 A lead source's **default** campaign — used to pre-select the campaign in
-"Enroll all" (and, in future, auto-enroll-on-ingest) — lives on
+"Enroll all" and to auto-enroll new leads on ingest (when the source's policy
+sets `enabled && autoEnroll`) — lives on
 `lead_sources.voipConfigJSON.campaigns.defaultCampaignId`, set via the Setup tab.
+Auto-enroll is dispatched best-effort by `enrollLeadJob` from
+`customerIntakeService.ingestLead`; see
+`docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md`.
 That is a *default*, not ownership: one campaign can be the default for zero, one,
 or many sources.
 
