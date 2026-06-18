@@ -15,9 +15,9 @@ export function SourceRollupCard({ campaigns, summary }: { campaigns: VoipCampai
   const [, setTab] = useQueryState('tab', campaignTabParser)
 
   const stats = [
-    { hero: false, label: 'Enrolled', tone: 'text-green-700 dark:text-green-400', value: summary.enrolledCount },
-    { hero: true, label: 'Eligible', tone: 'text-foreground', value: summary.eligibleCount },
-    { hero: false, label: 'DNC', tone: 'text-red-700 dark:text-red-500', value: summary.dncCount },
+    { accent: 'text-success', label: 'Enrolled', value: summary.enrolledCount },
+    { accent: 'text-foreground', label: 'Eligible', value: summary.eligibleCount },
+    { accent: 'text-destructive', label: 'DNC', value: summary.dncCount },
   ]
 
   return (
@@ -28,10 +28,10 @@ export function SourceRollupCard({ campaigns, summary }: { campaigns: VoipCampai
           <span className="truncate text-xs text-muted-foreground">{summary.sourceSlug}</span>
         </div>
         {summary.defaultCampaignId
-          ? <Badge className="shrink-0" variant="secondary">Bound</Badge>
+          ? <Badge className="shrink-0" variant="secondary">Default set</Badge>
           : (
               <Badge
-                className="shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+                className="shrink-0 border-warning/40 bg-warning/10 text-warning"
                 variant="outline"
               >
                 No default
@@ -48,7 +48,7 @@ export function SourceRollupCard({ campaigns, summary }: { campaigns: VoipCampai
             <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
               {s.label}
             </span>
-            <span className={cn('tabular-nums', s.hero ? 'text-2xl font-bold' : 'text-base font-semibold', s.tone)}>
+            <span className={cn('text-lg font-semibold tabular-nums', s.value > 0 ? s.accent : 'text-muted-foreground')}>
               {s.value.toLocaleString()}
             </span>
           </div>
@@ -60,7 +60,7 @@ export function SourceRollupCard({ campaigns, summary }: { campaigns: VoipCampai
           Pick a campaign on enroll, or
           {' '}
           <button
-            className="-mx-1 inline-flex min-h-6 items-center rounded px-1 font-medium text-amber-800 underline-offset-2 outline-2 outline-primary -outline-offset-2 hover:underline focus-visible:outline dark:text-amber-300"
+            className="-mx-1 inline-flex min-h-6 items-center rounded px-1 font-medium text-warning underline-offset-2 outline-2 outline-primary -outline-offset-2 hover:underline focus-visible:outline"
             type="button"
             onClick={() => setTab('setup')}
           >

@@ -10,9 +10,9 @@ interface OverviewSummaryBarProps {
 
 export function OverviewSummaryBar({ dnc, eligible, enrolled }: OverviewSummaryBarProps) {
   const segments = [
-    { dotClass: 'bg-green-500', label: 'Enrolled', value: enrolled },
+    { dotClass: 'bg-success', label: 'Enrolled', value: enrolled },
     { dotClass: 'bg-muted-foreground', label: 'Eligible', value: eligible },
-    { dotClass: 'bg-red-500', label: 'DNC', value: dnc },
+    { dotClass: 'bg-destructive', label: 'DNC', value: dnc },
   ]
 
   return (

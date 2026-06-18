@@ -111,7 +111,7 @@ export function SourcePolicyRow({ source, campaigns, busy, onPatch }: SourcePoli
       <TableCell className="text-right text-sm tabular-nums">
         <span className="text-foreground">{source.eligibleCount}</span>
         <span className="px-1 text-muted-foreground/60">/</span>
-        <span className="text-muted-foreground">{source.enrolledCount}</span>
+        <span className={source.enrolledCount > 0 ? 'text-success' : 'text-muted-foreground'}>{source.enrolledCount}</span>
       </TableCell>
     </TableRow>
   )

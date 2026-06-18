@@ -31,7 +31,7 @@ export function CampaignsOverviewView() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-5 overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pr-1">
         <Skeleton className="h-12 w-full" />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -47,7 +47,7 @@ export function CampaignsOverviewView() {
   }
 
   return (
-    <div className="flex flex-col gap-5 overflow-y-auto">
+    <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain pr-1">
       <OverviewSummaryBar
         dnc={totals.dnc}
         eligible={totals.eligible}

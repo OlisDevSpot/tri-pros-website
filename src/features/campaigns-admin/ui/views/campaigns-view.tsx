@@ -29,7 +29,7 @@ export function CampaignsView() {
           <TabsTrigger value="setup">Setup</TabsTrigger>
         </TabsList>
 
-        <TabsContent className="min-h-0 flex-1" value="overview"><CampaignsOverviewView /></TabsContent>
+        <TabsContent className="flex min-h-0 flex-1 flex-col" value="overview"><CampaignsOverviewView /></TabsContent>
         <TabsContent className="flex min-h-0 flex-1 flex-col" value="leads"><CampaignsLeadsView /></TabsContent>
         <TabsContent className="flex min-h-0 flex-1 flex-col" value="setup"><CampaignsSetupView /></TabsContent>
       </Tabs>

@@ -25,7 +25,7 @@ export function IdleSourceRow({ summary }: { summary: SourceSummary }) {
         ))}
       </div>
       {summary.defaultCampaignId
-        ? <Badge className="shrink-0" variant="secondary">Bound</Badge>
+        ? <Badge className="shrink-0" variant="secondary">Default set</Badge>
         : <Badge className="shrink-0" variant="outline">No default</Badge>}
     </div>
   )

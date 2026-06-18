@@ -70,7 +70,7 @@ export function SyncedCampaignsCard() {
                             <span className="inline-flex items-center gap-1.5 text-sm">
                               <span
                                 aria-hidden="true"
-                                className={isActive ? 'size-1.5 rounded-full bg-foreground' : 'size-1.5 rounded-full bg-muted-foreground/40'}
+                                className={isActive ? 'size-1.5 rounded-full bg-success' : 'size-1.5 rounded-full bg-muted-foreground/40'}
                               />
                               <span className={isActive ? 'text-foreground' : 'text-muted-foreground'}>
                                 {isActive ? 'Active' : 'Inactive'}
