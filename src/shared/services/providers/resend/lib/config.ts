@@ -26,7 +26,5 @@ const helpers = createProviderConfig({
   }),
 })
 
-export const buildResendConfig = helpers.build
 export const getResendConfig = helpers.get
-export const isResendConfigured = helpers.isConfigured
 export const resendConfigMeta = helpers.configMeta

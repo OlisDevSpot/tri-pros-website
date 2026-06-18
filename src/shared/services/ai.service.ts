@@ -1,5 +1,5 @@
 import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
-import { generateProjectSummary } from '@/shared/services/providers/ai/generate-project-summary'
+import { aiClient } from '@/shared/services/providers/ai/client'
 
 /** AI service: wraps existing AI functions + stubs for future expansion */
 function createAIService() {
@@ -8,7 +8,7 @@ function createAIService() {
       proposalId: string
       proposalFormValues: Partial<ProposalFormSchema>
     }): Promise<void> => {
-      await generateProjectSummary(params.proposalId, params.proposalFormValues)
+      await aiClient.generateProjectSummary(params.proposalId, params.proposalFormValues)
     },
 
     generateMeetingSummary: async (_params: { meetingId: string }): Promise<string> => {

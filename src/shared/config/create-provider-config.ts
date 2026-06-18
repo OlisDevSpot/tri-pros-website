@@ -1,7 +1,37 @@
 import type { z } from 'zod'
 
+import process from 'node:process'
+
 import { NotConfiguredError } from '@/shared/config/not-configured-error'
-import env from '@/shared/config/server-env'
+
+/**
+ * Why this factory validates its OWN `fragment` against `process.env` instead
+ * of importing the parsed `env` singleton from `server-env`:
+ *
+ * Every provider's `lib/config.ts` imports THIS module (for the factory) and is
+ * in turn imported BY `server-env` (which spreads each `xEnvFragment` into the
+ * central schema). If the factory ALSO imported `server-env`, that closes a
+ * module-init cycle:
+ *
+ *   provider/lib/config.ts → create-provider-config → server-env
+ *     → (back to) provider/lib/config.ts for its `xEnvFragment`
+ *
+ * ESM hoists imports, so when the graph is entered through a provider config
+ * (e.g. the CloudTalk webhook route → cloudtalk/client → cloudtalk/lib/config),
+ * server-env would evaluate `...xEnvFragment.shape` while that fragment is still
+ * in the temporal dead zone → "Cannot access 'cloudtalkEnvFragment' before
+ * initialization".
+ *
+ * The factory doesn't need the aggregated singleton — it already receives the
+ * provider's own `fragment`. `get()` runs that fragment against `process.env`,
+ * which makes the fragment the per-provider safety gate it was designed to be:
+ * a misconfigured provider throws at ITS call site (NotConfiguredError for a
+ * missing required key; a scoped ZodError for a present-but-invalid value like
+ * cloudtalk's `.min(32)` secret) rather than crashing app boot. server-env keeps
+ * every fragment `.optional()` in the central schema, so boot still never fails
+ * on an unconfigured provider; this re-parse simply scopes validation to the
+ * one provider being used.
+ */
 
 /**
  * Shape of the boot-banner registry entry every provider's `lib/config.ts`
@@ -47,10 +77,11 @@ export interface ProviderConfigHelpers<TParsed, TConfig, TProvider extends strin
  *   1. The Zod fragment (all fields `.optional()`)
  *   2. The runtime config interface (required types)
  *   3. The mapping (parsed → runtime)
- * and calls `createProviderConfig({...})` to get the helper bundle. The
- * five canonical exports (`<x>EnvFragment`, `build<X>Config`, `get<X>Config`,
- * `is<X>Configured`, `<x>ConfigMeta`) come from the factory result + the
- * fragment definition.
+ * and calls `createProviderConfig({...})` to get the helper bundle
+ * (`{ build, get, isConfigured, configMeta }`). Re-export the `<x>EnvFragment`
+ * (server-env spreads it) plus only the helpers a provider actually uses —
+ * always `getXConfig` + `xConfigMeta`; add `isXConfigured` / `buildXConfig`
+ * when a consumer needs them.
  *
  * @example
  * ```ts
@@ -66,9 +97,7 @@ export interface ProviderConfigHelpers<TParsed, TConfig, TProvider extends strin
  *   toConfig: (parsed): ResendRuntimeConfig => ({ apiKey: parsed.RESEND_API_KEY! }),
  * })
  *
- * export const buildResendConfig = helpers.build
  * export const getResendConfig = helpers.get
- * export const isResendConfigured = helpers.isConfigured
  * export const resendConfigMeta = helpers.configMeta
  * ```
  *
@@ -88,7 +117,7 @@ export function createProviderConfig<
 
   function listMissing(): string[] {
     return opts.requiredKeys
-      .filter(k => !(env as Record<string, unknown>)[k as string])
+      .filter(k => !process.env[k as string])
       .map(String)
   }
 
@@ -107,7 +136,9 @@ export function createProviderConfig<
     if (_cache !== null) {
       return _cache
     }
-    _cache = build(env as unknown as TParsed)
+    // Validate this provider's own slice — throws a scoped error on a
+    // present-but-invalid value; `build` handles missing required keys.
+    _cache = build(opts.fragment.parse(process.env))
     return _cache
   }
 

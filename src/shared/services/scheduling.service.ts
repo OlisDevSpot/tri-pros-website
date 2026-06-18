@@ -36,7 +36,7 @@ import { GCalSyncTokenExpiredError, googleCalendarClient } from '@/shared/servic
 import { hasRemoteChanged, resolveConflict } from '@/shared/services/providers/google-calendar/lib/conflict'
 import { gcalEventToLocal } from '@/shared/services/providers/google-calendar/lib/map-from-gcal'
 import { activityToGCalEvent, meetingToGCalEvent } from '@/shared/services/providers/google-calendar/lib/map-to-gcal'
-import { refreshAccessToken } from '@/shared/services/providers/google-drive/lib/refresh-access-token'
+import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
 
 const isDev = env.NODE_ENV === 'development'
 const TRI_PROS_CALENDAR_NAME = isDev ? 'Tri Pros Schedule (DEV)' : 'Tri Pros Schedule'
@@ -54,7 +54,7 @@ async function getAccessTokenForUser(userId: string): Promise<{ accessToken: str
 
   let accessToken = row.accessToken
   if (!accessToken || expiresAt < fiveMinFromNow) {
-    const refreshed = await refreshAccessToken({ refreshToken: row.refreshToken })
+    const refreshed = await googleDriveClient.refreshAccessToken({ refreshToken: row.refreshToken })
     accessToken = refreshed.accessToken
 
     await updateAccountGCalFields(row.id, {

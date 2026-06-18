@@ -20,7 +20,7 @@ import './lib/load-env'
 import { eq } from 'drizzle-orm'
 import { db } from '../src/shared/db'
 import { user } from '../src/shared/db/schema/auth'
-import { sendPushToUser } from '../src/shared/services/providers/web-push/send'
+import { webPushClient } from '../src/shared/services/providers/web-push/client'
 
 interface Args {
   to?: string
@@ -67,7 +67,7 @@ async function main() {
 
   console.warn(`Sending push to ${target.name} <${target.email}>...`)
 
-  const result = await sendPushToUser(target.id, {
+  const result = await webPushClient.sendToUser(target.id, {
     title: args.title,
     body: args.body,
     navigate: args.navigate ?? '/dashboard',

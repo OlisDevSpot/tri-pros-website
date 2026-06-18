@@ -46,7 +46,5 @@ const helpers = createProviderConfig({
   }),
 })
 
-export const buildQuickbooksConfig = helpers.build
 export const getQuickbooksConfig = helpers.get
-export const isQuickbooksConfigured = helpers.isConfigured
 export const quickbooksConfigMeta = helpers.configMeta

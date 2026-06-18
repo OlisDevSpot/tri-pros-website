@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
 import { account, mediaFiles } from '@/shared/db/schema'
-import { refreshAccessToken } from '@/shared/services/providers/google-drive/lib/refresh-access-token'
+import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
 import { putObject } from '@/shared/services/providers/r2/put-object'
 import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
@@ -36,7 +36,7 @@ export const googleDriveRouter = createTRPCRouter({
         return { accessToken: googleAccount.accessToken! }
       }
 
-      const { accessToken, expiresAt } = await refreshAccessToken({ refreshToken: googleAccount.refreshToken })
+      const { accessToken, expiresAt } = await googleDriveClient.refreshAccessToken({ refreshToken: googleAccount.refreshToken })
       await db
         .update(account)
         .set({ accessToken, accessTokenExpiresAt: expiresAt })
@@ -68,7 +68,7 @@ export const googleDriveRouter = createTRPCRouter({
       const fiveMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000)
       let accessToken = googleAccount.accessToken
       if (!googleAccount.accessTokenExpiresAt || googleAccount.accessTokenExpiresAt <= fiveMinutesFromNow) {
-        const refreshed = await refreshAccessToken({ refreshToken: googleAccount.refreshToken })
+        const refreshed = await googleDriveClient.refreshAccessToken({ refreshToken: googleAccount.refreshToken })
         await db
           .update(account)
           .set({ accessToken: refreshed.accessToken, accessTokenExpiresAt: refreshed.expiresAt })

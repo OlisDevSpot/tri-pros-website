@@ -3,7 +3,7 @@ import {
   deletePushSubscriptionForUser,
   upsertPushSubscription,
 } from '@/shared/entities/push-subscriptions/dal/server/queries'
-import { sendPushToUser } from '@/shared/services/providers/web-push/send'
+import { webPushClient } from '@/shared/services/providers/web-push/client'
 import { agentProcedure, createTRPCRouter, protectedProcedure } from '../init'
 
 // Subscribe payload mirrors what `PushSubscription.toJSON()` returns in the
@@ -63,7 +63,7 @@ export const pushRouter = createTRPCRouter({
       navigate: z.string().default('/dashboard'),
     }))
     .mutation(async ({ ctx, input }) => {
-      const result = await sendPushToUser(ctx.session.user.id, {
+      const result = await webPushClient.sendToUser(ctx.session.user.id, {
         title: 'Tri Pros — test notification',
         body: 'Tap to deep-link into the app.',
         navigate: input.navigate,

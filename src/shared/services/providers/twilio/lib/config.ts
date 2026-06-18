@@ -14,8 +14,9 @@ import { createProviderConfig } from '@/shared/config/create-provider-config'
  *   verify paths don't structurally require them. Read them via the lazy
  *   `getVetting()` helper in `constants/index.ts` when runtime gates need them.
  * - ESM bootstrap order: server-env imports this file for the fragment; the
- *   factory imports `env` lazily inside its function bodies, so circular
- *   import resolves cleanly.
+ *   factory does NOT import server-env back (it validates this fragment against
+ *   `process.env` directly), so there is no module-init cycle. See
+ *   create-provider-config.ts for the full rationale.
  */
 export const twilioEnvFragment = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),

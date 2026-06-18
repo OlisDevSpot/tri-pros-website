@@ -3,12 +3,7 @@
 import type { HeroView } from './hero-view-toggle'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useMemo, useState } from 'react'
-import {
-  buildAerialStaticMapUrl,
-  buildRoadmapStaticMapUrl,
-  buildStreetViewStaticUrl,
-  hasGoogleMapsKey,
-} from '@/shared/services/providers/google-maps/static-urls'
+import { googleMapsClient } from '@/shared/services/providers/google-maps/client'
 
 interface Props {
   address: string | null
@@ -22,7 +17,7 @@ interface Props {
 export function CustomerAddressHero({ address, view }: Props) {
   const [imageErrored, setImageErrored] = useState(false)
   const [errorUrl, setErrorUrl] = useState<string | null>(null)
-  const keyPresent = hasGoogleMapsKey()
+  const keyPresent = googleMapsClient.hasKey()
 
   useEffect(() => {
     if (!keyPresent) {
@@ -35,9 +30,9 @@ export function CustomerAddressHero({ address, view }: Props) {
       return null
     }
     return {
-      aerial: buildAerialStaticMapUrl(address),
-      map: buildRoadmapStaticMapUrl(address),
-      street: buildStreetViewStaticUrl(address),
+      aerial: googleMapsClient.aerialStaticMapUrl(address),
+      map: googleMapsClient.roadmapStaticMapUrl(address),
+      street: googleMapsClient.streetViewStaticUrl(address),
     }
   }, [address, keyPresent])
 

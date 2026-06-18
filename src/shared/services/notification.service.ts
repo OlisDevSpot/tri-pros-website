@@ -5,7 +5,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
-import { sendPushToUser, sendPushToUsers } from '@/shared/services/providers/web-push/send'
+import { webPushClient } from '@/shared/services/providers/web-push/client'
 
 // @migration(meetings-entity-router)
 // This service still imports `db` for the meeting notification methods
@@ -72,7 +72,7 @@ function createNotificationService() {
       const sourceLabel = sourceLabels[params.source] ?? 'Opened directly'
 
       // Push (always sent when owner has an active subscription).
-      const pushResult = await sendPushToUser(params.proposalOwnerId, {
+      const pushResult = await webPushClient.sendToUser(params.proposalOwnerId, {
         title: `Proposal Viewed | ${params.customerName}`,
         body: `${sourceLabel} • ${formatScheduledTime(params.viewedAt)}`,
         navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
@@ -128,7 +128,7 @@ function createNotificationService() {
       const title = `New Meeting | ${buildCustomerLabel({ name: meeting.customerName, address: meeting.customerAddress })}`
       const body = meeting.scheduledFor ? formatScheduledTime(meeting.scheduledFor) : 'Tap to view'
 
-      const result = await sendPushToUser(params.participantUserId, {
+      const result = await webPushClient.sendToUser(params.participantUserId, {
         title,
         body,
         navigate,
@@ -210,7 +210,7 @@ function createNotificationService() {
 
       const title = `Time Changed | ${customerLabel}`
 
-      const result = await sendPushToUsers(
+      const result = await webPushClient.sendToUsers(
         recipients.map(r => r.userId),
         {
           title,

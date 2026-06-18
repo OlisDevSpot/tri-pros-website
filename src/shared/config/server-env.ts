@@ -165,15 +165,12 @@ catch (e) {
   process.exit(1)
 }
 
-// Publish the default export BEFORE the boot banner runs. The banner calls
-// `meta.listMissing()`, which reads `env` through the circular import in
-// `create-provider-config.ts` (provider config → factory → back to this file's
-// default export). Webpack compiles `export default env` into a `const` that's
-// in the temporal dead zone until its declaration executes — so if this sits at
-// the bottom (after the banner), `listMissing()` throws
-// "Cannot access '__WEBPACK_DEFAULT_EXPORT__' before initialization".
-// Assigning it here, before the banner, breaks that TDZ cycle. `env` is fully
-// parsed at this point and never reassigned, so the exported value is stable.
+// Publish the default export as soon as `env` is parsed, before the side
+// effects below. `create-provider-config` no longer imports this singleton
+// (it validates each provider's fragment against `process.env` directly), so
+// the boot banner's `meta.listMissing()` does NOT read back through here — the
+// former provider-config ↔ server-env import cycle is gone. Exporting early
+// stays as a clean default: the value is fully parsed and never reassigned.
 export default env
 
 // Production safety gate: VOIP_DEV_OVERRIDE_NUMBER reroutes all outbound voice/SMS

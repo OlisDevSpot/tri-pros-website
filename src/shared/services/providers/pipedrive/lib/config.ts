@@ -30,7 +30,6 @@ const helpers = createProviderConfig({
   }),
 })
 
-export const buildPipedriveConfig = helpers.build
 export const getPipedriveConfig = helpers.get
 export const isPipedriveConfigured = helpers.isConfigured
 export const pipedriveConfigMeta = helpers.configMeta

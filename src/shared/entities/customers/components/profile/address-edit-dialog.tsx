@@ -11,11 +11,7 @@ import { Modal } from '@/shared/components/dialogs/modals/base-modal'
 import { AddressAutocomplete } from '@/shared/components/inputs/address-autocomplete'
 import { Button } from '@/shared/components/ui/button'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import {
-  buildAerialStaticMapUrl,
-  buildStreetViewStaticUrl,
-  hasGoogleMapsKey,
-} from '@/shared/services/providers/google-maps/static-urls'
+import { googleMapsClient } from '@/shared/services/providers/google-maps/client'
 import { useTRPC } from '@/trpc/helpers'
 
 interface Props {
@@ -124,9 +120,9 @@ export function AddressEditDialog({ customerId, isOpen, onClose, defaultAddress 
 // static-map URLs so it matches the customer hero look and avoids an extra
 // interactive map widget.
 function SelectedPreview({ fullAddress }: { fullAddress: string }) {
-  const mapsKeyPresent = hasGoogleMapsKey()
-  const aerialUrl = mapsKeyPresent ? buildAerialStaticMapUrl(fullAddress, '640x480') : null
-  const streetUrl = mapsKeyPresent ? buildStreetViewStaticUrl(fullAddress, '640x480') : null
+  const mapsKeyPresent = googleMapsClient.hasKey()
+  const aerialUrl = mapsKeyPresent ? googleMapsClient.aerialStaticMapUrl(fullAddress, '640x480') : null
+  const streetUrl = mapsKeyPresent ? googleMapsClient.streetViewStaticUrl(fullAddress, '640x480') : null
 
   return (
     <div className="space-y-2">
