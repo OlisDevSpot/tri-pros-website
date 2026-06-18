@@ -97,7 +97,7 @@ export function SyncedCampaignsCard() {
                                     <span className="inline-flex items-center gap-1.5 text-sm">
                                       <span aria-hidden="true" className="size-1.5 rounded-full bg-success" />
                                       <span className="tabular-nums text-foreground">{n}</span>
-                                      <span className="text-foreground"> msgs&nbsp;·&nbsp;on</span>
+                                      <span className="text-foreground">msgs&nbsp;·&nbsp;on</span>
                                     </span>
                                   )
                                 : (

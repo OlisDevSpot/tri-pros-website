@@ -37,7 +37,9 @@ export function CampaignCadenceDialog({
   const [draft, setDraft] = useState<SmsCadence>(
     () => campaign?.smsCadence ?? smsCadenceSchema.parse({}),
   )
-  const [messageKeys, setMessageKeys] = useState<string[]>([])
+  const [messageKeys, setMessageKeys] = useState<string[]>(
+    () => (campaign?.smsCadence ?? smsCadenceSchema.parse({})).messages.map(() => crypto.randomUUID()),
+  )
 
   // Re-seed whenever the dialog opens or a different campaign is selected.
   useEffect(() => {
@@ -174,11 +176,11 @@ export function CampaignCadenceDialog({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-2">
           {messageCount === 0
             ? (
-                <p className="py-6 text-sm text-muted-foreground">“No messages yet. Add an opener — it sends after the first dial attempt.”</p>
+                <p className="py-6 text-sm text-muted-foreground">No messages yet. Add an opener — it sends after the first dial attempt.</p>
               )
             : draft.messages.map((m, i) => (
                 <CadenceMessageRow
-                  key={messageKeys[i] ?? crypto.randomUUID()}
+                  key={messageKeys[i]}
                   index={i}
                   message={m}
                   showThresholdWarning={i > 0 && m.afterAttempts < draft.messages[i - 1]!.afterAttempts}

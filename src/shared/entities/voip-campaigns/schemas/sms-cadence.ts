@@ -11,7 +11,7 @@ export const smsCadenceMessageSchema = z.object({
   // opener arms after the first dial (no enrollment-time send; the from-DID is
   // read off the call.ended event).
   afterAttempts: z.number().int().min(1),
-  // SMS body. Supports {{first_name}}, {{city}}, {{primary_trade}} merge tokens.
+  // SMS body. Supports {{token}} merge fields — see ../lib/sms-merge-tokens.ts for the canonical token set.
   body: z.string().min(1),
 })
 
