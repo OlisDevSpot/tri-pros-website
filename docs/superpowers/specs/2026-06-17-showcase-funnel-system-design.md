@@ -114,7 +114,7 @@ export const SUBDOMAIN_ROUTES: Record<string, string> = {
   ...Object.fromEntries(
     Object.entries(FUNNEL_SUBDOMAINS).map(([sub, trade]) => [sub, ROOTS.funnels.trade(trade)]),
   ),
-  voip: ROOTS.voip.root(),
+  // voip: ROOTS.voip.root(),  // future — added when the /voip route exists (NOT registered yet)
 }
 ```
 

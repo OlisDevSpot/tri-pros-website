@@ -1,7 +1,7 @@
 /**
  * Subdomain label → internal trade slug. Single source of truth for which
  * funnel subdomains exist. Consumed by the subdomain registry
- * (src/shared/config/subdomains.ts) and the `(funnels)/[trade]` route.
+ * (src/shared/config/subdomains.ts) and the `funnels/[trade]` route.
  */
 export const FUNNEL_SUBDOMAINS = {
   kitchens: 'kitchen',
