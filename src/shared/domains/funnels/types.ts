@@ -59,7 +59,7 @@ export interface LocationContent {
   outOfAreaLabel?: string
 }
 
-export interface PiiFieldLabels { name?: string, phone?: string, email?: string, city?: string }
+export interface PiiFieldLabels { firstName?: string, lastName?: string, phone?: string }
 export interface PiiContent {
   title: string
   subtitle?: string
