@@ -5,6 +5,7 @@ import { bulkEnrollJob } from '@/shared/services/providers/upstash/jobs/bulk-enr
 import { bulkUnenrollJob } from '@/shared/services/providers/upstash/jobs/bulk-unenroll'
 import { createQbRecordsJob } from '@/shared/services/providers/upstash/jobs/create-qb-records'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
+import { enrollLeadJob } from '@/shared/services/providers/upstash/jobs/enroll-lead'
 import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/enroll-source-batch'
 import { generateAISummaryJob } from '@/shared/services/providers/upstash/jobs/generate-ai-summary'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
@@ -43,6 +44,7 @@ const jobs: Job[] = [
   deleteMeetingEventJob,
   propagateCustomerChangeJob,
   notifyMeetingTimeChangedJob,
+  enrollLeadJob,
   enrollSourceBatchJob,
   bulkEnrollJob,
   bulkUnenrollJob,
