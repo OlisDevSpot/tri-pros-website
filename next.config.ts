@@ -8,7 +8,12 @@ const nextConfig: NextConfig = {
   // Allow HMR and /_next/* asset requests through the static ngrok tunnel
   // used by `pnpm dev:mobile`. Without this, Next.js logs a cross-origin
   // warning and (in a future major) will block the requests outright.
-  allowedDevOrigins: [...APP_HOSTS.tunnel],
+  allowedDevOrigins: [
+    ...APP_HOSTS.tunnel,
+    'kitchens.localhost',
+    'bathrooms.localhost',
+    'interiors.localhost',
+  ],
   // pdfkit reads its 14 standard-font AFM files + sRGB ICC profile via
   // fs.readFileSync(__dirname + '/data/...'). Two things conspire to
   // break this on Vercel:

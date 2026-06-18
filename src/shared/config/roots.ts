@@ -5,7 +5,14 @@ import type { ServiceSlug } from '@/shared/constants/company/services'
 
 export const APP_HOSTS = {
   prod: ['triprosremodeling.com', 'www.triprosremodeling.com'],
-  dev: ['localhost:3000', 'localhost:3001', 'localhost:3002'],
+  dev: [
+    'localhost:3000',
+    'localhost:3001',
+    'localhost:3002',
+    'kitchens.localhost:3000',
+    'bathrooms.localhost:3000',
+    'interiors.localhost:3000',
+  ],
   tunnel: ['destined-emu-bold.ngrok-free.app'],
 } as const
 
