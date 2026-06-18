@@ -4,8 +4,10 @@ import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 /** A step's stable identifier, unique within a funnel. */
 export type StepId = string
 
-/** Accumulated answers, keyed by the answering step's `field` (e.g. 'layout',
- *  'ownership', 'zip', 'city'). NARROWS the foundation's Partial<Record<StepId,unknown>>. */
+/**
+ * Accumulated answers, keyed by the answering step's `field` (e.g. 'layout',
+ * 'ownership', 'zip', 'city'). NARROWS the foundation's Partial<Record<StepId,unknown>>.
+ */
 export type FunnelAnswers = Record<string, string | string[] | null>
 
 // ── Step variants (discriminated by `kind`) — REPLACES the `{ id }` stub ──
@@ -44,11 +46,16 @@ export interface StepContent {
 
 // ── EXTEND the landed FunnelContent: keep the four hero fields, ADD `steps` ──
 export interface FunnelContent {
-  title: string         // existing — hero + document title
-  headline: string      // existing — hero headline
-  subhead: string       // existing — hero subhead
-  scarcityLine: string  // existing — scarcity line
-  steps: Record<StepId, StepContent>  // NEW (Plan 2) — per-step copy
+  /** Hero + document title. */
+  title: string
+  /** Hero headline. */
+  headline: string
+  /** Hero subhead. */
+  subhead: string
+  /** Real, stated scarcity line. */
+  scarcityLine: string
+  /** Per-step copy. NEW (Plan 2). */
+  steps: Record<StepId, StepContent>
 }
 
 /** Per-trade visual accent tokens. Plan 5 extends with full theming. */
