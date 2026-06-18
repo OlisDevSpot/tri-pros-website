@@ -1,13 +1,14 @@
-import { FUNNEL_SUBDOMAINS } from '@/features/funnels/constants/funnel-hosts'
 import { ROOTS } from '@/shared/config/roots'
+import { FUNNEL_SLUGS } from '@/shared/domains/funnels/constants/slugs'
 
 /**
  * Single source of truth: subdomain label → internal base path the
- * middleware rewrites to. Adding a new subdomain = one entry here.
+ * middleware rewrites to. Adding a new funnel subdomain = one slug in
+ * FUNNEL_SLUGS (src/shared/domains/funnels/constants/slugs.ts).
  *
  * `voip` is intentionally NOT registered yet — the `/voip` route group does
  * not exist. When it does, add: `voip: ROOTS.voip.root(),`
  */
 export const SUBDOMAIN_ROUTES: Record<string, string> = Object.fromEntries(
-  Object.entries(FUNNEL_SUBDOMAINS).map(([sub, trade]) => [sub, ROOTS.funnels.trade(trade)]),
+  FUNNEL_SLUGS.map(slug => [slug, ROOTS.funnels.trade(slug)]),
 )

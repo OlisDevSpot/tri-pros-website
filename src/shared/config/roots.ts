@@ -1,7 +1,7 @@
+import type { ServiceSlug } from '@/shared/constants/company/services'
 // Type-only import — erased at build time, so this does NOT create a runtime
 // circular dependency with services.ts (which value-imports ROOTS).
-import type { FunnelSubdomain, FunnelTrade } from '@/features/funnels/constants/funnel-hosts'
-import type { ServiceSlug } from '@/shared/constants/company/services'
+import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 
 export const APP_HOSTS = {
   prod: ['triprosremodeling.com', 'www.triprosremodeling.com'],
@@ -94,9 +94,9 @@ const APP_ROOTS = {
   },
   funnels: {
     // Internal rewrite TARGET — middleware rewrites a funnel host to this path.
-    trade: (trade: FunnelTrade, options?: UrlOptions) => generateUrl(`/funnels/${trade}`, options),
+    trade: (slug: FunnelSlug, options?: UrlOptions) => generateUrl(`/funnels/${slug}`, options),
     // Public subdomain URL — what we hand to Meta / link externally.
-    subdomain: (sub: FunnelSubdomain) => `https://${sub}.${APP_HOSTS.prod[0]}`,
+    subdomain: (slug: FunnelSlug) => `https://${slug}.${APP_HOSTS.prod[0]}`,
   },
 } as const
 
