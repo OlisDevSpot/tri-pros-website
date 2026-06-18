@@ -1,5 +1,5 @@
 import type { FunnelAnswers, FunnelSpec, FunnelStep, StepId } from '@/shared/domains/funnels/types'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { funnelStateKey } from '@/shared/domains/funnels/constants/storage-keys'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 
@@ -21,21 +21,29 @@ export interface FunnelEngine {
 }
 
 export function useFunnelEngine(spec: FunnelSpec): FunnelEngine {
-  const initial: EngineState = {
+  const initial = useMemo<EngineState>(() => ({
     currentStepId: spec.steps[0].id,
     history: [],
     answers: {},
-  }
+  }), [spec.steps])
   const [state, setState] = usePersistedState<EngineState>(funnelStateKey(spec.slug), initial)
 
+  // Hydration gate: use the default initial state on first render (matching SSR),
+  // then switch to persisted state after mount so both renders agree on step[0].
+  const [hydrated, setHydrated] = useState(false)
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+  const effective = hydrated ? state : initial
+
   const step = useMemo(() => {
-    const found = spec.steps.find(s => s.id === state.currentStepId)
+    const found = spec.steps.find(s => s.id === effective.currentStepId)
     // Spec changed under a resumed state (step id removed) → restart safely.
     return found ?? spec.steps[0]
-  }, [spec.steps, state.currentStepId])
+  }, [spec.steps, effective.currentStepId])
 
   const field = step.kind === 'card-select' ? step.field : null
-  const value = field ? (state.answers[field] ?? null) : null
+  const value = field ? (effective.answers[field] ?? null) : null
 
   const setAnswer = useCallback((next: string | string[]) => {
     if (!field) {
@@ -70,8 +78,8 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngine {
   return {
     step,
     value,
-    answers: state.answers,
-    isFirst: state.history.length === 0,
+    answers: effective.answers,
+    isFirst: effective.history.length === 0,
     setAnswer,
     advance,
     back,
