@@ -18,8 +18,8 @@ Form logic: (FL1) best-practice multi-step RHF + shadcn + zod; (FL2) email optio
 **Bucketing that drives the plans:**
 - **Group A — foundational model changes** (§1): #3, #1, #2, #6. Amend the step model.
 - **Group B — shipped-behavior bugs** (§2): #4, #5, FL2-email.
-- **Group C — form architecture & validation** (§3): FL1, FL4, FL3, FL2-zip.
-- **Deferred to 2c**: #7 (rides the region-map task).
+- **Group C — form architecture & validation** (§3): FL1 (form arch), FL4 (phone hard-gate), FL2-zip (SoCal region). **PII refinement** (post-approval): name split + progressive disclosure (§3.5), city sourced from the ZIP answer (§3.6).
+- **Deferred to 2c (or later)**: #7 region map (rides the region-map task); **email capture** (moved out of PII into enrichment — §3.3).
 
 ---
 
@@ -133,7 +133,7 @@ function useDebouncedAsyncValidator<T>(
   fn: (value: T, signal: AbortSignal) => Promise<true | string>, delayMs = 600,
 ): (value: T) => Promise<true | string>
 ```
-Form config: `mode: 'onBlur'`, `reValidateMode: 'onBlur'`. Pre-fill cross-step values via `defaultValues` (as PII already does for `city`); if reactive re-population on back-nav is ever needed use RHF's `values` prop + `resetOptions.keepDirtyValues` — **never** `useEffect(() => form.reset())`.
+Form config: `mode: 'onBlur'`, `reValidateMode: 'onBlur'`. The PII step no longer pre-fills `city` (it's not a field — §3.6); if reactive re-population on back-nav is ever needed use RHF's `values` prop + `resetOptions.keepDirtyValues` — **never** `useEffect(() => form.reset())`.
 
 ### 3.2 Phone — hard gate (FL4) — **owner decision: gate, don't warn**
 
@@ -167,14 +167,38 @@ Phone is the **primary** contact channel: "no valid phone number == not a real l
 
 **Cost:** ~$0.005/lookup; the `isValid` pre-filter + per-session cache keep it to roughly one paid lookup per real submission (~$10–40/mo at funnel volume). Lookup pricing **must be re-confirmed in the Twilio console before launch** (Context7 didn't return a hard figure).
 
-### 3.3 Email — optional, format-only (FL2/FL3) — **owner decision: keep simple**
+### 3.3 Email — removed from PII, moved to enrichment (FL2/FL3) — **owner decision**
 
-Make email **optional**, **format-only**, **no new dependency**, no deliverability/MX, no typo lib.
+Email is **not** part of the PII step. Phone is the primary (and gated) channel; email is a *nice-to-have* second channel captured **later, during enrichment (Plan 2c, or a subsequent plan)** — after the lead already exists. So:
+- **Remove `email` from `pii.schema.ts` and the PII form entirely** in 2b.5.
+- When email is (re)introduced in enrichment it is **optional, format-only** (`z.email()`, zod v4), no deliverability/MX, no typo lib, no new dependency. `buildLeadInput` must not require email.
+
+### 3.5 PII step — name split + progressive disclosure (owner refinement)
+
+**Intent:** make the PII step *feel* much smaller than it is. Reveal fields in stages so the user commits to the easy part first.
+
+- **Name is two separate fields — `firstName` and `lastName`** (not one "Full name"). Both visible on mount.
+- **Submit is disabled** initially.
+- **Progressive reveal:** only once **both** `firstName` and `lastName` are non-empty (trimmed) does the **phone field + consent checkbox** animate in (`motion/react` entrance; respect `useReducedMotion`; `AnimatePresence` on the revealed block).
+- **Submit enables** once the full set is valid — `firstName`, `lastName`, a phone that passes the client pre-check (§3.2), and `consent === true`.
+- **No `email`, no `city` field** on the form (city comes from `answers.location` — see §3.6). Final PII fields: `firstName`, `lastName`, `phone`, `consent`.
+
+**RHF mechanics:** `watch(['firstName','lastName'])` drives a derived `namesFilled` boolean gating the `AnimatePresence` block; keep per-step `useForm` (§3.1). The phone field's debounced async `validate` (§3.2) only matters once the field is mounted.
+
 ```ts
-// pii.schema.ts — email currently required via z.email(); make optional:
-email: z.email('Please enter a valid email').optional().or(z.literal('')),
+// pii.schema.ts — after this change
+export const piiSchema = z.object({
+  firstName: z.string().min(1, 'Please enter your first name'),
+  lastName: z.string().min(1, 'Please enter your last name'),
+  phone: z.string().min(7, 'Please enter a valid phone'), // hard-gated server-side (§3.2)
+  consent: z.literal(true, { message: 'Please agree to be contacted' }),
+  _honeypot: z.string().max(0).optional(),
+})
 ```
-`buildLeadInput` must tolerate an empty/absent email. (We're on zod v4, so `z.email()` is correct.)
+
+### 3.6 City source — the ZIP answer, not a PII field
+
+`buildLeadInput` ([build-lead-input.ts](../../../src/shared/domains/funnels/lib/build-lead-input.ts)) currently reads `city` from the PII form. With city removed from PII (§3.5), it reads `city`/`state`/`zip` from the composite `answers.location` (already captured + persisted by the ZIP step). Single source of truth for location; one fewer input. The PII step no longer pre-fills `city`.
 
 ### 3.4 ZIP — Southern-California region validation (FL2-zip)
 
@@ -205,7 +229,9 @@ The qualified phase already carries the seam comment ([location-step.tsx:66](../
 | `StepProps` | **add** `isAnswered: boolean` |
 | `OptionContent` | drop `icon?: string`; **add** `asset?: OptionAsset` |
 | `LocationContent` | split `cta` → `inputCta`/`checkingLabel`/`qualifiesLabel`; **add** not-qualified copy |
-| `pii.schema.ts` | `email` → optional |
+| `pii.schema.ts` | **remove** `email`; split `name` → `firstName` + `lastName`; drop `city` |
+| `pii-form-step.tsx` | first/last split + progressive reveal of phone+consent (motion); submit gated on full validity |
+| `build-lead-input.ts` | read `city`/`state`/`zip` from `answers.location`, not the PII form; no email required |
 | `leadMetaSchema` | **add** optional `phoneVerification` |
 | Twilio `client.ts` | **add** `lookupPhoneNumber` leaf method |
 | new files | `hooks/use-debounced-async-validator.ts`, `lib/evaluate-phone-gate.ts`, `constants/option-assets.tsx`, `ui/funnel-hero.tsx`, phone-lookup tRPC proc |
