@@ -51,6 +51,57 @@ No per-agent ownership. The visibility predicate is `FALSE` — only super-admin
 (omni path) reads via scoped CRUD. The Resync/binding admin UI reads through the
 tRPC router under admin gating.
 
+## SMS Cadence Config (`#sms-cadence`)
+
+Each campaign defines an **ordered ladder of ≤ 5 SMS messages**, each armed by a
+dial-attempt threshold, configurable per-campaign in the `sms_cadence` JSONB
+column. The app orchestrates the cadence decision; CloudTalk delivers via its
+`POST /sms/send.json` endpoint.
+
+**Resync-safe:** `upsertCampaignByCtId` never touches this column (it lives
+outside CT's purview; only app-side mutations write it).
+
+### Shape
+
+Typed via `smsCadenceSchema` (in `entities/voip-campaigns/schemas/`):
+
+```ts
+{
+  enabled: boolean                  // default: false
+  maxMessages: number               // default: 5, max: 5 messages per campaign
+  oneSmsPerDay: boolean             // default: true, ≤1 SMS per contact per calendar day
+  messages: [
+    {
+      afterAttempts: number         // ≥1, arms message when dial attempts reach this count
+      body: string                  // SMS body, supports merge fields: {{first_name}}, {{city}}, {{primary_trade}}
+    },
+    …
+  ]
+}
+```
+
+### Orchestration
+
+The `call.ended` webhook handler increments `voip_campaign_contacts.dial_attempts`
+and invokes the cadence decision engine (`services/voip/campaigns/`). The engine:
+
+1. Checks if cadence is `enabled` on the campaign.
+2. Checks `auto_sms_sent_count >= maxMessages` (cap at 5 per lead).
+3. Checks `auto_sms_sent_count >= messages.length` (all messages sent).
+4. If `oneSmsPerDay`, checks if an SMS was sent on the same LA-local calendar day
+   (skip if `sameLocalDay(last_auto_sms_at, now)`).
+5. Selects the next message (`messages[auto_sms_sent_count]`).
+6. Checks if `dialAttempts >= message.afterAttempts` (message is armed).
+7. If all gates pass, renders merge fields and sends via `cloudtalkClient.sendSms`.
+8. On successful send, increments `auto_sms_sent_count` and stamps `last_auto_sms_at`.
+
+The SMS `from` number is the CloudTalk DID the contact has been seeing
+(`internal_number_e164` from the `call.ended` event) — never hardcoded.
+
+### Design reference
+
+[docs/superpowers/specs/2026-06-17-voip-campaigns-sms-cadence-design.md](../../../../docs/superpowers/specs/2026-06-17-voip-campaigns-sms-cadence-design.md)
+
 ## Related
 
 - `services/voip/campaigns/campaign-sync.service.ts` — populates this table
