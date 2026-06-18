@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
 import { isFunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { FunnelEngine } from '@/shared/domains/funnels/ui/funnel-engine'
 
 interface Props {
@@ -12,6 +11,5 @@ export default async function FunnelTradePage({ params }: Props) {
   if (!isFunnelSlug(trade)) {
     notFound()
   }
-  const spec = getFunnel(trade)
-  return <FunnelEngine spec={spec} />
+  return <FunnelEngine slug={trade} />
 }

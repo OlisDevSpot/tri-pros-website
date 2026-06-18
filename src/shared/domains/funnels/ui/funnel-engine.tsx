@@ -1,13 +1,20 @@
 'use client'
 
-import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
 import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/lib/funnel-motion'
+import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { STEP_REGISTRY } from '@/shared/domains/funnels/lib/step-registry'
 import { FunnelProgress } from '@/shared/domains/funnels/ui/funnel-progress'
 
-export function FunnelEngine({ spec }: { spec: FunnelSpec }) {
+/**
+ * Accepts `slug` (a serializable string) rather than `spec` (which contains
+ * functions and cannot cross the server→client boundary). Resolves the spec
+ * from the registry on the client, keeping the engine fully client-side.
+ */
+export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
+  const spec = getFunnel(slug)
   const engine = useFunnelEngine(spec)
   const reduceMotion = useReducedMotion()
 
