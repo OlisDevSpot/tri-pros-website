@@ -8,10 +8,9 @@ export const bathroomsFunnel: FunnelSpec = {
     headline: 'Get a AAA-grade bathroom remodel — at a Showcase price.',
     subhead: 'See if your home qualifies for one of our Showcase bathrooms.',
     scarcityLine: 'We\'re selecting 5 bathrooms in your area.',
-    steps: {},
+    copy: {},
   },
   theme: { accent: 'primary' },
   steps: [],
-  flow: () => null,
   pixel: { contentCategory: 'bathroom' },
 }

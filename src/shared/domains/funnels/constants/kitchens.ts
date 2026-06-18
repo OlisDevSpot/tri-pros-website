@@ -1,29 +1,23 @@
-import type { FunnelSpec, StepId } from '@/shared/domains/funnels/types'
-
-const STEP_ORDER: StepId[] = ['hero', 'layout', 'ownership']
+import type { FunnelSpec } from '@/shared/domains/funnels/types'
 
 export const kitchensFunnel: FunnelSpec = {
   slug: 'kitchens',
   theme: { accent: 'primary' },
   pixel: { contentCategory: 'kitchen' },
+  // Linear funnel: no `flow` — the engine advances through `steps` in order.
   steps: [
     { id: 'hero', kind: 'info' },
     { id: 'layout', kind: 'card-select', field: 'layout', optionIds: ['l-shape', 'u-shape', 'galley', 'island', 'open', 'not-sure'] },
     { id: 'ownership', kind: 'card-select', field: 'ownership', optionIds: ['own', 'rent'] },
   ],
-  // Linear for kitchen; engine supports branching for other funnels.
-  flow: (_answers, currentStepId) => {
-    const i = STEP_ORDER.indexOf(currentStepId)
-    return i >= 0 && i < STEP_ORDER.length - 1 ? STEP_ORDER[i + 1] : null
-  },
   content: {
-    // ── existing hero fields (keep the foundation's copy) ──
+    // ── hero fields ──
     title: 'Kitchen Showcase',
     headline: 'Get a AAA-grade kitchen remodel — at a Showcase price.',
     subhead: 'See if your home qualifies for one of our Showcase kitchens.',
     scarcityLine: 'We\'re selecting 5 kitchens in your area.',
-    // ── per-step copy (NEW) ──
-    steps: {
+    // ── per-step copy ──
+    copy: {
       // Hero copy comes from the funnel-level fields above; this entry only
       // supplies the hero CTA label.
       hero: { title: 'Kitchen Showcase', cta: 'See if my kitchen qualifies →' },

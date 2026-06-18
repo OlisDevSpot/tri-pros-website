@@ -8,10 +8,9 @@ export const completeInteriorFunnel: FunnelSpec = {
     headline: 'Get a AAA-grade whole-interior remodel — at a Showcase price.',
     subhead: 'See if your home qualifies for one of our Complete-Interior Showcase spots.',
     scarcityLine: 'We\'re selecting 5 homes in your area.',
-    steps: {},
+    copy: {},
   },
   theme: { accent: 'primary' },
   steps: [],
-  flow: () => null,
   pixel: { contentCategory: 'complete-interior' },
 }

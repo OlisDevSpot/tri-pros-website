@@ -1,6 +1,7 @@
-import type { FunnelAnswers, FunnelSpec, FunnelStep, StepId } from '@/shared/domains/funnels/types'
+import type { AnswerValue, FunnelAnswers, FunnelSpec, FunnelStep, StepId } from '@/shared/domains/funnels/types'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { funnelStateKey } from '@/shared/domains/funnels/constants/storage-keys'
+import { defaultLinearNext } from '@/shared/domains/funnels/lib/funnel-flow'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 
 interface EngineState {
@@ -9,9 +10,9 @@ interface EngineState {
   answers: FunnelAnswers
 }
 
-export interface FunnelEngine {
+export interface FunnelEngineApi {
   step: FunnelStep
-  value: string | string[] | null
+  value: AnswerValue
   answers: FunnelAnswers
   isFirst: boolean
   setAnswer: (value: string | string[]) => void
@@ -20,7 +21,7 @@ export interface FunnelEngine {
   reset: () => void
 }
 
-export function useFunnelEngine(spec: FunnelSpec): FunnelEngine {
+export function useFunnelEngine(spec: FunnelSpec): FunnelEngineApi {
   const initial = useMemo<EngineState>(() => ({
     currentStepId: spec.steps[0].id,
     history: [],
@@ -54,7 +55,9 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngine {
 
   const advance = useCallback(() => {
     setState((prev) => {
-      const nextId = spec.flow(prev.answers, prev.currentStepId)
+      const nextId = spec.flow
+        ? spec.flow(prev.answers, prev.currentStepId)
+        : defaultLinearNext(spec.steps, prev.currentStepId)
       if (!nextId || nextId === prev.currentStepId) {
         return prev
       }

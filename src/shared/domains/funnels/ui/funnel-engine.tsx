@@ -1,11 +1,12 @@
 'use client'
 
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
+import type { StepComponent } from '@/shared/domains/funnels/types'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/constants/funnel-motion'
+import { STEP_REGISTRY } from '@/shared/domains/funnels/constants/step-registry'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
-import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/lib/funnel-motion'
 import { getFunnel } from '@/shared/domains/funnels/lib/registry'
-import { STEP_REGISTRY } from '@/shared/domains/funnels/lib/step-registry'
 import { FunnelProgress } from '@/shared/domains/funnels/ui/funnel-progress'
 
 /**
@@ -18,9 +19,11 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   const engine = useFunnelEngine(spec)
   const reduceMotion = useReducedMotion()
 
-  const StepView = STEP_REGISTRY[engine.step.kind]
+  // Single narrowing seam: the registry is fully typed per kind, but indexing by
+  // a union `kind` widens the lookup — re-narrow here at the one dispatch point.
+  const StepView = STEP_REGISTRY[engine.step.kind] as StepComponent
   // undefined for the hero (uses funnelContent)
-  const stepContent = spec.content.steps[engine.step.id]
+  const stepContent = spec.content.copy[engine.step.id]
   const currentIndex = spec.steps.findIndex(s => s.id === engine.step.id)
 
   // `data-funnel` is stamped for later per-trade theming (Plan 5); the 2a

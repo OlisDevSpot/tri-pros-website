@@ -4,11 +4,14 @@ import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 /** A step's stable identifier, unique within a funnel. */
 export type StepId = string
 
+/** A single step's answer value. Widen here when richer shapes (objects, dates) land in 2b/2c. */
+export type AnswerValue = string | string[] | null
+
 /**
  * Accumulated answers, keyed by the answering step's `field` (e.g. 'layout',
  * 'ownership', 'zip', 'city'). NARROWS the foundation's Partial<Record<StepId,unknown>>.
  */
-export type FunnelAnswers = Record<string, string | string[] | null>
+export type FunnelAnswers = Record<string, AnswerValue>
 
 // ── Step variants (discriminated by `kind`) — REPLACES the `{ id }` stub ──
 interface BaseStep { id: StepId }
@@ -44,7 +47,7 @@ export interface StepContent {
   options?: Record<string, OptionContent>
 }
 
-// ── EXTEND the landed FunnelContent: keep the four hero fields, ADD `steps` ──
+// ── EXTEND the landed FunnelContent: keep the four hero fields, ADD `copy` ──
 export interface FunnelContent {
   /** Hero + document title. */
   title: string
@@ -54,8 +57,11 @@ export interface FunnelContent {
   subhead: string
   /** Real, stated scarcity line. */
   scarcityLine: string
-  /** Per-step copy. NEW (Plan 2). */
-  steps: Record<StepId, StepContent>
+  /**
+   * Per-step copy, keyed by step id. The separable "lift-to-DB-later" content
+   * slot — distinct from `FunnelSpec.steps`, which is the structural step list.
+   */
+  copy: Record<StepId, StepContent>
 }
 
 /** Per-trade visual accent tokens. Plan 5 extends with full theming. */
@@ -71,7 +77,7 @@ export interface StepProps<S extends FunnelStep = FunnelStep> {
   funnelContent: FunnelContent
   /** Per-step copy (input steps). Undefined for the hero (uses funnelContent). */
   content?: StepContent
-  value: string | string[] | null
+  value: AnswerValue
   onChange: (value: string | string[]) => void
   onAdvance: () => void
   onBack: () => void
@@ -79,6 +85,12 @@ export interface StepProps<S extends FunnelStep = FunnelStep> {
 }
 
 export type StepComponent<S extends FunnelStep = FunnelStep> = ComponentType<StepProps<S>>
+
+/** The component for one step kind, with its prop variant correlated to the discriminant. */
+export type StepComponentFor<K extends StepKind> = ComponentType<StepProps<Extract<FunnelStep, { kind: K }>>>
+
+/** kind → component map. tsc enforces each slot holds the component for that exact kind. */
+export type StepRegistry = { [K in StepKind]: StepComponentFor<K> }
 
 /**
  * Centralized declarative configuration for one funnel — the EntityServerSpec
@@ -88,10 +100,13 @@ export interface FunnelSpec {
   slug: FunnelSlug
   content: FunnelContent
   theme: FunnelTheme
-  /** Ordered steps composed from the shared library. */
+  /** Ordered steps composed from the shared library. The structural step list. */
   steps: FunnelStep[]
-  /** Per-funnel branching, as CODE. Returns the next step id, or null to end. */
-  flow: (answers: FunnelAnswers, currentStepId: StepId) => StepId | null
+  /**
+   * Per-funnel branching, as CODE. OPTIONAL — omit for linear funnels and the
+   * engine advances through `steps` in order. Supply only to branch.
+   */
+  flow?: (answers: FunnelAnswers, currentStepId: StepId) => StepId | null
   /** Trade parameter carried on the shared Meta Pixel/dataset. */
   pixel: { contentCategory: string }
 }
