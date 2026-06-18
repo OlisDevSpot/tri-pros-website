@@ -63,8 +63,10 @@ export interface AnswerByKind {
 export type AnswerOf<S extends FunnelStep> = AnswerByKind[S['kind']]
 
 /** Runtime answer store: loosely typed (ids are dynamic). Strong typing happens
- *  at the component boundary (AnswerOf<S>) and via the opt-in AnswersOf<> view (§5). */
-export type AnswerValue = string | string[] | LocationAnswer | PiiAnswer | null
+ *  at the component boundary (AnswerOf<S>) and via the opt-in AnswersOf<> view (§5).
+ *  DERIVED from AnswerByKind so it auto-syncs as kinds are added — no hand-maintained
+ *  union to drift. (`never` arms collapse away; composite answers flow in for free.) */
+export type AnswerValue = AnswerByKind[keyof AnswerByKind] | null
 export type FunnelAnswers = Partial<Record<StepId, AnswerValue>>
 
 // ── 2. CONTENT: per kind. No shared StepContent bag. ──
