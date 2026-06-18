@@ -79,7 +79,7 @@ src/shared/domains/funnels/
 │   ├── bathrooms.ts         bathroomsFunnel: FunnelSpec                      [now: stub]
 │   └── complete-interior.ts completeInteriorFunnel: FunnelSpec              [now: stub]
 ├── lib/
-│   └── registry.ts          slug → FunnelSpec; registerFunnel / getFunnel    [now]
+│   └── registry.ts          slug → FunnelSpec via static map; getFunnel       [now]
 ├── types.ts                 FunnelSpec / FunnelStep / FunnelContent / FunnelTheme  [now]
 ├── hooks/                   engine state: nav, persistence, branching eval   [Plan 2]
 └── ui/
@@ -120,9 +120,9 @@ interface FunnelSpec {
 - **`content`** is isolated so its *source* can later change (code → DB) transparently to the engine.
 - **`pixel.contentCategory`** carries the trade on the single shared Pixel/dataset (per product spec §6.1).
 
-**Registry** (`lib/registry.ts`), mirroring `registerEntity`:
-- `registerFunnel(spec)` called at module load by each spec file; duplicate slug throws immediately.
+**Registry** (`lib/registry.ts`) — a static, exhaustive `Record<FunnelSlug, FunnelSpec>` that imports every spec directly:
 - `getFunnel(slug: FunnelSlug): FunnelSpec` — the route page's single entry point.
+- Completeness is enforced at compile time: omit a slug from the map and `tsc` errors. No `registerFunnel` load-time side-effect (avoids Next.js module-import-order fragility). This refines the spec's earlier `registerEntity`-mirroring idea — the static map achieves the same centralized resolution with stronger guarantees.
 
 **This session ships:** the `types.ts` contract, the registry, and three minimal spec **stubs** (`slug` + `content` + `theme`; `steps: []`, `flow` returning the linear next step). The route page renders trade-correct content (title/label from `content`) immediately; Plan 2 fills `steps` and `flow`.
 

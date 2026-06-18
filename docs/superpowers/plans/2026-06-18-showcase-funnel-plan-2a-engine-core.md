@@ -17,8 +17,8 @@
 The **funnels domain/config architecture** must already be implemented (the refactor from the Plan 1 review). Before Task 1, confirm these exist:
 - `src/shared/domains/funnels/constants/slugs.ts` exporting `FUNNEL_SLUGS`, `FunnelSlug`, `isFunnelSlug`.
 - `src/shared/domains/funnels/types.ts` exporting a `FunnelSpec` skeleton (`slug`, `content`, `theme`, `steps`, `flow`, `pixel`).
-- `src/shared/domains/funnels/lib/registry.ts` exporting `registerFunnel(spec)` and `getFunnel(slug): FunnelSpec`.
-- `src/shared/domains/funnels/constants/kitchens.ts` (+ `bathrooms.ts`, `complete-interior.ts`) spec **stubs** that call `registerFunnel`.
+- `src/shared/domains/funnels/lib/registry.ts` exporting `getFunnel(slug): FunnelSpec`, backed by a static exhaustive `Record<FunnelSlug, FunnelSpec>` that imports every spec directly. (No `registerFunnel` side-effect — completeness is compile-time-enforced. This supersedes the earlier `registerFunnel` idea; see the foundation plan.)
+- `src/shared/domains/funnels/constants/kitchens.ts` (+ `bathrooms.ts`, `complete-interior.ts`) spec **stubs** — each a plain `export const …Funnel: FunnelSpec` (no `registerFunnel` call); the registry's static map references them.
 - `src/app/(frontend)/funnels/[trade]/page.tsx` calling `getFunnel(slug)`.
 
 If any are missing, STOP — this plan cannot run until the architecture plan lands. (Run: `ls src/shared/domains/funnels/{constants/slugs.ts,types.ts,lib/registry.ts}` to verify.)
@@ -568,16 +568,15 @@ git commit -m "feat(funnels): engine shell + progress (theme, animated step disp
 - Modify: `src/app/(frontend)/funnels/[trade]/page.tsx`
 
 **Interfaces:**
-- Consumes: `FunnelSpec`, `registerFunnel` (architecture), `FunnelEngine` (Task 5).
-- Produces: a registered kitchen spec with `info` + two `card-select` steps and a linear `flow`.
+- Consumes: `FunnelSpec` (architecture), `FunnelEngine` (Task 5).
+- Produces: a kitchen spec with `info` + two `card-select` steps and a linear `flow`, resolvable via the registry's static map.
 
 - [ ] **Step 1: Fill the kitchen spec (hero → layout → own/rent), linear flow**
 
-Replace the stub body of `kitchens.ts`. Keep its `registerFunnel(...)` call. The remaining steps (location, pii, enrichment, datetime, confirmation) arrive in Plans 2b/2c.
+Replace the stub body of `kitchens.ts` — it stays a plain `export const kitchensFunnel` (the registry's static map already references it; no `registerFunnel` call). The remaining steps (location, pii, enrichment, datetime, confirmation) arrive in Plans 2b/2c.
 
 ```ts
 // src/shared/domains/funnels/constants/kitchens.ts
-import { registerFunnel } from '@/shared/domains/funnels/lib/registry'
 import type { FunnelSpec, StepId } from '@/shared/domains/funnels/types'
 
 const STEP_ORDER: StepId[] = ['hero', 'layout', 'ownership']
@@ -627,8 +626,6 @@ export const kitchensFunnel: FunnelSpec = {
     },
   },
 }
-
-registerFunnel(kitchensFunnel)
 ```
 
 > Theme oklch values are placeholders consistent with the brand `--primary` (`oklch(0.6231 0.188 259.8145)` in `globals.css`); Plan 5 (polish) tunes per-trade accents. They are valid CSS now.
@@ -658,7 +655,7 @@ export default async function FunnelTradePage({ params }: Props) {
 }
 ```
 
-> Confirm during implementation that `getFunnel` resolves a registered spec. Specs register on module import; ensure the spec files are imported somewhere the registry loads them (the architecture's registry/index pattern). If `getFunnel('kitchens')` throws "not registered", import `kitchensFunnel` where the registry is initialized (follow the architecture's established registration pattern — mirror how `bathrooms`/`complete-interior` stubs register).
+> `getFunnel` resolves via the registry's static `Record<FunnelSlug, FunnelSpec>`, which imports every spec directly — there is no module-import side-effect to arrange. `getFunnel('kitchens')` always resolves as long as `kitchens.ts` exports `kitchensFunnel` and the registry lists it (it already does).
 
 - [ ] **Step 3: Type-check + lint**
 
@@ -696,4 +693,4 @@ git commit -m "feat(funnels): kitchen spec (hero/layout/ownership) + render engi
 - **Spec coverage:** shared funnel-agnostic engine (Tasks 3,5) ✅ [arch §8]; reusable step library + `Step` contract (Tasks 1,4) ✅ [arch §8]; nav back/forward with answers preserved (Task 3 `back`) ✅ [product §7.2]; persistence + refresh-resume via `usePersistedState` (Tasks 2,3) ✅ [product §7.3]; branching evaluated from `spec.flow` (Task 3 `advance`) ✅ [arch §4]; content seam (FunnelContent separate from steps, Task 1) ✅ [arch §3]; per-trade theme inline CSS vars (Task 5) ✅; motion + reduced-motion (Tasks 2,5) ✅ [product §7.1]; designed progress (Task 5) ✅ [product §7.5]. Deferred-with-note: pixel/UTM (§5/§6 → 2b/3), the remaining step kinds (2b/2c).
 - **Placeholder scan:** none — every step has concrete code/commands. Theme oklch + remaining steps are explicitly scoped to later plans, not placeholders.
 - **Type consistency:** `StepProps`/`FunnelStep`/`FunnelContent`/`StepId` (Task 1) consumed identically in Tasks 3–6; `STEP_REGISTRY` keys are `StepKind` (Task 4) matching the union (Task 1); engine passes exactly the `StepProps` fields the step components destructure; `funnelStateKey`/`FUNNEL_TRANSITION`/`STEP_VARIANTS` (Task 2) used in Tasks 3,5.
-- **Dependency flagged:** Task-0 precondition requires the architecture plan landed; Task 6 notes the registry registration pattern must be followed.
+- **Dependency flagged:** Task-0 precondition requires the foundation plan landed; the registry is a static `Record<FunnelSlug, FunnelSpec>` (no `registerFunnel`), so specs need only be exported and listed in the map.

@@ -20,7 +20,7 @@
 - **No hardcoded route paths** — all internal paths come from `ROOTS`.
 - **Canonical slugs are exactly:** `kitchens`, `bathrooms`, `complete-interior`. Used identically as subdomain label, route segment, registry key, and spec key.
 - **`shared/` never imports from `features/`.** After this plan, all funnel consumers import from `shared/domains/funnels/` (shared→shared).
-- **Registry note (vs spec §4):** the spec described a `registerFunnel()` load-time side-effect mirroring `registerEntity`. We implement a **static, exhaustive `Record<FunnelSlug, FunnelSpec>`** instead — same centralized resolution, but completeness is enforced at compile time (omit a slug → `tsc` error) and there is no Next.js module-load-order fragility. Deliberate, documented deviation.
+- **Registry mechanism:** a **static, exhaustive `Record<FunnelSlug, FunnelSpec>`** (in `lib/registry.ts`) that imports every spec directly; the only export is `getFunnel(slug)`. Completeness is enforced at compile time (omit a slug → `tsc` error), with no `registerFunnel` load-time side-effect (avoids Next.js module-import-order fragility). Spec §4 and Plan 2a are aligned to this.
 
 ---
 
