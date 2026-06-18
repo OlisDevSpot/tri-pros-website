@@ -6,6 +6,7 @@ import { campaignEnrollmentService } from '@/shared/services/voip/campaigns/enro
 import { isStopKeyword } from '@/shared/services/voip/campaigns/lib/is-stop-keyword'
 import { resolveCustomerByCtContactId, resolveCustomerByPhone } from '@/shared/services/voip/campaigns/lib/resolve-customer'
 import { ctDispositionToUnenrollReason } from '@/shared/services/voip/campaigns/lib/unenroll-reason'
+import { smsCadenceService } from '@/shared/services/voip/campaigns/sms-cadence.service'
 import { complianceService } from '@/shared/services/voip/compliance.service'
 
 // CloudTalk webhook receiver — single endpoint, route handler IS the orchestrator.
@@ -107,9 +108,15 @@ export async function POST(req: Request): Promise<Response> {
         break
       }
 
-      // Deferred to ring 2 — no-op for now (handler stays stable for expansion):
-      // call.started, call.answered, call.ended (attempt counter → cadence_exhausted),
-      // voicemail.
+      // Outbound dials drive the automated SMS cadence (count attempt + maybe
+      // send next message). Idempotent; failures logged, 200 returned.
+      case 'call.ended': {
+        await smsCadenceService.handleCallEnded(event)
+        break
+      }
+
+      // Deferred to ring 2 — no-op (handler stays stable for expansion):
+      // call.started, call.answered, voicemail.
       default:
         break
     }
