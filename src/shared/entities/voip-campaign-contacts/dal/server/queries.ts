@@ -3,12 +3,14 @@
 // All DAL conventions: see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { SmsCadence } from '@/shared/entities/voip-campaigns/schemas/sms-cadence'
 
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { db } from '@/shared/db'
+import { customers } from '@/shared/db/schema/customers'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
 import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
@@ -68,6 +70,67 @@ export async function findCustomerIdByCtContactId(
       .limit(1)
 
     return row ?? null
+  })
+}
+
+export interface SmsCadenceContext {
+  customerId: string
+  unenrolledAt: string | null
+  dialAttempts: number
+  autoSmsSentCount: number
+  lastAutoSmsAt: string | null
+  // Customer fields for merge-field rendering + the SMS recipient.
+  customerName: string
+  customerPhone: string | null
+  customerCity: string
+  interestedTradesRaw: string[]
+  // Campaign cadence config (null when no campaign / unconfigured).
+  smsCadence: SmsCadence | null
+}
+
+/**
+ * One-shot read of everything the SMS-cadence orchestrator needs, keyed on the
+ * CloudTalk contact id carried by a call.ended event. Returns null when no
+ * participation row carries that CT contact id.
+ */
+export async function findSmsCadenceContextByCtContactId(
+  ctContactId: string,
+): Promise<DalReturn<SmsCadenceContext | null>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select({
+        customerId: voipCampaignContacts.customerId,
+        unenrolledAt: voipCampaignContacts.unenrolledAt,
+        dialAttempts: voipCampaignContacts.dialAttempts,
+        autoSmsSentCount: voipCampaignContacts.autoSmsSentCount,
+        lastAutoSmsAt: voipCampaignContacts.lastAutoSmsAt,
+        customerName: customers.name,
+        customerPhone: customers.phone,
+        customerCity: customers.city,
+        leadMetaJSON: customers.leadMetaJSON,
+        smsCadence: voipCampaigns.smsCadence,
+      })
+      .from(voipCampaignContacts)
+      .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+      .leftJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
+      .where(eq(voipCampaignContacts.cloudtalkContactId, ctContactId))
+      .limit(1)
+
+    if (!row) {
+      return null
+    }
+    return {
+      customerId: row.customerId,
+      unenrolledAt: row.unenrolledAt,
+      dialAttempts: row.dialAttempts,
+      autoSmsSentCount: row.autoSmsSentCount,
+      lastAutoSmsAt: row.lastAutoSmsAt,
+      customerName: row.customerName,
+      customerPhone: row.customerPhone,
+      customerCity: row.customerCity,
+      interestedTradesRaw: row.leadMetaJSON?.interestedTradesRaw ?? [],
+      smsCadence: row.smsCadence ?? null,
+    }
   })
 }
 

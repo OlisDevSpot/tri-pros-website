@@ -15,7 +15,7 @@ import type { VoipUnenrollReason } from '@/shared/constants/enums/voip'
 import type { DalReturn } from '@/shared/dal/server/types'
 import type { VoipCampaignContact } from '@/shared/db/schema/voip-campaign-contacts'
 
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
@@ -141,5 +141,48 @@ export async function recordSyncError(
       .returning({ customerId: voipCampaignContacts.customerId })
 
     return { rowsAffected: result.length }
+  })
+}
+
+/**
+ * Exactly-once dial-attempt counting. The dedup IS the increment: a single
+ * atomic conditional UPDATE that only fires when this call_uuid differs from
+ * the last counted one. Returns the new dial_attempts on a first sighting, or
+ * null on a redelivery (row unchanged). See design §8.1.
+ */
+export async function claimAndIncrementDialAttempt(
+  customerId: string,
+  callUuid: string,
+): Promise<DalReturn<{ dialAttempts: number } | null>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .update(voipCampaignContacts)
+      .set({
+        dialAttempts: sql`${voipCampaignContacts.dialAttempts} + 1`,
+        lastCallUuid: callUuid,
+      })
+      .where(and(
+        eq(voipCampaignContacts.customerId, customerId),
+        sql`${voipCampaignContacts.lastCallUuid} IS DISTINCT FROM ${callUuid}`,
+      ))
+      .returning({ dialAttempts: voipCampaignContacts.dialAttempts })
+
+    return row ? { dialAttempts: row.dialAttempts } : null
+  })
+}
+
+/**
+ * Record a successful auto-SMS: advance the ladder index + stamp the day for
+ * the ≤1/day gate. Called only after cloudtalkClient.sendSms succeeds.
+ */
+export async function recordAutoSmsSent(customerId: string): Promise<DalReturn<void>> {
+  return dalDbOperation(async () => {
+    await db
+      .update(voipCampaignContacts)
+      .set({
+        autoSmsSentCount: sql`${voipCampaignContacts.autoSmsSentCount} + 1`,
+        lastAutoSmsAt: new Date().toISOString(),
+      })
+      .where(eq(voipCampaignContacts.customerId, customerId))
   })
 }
