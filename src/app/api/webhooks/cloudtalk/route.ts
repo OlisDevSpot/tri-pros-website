@@ -116,7 +116,7 @@ export async function POST(req: Request): Promise<Response> {
       }
 
       // Deferred to ring 2 — no-op (handler stays stable for expansion):
-      // call.started, call.answered, voicemail.
+      // call.answered, voicemail. (call.started isn't sent — no Call+Started WA.)
       default:
         break
     }

@@ -9,15 +9,15 @@ import { cloudtalkDispositions } from '../constants'
 // each WA's body-builder UI; CT does NOT inject `event_type` natively — we
 // hardcode it as the first body field in every WA.
 //
-// 5 WAs for Phase 1 (NOT 6 — `call.missed` and `voicemail.received` are
-// derived inside the `call.ended` handler from CT's `is_voicemail` flag +
-// `answered_at` presence; disposition arrives separately on `Call.Modified`):
+// Configured WAs (`call.started` is intentionally NOT sent — no Call+Started WA;
+// `call.missed` / `voicemail.received` are derived inside the `call.ended`
+// handler from CT's `is_voicemail` flag + `answered_at`; disposition arrives
+// separately on `Call.Modified`):
 //
-//   1. Call + Started      → event_type: 'call.started'
-//   2. Call + Answered     → event_type: 'call.answered'
-//   3. Call + Ended        → event_type: 'call.ended'
-//   4. Call + Modified     → event_type: 'call.disposition_set'
-//   5. Messages + Received → event_type: 'sms.received'
+//   • Call + Answered     → event_type: 'call.answered'
+//   • Call + Ended        → event_type: 'call.ended'
+//   • Call + Modified     → event_type: 'call.disposition_set'
+//   • Messages + Received → event_type: 'sms.received'
 //
 // Race-ordering note: `Call.Ended` typically fires before `Call.Modified`
 // (which carries the disposition during after-call work). The route handler
@@ -85,28 +85,11 @@ const ctContactNameSchema = z.preprocess(
   z.string().optional(),
 )
 
-// ── 1. Call + Started ───────────────────────────────────────────────────────
-export const cloudtalkCallStartedSchema = z.object({
-  event_type: z.literal('call.started'),
-  call_uuid: z.string(),
-  caller_e164: e164Schema, // mapped from event.properties.external_number
-  internal_number_e164: e164Schema.optional(), // mapped from event.properties.internal_number
-  // REQUIRED — CT reliably emits direction on call start; ring-2 attempt
-  // counting must trust it (only outbound increments). Normalized incoming→inbound.
-  direction: ctDirectionSchema,
-  // ALWAYS template the contact id (flat `contact_id` from
-  // `{{ event.properties.contacts[0].id }}`) so we can resolve the customer
-  // deterministically via the voip_campaign_contacts.cloudtalk_contact_id bridge.
-  // Stays optional: an inbound call from a never-enrolled number has no CT
-  // contact → "" → undefined → safe no-op.
-  contact_id: ctContactIdSchema,
-  contact_name: ctContactNameSchema,
-  started_at: ctTimestampSchema,
-})
+// NOTE: `call.started` is intentionally NOT modelled — we do not configure a
+// Call+Started Workflow Automation, so CloudTalk never sends that event. Re-add
+// a `cloudtalkCallStartedSchema` (+ union member) if/when that WA is created.
 
-export type CloudtalkCallStartedEvent = z.infer<typeof cloudtalkCallStartedSchema>
-
-// ── 2. Call + Answered ──────────────────────────────────────────────────────
+// ── Call + Answered ─────────────────────────────────────────────────────────
 export const cloudtalkCallAnsweredSchema = z.object({
   event_type: z.literal('call.answered'),
   call_uuid: z.string(),
@@ -198,7 +181,6 @@ export type CloudtalkSmsReceivedEvent = z.infer<typeof cloudtalkSmsReceivedSchem
 
 // ── Discriminated union (the canonical event shape) ─────────────────────────
 export const cloudtalkEventSchema = z.discriminatedUnion('event_type', [
-  cloudtalkCallStartedSchema,
   cloudtalkCallAnsweredSchema,
   cloudtalkCallEndedSchema,
   cloudtalkCallDispositionSetSchema,
