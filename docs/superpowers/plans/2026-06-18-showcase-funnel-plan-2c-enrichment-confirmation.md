@@ -1,66 +1,67 @@
 # Showcase Funnel — Plan 2c: Enrichment + Appointment + Confirmation (+ region map)
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **RE-CUT (2026-06-18) against the hardened step model** (`docs/superpowers/specs/2026-06-18-funnelspec-step-model-design.md`). Supersedes the prior 2c. No `setAnswers` (the `datetime` step writes a composite `DatetimeAnswer` via the single `setValue`); no engine special-casing; the created lead id lives in the `pii` step's typed `PiiAnswer.leadId` (written by 2b), read here as `answers.pii.leadId`. New kinds (`datetime`, `confirmation`) land as forced-exhaustive lockstep extensions.
 
-**Goal:** Complete the kitchen funnel end-to-end: post-lead **enrichment** (age / scope / timeline), a soft **appointment** picker (→ `scheduledFor`), a **confirmation** step with real portfolio before/afters, and the **stylized SVG region map** reveal on the location step. Enrichment + appointment persist to the already-created lead via a guarded public mutation.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans. Steps use checkbox (`- [ ]`) syntax.
 
-**Architecture:** Enrichment reuses the `card-select` step (no new kind). New step kinds: `datetime` (day + time-window, card-based — no calendar dependency) and `confirmation`. Because the lead already exists (Plan 2b creates it at PII), enrichment/appointment are saved **best-effort, batched, fire-and-forget** at the end via a new **public `enrichFunnelLead` tRPC mutation** — guarded by the customer UUID (returned at PII) as a capability, rate-limited, and restricted to patching `leadMetaJSON` enrichment fields on `source.kind === 'funnel'` leads only. The confirmation step queries the public portfolio for kitchen before/afters.
+**Goal:** Complete the kitchen funnel end-to-end: post-lead **enrichment** (age / scope / timeline via `card-select`), a soft **appointment** picker (`datetime` → `scheduledFor`), a **confirmation** step with real portfolio before/afters, and the **stylized SVG region map** reveal on the location step. Enrichment + appointment persist to the already-created lead via a guarded public mutation.
+
+**Architecture:** Enrichment reuses `card-select` (no new kind) — each answer is a string keyed by step id (`answers.age`, `answers.scope`, `answers.timeline`). Two new kinds: `datetime` (day + window, composite answer `{scheduledFor, window}`, card-based — no calendar dep) and `confirmation` (terminal, no input). Because the lead already exists (2b creates it at PII and stores `{ leadId }` in the `pii` slot), enrichment/appointment are saved **best-effort, fire-and-forget** when the user reaches confirmation, via a new **public `enrichFunnelLead` tRPC mutation** — guarded by the lead UUID as a capability, rate-limited, restricted to patching enrichment fields on `source.kind === 'funnel'` leads only. The shared steps ship as importable prebuilt objects (`DATETIME_STEP`, `CONFIRMATION_STEP`) — Seam A.
 
 **Tech Stack:** Next.js 15.5.9, React 19, tRPC, `motion` v12, shadcn/ui, Drizzle.
 
-**Specs:** product `2026-06-17-showcase-funnel-system-design.md` (§2 flow, §2 soft preferred-time, confirmation); architecture doc.
+**Specs:** product `2026-06-17-showcase-funnel-system-design.md` (§2 flow, soft preferred-time, confirmation); type model `2026-06-18-funnelspec-step-model-design.md`.
 
 ## Precondition (HARD DEPENDENCY)
 
-- **Plans 2a + 2b implemented.** Kitchen runs hero→layout→ownership→location→pii and creates a `branded-meta-ads` lead; PII stores the returned `customerId` into answers.
+- **The hardened model + Plan 2b are landed.** Kitchen runs hero→layout→ownership→location→pii and creates a `branded-meta-ads` lead; the `pii` step writes `PiiAnswer = { leadId }` into `answers.pii` via `setValue` on success.
+- Verify: `grep -n "PiiAnswer\|LocationAnswer" src/shared/domains/funnels/types.ts` (present) and that `pii-form-step.tsx` does `setValue({ leadId: … })` on success.
 
-Verify: `ls src/shared/domains/funnels/ui/steps/{location-step.tsx,pii-form-step.tsx}` and that `pii-form-step.tsx` writes `customerId` into answers on success. If PII does not yet persist `customerId` into `answers`, add that first (Task 1).
-
-> **RECONCILE FIRST (read the landed 2a/2b contracts).** Treat the landed `StepProps` (`{ step, funnelContent, content?, answers, setAnswers, value, onChange, onAdvance, onBack, isFirst }`) and the landed `leadMetaSchema` `funnel` source variant as source of truth; this plan's snippets show only the deltas they add. Per-step `content` is optional → use `content?.x`. `FunnelContent`/`FunnelAnswers` are owned by 2a — extend the step union + content via the established pattern, don't redefine the base types.
+> **Contracts to build on (the hardened model — source of truth):** `StepProps<S>` = `{ step, content: ContentOf<S>, value: AnswerOf<S> | null, setValue: (a: AnswerOf<S>) => void, answers: FunnelAnswers, ctx: FunnelContext, advance, back, isFirst }`. Answers are one typed slot per step id; composites are objects. Add a kind by extending `FunnelStep` + `AnswerByKind` + `ContentByKind` + `STEP_REGISTRY` (`constants/step-registry.ts`) in lockstep — `tsc` forces all four. The engine is NOT modified by this plan.
 
 ## Locked decisions
 
-- **Enrichment:** age/condition, project scope, timeline (card-selects). `ownership` (own/rent) is NOT here — it's qualification, already collected pre-PII in 2a.
-- **Appointment:** soft preferred-time (day + window), stored as `leadMeta.scheduledFor`; a human confirms (no auto-meeting). Day picker = next 14 days as selectable pills; window = morning/afternoon/evening cards. (No calendar component dependency.)
-- **Persistence of post-lead data:** one **fire-and-forget** `enrichFunnelLead` call when the user reaches confirmation; never blocks the thank-you (matches "lead never blocked by downstream").
+- **Enrichment:** age/condition, project scope, timeline (`card-select`). `ownership` is qualification (pre-PII, 2a), not here.
+- **Appointment:** soft preferred-time (day + window) → `leadMeta.scheduledFor`; human confirms (no auto-meeting). Day = next 14 days as pills; window = morning/afternoon/evening cards. No calendar dependency.
+- **Persistence of post-lead data:** one **fire-and-forget** `enrichFunnelLead` call when the user reaches confirmation; never blocks the thank-you.
 - **Confirmation proof:** kitchen before/afters from the existing public portfolio query.
-- **Region map:** stylized SVG (per the earlier decision), animated reveal, highlights the resolved region; no external map API.
+- **Region map:** stylized SVG, animated reveal, highlights the resolved region; no external map API.
 
 ## Global Constraints
 
-(Same as 2a/2b.) Named exports; `pnpm tsc`+`pnpm lint`+runtime smoke; `import type`; braces+newline; `@/`→`src/`; **pathspec commits on `main`**; `shared` never imports `features`; schemas in `schemas/` sibling of `lib/`; backend follows **tRPC → service → DAL** (no `db.*` in routers/services — DAL owns mutations); one component per file; no barrels; engine trade-agnostic; motion respects reduced-motion.
+(Same as 2a/2b.) No test runner — `pnpm tsc`+`pnpm lint`+runtime smoke; NEVER `pnpm build`. Named exports; `import type` top level; braces+newline `if`; sorted imports; `@/`→`src/`; **pathspec commits on `main`**; `shared` never imports `features`; `schemas/` sibling of `lib/`; backend follows **tRPC → service → DAL** (no `db.*` in routers/services); one component per file; no barrels; **engine trade-agnostic and unmodified**; motion respects reduced-motion. Adding a kind is a lockstep change (union + AnswerByKind + ContentByKind + STEP_REGISTRY) — don't suppress the exhaustiveness error with casts.
 
 ## File structure (this plan)
 
 ```
 src/shared/entities/customers/schemas/index.ts        MODIFY — enrichment fields on the 'funnel' source variant
 src/trpc/routers/customers.router/business.router.ts  MODIFY — add enrichFunnelLead public procedure
-src/shared/services/customer-intake.service.ts        MODIFY — enrichFunnelLead service method (or sibling)
-src/shared/entities/customers/dal/server/…            MODIFY — leadMeta patch mutation (if none fits)
+src/shared/services/customer-intake.service.ts        MODIFY — enrichFunnelLead service method
+src/shared/entities/customers/dal/server/mutations.ts MODIFY — leadMeta patch mutation (if none fits)
 src/shared/domains/funnels/
-├── types.ts                         MODIFY — add DatetimeStep + ConfirmationStep; content fields
-├── lib/step-registry.ts             MODIFY — register datetime + confirmation
+├── types.ts                         MODIFY — add datetime + confirmation kinds (lockstep)
+├── constants/
+│   ├── step-registry.ts             MODIFY — register datetime + confirmation
+│   ├── socal-regions.ts             CREATE — county → SVG region id mapping
+│   └── kitchens.ts                  MODIFY — full flow + inline enrichment content
 ├── hooks/use-enrich-lead.ts         CREATE — fire-and-forget enrichment mutation hook
-├── constants/socal-regions.ts       CREATE — county/region → SVG region id mapping
-├── constants/kitchens.ts            MODIFY — full flow + enrichment/datetime/confirmation content
 └── ui/
     ├── region-map.tsx               CREATE — stylized SVG region reveal
     └── steps/
-        ├── datetime-step.tsx        CREATE — day + window picker
-        └── confirmation-step.tsx    CREATE — portfolio before/afters + next steps
+        ├── datetime-step.tsx        CREATE — DatetimeStepView + DatetimeContent + DATETIME_STEP
+        └── confirmation-step.tsx    CREATE — ConfirmationStepView + ConfirmationContent + CONFIRMATION_STEP
 ```
 
 ---
 
-### Task 1: Ensure PII writes `customerId`; add enrichment fields to leadMeta
+### Task 1: Add enrichment fields to the leadMeta `funnel` variant
+
+(The prior 2c's "make PII store customerId" step is obsolete — 2b already stores `PiiAnswer.leadId` via `setValue`.)
 
 **Files:**
-- Modify: `src/shared/domains/funnels/ui/steps/pii-form-step.tsx` (if not already)
 - Modify: `src/shared/entities/customers/schemas/index.ts`
 
-- [ ] **Step 1:** In `pii-form-step.tsx`, after a successful `submit.mutateAsync(...)`, persist the returned id: `setAnswers({ customerId: result.customerId })` before `onAdvance()`. (The mutation returns `{ customerId, meetingId }`.)
-
-- [ ] **Step 2:** Extend the `kind: 'funnel'` source variant (added in 2b) with optional enrichment fields:
+- [ ] **Step 1:** Extend the `kind: 'funnel'` source variant (added in 2b) with optional enrichment fields:
 
 ```ts
 // within the funnel variant object in leadMetaSchema.source
@@ -71,12 +72,13 @@ enrichment: z.object({
 }).optional(),
 ```
 
-(`scheduledFor` already exists at the top level of `leadMetaSchema` — reuse it; don't add a new field.)
+(`scheduledFor` already exists at the top level of `leadMetaSchema` — reuse it; do not add a new field.)
 
-- [ ] **Step 3:** tsc + lint + commit
+- [ ] **Step 2:** tsc + lint + commit
 
 ```bash
-git commit -m "feat(funnels): PII stores customerId; leadMeta funnel enrichment fields" -- src/shared/domains/funnels/ui/steps/pii-form-step.tsx src/shared/entities/customers/schemas/index.ts
+git status --short
+git commit -m "feat(customers): leadMeta funnel enrichment fields (age/scope/timeline)" -- src/shared/entities/customers/schemas/index.ts
 ```
 
 ---
@@ -89,9 +91,9 @@ git commit -m "feat(funnels): PII stores customerId; leadMeta funnel enrichment 
 - Modify (or create): a DAL mutation that patches `leadMetaJSON` for a customer id.
 
 **Interfaces:**
-- Produces: `customersRouter.business.enrichFunnelLead` (public), input `{ customerId, scheduledFor?, enrichment? }`; service `customerIntakeService.enrichFunnelLead(ctx, input)`.
+- Produces: `customersRouter.business.enrichFunnelLead` (public), input `{ leadId, scheduledFor?, enrichment? }`; service `customerIntakeService.enrichFunnelLead(ctx, input)`.
 
-**Security model (review me):** public `baseProcedure`; the **`customerId` UUID is the capability** (unguessable); IP rate-limited (reuse the `intake:submit` limiter or a new `intake:enrich` window); the service **only patches** `scheduledFor` + `source.funnel.enrichment` and **only when** the target customer's `leadMetaJSON.source.kind === 'funnel'` (so this endpoint can never mutate non-funnel customers or any field outside the enrichment allowlist). No PII, no status, no ownership changes.
+**Security model (REVIEW THIS — the one new public write surface):** public `baseProcedure`; the **`leadId` UUID is the capability** (unguessable, returned to the client only at PII); IP rate-limited (mirror `createFromIntake`'s limiter, prefix `'intake:enrich'`, e.g. 10/h); the service **only patches** `scheduledFor` + `source.enrichment` and **only when** the target customer's `leadMetaJSON.source.kind === 'funnel'` — so it can never mutate non-funnel customers or any field outside the enrichment allowlist. No PII, no status, no ownership changes.
 
 - [ ] **Step 1: Zod input + procedure**
 
@@ -99,7 +101,7 @@ git commit -m "feat(funnels): PII stores customerId; leadMeta funnel enrichment 
 // business.router.ts
 enrichFunnelLead: entity.publicProcedure
   .input(z.object({
-    customerId: z.string().uuid(),
+    leadId: z.string().uuid(),
     scheduledFor: z.string().optional(),
     enrichment: z.object({
       age: z.string().nullable().optional(),
@@ -109,36 +111,35 @@ enrichFunnelLead: entity.publicProcedure
   }))
   .mutation(async ({ input }) => {
     // rate-limit by IP (mirror createFromIntake's limiter; prefix 'intake:enrich')
-    // then delegate to the service:
     return customerIntakeService.enrichFunnelLead(SYSTEM_CONTEXT, input)
   }),
 ```
 
-> Mirror the existing rate-limit block at the top of `createFromIntake` (Upstash sliding window, `x-forwarded-for`). Use a distinct prefix `'intake:enrich'` and a sane window (e.g. `10 per 1 h`).
+> Mirror the existing rate-limit block at the top of `createFromIntake` (Upstash sliding window, `x-forwarded-for`), with a distinct prefix `'intake:enrich'` and a sane window.
 
-- [ ] **Step 2: Service method** — load customer, guard on `source.kind === 'funnel'`, merge patch, call the DAL update.
+- [ ] **Step 2: Service method** — load customer, guard on `source.kind === 'funnel'`, merge patch, call the DAL update:
 
 ```ts
-// customer-intake.service.ts (sketch — follow DalReturn conventions in this file)
+// customer-intake.service.ts (sketch — follow this file's DalReturn conventions)
 async enrichFunnelLead(ctx: ScopedContext, input: EnrichFunnelLeadInput): Promise<DalReturn<{ ok: true }>> {
-  const existing = await customerCrud.getById(ctx, input.customerId)  // or the appropriate read
+  const existing = await customerCrud.getById(ctx, input.leadId)
   if (!existing.ok) {
     return existing
   }
   const leadMeta = existing.data.leadMetaJSON
   if (leadMeta?.source?.kind !== 'funnel') {
-    return dalPreconditionFailed('not a funnel lead')  // refuse non-funnel customers
+    return dalPreconditionFailed('not a funnel lead')   // refuse non-funnel customers
   }
   const nextLeadMeta = {
     ...leadMeta,
     scheduledFor: input.scheduledFor ?? leadMeta.scheduledFor,
     source: { ...leadMeta.source, enrichment: { ...leadMeta.source.enrichment, ...input.enrichment } },
   }
-  return customerLeadMetaUpdate(ctx, input.customerId, nextLeadMeta)  // DAL mutation
+  return customerLeadMetaUpdate(ctx, input.leadId, nextLeadMeta)
 }
 ```
 
-> Use the exact helpers this file already uses (`customerCrud`, `dalSuccess`, the precondition-failed helper). The leadMeta patch must go through a **DAL mutation** — if no `db.update` for leadMeta exists, add `customerLeadMetaUpdate` in `src/shared/entities/customers/dal/server/mutations.ts` (services never call `db.*` directly — see conventions). Do NOT set `updatedAt` manually (schema-helper handles it).
+> Use the exact helpers this file already uses (`customerCrud`, `dalSuccess`, the precondition-failed helper). The leadMeta patch MUST go through a DAL mutation — if no `db.update` for leadMeta exists, add `customerLeadMetaUpdate` in `src/shared/entities/customers/dal/server/mutations.ts` (services never call `db.*` directly). Do NOT set `updatedAt` manually.
 
 - [ ] **Step 3:** tsc + lint + commit
 
@@ -154,7 +155,7 @@ git commit -m "feat(funnels): guarded public enrichFunnelLead mutation (funnel l
 - Create: `src/shared/domains/funnels/hooks/use-enrich-lead.ts`
 
 **Interfaces:**
-- Produces: `useEnrichLead(): (args: { customerId: string, scheduledFor?: string, enrichment?: {...} }) => void` — fires the mutation, swallows errors (best-effort; never throws to the UI).
+- Produces: `useEnrichLead(): (args: { leadId: string, scheduledFor?: string, enrichment?: {...} }) => void` — fires the mutation, swallows errors.
 
 - [ ] **Step 1: Implement**
 
@@ -166,7 +167,7 @@ import { useTRPC } from '@/trpc/helpers'
 export function useEnrichLead() {
   const trpc = useTRPC()
   const mutation = useMutation(trpc.customersRouter.business.enrichFunnelLead.mutationOptions())
-  return (args: { customerId: string, scheduledFor?: string, enrichment?: { age?: string | null, scope?: string | null, timeline?: string | null } }) => {
+  return (args: { leadId: string, scheduledFor?: string, enrichment?: { age?: string | null, scope?: string | null, timeline?: string | null } }) => {
     // Best-effort: do not await, do not surface errors — enrichment must never
     // block or break the confirmation experience.
     mutation.mutate(args, { onError: () => {} })
@@ -182,26 +183,82 @@ git commit -m "feat(funnels): fire-and-forget enrichment hook" -- src/shared/dom
 
 ---
 
-### Task 4: `datetime` step (day + window picker)
+### Task 4: Add `datetime` + `confirmation` kinds to the type model (lockstep)
+
+Add both kinds' answer + content + step variants in one cohesive change. After it, `tsc` errors ONLY in `constants/step-registry.ts` (missing component keys) — expected; closed in Tasks 5–6.
+
+**Files:**
+- Modify: `src/shared/domains/funnels/types.ts`
+
+- [ ] **Step 1: Answer shapes + AnswerByKind:**
+
+```ts
+export interface DatetimeAnswer { scheduledFor: string, window: string }
+
+export interface AnswerByKind {
+  'info': never
+  'card-select': string
+  'location': LocationAnswer
+  'pii-form': PiiAnswer
+  'datetime': DatetimeAnswer
+  'confirmation': never
+}
+```
+
+- [ ] **Step 2: Content shapes + ContentByKind:**
+
+```ts
+export interface DatetimeContent { title: string, subtitle?: string, cta?: string, windows?: Record<string, string> }
+export interface ConfirmationContent { title: string, subtitle?: string }
+
+export interface ContentByKind {
+  'info': HeroContent
+  'card-select': CardSelectContent
+  'location': LocationContent
+  'pii-form': PiiContent
+  'datetime': DatetimeContent
+  'confirmation': ConfirmationContent
+}
+```
+
+- [ ] **Step 3: Step variants:**
+
+```ts
+export interface DatetimeStep extends BaseStep<'datetime'> { content: DatetimeContent }
+export interface ConfirmationStep extends BaseStep<'confirmation'> { content: ConfirmationContent }
+
+export type FunnelStep = InfoStep | CardSelectStep | LocationStep | PiiStep | DatetimeStep | ConfirmationStep
+```
+
+- [ ] **Step 4: tsc** — `pnpm tsc 2>&1 | grep "domains/funnels"`. Expected: errors ONLY in `constants/step-registry.ts` (missing `datetime`/`confirmation` keys). `types.ts` clean.
+
+- [ ] **Step 5: lint + commit**
+
+```bash
+git commit -m "feat(funnels): add datetime + confirmation kinds to type model (lockstep)" -- src/shared/domains/funnels/types.ts
+```
+
+---
+
+### Task 5: `datetime` step + register + `DATETIME_STEP` library object
+
+Writes a **composite** `DatetimeAnswer` via the single `setValue`. Day pills + window cards; no calendar dep.
 
 **Files:**
 - Create: `src/shared/domains/funnels/ui/steps/datetime-step.tsx`
-- Modify: `src/shared/domains/funnels/types.ts` (add `DatetimeStep` to union; content fields `windows`)
-- Modify: `src/shared/domains/funnels/lib/step-registry.ts`
+- Modify: `src/shared/domains/funnels/constants/step-registry.ts`
 
-- [ ] **Step 1: Type** — add `export interface DatetimeStep extends BaseStep { kind: 'datetime', field: string }` to the union; add to `StepContent` an optional `windows?: Record<string, string>` (e.g. `{ morning: 'Morning (8–12)', afternoon: 'Afternoon (12–4)', evening: 'Evening (4–7)' }`).
-
-- [ ] **Step 2: Component** — next-14-day pills + a window card-select; on confirm, compose an ISO-ish preferred string and write it to answers (`scheduledFor`), then advance.
+- [ ] **Step 1: Component + library object**
 
 ```tsx
 // src/shared/domains/funnels/ui/steps/datetime-step.tsx
+import type { DatetimeStep, StepProps } from '@/shared/domains/funnels/types'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
-import type { DatetimeStep, StepProps } from '@/shared/domains/funnels/types'
 
-// 14 upcoming dates. NOTE: Date.now()/new Date() are fine in a client component
-// at runtime (the no-Date rule applies only to workflow scripts, not app code).
+// 14 upcoming dates. Date/new Date() are fine in client app code (the no-Date
+// rule applies only to workflow scripts).
 function upcomingDays(count: number): { iso: string, label: string }[] {
   const out: { iso: string, label: string }[] = []
   const base = new Date()
@@ -213,7 +270,7 @@ function upcomingDays(count: number): { iso: string, label: string }[] {
   return out
 }
 
-export function DatetimeStepView({ content, setAnswers, onAdvance, onBack, isFirst }: StepProps<DatetimeStep>) {
+export function DatetimeStepView({ content, setValue, advance, back, isFirst }: StepProps<DatetimeStep>) {
   const [day, setDay] = useState<string | null>(null)
   const [windowKey, setWindowKey] = useState<string | null>(null)
   const days = upcomingDays(14)
@@ -224,9 +281,9 @@ export function DatetimeStepView({ content, setAnswers, onAdvance, onBack, isFir
     if (!day || !windowKey) {
       return
     }
-    // Soft preferred time: human confirms exact slot. Store date + window key.
-    setAnswers({ scheduledFor: `${day}T00:00:00.000Z`, preferredWindow: windowKey })
-    onAdvance()
+    // Soft preferred time: composite answer in one slot. No setAnswers.
+    setValue({ scheduledFor: `${day}T00:00:00.000Z`, window: windowKey })
+    advance()
   }
 
   return (
@@ -249,64 +306,81 @@ export function DatetimeStepView({ content, setAnswers, onAdvance, onBack, isFir
         ))}
       </div>
       <Button size="lg" disabled={!ready} onClick={confirm}>{content.cta ?? 'Confirm preferred time'}</Button>
-      {!isFirst ? <Button variant="ghost" onClick={onBack}>← Back</Button> : null}
+      {!isFirst ? <Button variant="ghost" onClick={back}>← Back</Button> : null}
     </div>
   )
 }
+
+/** Importable prebuilt step (Seam A). */
+export const DATETIME_STEP: DatetimeStep = {
+  id: 'datetime',
+  kind: 'datetime',
+  content: {
+    title: 'When works for a quick call?',
+    cta: 'Confirm preferred time',
+    windows: { morning: 'Morning (8–12)', afternoon: 'Afternoon (12–4)', evening: 'Evening (4–7)' },
+  },
+}
 ```
 
-> `preferredWindow` is stored in answers; the human-readable window can be appended to the lead note or carried in leadMeta later. For 2c, `scheduledFor` (date) is what persists to the lead.
+- [ ] **Step 2: Register** `'datetime': DatetimeStepView` in `constants/step-registry.ts`.
 
-- [ ] **Step 3:** Register `'datetime'` in the registry. tsc + lint + commit.
+- [ ] **Step 3: tsc** — `pnpm tsc 2>&1 | grep "domains/funnels"` → errors only for the still-missing `'confirmation'` key.
+
+- [ ] **Step 4: lint:fix + commit**
 
 ```bash
-git commit -m "feat(funnels): datetime step (day + window soft preferred-time)" -- src/shared/domains/funnels/ui/steps/datetime-step.tsx src/shared/domains/funnels/types.ts src/shared/domains/funnels/lib/step-registry.ts
+git commit -m "feat(funnels): datetime step (composite answer) + DATETIME_STEP" -- src/shared/domains/funnels/ui/steps/datetime-step.tsx src/shared/domains/funnels/constants/step-registry.ts
 ```
 
 ---
 
-### Task 5: `confirmation` step (portfolio proof + fire enrichment)
+### Task 6: `confirmation` step + register + `CONFIRMATION_STEP`
+
+Terminal step (no input). On mount, fires enrichment once (fire-and-forget), reading the typed answers (`answers.pii.leadId`, `answers.datetime.scheduledFor`, `answers.age/scope/timeline`). Renders portfolio before/afters.
 
 **Files:**
 - Create: `src/shared/domains/funnels/ui/steps/confirmation-step.tsx`
-- Modify: `src/shared/domains/funnels/types.ts` (add `ConfirmationStep`)
-- Modify: `src/shared/domains/funnels/lib/step-registry.ts`
+- Modify: `src/shared/domains/funnels/constants/step-registry.ts`
 
-- [ ] **Step 0: Confirm the public portfolio query** — recon noted `projectsRouter.showroomDisplay` is the public portfolio surface. During implementation, find the exact public query that returns kitchen before/after media filtered by trade, and its input/return shape. If none filters by trade cleanly, fetch the showroom list and filter client-side by the kitchen trade. Name the exact procedure in the report.
+- [ ] **Step 0: Confirm the public portfolio query** — recon noted `projectsRouter.showroomDisplay` is the public portfolio surface. Find the exact public query returning kitchen before/after media (filter by trade, or fetch the showroom list + filter client-side). Name the exact procedure + return shape in the report.
 
-- [ ] **Step 1: Component** — on mount, fire enrichment once (fire-and-forget); render scarcity + "we'll call within 24h" + a small before/after gallery from the portfolio query. This step is terminal (no advance).
+- [ ] **Step 1: Component + library object** — reads typed composite answers via small guards:
 
 ```tsx
 // src/shared/domains/funnels/ui/steps/confirmation-step.tsx
+import type { ConfirmationStep, DatetimeAnswer, PiiAnswer, StepProps } from '@/shared/domains/funnels/types'
 import { useEffect, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useEnrichLead } from '@/shared/domains/funnels/hooks/use-enrich-lead'
-import { useTRPC } from '@/trpc/helpers'
-import type { ConfirmationStep, StepProps } from '@/shared/domains/funnels/types'
+
+function asObject<T>(v: unknown): Partial<T> {
+  return v && typeof v === 'object' && !Array.isArray(v) ? v as T : {}
+}
+function asString(v: unknown): string | null {
+  return typeof v === 'string' ? v : null
+}
 
 export function ConfirmationStepView({ content, answers }: StepProps<ConfirmationStep>) {
   const enrich = useEnrichLead()
   const firedRef = useRef(false)
-  const trpc = useTRPC()
-  // Replace with the real public portfolio query confirmed in Step 0:
-  const portfolio = useQuery(trpc.projectsRouter.showroomDisplay.list.queryOptions(/* { trade: 'kitchen' } */))
 
   useEffect(() => {
     if (firedRef.current) {
       return
     }
     firedRef.current = true
-    const customerId = typeof answers.customerId === 'string' ? answers.customerId : null
-    if (!customerId) {
+    const leadId = asObject<PiiAnswer>(answers.pii).leadId
+    if (!leadId) {
       return
     }
+    const dt = asObject<DatetimeAnswer>(answers.datetime)
     enrich({
-      customerId,
-      scheduledFor: typeof answers.scheduledFor === 'string' ? answers.scheduledFor : undefined,
+      leadId,
+      scheduledFor: dt.scheduledFor,
       enrichment: {
-        age: typeof answers.age === 'string' ? answers.age : null,
-        scope: typeof answers.scope === 'string' ? answers.scope : null,
-        timeline: typeof answers.timeline === 'string' ? answers.timeline : null,
+        age: asString(answers.age),
+        scope: asString(answers.scope),
+        timeline: asString(answers.timeline),
       },
     })
   }, [answers, enrich])
@@ -315,34 +389,45 @@ export function ConfirmationStepView({ content, answers }: StepProps<Confirmatio
     <div className="flex flex-col items-center gap-6 py-6 text-center">
       <h2 className="text-2xl font-semibold">{content.title}</h2>
       {content.subtitle ? <p className="text-muted-foreground max-w-prose">{content.subtitle}</p> : null}
-      {/* before/after proof grid from `portfolio.data` — kitchen-filtered */}
+      {/* before/after proof grid from the portfolio query confirmed in Step 0 */}
     </div>
   )
 }
+
+/** Importable prebuilt step (Seam A). Terminal — no advance. */
+export const CONFIRMATION_STEP: ConfirmationStep = {
+  id: 'confirmation',
+  kind: 'confirmation',
+  content: {
+    title: 'You\'re on the list.',
+    subtitle: 'We review fit and call within 24 hours. Here\'s recent Tri Pros kitchen work.',
+  },
+}
 ```
 
-> Render a compact before/after grid from `portfolio.data` (kitchen projects). Keep it lightweight (a few images, lazy). Exact field access depends on the showroom query's return shape (Step 0).
+> Add the before/after gallery (a few lazy images) from the portfolio query confirmed in Step 0; wire it inside this component (a `useQuery` for the showroom list, kitchen-filtered). Keep field access aligned to the query's real return shape.
 
-- [ ] **Step 2:** Add `ConfirmationStep` to the union + register `'confirmation'`. tsc + lint + commit.
+- [ ] **Step 2: Register** `'confirmation': ConfirmationStepView` — registry now exhaustive; whole domain type-checks.
+
+- [ ] **Step 3: Full tsc + lint** → clean project-wide. Commit.
 
 ```bash
-git commit -m "feat(funnels): confirmation step (portfolio proof + fire enrichment)" -- src/shared/domains/funnels/ui/steps/confirmation-step.tsx src/shared/domains/funnels/types.ts src/shared/domains/funnels/lib/step-registry.ts
+git commit -m "feat(funnels): confirmation step (portfolio proof + fire enrichment) + CONFIRMATION_STEP" -- src/shared/domains/funnels/ui/steps/confirmation-step.tsx src/shared/domains/funnels/constants/step-registry.ts
 ```
 
 ---
 
-### Task 6: Stylized SVG region map on the location step
+### Task 7: Stylized SVG region map on the location step
 
 **Files:**
 - Create: `src/shared/domains/funnels/constants/socal-regions.ts`
 - Create: `src/shared/domains/funnels/ui/region-map.tsx`
 - Modify: `src/shared/domains/funnels/ui/steps/location-step.tsx`
 
-- [ ] **Step 1: Region mapping** — county → a region id used to highlight the SVG.
+- [ ] **Step 1: Region mapping** — county → SVG region id:
 
 ```ts
 // src/shared/domains/funnels/constants/socal-regions.ts
-// Resolved county (from resolve-zip) → highlighted region id in the SVG.
 export const COUNTY_TO_REGION: Record<string, string> = {
   'Los Angeles': 'la',
   'Orange': 'oc',
@@ -354,11 +439,11 @@ export const COUNTY_TO_REGION: Record<string, string> = {
 export const DEFAULT_REGION = 'socal'
 ```
 
-- [ ] **Step 2: `region-map.tsx`** — a branded inline SVG of the SoCal service area; the active region path animates in (motion), others dimmed. Props: `{ region: string }`. Use `motion.path`/`motion.g` with `FUNNEL_TRANSITION`; respect reduced motion. (Author the SVG paths as a stylized, low-detail regional shape — not a precise geographic map.)
+- [ ] **Step 2: `region-map.tsx`** — a branded inline SVG of the SoCal service area; the active region path animates in (`motion.path`/`motion.g` with `FUNNEL_TRANSITION`), others dimmed; respect reduced motion. Props: `{ region: string }`. Author stylized low-detail regional shapes (not a precise geographic map).
 
-- [ ] **Step 3:** In `location-step.tsx` `qualified` phase, store the resolved county in answers (extend `resolveZip` usage to keep `county`), map it via `COUNTY_TO_REGION`, and render `<RegionMap region={...} />` above the "qualifies" copy. Keep the `Continue` button.
+- [ ] **Step 3:** In `location-step.tsx` `qualified` phase, derive the region from the resolved county (the `location` step already resolves `county` into its composite answer — keep a local `resolved` ref or re-read; the county is available from the `resolveZip` result captured in `handleSubmit`). Map via `COUNTY_TO_REGION` (fallback `DEFAULT_REGION`) and render `<RegionMap region={...} />` above the "qualifies" copy. Keep the `Continue` button (`advance`).
 
-- [ ] **Step 4:** tsc + lint + runtime (map renders + animates on a known CA ZIP; reduced-motion shows it statically). Commit.
+- [ ] **Step 4:** tsc + lint + runtime (map renders + animates on a known CA ZIP; reduced-motion static). Commit.
 
 ```bash
 git commit -m "feat(funnels): stylized SVG region map reveal on location step" -- src/shared/domains/funnels/constants/socal-regions.ts src/shared/domains/funnels/ui/region-map.tsx src/shared/domains/funnels/ui/steps/location-step.tsx
@@ -366,41 +451,44 @@ git commit -m "feat(funnels): stylized SVG region map reveal on location step" -
 
 ---
 
-### Task 7: Complete the kitchen flow + full end-to-end smoke
+### Task 8: Complete the kitchen flow + full end-to-end smoke
 
 **Files:**
 - Modify: `src/shared/domains/funnels/constants/kitchens.ts`
 
-- [ ] **Step 1:** Extend `steps` + `STEP_ORDER` to the full flow:
+- [ ] **Step 1:** Append the post-PII steps to `steps` (linear — no `flow`). Enrichment steps are kitchen-specific `card-select`s (inline content); `datetime`/`confirmation` are the shared library objects (spread-overridable). Full flow:
 `hero → layout → ownership → location → pii → age → scope → timeline → datetime → confirmation`
-Add `age`/`scope`/`timeline` as `card-select` steps (`field: 'age'|'scope'|'timeline'`), `datetime` (`field:'scheduledFor'`), and `confirmation`. Add their `content.steps` entries:
 
 ```ts
-age: { title: 'How old is your kitchen?', options: {
-  '0-5': { label: '0–5 years' }, '5-15': { label: '5–15 years' },
-  '15-plus': { label: '15+ years' }, original: { label: 'Original / never renovated' } } },
-scope: { title: 'What are you picturing?', options: {
-  'full-gut': { label: 'Full gut remodel' }, 'cabinets-counters': { label: 'Cabinets + counters' },
-  refresh: { label: 'Cosmetic refresh' }, 'not-sure': { label: 'Not sure yet' } } },
-timeline: { title: 'When would you want to start?', options: {
-  asap: { label: 'ASAP' }, '1-3': { label: '1–3 months' },
-  '3-6': { label: '3–6 months' }, exploring: { label: 'Just exploring' } } },
-datetime: { title: 'When works for a quick call?', cta: 'Confirm preferred time',
-  windows: { morning: 'Morning (8–12)', afternoon: 'Afternoon (12–4)', evening: 'Evening (4–7)' } },
-confirmation: { title: "You're on the list.",
-  subtitle: "We review fit and call within 24 hours. Here's recent Tri Pros kitchen work." },
+import { DATETIME_STEP } from '@/shared/domains/funnels/ui/steps/datetime-step'
+import { CONFIRMATION_STEP } from '@/shared/domains/funnels/ui/steps/confirmation-step'
+// … appended to steps[] after the pii step:
+{ id: 'age', kind: 'card-select', optionIds: ['0-5', '5-15', '15-plus', 'original'], content: {
+  title: 'How old is your kitchen?',
+  options: { '0-5': { label: '0–5 years' }, '5-15': { label: '5–15 years' }, '15-plus': { label: '15+ years' }, 'original': { label: 'Original / never renovated' } } } },
+{ id: 'scope', kind: 'card-select', optionIds: ['full-gut', 'cabinets-counters', 'refresh', 'not-sure'], content: {
+  title: 'What are you picturing?',
+  options: { 'full-gut': { label: 'Full gut remodel' }, 'cabinets-counters': { label: 'Cabinets + counters' }, 'refresh': { label: 'Cosmetic refresh' }, 'not-sure': { label: 'Not sure yet' } } } },
+{ id: 'timeline', kind: 'card-select', optionIds: ['asap', '1-3', '3-6', 'exploring'], content: {
+  title: 'When would you want to start?',
+  options: { 'asap': { label: 'ASAP' }, '1-3': { label: '1–3 months' }, '3-6': { label: '3–6 months' }, 'exploring': { label: 'Just exploring' } } } },
+DATETIME_STEP,
+CONFIRMATION_STEP,
 ```
 
-- [ ] **Step 2: tsc + lint** → clean.
+(Answers land keyed by step id: `answers.age`, `answers.scope`, `answers.timeline`, `answers.datetime` = `{scheduledFor, window}`, `answers.pii` = `{leadId}`.)
 
-- [ ] **Step 3: Full end-to-end runtime smoke (dev, browser)** at `http://kitchens.localhost:3000/?utm_source=meta&utm_campaign=kitchens-showcase`:
+- [ ] **Step 2: tsc + lint** → clean project-wide.
+
+- [ ] **Step 3: Full end-to-end runtime smoke (dev, browser)** at `http://localhost:3000/funnels/kitchens?utm_source=meta&utm_campaign=kitchens-showcase` (or the `kitchens.localhost:3000` host):
   1. Complete all steps hero → … → confirmation.
-  2. On the ZIP step, a known CA ZIP shows the animated region map + "qualifies"; city pre-fills on PII.
-  3. PII submit creates the lead (network 200).
+  2. ZIP step: a known CA ZIP shows the animated region map + "qualifies"; city pre-fills on PII.
+  3. PII submit creates the lead (network 200); `answers.pii.leadId` set.
   4. Reaching confirmation fires `enrichFunnelLead` (network 200, fire-and-forget).
-  5. Verify in the DEV DB the customer's `leadMetaJSON` has: `source.kind:'funnel'`, `offer:'showcase'`, `funnelSlug:'kitchens'`, `utm.source:'meta'`, `utm.campaign:'kitchens-showcase'`, `source.enrichment.{age,scope,timeline}` set, `scheduledFor` set, `interestedTradesRaw:['Kitchen Renovation']`.
-  6. Confirm the before/after gallery renders kitchen projects.
-  7. Negative: directly POSTing `enrichFunnelLead` with a random UUID, or a non-funnel customer id, is refused (precondition-failed) — confirms the guard.
+  5. DEV DB: the customer's `leadMetaJSON` has `source.kind:'funnel'`, `offer:'showcase'`, `funnelSlug:'kitchens'`, `utm.source:'meta'`, `utm.campaign:'kitchens-showcase'`, `source.enrichment.{age,scope,timeline}` set, `scheduledFor` set, `interestedTradesRaw:['Kitchen Renovation']`.
+  6. `localStorage['tri-pros:funnel:kitchens'].answers`: `datetime` is a composite `{scheduledFor, window}` object; `age`/`scope`/`timeline` are strings; `pii` is `{leadId}`. **No flat enrichment keys** (proves no `setAnswers`).
+  7. Before/after gallery renders kitchen projects.
+  8. Negative: POSTing `enrichFunnelLead` with a random UUID, or a non-funnel customer id, is refused (precondition-failed) — confirms the guard.
 
   Record evidence in the report.
 
@@ -412,17 +500,19 @@ git commit -m "feat(funnels): complete kitchen funnel (enrichment + appointment 
 
 ---
 
-## Out of scope for Plan 2c (later plans)
+## Out of scope (later plans)
 
-- Meta Pixel + CAPI dual-fire (`PageView`/`ViewContent`/`Lead`/`Schedule` browser + the server pipeline events) — **Plan 3**.
+- Meta Pixel + CAPI dual-fire (`PageView`/`ViewContent`/`Lead`/`Schedule`) — **Plan 3**.
 - Bathroom + complete-interior specs (config-only, reusing this engine + step library) — **Plan 4**.
 - Trade icon set, per-trade accent tuning, copy polish, fuller region-map artwork — **Plan 5**.
 
 ## Self-Review
 
-- **Spec coverage:** enrichment age/scope/timeline (Tasks 1,4,7) ✅ [product §2 enrichment]; soft preferred-time → `scheduledFor`, human confirms, no auto-meeting (Task 4 + 2b `customer_only`) ✅ [§2]; confirmation w/ portfolio before/afters + next-steps + scarcity (Task 5,7) ✅; region map reveal (Task 6) ✅; post-lead persistence without exposing a broad update (Task 2 guarded mutation) ✅; enrichment never blocks confirmation (Task 3 fire-and-forget) ✅.
-- **Placeholder scan:** none in code; two explicit "confirm during implementation" hooks (the public portfolio query shape in Task 5 Step 0; the region SVG artwork in Task 6 Step 2) are scoped investigations, not placeholders — each names exactly what to resolve.
-- **Type consistency:** `enrichment` shape identical across leadMeta variant (Task 1), `enrichFunnelLead` input (Task 2), the hook (Task 3), and the confirmation call (Task 5); `scheduledFor` reuses the existing top-level leadMeta field (not duplicated); new step kinds (`datetime`,`confirmation`) added to the union + registry consistently; `setAnswers` (from 2b) used by datetime + location.
-- **Security flagged for review:** Task 2's public `enrichFunnelLead` — UUID-capability + rate-limit + funnel-only + field-allowlist. This is the one new public write surface; called out in the plan header and to be reviewed before merge.
-- **Backend conventions:** leadMeta patch goes through a DAL mutation (Task 2 note), not `db.*` in the service; no manual `updatedAt`.
-```
+- **Anti-patterns removed:** no `setAnswers` (datetime writes a composite `DatetimeAnswer` via `setValue`; enrichment uses plain `card-select` string answers keyed by step id); no engine special-case (confirmation reads `answers` + the engine is untouched); lead id read from the typed `PiiAnswer.leadId`, not an ad-hoc `customerId` answer key. ✅
+- **Lockstep enforced:** Task 4 adds both kinds to union + AnswerByKind + ContentByKind; registry stays red until Tasks 5–6 register components — `tsc` is the safety net. ✅
+- **Seam A honored:** `DATETIME_STEP`/`CONFIRMATION_STEP` are importable prebuilt objects; age/scope/timeline are trade-specific inline card-selects (correctly NOT library steps). ✅
+- **Spec coverage:** enrichment age/scope/timeline (Tasks 4,8) [§2]; soft preferred-time → `scheduledFor`, human confirms (Task 5 + 2b `customer_only`) [§2]; confirmation + portfolio proof + scarcity (Task 6,8); region map reveal (Task 7); guarded post-lead persistence (Task 2); enrichment never blocks confirmation (Task 3 fire-and-forget). Deferred-with-note: pixel/CAPI (3), other trades (4), polish (5).
+- **Security flagged for review:** Task 2's public `enrichFunnelLead` — UUID-capability + rate-limit + funnel-only + field-allowlist. The one new public write surface; review before merge.
+- **Backend conventions:** leadMeta patch via DAL mutation (Task 2), not `db.*` in the service; no manual `updatedAt`.
+- **Placeholder scan:** concrete code throughout; two scoped implementation-time investigations (the public portfolio query shape in Task 6 Step 0; the region SVG artwork in Task 7 Step 2) — each names exactly what to resolve.
+- **Type consistency:** `DatetimeAnswer`/`PiiAnswer` (Task 4) ↔ `setValue` composites (Task 5) ↔ confirmation reads `answers.pii.leadId`/`answers.datetime.scheduledFor` (Task 6) ↔ `enrichFunnelLead` input `{leadId, scheduledFor?, enrichment?}` (Task 2) ↔ hook (Task 3); `enrichment` shape identical across leadMeta variant (Task 1), mutation, hook, and call site.
