@@ -3,7 +3,7 @@ import z from 'zod'
 
 import { paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { setVoipCampaignsPolicy, setVoipDefaultCampaign } from '@/shared/entities/lead-sources/dal/server/mutations'
+import { setVoipCampaignsPolicy } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
@@ -108,13 +108,6 @@ export const voipCampaignsRouter = createTRPCRouter({
   resyncFromCloudtalk: superAdminProcedure.mutation(async ({ ctx }) => {
     return dalToTrpc(await campaignSyncService.resyncFromCloudtalk(ctx))
   }),
-
-  /** Set (or clear) a source's default campaign for auto-enroll (decision #10). */
-  setDefaultCampaign: superAdminProcedure
-    .input(z.object({ sourceSlug: z.string(), campaignId: z.string().uuid().nullable() }))
-    .mutation(async ({ input }) => {
-      return dalToTrpc(await setVoipDefaultCampaign(input.sourceSlug, input.campaignId))
-    }),
 
   /** Patch a source's campaigns policy (default campaign + enabled + autoEnroll). */
   setSourcePolicy: superAdminProcedure

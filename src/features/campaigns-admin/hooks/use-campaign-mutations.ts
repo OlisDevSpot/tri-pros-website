@@ -49,16 +49,6 @@ export function useCampaignMutations() {
     }),
   )
 
-  const setDefaultCampaign = useMutation(
-    trpc.voipCampaignsRouter.setDefaultCampaign.mutationOptions({
-      onSuccess: () => {
-        invalidateVoipCampaigns()
-        toast.success('Default campaign updated')
-      },
-      onError: err => toast.error(err.message || 'Failed to set default campaign'),
-    }),
-  )
-
   const setSourcePolicy = useMutation(
     trpc.voipCampaignsRouter.setSourcePolicy.mutationOptions({
       onSuccess: () => {
@@ -190,7 +180,6 @@ export function useCampaignMutations() {
 
   return {
     resync,
-    setDefaultCampaign,
     setSourcePolicy,
     enrollAll,
     unenrollAll,
