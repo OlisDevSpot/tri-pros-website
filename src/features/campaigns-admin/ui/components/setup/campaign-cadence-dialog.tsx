@@ -37,14 +37,18 @@ export function CampaignCadenceDialog({
   const [draft, setDraft] = useState<SmsCadence>(
     () => campaign?.smsCadence ?? smsCadenceSchema.parse({}),
   )
+  const [messageKeys, setMessageKeys] = useState<string[]>([])
 
   // Re-seed whenever the dialog opens or a different campaign is selected.
   useEffect(() => {
     if (open) {
+      const seeded = campaign?.smsCadence ?? smsCadenceSchema.parse({})
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setDraft(campaign?.smsCadence ?? smsCadenceSchema.parse({}))
+      setDraft(seeded)
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+      setMessageKeys(seeded.messages.map(() => crypto.randomUUID()))
     }
-    // Only re-seed on open/campaign change — intentionally omit 'draft'
+    // Only re-seed on open/campaign change -- intentionally omit 'draft'
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaign?.id, open])
 
@@ -53,7 +57,11 @@ export function CampaignCadenceDialog({
 
   // Guard: intercept any close attempt while there are unsaved changes.
   function guardedClose() {
-    if (dirty && !isPending) {
+    // Fix 3: prevent Esc/overlay close while a save is in flight.
+    if (isPending) {
+      return
+    }
+    if (dirty) {
       // eslint-disable-next-line no-alert
       if (!window.confirm('Discard unsaved cadence changes?')) {
         return
@@ -83,6 +91,7 @@ export function CampaignCadenceDialog({
       ...prev,
       messages: prev.messages.filter((_, i) => i !== index),
     }))
+    setMessageKeys(prev => prev.filter((_, i) => i !== index))
   }
 
   function addMessage() {
@@ -96,6 +105,7 @@ export function CampaignCadenceDialog({
         },
       ],
     }))
+    setMessageKeys(prev => [...prev, crypto.randomUUID()])
   }
 
   function handleSave() {
@@ -164,14 +174,11 @@ export function CampaignCadenceDialog({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-2">
           {messageCount === 0
             ? (
-                <p className="py-6 text-sm text-muted-foreground">
-                  "No messages yet. Add an opener — it sends after the first dial attempt."
-                </p>
+                <p className="py-6 text-sm text-muted-foreground">“No messages yet. Add an opener — it sends after the first dial attempt.”</p>
               )
             : draft.messages.map((m, i) => (
                 <CadenceMessageRow
-                  // eslint-disable-next-line react/no-array-index-key
-                  key={i}
+                  key={messageKeys[i] ?? crypto.randomUUID()}
                   index={i}
                   message={m}
                   showThresholdWarning={i > 0 && m.afterAttempts < draft.messages[i - 1]!.afterAttempts}
