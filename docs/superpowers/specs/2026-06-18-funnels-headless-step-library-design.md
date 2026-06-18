@@ -147,3 +147,37 @@ Kitchen-specific steps are inline; ZIP / PII / hero / confirmation come from the
 - This is **Plan 2b/2c territory** — Plan 2a's own file-structure note defers "remaining step kinds (location, pii-form, datetime, confirmation)" to 2b/2c. Seams A–C are the foundation those kinds need.
 - All three seams **extend** the landed `types.ts` / `step-registry.ts` / `funnel-engine.tsx` / `use-funnel-engine.ts` — none replace them. Backward-compatible: a funnel that uses no library steps, no component overrides, and only single-value steps behaves exactly as Plan 2a does today.
 - **Shared working tree:** the engine session and other sessions commit to `main` in the same checkout. Whoever implements these seams should touch the engine files in one focused pass (pathspec commits) to avoid colliding with concurrent work.
+
+---
+
+## 8. Small cleanup nits (fold in during your next engine pass)
+
+From a `/simplify` review of the funnels domain (2026-06-18). The code is clean
+overall — these are two trivial nits, surfaced here rather than applied directly
+because the engine files had uncommitted work at review time. Apply when the tree
+is yours and clean; neither changes behavior.
+
+1. **Drop the `pop() as StepId` cast** — `hooks/use-funnel-engine.ts` (`back`).
+   `const previousId = history.pop() as StepId` copies the history array and then
+   mutates it, with a cast to paper over a narrowing TS can't see. Express "drop
+   the last entry" directly and cast-free:
+   ```ts
+   const previousId = prev.history.at(-1)!        // or guard above already ensures length > 0
+   return { ...prev, currentStepId: previousId, history: prev.history.slice(0, -1) }
+   ```
+
+2. **Name the answer-input union once** — `types.ts` + `use-funnel-engine.ts`.
+   `string | string[]` is spelled inline in `StepProps.onChange`, `setAnswer`'s
+   param, and the `FunnelEngine.setAnswer` type, while `AnswerValue`
+   (`string | string[] | null`) already exists two lines away. Add a non-null
+   sibling and reuse it:
+   ```ts
+   export type AnswerInput = string | string[]   // what a step can emit (never null)
+   ```
+   Then `onChange: (value: AnswerInput) => void`, etc. One edit site when a future
+   step kind widens the type (e.g. a slider adding `number` in Plan 2b).
+
+Explicitly **not** nits (reviewed and kept as-is): the `roots.ts` `APP_HOSTS.dev`
+literal (the value-import constraint is real; re-declaring slugs locally just moves
+the coupling), and the `hydrated` resume gate (does real work given the current
+`usePersistedState` contract).
