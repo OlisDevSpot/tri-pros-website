@@ -30,6 +30,15 @@ import { cloudtalkDispositions } from '../constants'
 const e164Schema = z.string().regex(/^\+?\d{10,15}$/)
 const ctTimestampSchema = z.string().min(1)
 
+// CloudTalk WA body-builders render a phone token UNQUOTED when it isn't wrapped
+// in quotes (`"internal_number_e164": {{ … }}`), so the value arrives as a raw
+// number (e.g. 18183505328). Coerce number→string (and ""/null/undefined →
+// undefined) before the e164 regex, the same way ctContactIdSchema coerces ids.
+const ctE164OptionalSchema = z.preprocess(
+  v => (v === '' || v === null || v === undefined ? undefined : String(v)),
+  e164Schema.optional(),
+)
+
 // CloudTalk emits call direction as 'incoming' / 'outgoing'. Normalize to the
 // app-canonical 'inbound' / 'outbound' vocabulary used everywhere else. (Do NOT
 // hardcode 'outbound' in the WA body-builder — template the real value:
@@ -121,7 +130,9 @@ export type CloudtalkCallAnsweredEvent = z.infer<typeof cloudtalkCallAnsweredSch
 export const cloudtalkCallEndedSchema = z.object({
   event_type: z.literal('call.ended'),
   call_uuid: z.string(),
-  ended_at: ctTimestampSchema,
+  // NOTE: `ended_at` is intentionally NOT modelled — CloudTalk's Call+Ended WA
+  // emits it as `null` (the token is empty at end-of-call) and v1 never reads it.
+  // Re-add as nullable/optional only if status derivation later needs it.
   // CT Workflow-Automation bodies template values as strings — coerce. (Mirrors
   // schemas/primitives.ts#ctNumberSchema; events.ts is self-contained by design.)
   duration_sec: z.coerce.number().int().optional(),
@@ -130,12 +141,13 @@ export const cloudtalkCallEndedSchema = z.object({
   // outbound dials. Tighten to required once the token is confirmed.
   direction: ctDirectionSchema.optional(),
   // Stringified-boolean safe (see ctBooleanSchema) — CT may emit "true"/"false".
-  // Relaxed to optional (2026-06-17): unused by v1 SMS cadence; a missing value
-  // must not 400 the whole event. Future voicemail handling will tighten this.
-  is_voicemail: ctBooleanSchema.optional(),
+  // nullish (2026-06-18): CT sends `null` when the call wasn't a voicemail;
+  // unused by v1 SMS cadence, so null/undefined must not 400 the event.
+  is_voicemail: ctBooleanSchema.nullable().optional(),
   // Our campaign DID for this call — the SMS `from`. Mapped from CT's
-  // event.properties.internal_number. Optional: inbound/manual calls may omit it.
-  internal_number_e164: e164Schema.optional(),
+  // event.properties.internal_number, which arrives UNQUOTED (a number) — see
+  // ctE164OptionalSchema. Optional: inbound/manual calls may omit it.
+  internal_number_e164: ctE164OptionalSchema,
   // Always template the contact id for deterministic customer resolution.
   contact_id: ctContactIdSchema,
   contact_name: ctContactNameSchema,
