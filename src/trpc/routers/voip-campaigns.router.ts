@@ -6,7 +6,9 @@ import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { setVoipCampaignsPolicy } from '@/shared/entities/lead-sources/dal/server/mutations'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { countLeadsByStatusPerSource, listActiveCustomerIdsBySource, listEnrolledLeadsBySource, listLeadsPaginated } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import { voipCampaignCrud } from '@/shared/entities/voip-campaigns/dal/server/crud'
 import { getVoipCampaignById, listVoipCampaigns } from '@/shared/entities/voip-campaigns/dal/server/queries'
+import { smsCadenceSchema } from '@/shared/entities/voip-campaigns/schemas/sms-cadence'
 import { listVoipContactAttributes } from '@/shared/entities/voip-contact-attributes/dal/server/queries'
 import { bulkDncJob } from '@/shared/services/providers/upstash/jobs/bulk-dnc'
 import { bulkEnrollJob } from '@/shared/services/providers/upstash/jobs/bulk-enroll'
@@ -121,6 +123,24 @@ export const voipCampaignsRouter = createTRPCRouter({
     }))
     .mutation(async ({ input }) => {
       return dalToTrpc(await setVoipCampaignsPolicy(input.sourceSlug, input.patch))
+    }),
+
+  /**
+   * Set a campaign's automated SMS cadence config. Full-replace of the
+   * `sms_cadence` JSONB (the spec defines no jsonbMergeColumns, so the messages
+   * array is replaced, not merged). Resync-safe — upsertCampaignByCtId never
+   * writes this column. see src/shared/entities/voip-campaigns/DOCS.md#sms-cadence
+   */
+  setCampaignSmsCadence: superAdminProcedure
+    .input(z.object({
+      campaignId: z.string().uuid(),
+      smsCadence: smsCadenceSchema,
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return dalToTrpc(await voipCampaignCrud.update(ctx, {
+        id: input.campaignId,
+        data: { smsCadence: input.smsCadence },
+      }))
     }),
 
   // ── Enrollment ─────────────────────────────────────────────────────────────
