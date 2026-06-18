@@ -37,7 +37,7 @@ export function LeadRowActions({ onEnroll, onOpenProfile, row }: LeadRowActionsP
           <DropdownMenuItem onSelect={() => removeFromCampaign.mutate({ customerId: row.customerId })}>Remove</DropdownMenuItem>
         )}
         {row.status !== 'dnc' && (
-          <DropdownMenuItem className="text-red-600" onSelect={() => markDnc.mutate({ customerIds: [row.customerId] })}>Mark DNC</DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive" onSelect={() => markDnc.mutate({ customerIds: [row.customerId] })}>Mark DNC</DropdownMenuItem>
         )}
         {row.status === 'dnc' && (
           <DropdownMenuItem onSelect={() => removeDnc.mutate({ customerId: row.customerId })}>Clear DNC</DropdownMenuItem>

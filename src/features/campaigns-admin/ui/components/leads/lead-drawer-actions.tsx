@@ -31,7 +31,7 @@ export function LeadDrawerActions({ campaigns, row }: { campaigns: VoipCampaign[
         )}
         {row.status !== 'dnc' && (
           <Button
-            className="text-amber-700 dark:text-amber-400"
+            className="text-warning"
             onClick={async () => {
               if (await confirm()) {
                 disqualify.mutate({ customerId: id })
@@ -46,7 +46,7 @@ export function LeadDrawerActions({ campaigns, row }: { campaigns: VoipCampaign[
         {row.status !== 'dnc'
           ? (
               <Button
-                className="text-red-600"
+                className="text-destructive"
                 onClick={async () => {
                   if (await confirm()) {
                     markDnc.mutate({ customerIds: [id] })

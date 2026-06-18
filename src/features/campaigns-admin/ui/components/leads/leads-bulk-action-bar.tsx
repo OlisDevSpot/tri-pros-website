@@ -59,7 +59,7 @@ export function LeadsBulkActionBar({ campaigns, onClear, selectedIds }: LeadsBul
             </Button>
             <span className="mx-1 h-4 w-px bg-border" />
             <Button
-              className="text-amber-700 dark:text-amber-400"
+              className="text-warning"
               onClick={async () => {
                 if (await confirm()) {
                   disqualifyBulk.mutate({ customerIds: selectedIds }, { onSuccess: settle })
@@ -71,7 +71,7 @@ export function LeadsBulkActionBar({ campaigns, onClear, selectedIds }: LeadsBul
               Disqualify
             </Button>
             <Button
-              className="text-red-600"
+              className="text-destructive"
               onClick={async () => {
                 if (await confirm()) {
                   markDnc.mutate({ customerIds: selectedIds }, { onSuccess: settle })
