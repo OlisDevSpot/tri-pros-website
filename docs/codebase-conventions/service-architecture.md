@@ -318,7 +318,7 @@ Use `dispatchOrThrow` and `await` it for critical work. Use `dispatch` and `void
 
 **Sync services:** `zoho-sync`. Future: `qb-sync` when accounting is decomposed.
 
-**Providers:** `zoho-sign`, `google-calendar`, `quickbooks`, `r2`, `resend`, `notion`, `web-push`, `upstash`, `ai`, `google-drive`, `google-maps`, `gohighlevel`, `pipedrive`.
+**Providers:** `zoho-sign`, `google-calendar`, `quickbooks`, `r2`, `resend`, `notion`, `web-push`, `upstash`, `ai`, `google-drive`, `google-maps`, `gohighlevel`.
 
 **Shared libs (NOT providers):** `shared/lib/pdf/` (pure local generation via pdfmake/pdf-lib).
 

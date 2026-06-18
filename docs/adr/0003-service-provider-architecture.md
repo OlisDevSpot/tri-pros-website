@@ -96,7 +96,7 @@ Providers never know about business logic. Services never make raw HTTP. The dep
 
 **Sync services:** `zoho-sync.service`. Future: `qb-sync.service`.
 
-**Providers:** `zoho-sign/`, `google-calendar/`, `quickbooks/`, `r2/`, `resend/`, `notion/`, `web-push/`, `upstash/`, `ai/`, `google-drive/`, `google-maps/`, `gohighlevel/`, `pipedrive/`.
+**Providers:** `zoho-sign/`, `google-calendar/`, `quickbooks/`, `r2/`, `resend/`, `notion/`, `web-push/`, `upstash/`, `ai/`, `google-drive/`, `google-maps/`, `gohighlevel/`.
 
 **Shared libs (NOT providers):** `shared/lib/pdf/` (pdfmake/pdf-lib — pure local generation), and assorted utilities.
 

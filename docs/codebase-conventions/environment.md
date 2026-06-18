@@ -83,7 +83,7 @@ CASL abilities live in `src/shared/domains/permissions/abilities.ts`. Every enti
 - **AI (Vercel AI SDK + OpenAI)** — project summary generation, currently via `services/providers/ai/`
 - **Web Push (Declarative Web Push)** — iOS PWA + desktop push; manifest scope MUST stay `/` for deep links
 
-**Legacy, do not use**: Monday.com, Pipedrive (provider files preserved for migration scripts only).
+**Legacy, do not use**: Monday.com. (Pipedrive fully removed 2026-06-17 — provider, package, and env vars deleted.)
 
 ## See also
 

@@ -9,7 +9,6 @@ import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { emailService } from '@/shared/services/email.service'
-import { putLead as putPipedriveLead } from '@/shared/services/providers/pipedrive/api/put-lead'
 import { formatProjectType } from '@/shared/services/providers/resend/lib/format-project-type'
 import { baseProcedure, createTRPCRouter } from '../../init'
 import { projectsRouter } from './projects.router'
@@ -21,9 +20,9 @@ export const landingRouter = createTRPCRouter({
   scheduleConsultation: baseProcedure
     .input(scheduleConsultationFormSchema)
     .mutation(async ({ input }) => {
-      // Internal lead email is the must-succeed leg. Customer confirmation,
-      // customer-record ingest, and Pipedrive run in parallel and any of those
-      // failing is logged but doesn't block the success path.
+      // Internal lead email is the must-succeed leg. Customer confirmation
+      // and customer-record ingest run in parallel and any of those failing
+      // is logged but doesn't block the success path.
       const [leadResult, confirmationResult, ingestResult] = await Promise.allSettled([
         emailService.sendScheduleConsultationEmail(input),
         emailService.sendInquiryConfirmationEmail({ type: 'schedule', formData: input }),
@@ -71,15 +70,6 @@ export const landingRouter = createTRPCRouter({
 
       if (ingestResult.status === 'rejected') {
         console.error('[landing/generalInquiry] customer ingest failed:', ingestResult.reason)
-      }
-
-      try {
-        await putPipedriveLead(input)
-      }
-      catch (error) {
-        // Pipedrive sync failure shouldn't block the lead — emails already
-        // delivered. Log and surface as a non-fatal warning in the response.
-        console.error('[landing/generalInquiry] pipedrive sync failed:', error)
       }
 
       return { data: leadResult.value.data, input }

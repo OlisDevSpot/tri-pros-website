@@ -7,7 +7,6 @@ import z from 'zod'
 
 import { cloudtalkConfigMeta, cloudtalkEnvFragment } from '@/shared/services/providers/cloudtalk/lib/config'
 import { notionConfigMeta, notionEnvFragment } from '@/shared/services/providers/notion/lib/config'
-import { pipedriveConfigMeta, pipedriveEnvFragment } from '@/shared/services/providers/pipedrive/lib/config'
 import { quickbooksConfigMeta, quickbooksEnvFragment } from '@/shared/services/providers/quickbooks/lib/config'
 import { r2ConfigMeta, r2EnvFragment } from '@/shared/services/providers/r2/lib/config'
 import { resendConfigMeta, resendEnvFragment } from '@/shared/services/providers/resend/lib/config'
@@ -54,10 +53,6 @@ const envSchema = z.object({
 
   // MONDAY
   MONDAY_API_TOKEN: z.string(),
-
-  // PIPEDRIVE — fragment lives at providers/pipedrive/lib/config.ts
-  // (PIPEDRIVE_BASE_URL removed 2026-06-05 — was dead env, no consumers)
-  ...pipedriveEnvFragment.shape,
 
   // ZOHO SIGN
   ZOHO_SIGN_DEV_TOKEN: z.string().optional(),
@@ -200,7 +195,6 @@ const PROVIDER_METAS = [
   cloudtalkConfigMeta,
   resendConfigMeta,
   notionConfigMeta,
-  pipedriveConfigMeta,
   quickbooksConfigMeta,
   r2ConfigMeta,
   qstashConfigMeta,
