@@ -26,7 +26,7 @@ via a generic host dispatcher in `src/middleware.ts`.
 
 ## Current registry
 
-- `kitchens` / `bathrooms` / `interiors` → `(funnels)/[trade]` (Showcase funnels)
+- `kitchens` / `bathrooms` / `interiors` → `funnels/[trade]` (Showcase funnels). Note: `funnels` is a real path segment, not a `(funnels)` route group — a group is stripped from the URL, so the `/funnels/[trade]` rewrite would 404.
 - `voip` → planned (`/voip`), not yet registered (route group does not exist)
 
 ## Rewrite, never redirect

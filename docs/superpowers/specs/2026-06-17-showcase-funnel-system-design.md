@@ -118,17 +118,19 @@ export const SUBDOMAIN_ROUTES: Record<string, string> = {
 }
 ```
 
-### 3.2 `(funnels)` route group — the codebase boundary
+### 3.2 `funnels/` route segment — the codebase boundary
 
 ```
-src/app/(frontend)/(funnels)/
+src/app/(frontend)/funnels/
 ├── layout.tsx          ← funnel-only chrome; <MetaPixel/> injected ONLY here
 └── [trade]/
     └── page.tsx        ← reads params.trade ("kitchen"|"bathroom"|"interior")
 ```
 
-- Sibling to `(site)` and `dashboard`; has **its own minimal layout** (no marketing nav/footer). Precedent already exists (`proposal-flow`, `intake` are standalone public surfaces).
+- **`funnels` is a REAL path segment, NOT a parenthesized route group.** A route group `(funnels)` is stripped from the URL, so the route would serve at `/[trade]` (e.g. `/kitchen`) — but the middleware rewrites to `/funnels/[trade]`, so a group would 404 every subdomain. A real segment makes `/funnels/[trade]` the actual URL the rewrite targets. (Discovered during Plan 1 implementation; the original "(funnels) group" framing was wrong.)
+- Has **its own minimal layout** (`funnels/layout.tsx`, no marketing nav/footer) — the funnel/app boundary is preserved by the dedicated directory + layout, not by the parentheses. Precedent for standalone public surfaces: `proposal-flow`, `intake`.
 - The Pixel lives in this layout only — it never loads on the marketing site or the app.
+- Side effect: `/funnels/[trade]` is also reachable on the apex (`triprosremodeling.com/funnels/kitchen`). Acceptable — the marketed canonical URL is the subdomain; an apex→subdomain canonical redirect can be added later if desired.
 
 ### 3.3 Paths, hosts, helpers
 

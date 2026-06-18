@@ -230,11 +230,13 @@ git commit -m "feat(funnels): generic subdomain dispatcher middleware + dev host
 
 ---
 
-### Task 4: `(funnels)` route group — layout + `[trade]` page shell
+### Task 4: `funnels/` route segment — layout + `[trade]` page shell
+
+> **CORRECTION (post-implementation):** `funnels` must be a REAL path segment, NOT a parenthesized route group `(funnels)`. A route group is stripped from the URL, so `(funnels)/[trade]` serves at `/[trade]` (e.g. `/kitchen`), which the middleware's `/funnels/[trade]` rewrite never matches → every subdomain 404s. Use a real `funnels/` directory so `/funnels/[trade]` is the actual URL. Its own `funnels/layout.tsx` preserves the funnel/app boundary.
 
 **Files:**
-- Create: `src/app/(frontend)/(funnels)/layout.tsx`
-- Create: `src/app/(frontend)/(funnels)/[trade]/page.tsx`
+- Create: `src/app/(frontend)/funnels/layout.tsx`
+- Create: `src/app/(frontend)/funnels/[trade]/page.tsx`
 
 **Interfaces:**
 - Consumes: `FUNNEL_TRADES`, `FunnelTrade` (Task 1).
@@ -245,7 +247,7 @@ git commit -m "feat(funnels): generic subdomain dispatcher middleware + dev host
 This is a NESTED layout under `(frontend)/layout.tsx` (which already provides `<html>`/`<body>`/fonts/Providers). It deliberately renders NO marketing nav/footer — this is the codebase boundary between "funnel" and "app". The Meta Pixel will be injected here in Plan 3 (placeholder comment now).
 
 ```tsx
-// src/app/(frontend)/(funnels)/layout.tsx
+// src/app/(frontend)/funnels/layout.tsx
 import type { ReactNode } from 'react'
 
 // Funnel-only chrome. No marketing nav/footer — funnels are deliberately
@@ -258,7 +260,7 @@ export default function FunnelLayout({ children }: { children: ReactNode }) {
 - [ ] **Step 2: Create the `[trade]` page shell with trade validation**
 
 ```tsx
-// src/app/(frontend)/(funnels)/[trade]/page.tsx
+// src/app/(frontend)/funnels/[trade]/page.tsx
 import { notFound } from 'next/navigation'
 import { FUNNEL_TRADES } from '@/features/funnels/constants/funnel-hosts'
 import type { FunnelTrade } from '@/features/funnels/constants/funnel-hosts'
@@ -308,7 +310,7 @@ Expected: `200` (apex marketing home STILL works — funnels are additive).
 - [ ] **Step 5: Commit**
 
 ```bash
-git add "src/app/(frontend)/(funnels)/layout.tsx" "src/app/(frontend)/(funnels)/[trade]/page.tsx"
+git add "src/app/(frontend)/funnels/layout.tsx" "src/app/(frontend)/funnels/[trade]/page.tsx"
 git commit -m "feat(funnels): (funnels) route group layout + [trade] page shell"
 ```
 
