@@ -1,112 +1,98 @@
 import type { ComponentType } from 'react'
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
+import type { FunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
 
-/** A step's stable identifier, unique within a funnel. */
+/** A step's stable identifier, unique within a funnel. Doubles as its answer key. */
 export type StepId = string
 
-/** A single step's answer value. Widen here when richer shapes (objects, dates) land in 2b/2c. */
-export type AnswerValue = string | string[] | null
+// ── Answers: one typed slot per step id (composites become objects in 2b) ──
 
 /**
- * Accumulated answers, keyed by the answering step's `field` (e.g. 'layout',
- * 'ownership', 'zip', 'city'). NARROWS the foundation's Partial<Record<StepId,unknown>>.
+ * kind → that kind's answer shape. `never` = the step takes no input. New kinds
+ * (location, pii-form, …) extend this in lockstep with FunnelStep + STEP_REGISTRY.
  */
-export type FunnelAnswers = Record<string, AnswerValue>
-
-// ── Step variants (discriminated by `kind`) — REPLACES the `{ id }` stub ──
-interface BaseStep { id: StepId }
-
-/** Informational / hero step — no input; a CTA advances. Renders funnel-level hero copy. */
-export interface InfoStep extends BaseStep { kind: 'info' }
-
-/** Single-select branded cards. `field` is the answers key; `optionIds` order the cards. */
-export interface CardSelectStep extends BaseStep {
-  kind: 'card-select'
-  field: string
-  optionIds: string[]
+export interface AnswerByKind {
+  'info': never
+  'card-select': string
 }
+export type AnswerOf<S extends FunnelStep> = AnswerByKind[S['kind']]
 
-/** The step union. New kinds (location, pii-form, datetime, confirmation) added in 2b/2c. */
+/**
+ * Runtime store value — the union of all answer shapes. Stays in sync with
+ * AnswerByKind automatically. Strong typing happens at the component boundary
+ * (AnswerOf<S>) and the opt-in AnswersOf<> author view.
+ */
+export type AnswerValue = AnswerByKind[keyof AnswerByKind] | null
+export type FunnelAnswers = Partial<Record<StepId, AnswerValue>>
+
+// ── Per-kind content (no shared kitchen-sink type) ──
+
+export interface OptionContent { label: string, icon?: string, description?: string }
+export interface HeroContent { headline: string, subhead: string, scarcityLine: string, cta: string }
+export interface CardSelectContent { title: string, subtitle?: string, options: Record<string, OptionContent> }
+
+/** kind → that kind's content shape. Extended in lockstep with new kinds. */
+export interface ContentByKind {
+  'info': HeroContent
+  'card-select': CardSelectContent
+}
+export type ContentOf<S extends FunnelStep> = ContentByKind[S['kind']]
+
+// ── Steps: a discriminated union; `content` is a typed field on each variant ──
+
+interface BaseStep<K extends string> { id: StepId, kind: K }
+export interface InfoStep extends BaseStep<'info'> { content: HeroContent }
+export interface CardSelectStep extends BaseStep<'card-select'> { optionIds: string[], content: CardSelectContent }
+
 export type FunnelStep = InfoStep | CardSelectStep
 export type StepKind = FunnelStep['kind']
 
-// ── Per-step content (the lift-to-DB-later seam) ──
-export interface OptionContent {
-  label: string
-  icon?: string
-  description?: string
+// ── Funnel-level context every step reads (this is what removes the need to
+//    special-case lead/composite steps in the engine) ──
+
+export interface FunnelTheme { accent: string }
+export interface FunnelContext {
+  slug: FunnelSlug
+  offer: string
+  theme: FunnelTheme
+  utm: FunnelUtm
 }
 
-export interface StepContent {
-  /** Step heading (input steps). The hero ignores this and uses funnel-level copy. */
-  title: string
-  subtitle?: string
-  /** CTA label. */
-  cta?: string
-  /** card-select: option id → its copy. */
-  options?: Record<string, OptionContent>
-}
+// ── Uniform step props — identical for every kind ──
 
-// ── EXTEND the landed FunnelContent: keep the four hero fields, ADD `copy` ──
-export interface FunnelContent {
-  /** Hero + document title. */
-  title: string
-  /** Hero headline. */
-  headline: string
-  /** Hero subhead. */
-  subhead: string
-  /** Real, stated scarcity line. */
-  scarcityLine: string
-  /**
-   * Per-step copy, keyed by step id. The separable "lift-to-DB-later" content
-   * slot — distinct from `FunnelSpec.steps`, which is the structural step list.
-   */
-  copy: Record<StepId, StepContent>
-}
-
-/** Per-trade visual accent tokens. Plan 5 extends with full theming. */
-export interface FunnelTheme {
-  /** Accent color token (Tailwind/CSS var name). */
-  accent: string
-}
-
-// ── Step component contract ──
 export interface StepProps<S extends FunnelStep = FunnelStep> {
   step: S
-  /** Funnel-level copy — the hero step reads headline/subhead/scarcityLine from here. */
-  funnelContent: FunnelContent
-  /** Per-step copy (input steps). Undefined for the hero (uses funnelContent). */
-  content?: StepContent
-  value: AnswerValue
-  onChange: (value: string | string[]) => void
-  onAdvance: () => void
-  onBack: () => void
+  content: ContentOf<S>
+  value: AnswerOf<S> | null
+  setValue: (answer: AnswerOf<S>) => void
+  answers: FunnelAnswers
+  ctx: FunnelContext
+  advance: () => void
+  back: () => void
   isFirst: boolean
 }
 
-export type StepComponent<S extends FunnelStep = FunnelStep> = ComponentType<StepProps<S>>
-
-/** The component for one step kind, with its prop variant correlated to the discriminant. */
 export type StepComponentFor<K extends StepKind> = ComponentType<StepProps<Extract<FunnelStep, { kind: K }>>>
-
-/** kind → component map. tsc enforces each slot holds the component for that exact kind. */
 export type StepRegistry = { [K in StepKind]: StepComponentFor<K> }
 
-/**
- * Centralized declarative configuration for one funnel — the EntityServerSpec
- * analog. The only trade-aware object; the engine and steps are funnel-agnostic.
- */
+// ── FunnelSpec: ordered steps + branching + metadata. No content map. ──
+
+export interface FunnelPixel { contentCategory: string }
 export interface FunnelSpec {
   slug: FunnelSlug
-  content: FunnelContent
+  offer: string
+  title: string
   theme: FunnelTheme
-  /** Ordered steps composed from the shared library. The structural step list. */
+  pixel: FunnelPixel
   steps: FunnelStep[]
-  /**
-   * Per-funnel branching, as CODE. OPTIONAL — omit for linear funnels and the
-   * engine advances through `steps` in order. Supply only to branch.
-   */
   flow?: (answers: FunnelAnswers, currentStepId: StepId) => StepId | null
-  /** Trade parameter carried on the shared Meta Pixel/dataset. */
-  pixel: { contentCategory: string }
+}
+
+/**
+ * Opt-in typed view of accumulated answers, keyed by step id — for `flow` and
+ * lead-building author sites only (requires `steps as const satisfies …`).
+ * Engine internals stay on the loose FunnelAnswers.
+ */
+export type AnswersOf<Steps extends readonly FunnelStep[]> = {
+  [S in Steps[number] as S['id']]?: AnswerOf<S>
 }
