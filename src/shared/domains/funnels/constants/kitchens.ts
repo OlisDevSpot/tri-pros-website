@@ -6,20 +6,16 @@ export const kitchensFunnel: FunnelSpec = {
   slug: 'kitchens',
   offer: 'showcase',
   title: 'Kitchen Showcase',
+  hero: {
+    headline: 'Get a AAA-grade kitchen remodel — at a Showcase price.',
+    subhead: 'See if your home qualifies for one of our Showcase kitchens.',
+    scarcityLine: 'We\'re selecting 5 kitchens in your area.',
+    prompt: 'Start by telling us about your kitchen ↓',
+  },
   theme: { accent: 'primary' },
   pixel: { contentCategory: 'kitchen' },
   // Linear funnel: no `flow` — the engine advances through `steps` in order.
   steps: [
-    {
-      id: 'hero',
-      kind: 'info',
-      content: {
-        headline: 'Get a AAA-grade kitchen remodel — at a Showcase price.',
-        subhead: 'See if your home qualifies for one of our Showcase kitchens.',
-        scarcityLine: 'We\'re selecting 5 kitchens in your area.',
-        cta: 'See if my kitchen qualifies →',
-      },
-    },
     {
       id: 'layout',
       kind: 'card-select',

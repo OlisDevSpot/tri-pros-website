@@ -15,7 +15,6 @@ export interface PiiAnswer { leadId: string }
  * (location, pii-form, …) extend this in lockstep with FunnelStep + STEP_REGISTRY.
  */
 export interface AnswerByKind {
-  'info': never
   'card-select': string
   'location': LocationAnswer
   'pii-form': PiiAnswer
@@ -33,7 +32,15 @@ export type FunnelAnswers = Partial<Record<StepId, AnswerValue>>
 // ── Per-kind content (no shared kitchen-sink type) ──
 
 export interface OptionContent { label: string, icon?: string, description?: string }
-export interface HeroContent { headline: string, subhead: string, scarcityLine: string, cta: string }
+export interface HeroMedia { kind: 'image', src: string, alt: string }
+export interface HeroContent {
+  headline: string
+  subhead: string
+  scarcityLine: string
+  /** Optional prompt introducing the embedded first question, e.g. "Start here ↓". */
+  prompt?: string
+  media?: HeroMedia
+}
 export interface CardSelectContent { title: string, subtitle?: string, options: Record<string, OptionContent> }
 
 export interface LocationContent {
@@ -55,7 +62,6 @@ export interface PiiContent {
 
 /** kind → that kind's content shape. Extended in lockstep with new kinds. */
 export interface ContentByKind {
-  'info': HeroContent
   'card-select': CardSelectContent
   'location': LocationContent
   'pii-form': PiiContent
@@ -65,12 +71,11 @@ export type ContentOf<S extends FunnelStep> = ContentByKind[S['kind']]
 // ── Steps: a discriminated union; `content` is a typed field on each variant ──
 
 interface BaseStep<K extends string> { id: StepId, kind: K }
-export interface InfoStep extends BaseStep<'info'> { content: HeroContent }
 export interface CardSelectStep extends BaseStep<'card-select'> { optionIds: string[], content: CardSelectContent }
 export interface LocationStep extends BaseStep<'location'> { content: LocationContent }
 export interface PiiStep extends BaseStep<'pii-form'> { content: PiiContent }
 
-export type FunnelStep = InfoStep | CardSelectStep | LocationStep | PiiStep
+export type FunnelStep = CardSelectStep | LocationStep | PiiStep
 export type StepKind = FunnelStep['kind']
 
 // ── Funnel-level context every step reads (this is what removes the need to
@@ -90,6 +95,7 @@ export interface StepProps<S extends FunnelStep = FunnelStep> {
   step: S
   content: ContentOf<S>
   value: AnswerOf<S> | null
+  isAnswered: boolean
   setValue: (answer: AnswerOf<S>) => void
   answers: FunnelAnswers
   ctx: FunnelContext
@@ -108,6 +114,7 @@ export interface FunnelSpec {
   slug: FunnelSlug
   offer: string
   title: string
+  hero: HeroContent
   theme: FunnelTheme
   pixel: FunnelPixel
   steps: FunnelStep[]

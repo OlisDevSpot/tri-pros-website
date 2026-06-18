@@ -10,6 +10,7 @@ import { STEP_REGISTRY } from '@/shared/domains/funnels/constants/step-registry'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
 import { useFunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
 import { getFunnel } from '@/shared/domains/funnels/lib/registry'
+import { FunnelHero } from '@/shared/domains/funnels/ui/funnel-hero'
 import { FunnelProgress } from '@/shared/domains/funnels/ui/funnel-progress'
 
 /**
@@ -36,9 +37,12 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   // step component stays fully typed against its own StepProps<S>.
   const StepView = STEP_REGISTRY[engine.step.kind] as ComponentType<StepProps>
 
+  const showHero = engine.isFirst
+
   return (
     <div data-funnel={spec.slug} className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-8 px-5 py-10">
-      <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
+      {showHero ? null : <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />}
+      {showHero ? <FunnelHero content={spec.hero} /> : null}
       <AnimatePresence mode="wait">
         <motion.div
           key={engine.step.id}
@@ -52,6 +56,7 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
             step={engine.step}
             content={engine.step.content}
             value={engine.value}
+            isAnswered={engine.value != null}
             setValue={engine.setAnswer}
             answers={engine.answers}
             ctx={ctx}
