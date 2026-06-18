@@ -1,6 +1,6 @@
+import type { FunnelAnswers, FunnelSpec, FunnelStep, StepId } from '@/shared/domains/funnels/types'
 import { useCallback, useMemo } from 'react'
 import { funnelStateKey } from '@/shared/domains/funnels/constants/storage-keys'
-import type { FunnelAnswers, FunnelSpec, FunnelStep, StepId } from '@/shared/domains/funnels/types'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 
 interface EngineState {
