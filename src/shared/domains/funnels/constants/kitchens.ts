@@ -1,4 +1,6 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import { ZIP_STEP } from '@/shared/domains/funnels/ui/steps/location-step'
+import { PII_STEP } from '@/shared/domains/funnels/ui/steps/pii-form-step'
 
 export const kitchensFunnel: FunnelSpec = {
   slug: 'kitchens',
@@ -47,5 +49,7 @@ export const kitchensFunnel: FunnelSpec = {
         },
       },
     },
+    { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase kitchens are selected by neighborhood.' } },
+    PII_STEP,
   ],
 }
