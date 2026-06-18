@@ -59,6 +59,16 @@ export function useCampaignMutations() {
     }),
   )
 
+  const setCampaignSmsCadence = useMutation(
+    trpc.voipCampaignsRouter.setCampaignSmsCadence.mutationOptions({
+      onSuccess: () => {
+        invalidateVoipCampaigns()
+        toast.success('Cadence saved')
+      },
+      onError: err => toast.error(err.message || 'Failed to save cadence'),
+    }),
+  )
+
   const enrollAll = useMutation(
     trpc.voipCampaignsRouter.enrollAll.mutationOptions({
       onSuccess: () => {
@@ -181,6 +191,7 @@ export function useCampaignMutations() {
   return {
     resync,
     setSourcePolicy,
+    setCampaignSmsCadence,
     enrollAll,
     unenrollAll,
     disqualify,
