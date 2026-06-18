@@ -38,7 +38,8 @@ import { isCampaignDialable, isDncBlocked, normalizeToE164 } from './lib/eligibi
 interface EnrollInput {
   customerId: string
   // Explicit target campaign (bulk "enroll all" picker). When omitted, the
-  // source's defaultCampaignId is used (auto-enroll — not yet wired).
+  // source's defaultCampaignId is used (auto-enroll — wired via enrollLeadJob,
+  // dispatched from customerIntakeService.ingestLead).
   campaignId?: string
   // Single manual enroll (one named customer) authorizes re-dialing a cold or
   // stalled non-lead, so it bypasses the is-a-lead gate. Bulk paths leave this
@@ -92,8 +93,9 @@ function createCampaignEnrollmentService() {
       const policy = leadSource?.voipConfigJSON?.campaigns
 
       // ── Source must exist (for attribute build), but a source being
-      // "disabled" no longer blocks a manual enroll — that flag is reserved for
-      // the future auto-enroll-on-ingest flow. ──────────────────────────────
+      // "disabled" does not block a manual enroll — the `enabled`/`autoEnroll`
+      // flags gate ONLY the auto-enroll-on-ingest path (enforced at the
+      // ingestLead dispatch site), never this manual/bulk enroll. ────────────
       if (!leadSource) {
         return reject('source_disabled')
       }

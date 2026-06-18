@@ -79,6 +79,22 @@ A customer's lead source is tracked as `customers.leadSourceId` (FK with `onDele
 **Reference impl**: schema FK + `leadType` column
 **Enforced by**: Postgres FK; tsc on `leadType` enum
 
+### voip-campaigns-policy-lives-on-the-source
+
+A source's CloudTalk-campaign policy lives on `voipConfigJSON.campaigns` (`schemas.ts:voipCampaignsPolicySchema`), NOT on the campaign — campaigns are pools, never source-owned (see `../voip-campaigns/DOCS.md#admin-binding`). Three fields, each set via the Setup tab's per-source policy table through the single `setVoipCampaignsPolicy` patch-merge mutation:
+
+| Field | Meaning | Where enforced |
+|---|---|---|
+| `enabled` | Master VoIP-campaigns kill switch for the source | Auto-enroll dispatch gate (`customerIntakeService.ingestLead`). Does NOT block manual/bulk enroll. |
+| `autoEnroll` | Auto-enroll new leads from this source on ingest | Same dispatch gate. Inert without `enabled` + `defaultCampaignId`. |
+| `defaultCampaignId` | The source's default campaign (a `voip_campaigns.id` reference) | `enroll()` falls back to it when no explicit `campaignId` is passed (`enrollment.service.ts`); pre-selected by "Enroll all". |
+
+**Auto-enroll gate**: `ingestLead` dispatches `enrollLeadJob` (best-effort) iff `enabled && autoEnroll && defaultCampaignId`. The gate lives at the dispatch site; `enroll()` itself ignores `enabled`/`autoEnroll` so manual and bulk enroll always work regardless of source policy.
+
+**Why**: a campaign is a shared pool (the catch-all belongs to no source); a *default* is a one-directional source→campaign pointer (many-to-one). Auto-enroll is opt-in per source so cold/partner sources don't silently dial new leads.
+**Reference impl**: `schemas.ts:voipCampaignsPolicySchema`; `dal/server/mutations.ts:setVoipCampaignsPolicy`; spec `docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md`
+**Enforced by**: Zod (`voipCampaignsPolicySchema`); the `ingestLead` dispatch gate
+
 ## Anti-patterns
 
 - **Sharing only the slug.** Both slug AND token are required. Sharing slug alone produces a 404/403 at the intake route.
@@ -86,6 +102,8 @@ A customer's lead source is tracked as `customers.leadSourceId` (FK with `onDele
 - **Treating a soft-archived source as deleted.** It's still attributed; archive is a campaign-management state, not a delete.
 - **Reading `customers.pipeline` directly to bucket lead-source customers.** Use `buildSegmentWhere` — it composes the partition invariant with `notSigned`.
 - **Denormalizing the lead-source name onto the customer.** Use the FK; reports should join.
+- **Gating manual/bulk enroll on `enabled`/`autoEnroll`.** Those flags gate ONLY auto-enroll-on-ingest (at the `ingestLead` dispatch site). `enroll()` deliberately ignores them so an admin can always manually enroll from a disabled source.
+- **Putting campaign policy on `voip_campaigns`.** Policy is source-owned (`voipConfigJSON.campaigns`); campaigns stay pools.
 
 ## See also
 
