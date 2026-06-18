@@ -15,7 +15,7 @@ export interface FunnelEngineApi {
   value: AnswerValue
   answers: FunnelAnswers
   isFirst: boolean
-  setAnswer: (value: string | string[]) => void
+  setAnswer: (value: AnswerValue) => void
   advance: () => void
   back: () => void
   reset: () => void
@@ -29,8 +29,8 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngineApi {
   }), [spec.steps])
   const [state, setState] = usePersistedState<EngineState>(funnelStateKey(spec.slug), initial)
 
-  // Hydration gate: use the default initial state on first render (matching SSR),
-  // then switch to persisted state after mount so both renders agree on step[0].
+  // Hydration gate: render the default initial state on first client paint
+  // (matching SSR), then switch to persisted state after mount.
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => {
     setHydrated(true)
@@ -43,15 +43,12 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngineApi {
     return found ?? spec.steps[0]
   }, [spec.steps, effective.currentStepId])
 
-  const field = step.kind === 'card-select' ? step.field : null
-  const value = field ? (effective.answers[field] ?? null) : null
+  // One typed slot per step, keyed by step id (no `field`).
+  const value = effective.answers[step.id] ?? null
 
-  const setAnswer = useCallback((next: string | string[]) => {
-    if (!field) {
-      return
-    }
-    setState(prev => ({ ...prev, answers: { ...prev.answers, [field]: next } }))
-  }, [field, setState])
+  const setAnswer = useCallback((next: AnswerValue) => {
+    setState(prev => ({ ...prev, answers: { ...prev.answers, [step.id]: next } }))
+  }, [step.id, setState])
 
   const advance = useCallback(() => {
     setState((prev) => {
