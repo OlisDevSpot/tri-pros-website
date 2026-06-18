@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader } from '@/shared/components/ui/card'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -12,9 +12,9 @@ export function ContactAttributesReadout() {
   const attributes = data ?? []
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-base">Contact attributes</CardTitle>
+        <h2 className="text-base font-semibold text-foreground">Contact attributes</h2>
         <CardDescription>
           CloudTalk merge-field bridge — verify lead_source / primary_trade / trades_interested are wired.
         </CardDescription>
@@ -40,7 +40,7 @@ export function ContactAttributesReadout() {
                   {attributes.map(attr => (
                     <li key={attr.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                       <span className="font-medium text-foreground">{attr.ctTitle}</span>
-                      <span className="font-mono text-xs text-muted-foreground">{attr.appKey}</span>
+                      <code translate="no" className="font-mono text-xs text-muted-foreground">{attr.appKey}</code>
                     </li>
                   ))}
                 </ul>

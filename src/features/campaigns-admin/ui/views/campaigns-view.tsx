@@ -31,7 +31,7 @@ export function CampaignsView() {
 
         <TabsContent className="min-h-0 flex-1" value="overview"><CampaignsOverviewView /></TabsContent>
         <TabsContent className="flex min-h-0 flex-1 flex-col" value="leads"><CampaignsLeadsView /></TabsContent>
-        <TabsContent className="min-h-0 flex-1" value="setup"><CampaignsSetupView /></TabsContent>
+        <TabsContent className="flex min-h-0 flex-1 flex-col" value="setup"><CampaignsSetupView /></TabsContent>
       </Tabs>
     </div>
   )
