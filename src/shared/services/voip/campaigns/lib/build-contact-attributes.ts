@@ -17,6 +17,7 @@
 import type { CloudtalkContactAttributeAppKey } from '@/shared/services/providers/cloudtalk/constants'
 
 import { createHash } from 'node:crypto'
+import { pickPrimaryTrade } from './pick-primary-trade'
 
 // Lead-created timestamp as a human-readable Pacific date-time for the CT agent
 // view (e.g. "Jun 17, 2026, 2:30 PM"). Written once at enroll and absolute (not
@@ -64,7 +65,7 @@ export function buildContactAttributes(
 
   const valueByKey: Record<CloudtalkContactAttributeAppKey, string> = {
     lead_source: input.leadSourceSlug,
-    primary_trade: trades[0] ?? '',
+    primary_trade: pickPrimaryTrade(input.interestedTradesRaw),
     trades_interested: sortedTrades.join(', '),
     lead_created_at: formatLeadCreatedAt(input.leadCreatedAt),
   }
