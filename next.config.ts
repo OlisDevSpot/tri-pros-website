@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next'
 import { APP_HOSTS } from './src/shared/config/roots'
+import { FUNNEL_SLUGS } from './src/shared/domains/funnels/constants/slugs'
 
 const nextConfig: NextConfig = {
   images: {
@@ -10,9 +11,7 @@ const nextConfig: NextConfig = {
   // warning and (in a future major) will block the requests outright.
   allowedDevOrigins: [
     ...APP_HOSTS.tunnel,
-    'kitchens.localhost',
-    'bathrooms.localhost',
-    'interiors.localhost',
+    ...FUNNEL_SLUGS.map(slug => `${slug}.localhost`),
   ],
   // pdfkit reads its 14 standard-font AFM files + sRGB ICC profile via
   // fs.readFileSync(__dirname + '/data/...'). Two things conspire to
