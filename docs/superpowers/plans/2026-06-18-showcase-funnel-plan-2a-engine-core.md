@@ -162,15 +162,17 @@ Then update the landed `FunnelSpec.flow` signature in place (leave its other fie
 
 > The foundation's `FunnelStep`, `FunnelContent`, `FunnelAnswers` declarations are REPLACED (same names, new bodies); `FunnelTheme`, `FunnelSpec`'s field list, and the inline `pixel` shape are UNCHANGED.
 
+- [ ] **Step 1b: Keep the sibling stubs valid** — making `FunnelContent.steps` REQUIRED breaks `bathrooms.ts` and `complete-interior.ts` (their `content` has no `steps`). Add `steps: {},` to each stub's `content` (they stay step-less until Plan 4). Commit them together with `types.ts` in Step 3.
+
 - [ ] **Step 2: Type-check**
 
 Run: `pnpm tsc 2>&1 | tail -5`
-Expected: errors ONLY in the spec stub files (`kitchens.ts` etc.) and the engine files that don't exist yet — i.e. nothing from `types.ts` itself. (The stubs will be reconciled in Task 6.) If `types.ts` itself errors, fix it.
+Expected (after Step 1b): errors ONLY from the engine files that don't exist yet and from `kitchens.ts` (still step-less — reconciled in Task 6). `types.ts`, `bathrooms.ts`, `complete-interior.ts` must be clean. If `types.ts` itself errors, fix it.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git commit -m "feat(funnels): finalize FunnelStep/FunnelContent/StepProps contracts" -- src/shared/domains/funnels/types.ts
+git commit -m "feat(funnels): finalize FunnelStep/FunnelContent/StepProps contracts" -- src/shared/domains/funnels/types.ts src/shared/domains/funnels/constants/bathrooms.ts src/shared/domains/funnels/constants/complete-interior.ts
 ```
 
 ---
