@@ -111,10 +111,13 @@ export const cloudtalkCallAnsweredSchema = z.object({
 export type CloudtalkCallAnsweredEvent = z.infer<typeof cloudtalkCallAnsweredSchema>
 
 // ── 3. Call + Ended ─────────────────────────────────────────────────────────
-// Handler derives final status (`completed` / `no_answer` / `voicemail`) from
-// `is_voicemail` flag + whether an `answered_at` exists for this call_uuid.
-// Handler also runs app-side exhaustion detection (count call.ended events
-// against voip_campaigns.attempts_per_contact).
+// v1 (2026-06-17): the handler counts each unique call.ended into
+// voip_campaign_contacts.dial_attempts (exactly-once via the last_call_uuid
+// dedup) and drives the app-side SMS cadence (see sms-cadence.service.ts).
+// `internal_number_e164` is the SMS `from`. Status derivation (completed /
+// no_answer / voicemail from `is_voicemail` + `answered_at`) and exhaustion →
+// `cadence_exhausted` are deferred to ring 2 — `is_voicemail`/`duration_sec`/
+// `recording_url` are carried (optional) but not yet consumed.
 export const cloudtalkCallEndedSchema = z.object({
   event_type: z.literal('call.ended'),
   call_uuid: z.string(),
