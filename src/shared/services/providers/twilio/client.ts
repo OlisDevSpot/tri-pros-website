@@ -34,6 +34,13 @@ import { getTwilioConfig } from './lib/config'
 // `services/voip/*.service.ts`.
 // ---------------------------------------------------------------------------
 
+export interface PhoneLookupResult {
+  valid: boolean
+  lineType: string | null
+  carrierName: string | null
+  errorCode: number | null
+}
+
 interface BuildInboundVoiceTwimlInput {
   // Greeting spoken to the caller before any dial / queue / record action.
   // Omit for a raw bridge (or raw hangup, if dialTarget is also unset).
@@ -142,6 +149,22 @@ function createTwilioClient() {
     /** Fetch a message resource by SID. */
     async fetchMessage(messageSid: string): Promise<MessageInstance> {
       return sdk().messages(messageSid).fetch()
+    },
+
+    /**
+     * Lookup v2 with line-type-intelligence. Confirms a number is real/reachable
+     * and resolves its line type + carrier. Paid (~$0.005/lookup). Throws on a
+     * transport/API error — callers MUST treat a throw as "indeterminate" and
+     * fail open (never block a lead on a Twilio outage). See the funnel phone gate.
+     */
+    async lookupPhoneNumber(e164: string): Promise<PhoneLookupResult> {
+      const res = await sdk().lookups.v2.phoneNumbers(e164).fetch({ fields: 'line_type_intelligence' })
+      return {
+        valid: res.valid ?? false,
+        lineType: res.lineTypeIntelligence?.type ?? null,
+        carrierName: res.lineTypeIntelligence?.carrierName ?? null,
+        errorCode: res.lineTypeIntelligence?.errorCode ?? null,
+      }
     },
 
     // -----------------------------------------------------------------------

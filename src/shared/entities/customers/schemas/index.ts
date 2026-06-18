@@ -78,6 +78,15 @@ export const leadMetaSchema = z.object({
   // form. Descriptive/immutable; distinct from the OPERATIONAL enrolled campaign
   // (voip_campaign_contacts.voip_campaign_id). Does NOT drive routing.
   originCampaign: z.string().optional(),
+  // Phone verification result from Twilio Lookup v2. Optional — only set when
+  // the funnel phone gate ran. status 'verified' = valid real number;
+  // 'unverified' = gate was indeterminate (Twilio outage, errorCode set) or
+  // the lookup was skipped entirely.
+  phoneVerification: z.object({
+    status: z.enum(['verified', 'unverified']),
+    lineType: z.string().nullable(),
+    carrierName: z.string().nullable(),
+  }).optional(),
   // OPTIONAL human-confirmed app-trade link, filled later by an agent. The
   // envelope's interestedTradesRaw is the cross-source truth; this is the
   // structured link to real app trades/scopes once a human confirms it.
