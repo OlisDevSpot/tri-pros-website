@@ -49,9 +49,14 @@ export interface CardSelectContent { title: string, subtitle?: string, options: 
 export interface LocationContent {
   title: string
   subtitle?: string
-  cta?: string
+  /** Input phase button — default "Check my area" */
+  inputCta?: string
+  /** Checking phase ({zip} placeholder supported) */
   checkingLabel?: string
+  /** Qualified headline */
   qualifiesLabel?: string
+  /** Not-in-area message */
+  outOfAreaLabel?: string
 }
 
 export interface PiiFieldLabels { name?: string, phone?: string, email?: string, city?: string }
