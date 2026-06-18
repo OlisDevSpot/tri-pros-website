@@ -59,6 +59,16 @@ export function useCampaignMutations() {
     }),
   )
 
+  const setSourcePolicy = useMutation(
+    trpc.voipCampaignsRouter.setSourcePolicy.mutationOptions({
+      onSuccess: () => {
+        invalidateVoipCampaigns()
+        toast.success('Source policy updated')
+      },
+      onError: err => toast.error(err.message || 'Failed to update source policy'),
+    }),
+  )
+
   const enrollAll = useMutation(
     trpc.voipCampaignsRouter.enrollAll.mutationOptions({
       onSuccess: () => {
@@ -181,6 +191,7 @@ export function useCampaignMutations() {
   return {
     resync,
     setDefaultCampaign,
+    setSourcePolicy,
     enrollAll,
     unenrollAll,
     disqualify,
