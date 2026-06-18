@@ -4,13 +4,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import readline from 'node:readline'
-import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
 import { r2Client } from '@/shared/services/providers/r2/client'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { OUTPUT_BASE_DIR } from './constants'
 
 const BUCKET = R2_BUCKETS.portfolioProjects
@@ -205,12 +204,7 @@ async function uploadToR2(
 ): Promise<void> {
   const fileBuffer = fs.readFileSync(filePath)
 
-  await r2Client.send(new PutObjectCommand({
-    Bucket: BUCKET,
-    Key: pathKey,
-    Body: fileBuffer,
-    ContentType: mimeType,
-  }))
+  await r2Client.putObject(BUCKET, pathKey, fileBuffer, mimeType)
 }
 
 interface ImportResult {

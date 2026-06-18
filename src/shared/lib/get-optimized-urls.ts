@@ -1,4 +1,4 @@
-import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
+import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
 const DEFAULT_R2_DOMAIN = R2_PUBLIC_DOMAINS['tpr-portfolio-projects'] ?? ''
 

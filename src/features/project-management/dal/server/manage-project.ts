@@ -1,11 +1,11 @@
 import type { InsertProject, Project } from '@/shared/db/schema'
-import type { R2BucketName } from '@/shared/services/providers/r2/buckets'
+import type { R2BucketName } from '@/shared/services/providers/r2/types'
 
 import { asc, eq, inArray } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { mediaFiles, projects, x_projectScopes } from '@/shared/db/schema'
-import { deleteMediaWithVariants } from '@/shared/services/providers/r2/lib/delete-media-with-variants'
+import { r2Client } from '@/shared/services/providers/r2/client'
 
 export async function createProject(
   data: InsertProject,
@@ -64,7 +64,7 @@ export async function deleteProject(projectId: string): Promise<void> {
     .where(eq(mediaFiles.projectId, projectId))
 
   await Promise.all(
-    files.map(f => deleteMediaWithVariants(f.bucket as R2BucketName, f.pathKey)),
+    files.map(f => r2Client.deleteMediaWithVariants(f.bucket as R2BucketName, f.pathKey)),
   )
 
   await db.delete(projects).where(eq(projects.id, projectId))

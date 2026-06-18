@@ -1,3 +1,13 @@
+/**
+ * Public, isomorphic R2 metadata — bucket registry, public-domain map, and
+ * the `R2BucketName` type. No SDK imports, so this entrypoint is safe for
+ * client components (building public image URLs) AND the server `client.ts`.
+ *
+ * Second public surface of the r2 provider alongside `client.ts`; mirrors the
+ * `types.ts` of the reference-clean providers (cloudtalk, twilio). External
+ * consumers import bucket constants/types from here — never from loose files.
+ */
+
 export const R2_BUCKETS = {
   portfolioProjects: 'tpr-portfolio-projects',
   companyDocs: 'tpr-company-docs',

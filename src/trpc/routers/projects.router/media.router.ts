@@ -6,9 +6,8 @@ import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
 import { insertMediaFilesSchema, mediaFiles } from '@/shared/db/schema'
 import { resetOptimizationStatus } from '@/shared/entities/media-files/dal/server/queries'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
-import { getPresignedUploadUrl } from '@/shared/services/providers/r2/get-presigned-upload-url'
-import { deleteMediaWithVariants } from '@/shared/services/providers/r2/lib/delete-media-with-variants'
+import { r2Client } from '@/shared/services/providers/r2/client'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
@@ -28,7 +27,7 @@ export const mediaRouter = createTRPCRouter({
       const pathKey = `projects/${input.projectId}/${input.phase}/${fileId}${ext}`
       const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET] ?? ''}/${pathKey}`
 
-      const uploadUrl = await getPresignedUploadUrl({
+      const uploadUrl = await r2Client.getPresignedUploadUrl({
         bucket: PORTFOLIO_BUCKET,
         pathKey,
         mimeType: input.mimeType,
@@ -74,7 +73,7 @@ export const mediaRouter = createTRPCRouter({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
       }
 
-      await deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
+      await r2Client.deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
       await db.delete(mediaFiles).where(eq(mediaFiles.id, input.id))
     }),
 
@@ -121,7 +120,7 @@ export const mediaRouter = createTRPCRouter({
         .where(inArray(mediaFiles.id, input.ids))
 
       for (const file of files) {
-        await deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
+        await r2Client.deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
       }
 
       await db.delete(mediaFiles).where(inArray(mediaFiles.id, input.ids))

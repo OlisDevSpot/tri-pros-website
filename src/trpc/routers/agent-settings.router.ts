@@ -4,8 +4,8 @@ import { z } from 'zod'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema'
 import { agentProfileSchema } from '@/shared/entities/users/schemas'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
-import { getPresignedUploadUrl } from '@/shared/services/providers/r2/get-presigned-upload-url'
+import { r2Client } from '@/shared/services/providers/r2/client'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
 import { agentProcedure, createTRPCRouter } from '../init'
 
@@ -56,7 +56,7 @@ export const agentSettingsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const pathKey = `agent-headshots/${ctx.session.user.id}/${Date.now()}-${input.filename}`
 
-      const uploadUrl = await getPresignedUploadUrl({
+      const uploadUrl = await r2Client.getPresignedUploadUrl({
         bucket: R2_BUCKETS.companyDocs,
         mimeType: input.mimeType,
         pathKey,

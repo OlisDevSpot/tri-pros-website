@@ -3,8 +3,8 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import z from 'zod'
 import env from '@/shared/config/server-env'
-import { R2_BUCKETS } from '@/shared/services/providers/r2/buckets'
-import { getPresignedUploadUrl } from '@/shared/services/providers/r2/get-presigned-upload-url'
+import { r2Client } from '@/shared/services/providers/r2/client'
+import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 import { baseProcedure, createTRPCRouter } from '../init'
 
 const redis = new Redis({
@@ -40,7 +40,7 @@ export const intakeRouter = createTRPCRouter({
       const slug = input.customerName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
       const key = `recordings/${slug}-${crypto.randomUUID()}.mp3`
 
-      const uploadUrl = await getPresignedUploadUrl({
+      const uploadUrl = await r2Client.getPresignedUploadUrl({
         bucket: R2_BUCKETS.homeownerFiles,
         pathKey: key,
         mimeType: input.contentType,

@@ -6,8 +6,8 @@ import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
 import { account, mediaFiles } from '@/shared/db/schema'
 import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/buckets'
-import { putObject } from '@/shared/services/providers/r2/put-object'
+import { r2Client } from '@/shared/services/providers/r2/client'
+import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
@@ -105,7 +105,7 @@ export const googleDriveRouter = createTRPCRouter({
       const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET] ?? ''}/${pathKey}`
 
       const buffer = Buffer.from(await driveResponse.arrayBuffer())
-      await putObject(PORTFOLIO_BUCKET, pathKey, buffer, input.mimeType)
+      await r2Client.putObject(PORTFOLIO_BUCKET, pathKey, buffer, input.mimeType)
 
       const [created] = await db
         .insert(mediaFiles)

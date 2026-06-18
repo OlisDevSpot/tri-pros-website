@@ -32,8 +32,8 @@ import { notionClient } from '../src/shared/services/providers/notion/client'
 import { notionDatabasesMeta } from '../src/shared/services/providers/notion/constants/databases'
 import { pageToContact } from '../src/shared/services/providers/notion/lib/contacts/adapter'
 import { titleText } from '../src/shared/services/providers/notion/lib/extractors'
-import { R2_BUCKETS } from '../src/shared/services/providers/r2/buckets'
-import { putObject } from '../src/shared/services/providers/r2/put-object'
+import { r2Client } from '../src/shared/services/providers/r2/client'
+import { R2_BUCKETS } from '../src/shared/services/providers/r2/types'
 
 // ── Constants ──────────────────────────────────────────────
 
@@ -105,7 +105,7 @@ async function downloadAndUploadMp3(url: string, customerId: string): Promise<st
     const buffer = Buffer.from(await response.arrayBuffer())
     const key = `${customerId}/recordings/${Date.now()}-${crypto.randomUUID()}.mp3`
 
-    await putObject(R2_BUCKETS.homeownerFiles, key, buffer, 'audio/mpeg')
+    await r2Client.putObject(R2_BUCKETS.homeownerFiles, key, buffer, 'audio/mpeg')
 
     return key
   }

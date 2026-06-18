@@ -14,8 +14,8 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
-import { R2_BUCKETS } from '@/shared/services/providers/r2/buckets'
-import { getPresignedDownloadUrl } from '@/shared/services/providers/r2/get-presigned-download-url'
+import { r2Client } from '@/shared/services/providers/r2/client'
+import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { agentProcedure, createTRPCRouter } from '../init'
@@ -83,7 +83,7 @@ export const customerPipelinesRouter = createTRPCRouter({
         return { url: null }
       }
 
-      const url = await getPresignedDownloadUrl({
+      const url = await r2Client.getPresignedDownloadUrl({
         bucket: R2_BUCKETS.homeownerFiles,
         pathKey: meta.mp3RecordingKey,
       })
