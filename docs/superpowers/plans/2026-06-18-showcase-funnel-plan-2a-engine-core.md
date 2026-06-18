@@ -488,10 +488,16 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
 import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/lib/funnel-motion'
 import { STEP_REGISTRY } from '@/shared/domains/funnels/lib/step-registry'
+import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { FunnelProgress } from '@/shared/domains/funnels/ui/funnel-progress'
-import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 
-export function FunnelEngine({ spec }: { spec: FunnelSpec }) {
+// IMPORTANT: takes `slug`, NOT `spec`. FunnelSpec contains `flow` (a function),
+// which cannot be passed as a prop from the Server-Component route page to this
+// Client Component (Next.js forbids non-serializable props). The engine resolves
+// the spec from the registry on the client instead.
+export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
+  const spec = getFunnel(slug)
   const engine = useFunnelEngine(spec)
   const reduceMotion = useReducedMotion()
 
@@ -618,7 +624,6 @@ The architecture left the page validating the slug + calling `getFunnel`. Replac
 // src/app/(frontend)/funnels/[trade]/page.tsx
 import { notFound } from 'next/navigation'
 import { isFunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { FunnelEngine } from '@/shared/domains/funnels/ui/funnel-engine'
 
 interface Props {
@@ -630,12 +635,13 @@ export default async function FunnelTradePage({ params }: Props) {
   if (!isFunnelSlug(trade)) {
     notFound()
   }
-  const spec = getFunnel(trade)
-  return <FunnelEngine spec={spec} />
+  // Pass the SLUG, not the spec — the spec holds a `flow` function that can't
+  // cross the server→client boundary. FunnelEngine resolves the spec itself.
+  return <FunnelEngine slug={trade} />
 }
 ```
 
-> `getFunnel` resolves via the registry's static `Record<FunnelSlug, FunnelSpec>`, which imports every spec directly — there is no module-import side-effect to arrange. `getFunnel('kitchens')` always resolves as long as `kitchens.ts` exports `kitchensFunnel` and the registry lists it (it already does).
+> The page passes `slug` only. The engine calls `getFunnel(slug)` client-side. (Plan 3 may add a server-side `generateMetadata` here that DOES call `getFunnel(trade)` for `<title>`/OG tags — that's fine; the server just can't pass the resolved spec *as a prop* to the client engine.)
 
 - [ ] **Step 3: Type-check + lint**
 
