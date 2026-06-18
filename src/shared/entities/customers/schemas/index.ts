@@ -102,6 +102,20 @@ export const leadMetaSchema = z.object({
       kitchenScope: z.string().nullable(),
     }),
     z.object({ kind: z.literal('generic') }),
+    z.object({
+      kind: z.literal('funnel'),
+      offer: z.string(),
+      funnelSlug: z.string(),
+      utm: z.object({
+        source: z.string().nullable(),
+        medium: z.string().nullable(),
+        campaign: z.string().nullable(),
+        content: z.string().nullable(),
+        term: z.string().nullable(),
+        fbclid: z.string().nullable(),
+        gclid: z.string().nullable(),
+      }),
+    }),
   ]).optional(),
 })
 export type LeadMeta = z.infer<typeof leadMetaSchema>
