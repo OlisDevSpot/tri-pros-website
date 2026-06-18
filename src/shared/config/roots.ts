@@ -1,23 +1,30 @@
-// Type-only import — erased at build time, so this does NOT create a runtime
-// circular dependency with services.ts (which value-imports ROOTS).
+// MUST stay type-only. roots.ts is loaded by next.config.ts in a CommonJS
+// transpile that does NOT resolve `@/` path aliases for runtime (value)
+// imports — a value import here breaks `next dev`/`next build`. (services.ts
+// also value-imports ROOTS, so a value import would risk a cycle too.)
 import type { ServiceSlug } from '@/shared/constants/company/services'
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import { FUNNEL_SLUGS } from '@/shared/domains/funnels/constants/slugs'
-
-const DEV_PORTS = ['3000', '3001', '3002'] as const
-
-// Funnel subdomains on every dev port (e.g. kitchens.localhost:3001) so they
-// resolve in worktrees too — browsers map *.localhost to loopback with no
-// hosts-file edits. Derived from FUNNEL_SLUGS — adding a funnel needs no edit here.
-const FUNNEL_DEV_HOSTS = FUNNEL_SLUGS.flatMap(slug =>
-  DEV_PORTS.map(port => `${slug}.localhost:${port}`),
-)
 
 export const APP_HOSTS = {
   prod: ['triprosremodeling.com', 'www.triprosremodeling.com'],
+  // Funnel subdomains on every dev port so they resolve in worktrees too
+  // (browsers map *.localhost to loopback, no hosts-file edits). These mirror
+  // FUNNEL_SLUGS (the canonical source) × dev ports; they're literal here only
+  // because roots.ts cannot value-import FUNNEL_SLUGS (see import note above).
+  // Keep in sync with src/shared/domains/funnels/constants/slugs.ts.
   dev: [
-    ...DEV_PORTS.map(port => `localhost:${port}`),
-    ...FUNNEL_DEV_HOSTS,
+    'localhost:3000',
+    'localhost:3001',
+    'localhost:3002',
+    'kitchens.localhost:3000',
+    'kitchens.localhost:3001',
+    'kitchens.localhost:3002',
+    'bathrooms.localhost:3000',
+    'bathrooms.localhost:3001',
+    'bathrooms.localhost:3002',
+    'complete-interior.localhost:3000',
+    'complete-interior.localhost:3001',
+    'complete-interior.localhost:3002',
   ],
   tunnel: ['destined-emu-bold.ngrok-free.app'],
 } as const
