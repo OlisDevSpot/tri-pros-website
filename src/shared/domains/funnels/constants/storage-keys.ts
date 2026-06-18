@@ -5,3 +5,8 @@ import { STORAGE_KEY_PREFIX } from '@/shared/constants/storage-keys'
 export function funnelStateKey(slug: FunnelSlug): string {
   return `${STORAGE_KEY_PREFIX}funnel:${slug}`
 }
+
+/** localStorage key for a funnel's captured UTM attribution. */
+export function funnelUtmKey(slug: FunnelSlug): string {
+  return `${STORAGE_KEY_PREFIX}funnel-utm:${slug}`
+}
