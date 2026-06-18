@@ -5,6 +5,7 @@ import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 import type { FunnelContext, StepProps } from '@/shared/domains/funnels/types'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useMemo } from 'react'
+import { Button } from '@/shared/components/ui/button'
 import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/constants/funnel-motion'
 import { STEP_REGISTRY } from '@/shared/domains/funnels/constants/step-registry'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
@@ -66,6 +67,14 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
           />
         </motion.div>
       </AnimatePresence>
+      <div className="flex items-center justify-between gap-3">
+        {engine.isFirst
+          ? <span />
+          : <Button variant="ghost" onClick={engine.back}>← Back</Button>}
+        {engine.value != null && engine.hasNext
+          ? <Button onClick={engine.advance}>Next →</Button>
+          : <span />}
+      </div>
     </div>
   )
 }

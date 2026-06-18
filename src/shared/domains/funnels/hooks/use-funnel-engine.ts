@@ -15,6 +15,7 @@ export interface FunnelEngineApi {
   value: AnswerValue
   answers: FunnelAnswers
   isFirst: boolean
+  hasNext: boolean
   setAnswer: (value: AnswerValue) => void
   advance: () => void
   back: () => void
@@ -75,11 +76,17 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngineApi {
 
   const reset = useCallback(() => setState(initial), [setState, initial])
 
+  const nextId = spec.flow
+    ? spec.flow(effective.answers, step.id)
+    : defaultLinearNext(spec.steps, step.id)
+  const hasNext = nextId != null && nextId !== step.id
+
   return {
     step,
     value,
     answers: effective.answers,
     isFirst: effective.history.length === 0,
+    hasNext,
     setAnswer,
     advance,
     back,

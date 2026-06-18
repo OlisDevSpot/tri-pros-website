@@ -1,12 +1,15 @@
 import type { CardSelectStep, StepProps } from '@/shared/domains/funnels/types'
-import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
-export function CardSelectStepView({ step, content, value, setValue, advance, back, isFirst }: StepProps<CardSelectStep>) {
+export function CardSelectStepView({ step, content, value, isAnswered, setValue, advance }: StepProps<CardSelectStep>) {
   function handleSelect(optionId: string) {
     setValue(optionId)
-    // Micro-commitment: a tap advances immediately.
-    advance()
+    // Micro-commitment: a first answer advances immediately. On a revisit
+    // (already answered, reached via Back), selecting only changes the value —
+    // the shell's Next advances, so the user can review.
+    if (!isAnswered) {
+      advance()
+    }
   }
 
   return (
@@ -39,13 +42,6 @@ export function CardSelectStepView({ step, content, value, setValue, advance, ba
           )
         })}
       </div>
-      {!isFirst
-        ? (
-            <div className="flex justify-start">
-              <Button variant="ghost" onClick={back}>← Back</Button>
-            </div>
-          )
-        : null}
     </div>
   )
 }
