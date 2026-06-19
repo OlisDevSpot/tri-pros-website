@@ -137,6 +137,8 @@ export interface ValueBlockContent {
   headline: string
   intro?: string
   roiStat?: { value: string, label: string }
+  /** Real before/after photo pairs rendered as a comparison gallery. */
+  beforeAfter?: { before: string, after: string }[]
   items: { before: string, after: string }[]
 }
 export interface ProcessBlockContent {

@@ -37,6 +37,10 @@ export const kitchensFunnel: FunnelSpec = {
         content: {
           headline: 'Your kitchen, redesigned for how you actually live.',
           roiStat: { value: '95–185%', label: 'resale ROI — the highest of any room' },
+          beforeAfter: [
+            { before: '/funnels/kitchens/before-1.webp', after: '/funnels/kitchens/after-1.webp' },
+            { before: '/funnels/kitchens/before-2.webp', after: '/funnels/kitchens/after-2.webp' },
+          ],
           items: [
             { before: 'Cabinets that don\'t close right', after: 'Soft-close cabinetry, built to last' },
             { before: 'Counter space that was never enough', after: 'Quartz counters with room to actually cook' },
