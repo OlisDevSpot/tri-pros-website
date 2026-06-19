@@ -1,6 +1,6 @@
 'use client'
 
-import type { ConfirmationStep, FunnelContext, PiiAnswer, StepProps } from '@/shared/domains/funnels/types'
+import type { ConfirmationStep, PiiAnswer, StepProps } from '@/shared/domains/funnels/types'
 import type { PortfolioProject } from '@/shared/entities/projects/types'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
@@ -22,7 +22,9 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
   const enrich = useEnrichLead()
   const firedRef = useRef(false)
 
-  // Fire enrichment exactly once on mount, from the typed answer slots.
+  // Fire enrichment exactly once on mount, fire-and-forget.
+  // Empty dep array = run-once-on-mount; firedRef is belt-and-suspenders
+  // (fire exactly once on mount; never re-fire — do NOT remove the guard).
   useEffect(() => {
     if (firedRef.current) {
       return
@@ -41,7 +43,8 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
         timeline: asString(answers.timeline),
       },
     })
-  }, [answers, enrich])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
