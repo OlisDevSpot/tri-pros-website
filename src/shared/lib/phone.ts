@@ -84,11 +84,16 @@ export function toDialString(input: string | null | undefined): string {
  * national (or `null`). Applied to the customer insert/update schema so every
  * write path through createCrudDal persists the canonical shape, regardless of
  * what the caller sent (funnel E.164, agent-typed "(818)…", webhook raw).
+ *
+ * Absent-key contract: an absent key (`undefined`) passes through as `undefined`
+ * so partial updates never fabricate a `phone` write — `'phone' in parsed` stays
+ * false and buildUpdateSet omits it, preserving the existing value. Any *provided*
+ * value is normalized; an explicit `null`/`''` still clears the column.
  */
 export const optionalPhoneSchema = z
   .string()
   .nullish()
-  .transform(v => toNationalDigits(v))
+  .transform(v => (v === undefined ? undefined : toNationalDigits(v)))
 
 /**
  * FORM-input validation (required field). Validation only — no transform — so
