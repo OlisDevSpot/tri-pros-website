@@ -10,6 +10,7 @@ import { DEFAULT_LANDING_BLOCKS } from '@/shared/domains/funnels/constants/defau
 import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
 import { MARKETING_REGISTRY } from '@/shared/domains/funnels/constants/marketing-registry'
 import { FunnelHero } from '@/shared/domains/funnels/ui/funnel-hero'
+import { TrustBar } from '@/shared/domains/funnels/ui/trust-bar'
 
 const QUESTION_ANCHOR = 'funnel-q1'
 
@@ -50,15 +51,16 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
     >
       <div className="flex w-full max-w-xl flex-col gap-8 px-5">
         <FunnelHero content={spec.hero} />
+        <TrustBar />
         <div id={QUESTION_ANCHOR} className="scroll-mt-6">{children}</div>
       </div>
       <div className="flex w-full max-w-5xl flex-col gap-12 px-5">
         {blocks.map((block, i) => (
           <Fragment key={`${block.kind}-${i}`}>
             {renderBlock(block, ctx, i)}
-            {(i + 1) % 2 === 0 && i < blocks.length - 1
+            {(i + 1) % 3 === 0 && i < blocks.length - 1
               ? (
-                  <Button variant="outline" size="lg" onClick={scrollToQuestion} className="self-center">
+                  <Button size="lg" onClick={scrollToQuestion} className="self-center">
                     <ArrowUp className="size-4" />
                     See if you qualify
                   </Button>
