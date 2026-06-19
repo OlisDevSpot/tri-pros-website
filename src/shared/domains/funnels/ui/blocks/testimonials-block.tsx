@@ -22,7 +22,7 @@ export function TestimonialsBlock({ content }: { content: TestimonialsBlockConte
           <figure key={item.name} className="border-border flex flex-col gap-3 rounded-xl border p-5">
             <div className="flex items-center gap-1">
               {Array.from({ length: item.rating }, (_, i) => (
-                <Star key={i} className="fill-primary text-primary size-4" />
+                <Star key={i} className="fill-yellow-500 text-yellow-500 size-4" />
               ))}
             </div>
             <blockquote className="text-sm">{item.text}</blockquote>

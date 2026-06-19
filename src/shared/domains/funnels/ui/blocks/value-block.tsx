@@ -20,7 +20,7 @@ export function ValueBlock({ content }: { content: ValueBlockContent, ctx: Funne
         {content.items.map(item => (
           <li key={item.after} className="border-border bg-card flex items-center gap-3 rounded-xl border p-4 text-sm">
             <span className="text-muted-foreground flex-1 line-through">{item.before}</span>
-            <ArrowRight className="text-primary size-4 shrink-0" aria-hidden="true" />
+            <ArrowRight className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
             <span className="text-foreground flex-1 font-medium">{item.after}</span>
           </li>
         ))}

@@ -56,7 +56,7 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
                       {asset.kind === 'icon' && OPTION_ICONS[asset.name]
                         ? (() => {
                             const Icon = OPTION_ICONS[asset.name]
-                            return <Icon className="text-primary size-9 sm:size-12" />
+                            return <Icon className="text-foreground size-9 sm:size-12" />
                           })()
                         : null}
                       {asset.kind === 'image'

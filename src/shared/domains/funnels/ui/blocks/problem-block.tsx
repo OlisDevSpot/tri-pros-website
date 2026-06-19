@@ -20,7 +20,7 @@ export function ProblemBlock({ content }: { content: ProblemBlockContent, ctx: F
         ))}
       </div>
       {content.standardLine
-        ? <p className="border-primary/30 bg-primary/5 text-foreground mx-auto max-w-3xl text-balance rounded-2xl border px-6 py-4 text-center text-sm font-medium">{content.standardLine}</p>
+        ? <p className="border-border bg-muted/40 text-foreground mx-auto max-w-3xl text-balance rounded-2xl border px-6 py-4 text-center text-sm font-medium">{content.standardLine}</p>
         : null}
     </section>
   )

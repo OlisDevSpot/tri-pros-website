@@ -12,7 +12,7 @@ export function ProcessBlock({ content }: { content: ProcessBlockContent, ctx: F
               ? <Image src={step.image} alt={step.title} width={320} height={180} className="aspect-video w-full object-cover" />
               : null}
             <div className="flex flex-col gap-1 p-4">
-              <span className="text-primary text-xs font-semibold tabular-nums">
+              <span className="text-muted-foreground text-xs font-semibold tabular-nums">
                 Step
                 {' '}
                 {i + 1}

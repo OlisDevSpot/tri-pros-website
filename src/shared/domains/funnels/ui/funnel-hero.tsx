@@ -45,7 +45,7 @@ export function FunnelHero({ content, onCta }: { content: HeroContent, onCta?: (
           {renderHighlightedHeadline(content.headline, content.highlightWords)}
         </h1>
         <p className="text-muted-foreground text-balance text-lg">{content.subhead}</p>
-        <p className="text-primary text-sm font-medium">{content.scarcityLine}</p>
+        <p className="text-foreground text-sm font-medium">{content.scarcityLine}</p>
         {onCta
           ? (
               <Button size="lg" onClick={onCta} className="mt-1 shadow-lg">

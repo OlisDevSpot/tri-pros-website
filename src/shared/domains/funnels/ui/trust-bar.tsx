@@ -32,7 +32,7 @@ export function TrustBar({ rating = 4.9, count = 200 }: { rating?: number, count
       <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
         {chips.map(chip => (
           <li key={chip} className="text-muted-foreground flex items-center gap-1 text-xs font-medium">
-            <Check className="text-primary size-3.5 shrink-0" aria-hidden="true" />
+            <Check className="text-muted-foreground size-3.5 shrink-0" aria-hidden="true" />
             {chip}
           </li>
         ))}
