@@ -137,6 +137,10 @@ export interface ValueBlockContent {
   roiStat?: { value: string, label: string }
   items: { before: string, after: string }[]
 }
+export interface ProcessBlockContent {
+  title?: string
+  steps: { title: string, body: string, image?: string, duration?: string }[]
+}
 
 export type MarketingBlock
   = | { kind: 'reviews', content: ReviewsBlockContent }
@@ -146,6 +150,7 @@ export type MarketingBlock
     | { kind: 'guarantee', content: GuaranteeBlockContent }
     | { kind: 'problem', content: ProblemBlockContent }
     | { kind: 'value', content: ValueBlockContent }
+    | { kind: 'process', content: ProcessBlockContent }
 
 export type MarketingBlockKind = MarketingBlock['kind']
 export type MarketingBlockComponentFor<K extends MarketingBlockKind>

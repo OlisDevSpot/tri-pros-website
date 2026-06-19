@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { GuaranteeBlock } from '@/shared/domains/funnels/ui/blocks/guarantee-block'
 import { LicensingBlock } from '@/shared/domains/funnels/ui/blocks/licensing-block'
 import { ProblemBlock } from '@/shared/domains/funnels/ui/blocks/problem-block'
+import { ProcessBlock } from '@/shared/domains/funnels/ui/blocks/process-block'
 import { ReviewsBlock } from '@/shared/domains/funnels/ui/blocks/reviews-block'
 import { TestimonialsBlock } from '@/shared/domains/funnels/ui/blocks/testimonials-block'
 import { ValueBlock } from '@/shared/domains/funnels/ui/blocks/value-block'
@@ -21,6 +22,7 @@ export const MARKETING_REGISTRY: MarketingRegistry = {
   guarantee: GuaranteeBlock,
   licensing: LicensingBlock,
   portfolio: PortfolioBlock,
+  process: ProcessBlock,
   problem: ProblemBlock,
   reviews: ReviewsBlock,
   testimonials: TestimonialsBlock,
