@@ -21,6 +21,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Page requests only — skip API, static assets, image optimizer, SW.
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|sw.js).*)'],
+  // Page requests only. Skip API, the image optimizer, SW, AND any path with a
+  // file extension (`.*\\..*`) — i.e. everything served from /public (images,
+  // fonts, etc.). Without the extension guard, a subdomain rewrite prepends the
+  // basePath to static-asset requests (e.g. /funnels/kitchens/before-1.webp →
+  // /funnels/kitchens/funnels/kitchens/before-1.webp) and they 404.
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|sw.js|.*\\..*).*)'],
 }
