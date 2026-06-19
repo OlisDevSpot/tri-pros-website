@@ -62,6 +62,8 @@ export interface LocationContent {
   qualifiesLabel?: string
   /** Not-in-area message */
   outOfAreaLabel?: string
+  /** Shown when the ZIP is in-area-format but the lookup can't find it (404). */
+  notFoundLabel?: string
 }
 
 export interface PiiFieldLabels { firstName?: string, lastName?: string, phone?: string }

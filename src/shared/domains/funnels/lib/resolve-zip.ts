@@ -7,25 +7,47 @@ export interface ResolvedZip {
   county: string | null
 }
 
-export async function resolveZip(zip: string, opts?: { signal?: AbortSignal }): Promise<ResolvedZip | null> {
+/**
+ * Discriminated outcome of a live resolve. We must tell three cases apart so the
+ * UI can react correctly:
+ * - 'ok'        → resolved to a real place (badge).
+ * - 'not-found' → the API definitively says this ZIP doesn't exist (404 / empty
+ *                 places). A real, surfaceable error — distinct from a transient
+ *                 failure so the hook can show "couldn't find that ZIP".
+ * - 'error'     → transient/network failure (incl. aborts). Caller decides;
+ *                 the hook deliberately treats this (and aborts) as "no badge,
+ *                 no error message" so a cancelled request never flashes an error.
+ */
+export type ResolveZipResult
+  = | { status: 'ok', data: ResolvedZip }
+    | { status: 'not-found' }
+    | { status: 'error' }
+
+export async function resolveZip(zip: string, opts?: { signal?: AbortSignal }): Promise<ResolveZipResult> {
   const local = CA_ZIP_CITIES[zip]
   if (local) {
-    return { zip, city: local.city, state: 'CA', county: local.county }
+    return { status: 'ok', data: { zip, city: local.city, state: 'CA', county: local.county } }
   }
   try {
     const res = await fetch(`https://api.zippopotam.us/us/${zip}`, { signal: opts?.signal })
+    // zippopotam returns 404 for a non-existent ZIP — a definitive "not found".
+    if (res.status === 404) {
+      return { status: 'not-found' }
+    }
     if (!res.ok) {
-      return null
+      return { status: 'error' }
     }
     const data = await res.json() as { places?: Array<{ 'place name': string, 'state abbreviation': string }> }
     const place = data.places?.[0]
-    if (!place) {
-      return null
+    if (!place || !place['place name']) {
+      return { status: 'not-found' }
     }
-    return { zip, city: place['place name'], state: place['state abbreviation'], county: null }
+    return { status: 'ok', data: { zip, city: place['place name'], state: place['state abbreviation'], county: null } }
   }
   catch {
-    return null
+    // Aborts land here too — surfaced as 'error', which the hook treats as a
+    // no-op (it also guards on signal.aborted before any setState).
+    return { status: 'error' }
   }
 }
 
