@@ -42,6 +42,8 @@ export interface HeroContent {
   scarcityLine: string
   /** Optional prompt introducing the embedded first question, e.g. "Start here ↓". */
   prompt?: string
+  /** Label for the hero CTA that scrolls down to the first question. Defaults to "See if you qualify". */
+  ctaLabel?: string
   media?: HeroMedia
   /** Phrases within `headline` rendered in primary color (≤2 recommended). */
   highlightWords?: string[]

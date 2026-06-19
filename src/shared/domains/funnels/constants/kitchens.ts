@@ -10,7 +10,8 @@ export const kitchensFunnel: FunnelSpec = {
     headline: 'Get a AAA-grade kitchen remodel — at a Showcase price.',
     subhead: 'See if your home qualifies for one of our Showcase kitchens.',
     scarcityLine: 'We\'re selecting 5 kitchens in your area.',
-    prompt: 'Start by telling us about your kitchen ↓',
+    ctaLabel: 'See if you qualify',
+    media: { kind: 'image', src: '/portfolio-photos/modern-kitchen-1.jpeg', alt: 'Modern remodeled kitchen' },
     highlightWords: ['AAA-grade', 'Showcase'],
   },
   theme: { accent: 'primary' },
@@ -35,7 +36,7 @@ export const kitchensFunnel: FunnelSpec = {
         kind: 'value',
         content: {
           headline: 'Your kitchen, redesigned for how you actually live.',
-          roiStat: { value: '60–80%', label: 'resale ROI — the highest of any room' },
+          roiStat: { value: '95–185%', label: 'resale ROI — the highest of any room' },
           items: [
             { before: 'Cabinets that don\'t close right', after: 'Soft-close cabinetry, built to last' },
             { before: 'Counter space that was never enough', after: 'Quartz counters with room to actually cook' },

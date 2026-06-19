@@ -50,7 +50,7 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
       className="flex w-full flex-col items-center gap-16 py-10"
     >
       <div className="flex w-full max-w-xl flex-col gap-8 px-5">
-        <FunnelHero content={spec.hero} />
+        <FunnelHero content={spec.hero} onCta={scrollToQuestion} />
         <TrustBar />
         <div id={QUESTION_ANCHOR} className="scroll-mt-6">{children}</div>
       </div>

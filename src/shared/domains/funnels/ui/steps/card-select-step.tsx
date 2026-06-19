@@ -52,11 +52,11 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
             >
               {asset
                 ? (
-                    <div className="bg-muted/40 flex aspect-square w-full items-center justify-center sm:aspect-4/3">
+                    <div className="bg-muted/40 flex aspect-3/2 w-full items-center justify-center sm:aspect-4/3">
                       {asset.kind === 'icon' && OPTION_ICONS[asset.name]
                         ? (() => {
                             const Icon = OPTION_ICONS[asset.name]
-                            return <Icon className="text-primary size-12 sm:size-16" />
+                            return <Icon className="text-primary size-9 sm:size-12" />
                           })()
                         : null}
                       {asset.kind === 'image'
@@ -65,7 +65,7 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
                     </div>
                   )
                 : null}
-              <div className="flex flex-col items-center gap-1 p-3">
+              <div className="flex flex-col items-center gap-1 p-2 sm:p-3">
                 <span className="block text-sm font-medium sm:text-base">{option?.label ?? optionId}</span>
                 {option?.description
                   ? <span className="text-muted-foreground hidden text-sm sm:block">{option.description}</span>
