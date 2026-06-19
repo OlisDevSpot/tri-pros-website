@@ -148,7 +148,7 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
                 )
               : null}
           </AnimatePresence>
-          <input type="text" tabIndex={-1} autoComplete="off" className="hidden" {...form.register('_honeypot')} />
+          <input type="text" tabIndex={-1} aria-hidden="true" autoComplete="off" className="hidden" {...form.register('_honeypot')} />
         </fieldset>
         {/* Gate only on names (the progressive-disclosure trigger). handleSubmit awaits
             the async phone validate + zod and blocks invalid submits with field errors;

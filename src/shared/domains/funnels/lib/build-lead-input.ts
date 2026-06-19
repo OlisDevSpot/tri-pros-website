@@ -19,7 +19,7 @@ export function buildLeadInput(args: { ctx: FunnelContext, pii: PiiFormData, ans
   const campaign = ctx.utm.campaign ?? ctx.utm.source ?? `funnel:${ctx.slug}`
 
   return {
-    name: `${pii.firstName} ${pii.lastName}`.trim(),
+    name: `${pii.firstName.trim()} ${pii.lastName.trim()}`.trim(),
     phone: pii.phone,
     // city is required by createFromIntake (min 1); the qualified ZIP gate
     // guarantees a resolved city, but never drop a real lead on the rare
