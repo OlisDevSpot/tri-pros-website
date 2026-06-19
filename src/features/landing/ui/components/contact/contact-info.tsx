@@ -2,14 +2,17 @@
 
 import { motion } from 'motion/react'
 import { companyInfo } from '@/shared/constants/company'
-import { formatAsPhoneNumber } from '@/shared/lib/formatters'
+import { formatPhone, toDialString } from '@/shared/lib/phone'
+
+const officePhone = companyInfo.contactInfo.find(info => info.accessor === 'phone')!.value
 
 const offices = [
   {
     name: 'Main Office',
     address: companyInfo.contactInfo.find(info => info.accessor === 'mainOffice')!.value.split('\n')[0],
     city: companyInfo.contactInfo.find(info => info.accessor === 'mainOffice')!.value.split('\n')[1],
-    phone: formatAsPhoneNumber(companyInfo.contactInfo.find(info => info.accessor === 'phone')!.value),
+    phone: formatPhone(officePhone),
+    phoneHref: toDialString(officePhone),
     hours: 'Mon-Fri: 8:00 AM - 6:00 PM\nSat: 9:00 AM - 3:00 PM\nSun: Closed',
   },
 ]
@@ -60,7 +63,7 @@ export function ContactInfo() {
                       <div className="flex items-center space-x-2">
                         <span className="text-secondary">📞</span>
                         <a
-                          href={`tel:${office.phone}`}
+                          href={`tel:${office.phoneHref}`}
                           className="hover:text-secondary transition-colors"
                         >
                           {office.phone}

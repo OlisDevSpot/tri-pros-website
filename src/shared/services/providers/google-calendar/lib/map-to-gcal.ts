@@ -2,6 +2,7 @@ import type { GCalEventInput } from '../types'
 
 import { ROOTS } from '@/shared/config/roots'
 import { GCAL_ACTIVITY_COLORS, GCAL_MEETING_COLORS } from '@/shared/constants/gcal-colors'
+import { formatPhone } from '@/shared/lib/phone'
 
 interface TradeSelectionForGCal {
   tradeName: string
@@ -57,7 +58,7 @@ function buildMeetingDescription(meeting: MeetingForGCal): string {
   // Customer contact info
   const contactLines: string[] = []
   if (meeting.customerPhone) {
-    contactLines.push(`Phone: ${meeting.customerPhone}`)
+    contactLines.push(`Phone: ${formatPhone(meeting.customerPhone)}`)
   }
   if (meeting.customerEmail) {
     contactLines.push(`Email: ${meeting.customerEmail}`)

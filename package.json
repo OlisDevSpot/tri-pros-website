@@ -33,6 +33,8 @@
     "migrate:proposal-kind:dev": "tsx scripts/migrate-proposal-kind.ts",
     "backfill:trades": "NODE_ENV=production tsx scripts/backfill-interested-trades-raw.ts",
     "backfill:trades:dev": "tsx scripts/backfill-interested-trades-raw.ts",
+    "backfill:phones": "NODE_ENV=production tsx scripts/normalize-customer-phones.ts",
+    "backfill:phones:dev": "tsx scripts/normalize-customer-phones.ts",
     "seed:bina-contacts": "NODE_ENV=production tsx scripts/seed-bina-contacts.ts",
     "seed:bina-contacts:dev": "tsx scripts/seed-bina-contacts.ts",
     "verify:ct-note": "tsx scripts/verify-ct-note.ts",

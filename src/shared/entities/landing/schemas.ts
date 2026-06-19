@@ -1,5 +1,6 @@
 import z from 'zod'
 import { SERVICE_SLUGS } from '@/shared/constants/company/services'
+import { optionalPhoneInputSchema, requiredPhoneSchema } from '@/shared/lib/phone'
 
 // Inquiry-form project types: the 4 canonical services + an "other" catch-all
 // for prospects who don't fit cleanly into a service bucket. Single source of
@@ -13,7 +14,7 @@ export type ProjectInquiryType = (typeof PROJECT_INQUIRY_TYPES)[number]
 export const generalInquiryFormSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
   email: z.email().min(1, { message: 'email is required' }),
-  phone: z.string().min(1, { message: 'Phone is required' }),
+  phone: requiredPhoneSchema,
   address: z.object({
     street: z.string().min(1, { message: 'Address is required' }),
     city: z.string().min(1, { message: 'City is required' }),
@@ -48,7 +49,7 @@ export const generalInquiryDefaultValues: GeneralInquiryFormSchema = {
 export const scheduleConsultationFormSchema = z.object({
   name: z.string(),
   email: z.email(),
-  phone: z.string(),
+  phone: optionalPhoneInputSchema,
   projectType: z.enum(PROJECT_INQUIRY_TYPES),
   timeline: z.string(),
   budget: z.string(),

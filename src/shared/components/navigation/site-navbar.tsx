@@ -25,6 +25,7 @@ import { useAuthModalStore } from '@/shared/hooks/use-auth-modal-store'
 import { useHasScrolled } from '@/shared/hooks/use-has-scrolled'
 import { useMatchMedia } from '@/shared/hooks/use-match-media'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
+import { toDialString } from '@/shared/lib/phone'
 import { cn } from '@/shared/lib/utils'
 import { SignInModal } from '../dialogs/modals/sign-in-modal'
 import { SpinnerLoader2 } from '../loaders/spinner-loader-2'
@@ -363,7 +364,7 @@ export function SiteNavbar() {
                           }
                           asChild
                         >
-                          <a href={`tel:+1${companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value}`}>
+                          <a href={`tel:${toDialString(companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value)}`}>
                             <PhoneIcon />
                           </a>
                         </MotionButton>

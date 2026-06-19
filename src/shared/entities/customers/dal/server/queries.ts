@@ -10,6 +10,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { toNationalDigits } from '@/shared/lib/phone'
 import { queryNotionDatabase } from '@/shared/services/providers/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/providers/notion/lib/contacts/adapter'
 
@@ -58,12 +59,18 @@ export async function getCustomer(
  * Phones can be shared across household members; returns the first match.
  * Used by the CloudTalk webhook to resolve an inbound STOP's customer.
  */
-export async function findCustomerByPhone(phoneE164: string): Promise<DalReturn<Customer | null>> {
+export async function findCustomerByPhone(phone: string): Promise<DalReturn<Customer | null>> {
   return dalDbOperation(async () => {
+    // Normalize the lookup to the canonical storage shape (bare 10-digit) so an
+    // E.164 / formatted input still matches — see @/shared/lib/phone.
+    const national = toNationalDigits(phone)
+    if (!national) {
+      return null
+    }
     const [row] = await db
       .select()
       .from(customers)
-      .where(eq(customers.phone, phoneE164))
+      .where(eq(customers.phone, national))
       .limit(1)
     return row ?? null
   })

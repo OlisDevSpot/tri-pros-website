@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { formatLeadLocation } from '@/features/campaigns-admin/lib/format-lead-location'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { formatPhone } from '@/shared/lib/phone'
 import { useTRPC } from '@/trpc/helpers'
 
 export function LeadDrawerIdentity({ row }: { row: CampaignLeadRow }) {
@@ -34,7 +35,7 @@ export function LeadDrawerIdentity({ row }: { row: CampaignLeadRow }) {
   const trades = customer.leadMetaJSON?.interestedTradesRaw ?? []
 
   const rows: { label: string, value: string }[] = [
-    { label: 'Phone', value: customer.phone ?? '—' },
+    { label: 'Phone', value: customer.phone ? formatPhone(customer.phone) : '—' },
     { label: 'Location', value: location.street ? `${location.street} · ${location.cityLine}` : location.cityLine },
     { label: 'Campaign', value: row.campaignName ?? '—' },
   ]

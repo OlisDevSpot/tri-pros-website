@@ -6,6 +6,7 @@ import {
 import {
   findSmsCadenceContextByCtContactId,
 } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
+import { toE164 } from '@/shared/lib/phone'
 import { cloudtalkClient } from '@/shared/services/providers/cloudtalk/client'
 import { decideCadenceSms } from './lib/decide-cadence-sms'
 import { renderSmsTemplate } from './lib/render-sms-template'
@@ -78,9 +79,18 @@ function createSmsCadenceService() {
         return
       }
 
+      // Customer phone is stored canonical 10-digit; CloudTalk needs E.164.
+      const toE164Number = toE164(ctx.customerPhone)
+      if (!toE164Number) {
+        console.warn('[sms-cadence] customer phone not a valid US number — skipping send', {
+          customerId: ctx.customerId,
+        })
+        return
+      }
+
       const sent = await cloudtalkClient.sendSms({
         fromE164,
-        toE164: ctx.customerPhone,
+        toE164: toE164Number,
         text,
       })
       // Advance the ladder only on a successful send — a failed send leaves the

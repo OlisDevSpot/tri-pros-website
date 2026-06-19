@@ -10,6 +10,8 @@
 import type { VoipCampaign } from '@/shared/db/schema/voip-campaigns'
 import type { VoipCampaignsPolicy } from '@/shared/entities/lead-sources/schemas'
 
+import { toE164 } from '@/shared/lib/phone'
+
 // Reject reasons surfaced in DalReturn (decision #15). No status-based ones —
 // there is no local campaign status under perfect separation.
 export type EnrollmentRejectReason
@@ -45,27 +47,11 @@ export function isDncBlocked(customer: { dncOptedOutAt: string | null }): boolea
 }
 
 /**
- * Gate 5 — usable phone. Normalize to E.164 (US-default). Returns the
- * normalized number or null when it can't form a plausible E.164.
- *
- * Ring-1 normalizer (no libphonenumber dep): strip non-digits; accept a
- * 10-digit US number (prefix +1), an 11-digit 1-prefixed US number, or an
- * already-+-prefixed 11–15 digit international number. Anything else → null.
+ * Gate 5 — usable phone. Normalize to E.164 (US) for the dialer, or null when
+ * it can't form a plausible US number. Thin alias over the shared `toE164`
+ * (single source of truth for phone normalization — see @/shared/lib/phone);
+ * kept as a named gate so the service's gate chain reads uniformly.
  */
 export function normalizeToE164(phone: string | null | undefined): string | null {
-  if (!phone) {
-    return null
-  }
-  const hadPlus = phone.trim().startsWith('+')
-  const digits = phone.replace(/\D/g, '')
-  if (hadPlus) {
-    return digits.length >= 11 && digits.length <= 15 ? `+${digits}` : null
-  }
-  if (digits.length === 10) {
-    return `+1${digits}`
-  }
-  if (digits.length === 11 && digits.startsWith('1')) {
-    return `+${digits}`
-  }
-  return null
+  return toE164(phone)
 }

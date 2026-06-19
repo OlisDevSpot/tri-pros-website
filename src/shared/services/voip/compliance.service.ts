@@ -1,6 +1,7 @@
 import { and, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
+import { toNationalDigits } from '@/shared/lib/phone'
 
 // Compliance service — owner of the shared canonical DNC registry decorating
 // the `customers` row. Both voip-in-house (Twilio) and voip-campaigns (CloudTalk)
@@ -40,10 +41,16 @@ function createComplianceService() {
      * ftcScrubBatch cron, so this single predicate stays the contact gate.
      */
     canOutboundTo: async (phoneE164: string): Promise<boolean> => {
+      // customers.phone is stored canonical 10-digit — normalize the lookup so
+      // an E.164 input still matches a DNC'd row (see @/shared/lib/phone).
+      const national = toNationalDigits(phoneE164)
+      if (!national) {
+        return true // unparseable number can't match any customer row → no DNC block
+      }
       const [row] = await db
         .select({ id: customers.id })
         .from(customers)
-        .where(and(eq(customers.phone, phoneE164), isNotNull(customers.dncOptedOutAt)))
+        .where(and(eq(customers.phone, national), isNotNull(customers.dncOptedOutAt)))
         .limit(1)
 
       return row === undefined

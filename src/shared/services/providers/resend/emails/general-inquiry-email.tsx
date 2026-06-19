@@ -15,6 +15,7 @@ import {
 } from '@react-email/components'
 import * as React from 'react'
 import { ROOTS } from '@/shared/config/roots'
+import { formatPhone, toDialString } from '@/shared/lib/phone'
 import { emailStyles as s } from '@/shared/services/providers/resend/lib/email-styles'
 
 type InputData = inferInput<typeof trpc.landingRouter.generalInquiry>
@@ -75,8 +76,8 @@ export function GeneralInquiryEmail({ data }: EmailTemplateProps) {
             <FieldRow
               label="Phone"
               value={(
-                <Link href={`tel:${data.phone}`} style={s.link}>
-                  {data.phone}
+                <Link href={`tel:${toDialString(data.phone)}`} style={s.link}>
+                  {formatPhone(data.phone)}
                 </Link>
               )}
               isLast={!fullAddress}

@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
 import { copyToClipboard } from '@/shared/lib/clipboard'
-import { formatAsPhoneNumber } from '@/shared/lib/formatters'
+import { formatPhone, toDialString } from '@/shared/lib/phone'
 import { cn } from '@/shared/lib/utils'
 
 interface PhoneActionProps {
@@ -26,18 +26,18 @@ export function PhoneAction({ canEdit, children, className, compact = false, onE
   const menu = (
     <DropdownMenuContent align="start">
       <DropdownMenuItem asChild>
-        <a href={`tel:${phone}`}>
+        <a href={`tel:${toDialString(phone)}`}>
           <PhoneIcon size={14} />
           Call
         </a>
       </DropdownMenuItem>
       <DropdownMenuItem asChild>
-        <a href={`sms:${phone}`}>
+        <a href={`sms:${toDialString(phone)}`}>
           <MessageSquareIcon size={14} />
           Text
         </a>
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => copyToClipboard(phone, 'Phone')}>
+      <DropdownMenuItem onClick={() => copyToClipboard(formatPhone(phone), 'Phone')}>
         <CopyIcon size={14} />
         Copy
       </DropdownMenuItem>
@@ -65,12 +65,12 @@ export function PhoneAction({ canEdit, children, className, compact = false, onE
   return (
     <span className={cn('flex items-center gap-1', className)}>
       <a
-        href={`tel:${phone}`}
+        href={`tel:${toDialString(phone)}`}
         className="flex items-center gap-1.5 hover:text-foreground transition-colors"
         onClick={e => e.stopPropagation()}
       >
         <PhoneIcon size={14} className="shrink-0" />
-        {!compact && <span className="truncate">{formatAsPhoneNumber(phone)}</span>}
+        {!compact && <span className="truncate">{formatPhone(phone)}</span>}
       </a>
 
       <DropdownMenu>

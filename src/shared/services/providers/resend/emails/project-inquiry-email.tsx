@@ -15,6 +15,7 @@ import {
 } from '@react-email/components'
 import * as React from 'react'
 import { ROOTS } from '@/shared/config/roots'
+import { formatPhone, toDialString } from '@/shared/lib/phone'
 import { emailStyles as s } from '@/shared/services/providers/resend/lib/email-styles'
 import { formatProjectType } from '@/shared/services/providers/resend/lib/format-project-type'
 
@@ -67,8 +68,8 @@ export function ProjectEmailTemplate({ data }: EmailTemplateProps) {
             <FieldRow
               label="Phone"
               value={(
-                <Link href={`tel:${data.phone}`} style={s.link}>
-                  {data.phone}
+                <Link href={`tel:${toDialString(data.phone)}`} style={s.link}>
+                  {formatPhone(data.phone)}
                 </Link>
               )}
               isLast

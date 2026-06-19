@@ -1,4 +1,5 @@
 import z from 'zod'
+import { requiredPhoneSchema } from '@/shared/lib/phone'
 
 export const tradeRowSchema = z.object({
   tradeId: z.string().min(1, 'Trade is required'),
@@ -10,7 +11,7 @@ export type TradeRow = z.infer<typeof tradeRowSchema>
 // Shared base fields — always present in both modes
 const baseFields = {
   name: z.string().min(1, 'Name is required'),
-  phone: z.string().min(7, 'Valid phone number is required'),
+  phone: requiredPhoneSchema,
   city: z.string().min(1, 'City is required'),
   zip: z.string().min(3, 'Valid ZIP code is required'),
   address: z.string().min(1, 'Address is required'),

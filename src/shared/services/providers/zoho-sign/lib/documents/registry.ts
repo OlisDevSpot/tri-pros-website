@@ -3,6 +3,7 @@ import { format } from 'date-fns'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { cslbEarliestStartDate } from '@/shared/entities/proposals/lib/cslb-start-date'
+import { formatPhone } from '@/shared/lib/phone'
 import { pdfService } from '@/shared/services/pdf.service'
 import { ZOHO_SIGN_TEMPLATES } from '../../constants'
 
@@ -15,7 +16,7 @@ import { ZOHO_SIGN_TEMPLATES } from '../../constants'
 
 const customerNameSrc: FieldSource = ctx => ctx.proposal.customer?.name ?? ''
 const customerEmailSrc: FieldSource = ctx => ctx.proposal.customer?.email ?? ''
-const customerPhoneSrc: FieldSource = ctx => ctx.proposal.customer?.phone ?? ''
+const customerPhoneSrc: FieldSource = ctx => formatPhone(ctx.proposal.customer?.phone)
 const customerAddressSrc: FieldSource = ctx => ctx.proposal.customer?.address ?? ''
 const customerCityStateZipSrc: FieldSource = (ctx) => {
   const c = ctx.proposal.customer

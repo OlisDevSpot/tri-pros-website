@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { CheckIcon, SearchIcon, XIcon } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
+import { formatPhone } from '@/shared/lib/phone'
 import { useTRPC } from '@/trpc/helpers'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -95,7 +96,7 @@ export function CustomerSearch({ onSelect, onClear, prefillCustomerId }: Custome
               onClick={() => handleSelect(c.id, c.name)}
             >
               <span className="text-sm font-medium">{c.name}</span>
-              {c.phone && <span className="text-xs text-muted-foreground">{c.phone}</span>}
+              {c.phone && <span className="text-xs text-muted-foreground">{formatPhone(c.phone)}</span>}
             </button>
           ))}
         </div>

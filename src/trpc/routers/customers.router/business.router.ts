@@ -24,6 +24,7 @@ import { addCustomerNote } from '@/shared/entities/customers/dal/server/mutation
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
+import { toDigits } from '@/shared/lib/phone'
 import { constructionDataService } from '@/shared/services/construction-data.service'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 
@@ -106,10 +107,16 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         // see ../../../shared/entities/customers/DOCS.md#phone-visibility-threshold
         const isOmni = ctx.ability.can('manage', 'all')
         const q = `%${input.query}%`
+        // Phone is stored canonical 10-digit — strip the query to digits so a
+        // formatted/E.164 search term still matches (see @/shared/lib/phone).
+        const phoneDigits = toDigits(input.query)
         // Super-admins can also match by phone — agents cannot (they'd leak
         // which customers exist at which numbers).
         const textWhere = isOmni
-          ? or(ilike(customers.name, q), ilike(customers.phone, q))
+          ? or(
+              ilike(customers.name, q),
+              ilike(customers.phone, phoneDigits ? `%${phoneDigits}%` : q),
+            )
           : ilike(customers.name, q)
         return db
           .select({

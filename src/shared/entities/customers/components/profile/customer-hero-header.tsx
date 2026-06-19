@@ -13,7 +13,8 @@ import { Input } from '@/shared/components/ui/input'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { canAgentSeePhone } from '@/shared/entities/customers/lib/can-see-phone'
 import { getInitials } from '@/shared/entities/users/lib/get-initials'
-import { formatAsPhoneNumber, formatCustomerAddress } from '@/shared/lib/formatters'
+import { formatCustomerAddress } from '@/shared/lib/formatters'
+import { formatPhone } from '@/shared/lib/phone'
 import { cn } from '@/shared/lib/utils'
 import { AddressEditDialog } from './address-edit-dialog'
 
@@ -214,7 +215,7 @@ function PhoneBadge({ customer, canEdit, editForm, phoneUnlocked }: PhoneBadgePr
       >
         <button type="button" className={BADGE_BASE} onClick={e => e.stopPropagation()}>
           <PhoneIcon className="size-3.5 shrink-0 text-white/80" />
-          <span>{formatAsPhoneNumber(customer.phone)}</span>
+          <span>{formatPhone(customer.phone)}</span>
         </button>
       </PhoneAction>
     )

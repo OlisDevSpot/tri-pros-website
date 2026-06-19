@@ -22,6 +22,7 @@ import { ManageParticipantsModal } from '@/shared/entities/meetings/components/m
 import { PARTICIPANT_ROLE_SORT_ORDER } from '@/shared/entities/meetings/constants/participants'
 import { useParticipantMutations } from '@/shared/entities/meetings/hooks/use-participant-mutations'
 import { UserOverviewCard } from '@/shared/entities/users/components/overview-card'
+import { toDialString } from '@/shared/lib/phone'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -241,7 +242,7 @@ function ParticipantActionsMenu({
       <DropdownMenuContent align="end">
         {hasPhone && (
           <DropdownMenuItem asChild>
-            <a href={`tel:${participant.phone}`}>
+            <a href={`tel:${toDialString(participant.phone)}`}>
               <PhoneIcon className="size-3.5" />
               Call
             </a>
@@ -249,7 +250,7 @@ function ParticipantActionsMenu({
         )}
         {hasPhone && (
           <DropdownMenuItem asChild>
-            <a href={`sms:${participant.phone}`}>
+            <a href={`sms:${toDialString(participant.phone)}`}>
               <MessageSquareIcon className="size-3.5" />
               Text
             </a>

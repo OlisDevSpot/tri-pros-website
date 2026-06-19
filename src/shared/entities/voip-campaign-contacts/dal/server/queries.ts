@@ -15,6 +15,7 @@ import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
 import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { isCampaignLeadSql, isDncSql, isEligibleSql, isEnrolledSql, isRemovedSql, leadStatusCaseSql } from '@/shared/entities/voip-campaign-contacts/lib/lead-campaign-status'
+import { toDigits } from '@/shared/lib/phone'
 
 export interface ActiveEnrollment {
   customerId: string
@@ -297,8 +298,11 @@ export async function listLeadsPaginated(
       : sql``
     // Super-admin-only surface, so raw-phone search is acceptable; if a scoped
     // caller is ever added, gate this ILIKE too (or it leaks phone existence).
+    // Phone is stored canonical 10-digit — strip the term to digits so a
+    // formatted/E.164 search still matches (see @/shared/lib/phone).
+    const searchDigits = args.search ? toDigits(args.search) : ''
     const searchFilter = args.search
-      ? sql`AND (customers.name ILIKE ${`%${args.search}%`} OR customers.phone ILIKE ${`%${args.search}%`})`
+      ? sql`AND (customers.name ILIKE ${`%${args.search}%`} OR customers.phone ILIKE ${`%${searchDigits || args.search}%`})`
       : sql``
 
     // `customers` is UNALIASED on purpose — the status predicates embed

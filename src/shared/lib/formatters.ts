@@ -8,10 +8,6 @@ export function formatDate(date: string | Date) {
   })
 }
 
-export function formatAsPhoneNumber(phone: string) {
-  return phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3')
-}
-
 export function formatAddress(address: string, city: string, state: string, zipCode: string) {
   return `${address},\n${city}, ${state}, ${zipCode}`
 }

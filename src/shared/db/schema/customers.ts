@@ -3,6 +3,7 @@ import type { CustomerProfile, FinancialProfile, LeadMeta, PropertyProfile } fro
 import { doublePrecision, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { leadSourcesTable } from './lead-sources'
@@ -67,6 +68,11 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   propertyProfileJSON: propertyProfileSchema.optional(),
   financialProfileJSON: financialProfileSchema.optional(),
   leadMetaJSON: leadMetaSchema.optional(),
+  // Canonical storage chokepoint: every write through createCrudDal parses this
+  // schema, so phone is normalized to bare 10-digit national (or null) here —
+  // regardless of caller (funnel E.164, agent-typed "(818)…", webhook raw).
+  // see @/shared/lib/phone
+  phone: optionalPhoneSchema,
 }).omit({
   id: true,
   createdAt: true,

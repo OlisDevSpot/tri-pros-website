@@ -9,6 +9,7 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { formatPhone } from '@/shared/lib/phone'
 import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
 function createAccountingService() {
@@ -63,7 +64,7 @@ function createAccountingService() {
             body: JSON.stringify({
               DisplayName: customer.name,
               PrimaryEmailAddr: customer.email ? { Address: customer.email } : undefined,
-              PrimaryPhone: customer.phone ? { FreeFormNumber: customer.phone } : undefined,
+              PrimaryPhone: customer.phone ? { FreeFormNumber: formatPhone(customer.phone) } : undefined,
               BillAddr: {
                 Line1: customer.address ?? '',
                 City: customer.city,

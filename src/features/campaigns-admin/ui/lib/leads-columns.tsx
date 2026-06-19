@@ -11,7 +11,7 @@ import { LeadSelectCell } from '@/features/campaigns-admin/ui/components/leads/l
 import { LeadSelectHeader } from '@/features/campaigns-admin/ui/components/leads/lead-select-header'
 import { LeadStatusBadge } from '@/features/campaigns-admin/ui/components/leads/lead-status-badge'
 import { Button } from '@/shared/components/ui/button'
-import { formatAsPhoneNumber } from '@/shared/lib/formatters'
+import { formatPhone } from '@/shared/lib/phone'
 
 export interface LeadsTableMeta {
   campaigns: VoipCampaign[]
@@ -74,7 +74,7 @@ export function buildLeadsColumns(): ColumnDef<LeadTableRow>[] {
       id: 'name',
     },
     {
-      cell: ({ row }) => <span className="text-sm tabular-nums">{row.original.phone ? formatAsPhoneNumber(row.original.phone) : '—'}</span>,
+      cell: ({ row }) => <span className="text-sm tabular-nums">{row.original.phone ? formatPhone(row.original.phone) : '—'}</span>,
       header: 'Phone',
       id: 'phone',
     },
