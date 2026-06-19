@@ -96,7 +96,7 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
 
       {content.whatNext && content.whatNext.length > 0
         ? (
-            <ol className="border-border bg-card flex w-full max-w-md flex-col gap-3 rounded-2xl border p-5 text-left text-sm">
+            <ol className="border-border bg-card flex w-full flex-col gap-3 rounded-2xl border p-5 text-left text-sm">
               {content.whatNext.map((line, i) => (
                 <li key={line} className="flex items-start gap-3">
                   <span className="bg-primary/10 text-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">{i + 1}</span>
@@ -107,11 +107,11 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
           )
         : null}
 
-      <div className="flex w-full max-w-sm flex-col gap-3">
-        <Button asChild size="lg" className="h-14 w-full text-base">
+      <div className="flex w-full flex-col gap-3 sm:flex-row">
+        <Button asChild size="lg" className="h-14 flex-1 text-base">
           <a href={`tel:${toDialString(phone)}`}>{`Call ${phone}`}</a>
         </Button>
-        <Button asChild size="lg" variant="outline" className="h-14 w-full text-base">
+        <Button asChild size="lg" variant="outline" className="h-14 flex-1 text-base">
           {/* eslint-disable-next-line node/prefer-global/process */}
           <a href={process.env.NEXT_PUBLIC_BASE_URL ?? '/'} target="_blank" rel="noopener noreferrer">See our work</a>
         </Button>
