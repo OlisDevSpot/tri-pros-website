@@ -1,6 +1,7 @@
 'use client'
 
 import type { FunnelContext, PortfolioBlockContent } from '@/shared/domains/funnels/types'
+import type { PortfolioProject } from '@/shared/entities/projects/types'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useMemo } from 'react'
@@ -22,8 +23,8 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
       return null
     }
     const scopeToTrade = new Map(scopes.map(s => [s.id, s.relatedTrade]))
-    const hits = projects.filter(p =>
-      p.heroImage && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),
+    const hits = projects.filter((p): p is PortfolioProject & { heroImage: NonNullable<PortfolioProject['heroImage']> } =>
+      p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),
     )
     if (hits.length === 0) {
       console.warn(`[funnels] portfolio block: no projects matched trade ${tradeId} for funnel ${ctx.slug}`)
@@ -46,7 +47,7 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
         {matched.map(p => (
           <div key={p.project.id} className="overflow-hidden rounded-xl">
             <Image
-              src={getOptimizedSrc(p.heroImage!)}
+              src={getOptimizedSrc(p.heroImage)}
               alt={p.project.title}
               width={400}
               height={300}
