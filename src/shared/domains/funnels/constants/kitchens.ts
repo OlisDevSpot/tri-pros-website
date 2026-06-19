@@ -1,4 +1,5 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import { CONFIRMATION_STEP } from '@/shared/domains/funnels/ui/steps/confirmation-step'
 import { ZIP_STEP } from '@/shared/domains/funnels/ui/steps/location-step'
 import { PII_STEP } from '@/shared/domains/funnels/ui/steps/pii-form-step'
 
@@ -129,5 +130,62 @@ export const kitchensFunnel: FunnelSpec = {
     },
     { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase kitchens are selected by neighborhood.' } },
     PII_STEP,
+    {
+      id: 'homeType',
+      kind: 'card-select',
+      optionIds: ['single-family', 'condo', 'mobile-home', 'commercial'],
+      content: {
+        title: 'What kind of home is it?',
+        options: {
+          'single-family': { label: 'Single-family' },
+          'condo': { label: 'Condo' },
+          'mobile-home': { label: 'Mobile home' },
+          'commercial': { label: 'Commercial' },
+        },
+      },
+    },
+    {
+      id: 'age',
+      kind: 'card-select',
+      optionIds: ['0-5', '5-15', '15-plus', 'original'],
+      content: {
+        title: 'How old is your kitchen?',
+        options: {
+          '0-5': { label: '0–5 years' },
+          '5-15': { label: '5–15 years' },
+          '15-plus': { label: '15+ years' },
+          'original': { label: 'Original / never renovated' },
+        },
+      },
+    },
+    {
+      id: 'scope',
+      kind: 'card-select',
+      optionIds: ['full-gut', 'cabinets-counters', 'refresh', 'not-sure'],
+      content: {
+        title: 'What are you picturing?',
+        options: {
+          'full-gut': { label: 'Full gut remodel' },
+          'cabinets-counters': { label: 'Cabinets + counters' },
+          'refresh': { label: 'Cosmetic refresh' },
+          'not-sure': { label: 'Not sure yet' },
+        },
+      },
+    },
+    {
+      id: 'timeline',
+      kind: 'card-select',
+      optionIds: ['asap', '1-3', '3-6', 'exploring'],
+      content: {
+        title: 'When would you want to start?',
+        options: {
+          'asap': { label: 'ASAP' },
+          '1-3': { label: '1–3 months' },
+          '3-6': { label: '3–6 months' },
+          'exploring': { label: 'Just exploring' },
+        },
+      },
+    },
+    CONFIRMATION_STEP,
   ],
 }
