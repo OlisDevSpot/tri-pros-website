@@ -57,7 +57,7 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
               src={tile.src}
               alt={tile.alt}
               fill
-              sizes="(max-width: 640px) 50vw, 25vw"
+              sizes={i === 0 ? '(max-width: 640px) 100vw, 50vw' : '(max-width: 640px) 50vw, 25vw'}
               className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           </div>
