@@ -124,6 +124,12 @@ export const leadMetaSchema = z.object({
         fbclid: z.string().nullable(),
         gclid: z.string().nullable(),
       }),
+      enrichment: z.object({
+        homeType: z.string().nullable(),
+        age: z.string().nullable(),
+        scope: z.string().nullable(),
+        timeline: z.string().nullable(),
+      }).partial().optional(),
     }),
   ]).optional(),
 })
