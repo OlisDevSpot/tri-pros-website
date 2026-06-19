@@ -71,10 +71,15 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
     )
   }
 
+  // One content rail per step, shared by the sticky header and the body so the
+  // logo/Call always align with the content edges. Terminal steps (no Next)
+  // widen to 3xl for the confirmation gallery; question steps stay focused at xl.
+  const contentWidth = engine.hasNext ? 'max-w-xl' : 'max-w-3xl'
+
   return (
     <div data-funnel={spec.slug} className="min-h-dvh w-full">
-      <FunnelStickyHeader opacity={stickyOpacity} />
-      <div className={`mx-auto flex min-h-dvh w-full flex-col gap-8 px-5 pb-10 pt-16 ${engine.hasNext ? 'max-w-xl' : 'max-w-3xl'}`}>
+      <FunnelStickyHeader opacity={stickyOpacity} widthClass={contentWidth} />
+      <div className={`mx-auto flex min-h-dvh w-full flex-col gap-8 px-5 pb-10 pt-16 ${contentWidth}`}>
         <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
         <AnimatePresence mode="wait">
           <motion.div

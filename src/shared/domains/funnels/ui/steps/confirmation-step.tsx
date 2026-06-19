@@ -3,13 +3,14 @@
 import type { ConfirmationStep, PiiAnswer, StepProps } from '@/shared/domains/funnels/types'
 import type { PortfolioProject } from '@/shared/entities/projects/types'
 import { useQueries, useQuery } from '@tanstack/react-query'
+import { CircleCheck } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { contactInfo } from '@/shared/constants/company/contact-info'
+import { PORTFOLIO_FALLBACK_IMAGES } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
 import { TRADE_BY_SLUG } from '@/shared/domains/funnels/constants/trade-by-slug'
 import { useEnrichLead } from '@/shared/domains/funnels/hooks/use-enrich-lead'
-import { PortfolioBlock } from '@/shared/domains/funnels/ui/blocks/portfolio-block'
 import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { toDialString } from '@/shared/lib/phone'
 import { useTRPC } from '@/trpc/helpers'
@@ -87,9 +88,36 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
       .filter((p): p is { title: string, before: string, after: string } => p !== null)
   }, [detailQs])
 
+  // Fallback gallery when no before/after pairs resolve: a uniform 3-up grid of
+  // project hero photos (padded with on-brand fallbacks so it's never empty),
+  // in the SAME card language as the pairs grid — never the marketing bento.
+  // `null` = still loading (show skeleton); a filled array = ready.
+  const heroTiles = useMemo(() => {
+    const scopes = scopesQ.data
+    const projects = projectsQ.data
+    if (!scopes || !projects) {
+      return null
+    }
+    const scopeToTrade = new Map(scopes.map(s => [s.id, s.relatedTrade]))
+    const real = projects
+      .filter((p): p is PortfolioProject & { heroImage: NonNullable<PortfolioProject['heroImage']> } =>
+        p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),
+      )
+      .map(p => ({ title: p.project.title, src: getOptimizedSrc(p.heroImage) }))
+    const padded = [...real]
+    for (let i = 0; padded.length < MAX_PAIRS; i++) {
+      const fb = PORTFOLIO_FALLBACK_IMAGES[i % PORTFOLIO_FALLBACK_IMAGES.length]
+      padded.push({ title: fb.alt, src: fb.src })
+    }
+    return padded.slice(0, MAX_PAIRS)
+  }, [scopesQ.data, projectsQ.data, tradeId])
+
   return (
     <div className="flex flex-col items-center gap-8 py-6 text-center">
       <div className="flex flex-col items-center gap-3">
+        <span className="bg-primary/10 text-primary flex size-14 items-center justify-center rounded-full">
+          <CircleCheck className="size-8" aria-hidden />
+        </span>
         <h2 className="text-2xl font-semibold">{content.title}</h2>
         {content.subtitle ? <p className="text-muted-foreground max-w-prose">{content.subtitle}</p> : null}
       </div>
@@ -121,26 +149,39 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
         ? <p className="text-muted-foreground text-sm font-medium">{content.scarcityLine}</p>
         : null}
 
-      {pairs.length > 0
-        ? (
-            <div className="grid w-full gap-4 sm:grid-cols-3">
-              {pairs.map(pair => (
-                <figure key={pair.title} className="border-border overflow-hidden rounded-2xl border">
-                  <div className="grid grid-cols-2">
-                    <div className="relative aspect-square">
-                      <Image src={pair.before} alt={`${pair.title} — before`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
-                      <span className="bg-background/80 text-foreground absolute left-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-medium">Before</span>
+      <section className="flex w-full flex-col gap-4">
+        <h3 className="text-foreground text-lg font-semibold">Recent Tri Pros work</h3>
+        {pairs.length > 0
+          ? (
+              <div className="grid w-full gap-4 sm:grid-cols-3">
+                {pairs.map(pair => (
+                  <figure key={pair.title} className="border-border overflow-hidden rounded-2xl border">
+                    <div className="grid grid-cols-2">
+                      <div className="relative aspect-square">
+                        <Image src={pair.before} alt={`${pair.title} — before`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
+                        <span className="bg-background/80 text-foreground absolute left-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-medium">Before</span>
+                      </div>
+                      <div className="relative aspect-square">
+                        <Image src={pair.after} alt={`${pair.title} — after`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
+                        <span className="bg-foreground/85 text-background absolute right-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-medium">After</span>
+                      </div>
                     </div>
-                    <div className="relative aspect-square">
-                      <Image src={pair.after} alt={`${pair.title} — after`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
-                      <span className="bg-primary text-primary-foreground absolute right-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-medium">After</span>
-                    </div>
-                  </div>
-                </figure>
-              ))}
-            </div>
-          )
-        : <PortfolioBlock content={{ title: 'Recent Tri Pros work' }} ctx={ctx} />}
+                  </figure>
+                ))}
+              </div>
+            )
+          : heroTiles === null
+            ? <div className="bg-muted/40 h-44 w-full animate-pulse rounded-2xl" />
+            : (
+                <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3">
+                  {heroTiles.map((tile, i) => (
+                    <figure key={`${tile.src}-${i}`} className="border-border relative aspect-square overflow-hidden rounded-2xl border">
+                      <Image src={tile.src} alt={tile.title} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
+                    </figure>
+                  ))}
+                </div>
+              )}
+      </section>
     </div>
   )
 }
