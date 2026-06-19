@@ -72,3 +72,19 @@ export const HERO_LOGO_SCALE_TARGET = 0.85
 /** Slim sticky bar cross-fades in (slight overlap with the logo fade = the crossfade). */
 export const HERO_HEADER_OPACITY_IN = [0.4, 0.75]
 export const HERO_HEADER_OPACITY_OUT = [0, 1]
+
+/**
+ * Confirmation "what's next" timeline. The container draws its steps in with a
+ * deliberate 120ms stagger; TIMELINE_LINE scales the connecting line in from
+ * the top (origin-top). Steps reuse CARD_STAGGER_ITEM (shared hidden/visible
+ * labels). Gated on useReducedMotion() at the call site.
+ */
+export const TIMELINE_STAGGER_CONTAINER: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } },
+}
+
+export const TIMELINE_LINE: Variants = {
+  hidden: { scaleY: 0 },
+  visible: { scaleY: 1, transition: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } },
+}
