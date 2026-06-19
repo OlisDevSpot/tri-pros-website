@@ -16,6 +16,7 @@ export interface PiiAnswer { leadId: string }
  */
 export interface AnswerByKind {
   'card-select': string
+  'confirmation': never
   'location': LocationAnswer
   'pii-form': PiiAnswer
 }
@@ -72,9 +73,18 @@ export interface PiiContent {
   fields: PiiFieldLabels
 }
 
+export interface ConfirmationContent {
+  title: string
+  subtitle?: string
+  /** Ordered "what happens next" lines. */
+  whatNext?: string[]
+  scarcityLine?: string
+}
+
 /** kind → that kind's content shape. Extended in lockstep with new kinds. */
 export interface ContentByKind {
   'card-select': CardSelectContent
+  'confirmation': ConfirmationContent
   'location': LocationContent
   'pii-form': PiiContent
 }
@@ -84,10 +94,11 @@ export type ContentOf<S extends FunnelStep> = ContentByKind[S['kind']]
 
 interface BaseStep<K extends string> { id: StepId, kind: K }
 export interface CardSelectStep extends BaseStep<'card-select'> { optionIds: string[], content: CardSelectContent }
+export interface ConfirmationStep extends BaseStep<'confirmation'> { content: ConfirmationContent }
 export interface LocationStep extends BaseStep<'location'> { content: LocationContent }
 export interface PiiStep extends BaseStep<'pii-form'> { content: PiiContent }
 
-export type FunnelStep = CardSelectStep | LocationStep | PiiStep
+export type FunnelStep = CardSelectStep | ConfirmationStep | LocationStep | PiiStep
 export type StepKind = FunnelStep['kind']
 
 // ── Funnel-level context every step reads (this is what removes the need to
