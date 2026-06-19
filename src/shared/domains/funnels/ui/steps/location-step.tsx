@@ -46,10 +46,16 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
 
   if (phase === 'qualified') {
     return (
-      <div className="flex flex-col items-center gap-6 py-8 text-center" aria-live="polite">
-        <p className="text-primary text-xl font-semibold">
+      <div className="flex flex-col items-center gap-4 py-8 text-center" aria-live="polite">
+        <p className="text-foreground text-xl font-semibold">
           {content.qualifiesLabel ?? '✓ Great news — your area qualifies.'}
         </p>
+        {/* Persisted ZIP is editable: drop back to input (current ZIP pre-filled)
+            so a different area can be checked. Re-checking overwrites the stored
+            value. Secondary action — deliberately not the primary color. */}
+        <Button variant="ghost" size="sm" onClick={() => setPhase('input')} className="text-muted-foreground">
+          Check a different ZIP
+        </Button>
         {/* Plan 2c replaces this with the stylized SVG region reveal. */}
       </div>
     )

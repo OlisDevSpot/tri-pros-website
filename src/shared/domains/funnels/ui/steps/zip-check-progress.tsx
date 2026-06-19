@@ -26,13 +26,13 @@ export function ZipCheckProgress({ steps, stepMs = 450 }: { steps: string[], ste
             <span
               className={
                 complete
-                  ? 'bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-full'
+                  ? 'bg-green-600 text-white flex size-6 items-center justify-center rounded-full'
                   : 'border-muted-foreground/40 flex size-6 items-center justify-center rounded-full border-2'
               }
             >
               {complete
                 ? <Check className="size-4" />
-                : active ? <span className="border-primary size-3 animate-spin rounded-full border-2 border-t-transparent" /> : null}
+                : active ? <span className="border-green-600 size-3 animate-spin rounded-full border-2 border-t-transparent" /> : null}
             </span>
             <span className={complete ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
           </li>
