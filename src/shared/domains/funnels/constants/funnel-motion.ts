@@ -88,3 +88,12 @@ export const TIMELINE_LINE: Variants = {
   hidden: { scaleY: 0 },
   visible: { scaleY: 1, transition: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } },
 }
+
+/**
+ * Each timeline step pops in with a spring (scale + lift) so the numbered
+ * badges feel alive as the line draws past them.
+ */
+export const TIMELINE_STEP_ITEM: Variants = {
+  hidden: { opacity: 0, y: 10, scale: 0.85 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 420, damping: 24 } },
+}
