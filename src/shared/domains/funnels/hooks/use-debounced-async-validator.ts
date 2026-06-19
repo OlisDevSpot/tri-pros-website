@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 /**
  * Wraps an async validator with a debounce + AbortController so it fits RHF's
@@ -11,6 +11,15 @@ export function useDebouncedAsyncValidator<T>(
 ): (value: T) => Promise<true | string> {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+      abortRef.current?.abort()
+    }
+  }, [])
 
   return useCallback((value: T) => {
     if (timerRef.current) {
