@@ -1,7 +1,8 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ReactNode, Ref } from 'react'
 import type { FunnelContext, FunnelSpec, MarketingBlock } from '@/shared/domains/funnels/types'
+import type { HeroScroll } from '@/shared/domains/funnels/ui/funnel-hero'
 import { ArrowUp } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Fragment, useEffect } from 'react'
@@ -25,11 +26,13 @@ function renderBlock(block: MarketingBlock, ctx: FunnelContext, _index: number) 
   return <Block content={block.content} ctx={ctx} />
 }
 
-export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: {
+export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount, heroRef, scroll }: {
   spec: FunnelSpec
   ctx: FunnelContext
   children: ReactNode
   scrollToQuestionOnMount?: boolean
+  heroRef?: Ref<HTMLElement>
+  scroll?: HeroScroll | null
 }) {
   const reduceMotion = useReducedMotion()
   const blocks = spec.landing?.blocks ?? DEFAULT_LANDING_BLOCKS
@@ -50,7 +53,7 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
       className="flex w-full flex-col items-center gap-16 py-10"
     >
       <div className="flex w-full max-w-xl flex-col gap-8 px-5">
-        <FunnelHero content={spec.hero} onCta={scrollToQuestion} />
+        <FunnelHero content={spec.hero} onCta={scrollToQuestion} ref={heroRef} scroll={scroll} />
         <TrustBar />
         <div id={QUESTION_ANCHOR} className="scroll-mt-6">{children}</div>
       </div>

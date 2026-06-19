@@ -38,3 +38,37 @@ export const CARD_STAGGER_ITEM: Variants = {
   hidden: { opacity: 0, y: 12 },
   visible: { opacity: 1, y: 0, transition: FUNNEL_TRANSITION },
 }
+
+// ─── Hero scroll choreography ──────────────────────────────────────────────
+//
+// As the landing hero scrolls past, its text fades + lifts away and the big
+// logo cross-fades into the slim sticky header. Driven by a single
+// `useScroll({ target: heroRef, offset: HERO_SCROLL_OFFSET })` whose
+// `scrollYProgress` runs 0→1 over exactly the hero's own height. All ranges
+// are [input → output] pairs for `useTransform`. Translate/scale magnitudes
+// are gated behind `useReducedMotion()` in the engine (opacity is kept — it is
+// vestibular-safe and aids comprehension). see ../ui/funnel-engine.tsx
+
+// Each pair is (input range, output range) for `useTransform`. Kept as flat
+// `number[]` so they pass straight in; the offset stays `as const` (its members
+// are template-literal `Intersection` types) and is spread at the call site.
+
+/** `[targetEdge containerEdge]` pair → progress 0 at page top, 1 when hero fully scrolled past. */
+export const HERO_SCROLL_OFFSET = ['start start', 'end start'] as const
+
+/** Text group fades fully by the halfway point (premium "fade faster than you scroll"). */
+export const HERO_TEXT_OPACITY_IN = [0, 0.5]
+export const HERO_TEXT_OPACITY_OUT = [1, 0]
+/** Gentle upward lift of the text group, in px (negative = up). Gated by reduced motion. */
+export const HERO_TEXT_LIFT_PX = -120
+
+/** Big in-flow hero logo fades out before the slim bar finishes fading in. */
+export const HERO_LOGO_OPACITY_IN = [0.05, 0.45]
+export const HERO_LOGO_OPACITY_OUT = [1, 0]
+/** Slight shrink of the big logo as it leaves. Gated by reduced motion. */
+export const HERO_LOGO_SCALE_IN = [0, 0.45]
+export const HERO_LOGO_SCALE_TARGET = 0.85
+
+/** Slim sticky bar cross-fades in (slight overlap with the logo fade = the crossfade). */
+export const HERO_HEADER_OPACITY_IN = [0.4, 0.75]
+export const HERO_HEADER_OPACITY_OUT = [0, 1]
