@@ -5,10 +5,13 @@ import type { PortfolioProject } from '@/shared/entities/projects/types'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef } from 'react'
+import { Button } from '@/shared/components/ui/button'
+import { contactInfo } from '@/shared/constants/company/contact-info'
 import { TRADE_BY_SLUG } from '@/shared/domains/funnels/constants/trade-by-slug'
 import { useEnrichLead } from '@/shared/domains/funnels/hooks/use-enrich-lead'
 import { PortfolioBlock } from '@/shared/domains/funnels/ui/blocks/portfolio-block'
 import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
+import { toDialString } from '@/shared/lib/phone'
 import { useTRPC } from '@/trpc/helpers'
 
 const MAX_PAIRS = 3
@@ -45,6 +48,8 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const phone = contactInfo.find(info => info.accessor === 'phone')!.value
 
   const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
@@ -102,18 +107,32 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
           )
         : null}
 
+      <div className="flex w-full max-w-sm flex-col gap-3">
+        <Button asChild size="lg" className="h-14 w-full text-base">
+          <a href={`tel:${toDialString(phone)}`}>{`Call ${phone}`}</a>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="h-14 w-full text-base">
+          {/* eslint-disable-next-line node/prefer-global/process */}
+          <a href={process.env.NEXT_PUBLIC_BASE_URL ?? '/'} target="_blank" rel="noopener noreferrer">See our work</a>
+        </Button>
+      </div>
+
+      {content.scarcityLine
+        ? <p className="text-muted-foreground text-sm font-medium">{content.scarcityLine}</p>
+        : null}
+
       {pairs.length > 0
         ? (
-            <div className="grid w-full max-w-3xl gap-4 sm:grid-cols-3">
+            <div className="grid w-full gap-4 sm:grid-cols-3">
               {pairs.map(pair => (
                 <figure key={pair.title} className="border-border overflow-hidden rounded-2xl border">
                   <div className="grid grid-cols-2">
                     <div className="relative aspect-square">
-                      <Image src={pair.before} alt={`${pair.title} — before`} fill sizes="33vw" className="object-cover" />
+                      <Image src={pair.before} alt={`${pair.title} — before`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
                       <span className="bg-background/80 text-foreground absolute left-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-medium">Before</span>
                     </div>
                     <div className="relative aspect-square">
-                      <Image src={pair.after} alt={`${pair.title} — after`} fill sizes="33vw" className="object-cover" />
+                      <Image src={pair.after} alt={`${pair.title} — after`} fill sizes="(min-width: 640px) 33vw, 50vw" className="object-cover" />
                       <span className="bg-primary text-primary-foreground absolute right-1 top-1 rounded px-1.5 py-0.5 text-[10px] font-medium">After</span>
                     </div>
                   </div>
@@ -122,10 +141,6 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
             </div>
           )
         : <PortfolioBlock content={{ title: 'Recent Tri Pros work' }} ctx={ctx} />}
-
-      {content.scarcityLine
-        ? <p className="text-muted-foreground text-sm font-medium">{content.scarcityLine}</p>
-        : null}
     </div>
   )
 }

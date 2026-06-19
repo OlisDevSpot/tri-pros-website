@@ -74,7 +74,7 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   return (
     <div data-funnel={spec.slug} className="min-h-dvh w-full">
       <FunnelStickyHeader opacity={stickyOpacity} />
-      <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col gap-8 px-5 pb-10 pt-16">
+      <div className={`mx-auto flex min-h-dvh w-full flex-col gap-8 px-5 pb-10 pt-16 ${engine.hasNext ? 'max-w-xl' : 'max-w-5xl'}`}>
         <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
         <AnimatePresence mode="wait">
           <motion.div
