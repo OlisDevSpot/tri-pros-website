@@ -150,7 +150,11 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
           </AnimatePresence>
           <input type="text" tabIndex={-1} autoComplete="off" className="hidden" {...form.register('_honeypot')} />
         </fieldset>
-        <Button type="submit" size="lg" disabled={!namesFilled || !form.formState.isValid || submit.isPending}>
+        {/* Gate only on names (the progressive-disclosure trigger). handleSubmit awaits
+            the async phone validate + zod and blocks invalid submits with field errors;
+            the server submitLead gate is authoritative. formState.isValid is unreliable
+            with mode:'onBlur' + async validators, so it must not disable the button. */}
+        <Button type="submit" size="lg" disabled={!namesFilled || submit.isPending}>
           {submit.isPending ? 'Submitting…' : (content.cta ?? 'See if I qualify')}
         </Button>
       </form>
