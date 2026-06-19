@@ -23,7 +23,7 @@ import { renderHighlightedHeadline } from '@/shared/domains/funnels/lib/highligh
  */
 export function FunnelHero({ content, onCta }: { content: HeroContent, onCta?: () => void }) {
   return (
-    <section className="border-border relative isolate overflow-hidden rounded-3xl border shadow-xl">
+    <section className="border-border relative isolate overflow-hidden rounded-3xl border shadow-[0_24px_60px_-15px_rgb(15_23_42/0.35)]">
       {content.media
         ? (
             <Image
@@ -32,13 +32,17 @@ export function FunnelHero({ content, onCta }: { content: HeroContent, onCta?: (
               fill
               priority
               sizes="(max-width: 640px) 100vw, 576px"
-              className="-z-10 object-cover"
+              className="-z-20 object-cover"
             />
           )
         : null}
+      {/* Knockdown: a dark tint over the photo (strongest toward the bottom,
+          where the photo shows most) tames the bright kitchen so it reads as a
+          richer backdrop instead of a glare that washes out the copy. */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-b from-transparent to-foreground/25" />
       {/* Legibility scrim: opaque at top (logo/headline), opening up toward the
-          bottom so the kitchen photo shows behind the CTA + padding. */}
-      <div className="absolute inset-0 -z-10 bg-linear-to-b from-card via-card/95 to-card/45" />
+          bottom so the (now-tamed) kitchen photo shows behind the CTA + padding. */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-b from-card via-card/92 to-card/50" />
       <div className="flex flex-col items-center gap-4 px-6 py-12 text-center sm:px-10 sm:py-14">
         <Image src={LogoDarkInk} alt="Tri Pros Remodeling" width={200} height={54} priority className="h-14 w-auto" />
         <h1 className="text-foreground text-balance font-serif text-3xl font-bold tracking-tight sm:text-4xl">

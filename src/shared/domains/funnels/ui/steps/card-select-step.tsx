@@ -60,7 +60,7 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
                           })()
                         : null}
                       {asset.kind === 'image'
-                        ? <Image src={asset.src} alt={asset.alt} width={320} height={240} className="h-full w-full object-cover" />
+                        ? <Image src={asset.src} alt={asset.alt} width={500} height={667} sizes="(max-width: 640px) 45vw, 280px" className="h-full w-full object-cover object-center" />
                         : null}
                     </div>
                   )

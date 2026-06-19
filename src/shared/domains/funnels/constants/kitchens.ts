@@ -105,9 +105,9 @@ export const kitchensFunnel: FunnelSpec = {
       content: {
         title: 'Which best describes your kitchen?',
         options: {
-          'l-shape': { label: 'L-shaped', asset: { kind: 'icon', name: 'l-shape' } },
-          'u-shape': { label: 'U-shaped', asset: { kind: 'icon', name: 'u-shape' } },
-          'galley': { label: 'Galley', asset: { kind: 'icon', name: 'galley' } },
+          'l-shape': { label: 'L-shaped', asset: { kind: 'image', src: '/funnels/kitchens/option-l-shape.webp', alt: 'L-shaped kitchen layout' } },
+          'u-shape': { label: 'U-shaped', asset: { kind: 'image', src: '/funnels/kitchens/option-u-shape.webp', alt: 'U-shaped kitchen layout' } },
+          'galley': { label: 'Galley', asset: { kind: 'image', src: '/funnels/kitchens/option-galley.webp', alt: 'Galley kitchen layout' } },
           'island': { label: 'Has an island', asset: { kind: 'icon', name: 'island' } },
           'open': { label: 'Open-concept', asset: { kind: 'icon', name: 'open' } },
           'not-sure': { label: 'Not sure', asset: { kind: 'icon', name: 'not-sure' } },

@@ -77,6 +77,13 @@
 
 .funnel-light {
   color-scheme: light;
+  /* The funnel sits on a near-white background (--background 0.9846) with white
+     cards (--card 1.0). The shared --border (0.9276) is too close to both to
+     read as an edge, so cards and the hero blend into the page. Darken border +
+     input one tier (≈slate-300) for visible definition — scoped to the funnel
+     so the rest of the app keeps the lighter shared border. */
+  --border: oklch(0.872 0.009 264.5313);
+  --input: oklch(0.872 0.009 264.5313);
 }
 
 .dark {
