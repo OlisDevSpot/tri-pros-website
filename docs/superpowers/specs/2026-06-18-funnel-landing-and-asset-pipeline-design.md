@@ -87,7 +87,7 @@ landing: { blocks: MarketingBlock[] }
 |---|---|---|
 | `reviews` | Aggregate trust band — rating value, star row, count, optional Google/BBB marks | Static content in the block config (e.g. `{ rating: 4.9, count: 200, label }`) |
 | `testimonials` | Named quote cards (photo, quote, name, location, 5 stars) | Defaults to the 3 static entries in `shared/constants/company/testimonials.ts`; overridable per funnel |
-| `portfolio` | Live trade-filtered before/after gallery of real projects | `projectsRouter.showroomDisplay.getAll()` filtered by a `slug → scopeId[]` map |
+| `portfolio` | Live trade-filtered before/after gallery of real projects | `projectsRouter.showroomDisplay.getAll()` filtered by the funnel's Notion **trade** (via scope→trade resolution) |
 | `licensing` | Bonded / licensed / insured trust section + license # | `shared/constants/company/` |
 | `guarantee` | Offer guarantee + scarcity reinforcement | Static content in the block config |
 
@@ -95,7 +95,16 @@ landing: { blocks: MarketingBlock[] }
 - Blocks live in `src/shared/domains/funnels/ui/blocks/` — ONE component per file.
 - Blocks reuse only `shared/components/ui` primitives and `shared/constants/company`. They do NOT import from `features/`. The `features/landing` and `features/project-management` components are styling references only; lean funnel-specific versions are built here (landing has different needs than the portfolio page).
 - The `portfolio` block fetches live via `useTRPC()` (client). It is below-the-fold and lazy so it never blocks first paint. Loading + empty states required (a funnel/trade with no public projects must degrade gracefully — render nothing rather than an empty shell).
-- Trade map: `constants/trade-scopes.ts` — `Record<FunnelSlug, string[]>` mapping each funnel to the Notion scope UUID(s) used to filter showroom projects. (Verify the canonical scope IDs against the projects entity before hardcoding.)
+
+**Trade filtering (verified against live Notion).** There is NO direct trade→project relation. A project carries `scopeIds`; each scope has a `relatedTrade` (the Notion trade UUID). So filtering is: **funnel trade UUID → scopes whose `relatedTrade` matches → projects whose `scopeIds` intersect those scopes.**
+- `constants/trade-scopes.ts` — `Record<FunnelSlug, string>` mapping each funnel to its Notion **trade** UUID (verified 2026-06-18 against "All Construction Trades DB"):
+  - `kitchens` → `6240ca1b-548b-837d-a9c0-01acc1fb530a` (Notion: "Kitchen Remodel")
+  - `bathrooms` → `1290ca1b-548b-830d-a13c-01e4da06eb3d` (Notion: "Bathroom Remodel")
+  - `complete-interior` → `9340ca1b-548b-83d5-b3cd-01b5cce9b199` (Notion: "Interior Upgrades & Home Layout")
+- The scope→trade map is built at runtime from the scopes data (each scope exposes `relatedTrade`). The plan must identify the client-reachable procedure that returns scopes-with-`relatedTrade` (the `features/project-management` `use-portfolio-filters.ts` builds this from a `getAllScopes`-style source; the funnel block needs the equivalent tRPC query — verify during planning, do NOT import the features hook).
+- **Drift guard:** these UUIDs are live Notion page IDs with no in-code source of truth. If a funnel's trade UUID resolves to zero matching scopes/projects, the block degrades to rendering nothing AND logs a `console.warn` so a drifted/renamed trade is visible, not silent.
+
+> ⚠️ **Flagged, out of scope:** `lib/build-lead-input.ts`'s `TRADE_NAME` map (slug → "canonical Notion trade name") diverges from the live Notion trade names on all three trades ("Renovation" vs "Remodel"; "Complete Interior Remodel" vs "Interior Upgrades & Home Layout"). This affects lead/CloudTalk/SMS attribution, not portfolio filtering. Recommend a standalone fix or folding into Plan 2c — NOT addressed in this plan.
 
 ---
 
@@ -170,7 +179,7 @@ Folded into this plan (was "file an issue"):
 **New:**
 - `ui/funnel-landing.tsx`
 - `ui/blocks/reviews-block.tsx`, `testimonials-block.tsx`, `portfolio-block.tsx`, `licensing-block.tsx`, `guarantee-block.tsx`
-- `constants/marketing-registry.ts`, `constants/default-landing-blocks.ts`, `constants/trade-scopes.ts`
+- `constants/marketing-registry.ts`, `constants/default-landing-blocks.ts`, `constants/trade-scopes.ts` (slug → Notion trade UUID)
 - `ui/steps/zip-check-progress.tsx`
 - `docs/funnels/asset-manifest.md`
 - shared `clientIp` helper file
