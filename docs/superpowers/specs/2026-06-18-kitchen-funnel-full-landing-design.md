@@ -122,9 +122,9 @@ TrustBar renders above Q1; final CTA at the bottom.
 
 ## Open flags / honesty
 
-- ⚠️ Testimonials + awards are placeholder/fabricated; `4.9★/200` is a default not a real Google pull — refine before launch.
-- ⚠️ **Confirm financing is actually offered** and on what terms before the financing callout goes live; drafted copy states no rates.
-- ⚠️ FAQ cost answer intentionally gives NO fixed price (avoids a number that balloons); confirm the timeline ranges (~6–10 wks construction) are accurate.
+- ✅ Reviews/testimonials + awards ship as PLACEHOLDER (user-confirmed); a later sweep replaces with real info. `4.9★/200` is a default.
+- ✅ Financing CONFIRMED offered — **fixed, low monthly payments**. Exact approved marketing verbiage is PENDING from the user; the drafted callout/FAQ copy is a placeholder to swap. No rates stated.
+- ✅ FAQ cost answer gives NO fixed price (deliberate). Timeline CONFIRMED: **3–10 weeks** active construction (depends on complexity).
 - ⚠️ Stale asset paths to fix separately (out of scope, flagged): `companyInfo.logo='/logo.png'` (missing), broken team-headshot paths, `/services/` pillar hero images.
 
 ## Testing / verification
@@ -172,17 +172,17 @@ TrustBar renders above Q1; final CTA at the bottom.
 - `Construction` (`/process/construction-stage.jpeg`) — `One accountable crew, daily quality checks, and photo documentation — not a rotating cast of subs.`
 - `Completion & Handover` (`/process/handover-stage.jpeg`) — `Final walkthrough, punch list, and a kitchen that's done right — backed by our workmanship guarantee.`
 
-### `callout` — Financing
-- headline: `Start now, pay over time.`
-- body: `Flexible financing options make a Showcase kitchen attainable without draining your savings. We'll walk you through what you qualify for during your consultation — no obligation.`
-- points: `Options for a range of budgets` · `No-obligation consultation` · `Clear, written numbers up front`
+### `callout` — Financing  *(verbiage is placeholder — user will supply exact approved financing wording)*
+- headline: `Fixed, low monthly payments.`
+- body: `Fixed, low monthly payments put a Showcase kitchen within reach without draining your savings. We'll walk you through the options you qualify for during your consultation — no obligation.`
+- points: `Fixed low monthly payments` · `No-obligation consultation` · `Clear, written numbers up front`
 
 ### `faq` — Kitchen FAQ
 - `How much does a kitchen remodel cost?` — `It depends on size, scope, and finishes — which is exactly why we give you a fixed written scope and clear numbers up front instead of a low guess that balloons later. Most Showcase kitchens land in a range we'll walk you through on your consultation.`
-- `How long does it take?` — `A typical Showcase kitchen runs about 6–10 weeks of active construction after design and permits, depending on scope. You get a real schedule — not a vague "couple of months."`
+- `How long does it take?` — `A typical Showcase kitchen runs about 3–10 weeks of active construction after design and permits, depending on complexity and scope. You get a real schedule — not a vague "couple of months."`
 - `Do I need permits?` — `Most kitchen remodels that touch plumbing, gas, or electrical do. As a licensed general contractor we pull and manage them for you. Unpermitted work becomes your problem when you sell.`
 - `Can I use my kitchen during the remodel?` — `There's a window where it's offline. We sequence the work to keep that window as short as possible and tell you exactly when, up front.`
-- `Is financing available?` — `Yes. We offer financing options so you can start now and pay over time — we'll cover what you qualify for during your consultation.`
+- `Is financing available?` — `Yes — with fixed, low monthly payments so you can start now and pay over time. We'll cover the options you qualify for during your consultation.`
 - `Are you licensed and insured?` — `Fully. We're a licensed, bonded general contractor (CSLB #1076760) insured up to $1M general liability — and you can verify our license on the CSLB website.`
 
 ### `guarantee` (existing copy, kept)
