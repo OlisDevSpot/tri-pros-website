@@ -1,5 +1,5 @@
 import type { FunnelContext, ProblemBlockContent } from '@/shared/domains/funnels/types'
-import { TriangleAlert } from 'lucide-react'
+import { ShieldCheck, TriangleAlert } from 'lucide-react'
 
 export function ProblemBlock({ content }: { content: ProblemBlockContent, ctx: FunnelContext }) {
   return (
@@ -10,9 +10,11 @@ export function ProblemBlock({ content }: { content: ProblemBlockContent, ctx: F
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {content.points.map(p => (
-          <div key={p.title} className="border-border bg-card flex flex-col gap-1 rounded-2xl border p-5">
-            <div className="text-foreground flex items-center gap-2 font-medium">
-              <TriangleAlert className="text-destructive size-4 shrink-0" aria-hidden="true" />
+          <div key={p.title} className="border-border bg-card flex flex-col gap-2 rounded-lg border p-5 shadow-sm">
+            <div className="text-foreground flex items-center gap-2.5 font-semibold">
+              <span className="bg-destructive/10 text-destructive flex size-8 shrink-0 items-center justify-center rounded-md">
+                <TriangleAlert className="size-4" aria-hidden="true" />
+              </span>
               {p.title}
             </div>
             <p className="text-muted-foreground text-sm">{p.body}</p>
@@ -20,7 +22,12 @@ export function ProblemBlock({ content }: { content: ProblemBlockContent, ctx: F
         ))}
       </div>
       {content.standardLine
-        ? <p className="border-border bg-muted/40 text-foreground mx-auto max-w-3xl text-balance rounded-2xl border px-6 py-4 text-center text-sm font-medium">{content.standardLine}</p>
+        ? (
+            <div className="border-border border-l-foreground/30 bg-card text-foreground flex w-full items-start gap-3 rounded-lg border border-l-4 px-6 py-5 shadow-sm">
+              <ShieldCheck className="text-foreground mt-0.5 size-5 shrink-0" aria-hidden="true" />
+              <p className="text-balance text-sm font-medium">{content.standardLine}</p>
+            </div>
+          )
         : null}
     </section>
   )

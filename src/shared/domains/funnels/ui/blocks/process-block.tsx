@@ -7,9 +7,14 @@ export function ProcessBlock({ content }: { content: ProcessBlockContent, ctx: F
       {content.title ? <h2 className="text-foreground text-center text-2xl font-semibold">{content.title}</h2> : null}
       <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {content.steps.map((step, i) => (
-          <li key={step.title} className="border-border bg-card flex flex-col overflow-hidden rounded-2xl border">
+          <li key={step.title} className="border-border bg-card flex flex-col overflow-hidden rounded-lg border shadow-sm">
             {step.image
-              ? <Image src={step.image} alt={step.title} width={320} height={180} className="aspect-video w-full object-cover" />
+              ? (
+                  <div className="relative">
+                    <Image src={step.image} alt={step.title} width={320} height={180} className="aspect-video w-full object-cover" />
+                    <span className="bg-card text-foreground border-border absolute left-3 top-3 flex size-7 items-center justify-center rounded-full border text-sm font-semibold tabular-nums shadow-sm">{i + 1}</span>
+                  </div>
+                )
               : null}
             <div className="flex flex-col gap-1 p-4">
               <span className="text-muted-foreground text-xs font-semibold tabular-nums">

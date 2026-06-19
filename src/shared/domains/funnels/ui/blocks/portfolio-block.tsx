@@ -40,7 +40,7 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
   }, [scopesQ.data, projectsQ.data, tradeId, ctx.slug])
 
   if (tiles === null) {
-    return <div className="bg-muted/40 h-64 w-full animate-pulse rounded-2xl" />
+    return <div className="bg-muted/40 h-64 w-full animate-pulse rounded-lg" />
   }
 
   return (
@@ -51,7 +51,7 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
         {tiles.map((tile, i) => (
           <div
             key={`${tile.src}-${i}`}
-            className={cn('group relative overflow-hidden rounded-2xl', i === 0 ? 'col-span-2' : '', PORTFOLIO_BENTO_SPANS[i])}
+            className={cn('group relative overflow-hidden rounded-lg', i === 0 ? 'col-span-2' : '', PORTFOLIO_BENTO_SPANS[i])}
           >
             <Image
               src={tile.src}

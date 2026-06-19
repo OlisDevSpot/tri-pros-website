@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
+import { cn } from '@/shared/lib/utils'
 
 /**
  * Single-open accordion. motion/react drives it: the open answer animates its
@@ -17,7 +18,7 @@ export function FaqBlock({ content }: { content: FaqBlockContent, ctx: FunnelCon
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section className="mx-auto flex w-full max-w-2xl flex-col gap-4 py-10">
+    <section className="flex w-full flex-col gap-4 py-10">
       {content.title ? <h2 className="text-foreground text-center text-2xl font-semibold">{content.title}</h2> : null}
       <div className="flex flex-col gap-2">
         {content.items.map((item, i) => {
@@ -28,7 +29,10 @@ export function FaqBlock({ content }: { content: FaqBlockContent, ctx: FunnelCon
               key={item.q}
               layout={!reduceMotion}
               transition={FUNNEL_TRANSITION}
-              className="border-border bg-card overflow-hidden rounded-xl border"
+              className={cn(
+                'border-border bg-card overflow-hidden rounded-lg border shadow-sm transition-colors',
+                isOpen && 'border-foreground/20',
+              )}
             >
               <motion.button
                 layout={!reduceMotion}

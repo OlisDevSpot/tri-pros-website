@@ -19,7 +19,7 @@ export function TestimonialsBlock({ content }: { content: TestimonialsBlockConte
       {content.title ? <h2 className="text-center text-2xl font-semibold">{content.title}</h2> : null}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map(item => (
-          <figure key={item.name} className="border-border flex flex-col gap-3 rounded-xl border p-5">
+          <figure key={item.name} className="border-border bg-card flex flex-col gap-3 rounded-lg border p-5 shadow-sm">
             <div className="flex items-center gap-1">
               {Array.from({ length: item.rating }, (_, i) => (
                 <Star key={i} className="fill-yellow-500 text-yellow-500 size-4" />

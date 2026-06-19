@@ -32,7 +32,7 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
         variants={reduceMotion ? undefined : CARD_STAGGER_CONTAINER}
         initial={reduceMotion ? false : 'hidden'}
         animate={reduceMotion ? false : 'visible'}
-        className="grid grid-cols-2 gap-3 sm:gap-4"
+        className="grid grid-cols-2 gap-2 sm:gap-3"
       >
         {step.optionIds.map((optionId) => {
           const option = content.options[optionId]
@@ -46,27 +46,27 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
               whileTap={reduceMotion ? undefined : { scale: 0.97 }}
               onClick={() => handleSelect(optionId)}
               className={cn(
-                'flex flex-col items-center overflow-hidden rounded-xl border-2 text-center transition-colors touch-manipulation hover:border-primary/60',
+                'flex flex-col items-center overflow-hidden rounded-lg border-2 text-center shadow-sm transition-colors touch-manipulation hover:border-primary/60',
                 selected ? 'border-primary bg-primary/5' : 'border-border',
               )}
             >
               {asset
                 ? (
-                    <div className="bg-muted/40 flex aspect-3/2 w-full items-center justify-center sm:aspect-4/3">
+                    <div className="bg-muted/40 flex aspect-video w-full items-center justify-center">
                       {asset.kind === 'icon' && OPTION_ICONS[asset.name]
                         ? (() => {
                             const Icon = OPTION_ICONS[asset.name]
-                            return <Icon className="text-foreground size-9 sm:size-12" />
+                            return <Icon className="text-foreground size-8 sm:size-10" />
                           })()
                         : null}
                       {asset.kind === 'image'
-                        ? <Image src={asset.src} alt={asset.alt} width={500} height={667} sizes="(max-width: 640px) 45vw, 280px" className="h-full w-full object-cover object-center" />
+                        ? <Image src={asset.src} alt={asset.alt} width={600} height={282} sizes="(max-width: 640px) 45vw, 280px" className="h-full w-full object-cover object-center" />
                         : null}
                     </div>
                   )
                 : null}
-              <div className="flex flex-col items-center gap-1 p-2 sm:p-3">
-                <span className="block text-sm font-medium sm:text-base">{option?.label ?? optionId}</span>
+              <div className="flex flex-col items-center gap-1 p-2">
+                <span className="block text-sm font-medium">{option?.label ?? optionId}</span>
                 {option?.description
                   ? <span className="text-muted-foreground hidden text-sm sm:block">{option.description}</span>
                   : null}

@@ -19,14 +19,14 @@ export function ValueBlock({ content }: { content: ValueBlockContent, ctx: Funne
         : null}
       {content.beforeAfter?.length
         ? (
-            <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+            <div className="grid w-full gap-4 sm:grid-cols-2">
               {content.beforeAfter.map(pair => (
                 <div key={pair.after} className="grid grid-cols-2 gap-2 sm:gap-3">
-                  <figure className="border-border relative overflow-hidden rounded-xl border">
+                  <figure className="border-border relative overflow-hidden rounded-lg border">
                     <Image src={pair.before} alt="Kitchen before the remodel" width={640} height={480} sizes="(max-width: 640px) 45vw, 320px" className="aspect-4/3 w-full object-cover" />
                     <figcaption className="bg-background/85 text-foreground absolute left-2 top-2 rounded-md px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">Before</figcaption>
                   </figure>
-                  <figure className="border-border relative overflow-hidden rounded-xl border">
+                  <figure className="border-border relative overflow-hidden rounded-lg border">
                     <Image src={pair.after} alt="Kitchen after the remodel" width={640} height={480} sizes="(max-width: 640px) 45vw, 320px" className="aspect-4/3 w-full object-cover" />
                     <figcaption className="bg-foreground/85 text-background absolute left-2 top-2 rounded-md px-2 py-0.5 text-xs font-semibold backdrop-blur-sm">After</figcaption>
                   </figure>
@@ -35,9 +35,9 @@ export function ValueBlock({ content }: { content: ValueBlockContent, ctx: Funne
             </div>
           )
         : null}
-      <ul className="mx-auto flex w-full max-w-2xl flex-col gap-3">
+      <ul className="grid w-full gap-3 sm:grid-cols-2">
         {content.items.map(item => (
-          <li key={item.after} className="border-border bg-card flex items-center gap-3 rounded-xl border p-4 text-sm">
+          <li key={item.after} className="border-border bg-card flex items-center gap-3 rounded-lg border p-4 text-sm shadow-sm">
             <span className="text-muted-foreground flex-1 line-through">{item.before}</span>
             <ArrowRight className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
             <span className="text-foreground flex-1 font-medium">{item.after}</span>

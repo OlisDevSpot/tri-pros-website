@@ -108,7 +108,7 @@ export const kitchensFunnel: FunnelSpec = {
           'l-shape': { label: 'L-shaped', asset: { kind: 'image', src: '/funnels/kitchens/option-l-shape.webp', alt: 'L-shaped kitchen layout' } },
           'u-shape': { label: 'U-shaped', asset: { kind: 'image', src: '/funnels/kitchens/option-u-shape.webp', alt: 'U-shaped kitchen layout' } },
           'galley': { label: 'Galley', asset: { kind: 'image', src: '/funnels/kitchens/option-galley.webp', alt: 'Galley kitchen layout' } },
-          'island': { label: 'Has an island', asset: { kind: 'icon', name: 'island' } },
+          'island': { label: 'Has an island', asset: { kind: 'image', src: '/funnels/kitchens/option-island.webp', alt: 'Kitchen with an island layout' } },
           'open': { label: 'Open-concept', asset: { kind: 'icon', name: 'open' } },
           'not-sure': { label: 'Not sure', asset: { kind: 'icon', name: 'not-sure' } },
         },

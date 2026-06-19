@@ -23,7 +23,7 @@ import { renderHighlightedHeadline } from '@/shared/domains/funnels/lib/highligh
  */
 export function FunnelHero({ content, onCta }: { content: HeroContent, onCta?: () => void }) {
   return (
-    <section className="border-border relative isolate overflow-hidden rounded-3xl border shadow-[0_24px_60px_-15px_rgb(15_23_42/0.35)]">
+    <section className="border-border relative isolate overflow-hidden rounded-xl border shadow-[0_24px_60px_-15px_rgb(15_23_42/0.35)]">
       {content.media
         ? (
             <Image
