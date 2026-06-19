@@ -7,6 +7,7 @@ import { ArrowUp } from 'lucide-react'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Fragment, useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
+import { QUESTION_ANCHOR } from '@/shared/domains/funnels/constants/anchors'
 import { DEFAULT_LANDING_BLOCKS } from '@/shared/domains/funnels/constants/default-landing-blocks'
 import {
   FUNNEL_TRANSITION,
@@ -25,8 +26,6 @@ import { MARKETING_REGISTRY } from '@/shared/domains/funnels/constants/marketing
 import { FunnelHero } from '@/shared/domains/funnels/ui/funnel-hero'
 import { FunnelStickyHeader } from '@/shared/domains/funnels/ui/funnel-sticky-header'
 import { TrustBar } from '@/shared/domains/funnels/ui/trust-bar'
-
-const QUESTION_ANCHOR = 'funnel-q1'
 
 function scrollToQuestion() {
   document.getElementById(QUESTION_ANCHOR)?.scrollIntoView({ behavior: 'smooth', block: 'start' })

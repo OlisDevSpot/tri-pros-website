@@ -167,6 +167,9 @@ export interface CalloutBlockContent {
   body: string
   points?: string[]
 }
+export interface CtaBlockContent {
+  label: string
+}
 
 export type MarketingBlock
   = | { kind: 'reviews', content: ReviewsBlockContent }
@@ -179,6 +182,7 @@ export type MarketingBlock
     | { kind: 'process', content: ProcessBlockContent }
     | { kind: 'faq', content: FaqBlockContent }
     | { kind: 'callout', content: CalloutBlockContent }
+    | { kind: 'cta', content: CtaBlockContent }
 
 export type MarketingBlockKind = MarketingBlock['kind']
 export type MarketingBlockComponentFor<K extends MarketingBlockKind>

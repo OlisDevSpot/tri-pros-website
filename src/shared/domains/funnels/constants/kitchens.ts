@@ -33,6 +33,7 @@ export const kitchensFunnel: FunnelSpec = {
           standardLine: 'What to demand: a licensed, bonded, insured GC you can verify, one accountable team, a fixed written scope, and a real schedule. That\'s the bar — and for us it\'s the floor.',
         },
       },
+      { kind: 'cta', content: { label: 'Learn how we do it' } },
       {
         kind: 'value',
         content: {
