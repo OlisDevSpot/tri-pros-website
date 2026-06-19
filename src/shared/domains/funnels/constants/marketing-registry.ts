@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { FunnelContext, MarketingRegistry, PortfolioBlockContent } from '@/shared/domains/funnels/types'
 import dynamic from 'next/dynamic'
+import { FaqBlock } from '@/shared/domains/funnels/ui/blocks/faq-block'
 import { GuaranteeBlock } from '@/shared/domains/funnels/ui/blocks/guarantee-block'
 import { LicensingBlock } from '@/shared/domains/funnels/ui/blocks/licensing-block'
 import { ProblemBlock } from '@/shared/domains/funnels/ui/blocks/problem-block'
@@ -19,6 +20,7 @@ const PortfolioBlock = dynamic(
 
 /** kind → block component. Typed by MarketingRegistry so each slot is checked against its kind. */
 export const MARKETING_REGISTRY: MarketingRegistry = {
+  faq: FaqBlock,
   guarantee: GuaranteeBlock,
   licensing: LicensingBlock,
   portfolio: PortfolioBlock,
