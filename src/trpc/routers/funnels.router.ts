@@ -31,6 +31,17 @@ const phoneLookupRatelimit = new Ratelimit({
 
 const e164 = z.string().regex(/^\+1\d{10}$/, 'Expected a US E.164 number')
 
+const LOOKUP_TIMEOUT_MS = 5000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error('phone lookup timed out')), ms)
+    }),
+  ])
+}
+
 export const funnelsRouter = createTRPCRouter({
   // Public UX check — the PII step calls this (debounced) to surface the
   // verdict before submit. Returns the raw lookup; the gate is applied client
@@ -45,10 +56,10 @@ export const funnelsRouter = createTRPCRouter({
       }
 
       try {
-        return await twilioClient.lookupPhoneNumber(input.phone)
+        return await withTimeout(twilioClient.lookupPhoneNumber(input.phone), LOOKUP_TIMEOUT_MS)
       }
       catch (err) {
-        if (err instanceof RestException) {
+        if (err instanceof RestException || err instanceof Error) {
           // Treat as indeterminate — the client gate will fail open.
           return { valid: true, lineType: null, carrierName: null, errorCode: -1 }
         }
@@ -74,10 +85,10 @@ export const funnelsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
 
-      // Authoritative lookup; a transport error fails OPEN (never drop a lead).
+      // Authoritative lookup; a transport error or timeout fails OPEN (never drop a lead).
       let lookup = null
       try {
-        lookup = await twilioClient.lookupPhoneNumber(input.phone)
+        lookup = await withTimeout(twilioClient.lookupPhoneNumber(input.phone), LOOKUP_TIMEOUT_MS)
       }
       catch {
         lookup = null
