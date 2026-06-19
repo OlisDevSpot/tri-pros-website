@@ -30,6 +30,12 @@ const phoneLookupRatelimit = new Ratelimit({
   prefix: 'funnel:phone-lookup',
 })
 
+const enrichRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 h'),
+  prefix: 'funnel:enrich',
+})
+
 // Global paid-lookup ceiling — backstop against IP rotation across many real
 // IPs. Fail-open on exceed so legit leads are never dropped while cost is capped.
 const lookupCeiling = new Ratelimit({
@@ -144,5 +150,31 @@ export const funnelsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not save your details. Please try again.' })
       }
       return { customerId: result.data.customer.id }
+    }),
+
+  // Guarded post-lead enrichment (funnel leads only). The leadId UUID is the
+  // capability; IP rate-limited; the service refuses non-funnel customers and
+  // only patches source.enrichment. Best-effort — the client never blocks on it.
+  enrichFunnelLead: baseProcedure
+    .input(z.object({
+      leadId: z.string().uuid(),
+      enrichment: z.object({
+        homeType: z.string().nullable().optional(),
+        age: z.string().nullable().optional(),
+        scope: z.string().nullable().optional(),
+        timeline: z.string().nullable().optional(),
+      }).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const ip = clientIp((ctx as { req?: Request }).req)
+      const { success } = await enrichRatelimit.limit(ip)
+      if (!success) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
+      }
+      const result = await customerIntakeService.enrichFunnelLead(SYSTEM_CONTEXT, input)
+      if (!result.success) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not save your details.' })
+      }
+      return { ok: true as const }
     }),
 })

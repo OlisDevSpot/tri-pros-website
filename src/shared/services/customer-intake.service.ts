@@ -31,6 +31,11 @@ interface IngestLeadInput {
   meeting?: { ownerId: string } | null
 }
 
+interface EnrichFunnelLeadInput {
+  leadId: string
+  enrichment?: { homeType?: string | null, age?: string | null, scope?: string | null, timeline?: string | null }
+}
+
 function createCustomerIntakeService() {
   return {
     async ingestLead(
@@ -107,6 +112,36 @@ function createCustomerIntakeService() {
       }
 
       return dalSuccess({ customer, meetingId })
+    },
+
+    // Guarded enrichment patch for an already-created funnel lead. The leadId is
+    // the capability; we refuse anything that isn't a funnel-sourced customer and
+    // only ever touch source.enrichment. Best-effort from the confirmation step.
+    async enrichFunnelLead(
+      ctx: ScopedContext,
+      input: EnrichFunnelLeadInput,
+    ): Promise<DalReturn<{ ok: true }>> {
+      const existing = await customerCrud.getById(ctx, { id: input.leadId })
+      if (!existing.success) {
+        return existing
+      }
+      const customer = existing.data
+      const leadMeta = customer?.leadMetaJSON
+      if (!customer || leadMeta?.source?.kind !== 'funnel') {
+        return dalError({ type: 'precondition-failed', reason: 'not_a_funnel_lead' })
+      }
+      const nextLeadMeta: LeadMeta = {
+        ...leadMeta,
+        source: {
+          ...leadMeta.source,
+          enrichment: { ...leadMeta.source.enrichment, ...input.enrichment },
+        },
+      }
+      const updated = await customerCrud.update(ctx, { id: input.leadId, data: { leadMetaJSON: nextLeadMeta } })
+      if (!updated.success) {
+        return updated
+      }
+      return dalSuccess({ ok: true })
     },
   }
 }
