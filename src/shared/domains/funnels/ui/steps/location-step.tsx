@@ -1,7 +1,10 @@
 import type { LocationStep, StepProps } from '@/shared/domains/funnels/types'
+import { MapPin } from 'lucide-react'
+import { motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
 import { classifyZip, resolveZip } from '@/shared/domains/funnels/lib/resolve-zip'
 import { ZipCheckProgress } from '@/shared/domains/funnels/ui/steps/zip-check-progress'
 
@@ -19,6 +22,7 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
   // mount directly in the qualified phase with the stored ZIP.
   const [zip, setZip] = useState(value?.zip ?? '')
   const [phase, setPhase] = useState<Phase>(value?.zip ? 'qualified' : 'input')
+  const reduceMotion = useReducedMotion()
 
   async function handleSubmit() {
     if (!/^\d{5}$/.test(zip)) {
@@ -45,18 +49,31 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
   }
 
   if (phase === 'qualified') {
+    const place = [value?.city, value?.county ? `${value.county} County` : null].filter(Boolean).join(', ')
     return (
       <div className="flex flex-col items-center gap-4 py-8 text-center" aria-live="polite">
         <p className="text-foreground text-xl font-semibold">
           {content.qualifiesLabel ?? '✓ Great news — your area qualifies.'}
         </p>
+        {place
+          ? (
+              <motion.div
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.9, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={FUNNEL_TRANSITION}
+                className="border-primary/30 bg-primary/5 inline-flex items-center gap-2 rounded-full border px-4 py-2"
+              >
+                <MapPin className="text-primary size-4" aria-hidden="true" />
+                <span className="text-foreground text-sm font-medium">{place}</span>
+              </motion.div>
+            )
+          : null}
         {/* Persisted ZIP is editable: drop back to input (current ZIP pre-filled)
             so a different area can be checked. Re-checking overwrites the stored
             value. Secondary action — deliberately not the primary color. */}
         <Button variant="ghost" size="sm" onClick={() => setPhase('input')} className="text-muted-foreground">
           Check a different ZIP
         </Button>
-        {/* Plan 2c replaces this with the stylized SVG region reveal. */}
       </div>
     )
   }
