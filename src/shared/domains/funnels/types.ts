@@ -115,6 +115,27 @@ export interface StepProps<S extends FunnelStep = FunnelStep> {
 export type StepComponentFor<K extends StepKind> = ComponentType<StepProps<Extract<FunnelStep, { kind: K }>>>
 export type StepRegistry = { [K in StepKind]: StepComponentFor<K> }
 
+// ── Marketing blocks: composable trust sections shown on the landing ──
+
+export interface ReviewsBlockContent { rating: number, count: number, label?: string }
+export interface TestimonialItem { name: string, location: string, text: string, rating: number, image?: string }
+export interface TestimonialsBlockContent { title?: string, items?: TestimonialItem[] }
+export interface PortfolioBlockContent { title?: string, subtitle?: string, maxItems?: number }
+export interface LicensingBlockContent { title?: string }
+export interface GuaranteeBlockContent { headline: string, body: string, scarcityLine?: string }
+
+export type MarketingBlock
+  = | { kind: 'reviews', content: ReviewsBlockContent }
+    | { kind: 'testimonials', content: TestimonialsBlockContent }
+    | { kind: 'portfolio', content: PortfolioBlockContent }
+    | { kind: 'licensing', content: LicensingBlockContent }
+    | { kind: 'guarantee', content: GuaranteeBlockContent }
+
+export type MarketingBlockKind = MarketingBlock['kind']
+export type MarketingBlockComponentFor<K extends MarketingBlockKind>
+  = ComponentType<{ content: Extract<MarketingBlock, { kind: K }>['content'], ctx: FunnelContext }>
+export type MarketingRegistry = { [K in MarketingBlockKind]: MarketingBlockComponentFor<K> }
+
 // ── FunnelSpec: ordered steps + branching + metadata. No content map. ──
 
 export interface FunnelPixel { contentCategory: string }
@@ -125,6 +146,8 @@ export interface FunnelSpec {
   hero: HeroContent
   theme: FunnelTheme
   pixel: FunnelPixel
+  /** Optional landing block list; falls back to DEFAULT_LANDING_BLOCKS when absent. */
+  landing?: { blocks: MarketingBlock[] }
   steps: FunnelStep[]
   flow?: (answers: FunnelAnswers, currentStepId: StepId) => StepId | null
 }
