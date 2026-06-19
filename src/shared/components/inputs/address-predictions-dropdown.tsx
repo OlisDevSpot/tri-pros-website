@@ -3,6 +3,7 @@
 import { LoaderCircleIcon, MapPinIcon } from 'lucide-react'
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/shared/components/ui/command'
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/components/ui/popover'
+import { cn } from '@/shared/lib/utils'
 
 interface AddressPredictionsDropdownProps {
   predictions: google.maps.places.AutocompletePrediction[]
@@ -10,6 +11,7 @@ interface AddressPredictionsDropdownProps {
   onSelect: (placeId: string) => void
   isLoading?: boolean
   anchorRef: React.RefObject<HTMLDivElement | null>
+  contentClassName?: string
 }
 
 const LISTBOX_ID = 'address-predictions-listbox'
@@ -22,12 +24,13 @@ export function AddressPredictionsDropdown({
   onSelect,
   isLoading = false,
   anchorRef,
+  contentClassName,
 }: AddressPredictionsDropdownProps) {
   return (
     <Popover open={isOpen}>
       <PopoverAnchor virtualRef={anchorRef as React.RefObject<HTMLDivElement>} />
       <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
+        className={cn('w-[var(--radix-popover-trigger-width)] p-0', contentClassName)}
         align="start"
         onOpenAutoFocus={e => e.preventDefault()}
         onCloseAutoFocus={e => e.preventDefault()}

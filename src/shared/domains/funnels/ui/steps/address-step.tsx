@@ -39,6 +39,7 @@ export function AddressStepView({ content, value, answers, setValue }: StepProps
             defaultValue={value?.fullAddress}
             onSelect={handleSelect}
             showMap={false}
+            dropdownClassName="funnel-light text-foreground"
           />
 
           {value

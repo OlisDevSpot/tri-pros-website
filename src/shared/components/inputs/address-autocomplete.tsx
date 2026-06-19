@@ -25,6 +25,7 @@ interface AddressAutocompleteProps {
   showMap?: boolean
   debounceMs?: number
   minChars?: number
+  dropdownClassName?: string
 }
 
 export function AddressAutocomplete({
@@ -36,6 +37,7 @@ export function AddressAutocomplete({
   showMap = false,
   debounceMs = 300,
   minChars = 2,
+  dropdownClassName,
 }: AddressAutocompleteProps) {
   const placesLib = useMapsLibrary('places')
 
@@ -192,6 +194,7 @@ export function AddressAutocomplete({
         onSelect={handleSelect}
         isLoading={isLoading}
         anchorRef={anchorRef}
+        contentClassName={dropdownClassName}
       />
 
       {showMap && resolvedLoc && (
