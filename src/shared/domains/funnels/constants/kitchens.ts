@@ -137,10 +137,10 @@ export const kitchensFunnel: FunnelSpec = {
       content: {
         title: 'What kind of home is it?',
         options: {
-          'single-family': { label: 'Single-family' },
-          'condo': { label: 'Condo' },
-          'mobile-home': { label: 'Mobile home' },
-          'commercial': { label: 'Commercial' },
+          'single-family': { label: 'Single-family', asset: { kind: 'image', src: '/funnels/kitchens/option-single-family.webp', alt: 'Single-family home' } },
+          'condo': { label: 'Condo', asset: { kind: 'image', src: '/funnels/kitchens/option-condo.webp', alt: 'Condo building' } },
+          'mobile-home': { label: 'Mobile home', asset: { kind: 'image', src: '/funnels/kitchens/option-mobile-home.webp', alt: 'Mobile home' } },
+          'commercial': { label: 'Commercial', asset: { kind: 'image', src: '/funnels/kitchens/option-commercial.webp', alt: 'Commercial building' } },
         },
       },
     },
