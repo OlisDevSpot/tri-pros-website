@@ -56,7 +56,7 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   if (engine.isFirst) {
     return (
       <div data-funnel={spec.slug} className="min-h-dvh w-full">
-        <FunnelLanding spec={spec} ctx={ctx}>{stepEl}</FunnelLanding>
+        <FunnelLanding spec={spec} ctx={ctx} scrollToQuestionOnMount={engine.value != null}>{stepEl}</FunnelLanding>
       </div>
     )
   }
