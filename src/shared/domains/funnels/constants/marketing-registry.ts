@@ -6,6 +6,7 @@ import { LicensingBlock } from '@/shared/domains/funnels/ui/blocks/licensing-blo
 import { ProblemBlock } from '@/shared/domains/funnels/ui/blocks/problem-block'
 import { ReviewsBlock } from '@/shared/domains/funnels/ui/blocks/reviews-block'
 import { TestimonialsBlock } from '@/shared/domains/funnels/ui/blocks/testimonials-block'
+import { ValueBlock } from '@/shared/domains/funnels/ui/blocks/value-block'
 
 // Dynamic import: fetches live data and is below-the-fold, so lazy-load it.
 // Cast is narrow — only this slot — to satisfy the mapped MarketingRegistry type,
@@ -23,4 +24,5 @@ export const MARKETING_REGISTRY: MarketingRegistry = {
   problem: ProblemBlock,
   reviews: ReviewsBlock,
   testimonials: TestimonialsBlock,
+  value: ValueBlock,
 }

@@ -131,6 +131,12 @@ export interface ProblemBlockContent {
   points: { title: string, body: string }[]
   standardLine?: string
 }
+export interface ValueBlockContent {
+  headline: string
+  intro?: string
+  roiStat?: { value: string, label: string }
+  items: { before: string, after: string }[]
+}
 
 export type MarketingBlock
   = | { kind: 'reviews', content: ReviewsBlockContent }
@@ -139,6 +145,7 @@ export type MarketingBlock
     | { kind: 'licensing', content: LicensingBlockContent }
     | { kind: 'guarantee', content: GuaranteeBlockContent }
     | { kind: 'problem', content: ProblemBlockContent }
+    | { kind: 'value', content: ValueBlockContent }
 
 export type MarketingBlockKind = MarketingBlock['kind']
 export type MarketingBlockComponentFor<K extends MarketingBlockKind>
