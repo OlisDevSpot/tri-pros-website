@@ -3,9 +3,12 @@ import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { classifyZip, resolveZip } from '@/shared/domains/funnels/lib/resolve-zip'
+import { ZipCheckProgress } from '@/shared/domains/funnels/ui/steps/zip-check-progress'
 
 type Phase = 'input' | 'checking' | 'qualified' | 'out-of-area'
-const MIN_CHECKING_MS = 1200
+const CHECK_STEPS = ['Locating your ZIP…', 'Checking service radius…', 'Confirming crew availability…', 'Reserving your area…']
+const STEP_MS = 450
+const MIN_CHECKING_MS = CHECK_STEPS.length * STEP_MS // 1800
 
 function delay(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
@@ -38,17 +41,12 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
   }
 
   if (phase === 'checking') {
-    return (
-      <div className="flex flex-col items-center gap-4 py-12 text-center">
-        <span className="border-primary size-8 animate-spin rounded-full border-2 border-t-transparent" />
-        <p className="text-muted-foreground">{(content.checkingLabel ?? 'Checking availability in {zip}…').replace('{zip}', zip)}</p>
-      </div>
-    )
+    return <ZipCheckProgress steps={CHECK_STEPS} stepMs={STEP_MS} />
   }
 
   if (phase === 'qualified') {
     return (
-      <div className="flex flex-col items-center gap-6 py-8 text-center">
+      <div className="flex flex-col items-center gap-6 py-8 text-center" aria-live="polite">
         <p className="text-primary text-xl font-semibold">
           {content.qualifiesLabel ?? '✓ Great news — your area qualifies.'}
         </p>
@@ -77,7 +75,7 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
         className="mx-auto max-w-xs text-center text-lg"
       />
       {phase === 'out-of-area'
-        ? <p className="text-muted-foreground text-center text-sm">{content.outOfAreaLabel ?? 'We don\'t serve that area yet — double-check your ZIP.'}</p>
+        ? <p aria-live="polite" className="text-muted-foreground text-center text-sm">{content.outOfAreaLabel ?? 'We don\'t serve that area yet — double-check your ZIP.'}</p>
         : null}
       <Button size="lg" disabled={!/^\d{5}$/.test(zip)} onClick={handleSubmit}>
         {content.inputCta ?? 'Check my area'}
