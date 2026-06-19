@@ -125,6 +125,12 @@ export interface TestimonialsBlockContent { title?: string, items?: TestimonialI
 export interface PortfolioBlockContent { title?: string, subtitle?: string, maxItems?: number }
 export interface LicensingBlockContent { title?: string }
 export interface GuaranteeBlockContent { headline: string, body: string, scarcityLine?: string }
+export interface ProblemBlockContent {
+  headline: string
+  body?: string
+  points: { title: string, body: string }[]
+  standardLine?: string
+}
 
 export type MarketingBlock
   = | { kind: 'reviews', content: ReviewsBlockContent }
@@ -132,6 +138,7 @@ export type MarketingBlock
     | { kind: 'portfolio', content: PortfolioBlockContent }
     | { kind: 'licensing', content: LicensingBlockContent }
     | { kind: 'guarantee', content: GuaranteeBlockContent }
+    | { kind: 'problem', content: ProblemBlockContent }
 
 export type MarketingBlockKind = MarketingBlock['kind']
 export type MarketingBlockComponentFor<K extends MarketingBlockKind>
