@@ -74,24 +74,20 @@ export const HERO_HEADER_OPACITY_IN = [0.4, 0.75]
 export const HERO_HEADER_OPACITY_OUT = [0, 1]
 
 /**
- * Confirmation "what's next" timeline. The container draws its steps in with a
- * deliberate 120ms stagger; TIMELINE_LINE scales the connecting line in from
- * the top (origin-top). Steps reuse CARD_STAGGER_ITEM (shared hidden/visible
- * labels). Gated on useReducedMotion() at the call site.
+ * Confirmation "what's next" timeline. The container reveals its steps with a
+ * deliberate 120ms stagger; each step pops via TIMELINE_STEP_ITEM. The
+ * connectors between badges are static CSS (they stop at each badge edge), so
+ * no animated line ever crosses a number. Gated on useReducedMotion() at the
+ * call site.
  */
 export const TIMELINE_STAGGER_CONTAINER: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } },
 }
 
-export const TIMELINE_LINE: Variants = {
-  hidden: { scaleY: 0 },
-  visible: { scaleY: 1, transition: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } },
-}
-
 /**
  * Each timeline step pops in with a spring (scale + lift) so the numbered
- * badges feel alive as the line draws past them.
+ * badges feel alive as they reveal in sequence.
  */
 export const TIMELINE_STEP_ITEM: Variants = {
   hidden: { opacity: 0, y: 10, scale: 0.85 },

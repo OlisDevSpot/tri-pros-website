@@ -62,16 +62,18 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
     <div className="flex flex-col items-center gap-8 py-6 text-center">
       <motion.div className="flex flex-col items-center gap-3" {...entrance(0)}>
         <span className="relative flex size-16 items-center justify-center">
-          {/* Looping "alive" pulse ring radiating out from behind the check. */}
+          {/* Looping "alive" pulse ring radiating out from behind the check.
+              Opacity self-closes (0 → peak → 0) so the infinite loop has no
+              visible reset flash at the boundary. */}
           {reduceMotion
             ? null
             : (
                 <motion.span
                   aria-hidden
                   className="bg-success/20 absolute inset-0 rounded-full"
-                  initial={{ scale: 0.85, opacity: 0.7 }}
-                  animate={{ scale: 1.6, opacity: 0 }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut', delay: 0.5 }}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: [0.9, 1.3, 1.7], opacity: [0, 0.5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeOut', times: [0, 0.25, 1], delay: 0.6 }}
                 />
               )}
           <motion.span
@@ -96,7 +98,7 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
         : null}
 
       <motion.div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center" {...entrance(0.28)}>
-        <Button asChild size="lg" className="h-14 flex-1 gap-2 text-base font-semibold shadow-sm">
+        <Button asChild size="lg" className="h-14 gap-2 text-base font-semibold shadow-sm sm:flex-1">
           <a href={`tel:${toDialString(phone)}`}>
             <Phone className="size-4" aria-hidden />
             {`Call ${phone}`}
