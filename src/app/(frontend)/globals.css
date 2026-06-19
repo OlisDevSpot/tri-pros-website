@@ -3,7 +3,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
+:root,
+.funnel-light {
   --background: oklch(0.9846 0.0017 247.8389);
   --foreground: oklch(0.2781 0.0296 256.848);
   --card: oklch(1 0 0);
@@ -72,6 +73,10 @@
   --shadow-2xl: 0px 4px 10px 0px hsl(215 27.907% 16.8627% / 0.13);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+}
+
+.funnel-light {
+  color-scheme: light;
 }
 
 .dark {
