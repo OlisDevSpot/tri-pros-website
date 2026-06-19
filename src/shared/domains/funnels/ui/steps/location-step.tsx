@@ -1,51 +1,56 @@
 import type { LocationStep, StepProps } from '@/shared/domains/funnels/types'
-import { MapPin } from 'lucide-react'
-import { motion, useReducedMotion } from 'motion/react'
+import { Loader2, MapPin } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
-import { classifyZip, resolveZip } from '@/shared/domains/funnels/lib/resolve-zip'
+import { CHECK_DURATIONS, CHECK_STEPS } from '@/shared/domains/funnels/constants/zip-check'
+import { useLiveZipResolve } from '@/shared/domains/funnels/hooks/use-live-zip-resolve'
+import { classifyZip } from '@/shared/domains/funnels/lib/resolve-zip'
 import { ZipCheckProgress } from '@/shared/domains/funnels/ui/steps/zip-check-progress'
 
-type Phase = 'input' | 'checking' | 'qualified' | 'out-of-area'
-const CHECK_STEPS = ['Locating your ZIP…', 'Checking service radius…', 'Confirming crew availability…', 'Reserving your area…']
-const STEP_MS = 450
-const MIN_CHECKING_MS = CHECK_STEPS.length * STEP_MS // 1800
-
-function delay(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms))
-}
+type Phase = 'input' | 'checking' | 'qualified'
 
 export function LocationStepView({ content, value, setValue }: StepProps<LocationStep>) {
-  // Persistence (#5): if this step was already answered (reached via Back),
+  // Persistence (#7): if this step was already answered (reached via Back),
   // mount directly in the qualified phase with the stored ZIP.
   const [zip, setZip] = useState(value?.zip ?? '')
   const [phase, setPhase] = useState<Phase>(value?.zip ? 'qualified' : 'input')
   const reduceMotion = useReducedMotion()
 
-  async function handleSubmit() {
-    if (!/^\d{5}$/.test(zip)) {
+  // Live resolve as the user types. Seeded with the stored answer so a Back-return
+  // shows the badge + enables the button without a refetch.
+  const seed = value?.zip ? { zip: value.zip, city: value.city, state: value.state, county: value.county } : null
+  const { resolved, pending } = useLiveZipResolve(zip, seed)
+
+  // Out-of-area messaging path: a complete 5-digit ZIP that isn't in-area.
+  const isFullZip = /^\d{5}$/.test(zip)
+  const showOutOfArea = isFullZip && !pending && !resolved && classifyZip(zip) !== 'in-area'
+
+  function handleSubmit() {
+    if (!resolved) {
       return
     }
-    if (classifyZip(zip) !== 'in-area') {
-      setPhase('out-of-area')
-      return
-    }
-    setPhase('checking')
-    // Anticipation beat (#4): local ZIPs resolve instantly — make qualifying breathe.
-    const [resolved] = await Promise.all([resolveZip(zip), delay(MIN_CHECKING_MS)])
+    // Resolve already happened — persist the resolved value, then play the
+    // anticipation beat (#6) before advancing to qualified.
     setValue({
-      zip,
-      city: resolved?.city ?? '',
-      state: resolved?.state ?? 'CA',
-      county: resolved?.county ?? null,
+      zip: resolved.zip,
+      city: resolved.city,
+      state: resolved.state,
+      county: resolved.county,
     })
-    setPhase('qualified')
+    setPhase('checking')
   }
 
   if (phase === 'checking') {
-    return <ZipCheckProgress steps={CHECK_STEPS} stepMs={STEP_MS} />
+    return (
+      <ZipCheckProgress
+        steps={CHECK_STEPS}
+        durations={CHECK_DURATIONS}
+        onComplete={() => setPhase('qualified')}
+      />
+    )
   }
 
   if (phase === 'qualified') {
@@ -78,29 +83,56 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
     )
   }
 
+  const badgePlace = resolved
+    ? [resolved.city, resolved.county ? `${resolved.county} County` : null].filter(Boolean).join(', ')
+    : ''
+
   return (
     <div className="flex flex-col gap-6">
       <div className="text-center">
         <h2 className="text-2xl font-semibold">{content.title}</h2>
         {content.subtitle ? <p className="text-muted-foreground mt-1">{content.subtitle}</p> : null}
       </div>
-      <Input
-        inputMode="numeric"
-        maxLength={5}
-        placeholder="ZIP code"
-        value={zip}
-        onChange={(e) => {
-          setZip(e.target.value.replace(/\D/g, ''))
-          if (phase === 'out-of-area') {
-            setPhase('input')
-          }
-        }}
-        className="mx-auto max-w-xs text-center text-lg"
-      />
-      {phase === 'out-of-area'
+      <div className="relative mx-auto w-full max-w-xs">
+        <Input
+          inputMode="numeric"
+          maxLength={5}
+          placeholder="ZIP code"
+          value={zip}
+          onChange={e => setZip(e.target.value.replace(/\D/g, ''))}
+          className="text-center text-lg"
+        />
+        {pending
+          ? (
+              <Loader2
+                className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin"
+                aria-hidden="true"
+              />
+            )
+          : null}
+      </div>
+      {/* Resolved location badge — animates in on resolve, out on edit/delete (#3, #5). */}
+      <AnimatePresence mode="wait">
+        {resolved
+          ? (
+              <motion.div
+                key={resolved.zip}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 8 }}
+                animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: -8 }}
+                transition={FUNNEL_TRANSITION}
+                className="border-primary/30 bg-primary/5 mx-auto inline-flex items-center gap-2 rounded-full border px-4 py-2"
+              >
+                <MapPin className="text-primary size-4" aria-hidden="true" />
+                <span className="text-foreground text-sm font-medium">{badgePlace}</span>
+              </motion.div>
+            )
+          : null}
+      </AnimatePresence>
+      {showOutOfArea
         ? <p aria-live="polite" className="text-muted-foreground text-center text-sm">{content.outOfAreaLabel ?? 'We don\'t serve that area yet — double-check your ZIP.'}</p>
         : null}
-      <Button size="lg" disabled={!/^\d{5}$/.test(zip)} onClick={handleSubmit}>
+      <Button size="lg" disabled={!resolved} onClick={handleSubmit}>
         {content.inputCta ?? 'Check my area'}
       </Button>
     </div>

@@ -7,13 +7,13 @@ export interface ResolvedZip {
   county: string | null
 }
 
-export async function resolveZip(zip: string): Promise<ResolvedZip | null> {
+export async function resolveZip(zip: string, opts?: { signal?: AbortSignal }): Promise<ResolvedZip | null> {
   const local = CA_ZIP_CITIES[zip]
   if (local) {
     return { zip, city: local.city, state: 'CA', county: local.county }
   }
   try {
-    const res = await fetch(`https://api.zippopotam.us/us/${zip}`)
+    const res = await fetch(`https://api.zippopotam.us/us/${zip}`, { signal: opts?.signal })
     if (!res.ok) {
       return null
     }
