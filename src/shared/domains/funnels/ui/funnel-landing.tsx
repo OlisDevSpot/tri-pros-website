@@ -90,10 +90,14 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
         transition={FUNNEL_TRANSITION}
         className="flex w-full flex-col items-center gap-16 py-10"
       >
-        <div className="flex w-full max-w-xl flex-col gap-8 px-5">
-          <FunnelHero content={spec.hero} onCta={scrollToQuestion} ref={heroRef} scroll={heroScroll} />
-          <TrustBar />
-          <div id={QUESTION_ANCHOR} className="scroll-mt-20">{children}</div>
+        <div className="flex w-full flex-col items-center gap-8">
+          <div className="w-full max-w-5xl px-5">
+            <FunnelHero content={spec.hero} onCta={scrollToQuestion} ref={heroRef} scroll={heroScroll} />
+          </div>
+          <div className="flex w-full max-w-xl flex-col gap-8 px-5">
+            <TrustBar />
+            <div id={QUESTION_ANCHOR} className="scroll-mt-20">{children}</div>
+          </div>
         </div>
         <div className="flex w-full max-w-5xl flex-col gap-12 px-5">
           {blocks.map((block, i) => (

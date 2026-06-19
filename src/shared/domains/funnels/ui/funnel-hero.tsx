@@ -52,7 +52,7 @@ export function FunnelHero({ content, onCta, ref, scroll }: {
               alt=""
               fill
               priority
-              sizes="(max-width: 640px) 100vw, 576px"
+              sizes="(max-width: 640px) 100vw, 1024px"
               className="-z-20 object-cover"
             />
           )
@@ -64,13 +64,16 @@ export function FunnelHero({ content, onCta, ref, scroll }: {
       {/* Legibility scrim: opaque at top (logo/headline), opening up toward the
           bottom so the (now-tamed) kitchen photo shows behind the CTA + padding. */}
       <div className="absolute inset-0 -z-10 bg-linear-to-b from-card via-card/92 to-card/50" />
-      <div className="flex flex-col items-center gap-4 px-6 py-12 text-center sm:px-10 sm:py-14">
-        <motion.div style={scroll ? { opacity: scroll.logoOpacity, scale: scroll.logoScale } : undefined}>
+      <div className="flex flex-col gap-6 px-6 py-12 sm:px-10 sm:py-14">
+        <motion.div
+          style={scroll ? { opacity: scroll.logoOpacity, scale: scroll.logoScale } : undefined}
+          className="self-center sm:self-start"
+        >
           <Image src={LogoDarkInk} alt="Tri Pros Remodeling" width={200} height={54} priority className="h-14 w-auto" />
         </motion.div>
         <motion.div
           style={scroll ? { opacity: scroll.textOpacity, y: scroll.textY } : undefined}
-          className="flex flex-col items-center gap-4"
+          className="mx-auto flex max-w-2xl flex-col items-center gap-4 text-center"
         >
           <h1 className="text-foreground text-balance font-serif text-3xl font-bold tracking-tight sm:text-4xl">
             {renderHighlightedHeadline(content.headline, content.highlightWords)}
