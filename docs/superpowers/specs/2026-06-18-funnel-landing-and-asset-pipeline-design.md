@@ -87,7 +87,7 @@ landing: { blocks: MarketingBlock[] }
 |---|---|---|
 | `reviews` | Aggregate trust band — rating value, star row, count, optional Google/BBB marks | Static content in the block config (e.g. `{ rating: 4.9, count: 200, label }`) |
 | `testimonials` | Named quote cards (photo, quote, name, location, 5 stars) | Defaults to the 3 static entries in `shared/constants/company/testimonials.ts`; overridable per funnel |
-| `portfolio` | Live trade-filtered before/after gallery of real projects | `projectsRouter.showroomDisplay.getAll()` filtered by the funnel's Notion **trade** (via scope→trade resolution) |
+| `portfolio` | Live trade-filtered **hero-image grid** of real projects (before/after slider deferred — `getAll` returns only `heroImage`; before/after would need per-project `getDetail`, too heavy for a below-fold block) | `projectsRouter.showroomDisplay.getAll()` filtered by the funnel's Notion **trade** (via scope→trade resolution) |
 | `licensing` | Bonded / licensed / insured trust section + license # | `shared/constants/company/` |
 | `guarantee` | Offer guarantee + scarcity reinforcement | Static content in the block config |
 
