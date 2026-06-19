@@ -2,6 +2,8 @@ import { z } from 'zod'
 
 // ─── phone — ONE canonical home for every phone-number transform ───────────
 //
+// see docs/codebase-conventions/phone-numbers.md
+//
 // The business is Southern-California-only, so every real number is a US
 // 10-digit local number. We standardize on two shapes and never mix them:
 //

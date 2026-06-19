@@ -19,6 +19,7 @@ If you can't find a rule here, check the most-recent ADR first — newer archite
 | [entity-frontend.md](./entity-frontend.md) | Compound overview cards, `<EntityActionMenu>`, `<EntityList>`, parent-enriched `meta` |
 | [environment.md](./environment.md) | Env validation, public URLs, auth, integrations inventory |
 | [webhook-routes.md](./webhook-routes.md) | Async-vs-sync split for inbound HTTP. One webhook route per provider; sync lookups under verb namespaces. |
+| [phone-numbers.md](./phone-numbers.md) | Canonical 10-digit storage, `phone.ts` helpers, normalize-at-write-boundary, E.164 only at external calls |
 
 ---
 
