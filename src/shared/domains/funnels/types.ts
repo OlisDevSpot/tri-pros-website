@@ -43,6 +43,8 @@ export interface HeroContent {
   /** Optional prompt introducing the embedded first question, e.g. "Start here ↓". */
   prompt?: string
   media?: HeroMedia
+  /** Phrases within `headline` rendered in primary color (≤2 recommended). */
+  highlightWords?: string[]
 }
 export interface CardSelectContent { title: string, subtitle?: string, options: Record<string, OptionContent> }
 

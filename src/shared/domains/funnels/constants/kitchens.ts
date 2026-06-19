@@ -11,6 +11,7 @@ export const kitchensFunnel: FunnelSpec = {
     subhead: 'See if your home qualifies for one of our Showcase kitchens.',
     scarcityLine: 'We\'re selecting 5 kitchens in your area.',
     prompt: 'Start by telling us about your kitchen ↓',
+    highlightWords: ['AAA-grade', 'Showcase'],
   },
   theme: { accent: 'primary' },
   pixel: { contentCategory: 'kitchen' },
