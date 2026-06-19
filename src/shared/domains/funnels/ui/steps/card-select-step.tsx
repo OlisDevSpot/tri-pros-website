@@ -26,29 +26,38 @@ export function CardSelectStepView({ step, content, value, isAnswered, setValue,
         {step.optionIds.map((optionId) => {
           const option = content.options[optionId]
           const selected = value === optionId
+          const asset = option?.asset
           return (
             <button
               key={optionId}
               type="button"
               onClick={() => handleSelect(optionId)}
               className={cn(
-                'rounded-xl border-2 p-5 text-left transition-colors hover:border-primary/60',
+                'flex flex-col overflow-hidden rounded-xl border-2 text-left transition-colors hover:border-primary/60',
                 selected ? 'border-primary bg-primary/5' : 'border-border',
               )}
             >
-              {option?.asset?.kind === 'icon' && OPTION_ICONS[option.asset.name]
-                ? (() => {
-                    const Icon = OPTION_ICONS[option.asset.name]
-                    return <Icon className="text-primary mb-2 size-6" />
-                  })()
+              {asset
+                ? (
+                    <div className="bg-muted/40 flex aspect-4/3 w-full items-center justify-center">
+                      {asset.kind === 'icon' && OPTION_ICONS[asset.name]
+                        ? (() => {
+                            const Icon = OPTION_ICONS[asset.name]
+                            return <Icon className="text-primary size-20" />
+                          })()
+                        : null}
+                      {asset.kind === 'image'
+                        ? <Image src={asset.src} alt={asset.alt} width={320} height={240} className="h-full w-full object-cover" />
+                        : null}
+                    </div>
+                  )
                 : null}
-              {option?.asset?.kind === 'image'
-                ? <Image src={option.asset.src} alt={option.asset.alt} width={48} height={48} className="mb-2" />
-                : null}
-              <span className="block font-medium">{option?.label ?? optionId}</span>
-              {option?.description
-                ? <span className="text-muted-foreground mt-1 block text-sm">{option.description}</span>
-                : null}
+              <div className="p-4">
+                <span className="block font-medium">{option?.label ?? optionId}</span>
+                {option?.description
+                  ? <span className="text-muted-foreground mt-1 block text-sm">{option.description}</span>
+                  : null}
+              </div>
             </button>
           )
         })}
