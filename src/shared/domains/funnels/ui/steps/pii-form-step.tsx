@@ -1,7 +1,8 @@
 import type { PiiFormData } from '@/shared/domains/funnels/schemas/pii.schema'
 import type { PiiStep, StepProps } from '@/shared/domains/funnels/types'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js/min'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
@@ -9,16 +10,20 @@ import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { useDebouncedAsyncValidator } from '@/shared/domains/funnels/hooks/use-debounced-async-validator'
 import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
+import { evaluatePhoneGate } from '@/shared/domains/funnels/lib/evaluate-phone-gate'
 import { piiSchema } from '@/shared/domains/funnels/schemas/pii.schema'
 import { useTRPC } from '@/trpc/helpers'
 
 export function PiiFormStepView({ content, answers, ctx, setValue, advance }: StepProps<PiiStep>) {
   const trpc = useTRPC()
   const reduceMotion = useReducedMotion()
-  const submit = useMutation(trpc.customersRouter.business.createFromIntake.mutationOptions({
+  const queryClient = useQueryClient()
+  const submit = useMutation(trpc.funnelsRouter.submitLead.mutationOptions({
     onError: err => toast.error(err.message),
   }))
+  const lookupPhone = trpc.funnelsRouter.phoneLookup
 
   const form = useForm<PiiFormData>({
     resolver: zodResolver(piiSchema),
@@ -30,11 +35,45 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
   const [firstName, lastName] = form.watch(['firstName', 'lastName'])
   const namesFilled = Boolean(firstName?.trim()) && Boolean(lastName?.trim())
 
+  const validatePhone = useDebouncedAsyncValidator<string>(async (raw, signal) => {
+    if (!isValidPhoneNumber(raw, 'US')) {
+      return 'Please enter a valid US phone number'
+    }
+    const parsed = parsePhoneNumber(raw, 'US')
+    const e164 = parsed?.number
+    if (!e164) {
+      return 'Please enter a valid US phone number'
+    }
+    const lookup = await queryClient.fetchQuery({
+      ...lookupPhone.queryOptions({ phone: e164 }),
+      staleTime: 5 * 60 * 1000,
+    })
+    if (signal.aborted) {
+      return true
+    }
+    return evaluatePhoneGate(lookup).ok ? true : 'That phone number doesn\'t look valid — please double-check it.'
+  })
+
   async function onSubmit(data: PiiFormData) {
     if (data._honeypot) {
       return
     }
-    const created = await submit.mutateAsync(buildLeadInput({ ctx, pii: data, answers }))
+    const lead = buildLeadInput({ ctx, pii: data, answers })
+    const parsed = parsePhoneNumber(data.phone, 'US')
+    const e164 = parsed?.number
+    if (!e164) {
+      toast.error('Please enter a valid US phone number')
+      return
+    }
+    const created = await submit.mutateAsync({
+      phone: e164,
+      name: lead.name,
+      city: lead.city,
+      state: lead.state,
+      zip: lead.zip,
+      leadSourceSlug: lead.leadSourceSlug,
+      leadMetaJSON: lead.leadMetaJSON,
+    })
     setValue({ leadId: created.customerId })
     advance()
   }
@@ -85,6 +124,7 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
                     <FormField
                       control={form.control}
                       name="phone"
+                      rules={{ validate: validatePhone }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{content.fields.phone ?? 'Phone'}</FormLabel>
@@ -110,7 +150,7 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
           </AnimatePresence>
           <input type="text" tabIndex={-1} autoComplete="off" className="hidden" {...form.register('_honeypot')} />
         </fieldset>
-        <Button type="submit" size="lg" disabled={!namesFilled || submit.isPending}>
+        <Button type="submit" size="lg" disabled={!namesFilled || !form.formState.isValid || submit.isPending}>
           {submit.isPending ? 'Submitting…' : (content.cta ?? 'See if I qualify')}
         </Button>
       </form>
