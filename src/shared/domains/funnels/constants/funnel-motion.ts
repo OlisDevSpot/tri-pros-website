@@ -1,4 +1,4 @@
-import type { TargetAndTransition, Transition } from 'motion/react'
+import type { TargetAndTransition, Transition, Variants } from 'motion/react'
 
 /**
  * Shared transition for funnel step swaps. Typed as motion's `Transition` so
@@ -22,4 +22,19 @@ export const STEP_VARIANTS: Record<'initial' | 'animate' | 'exit', TargetAndTran
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -10 },
+}
+
+/**
+ * Container + item variants for the card-select grid entrance. The container
+ * orchestrates a 50ms stagger; each card fades up. Reuses FUNNEL_TRANSITION
+ * easing. Engine gates these on useReducedMotion().
+ */
+export const CARD_STAGGER_CONTAINER: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.05, delayChildren: 0.08 } },
+}
+
+export const CARD_STAGGER_ITEM: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: FUNNEL_TRANSITION },
 }
