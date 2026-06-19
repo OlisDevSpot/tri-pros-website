@@ -88,12 +88,16 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
             {stepEl}
           </motion.div>
         </AnimatePresence>
-        <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" onClick={engine.back}>← Back</Button>
-          {engine.value != null && engine.hasNext
-            ? <Button onClick={engine.advance}>Next →</Button>
-            : <span />}
-        </div>
+        {engine.hasNext
+          ? (
+              <div className="flex items-center justify-between gap-3">
+                <Button variant="ghost" onClick={engine.back}>← Back</Button>
+                {engine.value != null
+                  ? <Button onClick={engine.advance}>Next →</Button>
+                  : <span />}
+              </div>
+            )
+          : null}
       </div>
     </div>
   )
