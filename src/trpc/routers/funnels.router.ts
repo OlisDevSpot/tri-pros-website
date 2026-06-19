@@ -11,6 +11,7 @@ import { customerIntakeService } from '@/shared/services/customer-intake.service
 import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
 
 import { baseProcedure, createTRPCRouter } from '../init'
+import { clientIp } from '../lib/client-ip'
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -37,17 +38,6 @@ const lookupCeiling = new Ratelimit({
   prefix: 'funnel:lookup-ceiling',
   ephemeralCache: new Map(),
 })
-
-// Trusted client IP for rate-limiting. On Vercel the edge sets
-// x-vercel-forwarded-for / x-real-ip to the real client IP and the caller
-// cannot overwrite them; raw x-forwarded-for IS client-spoofable (rotating it
-// bypasses per-IP limits and amplifies PAID Twilio lookups), so we don't trust
-// it. No edge (local dev) → 'anonymous'.
-function clientIp(req: Request | undefined): string {
-  return req?.headers.get('x-vercel-forwarded-for')
-    ?? req?.headers.get('x-real-ip')
-    ?? 'anonymous'
-}
 
 const e164 = z.string().regex(/^\+1\d{10}$/, 'Expected a US E.164 number')
 

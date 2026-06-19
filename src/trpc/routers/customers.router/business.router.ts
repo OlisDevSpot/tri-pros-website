@@ -29,6 +29,7 @@ import { constructionDataService } from '@/shared/services/construction-data.ser
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 
 import { createTRPCRouter } from '../../init'
+import { clientIp } from '../../lib/client-ip'
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -168,7 +169,7 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         const { notes, mode, leadSourceSlug, ...customerData } = input
 
         // Rate limit by IP
-        const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
+        const ip = clientIp((ctx as { req?: Request }).req)
         const { success } = await intakeRatelimit.limit(ip)
         if (!success) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })

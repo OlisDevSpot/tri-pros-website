@@ -2,10 +2,13 @@ import { TRPCError } from '@trpc/server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import z from 'zod'
+
 import env from '@/shared/config/server-env'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS } from '@/shared/services/providers/r2/types'
+
 import { baseProcedure, createTRPCRouter } from '../init'
+import { clientIp } from '../lib/client-ip'
 
 const redis = new Redis({
   url: env.UPSTASH_REDIS_REST_URL,
@@ -27,7 +30,7 @@ export const intakeRouter = createTRPCRouter({
     }))
     .mutation(async ({ input, ctx }) => {
       // Rate limit by IP
-      const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
+      const ip = clientIp((ctx as { req?: Request }).req)
       const { success } = await uploadRatelimit.limit(ip)
 
       if (!success) {
