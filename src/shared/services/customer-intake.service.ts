@@ -4,6 +4,7 @@ import type { LeadMeta } from '@/shared/entities/customers/schemas'
 import type { IntakeCore } from '@/shared/services/providers/gohighlevel/lib/normalize-bina-lead'
 
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
+import { buildFunnelLeadNote } from '@/shared/domains/funnels/lib/build-funnel-lead-note'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { addCustomerNote } from '@/shared/entities/customers/dal/server/mutations'
 import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/queries'
@@ -141,6 +142,20 @@ function createCustomerIntakeService() {
       if (!updated.success) {
         return updated
       }
+
+      // ── Optional note (best-effort — never rolls back the enrichment) ────────
+      const noteContent = buildFunnelLeadNote(nextLeadMeta)
+      if (noteContent) {
+        const noteResult = await addCustomerNote({
+          customerId: input.leadId,
+          content: noteContent,
+          authorId: null,
+        })
+        if (!noteResult.success) {
+          console.error('[customerIntake] funnel enrichment note failed (enrichment kept)', noteResult.error)
+        }
+      }
+
       return dalSuccess({ ok: true })
     },
   }
