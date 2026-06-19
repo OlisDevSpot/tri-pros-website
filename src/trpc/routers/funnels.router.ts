@@ -29,6 +29,26 @@ const phoneLookupRatelimit = new Ratelimit({
   prefix: 'funnel:phone-lookup',
 })
 
+// Global paid-lookup ceiling — backstop against IP rotation across many real
+// IPs. Fail-open on exceed so legit leads are never dropped while cost is capped.
+const lookupCeiling = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(300, '1 h'),
+  prefix: 'funnel:lookup-ceiling',
+  ephemeralCache: new Map(),
+})
+
+// Trusted client IP for rate-limiting. On Vercel the edge sets
+// x-vercel-forwarded-for / x-real-ip to the real client IP and the caller
+// cannot overwrite them; raw x-forwarded-for IS client-spoofable (rotating it
+// bypasses per-IP limits and amplifies PAID Twilio lookups), so we don't trust
+// it. No edge (local dev) → 'anonymous'.
+function clientIp(req: Request | undefined): string {
+  return req?.headers.get('x-vercel-forwarded-for')
+    ?? req?.headers.get('x-real-ip')
+    ?? 'anonymous'
+}
+
 const e164 = z.string().regex(/^\+1\d{10}$/, 'Expected a US E.164 number')
 
 const LOOKUP_TIMEOUT_MS = 5000
@@ -49,10 +69,17 @@ export const funnelsRouter = createTRPCRouter({
   phoneLookup: baseProcedure
     .input(z.object({ phone: e164 }))
     .query(async ({ input, ctx }) => {
-      const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
+      const ip = clientIp((ctx as { req?: Request }).req)
       const { success } = await phoneLookupRatelimit.limit(ip)
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
+      }
+
+      const ceiling = await lookupCeiling.limit('global')
+      if (!ceiling.success) {
+        // Global paid-lookup cap hit (abuse backstop) — skip the paid call and
+        // return the indeterminate result; the client gate treats it as pass.
+        return { valid: true, lineType: null, carrierName: null, errorCode: -1 }
       }
 
       try {
@@ -79,19 +106,24 @@ export const funnelsRouter = createTRPCRouter({
       leadMetaJSON: leadMetaSchema,
     }))
     .mutation(async ({ input, ctx }) => {
-      const ip = (ctx as { req?: Request }).req?.headers.get('x-forwarded-for') ?? 'anonymous'
+      const ip = clientIp((ctx as { req?: Request }).req)
       const { success } = await submitRatelimit.limit(ip)
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
 
-      // Authoritative lookup; a transport error or timeout fails OPEN (never drop a lead).
+      // Authoritative lookup; a transport error, timeout, or global ceiling hit
+      // fails OPEN (never drop a lead). ceiling not ok → lookup stays null →
+      // evaluatePhoneGate(null) → fail-open 'unverified' → lead still created.
       let lookup = null
-      try {
-        lookup = await withTimeout(twilioClient.lookupPhoneNumber(input.phone), LOOKUP_TIMEOUT_MS)
-      }
-      catch {
-        lookup = null
+      const ceiling = await lookupCeiling.limit('global')
+      if (ceiling.success) {
+        try {
+          lookup = await withTimeout(twilioClient.lookupPhoneNumber(input.phone), LOOKUP_TIMEOUT_MS)
+        }
+        catch {
+          lookup = null
+        }
       }
       const verdict = evaluatePhoneGate(lookup)
       if (!verdict.ok) {
