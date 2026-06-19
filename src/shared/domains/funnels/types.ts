@@ -145,6 +145,11 @@ export interface FaqBlockContent {
   title?: string
   items: { q: string, a: string }[]
 }
+export interface CalloutBlockContent {
+  headline: string
+  body: string
+  points?: string[]
+}
 
 export type MarketingBlock
   = | { kind: 'reviews', content: ReviewsBlockContent }
@@ -156,6 +161,7 @@ export type MarketingBlock
     | { kind: 'value', content: ValueBlockContent }
     | { kind: 'process', content: ProcessBlockContent }
     | { kind: 'faq', content: FaqBlockContent }
+    | { kind: 'callout', content: CalloutBlockContent }
 
 export type MarketingBlockKind = MarketingBlock['kind']
 export type MarketingBlockComponentFor<K extends MarketingBlockKind>
