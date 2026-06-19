@@ -185,8 +185,14 @@ New step kind `disqualified` + view `ui/steps/disqualified-step.tsx`, terminal, 
 
 ### 6.5 Lead capture & pixel on DQ
 
-- `capture-stop` reuses the existing confirmation submit/enrichment path, tagging the lead `disqualified: true` + `reason`, so **DQ rate is measurable per UTM source** (directly serving the per-click ad-spend concern).
-- A **distinct pixel event** fires for DQ vs. qualified, so Meta optimization is not trained on dead-end "conversions". (Exact event taxonomy to be finalized in the plan against the existing pixel wiring.)
+> **Refined during planning (2026-06-19) — these are DEFERRED, not built in Phase 2:**
+> - **Disqualification is stubbed, not active.** The business has not committed to disqualifying leads, so Phase 2 builds only the inert model + a minimal dead-end screen. No funnel wires a DQ rule.
+> - **No pixel fires today** (verified: `FunnelPixel.contentCategory` is declared but never used). Building the base Meta pixel pipeline is its own **Phase 2.5**.
+> - **Pre-PII timing gap:** the canonical renter DQ fires at the ownership step (step 2), *before* the PII step (step 4) creates the lead — so there is no contact info to capture at that point. Activating capture must handle anonymous pre-PII DQ events vs. post-PII lead flagging. Deferred to a future "activate disqualification" phase.
+
+The target design (when activated) remains:
+- `capture-stop` reuses the existing confirmation submit/enrichment path, tagging the lead `disqualified: true` + `reason`, so **DQ rate is measurable per UTM source**.
+- A **distinct pixel event** fires for DQ vs. qualified, so Meta optimization is not trained on dead-end "conversions".
 
 ---
 
@@ -226,11 +232,13 @@ Also: refresh `memory/feedback-funnel-design-standards.md` and add a one-line `M
 
 ## 9. Phasing (each independently shippable)
 
-- **Phase 1 — Reusability core**: `defineBlock` / `defineStep` / `configureStep` + inline-component rendering + Tier-2 override fix. Unlocks custom one-offs and true shared-customization. **No behavior change to kitchens.**
-- **Phase 2 — Branching & DQ**: `outcomes.ts`, per-step `next` in engine, `disqualified` step, DQ capture + pixel split. Ship the renter rule on kitchens as the first real consumer and manual proof.
-- **Phase 3 — Docs & hardening**: author `DOCS.md` end-to-end, add in-code refs, refresh memory. (Drafted alongside Phases 1–2; finalized here.)
+- **Phase 1 — Reusability core**: `defineBlock` / `defineStep` / `configureStep` + inline-component rendering + Tier-2 override fix (`reviews` only — `testimonials` already compliant). Unlocks custom one-offs and true shared-customization. **No behavior change to kitchens.** → `docs/superpowers/plans/2026-06-19-funnel-engine-phase1-reusability.md`
+- **Phase 2 — Branching engine**: `outcomes.ts`, per-step `next` in engine, `resolveNext`/`outcomeTargetId`, **disqualified stub screen (inert — no capture, no pixel, no funnel wires a DQ rule)**. Branching proven via a temporary conditional-skip in kitchens (reverted). → `docs/superpowers/plans/2026-06-19-funnel-engine-phase2-branching.md`
+- **Phase 2.5 — Pixel pipeline (future)**: build the base Meta pixel firing (qualified `Lead` event + distinct DQ event). Not yet planned; write when ready.
+- **Phase 3 — Docs**: author `DOCS.md` end-to-end, add in-code refs, refresh memory. → `docs/superpowers/plans/2026-06-19-funnel-engine-phase3-docs.md`
+- **Future — Activate disqualification**: wire a real DQ rule + lead-capture-on-DQ (anonymous pre-PII event + post-PII flag). Gated on a business decision to disqualify leads.
 
-**Verification per phase:** `pnpm tsc` + `pnpm lint`; kitchens funnel renders unchanged after Phase 1; renter→DQ path manually verified after Phase 2.
+**Verification per phase:** `pnpm tsc` + `pnpm lint` (no unit-test runner in repo — the compiler is the primary test surface) + manual/Playwright-MCP browser smoke; kitchens renders unchanged after Phases 1 and 2.
 
 ---
 
