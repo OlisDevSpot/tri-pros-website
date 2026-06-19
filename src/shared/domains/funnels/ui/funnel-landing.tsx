@@ -9,6 +9,7 @@ import { Fragment, useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { QUESTION_ANCHOR } from '@/shared/domains/funnels/constants/anchors'
 import { DEFAULT_LANDING_BLOCKS } from '@/shared/domains/funnels/constants/default-landing-blocks'
+import { FUNNEL_RAIL_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import {
   FUNNEL_TRANSITION,
   HERO_HEADER_OPACITY_IN,
@@ -83,7 +84,7 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
 
   return (
     <>
-      <FunnelStickyHeader opacity={headerOpacity} />
+      <FunnelStickyHeader opacity={headerOpacity} widthClass={FUNNEL_RAIL_MAX_W} />
       <motion.div
         initial={reduceMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -91,7 +92,7 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
         className="flex w-full flex-col items-center gap-16 py-10"
       >
         <div className="flex w-full flex-col items-center gap-8">
-          <div className="w-full max-w-5xl px-5">
+          <div className={`w-full ${FUNNEL_RAIL_MAX_W} px-5`}>
             <FunnelHero content={spec.hero} onCta={scrollToQuestion} ref={heroRef} scroll={heroScroll} />
           </div>
           <div className="flex w-full max-w-xl flex-col gap-8 px-5">
@@ -99,7 +100,7 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
             <div id={QUESTION_ANCHOR} className="scroll-mt-20">{children}</div>
           </div>
         </div>
-        <div className="flex w-full max-w-5xl flex-col gap-12 px-5">
+        <div className={`flex w-full ${FUNNEL_RAIL_MAX_W} flex-col gap-12 px-5`}>
           {blocks.map((block, i) => (
             <Fragment key={`${block.kind}-${i}`}>
               {renderBlock(block, ctx, i)}

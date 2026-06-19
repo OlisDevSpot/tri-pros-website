@@ -6,6 +6,7 @@ import type { FunnelContext, StepProps } from '@/shared/domains/funnels/types'
 import { AnimatePresence, motion, useMotionValue, useReducedMotion } from 'motion/react'
 import { useMemo } from 'react'
 import { Button } from '@/shared/components/ui/button'
+import { FUNNEL_RAIL_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/constants/funnel-motion'
 import { STEP_REGISTRY } from '@/shared/domains/funnels/constants/step-registry'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
@@ -71,10 +72,10 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
     )
   }
 
-  // One content rail per step, shared by the sticky header and the body so the
-  // logo/Call always align with the content edges. Terminal steps (no Next)
-  // widen to 3xl for the confirmation gallery; question steps stay focused at xl.
-  const contentWidth = engine.hasNext ? 'max-w-xl' : 'max-w-3xl'
+  // One content rail for the whole funnel (see constants/funnel-layout). Every
+  // step + the terminal confirmation share this baseline width; the sticky
+  // header mirrors it. Focused controls constrain internally.
+  const contentWidth = FUNNEL_RAIL_MAX_W
 
   return (
     <div data-funnel={spec.slug} className="min-h-dvh w-full">
