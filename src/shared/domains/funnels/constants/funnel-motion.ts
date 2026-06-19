@@ -7,8 +7,8 @@ import type { TargetAndTransition, Transition } from 'motion/react'
  * matching CSS `ease` — which `Transition` accepts directly.
  */
 export const FUNNEL_TRANSITION: Transition = {
-  duration: 0.25,
-  ease: [0.25, 0.1, 0.25, 1],
+  duration: 0.18,
+  ease: [0.32, 0.72, 0, 1],
 }
 
 /**
@@ -19,7 +19,7 @@ export const FUNNEL_TRANSITION: Transition = {
  * resolver function, which those props don't accept.
  */
 export const STEP_VARIANTS: Record<'initial' | 'animate' | 'exit', TargetAndTransition> = {
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -16 },
+  exit: { opacity: 0, y: -10 },
 }
