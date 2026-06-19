@@ -26,7 +26,8 @@ export function ReviewCard({ name, text, rating, location, platform, image, clas
         <div className="min-w-0">
           <div className="text-foreground flex items-center gap-1 text-sm font-medium">
             {name}
-            <BadgeCheck className="text-primary size-4 shrink-0" aria-label="Verified review" />
+            <BadgeCheck className="text-primary size-4 shrink-0" aria-hidden="true" />
+            <span className="sr-only">Verified review</span>
           </div>
           {meta ? <div className="text-muted-foreground text-xs">{meta}</div> : null}
         </div>
