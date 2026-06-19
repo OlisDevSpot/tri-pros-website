@@ -37,6 +37,14 @@ interface EnrichFunnelLeadInput {
   enrichment?: { homeType?: string | null, age?: string | null, scope?: string | null, timeline?: string | null }
 }
 
+interface SetFunnelLeadAddressInput {
+  leadId: string
+  address: string
+  city: string
+  state: string
+  zip: string
+}
+
 function createCustomerIntakeService() {
   return {
     async ingestLead(
@@ -156,6 +164,38 @@ function createCustomerIntakeService() {
         }
       }
 
+      return dalSuccess({ ok: true })
+    },
+
+    // Guarded address patch for an already-created funnel lead. Same capability
+    // model as enrichFunnelLead: the leadId is the capability and we refuse any
+    // non-funnel customer. The partial update triggers the existing geocode-
+    // invalidation hook (desired). Relies on the committed phone fix so a partial
+    // update doesn't null the phone.
+    async setFunnelLeadAddress(
+      ctx: ScopedContext,
+      input: SetFunnelLeadAddressInput,
+    ): Promise<DalReturn<{ ok: true }>> {
+      const existing = await customerCrud.getById(ctx, { id: input.leadId })
+      if (!existing.success) {
+        return existing
+      }
+      const customer = existing.data
+      if (!customer || customer.leadMetaJSON?.source?.kind !== 'funnel') {
+        return dalError({ type: 'precondition-failed', reason: 'not_a_funnel_lead' })
+      }
+      const updated = await customerCrud.update(ctx, {
+        id: input.leadId,
+        data: {
+          address: input.address,
+          city: input.city,
+          state: input.state,
+          zip: input.zip,
+        },
+      })
+      if (!updated.success) {
+        return updated
+      }
       return dalSuccess({ ok: true })
     },
   }

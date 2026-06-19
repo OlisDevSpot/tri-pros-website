@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 import type { FunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
+import type { AddressFields } from '@/shared/lib/google-maps-helpers'
 
 /** A step's stable identifier, unique within a funnel. Doubles as its answer key. */
 export type StepId = string
@@ -15,6 +16,7 @@ export interface PiiAnswer { leadId: string }
  * (location, pii-form, …) extend this in lockstep with FunnelStep + STEP_REGISTRY.
  */
 export interface AnswerByKind {
+  'address': AddressFields
   'card-select': string
   'confirmation': never
   'location': LocationAnswer
@@ -75,6 +77,8 @@ export interface PiiContent {
   fields: PiiFieldLabels
 }
 
+export interface AddressContent { title: string, subtitle?: string }
+
 export interface ConfirmationContent {
   title: string
   subtitle?: string
@@ -85,6 +89,7 @@ export interface ConfirmationContent {
 
 /** kind → that kind's content shape. Extended in lockstep with new kinds. */
 export interface ContentByKind {
+  'address': AddressContent
   'card-select': CardSelectContent
   'confirmation': ConfirmationContent
   'location': LocationContent
@@ -95,12 +100,13 @@ export type ContentOf<S extends FunnelStep> = ContentByKind[S['kind']]
 // ── Steps: a discriminated union; `content` is a typed field on each variant ──
 
 interface BaseStep<K extends string> { id: StepId, kind: K }
+export interface AddressStep extends BaseStep<'address'> { content: AddressContent }
 export interface CardSelectStep extends BaseStep<'card-select'> { optionIds: string[], content: CardSelectContent }
 export interface ConfirmationStep extends BaseStep<'confirmation'> { content: ConfirmationContent }
 export interface LocationStep extends BaseStep<'location'> { content: LocationContent }
 export interface PiiStep extends BaseStep<'pii-form'> { content: PiiContent }
 
-export type FunnelStep = CardSelectStep | ConfirmationStep | LocationStep | PiiStep
+export type FunnelStep = AddressStep | CardSelectStep | ConfirmationStep | LocationStep | PiiStep
 export type StepKind = FunnelStep['kind']
 
 // ── Funnel-level context every step reads (this is what removes the need to

@@ -36,6 +36,12 @@ const enrichRatelimit = new Ratelimit({
   prefix: 'funnel:enrich',
 })
 
+const addressRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 h'),
+  prefix: 'funnel:address',
+})
+
 // Global paid-lookup ceiling — backstop against IP rotation across many real
 // IPs. Fail-open on exceed so legit leads are never dropped while cost is capped.
 const lookupCeiling = new Ratelimit({
@@ -172,6 +178,33 @@ export const funnelsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
       const result = await customerIntakeService.enrichFunnelLead(SYSTEM_CONTEXT, input)
+      if (!result.success) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not save your details.' })
+      }
+      return { ok: true as const }
+    }),
+
+  // Guarded post-lead address patch (funnel leads only). Mirrors enrichFunnelLead:
+  // leadId UUID is the capability; IP rate-limited; the service refuses non-funnel
+  // customers and only patches address fields. Best-effort — client never blocks.
+  setFunnelLeadAddress: baseProcedure
+    .input(z.object({
+      leadId: z.string().uuid(),
+      address: z.string().min(1).max(200),
+      city: z.string().min(1).max(100),
+      state: z.string().length(2).optional(),
+      zip: z.string().min(1).max(10),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const ip = clientIp((ctx as { req?: Request }).req)
+      const { success } = await addressRatelimit.limit(ip)
+      if (!success) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
+      }
+      const result = await customerIntakeService.setFunnelLeadAddress(SYSTEM_CONTEXT, {
+        ...input,
+        state: input.state ?? 'CA', // Funnel is SoCal-only; CA is the safe default
+      })
       if (!result.success) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not save your details.' })
       }
