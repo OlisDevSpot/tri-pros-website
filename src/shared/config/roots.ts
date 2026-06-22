@@ -29,58 +29,48 @@ export const APP_HOSTS = {
   tunnel: ['destined-emu-bold.ngrok-free.app'],
 } as const
 
-export const PROD_BASE_URL = `https://${APP_HOSTS.prod[0]}`
-
-interface UrlOptions {
-  absolute?: boolean
-}
-
-function generateUrl(relativeUrl: string, options?: UrlOptions): string {
-  return options?.absolute ? `${PROD_BASE_URL}${relativeUrl}` : relativeUrl
-}
-
 const APP_ROOTS = {
-  authFlow: (options?: UrlOptions) => generateUrl('/auth-flow', options),
+  authFlow: () => '/auth-flow',
   subdomainUrl: (label: string, { rootDomain = APP_HOSTS.prod[0], protocol = 'https' }: { rootDomain?: string, protocol?: string } = {}) =>
     `${protocol}://${label}.${rootDomain}`,
   landing: {
-    about: (options?: UrlOptions) => generateUrl('/about', options),
-    blog: (options?: UrlOptions) => generateUrl('/blog', options),
-    communityCommitment: (options?: UrlOptions) => generateUrl('/community/commitment', options),
-    communityJoin: (options?: UrlOptions) => generateUrl('/community/join', options),
-    contact: (options?: UrlOptions) => generateUrl('/contact', options),
-    experience: (options?: UrlOptions) => generateUrl('/experience', options),
-    portfolio: (options?: UrlOptions) => generateUrl('/portfolio', options),
-    portfolioProjects: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.portfolio()}/projects`, options),
-    portfolioProject: (accessor: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.portfolioProjects()}/${accessor}`, options),
-    portfolioTestimonials: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.portfolio()}/testimonials`, options),
-    services: (options?: UrlOptions) => generateUrl('/services', options),
-    servicesPillar: (pillarSlug: ServiceSlug, options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.services()}/${pillarSlug}`, options),
-    servicesTrade: (pillarSlug: ServiceSlug, tradeSlug: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.servicesPillar(pillarSlug)}/${tradeSlug}`, options),
+    about: () => '/about',
+    blog: () => '/blog',
+    communityCommitment: () => '/community/commitment',
+    communityJoin: () => '/community/join',
+    contact: () => '/contact',
+    experience: () => '/experience',
+    portfolio: () => '/portfolio',
+    portfolioProjects: () => `${APP_ROOTS.landing.portfolio()}/projects`,
+    portfolioProject: (accessor: string) => `${APP_ROOTS.landing.portfolioProjects()}/${accessor}`,
+    portfolioTestimonials: () => `${APP_ROOTS.landing.portfolio()}/testimonials`,
+    services: () => '/services',
+    servicesPillar: (pillarSlug: ServiceSlug) => `${APP_ROOTS.landing.services()}/${pillarSlug}`,
+    servicesTrade: (pillarSlug: ServiceSlug, tradeSlug: string) => `${APP_ROOTS.landing.servicesPillar(pillarSlug)}/${tradeSlug}`,
   },
   dashboard: {
     root: '/dashboard',
     /** @deprecated Use dashboard.pipeline(pipelineKey) instead */
-    pipelines: (options?: UrlOptions) => generateUrl('/dashboard/pipeline/fresh', options),
-    pipeline: (pipeline: string = 'fresh', options?: UrlOptions) => generateUrl(`/dashboard/pipeline/${pipeline}`, options),
+    pipelines: () => '/dashboard/pipeline/fresh',
+    pipeline: (pipeline: string = 'fresh') => `/dashboard/pipeline/${pipeline}`,
     meetings: {
-      root: (options?: UrlOptions) => generateUrl('/dashboard/meetings', options),
-      byId: (id: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.meetings.root()}/${id}`, options),
+      root: () => '/dashboard/meetings',
+      byId: (id: string) => `${APP_ROOTS.dashboard.meetings.root()}/${id}`,
     },
     proposals: {
-      root: (options?: UrlOptions) => generateUrl('/dashboard/proposals', options),
-      new: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.proposals.root()}/new`, options),
-      byId: (id: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.proposals.root()}/${id}`, options),
+      root: () => '/dashboard/proposals',
+      new: () => `${APP_ROOTS.dashboard.proposals.root()}/new`,
+      byId: (id: string) => `${APP_ROOTS.dashboard.proposals.root()}/${id}`,
     },
     projects: {
-      root: (options?: UrlOptions) => generateUrl('/dashboard/projects', options),
-      new: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.projects.root()}/new`, options),
-      byId: (id: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.projects.root()}/${id}`, options),
+      root: () => '/dashboard/projects',
+      new: () => `${APP_ROOTS.dashboard.projects.root()}/new`,
+      byId: (id: string) => `${APP_ROOTS.dashboard.projects.root()}/${id}`,
     },
     customers: {
-      root: (options?: UrlOptions) => generateUrl('/dashboard/customers', options),
+      root: () => '/dashboard/customers',
     },
-    schedule: (options?: UrlOptions) => generateUrl('/dashboard/schedule', options),
+    schedule: () => '/dashboard/schedule',
     /**
      * Schedule URL with the nuqs params that trigger scroll + highlight in
      * use-schedule-highlight.ts. Single source of truth — used by the
@@ -90,33 +80,31 @@ const APP_ROOTS = {
     scheduleWithMeetingHighlight: (
       meetingId: string,
       scheduledFor?: string | null,
-      options?: UrlOptions,
     ) => {
       const search = new URLSearchParams({ highlightMeeting: meetingId })
       if (scheduledFor) {
         search.set('highlightDate', scheduledFor)
       }
-      return generateUrl(`/dashboard/schedule?${search.toString()}`, options)
+      return `/dashboard/schedule?${search.toString()}`
     },
-    settings: (options?: UrlOptions) => generateUrl('/dashboard/settings', options),
-    leadSources: (options?: UrlOptions) => generateUrl('/dashboard/lead-sources', options),
-    campaigns: (options?: UrlOptions) => generateUrl('/dashboard/campaigns', options),
-    team: (options?: UrlOptions) => generateUrl('/dashboard/team', options),
-    analytics: (options?: UrlOptions) => generateUrl('/dashboard/analytics', options),
+    settings: () => '/dashboard/settings',
+    leadSources: () => '/dashboard/lead-sources',
+    campaigns: () => '/dashboard/campaigns',
+    team: () => '/dashboard/team',
+    analytics: () => '/dashboard/analytics',
   },
   public: {
-    intake: (options?: UrlOptions) => generateUrl('/intake', options),
-    proposals: (options?: UrlOptions) => generateUrl('/proposal-flow', options),
-    proposalReview: (id: string, { token, ...options }: UrlOptions & { token?: string } = {}) =>
-      generateUrl(`${APP_ROOTS.public.proposals()}/proposal/${id}${token ? `?token=${token}` : ''}`, options),
+    intake: () => '/intake',
+    proposals: () => '/proposal-flow',
+    proposalReview: (id: string, token?: string) =>
+      `${APP_ROOTS.public.proposals()}/proposal/${id}${token ? `?token=${token}` : ''}`,
   },
   funnels: {
     // Internal rewrite TARGET — middleware rewrites a funnel host to this path.
-    trade: (slug: FunnelSlug, options?: UrlOptions) => generateUrl(`/funnels/${slug}`, options),
+    trade: (slug: FunnelSlug) => `/funnels/${slug}`,
   },
 } as const
 
 export const ROOTS = {
   ...APP_ROOTS,
-  generateUrl,
 }

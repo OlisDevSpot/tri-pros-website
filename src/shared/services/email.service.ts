@@ -59,7 +59,7 @@ function createEmailService() {
       replyTo?: string
       repName?: string
     }) => {
-      const proposalUrl = publicUrl(`${ROOTS.public.proposalReview(params.proposalId, { token: params.token })}&utm_source=email`)
+      const proposalUrl = publicUrl(`${ROOTS.public.proposalReview(params.proposalId, params.token)}&utm_source=email`)
       const firstName = params.customerName.split(' ')[0] ?? params.customerName
 
       const { data, error } = await resendClient.emails.send({
