@@ -77,6 +77,36 @@ export function toDialString(input: string | null | undefined): string {
   return toE164(input) ?? input?.trim() ?? ''
 }
 
+/**
+ * Cheap, FREE plausibility gate — runs BEFORE any paid line-type lookup so
+ * obvious junk never costs money. Rejects non-US-10-digit input, all-same-digit,
+ * trivial sequential runs, NANP-illegal area/exchange (must start 2-9), and the
+ * reserved fictional 555-01xx range. `true` means "worth a paid lookup", NOT
+ * "guaranteed real".
+ */
+export function isPlausibleUsPhone(input: string | null | undefined): boolean {
+  const n = toNationalDigits(input)
+  if (!n) {
+    return false
+  }
+  if (/^(\d)\1{9}$/.test(n)) {
+    return false
+  }
+  if (n === '1234567890' || n === '0123456789' || n === '9876543210') {
+    return false
+  }
+  const area = n.slice(0, 3)
+  const exchange = n.slice(3, 6)
+  const subscriber = n.slice(6)
+  if (area[0] === '0' || area[0] === '1' || exchange[0] === '0' || exchange[0] === '1') {
+    return false
+  }
+  if (exchange === '555' && subscriber.startsWith('01')) {
+    return false
+  }
+  return true
+}
+
 // ─── Zod ───────────────────────────────────────────────────────────────────
 
 /**
