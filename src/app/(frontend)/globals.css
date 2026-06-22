@@ -119,19 +119,17 @@
   --cred-ink: #4a443c; /* credential text */
   --cred-gap: 24px;
   --radius-chip: 3px;
-  --shadow-card: 0 44px 64px -42px rgb(60 40 15 / 0.5);
-
-  /* Visible elevation scale (ported from the old .funnel-light). The shared
-     :root scale is 0.05 opacity — invisible on light cards — so re-define at a
-     real ~0.08–0.12 so a plain `shadow-sm` reads as an actual card across every
-     funnel/marketing surface. */
-  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
-  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.08), 0 1px 2px -1px oklch(0 0 0 / 0.06);
-  --shadow: 0 1px 3px 0 oklch(0 0 0 / 0.08), 0 1px 2px -1px oklch(0 0 0 / 0.06);
-  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.09), 0 2px 4px -2px oklch(0 0 0 / 0.07);
-  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.1), 0 4px 6px -4px oklch(0 0 0 / 0.08);
-  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.12), 0 8px 10px -6px oklch(0 0 0 / 0.09);
+  /* Layered elevation: a black drop for honest depth + a VERY subtle brand-blue
+     accent layer underneath, so shadows read as "ours" (a faint blue lift)
+     rather than flat grey. Both layers scale together up the ramp. */
+  --shadow-card: 0 40px 60px -40px oklch(0 0 0 / 0.42), 0 18px 44px -24px rgb(3 175 237 / 0.16);
+  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.05);
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.06);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.09), 0 1px 3px -1px rgb(3 175 237 / 0.06);
+  --shadow: 0 1px 3px 0 oklch(0 0 0 / 0.09), 0 1px 3px -1px rgb(3 175 237 / 0.06);
+  --shadow-md: 0 4px 8px -2px oklch(0 0 0 / 0.1), 0 3px 10px -4px rgb(3 175 237 / 0.08);
+  --shadow-lg: 0 12px 20px -6px oklch(0 0 0 / 0.12), 0 8px 22px -8px rgb(3 175 237 / 0.1);
+  --shadow-xl: 0 24px 34px -8px oklch(0 0 0 / 0.14), 0 14px 32px -10px rgb(3 175 237 / 0.12);
 
   /* motion */
   --ease-brand: cubic-bezier(0.32, 0.72, 0, 1);

@@ -44,7 +44,7 @@ export function FunnelHero({ content, onCta, ref, scroll }: {
   scroll?: HeroScroll | null
 }) {
   return (
-    <section ref={ref} className="border-border relative isolate overflow-hidden rounded-xl border shadow-[0_24px_60px_-15px_rgb(15_23_42/0.35)]">
+    <section ref={ref} className="border-border relative isolate overflow-hidden rounded-xl border shadow-[0_28px_60px_-18px_rgb(0_0_0/0.3),0_14px_36px_-12px_rgb(3_175_237/0.16)]">
       {content.media
         ? (
             <Image
@@ -57,13 +57,14 @@ export function FunnelHero({ content, onCta, ref, scroll }: {
             />
           )
         : null}
-      {/* Knockdown: a dark tint over the photo (strongest toward the bottom,
-          where the photo shows most) tames the bright kitchen so it reads as a
-          richer backdrop instead of a glare that washes out the copy. */}
-      <div className="absolute inset-0 -z-10 bg-linear-to-b from-transparent to-foreground/25" />
-      {/* Legibility scrim: opaque at top (logo/headline), opening up toward the
-          bottom so the (now-tamed) kitchen photo shows behind the CTA + padding. */}
-      <div className="absolute inset-0 -z-10 bg-linear-to-b from-card via-card/92 to-card/50" />
+      {/* Knockdown: a NEUTRAL dark tint (not warm ink — warm ink over the photo
+          was producing a muddy yellow-grey) toward the bottom, taming the bright
+          kitchen so it reads as a richer backdrop instead of glare. */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-b from-transparent to-black/20" />
+      {/* Legibility scrim: solid cream behind the logo/headline, fading to FULLY
+          transparent so the lower photo shows clean — no half-cream mid-zone
+          (that half-opacity cream over the photo was the muddy band). */}
+      <div className="absolute inset-0 -z-10 bg-linear-to-b from-card via-card/80 to-transparent" />
       <div className="flex flex-col gap-6 px-6 py-12 sm:px-10 sm:py-14">
         <motion.div
           style={scroll ? { opacity: scroll.logoOpacity, scale: scroll.logoScale } : undefined}
