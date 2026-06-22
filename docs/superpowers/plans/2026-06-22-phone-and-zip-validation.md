@@ -661,7 +661,7 @@ git commit -m "feat(zip): gate classifyZip on real service area"
 ### Task 12: Out-of-area copy + funnel smoke
 
 **Files:**
-- Modify: `src/shared/domains/funnels/ui/steps/zip-step.tsx` (only the `ZIP_STEP.content.outOfAreaLabel` string — no logic change; the out-of-area UX is already wired). NOTE: this file was formerly `location-step.tsx` — the view export is still `LocationStepView`.
+- Modify: `src/shared/domains/funnels/ui/steps/zip-step.tsx` (only the `ZIP_STEP.content.outOfAreaLabel` string — no logic change; the out-of-area UX is already wired). NOTE: the step view export is `ZipStepView` and the step kind is `'zip'` (renamed from `location`/`LocationStepView`).
 
 **Interfaces:** none.
 
