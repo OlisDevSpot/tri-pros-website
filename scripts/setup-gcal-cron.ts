@@ -30,10 +30,10 @@
  * URL resolution:
  *   - NODE_ENV=production → uses `PROD_BASE_URL` from roots.ts (the
  *     canonical constant derived from `APP_HOSTS.prod[0]`). Bypasses
- *     getPublicBaseUrl() entirely so this script can be run from a dev
+ *     publicUrl() entirely so this script can be run from a dev
  *     box (where NGROK_URL or a dev NEXT_PUBLIC_BASE_URL would otherwise
  *     leak in) and still target the real prod endpoint.
- *   - NODE_ENV=development → uses `getPublicBaseUrl()`, which returns
+ *   - NODE_ENV=development → uses `publicUrl()`, which returns
  *     `NGROK_URL ?? NEXT_PUBLIC_BASE_URL`. The dev script runs through
  *     ngrok so QStash can deliver to the local app.
  *
@@ -52,7 +52,7 @@
  */
 import './lib/load-env'
 
-import { getPublicBaseUrl } from '@/shared/config/public-url'
+import { publicUrl } from '@/shared/config/public-url'
 import { PROD_BASE_URL } from '@/shared/config/roots'
 import { qstashClient } from '@/shared/services/providers/upstash/qstash-client'
 
@@ -83,9 +83,9 @@ async function main() {
   const force = process.argv.includes('--force')
 
   const isProd = process.env.NODE_ENV === 'production'
-  // Prod path skips getPublicBaseUrl() so dev-box invocations don't pick up
+  // Prod path skips publicUrl() so dev-box invocations don't pick up
   // NGROK_URL or a dev-shaped NEXT_PUBLIC_BASE_URL from .env.local.
-  const baseUrl = isProd ? PROD_BASE_URL : getPublicBaseUrl()
+  const baseUrl = isProd ? PROD_BASE_URL : publicUrl()
   const destination = `${baseUrl}/api/qstash-jobs?job=${JOB_KEY}`
 
   console.log('--- SETUP GCAL RENEWAL CRON ---')

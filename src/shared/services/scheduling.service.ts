@@ -1,6 +1,6 @@
 import type { AccountRow } from '@/shared/entities/accounts/dal/server/google-calendar'
 
-import { getPublicBaseUrl } from '@/shared/config/public-url'
+import { publicUrl } from '@/shared/config/public-url'
 import env from '@/shared/config/server-env'
 import { gcalSyncableActivityTypes } from '@/shared/constants/enums'
 import {
@@ -316,7 +316,7 @@ function createSchedulingService() {
       }
 
       // Register webhook for real-time push notifications
-      const webhookUrl = `${getPublicBaseUrl()}/api/google-calendar/webhook`
+      const webhookUrl = publicUrl('/api/google-calendar/webhook')
       const channelId = crypto.randomUUID()
       const watchResponse = await googleCalendarClient.watchEvents(
         auth.accessToken,
@@ -534,7 +534,7 @@ function createSchedulingService() {
         await googleCalendarClient.stopWatch(auth.accessToken, acct.gcalChannelId, '').catch(() => {})
       }
 
-      const webhookUrl = `${getPublicBaseUrl()}/api/google-calendar/webhook`
+      const webhookUrl = publicUrl('/api/google-calendar/webhook')
       const newChannelId = crypto.randomUUID()
       const watchResponse = await googleCalendarClient.watchEvents(
         auth.accessToken,

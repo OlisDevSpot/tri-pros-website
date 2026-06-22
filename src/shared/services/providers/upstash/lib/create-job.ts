@@ -1,6 +1,6 @@
 import type { PublishRequest } from '@upstash/qstash'
 import type { JobHandler } from '../types'
-import { getPublicBaseUrl } from '@/shared/config/public-url'
+import { publicUrl } from '@/shared/config/public-url'
 import { qstashClient } from '../qstash-client'
 
 type DispatchOptions<T> = Omit<
@@ -16,7 +16,7 @@ export function createJob<T>(key: string, handler: JobHandler<T>) {
       ...options,
       body: payload,
       method: 'POST',
-      url: `${getPublicBaseUrl()}/api/qstash-jobs?job=${key}`,
+      url: publicUrl(`/api/qstash-jobs?job=${key}`),
     })
 
   return {

@@ -1,4 +1,4 @@
-import { getPublicBaseUrl } from '@/shared/config/public-url'
+import { publicUrl } from '@/shared/config/public-url'
 import { DECLARATIVE_WEB_PUSH_FORMAT } from './constants'
 
 export interface PushPayloadInput {
@@ -78,10 +78,10 @@ export function buildPushPayload(input: PushPayloadInput): DeclarativeWebPushPay
 // Resolve `/customers/123` -> `https://app.example.com/customers/123`. iOS
 // only routes the deep link into the standalone PWA when the navigate URL
 // matches the origin the PWA was installed FROM, which is why we resolve
-// against `getPublicBaseUrl()` (NGROK_URL in dev, prod URL in prod).
+// against `publicUrl()` (NGROK_URL in dev, prod URL in prod).
 function resolveNavigateUrl(navigate: string): string {
   if (/^https?:\/\//i.test(navigate)) {
     return navigate
   }
-  return new URL(navigate, getPublicBaseUrl()).href
+  return new URL(navigate, publicUrl()).href
 }

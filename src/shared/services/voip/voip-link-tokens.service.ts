@@ -82,7 +82,7 @@ function createVoipLinkTokensService() {
      * Mint a fresh token row. Validates the payload against the per-type
      * Zod first; rejects with `precondition-failed` if mismatched. Returns
      * the random token value so the caller can compose the customer URL
-     * (`${getPublicBaseUrl()}/api/voip/links/${token}`).
+     * (`${publicUrl('/api/voip/links/${token}')}`).
      */
     mintToken: async (
       ctx: ScopedContext,
