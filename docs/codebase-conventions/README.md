@@ -21,6 +21,7 @@ If you can't find a rule here, check the most-recent ADR first — newer archite
 | [webhook-routes.md](./webhook-routes.md) | Async-vs-sync split for inbound HTTP. One webhook route per provider; sync lookups under verb namespaces. |
 | [phone-numbers.md](./phone-numbers.md) | Canonical 10-digit storage, `phone.ts` helpers, normalize-at-write-boundary, E.164 only at external calls |
 | [urls-and-origins.md](./urls-and-origins.md) | Paths from `ROOTS.*`, client absolute URLs via `mainSiteUrl`, server via `publicUrl`, subdomain URLs via `ROOTS.subdomainUrl`; never hardcode origins or path segments |
+| [Design System](../design-system/DESIGN.md) | app-wide tokens, anti-slop rules, decor + trust patterns |
 
 ---
 

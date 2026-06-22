@@ -32,6 +32,7 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 - `docs/adr/` — architectural decisions ("why we chose X")
 - `docs/how-to/` — step-by-step recipes (start with `add-an-entity.md` for the entity workflow)
 - `docs/codebase-conventions/` — cross-cutting engineering rules (DAL signatures, schema, enums, tRPC, services, query toolkit, frontend stack, environment)
+- `docs/design-system/` — design tokens, anti-slop DESIGN.md + checklist
 
 **Business rules — what the code means**
 - `src/shared/entities/<entity>/DOCS.md` — per-entity invariants, derivations, gates (proposals/ is the canonical example)
