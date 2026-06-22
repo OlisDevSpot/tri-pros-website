@@ -12,10 +12,10 @@ import {
   Text,
 } from '@react-email/components'
 import * as React from 'react'
-import { ROOTS } from '@/shared/config/roots'
+import { publicUrl } from '@/shared/config/public-url'
 import { emailStyles as s } from '@/shared/services/providers/resend/lib/email-styles'
 
-const base = ROOTS.generateUrl('', { absolute: true })
+const base = publicUrl()
 const logoUrl = `${base}/company/logo/logo-light-right.jpg`
 
 export interface CustomerConfirmationEmailProps {

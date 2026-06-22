@@ -10,6 +10,7 @@ import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { PROPOSAL_ACTIONS } from '@/shared/entities/proposals/constants/actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { copyToClipboard } from '@/shared/lib/clipboard'
+import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { useTRPC } from '@/trpc/helpers'
 
 interface ProposalEntity {
@@ -18,7 +19,7 @@ interface ProposalEntity {
 }
 
 function buildShareableUrl(proposalId: string, token: string | null, utmSource: 'email' | 'sms'): string {
-  const base = `${ROOTS.public.proposals({ absolute: true })}/proposal/${proposalId}`
+  const base = mainSiteUrl(ROOTS.public.proposalReview(proposalId))
   const params = new URLSearchParams()
   if (token) {
     params.set('token', token)

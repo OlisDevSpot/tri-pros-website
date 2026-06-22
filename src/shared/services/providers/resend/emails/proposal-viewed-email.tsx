@@ -10,7 +10,7 @@ import {
   Section,
   Text,
 } from '@react-email/components'
-import { ROOTS } from '@/shared/config/roots'
+import { publicUrl } from '@/shared/config/public-url'
 
 const styles = {
   body: {
@@ -94,7 +94,7 @@ interface Props {
   proposalId: string
 }
 
-const base = ROOTS.generateUrl('', { absolute: true })
+const base = publicUrl()
 
 export default function ProposalViewedEmail({
   customerName,

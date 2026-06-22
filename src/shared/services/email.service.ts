@@ -1,4 +1,5 @@
 import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
+import { publicUrl } from '@/shared/config/public-url'
 import { ROOTS } from '@/shared/config/roots'
 import { resendClient } from '@/shared/services/providers/resend/client'
 import { RESEND_FROM, RESEND_LEAD_INBOX } from '@/shared/services/providers/resend/constants'
@@ -58,7 +59,7 @@ function createEmailService() {
       replyTo?: string
       repName?: string
     }) => {
-      const proposalUrl = `${ROOTS.public.proposals({ absolute: true })}/proposal/${params.proposalId}?token=${params.token}&utm_source=email`
+      const proposalUrl = publicUrl(`${ROOTS.public.proposalReview(params.proposalId, { token: params.token })}&utm_source=email`)
       const firstName = params.customerName.split(' ')[0] ?? params.customerName
 
       const { data, error } = await resendClient.emails.send({

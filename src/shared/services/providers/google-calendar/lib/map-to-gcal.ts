@@ -1,5 +1,6 @@
 import type { GCalEventInput } from '../types'
 
+import { publicUrl } from '@/shared/config/public-url'
 import { ROOTS } from '@/shared/config/roots'
 import { GCAL_ACTIVITY_COLORS, GCAL_MEETING_COLORS } from '@/shared/constants/gcal-colors'
 import { formatPhone } from '@/shared/lib/phone'
@@ -83,7 +84,7 @@ function buildMeetingDescription(meeting: MeetingForGCal): string {
 
   // Schedule deep link — nuqs params trigger scroll + highlight in schedule view
   if (meeting.scheduledFor) {
-    const scheduleUrl = ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, meeting.scheduledFor, { absolute: true })
+    const scheduleUrl = publicUrl(ROOTS.dashboard.scheduleWithMeetingHighlight(meeting.id, meeting.scheduledFor))
     sections.push(`🔗 View in Schedule: ${scheduleUrl}`)
   }
 

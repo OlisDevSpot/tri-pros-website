@@ -12,7 +12,7 @@ import {
   Text,
 } from '@react-email/components'
 import { Fragment } from 'react'
-import { ROOTS } from '@/shared/config/roots'
+import { publicUrl } from '@/shared/config/public-url'
 
 const styles = {
   body: {
@@ -121,7 +121,7 @@ interface Props {
   repMessage?: string
 }
 
-const base = ROOTS.generateUrl('', { absolute: true })
+const base = publicUrl()
 
 export default function ProposalEmail({
   proposalUrl,

@@ -14,7 +14,7 @@ import {
   Text,
 } from '@react-email/components'
 import * as React from 'react'
-import { ROOTS } from '@/shared/config/roots'
+import { publicUrl } from '@/shared/config/public-url'
 import { formatPhone, toDialString } from '@/shared/lib/phone'
 import { emailStyles as s } from '@/shared/services/providers/resend/lib/email-styles'
 import { formatProjectType } from '@/shared/services/providers/resend/lib/format-project-type'
@@ -25,7 +25,7 @@ interface EmailTemplateProps {
   data: InputData
 }
 
-const base = ROOTS.generateUrl('', { absolute: true })
+const base = publicUrl()
 const logoUrl = `${base}/company/logo/logo-light-right.jpg`
 
 export function ProjectEmailTemplate({ data }: EmailTemplateProps) {
