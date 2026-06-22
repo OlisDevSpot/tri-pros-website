@@ -56,3 +56,6 @@ next-env.d.ts
 
 # Local MCP overrides (holds project-scoped API tokens — never commit)
 .mcp.local.json
+
+# ZIP→county build input for generate-service-area-zips.ts (not runtime data)
+scripts/data/
