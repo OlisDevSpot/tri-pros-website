@@ -1,5 +1,7 @@
 # Funnel UI fixes — carousel URLs + question width
 
+> **Status (updated 2026-06-22):** Fix 2 (question max-width) shipped. **Fix 1 (carousel URL) is SUPERSEDED** by `2026-06-22-url-origin-routing-system-design.md` — the relative-path fix below is insufficient on a funnel subdomain; the carousel link is now part of the unified URL/origin routing system.
+
 **Date:** 2026-06-22
 **Scope:** Two surgical UI fixes to the funnel engine (`src/shared/domains/funnels/`), verified against the `/funnels/kitchens` route. No behavior changes beyond the two below.
 
