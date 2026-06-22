@@ -94,9 +94,9 @@
   color-scheme: light;
 
   /* semantic (shadcn) — warm-concrete neutrals + brand-blue accent */
-  --background: #e9e2d6; /* sand */
+  --background: #faf7f1; /* warm off-white page — light enough for crisp dark text */
   --foreground: #2a2520; /* warm ink */
-  --card: #f4efe6; /* panel */
+  --card: #f4efe6; /* warm panel — sits a touch deeper than the page (the loved callout tone) */
   --card-foreground: #2a2520;
   --popover: #f4efe6;
   --popover-foreground: #2a2520;

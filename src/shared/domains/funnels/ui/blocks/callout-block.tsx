@@ -12,7 +12,7 @@ import { CredentialStrip } from '@/shared/components/trust/credential-strip'
 export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: FunnelContext }) {
   return (
     <section className="bg-background relative w-full overflow-hidden py-10">
-      <div className="bg-card relative isolate mx-auto w-full max-w-140 overflow-hidden rounded-md px-9 py-9" style={{ boxShadow: 'var(--shadow-card)' }}>
+      <div className="bg-card relative isolate w-full overflow-hidden rounded-md px-9 py-9" style={{ boxShadow: 'var(--shadow-card)' }}>
         <Decor shape="arc" />
 
         <p className="font-sans text-[11.5px] font-bold tracking-[0.2em] uppercase" style={{ color: 'var(--accent-ink)' }}>
