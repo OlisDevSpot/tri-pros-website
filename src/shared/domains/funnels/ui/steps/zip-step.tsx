@@ -187,7 +187,7 @@ export const ZIP_STEP: ZipStep = {
     inputCta: 'Check my area',
     checkingLabel: 'Checking availability in {zip}…',
     qualifiesLabel: '✓ Great news — your area qualifies. Limited spots remain.',
-    outOfAreaLabel: 'We don\'t serve that area yet — double-check your ZIP.',
+    outOfAreaLabel: 'We don\'t serve your area yet — try a different ZIP.',
     notFoundLabel: 'We couldn\'t find that ZIP — double-check it.',
   },
 }
