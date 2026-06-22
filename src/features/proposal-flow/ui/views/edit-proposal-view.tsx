@@ -99,7 +99,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => {
         toast.success('Proposal updated')
-        router.push(`${ROOTS.public.proposals()}/proposal/${proposalId}`)
+        router.push(ROOTS.public.proposalReview(proposalId))
       },
       onError: error => toast.error(error.message),
     })
@@ -112,7 +112,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     })
   }
 
-  const viewHref = `${ROOTS.public.proposals()}/proposal/${proposalId}`
+  const viewHref = ROOTS.public.proposalReview(proposalId)
 
   return (
     <motion.div

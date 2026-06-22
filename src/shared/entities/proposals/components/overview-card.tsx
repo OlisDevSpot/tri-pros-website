@@ -85,7 +85,7 @@ function ProposalOverviewCardRoot({
       onView(proposal)
     }
     else {
-      window.open(`${ROOTS.public.proposals()}/proposal/${proposal.id}`, '_blank')
+      window.open(ROOTS.public.proposalReview(proposal.id), '_blank')
     }
   }, [proposal, onView])
 

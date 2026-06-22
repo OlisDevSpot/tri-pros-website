@@ -39,7 +39,7 @@ interface ProposalActionConfigsResult<T extends ProposalEntity> {
 }
 
 function defaultView(entity: { id: string }) {
-  window.open(`${ROOTS.public.proposals()}/proposal/${entity.id}`, '_blank')
+  window.open(ROOTS.public.proposalReview(entity.id), '_blank')
 }
 
 function defaultNavigate(entity: { id: string }) {

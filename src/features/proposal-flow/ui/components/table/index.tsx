@@ -54,7 +54,7 @@ export function PastProposalsTable() {
   )
 
   const handleView = useCallback((entity: ProposalRow) => {
-    window.open(`${ROOTS.public.proposals()}/proposal/${entity.id}`, '_blank')
+    window.open(ROOTS.public.proposalReview(entity.id), '_blank')
   }, [])
 
   const handleEdit = useCallback((entity: ProposalRow) => {
