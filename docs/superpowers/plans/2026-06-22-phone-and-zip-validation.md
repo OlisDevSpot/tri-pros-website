@@ -621,7 +621,7 @@ git commit -m "feat(zip): add isInServiceArea helper"
 
 **Interfaces:**
 - Consumes: `isInServiceArea` (Task 10).
-- Produces: `classifyZip(zip)` now returns real `'in-area' | 'out-of-area' | 'invalid-format'` (location-step already consumes it).
+- Produces: `classifyZip(zip)` now returns real `'in-area' | 'out-of-area' | 'invalid-format'` (the ZIP step view in `zip-step.tsx` already consumes it via `useLiveZipResolve`).
 
 - [ ] **Step 1: Add the import** (sorted — `@/shared/constants/...` sorts before `@/shared/domains/...`)
 
@@ -661,7 +661,7 @@ git commit -m "feat(zip): gate classifyZip on real service area"
 ### Task 12: Out-of-area copy + funnel smoke
 
 **Files:**
-- Modify: `src/shared/domains/funnels/ui/steps/location-step.tsx` (only the `ZIP_STEP.content.outOfAreaLabel` string — no logic change; the out-of-area UX is already wired)
+- Modify: `src/shared/domains/funnels/ui/steps/zip-step.tsx` (only the `ZIP_STEP.content.outOfAreaLabel` string — no logic change; the out-of-area UX is already wired). NOTE: this file was formerly `location-step.tsx` — the view export is still `LocationStepView`.
 
 **Interfaces:** none.
 
@@ -674,7 +674,7 @@ git commit -m "feat(zip): gate classifyZip on real service area"
 - [ ] **Step 2: Verify + manual smoke**
 
 ```bash
-pnpm tsc && pnpm lint src/shared/domains/funnels/ui/steps/location-step.tsx
+pnpm tsc && pnpm lint src/shared/domains/funnels/ui/steps/zip-step.tsx
 ```
 Manual smoke (`pnpm dev`, funnel ZIP step):
 - In-area ZIP (e.g. `91316` Encino) → city badge resolves, advance button enables.
@@ -684,7 +684,7 @@ Manual smoke (`pnpm dev`, funnel ZIP step):
 - [ ] **Step 3: Commit**
 
 ```bash
-git add src/shared/domains/funnels/ui/steps/location-step.tsx
+git add src/shared/domains/funnels/ui/steps/zip-step.tsx
 git commit -m "feat(zip): out-of-area copy on the funnel ZIP step"
 ```
 
