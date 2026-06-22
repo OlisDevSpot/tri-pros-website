@@ -11,4 +11,4 @@ Every addressable route has one builder. Builders derive from their parent, so r
 - Decision: if a reachable link is built during SSR, it's a server concern → `publicUrl`.
 
 ## Subdomains
-Registry: `SUBDOMAIN_ROUTES` (label → rewrite path) in `subdomains.ts`; `SUBDOMAIN_LABELS` is its key set. Middleware adds a label (rewrite); `mainSiteUrl` removes one (strip to apex). Outbound subdomain URLs: `ROOTS.subdomainUrl(label)`. Funnels and voip are both just labels.
+Routing is generic: the middleware rewrites any `<label>.<app-apex>` host to `/funnels/<label>` (the page's `isFunnelSlug()` guard 404s unknown labels), so there is no label→path registry to maintain. `SUBDOMAIN_LABELS` (`subdomains.ts`, = `FUNNEL_SLUGS`) is used only by `mainSiteUrl` to strip a funnel label back to the apex. Middleware adds a label (rewrite); `mainSiteUrl` removes one (strip to apex). Outbound subdomain URLs: `ROOTS.subdomainUrl(label)` — currently forward-looking; funnels are reached via subdomain rewrite, and future Meta/VoIP links will use it. See `subdomain-routing.md` for the full dispatch rule.
