@@ -5,10 +5,9 @@ import z from 'zod'
 
 import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { evaluatePhoneGate } from '@/shared/domains/funnels/lib/evaluate-phone-gate'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
-import { RestException, twilioClient } from '@/shared/services/providers/twilio/client'
+import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
 
 import { baseProcedure, createTRPCRouter } from '../init'
 import { clientIp } from '../lib/client-ip'
@@ -42,27 +41,7 @@ const addressRatelimit = new Ratelimit({
   prefix: 'funnel:address',
 })
 
-// Global paid-lookup ceiling — backstop against IP rotation across many real
-// IPs. Fail-open on exceed so legit leads are never dropped while cost is capped.
-const lookupCeiling = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(300, '1 h'),
-  prefix: 'funnel:lookup-ceiling',
-  ephemeralCache: new Map(),
-})
-
 const e164 = z.string().regex(/^\+1\d{10}$/, 'Expected a US E.164 number')
-
-const LOOKUP_TIMEOUT_MS = 5000
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error('phone lookup timed out')), ms)
-    }),
-  ])
-}
 
 export const funnelsRouter = createTRPCRouter({
   // Public UX check — the PII step calls this (debounced) to surface the
@@ -76,24 +55,7 @@ export const funnelsRouter = createTRPCRouter({
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
-
-      const ceiling = await lookupCeiling.limit('global')
-      if (!ceiling.success) {
-        // Global paid-lookup cap hit (abuse backstop) — skip the paid call and
-        // return the indeterminate result; the client gate treats it as pass.
-        return { valid: true, lineType: null, carrierName: null, errorCode: -1 }
-      }
-
-      try {
-        return await withTimeout(twilioClient.lookupPhoneNumber(input.phone), LOOKUP_TIMEOUT_MS)
-      }
-      catch (err) {
-        if (err instanceof RestException || err instanceof Error) {
-          // Treat as indeterminate — the client gate will fail open.
-          return { valid: true, lineType: null, carrierName: null, errorCode: -1 }
-        }
-        throw err
-      }
+      return validatePhoneLine(input.phone, 'mobile-only')
     }),
 
   // Server-authoritative submit: hard gate (fail-open on outage) → ingest.
@@ -114,22 +76,16 @@ export const funnelsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
 
-      // Authoritative lookup; a transport error, timeout, or global ceiling hit
-      // fails OPEN (never drop a lead). ceiling not ok → lookup stays null →
-      // evaluatePhoneGate(null) → fail-open 'unverified' → lead still created.
-      let lookup = null
-      const ceiling = await lookupCeiling.limit('global')
-      if (ceiling.success) {
-        try {
-          lookup = await withTimeout(twilioClient.lookupPhoneNumber(input.phone), LOOKUP_TIMEOUT_MS)
-        }
-        catch {
-          lookup = null
-        }
-      }
-      const verdict = evaluatePhoneGate(lookup)
+      // Authoritative mobile-only gate. Fail-open inside validatePhoneLine — a
+      // Twilio outage / ceiling / timeout never drops a lead.
+      const verdict = await validatePhoneLine(input.phone, 'mobile-only')
       if (!verdict.ok) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'That phone number doesn\'t look valid — please double-check it.' })
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: verdict.blockedReason === 'non-mobile'
+            ? 'Please use a mobile number only.'
+            : 'That phone number doesn\'t look valid — please double-check it.',
+        })
       }
 
       const result = await customerIntakeService.ingestLead(SYSTEM_CONTEXT, {
@@ -146,7 +102,7 @@ export const funnelsRouter = createTRPCRouter({
         leadMeta: {
           ...input.leadMetaJSON,
           phoneVerification: {
-            status: verdict.status,
+            status: verdict.status === 'unverified-line' ? 'unverified' : 'verified',
             lineType: verdict.lineType,
             carrierName: verdict.carrierName,
           },
