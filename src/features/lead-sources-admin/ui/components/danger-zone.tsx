@@ -15,6 +15,7 @@ import {
 } from '@/shared/components/ui/dialog'
 import { Input } from '@/shared/components/ui/input'
 import { Switch } from '@/shared/components/ui/switch'
+import { ROOTS } from '@/shared/config/roots'
 import { useLeadSourceActions } from '@/shared/entities/lead-sources/hooks/use-lead-source-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
@@ -49,7 +50,7 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
       return
     }
     archiveLeadSource.mutate({ id: leadSourceId }, {
-      onSuccess: () => router.push('/dashboard/lead-sources'),
+      onSuccess: () => router.push(ROOTS.dashboard.leadSources()),
     })
   }
 
@@ -57,7 +58,7 @@ export function DangerZone({ leadSourceId, slug, isActive, customerCount }: Dang
     deleteLeadSource.mutate({ id: leadSourceId }, {
       onSuccess: () => {
         setDeleteOpen(false)
-        router.push('/dashboard/lead-sources')
+        router.push(ROOTS.dashboard.leadSources())
       },
     })
   }

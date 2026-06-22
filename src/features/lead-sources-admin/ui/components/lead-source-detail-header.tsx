@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
+import { ROOTS } from '@/shared/config/roots'
 import { useLeadSourceActions } from '@/shared/entities/lead-sources/hooks/use-lead-source-actions'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { cn } from '@/shared/lib/utils'
@@ -45,7 +46,7 @@ export function LeadSourceDetailHeader({ source, onJumpToSettings, onAddCustomer
       return
     }
     archiveLeadSource.mutate({ id: source.id }, {
-      onSuccess: () => router.push('/dashboard/lead-sources'),
+      onSuccess: () => router.push(ROOTS.dashboard.leadSources()),
     })
   }
 
