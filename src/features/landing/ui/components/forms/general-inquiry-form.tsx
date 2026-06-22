@@ -17,6 +17,7 @@ import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { ROOTS } from '@/shared/config/roots'
 import { contactInfo } from '@/shared/constants/company'
 import { generalInquiryDefaultValues as defaultValues, generalInquiryFormSchema } from '@/shared/entities/landing/schemas'
 import { useTRPC } from '@/trpc/helpers'
@@ -250,7 +251,7 @@ export function GeneralInquiryForm() {
                 By submitting, you agree to our
                 {' '}
                 <Link
-                  href="/privacy"
+                  href={ROOTS.landing.privacy()}
                   className="underline underline-offset-2 transition-colors hover:text-foreground"
                 >
                   Privacy Policy
@@ -259,7 +260,7 @@ export function GeneralInquiryForm() {
                 and
                 {' '}
                 <Link
-                  href="/terms"
+                  href={ROOTS.landing.terms()}
                   className="underline underline-offset-2 transition-colors hover:text-foreground"
                 >
                   Terms of Service

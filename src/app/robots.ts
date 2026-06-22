@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           '/admin',
           '/api',
-          '/auth-flow',
+          '/auth',
           '/dashboard',
           '/intake',
           '/proposal-flow',

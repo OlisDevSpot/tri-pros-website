@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ROOTS } from '@/shared/config/roots'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
@@ -29,7 +30,7 @@ export default function TermsOfServicePage() {
           </p>
           <p>
             {'By accessing or using the Services, by creating an account, or by submitting a contact, estimate, or scheduling request through the Services, you agree to these Terms and to our '}
-            <Link href="/privacy">Privacy Policy</Link>
+            <Link href={ROOTS.landing.privacy()}>Privacy Policy</Link>
             . If you do not agree, do not use the Services.
           </p>
         </section>
@@ -143,7 +144,7 @@ export default function TermsOfServicePage() {
           </ul>
           <p>
             {'See our '}
-            <Link href="/privacy">Privacy Policy</Link>
+            <Link href={ROOTS.landing.privacy()}>Privacy Policy</Link>
             {' for how we handle the phone number and other information you provide.'}
           </p>
         </section>

@@ -107,7 +107,7 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
           </a>
         </Button>
         <Button asChild variant="outline" size="lg" className="h-14 text-base sm:w-auto">
-          <a href={mainSiteUrl(ROOTS.landing.portfolio())} target="_blank" rel="noopener noreferrer">See our work</a>
+          <a href={mainSiteUrl(ROOTS.landing.portfolioProjects())} target="_blank" rel="noopener noreferrer">See our work</a>
         </Button>
       </motion.div>
 

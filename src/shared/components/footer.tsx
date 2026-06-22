@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react'
 import Link from 'next/link'
+import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { footerData } from '@/shared/constants/footer'
 import { LogoLink } from './logo'
@@ -131,13 +132,13 @@ export default function Footer() {
             </div>
             <div className="flex space-x-6 text-sm">
               <Link
-                href="/privacy"
+                href={ROOTS.landing.privacy()}
                 className="text-foreground/70 hover:text-secondary transition-colors duration-200"
               >
                 Privacy Policy
               </Link>
               <Link
-                href="/terms"
+                href={ROOTS.landing.terms()}
                 className="text-foreground/70 hover:text-secondary transition-colors duration-200"
               >
                 Terms of Service

@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
+import { ROOTS } from '@/shared/config/roots'
 import { contactInfo } from '@/shared/constants/company'
 import { services } from '@/shared/constants/company/services'
 import { scheduleConsultationDefaultValues as defaultValues, scheduleConsultationFormSchema } from '@/shared/entities/landing/schemas'
@@ -342,7 +343,7 @@ export function ScheduleConsultationForm() {
               By submitting, you agree to our
               {' '}
               <Link
-                href="/privacy"
+                href={ROOTS.landing.privacy()}
                 className="underline underline-offset-2 transition-colors hover:text-foreground"
               >
                 Privacy Policy
@@ -351,7 +352,7 @@ export function ScheduleConsultationForm() {
               and
               {' '}
               <Link
-                href="/terms"
+                href={ROOTS.landing.terms()}
                 className="underline underline-offset-2 transition-colors hover:text-foreground"
               >
                 Terms of Service

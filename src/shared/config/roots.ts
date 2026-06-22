@@ -30,21 +30,29 @@ export const APP_HOSTS = {
   tunnel: ['destined-emu-bold.ngrok-free.app'],
 } as const
 
+/**
+ * Path prefix for the portfolio section. NOT a routable page — there is no
+ * `/portfolio` route, only `/portfolio/projects` and `/portfolio/testimonials`.
+ * Compose the `portfolio*` builders from this; never use it directly as an href.
+ */
+const PORTFOLIO_BASE = '/portfolio'
+
 const APP_ROOTS = {
-  authFlow: () => '/auth-flow',
   subdomainUrl: (label: string, { rootDomain = APP_HOSTS.prod[0], protocol = 'https' }: { rootDomain?: string, protocol?: string } = {}) =>
     `${protocol}://${label}.${rootDomain}`,
   landing: {
     about: () => '/about',
     blog: () => '/blog',
-    communityCommitment: () => '/community/commitment',
-    communityJoin: () => '/community/join',
+    community: () => '/community',
+    communityCommitment: () => `${APP_ROOTS.landing.community()}/commitment`,
+    communityJoin: () => `${APP_ROOTS.landing.community()}/join`,
     contact: () => '/contact',
     experience: () => '/experience',
-    portfolio: () => '/portfolio',
-    portfolioProjects: () => `${APP_ROOTS.landing.portfolio()}/projects`,
+    portfolioProjects: () => `${PORTFOLIO_BASE}/projects`,
     portfolioProject: (accessor: string) => `${APP_ROOTS.landing.portfolioProjects()}/${accessor}`,
-    portfolioTestimonials: () => `${APP_ROOTS.landing.portfolio()}/testimonials`,
+    portfolioTestimonials: () => `${PORTFOLIO_BASE}/testimonials`,
+    privacy: () => '/privacy',
+    terms: () => '/terms',
     services: () => '/services',
     servicesPillar: (pillarSlug: ServiceSlug) => `${APP_ROOTS.landing.services()}/${pillarSlug}`,
     servicesTrade: (pillarSlug: ServiceSlug, tradeSlug: string) => `${APP_ROOTS.landing.servicesPillar(pillarSlug)}/${tradeSlug}`,
