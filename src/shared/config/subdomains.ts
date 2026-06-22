@@ -1,3 +1,4 @@
+// see ../../../docs/codebase-conventions/urls-and-origins.md
 import { ROOTS } from '@/shared/config/roots'
 import { FUNNEL_SLUGS } from '@/shared/domains/funnels/constants/slugs'
 
