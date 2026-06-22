@@ -178,6 +178,8 @@ export interface CalloutBlockContent {
   headline: string
   body: string
   points?: string[]
+  eyebrow?: string
+  ctaLabel?: string
 }
 export interface CtaBlockContent {
   label: string
