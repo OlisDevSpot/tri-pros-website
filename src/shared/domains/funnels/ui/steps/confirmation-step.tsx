@@ -5,10 +5,12 @@ import { CircleCheck, Phone } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
+import { ROOTS } from '@/shared/config/roots'
 import { contactInfo } from '@/shared/constants/company/contact-info'
 import { useEnrichLead } from '@/shared/domains/funnels/hooks/use-enrich-lead'
 import { FunnelProjectCarousel } from '@/shared/domains/funnels/ui/blocks/funnel-project-carousel'
 import { ConfirmationTimeline } from '@/shared/domains/funnels/ui/steps/confirmation-timeline'
+import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { toDialString } from '@/shared/lib/phone'
 
 function asString(v: unknown): string | null {
@@ -105,8 +107,7 @@ export function ConfirmationStepView({ content, answers, ctx }: StepProps<Confir
           </a>
         </Button>
         <Button asChild variant="outline" size="lg" className="h-14 text-base sm:w-auto">
-          {/* eslint-disable-next-line node/prefer-global/process */}
-          <a href={process.env.NEXT_PUBLIC_BASE_URL ?? '/'} target="_blank" rel="noopener noreferrer">See our work</a>
+          <a href={mainSiteUrl(ROOTS.landing.portfolio())} target="_blank" rel="noopener noreferrer">See our work</a>
         </Button>
       </motion.div>
 

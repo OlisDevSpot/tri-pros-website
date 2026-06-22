@@ -11,6 +11,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { PORTFOLIO_FALLBACK_IMAGES } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
 import { TRADE_BY_SLUG } from '@/shared/domains/funnels/constants/trade-by-slug'
 import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
+import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -59,7 +60,7 @@ export function FunnelProjectCarousel({ slug }: { slug: string }) {
         p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),
       )
       .slice(0, MAX_SLIDES)
-      .map(p => ({ title: p.project.title, src: getOptimizedSrc(p.heroImage), href: ROOTS.landing.portfolioProject(p.project.accessor) }))
+      .map(p => ({ title: p.project.title, src: getOptimizedSrc(p.heroImage), href: mainSiteUrl(ROOTS.landing.portfolioProject(p.project.accessor)) }))
     const padded = [...real]
     for (let i = 0; padded.length < MIN_SLIDES; i++) {
       const fb = PORTFOLIO_FALLBACK_IMAGES[i % PORTFOLIO_FALLBACK_IMAGES.length]

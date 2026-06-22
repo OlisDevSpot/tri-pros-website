@@ -13,8 +13,9 @@ export function middleware(request: NextRequest) {
   }
 
   // Registered subdomain → rewrite, preserving any sub-path. URL bar unchanged.
-  //   kitchens.tripros.com/        → /funnels/kitchen
-  //   kitchens.tripros.com/thanks  → /funnels/kitchen/thanks
+  // A funnel is one kind of subdomain; voip will be another.
+  //   kitchens.triprosremodeling.com/        → /funnels/kitchens
+  //   kitchens.triprosremodeling.com/thanks  → /funnels/kitchens/thanks
   const url = request.nextUrl.clone()
   url.pathname = `${basePath}${url.pathname === '/' ? '' : url.pathname}`
   return NextResponse.rewrite(url)
