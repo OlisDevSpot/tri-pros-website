@@ -51,7 +51,7 @@ export function FunnelHero({ content, onCta, ref, scroll }: {
   scroll?: HeroScroll | null
 }) {
   return (
-    <section ref={ref} className="relative isolate overflow-hidden rounded-xl border border-white/10 shadow-[0_28px_60px_-18px_rgb(0_0_0/0.45),0_14px_36px_-12px_rgb(3_175_237/0.18)]">
+    <section ref={ref} className="relative isolate overflow-hidden rounded-xl shadow-[0_30px_64px_-20px_rgb(0_0_0/0.55),0_12px_28px_-14px_rgb(0_0_0/0.4)]">
       {content.media
         ? (
             <Image
