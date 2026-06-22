@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react'
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import type { FunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
 import type { AddressFields } from '@/shared/lib/google-maps-helpers'
 
 /** A step's stable identifier, unique within a funnel. Doubles as its answer key. */
@@ -113,6 +112,17 @@ export type StepKind = FunnelStep['kind']
 //    special-case lead/composite steps in the engine) ──
 
 export interface FunnelTheme { accent: string }
+
+export interface FunnelUtm {
+  source: string | null
+  medium: string | null
+  campaign: string | null
+  content: string | null
+  term: string | null
+  fbclid: string | null
+  gclid: string | null
+}
+
 export interface FunnelContext {
   slug: FunnelSlug
   offer: string

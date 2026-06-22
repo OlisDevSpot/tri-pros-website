@@ -1,27 +1,9 @@
 import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
+import type { FunnelUtm } from '@/shared/domains/funnels/types'
 import { useEffect } from 'react'
 import { funnelUtmKey } from '@/shared/domains/funnels/constants/storage-keys'
+import { EMPTY_UTM } from '@/shared/domains/funnels/constants/utm'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
-
-export interface FunnelUtm {
-  source: string | null
-  medium: string | null
-  campaign: string | null
-  content: string | null
-  term: string | null
-  fbclid: string | null
-  gclid: string | null
-}
-
-export const EMPTY_UTM: FunnelUtm = {
-  source: null,
-  medium: null,
-  campaign: null,
-  content: null,
-  term: null,
-  fbclid: null,
-  gclid: null,
-}
 
 /**
  * Capture-once attribution: reads UTM/click-ids from the URL on mount and

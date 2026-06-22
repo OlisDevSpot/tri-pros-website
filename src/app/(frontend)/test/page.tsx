@@ -1,5 +1,5 @@
 import type { FunnelContext } from '@/shared/domains/funnels/types'
-import { EMPTY_UTM } from '@/shared/domains/funnels/hooks/use-funnel-utm'
+import { EMPTY_UTM } from '@/shared/domains/funnels/constants/utm'
 import { CalloutBlock } from '@/shared/domains/funnels/ui/blocks/callout-block'
 import { FaqBlock } from '@/shared/domains/funnels/ui/blocks/faq-block'
 
