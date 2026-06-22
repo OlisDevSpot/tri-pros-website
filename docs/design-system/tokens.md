@@ -18,6 +18,18 @@ Components consume **semantic tokens** (Tier 2) via Tailwind utilities (`bg-card
 
 ---
 
+## Tier 1 Primitives Not Yet Emitted as CSS Variables
+
+The token tables below list exactly what is currently emitted in `globals.css` `.theme-marketing` block. However, some design primitives from [DESIGN.md](./DESIGN.md) and the spec are not yet emitted as explicit CSS variables; instead, they are consumed via Tailwind defaults and next/font:
+
+- **`--radius-pill: 999px`** — Spec-defined radius for pill shapes. Currently consumed via Tailwind's `rounded-full` utility, not emitted as a `.theme-marketing` variable.
+- **Spacing scale** (`--space-4`, `--space-8`, etc.) — The base spacing system. Currently consumed via Tailwind's default spacing utilities, not emitted as `.theme-marketing` variables.
+- **Font families** — Syne (used as `font-sans` in Tailwind) and Nunito (body default) are wired in `src/app/(frontend)/layout.tsx` via `next/font`, not emitted as `.theme-marketing` CSS variables.
+
+Emitting these primitives as explicit CSS variables and converting the entire marketing palette to OKLCH (matching the rest of `globals.css`) is a deferred follow-up (spec §13). Until that conversion happens, components should consume these via Tailwind utilities and font configuration rather than CSS vars.
+
+---
+
 ## Tier 2: Semantic Tokens — `.theme-marketing` Block
 
 The marketing theme is applied by adding the `.theme-marketing` class to a wrapper element. It remaps the shadcn semantic variables to the warm-concrete palette and brand blue.
