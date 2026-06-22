@@ -26,7 +26,7 @@ interface ProjectActionConfigsResult<T extends ProjectEntity> {
 
 function defaultView(entity: { id: string, accessor?: string }) {
   const slug = entity.accessor ?? entity.id
-  window.open(`${ROOTS.landing.portfolioProjects()}/${slug}`, '_blank')
+  window.open(ROOTS.landing.portfolioProject(slug), '_blank')
 }
 
 function defaultEdit(entity: { id: string }) {

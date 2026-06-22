@@ -59,7 +59,7 @@ export function FunnelProjectCarousel({ slug }: { slug: string }) {
         p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),
       )
       .slice(0, MAX_SLIDES)
-      .map(p => ({ title: p.project.title, src: getOptimizedSrc(p.heroImage), href: `${ROOTS.landing.portfolioProjects()}/${p.project.accessor}` }))
+      .map(p => ({ title: p.project.title, src: getOptimizedSrc(p.heroImage), href: ROOTS.landing.portfolioProject(p.project.accessor) }))
     const padded = [...real]
     for (let i = 0; padded.length < MIN_SLIDES; i++) {
       const fb = PORTFOLIO_FALLBACK_IMAGES[i % PORTFOLIO_FALLBACK_IMAGES.length]

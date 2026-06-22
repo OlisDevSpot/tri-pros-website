@@ -21,7 +21,7 @@ export function ProjectCard({ row, index }: { row: PublicProject, index: number 
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
       transition={{ duration: 0.5, delay: (index % 3) * 0.1 }}
     >
-      <Link href={`${ROOTS.landing.portfolioProjects()}/${project.accessor}`}>
+      <Link href={ROOTS.landing.portfolioProject(project.accessor)}>
         <motion.div
           className="relative rounded-xl overflow-hidden bg-muted aspect-4/3 cursor-pointer"
           whileHover={{ scale: 1.02 }}

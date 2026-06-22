@@ -126,7 +126,7 @@ export function ProjectDetailSheet({ project, isOpen, close, onDelete }: Project
                 variant="outline"
                 className="w-full"
                 onClick={() => {
-                  window.open(`${ROOTS.landing.portfolioProjects()}/${project.accessor}`, '_blank')
+                  window.open(ROOTS.landing.portfolioProject(project.accessor), '_blank')
                 }}
               >
                 View on Site

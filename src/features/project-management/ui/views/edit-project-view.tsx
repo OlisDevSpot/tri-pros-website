@@ -150,7 +150,7 @@ export function EditProjectView({ projectId }: Props) {
           Back to Portfolio
         </Button>
         <EntityViewButton
-          href={`${ROOTS.landing.portfolioProjects()}/${project.data.project.accessor}`}
+          href={ROOTS.landing.portfolioProject(project.data.project.accessor)}
           external
           showLabel
           size="sm"
