@@ -41,6 +41,8 @@ function generateUrl(relativeUrl: string, options?: UrlOptions): string {
 
 const APP_ROOTS = {
   authFlow: (options?: UrlOptions) => generateUrl('/auth-flow', options),
+  subdomainUrl: (label: string, { rootDomain = APP_HOSTS.prod[0], protocol = 'https' }: { rootDomain?: string, protocol?: string } = {}) =>
+    `${protocol}://${label}.${rootDomain}`,
   landing: {
     about: (options?: UrlOptions) => generateUrl('/about', options),
     blog: (options?: UrlOptions) => generateUrl('/blog', options),
@@ -111,8 +113,6 @@ const APP_ROOTS = {
   funnels: {
     // Internal rewrite TARGET — middleware rewrites a funnel host to this path.
     trade: (slug: FunnelSlug, options?: UrlOptions) => generateUrl(`/funnels/${slug}`, options),
-    // Public subdomain URL — what we hand to Meta / link externally.
-    subdomain: (slug: FunnelSlug) => `https://${slug}.${APP_HOSTS.prod[0]}`,
   },
 } as const
 
