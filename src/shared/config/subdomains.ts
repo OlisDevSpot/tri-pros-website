@@ -12,3 +12,10 @@ import { FUNNEL_SLUGS } from '@/shared/domains/funnels/constants/slugs'
 export const SUBDOMAIN_ROUTES: Record<string, string> = Object.fromEntries(
   FUNNEL_SLUGS.map(slug => [slug, ROOTS.funnels.trade(slug)]),
 )
+
+/**
+ * The subdomain labels that, if leading the host, mean we're on a subdomain
+ * (the inverse of what the middleware rewrites). Consumed by `mainSiteUrl` to
+ * strip back to the apex. Same source of truth as the middleware.
+ */
+export const SUBDOMAIN_LABELS = Object.keys(SUBDOMAIN_ROUTES)
