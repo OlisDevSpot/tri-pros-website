@@ -10,6 +10,7 @@ import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { emailService } from '@/shared/services/email.service'
 import { formatProjectType } from '@/shared/services/providers/resend/lib/format-project-type'
+import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
 import { baseProcedure, createTRPCRouter } from '../../init'
 import { projectsRouter } from './projects.router'
 
@@ -50,6 +51,16 @@ export const landingRouter = createTRPCRouter({
   generalInquiry: baseProcedure
     .input(generalInquiryFormSchema)
     .mutation(async ({ input }) => {
+      const phoneVerdict = await validatePhoneLine(input.phone, 'mobile-or-landline')
+      if (!phoneVerdict.ok) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: phoneVerdict.blockedReason === 'invalid'
+            ? 'Enter a valid US phone number.'
+            : 'Enter a mobile or landline number — VoIP/virtual numbers aren\'t accepted.',
+        })
+      }
+
       const [leadResult, confirmationResult, ingestResult] = await Promise.allSettled([
         emailService.sendGeneralInquiryEmail(input),
         emailService.sendInquiryConfirmationEmail({ type: 'general', formData: input }),
