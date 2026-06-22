@@ -49,11 +49,12 @@ const APP_ROOTS = {
     contact: (options?: UrlOptions) => generateUrl('/contact', options),
     experience: (options?: UrlOptions) => generateUrl('/experience', options),
     portfolio: (options?: UrlOptions) => generateUrl('/portfolio', options),
-    portfolioProjects: (options?: UrlOptions) => generateUrl('/portfolio/projects', options),
-    portfolioTestimonials: (options?: UrlOptions) => generateUrl('/portfolio/testimonials', options),
+    portfolioProjects: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.portfolio()}/projects`, options),
+    portfolioProject: (accessor: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.portfolioProjects()}/${accessor}`, options),
+    portfolioTestimonials: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.portfolio()}/testimonials`, options),
     services: (options?: UrlOptions) => generateUrl('/services', options),
-    servicesPillar: (pillarSlug: ServiceSlug, options?: UrlOptions) => generateUrl(`/services/${pillarSlug}`, options),
-    servicesTrade: (pillarSlug: ServiceSlug, tradeSlug: string, options?: UrlOptions) => generateUrl(`/services/${pillarSlug}/${tradeSlug}`, options),
+    servicesPillar: (pillarSlug: ServiceSlug, options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.services()}/${pillarSlug}`, options),
+    servicesTrade: (pillarSlug: ServiceSlug, tradeSlug: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.landing.servicesPillar(pillarSlug)}/${tradeSlug}`, options),
   },
   dashboard: {
     root: '/dashboard',
@@ -62,17 +63,17 @@ const APP_ROOTS = {
     pipeline: (pipeline: string = 'fresh', options?: UrlOptions) => generateUrl(`/dashboard/pipeline/${pipeline}`, options),
     meetings: {
       root: (options?: UrlOptions) => generateUrl('/dashboard/meetings', options),
-      byId: (id: string, options?: UrlOptions) => generateUrl(`/dashboard/meetings/${id}`, options),
+      byId: (id: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.meetings.root()}/${id}`, options),
     },
     proposals: {
       root: (options?: UrlOptions) => generateUrl('/dashboard/proposals', options),
-      new: (options?: UrlOptions) => generateUrl('/dashboard/proposals/new', options),
-      byId: (id: string, options?: UrlOptions) => generateUrl(`/dashboard/proposals/${id}`, options),
+      new: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.proposals.root()}/new`, options),
+      byId: (id: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.proposals.root()}/${id}`, options),
     },
     projects: {
       root: (options?: UrlOptions) => generateUrl('/dashboard/projects', options),
-      new: (options?: UrlOptions) => generateUrl('/dashboard/projects/new', options),
-      byId: (id: string, options?: UrlOptions) => generateUrl(`/dashboard/projects/${id}`, options),
+      new: (options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.projects.root()}/new`, options),
+      byId: (id: string, options?: UrlOptions) => generateUrl(`${APP_ROOTS.dashboard.projects.root()}/${id}`, options),
     },
     customers: {
       root: (options?: UrlOptions) => generateUrl('/dashboard/customers', options),
@@ -104,6 +105,8 @@ const APP_ROOTS = {
   public: {
     intake: (options?: UrlOptions) => generateUrl('/intake', options),
     proposals: (options?: UrlOptions) => generateUrl('/proposal-flow', options),
+    proposalReview: (id: string, { token, ...options }: UrlOptions & { token?: string } = {}) =>
+      generateUrl(`${APP_ROOTS.public.proposals()}/proposal/${id}${token ? `?token=${token}` : ''}`, options),
   },
   funnels: {
     // Internal rewrite TARGET — middleware rewrites a funnel host to this path.
