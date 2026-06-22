@@ -10,6 +10,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { useDebouncedAsyncValidator } from '@/shared/domains/funnels/hooks/use-debounced-async-validator'
 import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
 import { evaluatePhoneGate } from '@/shared/domains/funnels/lib/evaluate-phone-gate'
@@ -80,7 +81,7 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className={`mx-auto flex w-full flex-col gap-5 ${FUNNEL_QUESTION_MAX_W}`}>
         <div className="text-center">
           <h2 className="text-2xl font-semibold">{content.title}</h2>
           {content.subtitle ? <p className="text-muted-foreground mt-1">{content.subtitle}</p> : null}

@@ -11,7 +11,8 @@ export const FUNNEL_RAIL_MAX_W = 'max-w-5xl'
  * The narrow rail for an individual question's content (heading + options).
  * A question reads as a focused, single-column prompt rather than spanning the
  * full `FUNNEL_RAIL_MAX_W`. Applied internally + centered (`mx-auto`) so it sits
- * narrow inside whatever surface contains it — the landing's first question and
- * every subsequent card-select step share this one width.
+ * narrow inside whatever surface contains it — the landing's first question,
+ * every card-select step, and the PII form step share this one width. (The ZIP
+ * and address steps constrain their single input narrower still, internally.)
  */
 export const FUNNEL_QUESTION_MAX_W = 'max-w-xl'

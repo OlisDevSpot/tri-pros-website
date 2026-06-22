@@ -1,9 +1,10 @@
-import type { LocationStep, StepProps } from '@/shared/domains/funnels/types'
+import type { StepProps, ZipStep } from '@/shared/domains/funnels/types'
 import { Loader2, MapPin } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
 import { CHECK_DURATIONS, CHECK_STEPS } from '@/shared/domains/funnels/constants/zip-check'
 import { useLiveZipResolve } from '@/shared/domains/funnels/hooks/use-live-zip-resolve'
@@ -13,7 +14,7 @@ import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 
 type Phase = 'input' | 'checking' | 'qualified'
 
-export function LocationStepView({ content, value, setValue }: StepProps<LocationStep>) {
+export function ZipStepView({ content, value, setValue }: StepProps<ZipStep>) {
   // Persistence (#7): if this step was already answered (reached via Back),
   // mount directly in the qualified phase with the stored ZIP.
   const [zip, setZip] = useState(value?.zip ?? '')
@@ -61,7 +62,7 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
   if (phase === 'qualified') {
     const place = value?.city ?? ''
     return (
-      <div className="flex flex-col items-center gap-4 py-8 text-center" aria-live="polite">
+      <div className={`mx-auto flex w-full flex-col items-center gap-4 py-8 text-center ${FUNNEL_QUESTION_MAX_W}`} aria-live="polite">
         <p className="text-foreground text-xl font-semibold">
           {content.qualifiesLabel ?? '✓ Great news — your area qualifies.'}
         </p>
@@ -99,7 +100,7 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
       : null
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={`mx-auto flex w-full flex-col gap-6 ${FUNNEL_QUESTION_MAX_W}`}>
       <div className="text-center">
         <h2 className="text-2xl font-semibold">{content.title}</h2>
         {content.subtitle ? <p className="text-muted-foreground mt-1">{content.subtitle}</p> : null}
@@ -131,7 +132,7 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
               )
             : null}
         </motion.div>
-        {/* Resolved location badge. The chip fades via opacity while `layout`
+        {/* Resolved place badge. The chip fades via opacity while `layout`
             projection keeps its position continuous as the input gives way — no
             scale keyframe, so nothing fights the projection (#1). The inner span
             carries a translate-only slide-from-right; translate (unlike scale)
@@ -177,9 +178,9 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
 }
 
 /** Importable prebuilt step (Seam A). Spread + override `content` to customize per funnel. */
-export const ZIP_STEP: LocationStep = {
-  id: 'location',
-  kind: 'location',
+export const ZIP_STEP: ZipStep = {
+  id: 'zip',
+  kind: 'zip',
   content: {
     title: 'Where is your home?',
     subtitle: 'We select Showcase homes by area.',

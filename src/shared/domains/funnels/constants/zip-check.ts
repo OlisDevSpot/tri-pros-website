@@ -1,5 +1,5 @@
 /**
- * Location-step "checking your area" presentation config. The ZIP is already
+ * ZIP-step "checking your area" presentation config. The ZIP is already
  * resolved live (during input) before the checklist mounts, so these are pure
  * pacing values for the anticipation beat.
  */

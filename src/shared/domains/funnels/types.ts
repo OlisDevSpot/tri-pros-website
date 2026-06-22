@@ -8,19 +8,19 @@ export type StepId = string
 
 // ── Answers: one typed slot per step id (composites become objects in 2b) ──
 
-export interface LocationAnswer { zip: string, city: string, state: string, county: string | null }
+export interface ZipAnswer { zip: string, city: string, state: string, county: string | null }
 export interface PiiAnswer { leadId: string }
 
 /**
  * kind → that kind's answer shape. `never` = the step takes no input. New kinds
- * (location, pii-form, …) extend this in lockstep with FunnelStep + STEP_REGISTRY.
+ * (zip, pii-form, …) extend this in lockstep with FunnelStep + STEP_REGISTRY.
  */
 export interface AnswerByKind {
   'address': AddressFields
   'card-select': string
   'confirmation': never
-  'location': LocationAnswer
   'pii-form': PiiAnswer
+  'zip': ZipAnswer
 }
 export type AnswerOf<S extends FunnelStep> = AnswerByKind[S['kind']]
 
@@ -53,7 +53,7 @@ export interface HeroContent {
 }
 export interface CardSelectContent { title: string, subtitle?: string, options: Record<string, OptionContent> }
 
-export interface LocationContent {
+export interface ZipContent {
   title: string
   subtitle?: string
   /** Input phase button — default "Check my area" */
@@ -92,8 +92,8 @@ export interface ContentByKind {
   'address': AddressContent
   'card-select': CardSelectContent
   'confirmation': ConfirmationContent
-  'location': LocationContent
   'pii-form': PiiContent
+  'zip': ZipContent
 }
 export type ContentOf<S extends FunnelStep> = ContentByKind[S['kind']]
 
@@ -103,10 +103,10 @@ interface BaseStep<K extends string> { id: StepId, kind: K }
 export interface AddressStep extends BaseStep<'address'> { content: AddressContent }
 export interface CardSelectStep extends BaseStep<'card-select'> { optionIds: string[], content: CardSelectContent }
 export interface ConfirmationStep extends BaseStep<'confirmation'> { content: ConfirmationContent }
-export interface LocationStep extends BaseStep<'location'> { content: LocationContent }
 export interface PiiStep extends BaseStep<'pii-form'> { content: PiiContent }
+export interface ZipStep extends BaseStep<'zip'> { content: ZipContent }
 
-export type FunnelStep = AddressStep | CardSelectStep | ConfirmationStep | LocationStep | PiiStep
+export type FunnelStep = AddressStep | CardSelectStep | ConfirmationStep | PiiStep | ZipStep
 export type StepKind = FunnelStep['kind']
 
 // ── Funnel-level context every step reads (this is what removes the need to
