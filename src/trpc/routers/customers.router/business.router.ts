@@ -27,6 +27,7 @@ import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { toDigits } from '@/shared/lib/phone'
 import { constructionDataService } from '@/shared/services/construction-data.service'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
+import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
 
 import { createTRPCRouter } from '../../init'
 import { clientIp } from '../../lib/client-ip'
@@ -175,6 +176,18 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
         }
 
+        // Mobile-or-landline gate (hard-block; VoIP/virtual rejected). Fail-open
+        // inside validatePhoneLine never drops a real lead on a Twilio outage.
+        const phoneVerdict = await validatePhoneLine(customerData.phone, 'mobile-or-landline')
+        if (!phoneVerdict.ok) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: phoneVerdict.blockedReason === 'invalid'
+              ? 'Enter a valid US phone number.'
+              : 'Enter a mobile or landline number — VoIP/virtual numbers aren\'t accepted.',
+          })
+        }
+
         if (mode === 'customer_and_meeting' && !customerData.leadMetaJSON?.scheduledFor) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'A meeting must have a scheduled date.' })
         }
@@ -191,9 +204,16 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           interestedTradesRaw = pickedTradeIds.map(id => nameById.get(id)).filter((n): n is string => Boolean(n))
         }
 
-        const leadMeta = customerData.leadMetaJSON
-          ? { ...customerData.leadMetaJSON, ...(interestedTradesRaw ? { interestedTradesRaw } : {}) }
-          : (interestedTradesRaw ? { interestedTradesRaw } : undefined)
+        const phoneVerification = {
+          status: phoneVerdict.status === 'unverified-line' ? 'unverified' : 'verified',
+          lineType: phoneVerdict.lineType,
+          carrierName: phoneVerdict.carrierName,
+        } as const
+        const leadMeta = {
+          ...(customerData.leadMetaJSON ?? {}),
+          ...(interestedTradesRaw ? { interestedTradesRaw } : {}),
+          phoneVerification,
+        }
 
         // Resolve meeting owner (session, else info@ fallback) — business rule
         // with session context stays in the router.
