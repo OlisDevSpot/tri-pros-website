@@ -13,7 +13,6 @@ import { Input } from '@/shared/components/ui/input'
 import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { useDebouncedAsyncValidator } from '@/shared/domains/funnels/hooks/use-debounced-async-validator'
 import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
-import { evaluatePhoneGate } from '@/shared/domains/funnels/lib/evaluate-phone-gate'
 import { piiSchema } from '@/shared/domains/funnels/schemas/pii.schema'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -45,14 +44,19 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
     if (!e164) {
       return 'Please enter a valid US phone number'
     }
-    const lookup = await queryClient.fetchQuery({
+    const verdict = await queryClient.fetchQuery({
       ...lookupPhone.queryOptions({ phone: e164 }),
       staleTime: 5 * 60 * 1000,
     })
     if (signal.aborted) {
       return true
     }
-    return evaluatePhoneGate(lookup).ok ? true : 'That phone number doesn\'t look valid — please double-check it.'
+    if (verdict.ok) {
+      return true
+    }
+    return verdict.blockedReason === 'non-mobile'
+      ? 'Please use a mobile number only.'
+      : 'That phone number doesn\'t look valid — please double-check it.'
   })
 
   async function onSubmit(data: PiiFormData) {
