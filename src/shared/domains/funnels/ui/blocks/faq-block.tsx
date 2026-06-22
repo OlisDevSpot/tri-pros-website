@@ -4,6 +4,7 @@ import type { FaqBlockContent, FunnelContext } from '@/shared/domains/funnels/ty
 import { ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
+import { Decor } from '@/shared/components/decor/decor'
 import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
 import { cn } from '@/shared/lib/utils'
 
@@ -18,9 +19,10 @@ export function FaqBlock({ content }: { content: FaqBlockContent, ctx: FunnelCon
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   return (
-    <section className="flex w-full flex-col gap-4 py-10">
-      {content.title ? <h2 className="text-foreground text-center text-2xl font-semibold">{content.title}</h2> : null}
-      <div className="flex flex-col gap-2">
+    <section className="bg-background relative isolate w-full overflow-hidden py-10">
+      <Decor shape="square" />
+      {content.title ? <h2 className="text-foreground font-sans relative z-1 text-center text-2xl font-bold tracking-[-0.01em]">{content.title}</h2> : null}
+      <div className="relative z-1 mx-auto flex w-full max-w-140 flex-col gap-2">
         {content.items.map((item, i) => {
           const isOpen = openIndex === i
           const panelId = `faq-panel-${i}`
@@ -48,7 +50,7 @@ export function FaqBlock({ content }: { content: FaqBlockContent, ctx: FunnelCon
                   transition={FUNNEL_TRANSITION}
                   className="shrink-0"
                 >
-                  <ChevronDown className="text-muted-foreground size-4" aria-hidden="true" />
+                  <ChevronDown className="size-4" style={{ color: 'var(--primary)' }} aria-hidden="true" />
                 </motion.span>
               </motion.button>
               <AnimatePresence initial={false}>
@@ -63,7 +65,7 @@ export function FaqBlock({ content }: { content: FaqBlockContent, ctx: FunnelCon
                         transition={FUNNEL_TRANSITION}
                         className="overflow-hidden"
                       >
-                        <p className="text-muted-foreground px-4 pb-3 text-sm">{item.a}</p>
+                        <p className="px-4 pb-3 text-sm" style={{ color: 'var(--body-text)' }}>{item.a}</p>
                       </motion.div>
                     )
                   : null}
