@@ -75,37 +75,22 @@
   --spacing: 0.25rem;
 }
 
-.funnel-light {
-  color-scheme: light;
-  /* The funnel sits on a near-white background (--background 0.9846) with white
-     cards (--card 1.0). The shared --border (0.9276) is too close to both to
-     read as an edge, so cards and the hero blend into the page. Darken border +
-     input one tier (≈slate-300) for visible definition — scoped to the funnel
-     so the rest of the app keeps the lighter shared border. */
-  --border: oklch(0.872 0.009 264.5313);
-  --input: oklch(0.872 0.009 264.5313);
-  /* The shared shadow scale is 0.05 opacity — invisible on the funnel's white
-     cards, so panels read as flat outlines. Re-define the scale at a real
-     ~0.08–0.12 opacity (the standard shadcn/Tailwind elevation) so a plain
-     `shadow-sm` reads as an actual card across every funnel. Scoped here, so
-     the rest of the app keeps its flatter shadows. */
-  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
-  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.08), 0 1px 2px -1px oklch(0 0 0 / 0.06);
-  --shadow: 0 1px 3px 0 oklch(0 0 0 / 0.08), 0 1px 2px -1px oklch(0 0 0 / 0.06);
-  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.09), 0 2px 4px -2px oklch(0 0 0 / 0.07);
-  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.1), 0 4px 6px -4px oklch(0 0 0 / 0.08);
-  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.12), 0 8px 10px -6px oklch(0 0 0 / 0.09);
-}
+/* (The former .funnel-light border/shadow overrides are folded into the merged
+   marketing theme below. `.funnel-light` now ALIASES `.theme-marketing`, so the
+   whole funnel adopts the Blueprint Authority identity — warm concrete + brand
+   blue — and the marketing blocks' tokens resolve in the live funnel, not only
+   on /test.) */
 
 /* ─────────────────────────────────────────────────────────────────────────
    MARKETING THEME — "Blueprint Authority" (warm concrete + brand blue).
-   Applied via class on a wrapper (same mechanism as .funnel-light). Remaps the
-   shadcn semantic vars so existing components inherit the look, and adds new
-   system tokens consumed by <Decor>, <CredentialStrip>, and marketing blocks.
+   Applied via class on a wrapper (same mechanism as the old .funnel-light).
+   Remaps the shadcn semantic vars so existing components inherit the look, and
+   adds new system tokens consumed by <Decor>, <CredentialStrip>, and marketing
+   blocks. `.funnel-light` is aliased here so the live funnel re-themes too.
    See docs/superpowers/specs/2026-06-22-anti-slop-design-system-design.md
    ───────────────────────────────────────────────────────────────────────── */
-.theme-marketing {
+.theme-marketing,
+.funnel-light {
   color-scheme: light;
 
   /* semantic (shadcn) — warm-concrete neutrals + brand-blue accent */
@@ -135,6 +120,18 @@
   --cred-gap: 24px;
   --radius-chip: 3px;
   --shadow-card: 0 44px 64px -42px rgb(60 40 15 / 0.5);
+
+  /* Visible elevation scale (ported from the old .funnel-light). The shared
+     :root scale is 0.05 opacity — invisible on light cards — so re-define at a
+     real ~0.08–0.12 so a plain `shadow-sm` reads as an actual card across every
+     funnel/marketing surface. */
+  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.04);
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 oklch(0 0 0 / 0.08), 0 1px 2px -1px oklch(0 0 0 / 0.06);
+  --shadow: 0 1px 3px 0 oklch(0 0 0 / 0.08), 0 1px 2px -1px oklch(0 0 0 / 0.06);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.09), 0 2px 4px -2px oklch(0 0 0 / 0.07);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.1), 0 4px 6px -4px oklch(0 0 0 / 0.08);
+  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.12), 0 8px 10px -6px oklch(0 0 0 / 0.09);
 
   /* motion */
   --ease-brand: cubic-bezier(0.32, 0.72, 0, 1);
