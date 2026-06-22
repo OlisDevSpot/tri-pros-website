@@ -1,3 +1,4 @@
+import { isInServiceArea } from '@/shared/constants/company/service-area'
 import { CA_ZIP_CITIES } from '@/shared/domains/funnels/constants/ca-zip-cities'
 
 export interface ResolvedZip {
@@ -51,20 +52,17 @@ export async function resolveZip(zip: string, opts?: { signal?: AbortSignal }): 
   }
 }
 
-/** SoCal ZIP range ≈ 90001–93599 (LA / OC / SD / Inland Empire / Ventura). */
-const SOCAL_ZIP = /^9[0-3]\d{3}$/
-
 /**
- * Typo-prevention + light territory check (NOT a hard gate — we'd rather
- * qualify an adjacent SoCal homeowner than reject them):
- * - 'invalid-format'  → not a 5-digit SoCal-range ZIP; reject as a mistake.
- * - 'in-area'         → a known service-area ZIP, OR a SoCal-range ZIP we accept.
- * - 'out-of-area'     → reserved for future tightening (currently unused; SoCal
- *                       range all maps to 'in-area'). Kept for the not-qualified UI.
+ * Territory gate for the funnel ZIP step:
+ * - 'invalid-format' → not a 5-digit ZIP (a typo); neutral, no message.
+ * - 'in-area'        → inside the Tri Pros service area (resolve city for badge).
+ * - 'out-of-area'    → a real-looking ZIP we don't serve; the step shows the
+ *                      out-of-area message and keeps the advance button disabled.
+ * Local + synchronous — no API call to decide service area.
  */
 export function classifyZip(zip: string): 'in-area' | 'out-of-area' | 'invalid-format' {
-  if (!SOCAL_ZIP.test(zip)) {
+  if (!/^\d{5}$/.test(zip)) {
     return 'invalid-format'
   }
-  return 'in-area'
+  return isInServiceArea(zip) ? 'in-area' : 'out-of-area'
 }
