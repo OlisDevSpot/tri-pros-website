@@ -98,6 +98,112 @@
   --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.12), 0 8px 10px -6px oklch(0 0 0 / 0.09);
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   MARKETING THEME — "Blueprint Authority" (warm concrete + brand blue).
+   Applied via class on a wrapper (same mechanism as .funnel-light). Remaps the
+   shadcn semantic vars so existing components inherit the look, and adds new
+   system tokens consumed by <Decor>, <CredentialStrip>, and marketing blocks.
+   See docs/superpowers/specs/2026-06-22-anti-slop-design-system-design.md
+   ───────────────────────────────────────────────────────────────────────── */
+.theme-marketing {
+  color-scheme: light;
+
+  /* semantic (shadcn) — warm-concrete neutrals + brand-blue accent */
+  --background: #e9e2d6; /* sand */
+  --foreground: #2a2520; /* warm ink */
+  --card: #f4efe6; /* panel */
+  --card-foreground: #2a2520;
+  --popover: #f4efe6;
+  --popover-foreground: #2a2520;
+  --primary: #03afed; /* brand blue (the only accent) */
+  --primary-foreground: #ffffff;
+  --secondary: #efe7d7; /* raised */
+  --secondary-foreground: #2a2520;
+  --muted: #efe7d7;
+  --muted-foreground: #8a7c6a; /* warm muted */
+  --accent: #03afed;
+  --accent-foreground: #ffffff;
+  --border: #ddd4c4; /* hairline */
+  --input: #ddd4c4;
+  --ring: #03afed;
+  --radius: 0.375rem; /* 6px panel — not the slop 8px-everywhere */
+
+  /* NEW system tokens */
+  --accent-ink: #0784b3; /* brand blue darkened for small text on light */
+  --body-text: #5f574b; /* warm body copy */
+  --cred-ink: #4a443c; /* credential text */
+  --cred-gap: 24px;
+  --radius-chip: 3px;
+  --shadow-card: 0 44px 64px -42px rgb(60 40 15 / 0.5);
+
+  /* motion */
+  --ease-brand: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 0.18s;
+  --dur-base: 0.4s;
+  --dur-draw: 1.4s;
+
+  /* decor atmosphere */
+  --decor-stroke: #03afed;
+  --decor-gradient-alpha: 0.34;
+
+  color: var(--foreground);
+}
+
+/* Dark stub — EXPLICIT opt-in only via `.theme-dark`. It must NOT auto-activate
+   from the app-wide `<html class="dark">` ancestor, or the LIGHT showcase would
+   render dark. The marketing theme is light by default (like .funnel-light).
+   Full dark hardening deferred (spec §12). */
+.theme-marketing.theme-dark {
+  --background: #14110e;
+  --foreground: #ece6d8;
+  --card: #1c1813;
+  --card-foreground: #ece6d8;
+  --popover: #1c1813;
+  --popover-foreground: #ece6d8;
+  --secondary: #221d17;
+  --muted: #221d17;
+  --muted-foreground: #9a9082;
+  --border: #2c2620;
+  --input: #2c2620;
+  --accent-ink: #5cc6f2;
+  --body-text: #c4bbac;
+  --cred-ink: #d8cfbf;
+  color: var(--foreground);
+}
+
+/* Decor continuous motion — gated for reduced motion */
+@keyframes decor-sweep {
+  from {
+    transform: rotate(-3deg);
+  }
+  to {
+    transform: rotate(3deg);
+  }
+}
+@keyframes decor-breathe {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1.12;
+  }
+}
+.decor-sweep {
+  transform-origin: 100% 0;
+  animation: decor-sweep 18s ease-in-out infinite alternate;
+}
+.decor-breathe {
+  transform-origin: 100% 0;
+  animation: decor-breathe 7s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .decor-sweep,
+  .decor-breathe {
+    animation: none;
+  }
+}
+
 .dark {
   --background: oklch(0.2433 0.0247 263.9506);
   --foreground: oklch(0.9683 0.0069 247.8956);
