@@ -7,6 +7,7 @@ import { MapPinIcon, XIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
+import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { parseAddressComponents } from '@/shared/lib/google-maps-helpers'
 import {
@@ -26,6 +27,8 @@ interface AddressAutocompleteProps {
   debounceMs?: number
   minChars?: number
   dropdownClassName?: string
+  /** Focus the address field on mount (e.g. a funnel step that loads into it). */
+  autoFocus?: boolean
 }
 
 export function AddressAutocomplete({
@@ -38,8 +41,10 @@ export function AddressAutocomplete({
   debounceMs = 300,
   minChars = 2,
   dropdownClassName,
+  autoFocus = false,
 }: AddressAutocompleteProps) {
   const placesLib = useMapsLibrary('places')
+  const inputRef = useAutoFocus<HTMLInputElement>({ enabled: autoFocus })
 
   // Services — created once when placesLib loads
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
@@ -165,6 +170,7 @@ export function AddressAutocomplete({
       <div ref={anchorRef} className="relative">
         <MapPinIcon className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
+          ref={inputRef}
           role="combobox"
           aria-expanded={isOpen}
           aria-controls={ADDRESS_PREDICTIONS_LISTBOX_ID}

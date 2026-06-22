@@ -3,6 +3,7 @@ import { ArrowRight } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import Image from 'next/image'
 import { Button } from '@/shared/components/ui/button'
+import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { CARD_STAGGER_CONTAINER, CARD_STAGGER_ITEM } from '@/shared/domains/funnels/constants/funnel-motion'
 import { OPTION_ICONS } from '@/shared/domains/funnels/constants/option-assets'
 import { cn } from '@/shared/lib/utils'
@@ -21,7 +22,7 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={cn('mx-auto flex w-full flex-col gap-6', FUNNEL_QUESTION_MAX_W)}>
       <div className="text-center">
         <h2 className="text-2xl font-semibold">{content.title}</h2>
         {content.subtitle

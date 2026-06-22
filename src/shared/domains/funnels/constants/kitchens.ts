@@ -1,6 +1,7 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
 import { ADDRESS_STEP } from '@/shared/domains/funnels/ui/steps/address-step'
 import { CONFIRMATION_STEP } from '@/shared/domains/funnels/ui/steps/confirmation-step'
+import { HOME_TYPE_STEP } from '@/shared/domains/funnels/ui/steps/home-type-step'
 import { ZIP_STEP } from '@/shared/domains/funnels/ui/steps/location-step'
 import { PII_STEP } from '@/shared/domains/funnels/ui/steps/pii-form-step'
 
@@ -26,10 +27,10 @@ export const kitchensFunnel: FunnelSpec = {
           headline: 'Most kitchen remodels go sideways. Here\'s why.',
           body: 'A kitchen is the hardest room in the house to get right — plumbing, gas, electrical, cabinetry, and tight tolerances all have to land at once. One weak link and you\'re living in a months-long jobsite.',
           points: [
-            { title: 'Cut-rate "deal" crews', body: 'Low bids hide unpermitted work, no insurance, and no recourse when something goes wrong.' },
-            { title: 'No one accountable', body: 'Independent subs blame each other and you become the project manager of your own remodel.' },
-            { title: 'Surprise change-orders', body: 'A cheap bid becomes an expensive invoice the moment demo opens the walls.' },
-            { title: 'Endless timelines', body: 'Without real scheduling, six weeks becomes six months — and your kitchen stays unusable.' },
+            { title: 'Cut-rate "deal" crews', body: 'Low bids hide unpermitted work, no insurance, and no recourse when something goes wrong.', image: '/funnels/common/reason-cut-rate-crews.webp', alt: 'Cut-rate deal crews' },
+            { title: 'No one accountable', body: 'Independent subs blame each other and you become the project manager of your own remodel.', image: '/funnels/common/reason-no-accountability.webp', alt: 'No one accountable' },
+            { title: 'Surprise change-orders', body: 'A cheap bid becomes an expensive invoice the moment demo opens the walls.', image: '/funnels/common/reason-surprise-change-orders.webp', alt: 'Surprise change orders' },
+            { title: 'Endless timelines', body: 'Without real scheduling, six weeks becomes six months — and your kitchen stays unusable.', image: '/funnels/common/reason-endless-timelines.webp', alt: 'Endless timelines' },
           ],
           standardLine: 'What to demand: a licensed, bonded, insured GC you can verify, one accountable team, a fixed written scope, and a real schedule. That\'s the bar — and for us it\'s the floor.',
         },
@@ -108,10 +109,10 @@ export const kitchensFunnel: FunnelSpec = {
       content: {
         title: 'Which best describes your kitchen?',
         options: {
-          'l-shape': { label: 'L-shaped', asset: { kind: 'image', src: '/funnels/kitchens/option-l-shape.webp', alt: 'L-shaped kitchen layout' } },
-          'u-shape': { label: 'U-shaped', asset: { kind: 'image', src: '/funnels/kitchens/option-u-shape.webp', alt: 'U-shaped kitchen layout' } },
-          'galley': { label: 'Galley', asset: { kind: 'image', src: '/funnels/kitchens/option-galley.webp', alt: 'Galley kitchen layout' } },
-          'island': { label: 'Has an island', asset: { kind: 'image', src: '/funnels/kitchens/option-island.webp', alt: 'Kitchen with an island layout' } },
+          'l-shape': { label: 'L-shaped', asset: { kind: 'image', src: '/funnels/kitchens/layout/l-shape.webp', alt: 'L-shaped kitchen layout' } },
+          'u-shape': { label: 'U-shaped', asset: { kind: 'image', src: '/funnels/kitchens/layout/u-shape.webp', alt: 'U-shaped kitchen layout' } },
+          'galley': { label: 'Galley', asset: { kind: 'image', src: '/funnels/kitchens/layout/galley.webp', alt: 'Galley kitchen layout' } },
+          'island': { label: 'Has an island', asset: { kind: 'image', src: '/funnels/kitchens/layout/island.webp', alt: 'Kitchen with an island layout' } },
           'open': { label: 'Open-concept', asset: { kind: 'icon', name: 'open' } },
           'not-sure': { label: 'Not sure', asset: { kind: 'icon', name: 'not-sure' } },
         },
@@ -132,20 +133,7 @@ export const kitchensFunnel: FunnelSpec = {
     },
     { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase kitchens are selected by neighborhood.' } },
     PII_STEP,
-    {
-      id: 'homeType',
-      kind: 'card-select',
-      optionIds: ['single-family', 'condo', 'mobile-home', 'commercial'],
-      content: {
-        title: 'What kind of home is it?',
-        options: {
-          'single-family': { label: 'Single-family', asset: { kind: 'image', src: '/funnels/kitchens/option-single-family.webp', alt: 'Single-family home' } },
-          'condo': { label: 'Condo', asset: { kind: 'image', src: '/funnels/kitchens/option-condo.webp', alt: 'Condo building' } },
-          'mobile-home': { label: 'Mobile home', asset: { kind: 'image', src: '/funnels/kitchens/option-mobile-home.webp', alt: 'Mobile home' } },
-          'commercial': { label: 'Commercial', asset: { kind: 'image', src: '/funnels/kitchens/option-commercial.webp', alt: 'Commercial building' } },
-        },
-      },
-    },
+    HOME_TYPE_STEP,
     {
       id: 'age',
       kind: 'card-select',
@@ -153,10 +141,10 @@ export const kitchensFunnel: FunnelSpec = {
       content: {
         title: 'How old is your kitchen?',
         options: {
-          '0-5': { label: '0–5 years' },
-          '5-15': { label: '5–15 years' },
-          '15-plus': { label: '15+ years' },
-          'original': { label: 'Original / never renovated' },
+          '0-5': { label: '0–5 years', asset: { kind: 'image', src: '/funnels/kitchens/age/0-5.webp', alt: 'Kitchen 0–5 years old' } },
+          '5-15': { label: '5–15 years', asset: { kind: 'image', src: '/funnels/kitchens/age/5-15.webp', alt: 'Kitchen 5–15 years old' } },
+          '15-plus': { label: '15+ years', asset: { kind: 'image', src: '/funnels/kitchens/age/15-plus.webp', alt: 'Kitchen 15+ years old' } },
+          'original': { label: 'Original / never renovated', asset: { kind: 'image', src: '/funnels/kitchens/age/original.webp', alt: 'Original, never-renovated kitchen' } },
         },
       },
     },
@@ -167,10 +155,10 @@ export const kitchensFunnel: FunnelSpec = {
       content: {
         title: 'What are you picturing?',
         options: {
-          'full-gut': { label: 'Full gut remodel' },
-          'cabinets-counters': { label: 'Cabinets + counters' },
-          'refresh': { label: 'Cosmetic refresh' },
-          'not-sure': { label: 'Not sure yet' },
+          'full-gut': { label: 'Full gut remodel', asset: { kind: 'image', src: '/funnels/kitchens/scope/full-gut.webp', alt: 'Full gut kitchen remodel' } },
+          'cabinets-counters': { label: 'Cabinets + counters', asset: { kind: 'image', src: '/funnels/kitchens/scope/cabinets-counters.webp', alt: 'New cabinets and countertops' } },
+          'refresh': { label: 'Cosmetic refresh', asset: { kind: 'image', src: '/funnels/kitchens/scope/refresh.webp', alt: 'Cosmetic kitchen refresh' } },
+          'not-sure': { label: 'Not sure yet', asset: { kind: 'image', src: '/funnels/kitchens/scope/not-sure.webp', alt: 'Not sure about kitchen scope yet' } },
         },
       },
     },

@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useCallback, useMemo, useState } from 'react'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/shared/components/ui/carousel'
+import { ROOTS } from '@/shared/config/roots'
 import { PORTFOLIO_FALLBACK_IMAGES } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
 import { TRADE_BY_SLUG } from '@/shared/domains/funnels/constants/trade-by-slug'
 import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
@@ -58,7 +59,7 @@ export function FunnelProjectCarousel({ slug }: { slug: string }) {
         p.heroImage !== null && p.scopeIds.some(id => scopeToTrade.get(id) === tradeId),
       )
       .slice(0, MAX_SLIDES)
-      .map(p => ({ title: p.project.title, src: getOptimizedSrc(p.heroImage), href: `/portfolio-projects/${p.project.accessor}` }))
+      .map(p => ({ title: p.project.title, src: getOptimizedSrc(p.heroImage), href: `${ROOTS.landing.portfolioProjects()}/${p.project.accessor}` }))
     const padded = [...real]
     for (let i = 0; padded.length < MIN_SLIDES; i++) {
       const fb = PORTFOLIO_FALLBACK_IMAGES[i % PORTFOLIO_FALLBACK_IMAGES.length]

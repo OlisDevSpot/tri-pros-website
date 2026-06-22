@@ -36,6 +36,7 @@ export function AddressStepView({ content, value, answers, setValue }: StepProps
       <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}>
         <div className="mx-auto flex w-full max-w-md flex-col gap-4">
           <AddressAutocomplete
+            autoFocus
             defaultValue={value?.fullAddress}
             onSelect={handleSelect}
             showMap={false}

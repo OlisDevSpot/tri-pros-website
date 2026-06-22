@@ -149,7 +149,13 @@ export interface GuaranteeBlockContent { headline: string, body: string, scarcit
 export interface ProblemBlockContent {
   headline: string
   body?: string
-  points: { title: string, body: string }[]
+  /**
+   * Each reason. An optional `image` — a portrait poster whose headline is baked
+   * into the art — upgrades the block to an editorial gallery: the poster carries
+   * the title, `body` becomes its caption, and `alt` (falling back to `title`)
+   * labels it for assistive tech. Points without `image` render as text cards.
+   */
+  points: { title: string, body: string, image?: string, alt?: string }[]
   standardLine?: string
 }
 export interface ValueBlockContent {

@@ -9,6 +9,7 @@ import { CHECK_DURATIONS, CHECK_STEPS } from '@/shared/domains/funnels/constants
 import { useLiveZipResolve } from '@/shared/domains/funnels/hooks/use-live-zip-resolve'
 import { classifyZip } from '@/shared/domains/funnels/lib/resolve-zip'
 import { ZipCheckProgress } from '@/shared/domains/funnels/ui/steps/zip-check-progress'
+import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 
 type Phase = 'input' | 'checking' | 'qualified'
 
@@ -18,6 +19,10 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
   const [zip, setZip] = useState(value?.zip ?? '')
   const [phase, setPhase] = useState<Phase>(value?.zip ? 'qualified' : 'input')
   const reduceMotion = useReducedMotion()
+
+  // Focus the ZIP field on load — and again when the user drops back to the
+  // input phase via "check a different ZIP" (enabled flips false→true).
+  const inputRef = useAutoFocus<HTMLInputElement>({ enabled: phase === 'input' })
 
   // Live resolve as the user types. Seeded with the stored answer so a Back-return
   // shows the badge + enables the button without a refetch.
@@ -54,7 +59,7 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
   }
 
   if (phase === 'qualified') {
-    const place = [value?.city, value?.county ? `${value.county} County` : null].filter(Boolean).join(', ')
+    const place = value?.city ?? ''
     return (
       <div className="flex flex-col items-center gap-4 py-8 text-center" aria-live="polite">
         <p className="text-foreground text-xl font-semibold">
@@ -83,9 +88,7 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
     )
   }
 
-  const badgePlace = resolved
-    ? [resolved.city, resolved.county ? `${resolved.county} County` : null].filter(Boolean).join(', ')
-    : ''
+  const badgePlace = resolved?.city ?? ''
 
   // Reserved status slot (#2): at most one of these renders, and the slot keeps
   // a fixed min-height even when empty, so the button below never moves.
@@ -104,11 +107,14 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
 
       {/* Horizontal row (#1): input + badge share one line. No badge → the input
           owns the full width; on resolve the badge slides in from the right and
-          the input shrinks fluidly via `layout`. Fixed-height row → no vertical
+          the input gives way. The row carries `layout`; the input uses
+          `layout="position"` so its width snaps (no scaleX → no text distortion)
+          while position stays continuous (#1). Fixed-height row → no vertical
           shift regardless of badge/spinner state (#2). */}
       <motion.div layout={!reduceMotion} className="mx-auto flex w-full max-w-md items-center gap-2">
-        <motion.div layout={!reduceMotion} className="relative min-w-0 flex-1">
+        <motion.div layout={reduceMotion ? false : 'position'} className="relative min-w-0 flex-1">
           <Input
+            ref={inputRef}
             inputMode="numeric"
             maxLength={5}
             placeholder="ZIP code"
@@ -125,22 +131,32 @@ export function LocationStepView({ content, value, setValue }: StepProps<Locatio
               )
             : null}
         </motion.div>
-        {/* Resolved location badge — slides in from the right on resolve, exits on
-            edit/delete (#1). `layout` on the row lets the input reflow smoothly. */}
+        {/* Resolved location badge. The chip fades via opacity while `layout`
+            projection keeps its position continuous as the input gives way — no
+            scale keyframe, so nothing fights the projection (#1). The inner span
+            carries a translate-only slide-from-right; translate (unlike scale)
+            composes cleanly with layout projection and never distorts the text. */}
         <AnimatePresence mode="wait" initial={false}>
           {resolved
             ? (
                 <motion.div
                   key={resolved.zip}
                   layout={!reduceMotion}
-                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, x: 12 }}
-                  animate={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, x: 0 }}
-                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, x: 12 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   transition={FUNNEL_TRANSITION}
-                  className="border-primary/30 bg-primary/5 inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2"
+                  className="border-primary/30 bg-primary/5 inline-flex shrink-0 items-center rounded-full border px-3 py-2"
                 >
-                  <MapPin className="text-primary size-4 shrink-0" aria-hidden="true" />
-                  <span className="text-foreground whitespace-nowrap text-sm font-medium">{badgePlace}</span>
+                  <motion.span
+                    initial={reduceMotion ? false : { x: 10 }}
+                    animate={{ x: 0 }}
+                    transition={FUNNEL_TRANSITION}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <MapPin className="text-primary size-4 shrink-0" aria-hidden="true" />
+                    <span className="text-foreground whitespace-nowrap text-sm font-medium">{badgePlace}</span>
+                  </motion.span>
                 </motion.div>
               )
             : null}
