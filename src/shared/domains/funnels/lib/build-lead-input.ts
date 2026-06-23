@@ -1,5 +1,6 @@
 import type { PiiFormData } from '@/shared/domains/funnels/schemas/pii.schema'
 import type { FunnelAnswers, FunnelContext, ZipAnswer } from '@/shared/domains/funnels/types'
+import { readFbCookies } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
 
 // trade slug → canonical Notion trade name (CT/SMS uniformity)
 const TRADE_NAME: Record<string, string> = {
@@ -17,6 +18,7 @@ export function buildLeadInput(args: { ctx: FunnelContext, pii: PiiFormData, ans
   const { ctx, pii, answers } = args
   const zipData = zipAnswer(answers)
   const campaign = ctx.utm.campaign ?? ctx.utm.source ?? `funnel:${ctx.slug}`
+  const { fbp, fbc } = readFbCookies()
 
   return {
     name: `${pii.firstName.trim()} ${pii.lastName.trim()}`.trim(),
@@ -37,6 +39,7 @@ export function buildLeadInput(args: { ctx: FunnelContext, pii: PiiFormData, ans
         offer: ctx.offer,
         funnelSlug: ctx.slug,
         utm: ctx.utm,
+        meta: { fbp, fbc },
       },
     },
   }
