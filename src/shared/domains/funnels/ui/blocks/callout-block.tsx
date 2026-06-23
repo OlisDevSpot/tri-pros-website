@@ -28,7 +28,7 @@ export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: F
           ? (
               <ul className="flex flex-col gap-2">
                 {content.points.map(point => (
-                  <li key={point} className="flex items-center gap-2 text-[14.5px]" style={POINT_TEXT_STYLE}>
+                  <li key={point} className="flex items-center gap-2 text-(length:--fs-body)" style={POINT_TEXT_STYLE}>
                     <span className="size-1.5 shrink-0 rotate-45 rounded-[1px]" style={POINT_DOT_STYLE} />
                     {point}
                   </li>
@@ -38,7 +38,7 @@ export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: F
           : null}
         <Block.Trust><CredentialStrip /></Block.Trust>
         <Block.Actions>
-          <button type="button" className="bg-foreground text-card inline-flex items-center gap-2.5 rounded-[3px] px-6 py-3.5 text-[14.5px] font-bold">
+          <button type="button" className="bg-foreground text-card inline-flex items-center gap-2.5 rounded-[3px] px-6 py-3.5 text-(length:--fs-body) font-bold">
             {content.ctaLabel ?? 'See what you qualify for'}
             <ArrowRight className="size-4" style={ARROW_STYLE} />
           </button>
