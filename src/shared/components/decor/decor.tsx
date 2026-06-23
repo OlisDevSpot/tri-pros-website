@@ -1,5 +1,6 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import type { DecorShape } from '@/shared/components/decor/constants/decor-config'
 import { motion, useReducedMotion } from 'motion/react'
 import {
@@ -18,14 +19,31 @@ import { cn } from '@/shared/lib/utils'
  * on a higher z-index. Motion (draw-in) via motion/react; sweep/breathe via the
  * .decor-sweep/.decor-breathe CSS classes. Reduced motion → static final state.
  */
-export function Decor({ shape = 'arc', rings, className }: { shape?: DecorShape, rings?: number, className?: string }) {
+export function Decor({ shape = 'arc', rings, placement = 'corner', className }: { shape?: DecorShape, rings?: number, placement?: 'corner' | 'cover', className?: string }) {
   const reduce = useReducedMotion()
   const geometry = buildDecorGeometry(shape, rings)
   const { x, y } = DECOR_ORIGIN
+  const isCover = placement === 'cover'
 
   return (
-    <div className={cn('pointer-events-none absolute -top-[150px] -right-[150px] z-0 h-[500px] w-[500px]', className)} aria-hidden="true">
-      <svg width="100%" height="100%" viewBox={`0 0 ${DECOR_VIEWBOX} ${DECOR_VIEWBOX}`} fill="none">
+    <div
+      className={cn(
+        'pointer-events-none absolute',
+        isCover
+          ? 'inset-0 z-10 h-full w-full'
+          : '-top-[150px] -right-[150px] z-0 h-[500px] w-[500px]',
+        className,
+      )}
+      style={isCover ? ({ '--decor-gradient-alpha': '0.5' } as CSSProperties) : undefined}
+      aria-hidden="true"
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${DECOR_VIEWBOX} ${DECOR_VIEWBOX}`}
+        preserveAspectRatio={isCover ? 'xMaxYMin slice' : 'xMidYMid meet'}
+        fill="none"
+      >
         <defs>
           <radialGradient id="decor-grad" cx={x} cy={y} r={420} gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="var(--decor-stroke)" stopOpacity="var(--decor-gradient-alpha)" />
