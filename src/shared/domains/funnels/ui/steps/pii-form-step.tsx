@@ -13,6 +13,7 @@ import { Input } from '@/shared/components/ui/input'
 import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { useDebouncedAsyncValidator } from '@/shared/domains/funnels/hooks/use-debounced-async-validator'
 import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
+import { firePixel, mintEventId } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
 import { piiSchema } from '@/shared/domains/funnels/schemas/pii.schema'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -70,6 +71,12 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
       toast.error('Please enter a valid US phone number')
       return
     }
+    const eventId = mintEventId()
+    firePixel('Lead', {
+      eventId,
+      contentCategory: ctx.pixel.contentCategory,
+      contentName: ctx.slug,
+    })
     const created = await submit.mutateAsync({
       phone: e164,
       name: lead.name,
@@ -78,6 +85,11 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
       zip: lead.zip,
       leadSourceSlug: lead.leadSourceSlug,
       leadMetaJSON: lead.leadMetaJSON,
+      eventId,
+      pixel: {
+        contentCategory: ctx.pixel.contentCategory,
+        contentName: ctx.slug,
+      },
     })
     setValue({ leadId: created.customerId })
     advance()

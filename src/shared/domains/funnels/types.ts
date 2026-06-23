@@ -128,6 +128,7 @@ export interface FunnelContext {
   offer: string
   theme: FunnelTheme
   utm: FunnelUtm
+  pixel: FunnelPixel
 }
 
 // ── Uniform step props — identical for every kind ──

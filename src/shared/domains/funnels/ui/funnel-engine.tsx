@@ -40,7 +40,7 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   // Ambient funnel-level context handed to every step (e.g. the lead step will
   // read ctx.utm/offer/slug here in 2b — no engine special-case needed).
   const ctx = useMemo<FunnelContext>(
-    () => ({ slug: spec.slug, offer: spec.offer, theme: spec.theme, utm }),
+    () => ({ slug: spec.slug, offer: spec.offer, theme: spec.theme, utm, pixel: spec.pixel }),
     [spec, utm],
   )
 
