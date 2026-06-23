@@ -217,11 +217,29 @@ export type MarketingRegistry = { [K in MarketingBlockKind]: MarketingBlockCompo
 
 // ── FunnelSpec: ordered steps + branching + metadata. No content map. ──
 
+export interface FunnelMeta {
+  /**
+   * Tab title + og:title base. The root layout title template appends
+   * " | Tri Pros Remodeling". e.g. "Kitchen Remodels".
+   */
+  title: string
+  /** Meta description + og:description. Aim ~150–160 chars. */
+  description: string
+  /** OG image headline override. Defaults to `hero.headline`. */
+  ogHeadline?: string
+  /**
+   * OG background image (absolute public path, JPEG/PNG). Defaults to
+   * `hero.media.src`. Required for funnels without `hero.media`.
+   */
+  ogImage?: string
+}
+
 export interface FunnelPixel { contentCategory: string }
 export interface FunnelSpec {
   slug: FunnelSlug
   offer: string
   title: string
+  meta: FunnelMeta
   hero: HeroContent
   theme: FunnelTheme
   pixel: FunnelPixel

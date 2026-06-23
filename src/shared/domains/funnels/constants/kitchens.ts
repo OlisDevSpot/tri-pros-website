@@ -9,6 +9,10 @@ export const kitchensFunnel: FunnelSpec = {
   slug: 'kitchens',
   offer: 'showcase',
   title: 'Kitchen Showcase',
+  meta: {
+    title: 'Kitchen Remodels',
+    description: 'AAA-grade kitchen remodels at a showcase price for Southern California homeowners. See if your home qualifies — licensed, bonded & insured.',
+  },
   hero: {
     headline: 'Get a AAA-grade kitchen remodel — at a Showcase price.',
     subhead: 'See if your home qualifies to be featured in our showcase.',
