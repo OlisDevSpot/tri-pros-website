@@ -6,6 +6,7 @@ import { expand } from 'dotenv-expand'
 import z from 'zod'
 
 import { cloudtalkConfigMeta, cloudtalkEnvFragment } from '@/shared/services/providers/cloudtalk/lib/config'
+import { metaConfigMeta, metaEnvFragment } from '@/shared/services/providers/meta/lib/config'
 import { notionConfigMeta, notionEnvFragment } from '@/shared/services/providers/notion/lib/config'
 import { quickbooksConfigMeta, quickbooksEnvFragment } from '@/shared/services/providers/quickbooks/lib/config'
 import { r2ConfigMeta, r2EnvFragment } from '@/shared/services/providers/r2/lib/config'
@@ -89,6 +90,9 @@ const envSchema = z.object({
   // ABLY — fragment lives at providers/upstash/lib/config.ts (TODO backlog:
   // move to providers/ably/ — see upstash/lib/config.ts header note)
   ...ablyEnvFragment.shape,
+
+  // META (Pixel + Conversions API) — fragment lives at providers/meta/lib/config.ts
+  ...metaEnvFragment.shape,
 
   // VOIP — shared between voip-in-house (Twilio) and voip-campaigns (CloudTalk).
   // See docs/plans/voip/INTEGRATION-SEAM.md + .env.voip.example.
@@ -193,6 +197,7 @@ if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
 const PROVIDER_METAS = [
   twilioConfigMeta,
   cloudtalkConfigMeta,
+  metaConfigMeta,
   resendConfigMeta,
   notionConfigMeta,
   quickbooksConfigMeta,
