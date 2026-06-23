@@ -141,7 +141,21 @@
   --decor-stroke: #03afed;
   --decor-gradient-alpha: 0.34;
 
+  /* <Block> compound system — layout rhythm (see funnel/ui/block/) */
+  --block-pad: 1.25rem; /* inner panel padding (card/muted surfaces) — mobile */
+  --block-pad-compact: 1rem; /* size='compact' vertical padding — mobile */
+  --block-gap: 1.5rem; /* vertical rhythm between Block.Content children */
+  --block-media-min-h: 22rem; /* min height of the media column on desktop */
+
   color: var(--foreground);
+}
+
+@media (min-width: 640px) {
+  .theme-marketing,
+  .funnel-light {
+    --block-pad: 2.25rem;
+    --block-pad-compact: 1.5rem;
+  }
 }
 
 /* Dark stub — EXPLICIT opt-in only via `.theme-dark`. It must NOT auto-activate
