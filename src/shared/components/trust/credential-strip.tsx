@@ -9,7 +9,7 @@ import { cn } from '@/shared/lib/utils'
 export function CredentialStrip({ className }: { className?: string }) {
   const credentials = buildCredentials()
   return (
-    <div className={cn('flex flex-wrap items-center border-t pt-(--block-divider-pad)', className)} style={{ columnGap: 'var(--cred-gap)', rowGap: '10px' }}>
+    <div className={cn('flex flex-wrap items-center border-t pt-[var(--block-divider-pad)]', className)} style={{ columnGap: 'var(--cred-gap)', rowGap: '10px' }}>
       {credentials.map(c => (
         <span key={c.label} className="inline-flex items-center gap-2 whitespace-nowrap text-[13px] font-semibold" style={{ color: 'var(--cred-ink)' }}>
           <span className="size-[7px] shrink-0 rotate-45 rounded-[1px]" style={{ background: 'var(--primary)' }} />

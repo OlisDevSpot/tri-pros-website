@@ -8,11 +8,11 @@ export function ValueBlock({ content }: { content: ValueBlockContent, ctx: Funne
     <Block surface="plain" align="center">
       <Block.Content>
         <Block.Headline>{content.headline}</Block.Headline>
-        {content.intro ? <Block.Body className="text-balance">{content.intro}</Block.Body> : null}
+        {content.intro ? <Block.Body>{content.intro}</Block.Body> : null}
         {content.roiStat
           ? (
               <div className="flex flex-col items-center">
-                <span className="text-primary font-bold tabular-nums text-(length:--fs-display)">{content.roiStat.value}</span>
+                <span className="text-primary font-bold tabular-nums text-[length:var(--fs-display)]">{content.roiStat.value}</span>
                 <span className="text-muted-foreground text-sm">{content.roiStat.label}</span>
               </div>
             )
