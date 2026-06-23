@@ -217,7 +217,7 @@ export const funnelsRouter = createTRPCRouter({
       eventId: z.string(),
       pixel: z.object({ contentCategory: z.string(), contentName: z.string() }).optional(),
     }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ ctx }) => {
       const ip = clientIp((ctx as { req?: Request }).req)
       const { success } = await trackRatelimit.limit(ip)
       if (!success) {
