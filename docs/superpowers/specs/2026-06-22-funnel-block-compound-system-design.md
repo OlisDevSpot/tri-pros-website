@@ -92,7 +92,7 @@ Each slot is its own tiny RSC-safe component (flat named export), all re-attache
 | `Block.Body` | `block-body` | prose paragraph(s), font `var(--font-text)` (Nunito), color `--body-text`, `max-w-[48ch]`. |
 | `Block.Media` | `block-media` | the full-bleed media column (see recipe). Hosts an `<Image fill>` + optional `overlay`. |
 | `Block.Trust` | `block-trust` | drop-in for `<CredentialStrip>` / trust content; always left-aligned (carve-out). |
-| `Block.Actions` | `block-actions` | the CTA area (standard `<Button>`), top rhythm from `--block-gap`; not governed by `align`. |
+| `Block.Actions` | `block-actions` | the CTA area (standard `<Button>`), top rhythm from `--block-gap`. As a normal `Block.Content` child it IS positioned by the Root's `align` (e.g. `align="center"` centers the CTA — what `cta`/centered blocks want). Unlike `Block.Trust`, it has no left carve-out. |
 
 **Type law (A5):** Headline → `--font-display`; Eyebrow/Body → `--font-text`. **No monospace, ever** (token spec §3). No slot hardcodes a font family.
 
