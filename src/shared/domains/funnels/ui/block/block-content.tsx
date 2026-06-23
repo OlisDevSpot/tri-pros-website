@@ -8,5 +8,5 @@ import { cn } from '@/shared/lib/utils'
  * the gap is pulled tight to --block-gap-kicker so the label hugs its headline.
  */
 export function BlockContent({ className, ...props }: ComponentProps<'div'>) {
-  return <div data-slot="block-content" className={cn('flex flex-col gap-[var(--block-gap)] [&>[data-slot=block-eyebrow]+[data-slot=block-headline]]:mt-[calc(var(--block-gap-kicker)_-_var(--block-gap))]', className)} {...props} />
+  return <div data-slot="block-content" className={cn('flex flex-col gap-(--block-gap) [&>[data-slot=block-eyebrow]+[data-slot=block-headline]]:mt-[calc(var(--block-gap-kicker)_-_var(--block-gap))]', className)} {...props} />
 }

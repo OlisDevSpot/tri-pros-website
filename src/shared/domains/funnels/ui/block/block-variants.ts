@@ -28,12 +28,12 @@ export const blockVariants = cva(
     variants: {
       media: {
         none: '',
-        right: 'flex flex-col rounded-md md:block md:min-h-[var(--block-media-min-h)] md:bg-transparent md:shadow-none [&>[data-slot=block-content]]:relative [&>[data-slot=block-content]]:z-10 [&>[data-slot=block-content]]:p-[var(--block-pad)] md:[&>[data-slot=block-content]]:my-[var(--block-pad)] md:[&>[data-slot=block-content]]:w-[52%] md:[&>[data-slot=block-content]]:rounded-md md:[&>[data-slot=block-content]]:bg-card md:[&>[data-slot=block-content]]:shadow-[0_18px_48px_-14px_rgb(0_0_0/0.45)]',
-        left: 'flex flex-col rounded-md md:block md:min-h-[var(--block-media-min-h)] md:bg-transparent md:shadow-none [&>[data-slot=block-content]]:relative [&>[data-slot=block-content]]:z-10 [&>[data-slot=block-content]]:p-[var(--block-pad)] md:[&>[data-slot=block-content]]:my-[var(--block-pad)] md:[&>[data-slot=block-content]]:ml-auto md:[&>[data-slot=block-content]]:w-[52%] md:[&>[data-slot=block-content]]:rounded-md md:[&>[data-slot=block-content]]:bg-card md:[&>[data-slot=block-content]]:shadow-[0_18px_48px_-14px_rgb(0_0_0/0.45)]',
+        right: 'flex flex-col rounded-md md:block md:min-h-(--block-media-min-h) md:bg-transparent md:shadow-none [&>[data-slot=block-content]]:relative [&>[data-slot=block-content]]:z-10 [&>[data-slot=block-content]]:p-(--block-pad) md:[&>[data-slot=block-content]]:my-(--block-pad) md:[&>[data-slot=block-content]]:w-[52%] md:[&>[data-slot=block-content]]:rounded-md md:[&>[data-slot=block-content]]:bg-card md:[&>[data-slot=block-content]]:shadow-[0_18px_48px_-14px_rgb(0_0_0/0.45)]',
+        left: 'flex flex-col rounded-md md:block md:min-h-(--block-media-min-h) md:bg-transparent md:shadow-none [&>[data-slot=block-content]]:relative [&>[data-slot=block-content]]:z-10 [&>[data-slot=block-content]]:p-(--block-pad) md:[&>[data-slot=block-content]]:my-(--block-pad) md:[&>[data-slot=block-content]]:ml-auto md:[&>[data-slot=block-content]]:w-[52%] md:[&>[data-slot=block-content]]:rounded-md md:[&>[data-slot=block-content]]:bg-card md:[&>[data-slot=block-content]]:shadow-[0_18px_48px_-14px_rgb(0_0_0/0.45)]',
       },
       surface: {
         plain: 'bg-background',
-        card: 'bg-card rounded-md shadow-[var(--shadow-card)]',
+        card: 'bg-card rounded-md shadow-(--shadow-card)',
         muted: 'bg-muted rounded-md',
       },
       align: {
@@ -48,10 +48,10 @@ export const blockVariants = cva(
     },
     compoundVariants: [
       // Root padding only for non-media blocks; media blocks pad the floating card.
-      { media: 'none', surface: 'card', class: 'p-[var(--block-pad)]' },
-      { media: 'none', surface: 'muted', class: 'p-[var(--block-pad)]' },
-      { media: 'none', surface: 'plain', size: 'default', class: 'py-[var(--block-pad)]' },
-      { media: 'none', surface: 'plain', size: 'compact', class: 'py-[var(--block-pad-compact)]' },
+      { media: 'none', surface: 'card', class: 'p-(--block-pad)' },
+      { media: 'none', surface: 'muted', class: 'p-(--block-pad)' },
+      { media: 'none', surface: 'plain', size: 'default', class: 'py-(--block-pad)' },
+      { media: 'none', surface: 'plain', size: 'compact', class: 'py-(--block-pad-compact)' },
     ],
     defaultVariants: { media: 'none', surface: 'plain', align: 'left', size: 'default' },
   },

@@ -17,5 +17,5 @@ interface BlockDividerProps extends ComponentProps<'div'> {
  */
 export function BlockDivider({ asChild, className, ...props }: BlockDividerProps) {
   const Comp = asChild ? Slot : 'div'
-  return <Comp data-slot="block-divider" className={cn('border-border w-full border-t pt-[var(--block-divider-pad)]', className)} {...props} />
+  return <Comp data-slot="block-divider" className={cn('border-border w-full border-t pt-(--block-divider-pad)', className)} {...props} />
 }

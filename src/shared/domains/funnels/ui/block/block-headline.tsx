@@ -7,7 +7,7 @@ export function BlockHeadline({ className, ...props }: ComponentProps<'h2'>) {
   return (
     <h2
       data-slot="block-headline"
-      className={cn('text-foreground font-sans text-balance font-bold text-[length:var(--fs-headline)] leading-[var(--lh-headline)] tracking-[var(--tracking-headline)]', className)}
+      className={cn('text-foreground font-sans text-balance font-bold text-(length:--fs-headline) leading-(--lh-headline) tracking-(--tracking-headline)', className)}
       {...props}
     />
   )
