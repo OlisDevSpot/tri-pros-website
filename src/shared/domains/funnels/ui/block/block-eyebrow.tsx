@@ -6,5 +6,5 @@ const EYEBROW_STYLE: CSSProperties = { color: 'var(--accent-ink)' }
 
 /** Small uppercase accent label. Inherits Nunito (body font) — never font-mono. */
 export function BlockEyebrow({ className, ...props }: ComponentProps<'p'>) {
-  return <p data-slot="block-eyebrow" className={cn('text-[11.5px] font-bold tracking-[0.2em] uppercase', className)} style={EYEBROW_STYLE} {...props} />
+  return <p data-slot="block-eyebrow" className={cn('font-bold uppercase text-[length:var(--fs-eyebrow)] tracking-[var(--tracking-eyebrow)]', className)} style={EYEBROW_STYLE} {...props} />
 }

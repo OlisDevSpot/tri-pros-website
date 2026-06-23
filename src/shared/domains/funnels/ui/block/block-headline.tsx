@@ -2,12 +2,12 @@ import type { ComponentProps } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
-/** Section headline. font-sans = Syne (display). */
+/** Section headline. font-sans = Syne (display). Type from funnel tokens. */
 export function BlockHeadline({ className, ...props }: ComponentProps<'h2'>) {
   return (
     <h2
       data-slot="block-headline"
-      className={cn('text-foreground font-sans text-2xl leading-[1.15] font-bold tracking-[-0.01em] sm:text-[28px]', className)}
+      className={cn('text-foreground font-sans text-balance font-bold text-[length:var(--fs-headline)] leading-[var(--lh-headline)] tracking-[var(--tracking-headline)]', className)}
       {...props}
     />
   )
