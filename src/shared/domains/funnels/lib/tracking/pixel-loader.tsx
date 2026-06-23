@@ -1,0 +1,32 @@
+/* eslint-disable node/prefer-global/process */
+'use client'
+
+import Script from 'next/script'
+
+/**
+ * One-time Meta Pixel base-code loader. Mounted by the funnel layout so it
+ * loads on every funnel screen but nowhere else in the app. Renders nothing
+ * (and loads no script) when NEXT_PUBLIC_META_PIXEL_ID is unset — local dev and
+ * unprovisioned environments stay inert. Standard Meta snippet; the initial
+ * PageView fires here, all later events go through firePixel().
+ */
+export function PixelLoader() {
+  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
+  if (!pixelId) {
+    return null
+  }
+  return (
+    <Script id="meta-pixel" strategy="afterInteractive">
+      {`!function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window,document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '${pixelId}');
+      fbq('track', 'PageView');`}
+    </Script>
+  )
+}
