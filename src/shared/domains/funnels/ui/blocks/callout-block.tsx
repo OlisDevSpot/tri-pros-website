@@ -19,7 +19,7 @@ const DEFAULT_IMAGE = { src: '/portfolio-photos/modern-kitchen-1.jpeg', alt: 'Re
 export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: FunnelContext }) {
   const image = content.image ?? DEFAULT_IMAGE
   return (
-    <Block media="right" align="left">
+    <Block media="right" surface="card" align="left">
       <Block.Content>
         <Block.Eyebrow>{content.eyebrow ?? 'Financing · in writing'}</Block.Eyebrow>
         <Block.Headline>{content.headline}</Block.Headline>
