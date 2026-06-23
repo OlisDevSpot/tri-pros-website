@@ -12,6 +12,7 @@ import { STEP_REGISTRY } from '@/shared/domains/funnels/constants/step-registry'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
 import { useFunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
 import { getFunnel } from '@/shared/domains/funnels/lib/registry'
+import { useFunnelTracking } from '@/shared/domains/funnels/lib/tracking/use-funnel-tracking'
 import { FunnelLanding } from '@/shared/domains/funnels/ui/funnel-landing'
 import { FunnelProgress } from '@/shared/domains/funnels/ui/funnel-progress'
 import { FunnelStickyHeader } from '@/shared/domains/funnels/ui/funnel-sticky-header'
@@ -30,6 +31,7 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   const spec = getFunnel(slug)
   const engine = useFunnelEngine(spec)
   const utm = useFunnelUtm(slug)
+  useFunnelTracking(spec, engine)
   const reduceMotion = useReducedMotion()
 
   // Constant opacity for the header on step pages (no hero scroll to track).
