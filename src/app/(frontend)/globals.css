@@ -147,6 +147,19 @@
   --block-gap: 1.5rem; /* vertical rhythm between Block.Content children */
   --block-media-min-h: 22rem; /* min height of the media column on desktop */
 
+  /* funnel type scale (see funnel/ui/block/ slots) */
+  --fs-headline: 1.5rem; /* mobile; ≥640 below */
+  --lh-headline: 1.15;
+  --tracking-headline: -0.01em;
+  --fs-body: 0.95rem;
+  --lh-body: 1.65;
+  --fs-eyebrow: 0.72rem;
+  --tracking-eyebrow: 0.2em;
+  --fs-display: 2.25rem; /* prominent block numbers (e.g. ROI stat) */
+  --measure-prose: 60ch; /* lead/body readable measure */
+  --block-gap-kicker: 0.5rem; /* eyebrow→headline tight rhythm */
+  --block-divider-pad: 2rem; /* rule→content breathing inside a divided zone */
+
   color: var(--foreground);
 }
 
@@ -155,6 +168,7 @@
   .funnel-light {
     --block-pad: 2.25rem;
     --block-pad-compact: 1.5rem;
+    --fs-headline: 1.75rem;
   }
 }
 
