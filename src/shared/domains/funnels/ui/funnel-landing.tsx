@@ -24,6 +24,7 @@ import {
   HERO_TEXT_OPACITY_OUT,
 } from '@/shared/domains/funnels/constants/funnel-motion'
 import { MARKETING_REGISTRY } from '@/shared/domains/funnels/constants/marketing-registry'
+import { FunnelAtmosphere } from '@/shared/domains/funnels/ui/funnel-atmosphere'
 import { FunnelHero } from '@/shared/domains/funnels/ui/funnel-hero'
 import { FunnelStickyHeader } from '@/shared/domains/funnels/ui/funnel-sticky-header'
 import { TrustBar } from '@/shared/domains/funnels/ui/trust-bar'
@@ -89,8 +90,9 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
         initial={reduceMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={FUNNEL_TRANSITION}
-        className="flex w-full flex-col items-center gap-16 py-10"
+        className="relative flex w-full flex-col items-center gap-16 overflow-hidden py-10"
       >
+        <FunnelAtmosphere />
         <div className="flex w-full flex-col items-center gap-8">
           <div className={`w-full ${FUNNEL_RAIL_MAX_W} px-5`}>
             <FunnelHero content={spec.hero} onCta={scrollToQuestion} ref={heroRef} scroll={heroScroll} />

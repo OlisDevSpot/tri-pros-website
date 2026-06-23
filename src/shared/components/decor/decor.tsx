@@ -19,19 +19,19 @@ import { cn } from '@/shared/lib/utils'
  * on a higher z-index. Motion (draw-in) via motion/react; sweep/breathe via the
  * .decor-sweep/.decor-breathe CSS classes. Reduced motion → static final state.
  */
-export function Decor({ shape = 'arc', rings, placement = 'corner', className }: { shape?: DecorShape, rings?: number, placement?: 'corner' | 'cover', className?: string }) {
+export function Decor({ shape = 'arc', rings, placement = 'corner', className }: { shape?: DecorShape, rings?: number, placement?: 'corner' | 'cover' | 'free', className?: string }) {
   const reduce = useReducedMotion()
   const geometry = buildDecorGeometry(shape, rings)
   const { x, y } = DECOR_ORIGIN
   const isCover = placement === 'cover'
+  const isFree = placement === 'free'
 
   return (
     <div
       className={cn(
         'pointer-events-none absolute',
-        isCover
-          ? 'inset-0 z-10 h-full w-full'
-          : '-top-[150px] -right-[150px] z-0 h-[500px] w-[500px]',
+        isCover && 'inset-0 z-10 h-full w-full',
+        !isCover && !isFree && '-top-[150px] -right-[150px] z-0 h-[500px] w-[500px]',
         className,
       )}
       style={isCover ? ({ '--decor-gradient-alpha': '0.5' } as CSSProperties) : undefined}

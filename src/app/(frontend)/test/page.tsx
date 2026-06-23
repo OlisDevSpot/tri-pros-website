@@ -2,7 +2,6 @@ import type { FunnelContext } from '@/shared/domains/funnels/types'
 
 import Image from 'next/image'
 
-import { Decor } from '@/shared/components/decor/decor'
 import { CredentialStrip } from '@/shared/components/trust/credential-strip'
 import { EMPTY_UTM } from '@/shared/domains/funnels/constants/utm'
 import { Block } from '@/shared/domains/funnels/ui/block/block'
@@ -25,7 +24,7 @@ export default function TestPage() {
             <button type="button" className="bg-foreground text-card inline-flex items-center gap-2.5 rounded-[3px] px-6 py-3.5 text-[14.5px] font-bold">See what you qualify for</button>
           </Block.Actions>
         </Block.Content>
-        <Block.Media side="right" overlay={<Decor shape="arc" placement="cover" />}>
+        <Block.Media side="right">
           <Image src="/portfolio-photos/modern-kitchen-1.jpeg" alt="" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
         </Block.Media>
       </Block>

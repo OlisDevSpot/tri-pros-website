@@ -2,7 +2,6 @@ import type { CSSProperties } from 'react'
 import type { CalloutBlockContent, FunnelContext } from '@/shared/domains/funnels/types'
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
-import { Decor } from '@/shared/components/decor/decor'
 import { CredentialStrip } from '@/shared/components/trust/credential-strip'
 import { Block } from '@/shared/domains/funnels/ui/block/block'
 
@@ -45,7 +44,7 @@ export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: F
           </button>
         </Block.Actions>
       </Block.Content>
-      <Block.Media side="right" overlay={<Decor shape="arc" placement="cover" />}>
+      <Block.Media side="right">
         <Image src={image.src} alt={image.alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
       </Block.Media>
     </Block>
