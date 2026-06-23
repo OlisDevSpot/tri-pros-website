@@ -68,7 +68,8 @@ export function ProblemBlock({ content }: { content: ProblemBlockContent, ctx: F
                   <ShieldCheck className="size-4" aria-hidden="true" />
                   The standard
                 </span>
-                <p className="text-foreground text-pretty text-base leading-relaxed sm:text-lg">{content.standardLine}</p>
+                {/* Block.Body supplies the sanctioned max-w-[48ch] measure (no raw max-w in the block) */}
+                <Block.Body className="text-pretty text-base leading-relaxed sm:text-lg">{content.standardLine}</Block.Body>
               </div>
             )
           : null}

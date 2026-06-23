@@ -5,7 +5,7 @@ import { Block } from '@/shared/domains/funnels/ui/block/block'
 
 export function ValueBlock({ content }: { content: ValueBlockContent, ctx: FunnelContext }) {
   return (
-    <Block surface="card" align="center">
+    <Block surface="plain" align="center">
       <Block.Content>
         <Block.Headline>{content.headline}</Block.Headline>
         {content.intro ? <Block.Body className="text-balance">{content.intro}</Block.Body> : null}
