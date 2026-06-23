@@ -12,7 +12,7 @@ export function ValueBlock({ content }: { content: ValueBlockContent, ctx: Funne
         {content.roiStat
           ? (
               <div className="flex flex-col items-center">
-                <span className="text-primary text-4xl font-bold tabular-nums">{content.roiStat.value}</span>
+                <span className="text-primary font-bold tabular-nums text-(length:--fs-display)">{content.roiStat.value}</span>
                 <span className="text-muted-foreground text-sm">{content.roiStat.label}</span>
               </div>
             )

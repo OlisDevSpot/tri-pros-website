@@ -63,14 +63,13 @@ export function ProblemBlock({ content }: { content: ProblemBlockContent, ctx: F
 
         {content.standardLine
           ? (
-              <div className="border-border flex w-full flex-col items-center gap-3 border-t text-center">
-                <span className="text-primary inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.18em]">
+              <Block.Divider className="flex flex-col items-center gap-3 text-center">
+                <Block.Eyebrow className="text-primary inline-flex items-center gap-1.5">
                   <ShieldCheck className="size-4" aria-hidden="true" />
                   The standard
-                </span>
-                {/* Block.Body supplies the sanctioned max-w-[48ch] measure (no raw max-w in the block) */}
-                <Block.Body className="text-pretty text-base leading-relaxed sm:text-lg">{content.standardLine}</Block.Body>
-              </div>
+                </Block.Eyebrow>
+                <Block.Body>{content.standardLine}</Block.Body>
+              </Block.Divider>
             )
           : null}
       </Block.Content>
