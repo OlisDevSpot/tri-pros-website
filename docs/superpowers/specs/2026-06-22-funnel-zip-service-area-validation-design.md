@@ -31,11 +31,21 @@ The **ZIP** is rejected, never the lead (the ZIP step precedes PII, so no lead e
 | County | Inclusion |
 |---|---|
 | **Los Angeles** | Whole county (SFV, Santa Clarita, Antelope Valley incl. Lake LA, Pasadena/SGV — all). |
-| **San Bernardino** | Whole county. |
-| **Riverside** | Whole county (eastern boundary). |
+| **San Bernardino** | Western strip only (LA line east **through Fontana**): Chino Hills, Chino, Montclair, Ontario, Upland, Rancho Cucamonga, Fontana. Nothing past Fontana — **no** Rialto/Colton/San Bernardino city/Redlands, **no** High Desert (Victorville/Hesperia/Apple Valley), Mojave (Barstow/Needles/29 Palms), or mountains (Big Bear). |
+| **Riverside** | Western sliver only, pressed against the LA/Orange corner: **Corona, Norco, Mira Loma**. **No** Riverside city, Moreno Valley, Perris, Temecula, Hemet, and **no** Coachella Valley (Palm Springs/Indio/etc.) or Blythe. |
 | **Ventura** | West to and including the **city of Ventura** (Thousand Oaks, Simi, Moorpark, Camarillo, Oxnard, Ventura). |
 | **Orange** | North/central, south to **~Laguna Beach** (excludes Dana Point / San Juan Capistrano / San Clemente). |
 | **Kern** | **Rosamond only** (`93560`) — the north sliver. |
+
+> **⚠️ CORRECTION (2026-06-22, post-implementation):** The original design (and the
+> rationale/architecture/open-item sections below) modeled **San Bernardino and Riverside as
+> whole counties**. That was wrong — it pulled in the entire Coachella Valley (Indio, Palm
+> Springs, Blythe) and the SB High Desert/Mojave/mountains. The table above is the corrected,
+> authoritative service area: **only LA / Orange / Ventura are county-level includes; SB and
+> Riverside are explicit western-city ZIP lists** (SB through Fontana; Riverside = Corona/
+> Norco/Mira Loma). Where the text below says "whole counties" for SB/Riverside, read it as
+> superseded by this table and the generator (`scripts/generate-service-area-zips.ts`). Set
+> size went 942 → 750.
 
 ## Locked decisions
 
