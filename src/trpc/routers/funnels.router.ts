@@ -42,6 +42,12 @@ const addressRatelimit = new Ratelimit({
   prefix: 'funnel:address',
 })
 
+const trackRatelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, '1 h'),
+  prefix: 'funnel:track',
+})
+
 const e164 = z.string().regex(/^\+1\d{10}$/, 'Expected a US E.164 number')
 
 export const funnelsRouter = createTRPCRouter({
@@ -197,6 +203,29 @@ export const funnelsRouter = createTRPCRouter({
       if (!result.success) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not save your details.' })
       }
+      return { ok: true as const }
+    }),
+
+  // Generic post-lead server-twin seam for dual-fire browser events that fire
+  // AFTER the lead exists (e.g. Schedule). Guarded by the leadId UUID; the
+  // browser passes the same eventId it used for its pixel so Meta dedupes.
+  // Dormant in phase 1 — no funnel emits 'Schedule' yet (no datetime step).
+  trackFunnelEvent: baseProcedure
+    .input(z.object({
+      leadId: z.string().uuid(),
+      event: z.enum(['Schedule']),
+      eventId: z.string(),
+      pixel: z.object({ contentCategory: z.string(), contentName: z.string() }).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const ip = clientIp((ctx as { req?: Request }).req)
+      const { success } = await trackRatelimit.limit(ip)
+      if (!success) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
+      }
+      // Phase 1: the meta-capi-event job only handles 'Lead'. This endpoint is
+      // the wiring seam; the 'Schedule' job variant + measurement.service method
+      // land alongside the first datetime-bearing funnel. Acknowledge for now.
       return { ok: true as const }
     }),
 })
