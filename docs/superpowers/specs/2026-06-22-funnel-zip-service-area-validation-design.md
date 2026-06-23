@@ -20,7 +20,7 @@ The **ZIP** is rejected, never the lead (the ZIP step precedes PII, so no lead e
 - `resolveZip(zip)` — local `CA_ZIP_CITIES` cache (free, instant) → **zippopotam.us** (free,
   no key) fallback for city/state; discriminated `ok | not-found | error`.
 - `useLiveZipResolve` — debounced, abortable, only resolves when `classifyZip === 'in-area'`.
-- **The out-of-area UX is already scaffolded but dark:** `location-step.tsx` computes
+- **The out-of-area UX is already scaffolded but dark:** `zip-step.tsx` computes
   `showOutOfArea`, renders `content.outOfAreaLabel` in the reserved status slot, and the
   advance button is `disabled={!resolved}` (and `resolved` is only set for in-area ZIPs). So
   the moment `classifyZip` returns `out-of-area`, the message shows and the button stays
@@ -86,7 +86,7 @@ The **ZIP** is rejected, never the lead (the ZIP step precedes PII, so no lead e
   `CA_ZIP_CITIES`, which already carries county for its entries.)
 - **`resolve-zip.ts`** — `classifyZip` rewired: not-5-digits → `invalid-format`;
   `isInServiceArea(zip)` → `in-area`; else → `out-of-area`. (Drops the SoCal-regex shortcut.)
-- **`location-step.tsx`** — no structural change; the out-of-area path lights up automatically.
+- **`zip-step.tsx`** — no structural change; the out-of-area path lights up automatically.
   Update `ZIP_STEP.content.outOfAreaLabel` copy if desired.
 
 ## Data flow (funnel ZIP step)
