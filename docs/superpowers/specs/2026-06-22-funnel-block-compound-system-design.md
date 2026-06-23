@@ -86,8 +86,8 @@ Each slot is its own tiny RSC-safe component (flat named export), all re-attache
 
 | Slot | `data-slot` | Role |
 |---|---|---|
-| `Block.Content` | `block-content` | the non-media column wrapper — `flex-col`, gap = `--block-gap`; alignment inherited from Root via descendant selector. Holds everything below. When `media='none'` it spans full width. |
-| `Block.Eyebrow` | `block-eyebrow` | small uppercase tracked accent line, font `var(--font-text)` (Nunito), color `--accent-ink`. Flat, separate from headline. |
+| `Block.Content` | `block-content` | the non-media column wrapper — `flex-col`, gap = `--block-gap`; alignment inherited from Root via descendant selector. Holds everything below. When `media='none'` it spans full width. **Kicker rhythm (standardized):** when a headline directly follows an eyebrow, the gap is pulled tight (`[&>[data-slot=block-eyebrow]+[data-slot=block-headline]]:-mt-4` → ~8px) so the eyebrow hugs its headline instead of floating a full `--block-gap` above it. Applies to every block. |
+| `Block.Eyebrow` | `block-eyebrow` | small uppercase tracked accent line, font `var(--font-text)` (Nunito), color `--accent-ink`. Flat, separate from headline — but coupled to it visually via the kicker-rhythm rule above. |
 | `Block.Headline` | `block-headline` | the `h2`, font `var(--font-display)` (Syne), `text-2xl sm:text-[28px] leading-[1.15] tracking-[-0.01em] font-bold`. Flat, separate from eyebrow. |
 | `Block.Body` | `block-body` | prose paragraph(s), font `var(--font-text)` (Nunito), color `--body-text`, `max-w-[48ch]`. |
 | `Block.Media` | `block-media` | the full-bleed media column (see recipe). Hosts an `<Image fill>` + optional `overlay`. |
@@ -102,38 +102,56 @@ Block-specific bodies — accordion, bento grid, step list, before/after grid, r
 
 ### The canonical media composition
 
+> **Implemented recipe (supersedes the original 2-col negative-margin grid).** The flat side-by-side grid was rejected in review for reading as dead space (callout's content left half of an empty panel, image floating on the right). The shipped composition is a **floating cream card over a full-bleed photo** on desktop, and a **single unified card** on mobile. Approved on `/test` + `kitchens.localhost` (commits `369f1034`, `4eeb328e`, `26f93c36`).
+
 ```
-┌─ <Block media="right" surface="card"> ───────────────────────┐
-│  ┌ Block.Content ────────────┐ ┌ Block.Media (bleeds to edge)┐│
-│  │ Eyebrow                   │ │▓▓▓▓ <Image fill> ▓▓▓▓▓▓▓▓▓▓▓││
-│  │ Headline                  │ │▓▓▓▓  + <Decor cover>    ▓▓▓▓││
-│  │ Body                      │ │▓▓▓▓  (over photo, z-10) ▓▓▓▓││
-│  │ Trust  (CredentialStrip)  │ │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓││
-│  │ Actions (CTA →)           │ │▓▓▓ no padding, full side ▓▓▓││
-│  └───────────────────────────┘ └────────────────────────────┘│
-└──────────────────────────────────────────────────────────────┘
+DESKTOP (≥768px) — content card floats, overlapping the photo's inner edge
+┌─ <Block media="right" surface="card"> (Root = transparent stage) ─────────┐
+│   ┌ Block.Content (floating card) ─┐                                       │
+│   │ Eyebrow                        │░░░░░ <Image fill> (absolute, ░░░░░░░░ │
+│   │ Headline                       │░░░░░  inset-y-0, right-0, w-58%) ░░░░░ │
+│   │ Body                           │░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│   │ Trust / Actions                │░░░ card overlaps photo, z-10, ░░░░░░░ │
+│   └ bg-card + shadow, w-52%, my-pad┘░░░ shadow at the seam ░░░░░░░░░░░░░░░ │
+└───────────────────────────────────────────────────────────────────────────┘
+
+MOBILE (<768px) — one unified card: photo banner on top, padded content below
+┌─ unified card (bg-card + shadow + rounded, from surface="card") ─┐
+│  ▓▓▓▓▓▓▓ <Image> banner (order-first, aspect-video, flush) ▓▓▓▓▓ │
+│  Eyebrow            ← content padding (--block-pad) is the only   │
+│  Headline             gap above the eyebrow; NO Root gap          │
+│  Body / Trust / Actions                                           │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-**Exact full-bleed recipe (desktop):**
-- Full-bleed media is only valid when the block has panel padding — i.e. `surface='card'|'muted'`. A media block must not use `surface='plain'` (validate in migration). The grid is 2-col with **column gap `0`** (not `--block-gap`) so the image meets the panel edge.
-- `Block.Media` is a positioned wrapper: `relative overflow-hidden min-h-[var(--block-media-min-h)]`, plus negative margins equal to the panel padding to cancel it on the bled edges:
-  - `media='right'`: `-my-[var(--block-pad)] -mr-[var(--block-pad)]`
-  - `media='left'`:  `-my-[var(--block-pad)] -ml-[var(--block-pad)]`
-- Inside the wrapper: `<Image fill className="object-cover">` and the decor overlay as a sibling: `<div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden z-10"><Decor placement="cover" /></div>`. The wrapper's own `overflow-hidden` clips decor to the column.
-- Negative margins use the **responsive** `--block-pad`, so full-bleed holds at every breakpoint.
+**Pairing rule:** media blocks (`media='left'|'right'`) MUST be paired with `surface='card'`. That single prop delivers the mobile unified card (`bg-card` + `--shadow-card` + `rounded-md`) for free; the media variant then resets it on desktop (`md:bg-transparent md:shadow-none`) so only the photo + floating card show. A media block must not use `surface='plain'` (validate in migration).
 
-**Mobile:** the grid collapses to one column; the media renders as a **top banner** (`order-first`, `aspect-video`, full panel width). On mobile the *side* negative margins are dropped (`max-sm:mx-0`) — the banner bleeds top/left/right to the panel edge via `-mx-[var(--block-pad)] -mt-[var(--block-pad)]`, not the desktop side-bleed.
+**Desktop (≥`md`):**
+- The Root is a transparent stage (`md:bg-transparent md:shadow-none`, but keeps `rounded-md overflow-hidden` to clip the photo).
+- `Block.Media` is **absolutely positioned**, full-height, flush to its side: `md:absolute md:inset-y-0 md:w-[58%]` + `md:right-0` (right) / `md:left-0` (left). It sits behind the content (no z bump).
+- The `block-content` slot becomes the **floating card** via descendant selectors on the Root: `md:[&>[data-slot=block-content]]:{ bg-card, rounded-md, my-[--block-pad], w-[52%], z-10, shadow-[0_18px_48px_-14px_rgb(0_0_0/0.45)] }`. `media='left'` adds `md:[&>…]:ml-auto`. The card is in normal flow so its height drives the Root; the absolute photo fills whatever height results.
+- The 52%+58% widths overlap (~10%) so the card sits ON the photo. The card's **left edge stays on the rail max-width line** (no `ml` inset) so a media block reads the same width as every other block above/below it.
+- **Shadow** is omnidirectional (`0_18px_48px_-14px …`), NOT `--shadow-card` — the latter is bottom-only (`-40px` spread) and shows nothing at the side seam where the card meets the photo.
+
+**Mobile (<`md`):**
+- The Root is `flex flex-col` (no `--block-gap` — that double-stacks on the content's top padding and over-spaces the image→eyebrow seam).
+- `Block.Media` renders as a top banner: `order-first w-full aspect-video`, flush to the card's rounded top (clipped by Root `overflow-hidden`).
+- `block-content` carries `p-[var(--block-pad)]` — its top padding is the **only** gap above the eyebrow (~`--block-pad`).
+
+**Decor:** over-photo decor was rejected ("better used in the background… and not within the container"). Media blocks carry NO decor on the photo. Atmosphere lives at the page level — `<FunnelAtmosphere>` scatters subtle `<Decor placement="free">` shapes behind all content, alternating sides down the scroll (`-z-10`).
 
 `Block.Media`'s `asChild` path (consumer passes their own `<picture>`/element) skips the `fill` wrapper and the overlay; it exists for non-photo media and is not used by the callout proof case.
 
 ### Decor changes required (NEW — the component must be upgraded)
 
-The current `<Decor>` (`src/shared/components/decor/decor.tsx`) is hardcoded `pointer-events-none absolute -top-[150px] -right-[150px] z-0` and renders **behind** content (content sits at `z-1`). It cannot overlay media as the recipe requires. Plan tasks must:
-1. Add a `placement?: 'corner' | 'cover'` prop (default `'corner'` preserves every current caller). `'cover'` positions the decor to fill its host (`inset-0`, sized to the column) so it visibly rides the photo, and renders above the image (the overlay wrapper supplies `z-10`).
-2. Address **prominence** (the user's most-repeated complaint — decor "not pronounced enough," "pushed to its further limits"): for `cover`/over-media use, raise visibility — target `--decor-gradient-alpha` ≈ `0.5` for the cover variant (vs `0.34` corner default) and/or more `rings`. Acceptance bar: decor reads as a deliberate atmosphere layer over the photo, not a faint corner ghost. Tune live on `/test`.
-3. Keep `corner` behavior byte-for-byte for existing non-media blocks (faq square, etc.).
+> **Outcome update:** the `cover`/over-photo direction was built but then rejected on review — decor over the photo "doesn't look nice… better used in the background." The shipped approach keeps `corner` + `cover` on the component but routes funnel atmosphere through a **third placement, `free`**, consumed by a page-level `<FunnelAtmosphere>` (NOT inside any block). See "Decor: atmosphere, not over-media" below.
 
-This is the one place the system touches a shared primitive (`<Decor>`) rather than only composing — it is required to deliver the user's explicit "atmosphere overlays the image" effect (A21).
+The current `<Decor>` (`src/shared/components/decor/decor.tsx`) is hardcoded `pointer-events-none absolute -top-[150px] -right-[150px] z-0` and renders **behind** content (content sits at `z-1`). Plan tasks delivered:
+1. A `placement?: 'corner' | 'cover' | 'free'` prop (default `'corner'` preserves every current caller). `'cover'` fills its host (`inset-0`); `'free'` is just `pointer-events-none absolute` + the consumer's `className` (consumer positions/sizes it).
+2. Prominence tuning via `--decor-gradient-alpha` (corner default `0.34`, cover `0.5`).
+3. `corner` behavior kept byte-for-byte for existing non-media blocks (faq square, etc.).
+
+**Decor: atmosphere, not over-media (shipped).** Funnel atmosphere lives at the page level: `<FunnelAtmosphere>` (`src/shared/domains/funnels/ui/funnel-atmosphere.tsx`) renders a `-z-10` layer of subtle `<Decor placement="free">` shapes scattered behind all content, **alternating sides down the scroll** (right/left/right/left at ~5/30/55/80%), low opacity, bleeding off the edges. It is mounted once in `funnel-landing.tsx` (the wrapper is `relative overflow-hidden`). Blocks themselves carry no over-photo decor. This satisfies the user's amended intent ("atmosphere and not within the container," "sometimes to the right, sometimes to the left").
 
 ## File structure
 
