@@ -4,6 +4,7 @@ import type { CtaBlockContent, FunnelContext } from '@/shared/domains/funnels/ty
 import { ArrowUp } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { QUESTION_ANCHOR } from '@/shared/domains/funnels/constants/anchors'
+import { Block } from '@/shared/domains/funnels/ui/block/block'
 
 export function CtaBlock({ content }: { content: CtaBlockContent, ctx: FunnelContext }) {
   function handleClick() {
@@ -11,11 +12,15 @@ export function CtaBlock({ content }: { content: CtaBlockContent, ctx: FunnelCon
   }
 
   return (
-    <section className="flex flex-col items-center py-6">
-      <Button size="lg" onClick={handleClick}>
-        <ArrowUp className="size-4" aria-hidden="true" />
-        {content.label}
-      </Button>
-    </section>
+    <Block surface="plain" align="center" size="compact">
+      <Block.Content>
+        <Block.Actions>
+          <Button size="lg" onClick={handleClick}>
+            <ArrowUp className="size-4" aria-hidden="true" />
+            {content.label}
+          </Button>
+        </Block.Actions>
+      </Block.Content>
+    </Block>
   )
 }
