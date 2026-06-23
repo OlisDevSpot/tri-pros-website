@@ -1,5 +1,5 @@
 import type { CardSelectStep, StepProps } from '@/shared/domains/funnels/types'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import Image from 'next/image'
 import { Button } from '@/shared/components/ui/button'
@@ -8,8 +8,17 @@ import { CARD_STAGGER_CONTAINER, CARD_STAGGER_ITEM } from '@/shared/domains/funn
 import { OPTION_ICONS } from '@/shared/domains/funnels/constants/option-assets'
 import { cn } from '@/shared/lib/utils'
 
+/**
+ * Card-select question — a grid of tappable option tiles.
+ *
+ * The FIRST question (`isFirst`) renders as the funnel's one DARK MOMENT: a
+ * brand-blue→navy "spotlight" panel (`--q1-*` tokens) with glass tiles, so the
+ * bright hero hands off into it and the eye lands on the section to act on.
+ * Every later card-select stays on the light theme. All colors are tokens.
+ */
 export function CardSelectStepView({ step, content, value, isAnswered, isFirst, setValue, advance }: StepProps<CardSelectStep>) {
   const reduceMotion = useReducedMotion()
+  const spotlight = isFirst
 
   function handleSelect(optionId: string) {
     setValue(optionId)
@@ -22,11 +31,22 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
   }
 
   return (
-    <div className={cn('mx-auto flex w-full flex-col gap-6', FUNNEL_QUESTION_MAX_W)}>
-      <div className="text-center">
-        <h2 className="text-2xl font-semibold">{content.title}</h2>
+    <div
+      className={cn(
+        'mx-auto flex w-full flex-col',
+        FUNNEL_QUESTION_MAX_W,
+        spotlight
+          ? 'gap-5 rounded-2xl bg-linear-to-b from-(--q1-from) to-(--q1-to) p-5 shadow-(--shadow-hero) ring-1 ring-white/10 sm:p-6'
+          : 'gap-6',
+      )}
+    >
+      <div className={cn('flex flex-col text-center', spotlight ? 'gap-1.5' : 'gap-1')}>
+        {spotlight
+          ? <span className="text-xs font-semibold tracking-[0.18em] text-white/55 uppercase">Start here</span>
+          : null}
+        <h2 className={cn('text-2xl font-semibold', spotlight ? 'text-white' : 'text-foreground')}>{content.title}</h2>
         {content.subtitle
-          ? <p className="text-muted-foreground mt-1">{content.subtitle}</p>
+          ? <p className={spotlight ? 'text-white/70' : 'text-muted-foreground'}>{content.subtitle}</p>
           : null}
       </div>
       <motion.div
@@ -47,17 +67,19 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
               whileTap={reduceMotion ? undefined : { scale: 0.97 }}
               onClick={() => handleSelect(optionId)}
               className={cn(
-                'flex flex-col items-center overflow-hidden rounded-lg border-2 text-center shadow-sm transition-colors touch-manipulation hover:border-primary/60',
-                selected ? 'border-primary bg-primary/5' : 'border-border',
+                'flex flex-col items-center overflow-hidden rounded-lg border-2 text-center shadow-sm transition-colors touch-manipulation',
+                spotlight
+                  ? (selected ? 'border-(--q1-ring) bg-(--q1-tile-selected)' : 'border-white/15 bg-(--q1-tile) backdrop-blur-md hover:border-white/40')
+                  : (selected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/60'),
               )}
             >
               {asset
                 ? (
-                    <div className="bg-muted/40 flex aspect-video w-full items-center justify-center">
+                    <div className={cn('flex aspect-video w-full items-center justify-center', spotlight ? 'bg-black/15' : 'bg-muted/40')}>
                       {asset.kind === 'icon' && OPTION_ICONS[asset.name]
                         ? (() => {
                             const Icon = OPTION_ICONS[asset.name]
-                            return <Icon className="text-foreground size-8 sm:size-10" />
+                            return <Icon className={cn('size-8 sm:size-10', spotlight ? 'text-white/90' : 'text-foreground')} />
                           })()
                         : null}
                       {asset.kind === 'image'
@@ -67,9 +89,9 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
                   )
                 : null}
               <div className="flex flex-col items-center gap-1 p-2">
-                <span className="block text-sm font-medium">{option?.label ?? optionId}</span>
+                <span className={cn('block text-sm font-medium', spotlight && 'text-white')}>{option?.label ?? optionId}</span>
                 {option?.description
-                  ? <span className="text-muted-foreground hidden text-sm sm:block">{option.description}</span>
+                  ? <span className={cn('hidden text-sm sm:block', spotlight ? 'text-white/70' : 'text-muted-foreground')}>{option.description}</span>
                   : null}
               </div>
             </motion.button>
@@ -78,10 +100,18 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
       </motion.div>
       {isFirst && isAnswered
         ? (
-            <Button size="lg" onClick={advance} className="self-center">
+            <Button size="lg" onClick={advance} className="self-center bg-white text-(--q1-to) hover:bg-white/90">
               Continue
               <ArrowRight className="size-4" />
             </Button>
+          )
+        : null}
+      {spotlight && !isAnswered
+        ? (
+            <p className="flex items-center justify-center gap-1.5 text-sm text-white/65">
+              <Check className="size-3.5" aria-hidden="true" />
+              Tap any option to begin — it only takes 60 seconds
+            </p>
           )
         : null}
     </div>

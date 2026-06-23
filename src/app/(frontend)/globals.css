@@ -130,6 +130,39 @@
   --shadow-md: 0 4px 8px -2px oklch(0 0 0 / 0.1), 0 3px 10px -4px rgb(3 175 237 / 0.08);
   --shadow-lg: 0 12px 20px -6px oklch(0 0 0 / 0.12), 0 8px 22px -8px rgb(3 175 237 / 0.1);
   --shadow-xl: 0 24px 34px -8px oklch(0 0 0 / 0.14), 0 14px 32px -10px rgb(3 175 237 / 0.12);
+  /* hero (light frosted card on the brand photo): the funnel hero is a BRIGHT
+     wash, not a dark island. Copy rides a translucent warm card so the photo
+     bleeds THROUGH (backdrop-blur) and frames it, while near-black ink keeps
+     senior-grade contrast. Promoted from the /test legibility study (V2 warm).
+     All hero inks/fills derive from existing tokens via color-mix — no ad-hoc
+     values. Consumed by <FunnelHero> + <HeroTrustBadges>. See funnel-hero.tsx. */
+  --shadow-hero: 0 30px 64px -20px rgb(0 0 0 / 0.55), 0 12px 28px -14px rgb(0 0 0 / 0.4);
+  --hero-plate: color-mix(in srgb, var(--background) 80%, transparent); /* warm frosted card fill */
+  --hero-plate-ring: color-mix(in srgb, var(--accent-ink) 12%, transparent); /* faint brand hairline */
+  --hero-ink-soft: color-mix(in srgb, var(--foreground) 80%, var(--background)); /* subhead on the card */
+  --hero-ink-muted: color-mix(in srgb, var(--foreground) 62%, var(--background)); /* microcopy on the card */
+  --hero-pill-border: color-mix(in srgb, var(--accent-ink) 25%, transparent); /* scarcity pill hairline */
+
+  /* Q1 spotlight — the funnel's ONE dark moment, relocated from the hero to the
+     first question to pull the eye to the section the visitor must act on. A
+     brand-blue→navy panel with glass option tiles; the bright hero hands off
+     into it (max light→dark contrast). Consumed by <CardSelectStepView> when
+     `isFirst`. Promoted from the /test study (variant A · navy). */
+  --q1-from: #04638f; /* gradient top — brand blue, deep */
+  --q1-to: #031f2e; /* gradient bottom — navy, near-black */
+  --q1-tile: rgb(255 255 255 / 0.1); /* glass option tile */
+  --q1-tile-selected: rgb(255 255 255 / 0.2); /* selected tile fill */
+  --q1-ring: #7fd6f5; /* selected-tile ring — brand blue, lightened for the dark panel */
+
+  /* primary CTA (funnel) — promoted from the /test legibility study (winner #3).
+     Keeps the brand HUE but deepens the VALUE so white text clears AA+ (≈6.5:1).
+     The fill is a deepened brand-blue gradient; --cta-ring is DELIBERATELY NOT a
+     glow halo — just a faint brand hairline for edge definition (reads on the dark
+     hero + the light blocks alike) over a soft neutral drop for honest depth.
+     rgb(3 175 237) === --primary (#03afed). Consumed by <FunnelCta>. */
+  --cta-from: #045f87; /* gradient top — brand blue, deepened */
+  --cta-to: #033f5b; /* gradient bottom — deeper still */
+  --cta-ring: 0 0 0 1px rgb(3 175 237 / 0.3), 0 10px 24px -12px rgb(0 0 0 / 0.45);
 
   /* motion */
   --ease-brand: cubic-bezier(0.32, 0.72, 0, 1);

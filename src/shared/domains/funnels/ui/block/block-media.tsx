@@ -20,12 +20,20 @@ interface BlockMediaProps {
  * card overlaps the photo's inner edge. `overlay` (a `<Decor placement="cover">`)
  * rides on top of the photo, clipped to this wrapper. `asChild` lets a consumer
  * pass a fully-styled element instead of an `<Image fill>` (no overlay).
+ *
+ * Self-clipping layer (frame/clip split): the Root is a shadow-bearing frame with
+ * NO overflow, so this wrapper owns its own `overflow-hidden` + `rounded-[inherit]`
+ * to clip the photo to the frame's corners. Mobile = rounded top banner; desktop =
+ * the two corners flush to the Root edge on its side.
+ * See docs/codebase-conventions/frontend-stack.md#never-co-locate-shadow-and-overflow.
  */
 export function BlockMedia({ side = 'right', overlay, asChild, className, children }: BlockMediaProps) {
   const wrapperCls = cn(
-    'relative order-first w-full overflow-hidden aspect-video',
+    'relative order-first w-full overflow-hidden aspect-video rounded-t-[inherit]',
     'md:absolute md:inset-y-0 md:order-none md:aspect-auto md:h-auto md:w-[58%]',
-    side === 'right' ? 'md:right-0' : 'md:left-0',
+    side === 'right'
+      ? 'md:right-0 md:rounded-tl-none md:rounded-r-[inherit]'
+      : 'md:left-0 md:rounded-tr-none md:rounded-l-[inherit]',
     className,
   )
 

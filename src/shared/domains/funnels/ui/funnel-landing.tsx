@@ -6,8 +6,12 @@ import type { HeroScroll } from '@/shared/domains/funnels/ui/funnel-hero'
 import { ArrowUp } from 'lucide-react'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { Fragment, useEffect, useRef } from 'react'
-import { Button } from '@/shared/components/ui/button'
 import { QUESTION_ANCHOR } from '@/shared/domains/funnels/constants/anchors'
+import {
+  FOOTER_CTA_LABEL,
+  INTERSTITIAL_CTA_BY_SECTION,
+  INTERSTITIAL_CTA_FALLBACK,
+} from '@/shared/domains/funnels/constants/cta-copy'
 import { DEFAULT_LANDING_BLOCKS } from '@/shared/domains/funnels/constants/default-landing-blocks'
 import { FUNNEL_QUESTION_MAX_W, FUNNEL_RAIL_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import {
@@ -24,7 +28,7 @@ import {
   HERO_TEXT_OPACITY_OUT,
 } from '@/shared/domains/funnels/constants/funnel-motion'
 import { MARKETING_REGISTRY } from '@/shared/domains/funnels/constants/marketing-registry'
-import { FunnelAtmosphere } from '@/shared/domains/funnels/ui/funnel-atmosphere'
+import { FunnelCta } from '@/shared/domains/funnels/ui/funnel-cta'
 import { FunnelHero } from '@/shared/domains/funnels/ui/funnel-hero'
 import { FunnelStickyHeader } from '@/shared/domains/funnels/ui/funnel-sticky-header'
 import { TrustBar } from '@/shared/domains/funnels/ui/trust-bar'
@@ -90,34 +94,36 @@ export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: 
         initial={reduceMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={FUNNEL_TRANSITION}
-        className="relative flex w-full flex-col items-center gap-16 overflow-hidden py-10"
+        className="relative flex w-full flex-col items-center gap-16 overflow-x-clip pt-2.5 pb-10"
       >
-        <FunnelAtmosphere />
         <div className="flex w-full flex-col items-center gap-8">
-          <div className={`w-full ${FUNNEL_RAIL_MAX_W} px-5`}>
+          <div className={`w-full ${FUNNEL_RAIL_MAX_W} px-2.5`}>
             <FunnelHero content={spec.hero} onCta={scrollToQuestion} ref={heroRef} scroll={heroScroll} />
           </div>
-          <div className={`flex w-full ${FUNNEL_QUESTION_MAX_W} flex-col gap-8 px-5`}>
+          <div className={`flex w-full ${FUNNEL_QUESTION_MAX_W} flex-col gap-8 px-2.5`}>
             <TrustBar />
             <div id={QUESTION_ANCHOR} className="scroll-mt-20">{children}</div>
           </div>
         </div>
-        <div className={`flex w-full ${FUNNEL_RAIL_MAX_W} flex-col gap-12 px-5`}>
+        <div className={`flex w-full ${FUNNEL_RAIL_MAX_W} flex-col gap-12 px-2.5`}>
           {blocks.map((block, i) => (
             <Fragment key={`${block.kind}-${i}`}>
               {renderBlock(block, ctx, i)}
               {(i + 1) % 3 === 0 && i < blocks.length - 1
                 ? (
-                    <Button size="lg" onClick={scrollToQuestion} className="self-center">
+                    <FunnelCta onClick={scrollToQuestion} className="self-center">
                       <ArrowUp className="size-4" />
-                      See if you qualify
-                    </Button>
+                      {INTERSTITIAL_CTA_BY_SECTION[block.kind] ?? INTERSTITIAL_CTA_FALLBACK}
+                    </FunnelCta>
                   )
                 : null}
             </Fragment>
           ))}
         </div>
-        <Button size="lg" onClick={scrollToQuestion}>Ready? See if you qualify ↑</Button>
+        <FunnelCta onClick={scrollToQuestion} className="self-center">
+          {FOOTER_CTA_LABEL}
+          <ArrowUp className="size-4" />
+        </FunnelCta>
       </motion.div>
     </>
   )

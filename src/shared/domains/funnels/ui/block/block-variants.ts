@@ -21,9 +21,15 @@ import { cva } from 'class-variance-authority'
  *     in normal flow so its height drives the Root; the photo fills it.
  * Media blocks carry NO Root padding (the card owns its own padding); the photo
  * bleeds flush to the rounded Root edges.
+ *
+ * The Root is a pure FRAME: it owns radius + surface + shadow but NEVER overflow.
+ * Clipping is delegated to self-clipping child layers (`Block.Media`, `Block.Decor`),
+ * each `rounded-[inherit]` to match this radius. This is the frame/clip split —
+ * see docs/codebase-conventions/frontend-stack.md#never-co-locate-shadow-and-overflow.
+ * (Co-locating overflow-hidden here would slice every card/child shadow.)
  */
 export const blockVariants = cva(
-  'relative w-full isolate overflow-hidden',
+  'relative w-full isolate',
   {
     variants: {
       media: {

@@ -21,7 +21,8 @@ export function FaqBlock({ content }: { content: FaqBlockContent, ctx: FunnelCon
 
   return (
     <Block surface="plain" align="center">
-      <Decor shape="square" />
+      {/* Block.Decor self-clips the corner decor (the Root is a no-overflow frame) */}
+      <Block.Decor><Decor shape="square" /></Block.Decor>
       {/* z-1 lifts content above the corner Decor (z-0) within the Root's isolate */}
       <Block.Content className="relative z-1">
         {content.title ? <Block.Headline>{content.title}</Block.Headline> : null}

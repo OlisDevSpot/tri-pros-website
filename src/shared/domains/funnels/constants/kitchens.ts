@@ -11,7 +11,7 @@ export const kitchensFunnel: FunnelSpec = {
   title: 'Kitchen Showcase',
   hero: {
     headline: 'Get a AAA-grade kitchen remodel — at a Showcase price.',
-    subhead: 'See if your home qualifies for one of our Showcase kitchens.',
+    subhead: 'See if your home qualifies to be featured in our showcase.',
     scarcityLine: 'We\'re selecting 5 kitchens in your area.',
     ctaLabel: 'See if you qualify',
     media: { kind: 'image', src: '/portfolio-photos/modern-kitchen-1.jpeg', alt: 'Modern remodeled kitchen' },

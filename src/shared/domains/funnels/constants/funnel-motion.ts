@@ -39,6 +39,22 @@ export const CARD_STAGGER_ITEM: Variants = {
   visible: { opacity: 1, y: 0, transition: FUNNEL_TRANSITION },
 }
 
+// ─── Primary CTA (FunnelCta) ────────────────────────────────────────────────
+//
+// Restrained: a tactile spring on hover/press, plus a single occasional sheen
+// sweep as the only ambient motion. No glow halo, no pulsing. The sheen is gated
+// on useReducedMotion() inside <FunnelCta>; the static brand hairline
+// (--cta-ring) carries the identity when motion is reduced. see ../ui/funnel-cta.tsx
+
+/** Hover: gentle lift. Gated by reduced motion at the call site. */
+export const CTA_HOVER: TargetAndTransition = { y: -2 }
+/** Press: snappy compress — kept under reduced motion (intentional + brief). */
+export const CTA_TAP: TargetAndTransition = { scale: 0.97 }
+/** Spring for hover/press — physical, not linear. */
+export const CTA_PRESS_SPRING: Transition = { type: 'spring', stiffness: 400, damping: 17 }
+/** Idle sheen sweep — a light bar crosses the face, then pauses (~5s cadence). */
+export const CTA_SHEEN_TRANSITION: Transition = { duration: 1.1, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }
+
 // ─── Hero scroll choreography ──────────────────────────────────────────────
 //
 // As the landing hero scrolls past, its text fades + lifts away and the big

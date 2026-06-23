@@ -12,8 +12,10 @@ type BlockRootProps = ComponentPropsWithoutRef<'section'> & BlockVariants & { as
 /**
  * The funnel marketing block shell. RSC-safe + presentational: no 'use client',
  * no hooks, no client imports. Owns width (always w-full; the rail caps width),
- * surface, padding/rhythm tokens, alignment, and decor clipping (isolate +
- * overflow-hidden). Consumers compose Block.* slots + freeform children.
+ * surface, padding/rhythm tokens, alignment, and z-isolation (isolate). It is a
+ * pure FRAME — it owns the shadow but never overflow, so card/child shadows
+ * breathe. Clipping is delegated to self-clipping slots (Block.Media, Block.Decor).
+ * Consumers compose Block.* slots + freeform children.
  */
 export function BlockRoot({ media, surface, align, size, asChild, className, ...props }: BlockRootProps) {
   const Comp = asChild ? Slot : 'section'
