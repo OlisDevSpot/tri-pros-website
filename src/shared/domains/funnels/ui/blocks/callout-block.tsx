@@ -13,13 +13,14 @@ const DEFAULT_IMAGE = { src: '/portfolio-photos/modern-kitchen-1.jpeg', alt: 'Re
 
 /**
  * "Blueprint Authority" financing callout — the canonical media block:
- * content column + full-bleed kitchen photo with brand-blue decor overlay.
- * Composes the shared <Block> shell; all width/surface/rhythm come from there.
+ * a cream content card floats over a full-bleed kitchen photo (brand-blue decor
+ * riding the photo). Desktop = overlap composition; mobile = photo banner then
+ * content. All width/surface/rhythm come from the shared <Block> shell.
  */
 export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: FunnelContext }) {
   const image = content.image ?? DEFAULT_IMAGE
   return (
-    <Block media="right" surface="card" align="left">
+    <Block media="right" align="left">
       <Block.Content>
         <Block.Eyebrow>{content.eyebrow ?? 'Financing · in writing'}</Block.Eyebrow>
         <Block.Headline>{content.headline}</Block.Headline>

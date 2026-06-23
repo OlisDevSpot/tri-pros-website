@@ -15,7 +15,7 @@ const DEMO_CTX: FunnelContext = { slug: 'kitchens', offer: 'kitchen remodel', th
 export default function TestPage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-5 py-16">
-      <Block media="right" surface="card" align="left">
+      <Block media="right" align="left">
         <Block.Content>
           <Block.Eyebrow>Financing · in writing</Block.Eyebrow>
           <Block.Headline>A Showcase kitchen, without draining your savings.</Block.Headline>
