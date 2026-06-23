@@ -10,6 +10,7 @@ import { enrollSourceBatchJob } from '@/shared/services/providers/upstash/jobs/e
 import { generateAISummaryJob } from '@/shared/services/providers/upstash/jobs/generate-ai-summary'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { initialCalendarSyncJob } from '@/shared/services/providers/upstash/jobs/initial-calendar-sync'
+import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyLastInteractingAgentJob } from '@/shared/services/providers/upstash/jobs/notify-last-interacting-agent'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
@@ -40,6 +41,7 @@ const jobs: Job[] = [
   syncZohoSignStatusJob,
   syncCalendarsJob,
   initialCalendarSyncJob,
+  metaCapiEventJob,
   syncMeetingToGcalJob,
   deleteMeetingEventJob,
   propagateCustomerChangeJob,
