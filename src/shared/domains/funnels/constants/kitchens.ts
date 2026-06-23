@@ -73,6 +73,7 @@ export const kitchensFunnel: FunnelSpec = {
           headline: 'Fixed, low monthly payments.',
           body: 'Fixed, low monthly payments put a Showcase kitchen within reach without draining your savings. We\'ll walk you through the options you qualify for during your consultation — no obligation.',
           points: ['Fixed low monthly payments', 'No-obligation consultation', 'Clear, written numbers up front'],
+          image: { src: '/portfolio-photos/modern-kitchen-1.jpeg', alt: 'Remodeled Showcase kitchen' },
         },
       },
       {

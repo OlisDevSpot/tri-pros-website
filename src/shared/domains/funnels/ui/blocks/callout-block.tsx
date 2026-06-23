@@ -1,37 +1,52 @@
+import type { CSSProperties } from 'react'
 import type { CalloutBlockContent, FunnelContext } from '@/shared/domains/funnels/types'
 import { ArrowRight } from 'lucide-react'
+import Image from 'next/image'
 import { Decor } from '@/shared/components/decor/decor'
 import { CredentialStrip } from '@/shared/components/trust/credential-strip'
+import { Block } from '@/shared/domains/funnels/ui/block/block'
+
+const POINT_DOT_STYLE: CSSProperties = { background: 'var(--primary)' }
+const POINT_TEXT_STYLE: CSSProperties = { color: 'var(--body-text)' }
+const ARROW_STYLE: CSSProperties = { color: 'var(--primary)' }
+const DEFAULT_IMAGE = { src: '/portfolio-photos/modern-kitchen-1.jpeg', alt: 'Remodeled Showcase kitchen' }
 
 /**
- * "Blueprint Authority" callout — warm-concrete panel + brand-blue blueprint
- * atmosphere (top-right), credential trust row, single accent CTA. Consumes the
- * marketing theme tokens; must render inside a `.theme-marketing` scope.
- * Design: docs/superpowers/specs/2026-06-22-anti-slop-design-system-design.md
+ * "Blueprint Authority" financing callout — the canonical media block:
+ * content column + full-bleed kitchen photo with brand-blue decor overlay.
+ * Composes the shared <Block> shell; all width/surface/rhythm come from there.
  */
 export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: FunnelContext }) {
+  const image = content.image ?? DEFAULT_IMAGE
   return (
-    <section className="bg-background relative w-full overflow-hidden py-10">
-      <div className="bg-card relative isolate w-full overflow-hidden rounded-md px-9 py-9" style={{ boxShadow: 'var(--shadow-card)' }}>
-        <Decor shape="arc" />
-
-        <p className="font-sans text-[11.5px] font-bold tracking-[0.2em] uppercase" style={{ color: 'var(--accent-ink)' }}>
-          {content.eyebrow ?? 'Financing · in writing'}
-        </p>
-        <h2 className="text-foreground font-sans mt-3 text-[21px] leading-[1.2] font-bold tracking-[-0.01em]">
-          {content.headline}
-        </h2>
-        <p className="mt-2.5 max-w-[48ch] text-[14.5px]" style={{ color: 'var(--body-text)' }}>
-          {content.body}
-        </p>
-
-        <CredentialStrip className="mt-6" />
-
-        <button type="button" className="bg-foreground text-card font-sans mt-6 inline-flex items-center gap-2.5 rounded-[3px] px-6 py-3.5 text-[14.5px] font-bold">
-          {content.ctaLabel ?? 'See what you qualify for'}
-          <ArrowRight className="size-4" style={{ color: 'var(--primary)' }} />
-        </button>
-      </div>
-    </section>
+    <Block media="right" surface="card" align="left">
+      <Block.Content>
+        <Block.Eyebrow>{content.eyebrow ?? 'Financing · in writing'}</Block.Eyebrow>
+        <Block.Headline>{content.headline}</Block.Headline>
+        <Block.Body>{content.body}</Block.Body>
+        {content.points?.length
+          ? (
+              <ul className="flex flex-col gap-2">
+                {content.points.map(point => (
+                  <li key={point} className="flex items-center gap-2 text-[14.5px]" style={POINT_TEXT_STYLE}>
+                    <span className="size-1.5 shrink-0 rotate-45 rounded-[1px]" style={POINT_DOT_STYLE} />
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            )
+          : null}
+        <Block.Trust><CredentialStrip /></Block.Trust>
+        <Block.Actions>
+          <button type="button" className="bg-foreground text-card inline-flex items-center gap-2.5 rounded-[3px] px-6 py-3.5 text-[14.5px] font-bold">
+            {content.ctaLabel ?? 'See what you qualify for'}
+            <ArrowRight className="size-4" style={ARROW_STYLE} />
+          </button>
+        </Block.Actions>
+      </Block.Content>
+      <Block.Media side="right" overlay={<Decor shape="arc" placement="cover" />}>
+        <Image src={image.src} alt={image.alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+      </Block.Media>
+    </Block>
   )
 }
