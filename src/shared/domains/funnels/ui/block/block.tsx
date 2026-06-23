@@ -1,6 +1,7 @@
 import { BlockActions } from '@/shared/domains/funnels/ui/block/block-actions'
 import { BlockBody } from '@/shared/domains/funnels/ui/block/block-body'
 import { BlockContent } from '@/shared/domains/funnels/ui/block/block-content'
+import { BlockDivider } from '@/shared/domains/funnels/ui/block/block-divider'
 import { BlockEyebrow } from '@/shared/domains/funnels/ui/block/block-eyebrow'
 import { BlockHeadline } from '@/shared/domains/funnels/ui/block/block-headline'
 import { BlockMedia } from '@/shared/domains/funnels/ui/block/block-media'
@@ -14,6 +15,7 @@ import { BlockTrust } from '@/shared/domains/funnels/ui/block/block-trust'
  */
 export const Block = Object.assign(BlockRoot, {
   Content: BlockContent,
+  Divider: BlockDivider,
   Eyebrow: BlockEyebrow,
   Headline: BlockHeadline,
   Body: BlockBody,
@@ -22,4 +24,4 @@ export const Block = Object.assign(BlockRoot, {
   Actions: BlockActions,
 })
 
-export { BlockActions, BlockBody, BlockContent, BlockEyebrow, BlockHeadline, BlockMedia, BlockRoot, BlockTrust }
+export { BlockActions, BlockBody, BlockContent, BlockDivider, BlockEyebrow, BlockHeadline, BlockMedia, BlockRoot, BlockTrust }
