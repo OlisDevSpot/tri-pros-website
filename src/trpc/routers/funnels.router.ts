@@ -8,6 +8,7 @@ import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
+import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 
 import { baseProcedure, createTRPCRouter } from '../init'
 import { clientIp } from '../lib/client-ip'
@@ -68,6 +69,11 @@ export const funnelsRouter = createTRPCRouter({
       zip: z.string().min(1).max(10),
       leadSourceSlug: z.string().min(1).max(100),
       leadMetaJSON: leadMetaSchema,
+      eventId: z.string().optional(),
+      pixel: z.object({
+        contentCategory: z.string(),
+        contentName: z.string(),
+      }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const ip = clientIp((ctx as { req?: Request }).req)
@@ -111,7 +117,34 @@ export const funnelsRouter = createTRPCRouter({
       if (!result.success) {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not save your details. Please try again.' })
       }
-      return { customerId: result.data.customer.id }
+      const customerId = result.data.customer.id
+
+      // Server CAPI twin of the browser `Lead` pixel — same event_id → Meta
+      // dedupes. Cosmetic criticality: a dropped enqueue only weakens optimization.
+      if (input.eventId) {
+        const ip = clientIp((ctx as { req?: Request }).req)
+        const ua = (ctx as { req?: Request }).req?.headers.get('user-agent') ?? null
+        const fb = input.leadMetaJSON.source?.kind === 'funnel'
+          ? input.leadMetaJSON.source.meta
+          : undefined
+        void metaCapiEventJob.dispatch({
+          event: 'Lead',
+          args: {
+            eventId: input.eventId,
+            eventTime: Math.floor(Date.now() / 1000),
+            phone: input.phone,
+            externalId: customerId,
+            fbp: fb?.fbp ?? null,
+            fbc: fb?.fbc ?? null,
+            clientIp: ip,
+            clientUserAgent: ua,
+            contentCategory: input.pixel?.contentCategory ?? null,
+            contentName: input.pixel?.contentName ?? null,
+          },
+        })
+      }
+
+      return { customerId }
     }),
 
   // Guarded post-lead enrichment (funnel leads only). The leadId UUID is the
