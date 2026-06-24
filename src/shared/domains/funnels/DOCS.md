@@ -69,8 +69,11 @@ A new funnel is "author one spec + drop assets":
 
 1. **Spec:** create `constants/<slug>.ts` exporting `<slug>Funnel: FunnelSpec`.
    Reuse prebuilt steps (`ZIP_STEP`, `PII_STEP`, `HOME_TYPE_STEP`,
-   `ADDRESS_STEP`, `CONFIRMATION_STEP`); add card-select steps for trade-native
-   questions. Declare `enrichment: { stepId, label }[]` for every dimension that
+   `ADDRESS_STEP`, `CONFIRMATION_STEP`) — import their **configs from
+   `lib/steps/<step>`** (config-only modules), NOT from `ui/steps/*` (the
+   components). Co-locating a step config with its component would drag the
+   component's import graph into the spec and can close a registry→spec→config
+   import cycle. Add card-select steps for trade-native questions. Declare `enrichment: { stepId, label }[]` for every dimension that
    should reach the CRM (it renders in the customer Funnel Intake panel + the
    creation-time intake note automatically). Set `pixel.contentCategory`.
 2. **Register:** add the slug to `constants/slugs.ts`, the spec to
