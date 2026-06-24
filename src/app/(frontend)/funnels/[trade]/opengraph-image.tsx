@@ -21,7 +21,7 @@ export default async function Image({ params }: Props) {
   const background = meta?.ogImage
     ? await readPublicDataUri(meta.ogImage).catch(() => null)
     : null
-  const logo = await readPublicDataUri('/company/logo/logo-light-512.png').catch(() => null)
+  const logo = await readPublicDataUri('/company/logo/logo-light-right.png').catch(() => null)
   const fonts = await loadOgFonts()
   const headline = meta?.ogHeadline ?? meta?.title ?? 'Tri Pros Remodeling'
 

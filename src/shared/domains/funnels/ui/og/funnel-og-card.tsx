@@ -50,18 +50,18 @@ export function FunnelOgCard({ background, logo, headline, trustLine }: FunnelOg
             <div
               style={{
                 position: 'absolute',
-                top: 48,
+                top: 44,
                 left: 56,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: 16,
-                borderRadius: 20,
-                background: 'rgba(11, 18, 32, 0.62)',
-                border: '2px solid rgba(255, 255, 255, 0.16)',
+                padding: '22px 32px',
+                borderRadius: 24,
+                background: 'rgba(255, 255, 255, 0.94)',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.38)',
               }}
             >
-              <img src={logo} width={84} height={84} style={{ objectFit: 'contain' }} />
+              <img src={logo} width={384} height={105} style={{ objectFit: 'contain' }} />
             </div>
           )
         : null}

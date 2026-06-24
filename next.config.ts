@@ -50,7 +50,7 @@ const nextConfig: NextConfig = {
     '/funnels/[trade]/opengraph-image': [
       './public/fonts/PlayfairDisplay-Bold.ttf',
       './public/portfolio-photos/*.jpeg',
-      './public/company/logo/logo-light-512.png',
+      './public/company/logo/logo-light-right.png',
     ],
   },
   // Service worker headers. Browsers cache /sw.js by default and skip the
