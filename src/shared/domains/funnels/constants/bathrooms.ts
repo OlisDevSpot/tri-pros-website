@@ -1,9 +1,9 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
-import { PII_STEP } from '@/shared/domains/funnels/constants/pii-step'
-import { ADDRESS_STEP } from '@/shared/domains/funnels/ui/steps/address-step'
-import { CONFIRMATION_STEP } from '@/shared/domains/funnels/ui/steps/confirmation-step'
-import { HOME_TYPE_STEP } from '@/shared/domains/funnels/ui/steps/home-type-step'
-import { ZIP_STEP } from '@/shared/domains/funnels/ui/steps/zip-step'
+import { ADDRESS_STEP } from '@/shared/domains/funnels/lib/steps/address-step'
+import { CONFIRMATION_STEP } from '@/shared/domains/funnels/lib/steps/confirmation-step'
+import { HOME_TYPE_STEP } from '@/shared/domains/funnels/lib/steps/home-type-step'
+import { PII_STEP } from '@/shared/domains/funnels/lib/steps/pii-step'
+import { ZIP_STEP } from '@/shared/domains/funnels/lib/steps/zip-step'
 
 // @migration: the option-tile images (whichBathroom/age/scope) and the
 // before/after pairs currently resolve to PLACEHOLDER webps in
@@ -56,7 +56,7 @@ export const bathroomsFunnel: FunnelSpec = {
         kind: 'value',
         content: {
           headline: 'A bathroom that feels like a retreat — and protects your home.',
-          roiStat: { value: '60–70%', label: 'typical resale ROI on a bath remodel' },
+          roiStat: { value: '95 – 180%', label: 'typical resale ROI on a bath remodel' },
           beforeAfter: [
             { before: '/funnels/bathrooms/before-1.webp', after: '/funnels/bathrooms/after-1.webp' },
             { before: '/funnels/bathrooms/before-2.webp', after: '/funnels/bathrooms/after-2.webp' },
