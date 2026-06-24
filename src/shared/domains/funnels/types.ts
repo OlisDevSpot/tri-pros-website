@@ -237,6 +237,14 @@ export interface FunnelMeta {
 }
 
 export interface FunnelPixel { contentCategory: string }
+
+/** A funnel dimension whose selected answer enriches the lead. */
+export interface EnrichmentDimension { stepId: StepId, label: string }
+/** One captured dimension, self-describing for display (no server label mirror). */
+export interface EnrichmentEntry { label: string, value: string, order: number }
+/** Captured enrichment keyed by step id — JSONB-merge-safe (object, not array). */
+export type EnrichmentRecord = Record<string, EnrichmentEntry>
+
 export interface FunnelSpec {
   slug: FunnelSlug
   offer: string
@@ -246,6 +254,10 @@ export interface FunnelSpec {
   pixel: FunnelPixel
   /** Optional landing block list; falls back to DEFAULT_LANDING_BLOCKS when absent. */
   landing?: { blocks: MarketingBlock[] }
+  /** Alternate landing block sets selectable via `?v=` / UTM content. Steps + measurement unchanged. */
+  variants?: Record<string, { blocks: MarketingBlock[] }>
+  /** Steps whose answers enrich the lead, in display order. */
+  enrichment?: EnrichmentDimension[]
   steps: FunnelStep[]
   flow?: (answers: FunnelAnswers, currentStepId: StepId) => StepId | null
 }
