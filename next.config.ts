@@ -43,6 +43,15 @@ const nextConfig: NextConfig = {
     '/api/qstash-jobs': [
       './node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/data/**/*',
     ],
+    // The funnel OG image route reads its font + background photos + logo from
+    // public/ via fs at render time (see funnels/lib/og/og-assets.ts). NFT
+    // can't trace runtime process.cwd() reads, so force-ship the assets next to
+    // the serverless function or prod OG renders 500 (font) / lose the photo.
+    '/funnels/[trade]/opengraph-image': [
+      './public/fonts/PlayfairDisplay-Bold.ttf',
+      './public/portfolio-photos/*.jpeg',
+      './public/company/logo/logo-light-512.png',
+    ],
   },
   // Service worker headers. Browsers cache /sw.js by default and skip the
   // update check unless the response says otherwise — without no-cache,

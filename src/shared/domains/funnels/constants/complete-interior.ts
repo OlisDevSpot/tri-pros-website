@@ -5,11 +5,6 @@ export const completeInteriorFunnel: FunnelSpec = {
   slug: 'complete-interior',
   offer: 'showcase',
   title: 'Complete-Interior Showcase',
-  meta: {
-    title: 'Complete Interior Remodels',
-    description: 'Whole-home interior remodels at a showcase price for SoCal homeowners. See if your home qualifies — licensed, bonded & insured.',
-    ogImage: '/portfolio-photos/modern-staircase-1.jpeg',
-  },
   hero: {
     headline: 'A complete-interior remodel — at a Showcase price.',
     subhead: 'See if your home qualifies for one of our Complete-Interior Showcase projects.',

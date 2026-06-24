@@ -1,9 +1,8 @@
 import { ImageResponse } from 'next/og'
-import { publicUrl } from '@/shared/config/public-url'
+import { getFunnelMeta } from '@/shared/domains/funnels/constants/funnel-meta'
 import { isFunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import { fetchAsDataUri } from '@/shared/domains/funnels/lib/og/fetch-as-data-uri'
 import { loadOgFonts } from '@/shared/domains/funnels/lib/og/load-og-fonts'
-import { getFunnel } from '@/shared/domains/funnels/lib/registry'
+import { readPublicDataUri } from '@/shared/domains/funnels/lib/og/og-assets'
 import { FunnelOgCard } from '@/shared/domains/funnels/ui/og/funnel-og-card'
 
 export const runtime = 'nodejs'
@@ -17,15 +16,14 @@ interface Props {
 
 export default async function Image({ params }: Props) {
   const { trade } = await params
-  const spec = isFunnelSlug(trade) ? getFunnel(trade) : null
+  const meta = isFunnelSlug(trade) ? getFunnelMeta(trade) : null
 
-  const bgPath = spec?.meta.ogImage ?? spec?.hero.media?.src ?? null
-  const background = bgPath
-    ? await fetchAsDataUri(publicUrl(bgPath)).catch(() => null)
+  const background = meta?.ogImage
+    ? await readPublicDataUri(meta.ogImage).catch(() => null)
     : null
-  const logo = await fetchAsDataUri(publicUrl('/company/logo/logo-light-512.png')).catch(() => null)
+  const logo = await readPublicDataUri('/company/logo/logo-light-512.png').catch(() => null)
   const fonts = await loadOgFonts()
-  const headline = spec?.meta.ogHeadline ?? spec?.hero.headline ?? 'Tri Pros Remodeling'
+  const headline = meta?.ogHeadline ?? meta?.title ?? 'Tri Pros Remodeling'
 
   return new ImageResponse(
     (

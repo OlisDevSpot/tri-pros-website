@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ROOTS } from '@/shared/config/roots'
+import { getFunnelMeta } from '@/shared/domains/funnels/constants/funnel-meta'
 import { isFunnelSlug } from '@/shared/domains/funnels/constants/slugs'
-import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { FunnelEngine } from '@/shared/domains/funnels/ui/funnel-engine'
 
 interface Props {
@@ -14,22 +14,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isFunnelSlug(trade)) {
     return {}
   }
-  const spec = getFunnel(trade)
+  const meta = getFunnelMeta(trade)
   const url = ROOTS.subdomainUrl(trade)
   return {
-    title: spec.meta.title,
-    description: spec.meta.description,
+    title: meta.title,
+    description: meta.description,
     openGraph: {
-      title: spec.meta.title,
-      description: spec.meta.description,
+      title: meta.title,
+      description: meta.description,
       url,
       type: 'website',
       siteName: 'Tri Pros Remodeling',
     },
     twitter: {
       card: 'summary_large_image',
-      title: spec.meta.title,
-      description: spec.meta.description,
+      title: meta.title,
+      description: meta.description,
     },
     alternates: { canonical: url },
   }
