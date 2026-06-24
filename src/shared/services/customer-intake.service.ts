@@ -100,6 +100,20 @@ function createCustomerIntakeService() {
         }
       }
 
+      // ── 2b. Single funnel-intake note at creation time (best-effort) ─────────
+      // Fires once here so progressive enrichFunnelLead calls never duplicate it.
+      const funnelNote = buildFunnelLeadNote(input.leadMeta)
+      if (funnelNote) {
+        const noteResult = await addCustomerNote({
+          customerId: customer.id,
+          content: funnelNote,
+          authorId: null,
+        })
+        if (!noteResult.success) {
+          console.error('[customerIntake] funnel intake note failed (lead kept)', noteResult.error)
+        }
+      }
+
       // ── 3. Optional meeting ────────────────────────────────────────────────
       let meetingId: string | null = null
       if (input.meeting) {
@@ -149,19 +163,6 @@ function createCustomerIntakeService() {
       const updated = await customerCrud.update(ctx, { id: input.leadId, data: { leadMetaJSON: nextLeadMeta } })
       if (!updated.success) {
         return updated
-      }
-
-      // ── Optional note (best-effort — never rolls back the enrichment) ────────
-      const noteContent = buildFunnelLeadNote(nextLeadMeta)
-      if (noteContent) {
-        const noteResult = await addCustomerNote({
-          customerId: input.leadId,
-          content: noteContent,
-          authorId: null,
-        })
-        if (!noteResult.success) {
-          console.error('[customerIntake] funnel enrichment note failed (enrichment kept)', noteResult.error)
-        }
       }
 
       return dalSuccess({ ok: true })
