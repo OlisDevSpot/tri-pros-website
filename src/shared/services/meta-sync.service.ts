@@ -1,7 +1,7 @@
 import type { MetaServerEvent, MetaUserData } from '@/shared/services/providers/meta/schemas/server-event'
 import { metaClient } from '@/shared/services/providers/meta/client'
 import { META_ACTION_SOURCE, META_EVENT } from '@/shared/services/providers/meta/constants'
-import { isMetaConfigured } from '@/shared/services/providers/meta/lib/config'
+import { getMetaConfig, isMetaConfigured } from '@/shared/services/providers/meta/lib/config'
 
 export interface LeadEventArgs {
   eventId: string
@@ -52,6 +52,9 @@ function createMetaSyncService() {
       if (!isMetaConfigured()) {
         return
       }
+      // Staging/QA: env code routes events to Test Events. An explicit per-call
+      // arg (none today) still wins; prod has no code set so this stays undefined.
+      const { testEventCode: envTestEventCode } = getMetaConfig()
       const event: MetaServerEvent = {
         event_name: META_EVENT.Lead,
         event_time: args.eventTime,
@@ -65,7 +68,7 @@ function createMetaSyncService() {
         },
       }
       await metaClient.sendConversions([event], {
-        testEventCode: args.testEventCode ?? undefined,
+        testEventCode: args.testEventCode ?? envTestEventCode ?? undefined,
       })
     },
   }

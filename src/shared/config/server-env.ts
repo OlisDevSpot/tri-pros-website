@@ -178,6 +178,13 @@ if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
   throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
 }
 
+// Production safety gate: META_TEST_EVENT_CODE tags CAPI events for Events Manager
+// → Test Events, which Meta EXCLUDES from optimization + reporting. Set in prod it
+// would silently divert every real Lead out of ad optimization — fail boot instead.
+if (env.NODE_ENV === 'production' && env.META_TEST_EVENT_CODE) {
+  throw new Error('META_TEST_EVENT_CODE must NOT be set in production (test events are excluded from optimization)')
+}
+
 // -----------------------------------------------------------------------------
 // Boot banner — dev-only configured-service report.
 // -----------------------------------------------------------------------------
