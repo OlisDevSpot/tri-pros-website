@@ -58,14 +58,17 @@ function renderBlock(block: MarketingBlock, ctx: FunnelContext, _index: number) 
  * rather than the transformed wrapper. The step branch renders its own
  * always-visible copy from the engine.
  */
-export function FunnelLanding({ spec, ctx, children, scrollToQuestionOnMount }: {
+export function FunnelLanding({ spec, ctx, children, variant, scrollToQuestionOnMount }: {
   spec: FunnelSpec
   ctx: FunnelContext
   children: ReactNode
+  variant?: string
   scrollToQuestionOnMount?: boolean
 }) {
   const reduceMotion = useReducedMotion()
-  const blocks = spec.landing?.blocks ?? DEFAULT_LANDING_BLOCKS
+  const blocks = (variant ? spec.variants?.[variant]?.blocks : undefined)
+    ?? spec.landing?.blocks
+    ?? DEFAULT_LANDING_BLOCKS
 
   const heroRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: heroRef, offset: [...HERO_SCROLL_OFFSET] })

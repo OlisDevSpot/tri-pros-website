@@ -7,6 +7,7 @@ import { FunnelEngine } from '@/shared/domains/funnels/ui/funnel-engine'
 
 interface Props {
   params: Promise<{ trade: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -35,10 +36,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function FunnelTradePage({ params }: Props) {
+export default async function FunnelTradePage({ params, searchParams }: Props) {
   const { trade } = await params
+  const sp = await searchParams
   if (!isFunnelSlug(trade)) {
     notFound()
   }
-  return <FunnelEngine slug={trade} />
+  const variantRaw = sp.v
+  const variant = typeof variantRaw === 'string' ? variantRaw : undefined
+  return <FunnelEngine slug={trade} variant={variant} />
 }

@@ -28,7 +28,7 @@ import { FunnelStickyHeader } from '@/shared/domains/funnels/ui/funnel-sticky-he
  * must live there). On step pages there is no hero to track, so the engine
  * renders an always-visible copy with a constant opacity.
  */
-export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
+export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: string }) {
   const spec = getFunnel(slug)
   const engine = useFunnelEngine(spec)
   const utm = useFunnelUtm(slug)
@@ -71,7 +71,7 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   if (engine.isFirst) {
     return (
       <div data-funnel={spec.slug} className="min-h-dvh w-full">
-        <FunnelLanding spec={spec} ctx={ctx} scrollToQuestionOnMount={engine.value != null}>{stepEl}</FunnelLanding>
+        <FunnelLanding spec={spec} ctx={ctx} variant={variant} scrollToQuestionOnMount={engine.value != null}>{stepEl}</FunnelLanding>
       </div>
     )
   }
