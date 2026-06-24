@@ -62,3 +62,28 @@ absent. Next auto-wires it into `og:image`. Rules:
   `<img>` are Satori nodes (not DOM — `next/image` does not apply).
 
 Design: `docs/superpowers/specs/2026-06-23-funnel-metadata-engine-design.md`.
+
+## Adding a new funnel <!-- #adding-a-new-funnel -->
+
+A new funnel is "author one spec + drop assets":
+
+1. **Spec:** create `constants/<slug>.ts` exporting `<slug>Funnel: FunnelSpec`.
+   Reuse prebuilt steps (`ZIP_STEP`, `PII_STEP`, `HOME_TYPE_STEP`,
+   `ADDRESS_STEP`, `CONFIRMATION_STEP`); add card-select steps for trade-native
+   questions. Declare `enrichment: { stepId, label }[]` for every dimension that
+   should reach the CRM (it renders in the customer Funnel Intake panel + the
+   creation-time intake note automatically). Set `pixel.contentCategory`.
+2. **Register:** add the slug to `constants/slugs.ts`, the spec to
+   `lib/registry.ts`, the trade UUID to `constants/trade-by-slug.ts`, and the
+   lead name to `lib/build-lead-input.ts`.
+3. **Assets:** vertical-specific images live under
+   `public/funnels/<slug>/<dimension>/<option>.webp`; shared assets live under
+   `public/funnels/common/...`. Generate with an image model and run them
+   through the `optimize-image-assets` skill (convert→webp, crop, resize,
+   organize, delete source PNGs) before committing.
+4. **Variants (optional):** add `variants: { <name>: { blocks } }` for alternate
+   landing positioning, reachable at `/funnels/<slug>?v=<name>`. Steps + pixel
+   are unchanged.
+
+Measurement, ZIP gating, phone validation, lead submission, and enrichment are
+all funnel-agnostic — no backend wiring is needed for a new funnel.
