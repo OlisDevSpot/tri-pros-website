@@ -1,7 +1,7 @@
 import type { EnrichmentRecord, FunnelAnswers, FunnelSpec, PiiAnswer } from '@/shared/domains/funnels/types'
 import { useEffect, useRef } from 'react'
 import { useEnrichLead } from '@/shared/domains/funnels/hooks/use-enrich-lead'
-import { buildLeadEnrichment } from '@/shared/domains/funnels/lib/build-lead-enrichment'
+import { buildLeadEnrichment, enrichmentSignature } from '@/shared/domains/funnels/lib/build-lead-enrichment'
 
 /**
  * Progressive lead enrichment. Captures each declared enrichment dimension as
@@ -35,5 +35,5 @@ export function useProgressiveEnrichment(spec: FunnelSpec, answers: FunnelAnswer
     // Re-run whenever the captured set changes (or the lead first appears).
     // enrich is a new closure each render but captures a stable mutation ref, so omitting it from deps is safe.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leadId, Object.keys(full).map(k => `${k}=${full[k].value}`).join('|')])
+  }, [leadId, enrichmentSignature(full)])
 }

@@ -1,5 +1,7 @@
 import type { PiiFormData } from '@/shared/domains/funnels/schemas/pii.schema'
 import type { FunnelAnswers, FunnelContext, ZipAnswer } from '@/shared/domains/funnels/types'
+import { buildLeadEnrichment } from '@/shared/domains/funnels/lib/build-lead-enrichment'
+import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { readFbCookies } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
 
 // trade slug → canonical Notion trade name (CT/SMS uniformity)
@@ -19,6 +21,7 @@ export function buildLeadInput(args: { ctx: FunnelContext, pii: PiiFormData, ans
   const zipData = zipAnswer(answers)
   const campaign = ctx.utm.campaign ?? ctx.utm.source ?? `funnel:${ctx.slug}`
   const { fbp, fbc } = readFbCookies()
+  const enrichment = buildLeadEnrichment(getFunnel(ctx.slug), answers)
 
   return {
     name: `${pii.firstName.trim()} ${pii.lastName.trim()}`.trim(),
@@ -40,6 +43,7 @@ export function buildLeadInput(args: { ctx: FunnelContext, pii: PiiFormData, ans
         funnelSlug: ctx.slug,
         utm: ctx.utm,
         meta: { fbp, fbc },
+        enrichment,
       },
     },
   }
