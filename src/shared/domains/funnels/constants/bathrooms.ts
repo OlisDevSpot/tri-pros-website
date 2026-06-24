@@ -1,10 +1,18 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import { PII_STEP } from '@/shared/domains/funnels/constants/pii-step'
 import { ADDRESS_STEP } from '@/shared/domains/funnels/ui/steps/address-step'
 import { CONFIRMATION_STEP } from '@/shared/domains/funnels/ui/steps/confirmation-step'
 import { HOME_TYPE_STEP } from '@/shared/domains/funnels/ui/steps/home-type-step'
-import { PII_STEP } from '@/shared/domains/funnels/ui/steps/pii-form-step'
 import { ZIP_STEP } from '@/shared/domains/funnels/ui/steps/zip-step'
 
+// @migration: the option-tile images (whichBathroom/age/scope) and the
+// before/after pairs currently resolve to PLACEHOLDER webps in
+// `public/funnels/bathrooms/**` (a generic "BATHROOM placeholder art" tile).
+// To ship real art, generate the 17 images per
+// `docs/superpowers/specs/2026-06-23-bathrooms-funnel-asset-prompts.md`, run
+// them through the optimize-image-assets skill, and overwrite the files at
+// these exact paths — no code change here is needed (paths are already the
+// final contract). The hero, callout, problem, and process images are real.
 export const bathroomsFunnel: FunnelSpec = {
   slug: 'bathrooms',
   offer: 'showcase',

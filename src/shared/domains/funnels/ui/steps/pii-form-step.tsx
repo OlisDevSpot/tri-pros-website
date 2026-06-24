@@ -178,15 +178,3 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
     </Form>
   )
 }
-
-/** Importable prebuilt step (Seam A). Spread + override `content` per funnel. */
-export const PII_STEP: PiiStep = {
-  id: 'pii',
-  kind: 'pii-form',
-  content: {
-    title: 'Where should we send your Showcase details?',
-    cta: 'See if I qualify',
-    consent: 'By submitting, I agree Tri Pros Remodeling may contact me by call, text, and email about my project. Consent isn\'t a condition of purchase. Msg/data rates may apply. See our Privacy Policy.',
-    fields: { firstName: 'First name', lastName: 'Last name', phone: 'Phone' },
-  },
-}

@@ -1,8 +1,8 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import { PII_STEP } from '@/shared/domains/funnels/constants/pii-step'
 import { ADDRESS_STEP } from '@/shared/domains/funnels/ui/steps/address-step'
 import { CONFIRMATION_STEP } from '@/shared/domains/funnels/ui/steps/confirmation-step'
 import { HOME_TYPE_STEP } from '@/shared/domains/funnels/ui/steps/home-type-step'
-import { PII_STEP } from '@/shared/domains/funnels/ui/steps/pii-form-step'
 import { ZIP_STEP } from '@/shared/domains/funnels/ui/steps/zip-step'
 
 export const kitchensFunnel: FunnelSpec = {
