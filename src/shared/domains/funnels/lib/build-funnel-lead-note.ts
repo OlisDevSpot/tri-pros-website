@@ -8,7 +8,7 @@ import type { LeadMeta } from '@/shared/entities/customers/schemas'
 interface Entry { label: string, value: string, order: number }
 
 function isEntry(v: unknown): v is Entry {
-  return typeof v === 'object' && v !== null && 'label' in v && 'value' in v
+  return typeof v === 'object' && v !== null && 'label' in v && 'value' in v && 'order' in v
 }
 
 export function buildFunnelLeadNote(leadMeta: LeadMeta | null | undefined): string | null {

@@ -33,7 +33,7 @@ export function useProgressiveEnrichment(spec: FunnelSpec, answers: FunnelAnswer
       enrich({ leadId, enrichment: delta })
     }
     // Re-run whenever the captured set changes (or the lead first appears).
-    // `enrich` is stable from useEnrichLead.
+    // enrich is a new closure each render but captures a stable mutation ref, so omitting it from deps is safe.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId, Object.keys(full).map(k => `${k}=${full[k].value}`).join('|')])
 }
