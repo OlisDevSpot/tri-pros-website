@@ -40,7 +40,7 @@ export const kitchensFunnel: FunnelSpec = {
         kind: 'value',
         content: {
           headline: 'Your kitchen, redesigned for how you actually live.',
-          roiStat: { value: '95–185%', label: 'resale ROI — the highest of any room' },
+          roiStat: { value: '95 – 185%', label: 'resale ROI — the highest of any room' },
           beforeAfter: [
             { before: '/funnels/kitchens/before-1.webp', after: '/funnels/kitchens/after-1.webp' },
             { before: '/funnels/kitchens/before-2.webp', after: '/funnels/kitchens/after-2.webp' },
@@ -101,6 +101,12 @@ export const kitchensFunnel: FunnelSpec = {
       { kind: 'licensing', content: {} },
     ],
   },
+  enrichment: [
+    { stepId: 'homeType', label: 'Home type' },
+    { stepId: 'age', label: 'Project age' },
+    { stepId: 'scope', label: 'Scope' },
+    { stepId: 'timeline', label: 'Timeline' },
+  ],
   // Linear funnel: no `flow` — the engine advances through `steps` in order.
   steps: [
     {
