@@ -8,16 +8,17 @@ import { Block } from '@/shared/domains/funnels/ui/block/block'
 const POINT_DOT_STYLE: CSSProperties = { background: 'var(--primary)' }
 const POINT_TEXT_STYLE: CSSProperties = { color: 'var(--body-text)' }
 const ARROW_STYLE: CSSProperties = { color: 'var(--primary)' }
-const DEFAULT_IMAGE = { src: '/portfolio-photos/modern-kitchen-1.jpeg', alt: 'Remodeled Showcase kitchen' }
 
 /**
  * "Blueprint Authority" financing callout — the canonical media block:
- * a cream content card floats over a full-bleed kitchen photo (brand-blue decor
+ * a cream content card floats over a full-bleed photo (brand-blue decor
  * riding the photo). Desktop = overlap composition; mobile = photo banner then
  * content. All width/surface/rhythm come from the shared <Block> shell.
+ * The media column renders only when `content.image` is provided — no default
+ * fallback so non-kitchen funnels that omit an image get a content-only layout.
  */
 export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: FunnelContext }) {
-  const image = content.image ?? DEFAULT_IMAGE
+  const image = content.image
   return (
     <Block media="right" surface="card" align="left">
       <Block.Content>
@@ -44,9 +45,13 @@ export function CalloutBlock({ content }: { content: CalloutBlockContent, ctx: F
           </button>
         </Block.Actions>
       </Block.Content>
-      <Block.Media side="right">
-        <Image src={image.src} alt={image.alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
-      </Block.Media>
+      {image
+        ? (
+            <Block.Media side="right">
+              <Image src={image.src} alt={image.alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+            </Block.Media>
+          )
+        : null}
     </Block>
   )
 }

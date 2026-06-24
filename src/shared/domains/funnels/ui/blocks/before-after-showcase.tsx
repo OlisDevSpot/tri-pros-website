@@ -72,13 +72,13 @@ export function BeforeAfterShowcase({ pairs }: { pairs: BeforeAfterPair[] }) {
                 <ReactCompareSlider
                   itemOne={(
                     <div className="relative size-full">
-                      <Image src={pair.before} alt={pair.label ? `${pair.label} — before` : 'Kitchen before the remodel'} fill sizes="(max-width: 768px) 100vw, 720px" className="object-cover" priority={i === 0} />
+                      <Image src={pair.before} alt={pair.label ? `${pair.label} — before` : 'Before the remodel'} fill sizes="(max-width: 768px) 100vw, 720px" className="object-cover" priority={i === 0} />
                       <span className="pointer-events-none absolute top-3 left-3 rounded-md bg-neutral-900/70 px-2.5 py-1 text-xs font-semibold tracking-wide text-white uppercase shadow-sm backdrop-blur-sm">Before</span>
                     </div>
                   )}
                   itemTwo={(
                     <div className="relative size-full">
-                      <Image src={pair.after} alt={pair.label ? `${pair.label} — after` : 'Kitchen after the remodel'} fill sizes="(max-width: 768px) 100vw, 720px" className="object-cover" priority={i === 0} />
+                      <Image src={pair.after} alt={pair.label ? `${pair.label} — after` : 'After the remodel'} fill sizes="(max-width: 768px) 100vw, 720px" className="object-cover" priority={i === 0} />
                       <span className="ring-primary/70 pointer-events-none absolute top-3 right-3 rounded-md bg-neutral-900/70 px-2.5 py-1 text-xs font-semibold tracking-wide text-white uppercase shadow-sm ring-1 backdrop-blur-sm">After</span>
                     </div>
                   )}
