@@ -128,12 +128,13 @@ export const leadMetaSchema = z.object({
         fbp: z.string().nullable(),
         fbc: z.string().nullable(),
       }).partial().optional(),
-      enrichment: z.object({
-        homeType: z.string().nullable(),
-        age: z.string().nullable(),
-        scope: z.string().nullable(),
-        timeline: z.string().nullable(),
-      }).partial().optional(),
+      // Generic, self-describing enrichment keyed by step id. JSONB-merge-safe
+      // (object keys merge under Postgres `||`). `value` is the resolved option
+      // label so no server-side label mirror is needed; `order` drives display.
+      enrichment: z.record(
+        z.string(),
+        z.object({ label: z.string(), value: z.string(), order: z.number().int() }),
+      ).optional(),
     }),
   ]).optional(),
 })

@@ -31,8 +31,10 @@ const phoneLookupRatelimit = new Ratelimit({
 })
 
 const enrichRatelimit = new Ratelimit({
+  // Progressive capture fires once per answered enrichment dimension; a funnel
+  // can declare ~6. 20/h leaves comfortable headroom over a single session.
   redis,
-  limiter: Ratelimit.slidingWindow(10, '1 h'),
+  limiter: Ratelimit.slidingWindow(20, '1 h'),
   prefix: 'funnel:enrich',
 })
 
@@ -159,12 +161,10 @@ export const funnelsRouter = createTRPCRouter({
   enrichFunnelLead: baseProcedure
     .input(z.object({
       leadId: z.string().uuid(),
-      enrichment: z.object({
-        homeType: z.string().nullable().optional(),
-        age: z.string().nullable().optional(),
-        scope: z.string().nullable().optional(),
-        timeline: z.string().nullable().optional(),
-      }).optional(),
+      enrichment: z.record(
+        z.string(),
+        z.object({ label: z.string(), value: z.string(), order: z.number().int() }),
+      ),
     }))
     .mutation(async ({ input, ctx }) => {
       const ip = clientIp((ctx as { req?: Request }).req)

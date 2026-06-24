@@ -34,7 +34,7 @@ interface IngestLeadInput {
 
 interface EnrichFunnelLeadInput {
   leadId: string
-  enrichment?: { homeType?: string | null, age?: string | null, scope?: string | null, timeline?: string | null }
+  enrichment: Record<string, { label: string, value: string, order: number }>
 }
 
 interface SetFunnelLeadAddressInput {

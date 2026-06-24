@@ -1,50 +1,18 @@
 'use client'
 
-import type { ConfirmationStep, PiiAnswer, StepProps } from '@/shared/domains/funnels/types'
+import type { ConfirmationStep, StepProps } from '@/shared/domains/funnels/types'
 import { CircleCheck, Phone } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useEffect, useRef } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { contactInfo } from '@/shared/constants/company/contact-info'
-import { useEnrichLead } from '@/shared/domains/funnels/hooks/use-enrich-lead'
 import { FunnelProjectCarousel } from '@/shared/domains/funnels/ui/blocks/funnel-project-carousel'
 import { ConfirmationTimeline } from '@/shared/domains/funnels/ui/steps/confirmation-timeline'
 import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { toDialString } from '@/shared/lib/phone'
 
-function asString(v: unknown): string | null {
-  return typeof v === 'string' ? v : null
-}
-
-export function ConfirmationStepView({ content, answers, ctx }: StepProps<ConfirmationStep>) {
-  const enrich = useEnrichLead()
-  const firedRef = useRef(false)
+export function ConfirmationStepView({ content, ctx }: StepProps<ConfirmationStep>) {
   const reduceMotion = useReducedMotion()
-
-  // Fire enrichment exactly once on mount, fire-and-forget. Empty dep array =
-  // run-once-on-mount; firedRef is belt-and-suspenders (never re-fire).
-  useEffect(() => {
-    if (firedRef.current) {
-      return
-    }
-    firedRef.current = true
-    const leadId = (answers.pii as PiiAnswer | null)?.leadId
-    if (!leadId) {
-      return
-    }
-    enrich({
-      leadId,
-      enrichment: {
-        homeType: asString(answers.homeType),
-        age: asString(answers.age),
-        scope: asString(answers.scope),
-        timeline: asString(answers.timeline),
-      },
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const phone = contactInfo.find(info => info.accessor === 'phone')!.value
 
   // Per-block entrance: each section fades up in sequence on mount, gated on

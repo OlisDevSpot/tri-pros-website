@@ -11,6 +11,7 @@ import { FUNNEL_TRANSITION, STEP_VARIANTS } from '@/shared/domains/funnels/const
 import { STEP_REGISTRY } from '@/shared/domains/funnels/constants/step-registry'
 import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engine'
 import { useFunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
+import { useProgressiveEnrichment } from '@/shared/domains/funnels/hooks/use-progressive-enrichment'
 import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { useFunnelTracking } from '@/shared/domains/funnels/lib/tracking/use-funnel-tracking'
 import { FunnelLanding } from '@/shared/domains/funnels/ui/funnel-landing'
@@ -32,6 +33,7 @@ export function FunnelEngine({ slug }: { slug: FunnelSlug }) {
   const engine = useFunnelEngine(spec)
   const utm = useFunnelUtm(slug)
   useFunnelTracking(spec, engine)
+  useProgressiveEnrichment(spec, engine.answers)
   const reduceMotion = useReducedMotion()
 
   // Constant opacity for the header on step pages (no hero scroll to track).
