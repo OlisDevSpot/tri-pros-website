@@ -1,10 +1,12 @@
 'use client'
 
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
+import type { LeadMeta } from '@/shared/entities/customers/schemas'
 
 import { CUSTOMER_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-profile-fields'
 import { FINANCIAL_PROFILE_FIELDS } from '@/shared/entities/customers/constants/financial-profile-fields'
 import { PROPERTY_PROFILE_FIELDS } from '@/shared/entities/customers/constants/property-profile-fields'
+import { FunnelIntakePanel } from './funnel-intake-panel'
 import { ProfileCard } from './profile-card'
 
 interface Props {
@@ -12,6 +14,7 @@ interface Props {
   customerProfileJSON: Record<string, unknown> | null
   propertyProfileJSON: Record<string, unknown> | null
   financialProfileJSON: Record<string, unknown> | null
+  leadMetaJSON: LeadMeta | null | undefined
 }
 
 export function CustomerProfileDetails({
@@ -19,6 +22,7 @@ export function CustomerProfileDetails({
   customerProfileJSON,
   propertyProfileJSON,
   financialProfileJSON,
+  leadMetaJSON,
 }: Props) {
   const { form, isEditing, canEditProfiles } = editForm
 
@@ -51,6 +55,7 @@ export function CustomerProfileDetails({
         formPrefix="financialProfileJSON"
         control={form.control}
       />
+      <FunnelIntakePanel leadMetaJSON={leadMetaJSON} />
     </div>
   )
 }

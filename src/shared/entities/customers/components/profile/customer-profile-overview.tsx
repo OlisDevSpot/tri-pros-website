@@ -26,6 +26,7 @@ export function CustomerProfileOverview({ data, editForm, onMutationSuccess }: P
           customerProfileJSON={data.customer.customerProfileJSON as Record<string, unknown> | null}
           propertyProfileJSON={data.customer.propertyProfileJSON as Record<string, unknown> | null}
           financialProfileJSON={data.customer.financialProfileJSON as Record<string, unknown> | null}
+          leadMetaJSON={data.customer.leadMetaJSON}
         />
       </div>
     </div>
