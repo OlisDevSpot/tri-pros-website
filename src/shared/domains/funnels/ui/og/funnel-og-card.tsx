@@ -47,12 +47,22 @@ export function FunnelOgCard({ background, logo, headline, trustLine }: FunnelOg
       />
       {logo
         ? (
-            <img
-              src={logo}
-              width={190}
-              height={56}
-              style={{ position: 'absolute', top: 56, left: 64, objectFit: 'contain' }}
-            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 48,
+                left: 56,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 16,
+                borderRadius: 20,
+                background: 'rgba(11, 18, 32, 0.62)',
+                border: '2px solid rgba(255, 255, 255, 0.16)',
+              }}
+            >
+              <img src={logo} width={84} height={84} style={{ objectFit: 'contain' }} />
+            </div>
           )
         : null}
       <div
