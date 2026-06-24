@@ -9,7 +9,7 @@
 
 ### How to fix (2 minutes)
 1. Go to [developers.facebook.com/apps](https://developers.facebook.com/apps)
-2. Click your app (the one whose App ID is in `.env.meta` as `META_APP_ID`)
+2. Click your app (the one whose App ID is in `.env` as `META_APP_ID`)
 3. Find the **Unpublished → Published** toggle (top of the left sidebar)
 4. Switch to **Published** — Meta may ask for a Privacy Policy URL; use `https://tripros.com/privacy`
 5. Run: `pnpm meta init-account`
@@ -78,9 +78,10 @@ pnpm meta create-campaign     # Interactive wizard for future campaigns
 
 ---
 
-## Credentials File
+## Credentials
 
-`.env.meta` at project root (gitignored). Contains:
+`.env` at project root (gitignored), Meta section (ported from the old
+standalone `.env.meta` on 2026-06-24). Contains:
 - `META_APP_ID` — your Meta app ID
 - `META_ACCESS_TOKEN` — system user token (non-expiring)
 - `META_AD_ACCOUNT_ID` — `act_1552723459154642`
@@ -95,7 +96,7 @@ scripts/meta/
   index.ts                    ← pnpm meta dispatcher
   lib/
     client.ts                 ← metaFetch + MetaApiError
-    env.ts                    ← loads .env.meta, validates required vars
+    env.ts                    ← loads .env (shared load-env), validates required vars
     formatters.ts             ← printSuccess / printError / printInfo
     types.ts                  ← shared types
   setup/

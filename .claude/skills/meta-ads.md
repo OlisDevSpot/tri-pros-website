@@ -25,8 +25,10 @@ Example: `pnpm meta performance this_month`
 
 ## Credentials
 
-Stored in `.env.meta` at project root. Never committed (covered by `.gitignore`).
-If credentials fail, run `pnpm meta verify` first to diagnose.
+Stored in `.env` at project root, in the Meta section (`META_APP_ID`,
+`META_APP_SECRET`, `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`).
+Never committed (covered by `.gitignore`). If credentials fail, run
+`pnpm meta verify` first to diagnose.
 
 ## After Mutating Operations
 
@@ -37,4 +39,4 @@ Open that URL in the browser using Playwright to visually confirm the change.
 
 - All campaigns are created PAUSED — never activate without explicit user instruction
 - Always run `pnpm meta verify` if an API call throws an auth error before retrying
-- Never expose credentials in output — they stay in `.env.meta`
+- Never expose credentials in output — they stay in `.env`

@@ -1,12 +1,8 @@
 /* eslint-disable node/prefer-global/process */
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { config } from 'dotenv'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// Load .env.meta from project root — NOT .env
-config({ path: path.resolve(__dirname, '..', '..', '..', '.env.meta') })
+// Load .env.local then .env from the project root (shared loader, CWD-relative),
+// matching every other CLI script. The Marketing-API vars below were ported from
+// the old standalone .env.meta into .env's Meta section on 2026-06-24.
+import '../../lib/load-env'
 
 const REQUIRED = [
   'META_APP_ID',
@@ -18,7 +14,7 @@ const REQUIRED = [
 for (const key of REQUIRED) {
   if (!process.env[key]) {
     console.error(`❌  Missing required env var: ${key}`)
-    console.error(`    Add it to .env.meta at the project root.`)
+    console.error(`    Add it to .env at the project root (Meta section).`)
     process.exit(1)
   }
 }
