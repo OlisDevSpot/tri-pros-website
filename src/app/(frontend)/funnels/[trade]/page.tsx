@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ROOTS } from '@/shared/config/roots'
-import { getFunnelMeta } from '@/shared/domains/funnels/constants/funnel-meta'
 import { isFunnelSlug } from '@/shared/domains/funnels/constants/slugs'
+import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
 import { FunnelEngine } from '@/shared/domains/funnels/ui/funnel-engine'
 
 interface Props {
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!isFunnelSlug(trade)) {
     return {}
   }
-  const meta = getFunnelMeta(trade)
+  const meta = getTradeFacts(trade).meta
   const url = ROOTS.subdomainUrl(trade)
   return {
     title: meta.title,

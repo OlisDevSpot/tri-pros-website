@@ -27,28 +27,30 @@ Every funnel gets a per-funnel tab title, meta description, and a dynamically
 generated Open Graph share image (so a link pasted into WhatsApp/SMS/iMessage
 renders a branded preview, not the generic apex card).
 
-**Authoring (one place, data-only):** `constants/funnel-meta.ts` exports
-`FUNNEL_META: Record<FunnelSlug, FunnelMeta>` — `title`, `description`,
-`ogHeadline?`, `ogImage?`. `Record<FunnelSlug, …>` is the completeness guard:
-omit a slug and tsc errors. `meta.title` is the bare label; the root layout
-title template appends ` | Tri Pros Remodeling` (so `'Kitchen Remodels'` →
-`Kitchen Remodels | Tri Pros Remodeling`).
+**Authoring (one place, data-only):** `constants/trade-facts.ts` exports
+`TRADE_FACTS: Record<FunnelSlug, TradeFacts>` — `name` (Notion trade name),
+`notionTradeId`, and `meta` (`title`, `description`, `ogHeadline?`, `ogImage?`).
+`Record<FunnelSlug, …>` is the completeness guard: omit a slug and tsc errors.
+`meta.title` is the bare label; the root layout title template appends
+` | Tri Pros Remodeling` (so `'Kitchen Remodels'` →
+`Kitchen Remodels | Tri Pros Remodeling`). (`pixel.contentCategory` is
+measurement config and stays on the `FunnelSpec`, not a trade fact.)
 
 **Why a separate registry, NOT a field on `FunnelSpec`:** `FunnelSpec` imports
 the client step components. Server-side metadata code (`page.tsx`
 `generateMetadata`, `opengraph-image.tsx`) must read funnel data WITHOUT pulling
 that client tree into the server module graph — doing so 500s every funnel page
 (funnel modules use React hooks without `'use client'`, relying on the ambient
-`FunnelEngine` client boundary). So `funnel-meta.ts` imports ONLY types. Keep it
+`FunnelEngine` client boundary). So `trade-facts.ts` imports ONLY types. Keep it
 that way: never import a component (or anything that does) into this file.
 
 **Page metadata:** `funnels/[trade]/page.tsx` `generateMetadata` reads
-`getFunnelMeta(slug)` and sets title/description/openGraph/twitter, with
+`getTradeFacts(slug).meta` and sets title/description/openGraph/twitter, with
 `og:url` + `alternates.canonical` pointing at the funnel's OWN subdomain
 (`ROOTS.subdomainUrl(slug)`), not the apex.
 
 **OG image:** `funnels/[trade]/opengraph-image.tsx` (`next/og`, Node runtime)
-renders 1200×630 from `FUNNEL_META` — hero photo (`ogImage`) + scrim + logo +
+renders 1200×630 from `getTradeFacts(slug).meta` — hero photo (`ogImage`) + scrim + logo +
 `ogHeadline` + trust line, with a brand-gradient fallback when `ogImage` is
 absent. Next auto-wires it into `og:image`. Rules:
 - `ogImage` MUST be JPEG/PNG, never WebP (Satori's webp decoding is unreliable).

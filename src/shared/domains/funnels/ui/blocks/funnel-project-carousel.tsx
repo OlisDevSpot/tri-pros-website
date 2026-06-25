@@ -9,7 +9,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/shared/components/ui/carousel'
 import { ROOTS } from '@/shared/config/roots'
 import { PORTFOLIO_FALLBACK_IMAGES } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
-import { TRADE_BY_SLUG } from '@/shared/domains/funnels/constants/trade-by-slug'
+import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
 import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { cn } from '@/shared/lib/utils'
@@ -36,7 +36,7 @@ export function FunnelProjectCarousel({ slug }: { slug: string }) {
   const trpc = useTRPC()
   const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
-  const tradeId = TRADE_BY_SLUG[slug as FunnelSlug]
+  const tradeId = getTradeFacts(slug as FunnelSlug).notionTradeId
 
   const [api, setApi] = useState<CarouselApi>()
   const [current, setCurrent] = useState(0)

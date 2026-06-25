@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
-import { getFunnelMeta } from '@/shared/domains/funnels/constants/funnel-meta'
 import { isFunnelSlug } from '@/shared/domains/funnels/constants/slugs'
+import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
 import { loadOgFonts } from '@/shared/domains/funnels/lib/og/load-og-fonts'
 import { readPublicDataUri } from '@/shared/domains/funnels/lib/og/og-assets'
 import { FunnelOgCard } from '@/shared/domains/funnels/ui/og/funnel-og-card'
@@ -16,7 +16,7 @@ interface Props {
 
 export default async function Image({ params }: Props) {
   const { trade } = await params
-  const meta = isFunnelSlug(trade) ? getFunnelMeta(trade) : null
+  const meta = isFunnelSlug(trade) ? getTradeFacts(trade).meta : null
 
   const background = meta?.ogImage
     ? await readPublicDataUri(meta.ogImage).catch(() => null)

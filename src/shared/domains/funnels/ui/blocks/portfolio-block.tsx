@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useMemo } from 'react'
 import { PORTFOLIO_BENTO_SPANS, PORTFOLIO_FALLBACK_IMAGES, PORTFOLIO_SLOT_COUNT } from '@/shared/domains/funnels/constants/portfolio-fallback-images'
-import { TRADE_BY_SLUG } from '@/shared/domains/funnels/constants/trade-by-slug'
+import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
 import { Block } from '@/shared/domains/funnels/ui/block/block'
 import { getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { cn } from '@/shared/lib/utils'
@@ -16,7 +16,7 @@ export function PortfolioBlock({ content, ctx }: { content: PortfolioBlockConten
   const trpc = useTRPC()
   const scopesQ = useQuery(trpc.notionRouter.scopes.getAll.queryOptions())
   const projectsQ = useQuery(trpc.projectsRouter.showroomDisplay.getAll.queryOptions())
-  const tradeId = TRADE_BY_SLUG[ctx.slug]
+  const tradeId = getTradeFacts(ctx.slug).notionTradeId
 
   const tiles = useMemo(() => {
     const scopes = scopesQ.data

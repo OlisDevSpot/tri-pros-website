@@ -218,11 +218,11 @@ export type MarketingRegistry = { [K in MarketingBlockKind]: MarketingBlockCompo
 // ── FunnelSpec: ordered steps + branching + metadata. No content map. ──
 
 /**
- * Per-funnel share/SEO metadata. Authored in the component-free
- * `constants/funnel-meta.ts` registry (NOT on FunnelSpec) so server metadata
+ * Per-trade share/SEO metadata. Authored in the component-free
+ * `constants/trade-facts.ts` registry (NOT on FunnelSpec) so server metadata
  * code can read it without importing the client step-component tree.
  */
-export interface FunnelMeta {
+export interface TradeMeta {
   /**
    * Tab title + og:title base. The root layout title template appends
    * " | Tri Pros Remodeling". e.g. "Kitchen Remodels".
@@ -234,6 +234,22 @@ export interface FunnelMeta {
   ogHeadline?: string
   /** OG background image (absolute public path, JPEG/PNG — never WebP). */
   ogImage?: string
+}
+
+/**
+ * Everything component-free that is true of a trade (1:1 with a funnel). The
+ * single source for a trade's display name, its Notion trade UUID, and its
+ * share/SEO metadata. Read by server metadata code, the lead-input builder, and
+ * the portfolio block — none of which may pull the client step tree, so this
+ * stays component-free. see constants/trade-facts.ts + ../DOCS.md#funnel-metadata
+ */
+export interface TradeFacts {
+  /** Canonical Notion trade name, e.g. "Kitchen Renovation" (CT/SMS uniformity). */
+  name: string
+  /** Notion trade-page UUID — portfolio filtering. */
+  notionTradeId: string
+  /** Share/SEO metadata. */
+  meta: TradeMeta
 }
 
 export interface FunnelPixel { contentCategory: string }

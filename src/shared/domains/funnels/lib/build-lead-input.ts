@@ -1,15 +1,9 @@
 import type { PiiFormData } from '@/shared/domains/funnels/schemas/pii.schema'
 import type { FunnelAnswers, FunnelContext, ZipAnswer } from '@/shared/domains/funnels/types'
+import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
 import { buildLeadEnrichment } from '@/shared/domains/funnels/lib/build-lead-enrichment'
 import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { readFbCookies } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
-
-// trade slug → canonical Notion trade name (CT/SMS uniformity)
-const TRADE_NAME: Record<string, string> = {
-  'kitchens': 'Kitchen Renovation',
-  'bathrooms': 'Bathroom Renovation',
-  'complete-interior': 'Complete Interior Remodel',
-}
 
 function zipAnswer(answers: FunnelAnswers): Partial<ZipAnswer> {
   const a = answers.zip
@@ -35,7 +29,7 @@ export function buildLeadInput(args: { ctx: FunnelContext, pii: PiiFormData, ans
     mode: 'customer_only' as const,
     leadSourceSlug: 'branded-meta-ads',
     leadMetaJSON: {
-      interestedTradesRaw: [TRADE_NAME[ctx.slug] ?? ctx.slug],
+      interestedTradesRaw: [getTradeFacts(ctx.slug).name],
       originCampaign: campaign,
       source: {
         kind: 'funnel' as const,
