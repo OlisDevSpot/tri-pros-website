@@ -45,6 +45,9 @@ control. "Clear Activity" in Test Events only clears the *test* view.
 
 ### Backstop — Traffic Permissions allow-list (manual, one-time)
 
+> **Status: CONFIGURED (2026-06-25).** Allow list = `triprosremodeling.com` is
+> live on dataset `2031257387425754`.
+
 Defense-in-depth against a misconfigured deploy firing the pixel from a non-prod
 host: Events Manager → Data Sources → **the dataset** → Settings → **Traffic
 Permissions** → create an **Allow List** containing only `triprosremodeling.com`
