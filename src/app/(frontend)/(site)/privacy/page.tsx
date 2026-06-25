@@ -84,7 +84,7 @@ export default function PrivacyPolicyPage() {
           </p>
           <p>
             <strong>Mobile information sharing.</strong>
-            {' No mobile information will be shared with third parties or affiliates for marketing or promotional purposes. All other categories of personal information exclude text-messaging originator opt-in data and consent; this information will not be shared with any third parties.'}
+            {' Mobile information collected through our SMS/text-messaging program — including text-messaging originator opt-in data and consent — will not be shared with third parties or affiliates for marketing or promotional purposes, and this opt-in and consent data will not be shared with any third party for any purpose. This SMS restriction is separate from the advertising and conversion measurement described in Section 6, which shares only a one-way hashed identifier and never includes your SMS opt-in or consent data.'}
           </p>
           <p>
             We may share mobile information with service providers (such as our
