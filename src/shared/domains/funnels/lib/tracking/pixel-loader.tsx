@@ -4,11 +4,12 @@
 import Script from 'next/script'
 
 /**
- * One-time Meta Pixel base-code loader. Mounted by the funnel layout so it
- * loads on every funnel screen but nowhere else in the app. Renders nothing
- * (and loads no script) when NEXT_PUBLIC_META_PIXEL_ID is unset — local dev and
- * unprovisioned environments stay inert. Standard Meta snippet; the initial
- * PageView fires here, all later events go through firePixel().
+ * One-time Meta Pixel base-code loader. The funnel layout mounts this ONLY on
+ * the production host (see isProductionHost) — so dev/preview/ngrok sessions
+ * never define `window.fbq`, and every firePixel() call downstream no-ops. Also
+ * renders nothing when NEXT_PUBLIC_META_PIXEL_ID is unset (unprovisioned
+ * environments). Standard Meta snippet; the initial PageView fires here, all
+ * later events go through firePixel().
  */
 export function PixelLoader() {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
