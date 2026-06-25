@@ -1127,8 +1127,10 @@ Expected: clean.
 
 - [ ] **Step 5: Commit**
 
+> IMPORTANT: stage ONLY the files this task touched (the working tree has unrelated concurrent WIP — never `git add -A`). Stage the privacy-policy page path you edited in Step 1 plus the DOCS file:
+
 ```bash
-git add -A
+git add src/shared/domains/funnels/DOCS.md <privacy-policy-page-path-from-step-1>
 git commit -m "docs(meta): privacy disclosure + funnel measurement DOCS note"
 ```
 
