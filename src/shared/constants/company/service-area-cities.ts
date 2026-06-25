@@ -1,10 +1,15 @@
-// Curated CA service-area ZIPs → city/county. Unknown ZIPs fall back to the
-// Zippopotam API in resolve-zip.ts. Expand as coverage grows.
+// Curated CA service-area ZIP → city/county map (resolver). Sibling of the
+// generated membership gate `service-area-zips.ts` (`isInServiceArea`): this
+// names the anchor ZIPs for local, no-API city resolution; the funnel ZIP step
+// resolves city from here, and unknown in-area ZIPs fall back to the Zippopotam
+// API in `funnels/lib/resolve-zip.ts`. Every key here MUST also be in
+// `SERVICE_AREA_ZIPS` — a resolvable city that failed the gate would contradict
+// the funnel's in-area check. Drift guard TBD; verified ⊆ on 2026-06-24.
 //
 // Source: docs/seo/playbook.md §9.1 "Anchor 15 — city + ZIP reference"
 // Coverage: 15 anchor cities + HQ (Reseda) across SFV/SGV, Antelope Valley,
 //           Westside, and IE. 44 unique ZIPs + HQ ZIP = 45 entries total.
-export const CA_ZIP_CITIES: Record<string, { city: string, county: string }> = {
+export const SERVICE_AREA_CITIES: Record<string, { city: string, county: string }> = {
   // HQ — Reseda (San Fernando Valley)
   91335: { city: 'Reseda', county: 'Los Angeles' },
 

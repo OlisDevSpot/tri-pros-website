@@ -1,5 +1,5 @@
 import { isInServiceArea } from '@/shared/constants/company/service-area'
-import { CA_ZIP_CITIES } from '@/shared/domains/funnels/constants/ca-zip-cities'
+import { SERVICE_AREA_CITIES } from '@/shared/constants/company/service-area-cities'
 
 export interface ResolvedZip {
   zip: string
@@ -25,7 +25,7 @@ export type ResolveZipResult
     | { status: 'error' }
 
 export async function resolveZip(zip: string, opts?: { signal?: AbortSignal }): Promise<ResolveZipResult> {
-  const local = CA_ZIP_CITIES[zip]
+  const local = SERVICE_AREA_CITIES[zip]
   if (local) {
     return { status: 'ok', data: { zip, city: local.city, state: 'CA', county: local.county } }
   }
