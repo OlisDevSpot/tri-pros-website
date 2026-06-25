@@ -1,4 +1,5 @@
 import type { MetaServerEvent, MetaUserData } from '@/shared/services/providers/meta/schemas/server-event'
+import env from '@/shared/config/server-env'
 import { metaClient } from '@/shared/services/providers/meta/client'
 import { META_ACTION_SOURCE, META_EVENT } from '@/shared/services/providers/meta/constants'
 import { getMetaConfig, isMetaConfigured } from '@/shared/services/providers/meta/lib/config'
@@ -48,8 +49,13 @@ function createMetaSyncService() {
   return {
     async trackLead(args: LeadEventArgs): Promise<void> {
       // Config absent (local dev / unprovisioned) → no-op. Keeps the loop inert
-      // until Oliver creates the dataset + token.
+      // until Oliver creates the dataset + token. In prod this means the whole
+      // measurement loop is silently dead — the boot banner that would flag it is
+      // dev-only — so surface it loudly per dropped Lead instead of failing dark.
       if (!isMetaConfigured()) {
+        if (env.NODE_ENV === 'production') {
+          console.error('[meta-sync] CAPI Lead dropped — Meta is not configured in production (missing META_DATASET_ID / META_CAPI_TOKEN / NEXT_PUBLIC_META_PIXEL_ID). Ad optimization is receiving zero server events.')
+        }
         return
       }
       // Staging/QA: env code routes events to Test Events. An explicit per-call
