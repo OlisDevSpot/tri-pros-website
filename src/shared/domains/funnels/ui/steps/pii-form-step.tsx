@@ -72,11 +72,6 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
       return
     }
     const eventId = mintEventId()
-    firePixel('Lead', {
-      eventId,
-      contentCategory: ctx.pixel.contentCategory,
-      contentName: ctx.slug,
-    })
     const created = await submit.mutateAsync({
       phone: e164,
       name: lead.name,
@@ -86,10 +81,23 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
       leadSourceSlug: lead.leadSourceSlug,
       leadMetaJSON: lead.leadMetaJSON,
       eventId,
+      // Public browser URL (subdomain + attribution query) — the server threads
+      // this to the CAPI twin as event_source_url for match quality + dedup.
+      eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
       pixel: {
         contentCategory: ctx.pixel.contentCategory,
         contentName: ctx.slug,
       },
+    })
+    // Fire the browser Lead pixel only AFTER the server accepts + persists the
+    // lead, sharing the same event_id as the server CAPI twin (dispatched inside
+    // submitLead) so Meta dedupes the pair. Firing before submit would count a
+    // Lead even when the server rejects (non-mobile / rate-limit / ingest error),
+    // and the user's retry would mint a fresh event_id → a duplicate Lead.
+    firePixel('Lead', {
+      eventId,
+      contentCategory: ctx.pixel.contentCategory,
+      contentName: ctx.slug,
     })
     setValue({ leadId: created.customerId })
     advance()

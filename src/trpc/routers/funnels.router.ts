@@ -7,6 +7,7 @@ import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
+import { deriveFbc } from '@/shared/services/providers/meta/lib/derive-fbc'
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 
@@ -18,6 +19,12 @@ const redis = new Redis({
   token: env.UPSTASH_REDIS_REST_TOKEN,
 })
 
+// Keyed on `${ip}:${phone}`, NOT raw IP — mobile carriers pool many subscribers
+// behind a handful of CGNAT egress IPs, so a per-IP ceiling would collectively
+// throttle legitimate distinct leads under ad volume. The composite key gives
+// each phone number its own bucket (bounding same-number retries) while letting
+// distinct mobile users share an egress IP freely. Bot abuse rotating phones is
+// gated upstream by Twilio mobile validation + the honeypot.
 const submitRatelimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(5, '1 h'),
@@ -78,6 +85,9 @@ export const funnelsRouter = createTRPCRouter({
       leadSourceSlug: z.string().min(1).max(100),
       leadMetaJSON: leadMetaSchema,
       eventId: z.string().optional(),
+      // The PUBLIC browser URL (subdomain + query) at submit time — NOT the
+      // internal /funnels/... rewrite path. Improves CAPI match quality + dedup.
+      eventSourceUrl: z.string().url().max(2048).optional(),
       pixel: z.object({
         contentCategory: z.string(),
         contentName: z.string(),
@@ -85,7 +95,7 @@ export const funnelsRouter = createTRPCRouter({
     }))
     .mutation(async ({ input, ctx }) => {
       const ip = clientIp((ctx as { req?: Request }).req)
-      const { success } = await submitRatelimit.limit(ip)
+      const { success } = await submitRatelimit.limit(`${ip}:${input.phone}`)
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
@@ -132,20 +142,28 @@ export const funnelsRouter = createTRPCRouter({
       if (input.eventId) {
         const ip = clientIp((ctx as { req?: Request }).req)
         const ua = (ctx as { req?: Request }).req?.headers.get('user-agent') ?? null
-        const fb = input.leadMetaJSON.source?.kind === 'funnel'
-          ? input.leadMetaJSON.source.meta
+        const funnelSource = input.leadMetaJSON.source?.kind === 'funnel'
+          ? input.leadMetaJSON.source
           : undefined
+        const nowMs = Date.now()
         void metaCapiEventJob.dispatch({
           event: 'Lead',
           args: {
             eventId: input.eventId,
-            eventTime: Math.floor(Date.now() / 1000),
+            eventTime: Math.floor(nowMs / 1000),
             phone: input.phone,
             externalId: customerId,
-            fbp: fb?.fbp ?? null,
-            fbc: fb?.fbc ?? null,
+            fbp: funnelSource?.meta?.fbp ?? null,
+            // Reconstruct fbc from the persisted fbclid when the pixel never set
+            // the _fbc cookie (iOS ITP / ad blockers) — preserves click attribution.
+            fbc: deriveFbc({
+              fbc: funnelSource?.meta?.fbc,
+              fbclid: funnelSource?.utm.fbclid,
+              nowMs,
+            }),
             clientIp: ip,
             clientUserAgent: ua,
+            eventSourceUrl: input.eventSourceUrl ?? null,
             contentCategory: input.pixel?.contentCategory ?? null,
             contentName: input.pixel?.contentName ?? null,
           },
