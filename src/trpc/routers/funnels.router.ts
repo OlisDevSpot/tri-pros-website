@@ -87,7 +87,10 @@ export const funnelsRouter = createTRPCRouter({
       eventId: z.string().optional(),
       // The PUBLIC browser URL (subdomain + query) at submit time — NOT the
       // internal /funnels/... rewrite path. Improves CAPI match quality + dedup.
-      eventSourceUrl: z.string().url().max(2048).optional(),
+      // `.catch(undefined)` is load-bearing: this is a cosmetic CAPI field, so a
+      // malformed or oversized URL must self-heal to undefined, NEVER reject the
+      // lead-submit mutation (which would also suppress the post-submit pixel).
+      eventSourceUrl: z.string().url().max(2048).optional().catch(undefined),
       pixel: z.object({
         contentCategory: z.string(),
         contentName: z.string(),
