@@ -1,7 +1,9 @@
 import type { ResolvedZip } from '@/shared/domains/funnels/lib/resolve-zip'
 import { useEffect, useState } from 'react'
-import { RESOLVE_DEBOUNCE_MS } from '@/shared/domains/funnels/constants/zip-check'
 import { classifyZip, resolveZip } from '@/shared/domains/funnels/lib/resolve-zip'
+
+/** Debounce before firing a live resolve on a valid in-area ZIP. */
+const RESOLVE_DEBOUNCE_MS = 350
 
 interface LiveZipResolve {
   /** The resolved location, or null when the ZIP isn't a resolvable in-area ZIP. */

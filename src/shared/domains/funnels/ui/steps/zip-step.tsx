@@ -6,7 +6,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Input } from '@/shared/components/ui/input'
 import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
-import { CHECK_DURATIONS, CHECK_STEPS } from '@/shared/domains/funnels/constants/zip-check'
+import { getTradeFacts } from '@/shared/domains/funnels/constants/trade-facts'
 import { useLiveZipResolve } from '@/shared/domains/funnels/hooks/use-live-zip-resolve'
 import { classifyZip } from '@/shared/domains/funnels/lib/resolve-zip'
 import { ZipCheckProgress } from '@/shared/domains/funnels/ui/steps/zip-check-progress'
@@ -14,7 +14,7 @@ import { useAutoFocus } from '@/shared/hooks/use-auto-focus'
 
 type Phase = 'input' | 'checking' | 'qualified'
 
-export function ZipStepView({ content, value, setValue }: StepProps<ZipStep>) {
+export function ZipStepView({ content, value, setValue, ctx }: StepProps<ZipStep>) {
   // Persistence (#7): if this step was already answered (reached via Back),
   // mount directly in the qualified phase with the stored ZIP.
   const [zip, setZip] = useState(value?.zip ?? '')
@@ -52,8 +52,7 @@ export function ZipStepView({ content, value, setValue }: StepProps<ZipStep>) {
   if (phase === 'checking') {
     return (
       <ZipCheckProgress
-        steps={CHECK_STEPS}
-        durations={CHECK_DURATIONS}
+        input={{ zip: value?.zip ?? zip, city: value?.city ?? '', trade: getTradeFacts(ctx.slug).name }}
         onComplete={() => setPhase('qualified')}
       />
     )
