@@ -22,7 +22,7 @@ export function buildLeadEnrichment(spec: FunnelSpec, answers: FunnelAnswers): E
     if (typeof selectedId !== 'string') {
       return
     }
-    const label = step.content.options[selectedId]?.label
+    const label = step.content.options.find(o => o.id === selectedId)?.label
     if (!label) {
       return
     }

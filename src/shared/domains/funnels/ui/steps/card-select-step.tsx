@@ -16,7 +16,7 @@ import { cn } from '@/shared/lib/utils'
  * bright hero hands off into it and the eye lands on the section to act on.
  * Every later card-select stays on the light theme. All colors are tokens.
  */
-export function CardSelectStepView({ step, content, value, isAnswered, isFirst, setValue, advance }: StepProps<CardSelectStep>) {
+export function CardSelectStepView({ content, value, isAnswered, isFirst, setValue, advance }: StepProps<CardSelectStep>) {
   const reduceMotion = useReducedMotion()
   const spotlight = isFirst
 
@@ -55,10 +55,10 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
         animate={reduceMotion ? false : 'visible'}
         className="grid grid-cols-2 gap-2 sm:gap-3"
       >
-        {step.optionIds.map((optionId) => {
-          const option = content.options[optionId]
+        {content.options.map((option) => {
+          const optionId = option.id
           const selected = value === optionId
-          const asset = option?.asset
+          const asset = option.asset
           return (
             <motion.button
               key={optionId}
@@ -89,8 +89,8 @@ export function CardSelectStepView({ step, content, value, isAnswered, isFirst, 
                   )
                 : null}
               <div className="flex flex-col items-center gap-1 p-2">
-                <span className={cn('block text-sm font-medium', spotlight && 'text-white')}>{option?.label ?? optionId}</span>
-                {option?.description
+                <span className={cn('block text-sm font-medium', spotlight && 'text-white')}>{option.label}</span>
+                {option.description
                   ? <span className={cn('hidden text-sm sm:block', spotlight ? 'text-white/70' : 'text-muted-foreground')}>{option.description}</span>
                   : null}
               </div>

@@ -1,4 +1,5 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import { cardOptions, icon, img, text } from '@/shared/domains/funnels/lib/card-options'
 import { ADDRESS_STEP } from '@/shared/domains/funnels/lib/steps/address-step'
 import { CONFIRMATION_STEP } from '@/shared/domains/funnels/lib/steps/confirmation-step'
 import { HOME_TYPE_STEP } from '@/shared/domains/funnels/lib/steps/home-type-step'
@@ -112,30 +113,28 @@ export const kitchensFunnel: FunnelSpec = {
     {
       id: 'layout',
       kind: 'card-select',
-      optionIds: ['l-shape', 'u-shape', 'galley', 'island', 'open', 'not-sure'],
       content: {
         title: 'Which best describes your kitchen?',
-        options: {
-          'l-shape': { label: 'L-shaped', asset: { kind: 'image', src: '/funnels/kitchens/layout/l-shape.webp', alt: 'L-shaped kitchen layout' } },
-          'u-shape': { label: 'U-shaped', asset: { kind: 'image', src: '/funnels/kitchens/layout/u-shape.webp', alt: 'U-shaped kitchen layout' } },
-          'galley': { label: 'Galley', asset: { kind: 'image', src: '/funnels/kitchens/layout/galley.webp', alt: 'Galley kitchen layout' } },
-          'island': { label: 'Has an island', asset: { kind: 'image', src: '/funnels/kitchens/layout/island.webp', alt: 'Kitchen with an island layout' } },
-          'open': { label: 'Open-concept', asset: { kind: 'icon', name: 'open' } },
-          'not-sure': { label: 'Not sure', asset: { kind: 'icon', name: 'not-sure' } },
-        },
+        options: cardOptions('kitchens', 'layout', [
+          img('l-shape', 'L-shaped'),
+          img('u-shape', 'U-shaped'),
+          img('galley', 'Galley'),
+          img('island', 'Has an island'),
+          icon('open', 'Open-concept'),
+          icon('not-sure', 'Not sure'),
+        ]),
       },
     },
     {
       id: 'ownership',
       kind: 'card-select',
-      optionIds: ['own', 'rent'],
       content: {
         title: 'Do you own or rent your home?',
         subtitle: 'Showcase projects are available to homeowners.',
-        options: {
-          own: { label: 'I own my home' },
-          rent: { label: 'I rent' },
-        },
+        options: cardOptions('kitchens', 'ownership', [
+          text('own', 'I own my home'),
+          text('rent', 'I rent'),
+        ]),
       },
     },
     { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase kitchens are selected by neighborhood.' } },
@@ -144,43 +143,40 @@ export const kitchensFunnel: FunnelSpec = {
     {
       id: 'age',
       kind: 'card-select',
-      optionIds: ['0-5', '5-15', '15-plus', 'original'],
       content: {
         title: 'How old is your kitchen?',
-        options: {
-          '0-5': { label: '0–5 years', asset: { kind: 'image', src: '/funnels/kitchens/age/0-5.webp', alt: 'Kitchen 0–5 years old' } },
-          '5-15': { label: '5–15 years', asset: { kind: 'image', src: '/funnels/kitchens/age/5-15.webp', alt: 'Kitchen 5–15 years old' } },
-          '15-plus': { label: '15+ years', asset: { kind: 'image', src: '/funnels/kitchens/age/15-plus.webp', alt: 'Kitchen 15+ years old' } },
-          'original': { label: 'Original / never renovated', asset: { kind: 'image', src: '/funnels/kitchens/age/original.webp', alt: 'Original, never-renovated kitchen' } },
-        },
+        options: cardOptions('kitchens', 'age', [
+          img('0-5', '0–5 years'),
+          img('5-15', '5–15 years'),
+          img('15-plus', '15+ years'),
+          img('original', 'Original / never renovated'),
+        ]),
       },
     },
     {
       id: 'scope',
       kind: 'card-select',
-      optionIds: ['full-gut', 'cabinets-counters', 'refresh', 'not-sure'],
       content: {
         title: 'What are you picturing?',
-        options: {
-          'full-gut': { label: 'Full gut remodel', asset: { kind: 'image', src: '/funnels/kitchens/scope/full-gut.webp', alt: 'Full gut kitchen remodel' } },
-          'cabinets-counters': { label: 'Cabinets + counters', asset: { kind: 'image', src: '/funnels/kitchens/scope/cabinets-counters.webp', alt: 'New cabinets and countertops' } },
-          'refresh': { label: 'Cosmetic refresh', asset: { kind: 'image', src: '/funnels/kitchens/scope/refresh.webp', alt: 'Cosmetic kitchen refresh' } },
-          'not-sure': { label: 'Not sure yet', asset: { kind: 'image', src: '/funnels/kitchens/scope/not-sure.webp', alt: 'Not sure about kitchen scope yet' } },
-        },
+        options: cardOptions('kitchens', 'scope', [
+          img('full-gut', 'Full gut remodel'),
+          img('cabinets-counters', 'Cabinets + counters'),
+          img('refresh', 'Cosmetic refresh'),
+          img('not-sure', 'Not sure yet'),
+        ]),
       },
     },
     {
       id: 'timeline',
       kind: 'card-select',
-      optionIds: ['asap', '1-3', '3-6', 'exploring'],
       content: {
         title: 'When would you want to start?',
-        options: {
-          'asap': { label: 'ASAP' },
-          '1-3': { label: '1–3 months' },
-          '3-6': { label: '3–6 months' },
-          'exploring': { label: 'Just exploring' },
-        },
+        options: cardOptions('kitchens', 'timeline', [
+          text('asap', 'ASAP'),
+          text('1-3', '1–3 months'),
+          text('3-6', '3–6 months'),
+          text('exploring', 'Just exploring'),
+        ]),
       },
     },
     ADDRESS_STEP,

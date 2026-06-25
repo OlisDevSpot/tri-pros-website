@@ -1,4 +1,5 @@
 import type { FunnelSpec } from '@/shared/domains/funnels/types'
+import { cardOptions, img, text } from '@/shared/domains/funnels/lib/card-options'
 import { ADDRESS_STEP } from '@/shared/domains/funnels/lib/steps/address-step'
 import { CONFIRMATION_STEP } from '@/shared/domains/funnels/lib/steps/confirmation-step'
 import { HOME_TYPE_STEP } from '@/shared/domains/funnels/lib/steps/home-type-step'
@@ -18,12 +19,12 @@ export const bathroomsFunnel: FunnelSpec = {
   offer: 'showcase',
   title: 'Bathroom Showcase',
   hero: {
-    headline: 'The spa bathroom you\'ll actually use — at a Showcase price.',
+    headline: 'A bathroom you\'ll actually love — at a Showcase price.',
     subhead: 'See if your home qualifies to be featured in our bathroom showcase.',
     scarcityLine: 'We\'re selecting 5 bathrooms in your area.',
     ctaLabel: 'See if you qualify',
     media: { kind: 'image', src: '/portfolio-photos/modern-bathroom-1.jpeg', alt: 'Modern remodeled bathroom' },
-    highlightWords: ['spa', 'Showcase'],
+    highlightWords: ['bathroom', 'Showcase'],
   },
   theme: { accent: 'primary' },
   pixel: { contentCategory: 'bathroom' },
@@ -121,28 +122,26 @@ export const bathroomsFunnel: FunnelSpec = {
     {
       id: 'whichBathroom',
       kind: 'card-select',
-      optionIds: ['primary', 'guest', 'powder', 'multiple'],
       content: {
         title: 'Which bathroom are you remodeling?',
-        options: {
-          primary: { label: 'Primary / ensuite', asset: { kind: 'image', src: '/funnels/bathrooms/whichBathroom/primary.webp', alt: 'Primary ensuite bathroom' } },
-          guest: { label: 'Guest / hall bath', asset: { kind: 'image', src: '/funnels/bathrooms/whichBathroom/guest.webp', alt: 'Guest or hall bathroom' } },
-          powder: { label: 'Powder room', asset: { kind: 'image', src: '/funnels/bathrooms/whichBathroom/powder.webp', alt: 'Powder room' } },
-          multiple: { label: 'Multiple bathrooms', asset: { kind: 'image', src: '/funnels/bathrooms/whichBathroom/multiple.webp', alt: 'Multiple bathrooms' } },
-        },
+        options: cardOptions('bathrooms', 'whichBathroom', [
+          img('primary', 'Primary / ensuite'),
+          img('guest', 'Guest / hall bath'),
+          img('powder', 'Powder room'),
+          img('multiple', 'Multiple bathrooms'),
+        ]),
       },
     },
     {
       id: 'ownership',
       kind: 'card-select',
-      optionIds: ['own', 'rent'],
       content: {
         title: 'Do you own or rent your home?',
         subtitle: 'Showcase projects are available to homeowners.',
-        options: {
-          own: { label: 'I own my home' },
-          rent: { label: 'I rent' },
-        },
+        options: cardOptions('bathrooms', 'ownership', [
+          text('own', 'I own my home'),
+          text('rent', 'I rent'),
+        ]),
       },
     },
     { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase bathrooms are selected by neighborhood.' } },
@@ -151,58 +150,54 @@ export const bathroomsFunnel: FunnelSpec = {
     {
       id: 'age',
       kind: 'card-select',
-      optionIds: ['0-5', '5-15', '15-plus', 'original'],
       content: {
         title: 'How old is your bathroom?',
-        options: {
-          '0-5': { label: '0–5 years', asset: { kind: 'image', src: '/funnels/bathrooms/age/0-5.webp', alt: 'Bathroom 0–5 years old' } },
-          '5-15': { label: '5–15 years', asset: { kind: 'image', src: '/funnels/bathrooms/age/5-15.webp', alt: 'Bathroom 5–15 years old' } },
-          '15-plus': { label: '15+ years', asset: { kind: 'image', src: '/funnels/bathrooms/age/15-plus.webp', alt: 'Bathroom 15+ years old' } },
-          'original': { label: 'Original / never renovated', asset: { kind: 'image', src: '/funnels/bathrooms/age/original.webp', alt: 'Original, never-renovated bathroom' } },
-        },
+        options: cardOptions('bathrooms', 'age', [
+          img('0-5', '0–5 years'),
+          img('5-15', '5–15 years'),
+          img('15-plus', '15+ years'),
+          img('original', 'Original / never renovated'),
+        ]),
       },
     },
     {
       id: 'scope',
       kind: 'card-select',
-      optionIds: ['full-gut', 'tub-to-shower', 'walk-in-shower', 'vanity-fixtures', 'cosmetic'],
       content: {
         title: 'What are you picturing?',
-        options: {
-          'full-gut': { label: 'Full gut remodel', asset: { kind: 'image', src: '/funnels/bathrooms/scope/full-gut.webp', alt: 'Full gut bathroom remodel' } },
-          'tub-to-shower': { label: 'Tub → shower conversion', asset: { kind: 'image', src: '/funnels/bathrooms/scope/tub-to-shower.webp', alt: 'Tub to shower conversion' } },
-          'walk-in-shower': { label: 'New walk-in shower', asset: { kind: 'image', src: '/funnels/bathrooms/scope/walk-in-shower.webp', alt: 'New walk-in shower' } },
-          'vanity-fixtures': { label: 'Vanity + fixtures', asset: { kind: 'image', src: '/funnels/bathrooms/scope/vanity-fixtures.webp', alt: 'New vanity and fixtures' } },
-          'cosmetic': { label: 'Cosmetic refresh', asset: { kind: 'image', src: '/funnels/bathrooms/scope/cosmetic.webp', alt: 'Cosmetic bathroom refresh' } },
-        },
+        options: cardOptions('bathrooms', 'scope', [
+          img('full-gut', 'Full gut remodel'),
+          img('tub-to-shower', 'Tub → shower conversion'),
+          img('walk-in-shower', 'New walk-in shower'),
+          img('vanity-fixtures', 'Vanity + fixtures'),
+          img('cosmetic', 'Cosmetic refresh'),
+        ]),
       },
     },
     {
       id: 'accessibility',
       kind: 'card-select',
-      optionIds: ['curbless', 'grab-bars', 'not-needed'],
       content: {
         title: 'Any accessibility or safety needs?',
         subtitle: 'Aging-in-place upgrades are one of our specialties.',
-        options: {
-          'curbless': { label: 'Curbless / walk-in access' },
-          'grab-bars': { label: 'Grab bars & safety upgrades' },
-          'not-needed': { label: 'Not needed right now' },
-        },
+        options: cardOptions('bathrooms', 'accessibility', [
+          text('curbless', 'Curbless / walk-in access'),
+          text('grab-bars', 'Grab bars & safety upgrades'),
+          text('not-needed', 'Not needed right now'),
+        ]),
       },
     },
     {
       id: 'timeline',
       kind: 'card-select',
-      optionIds: ['asap', '1-3', '3-6', 'exploring'],
       content: {
         title: 'When would you want to start?',
-        options: {
-          'asap': { label: 'ASAP' },
-          '1-3': { label: '1–3 months' },
-          '3-6': { label: '3–6 months' },
-          'exploring': { label: 'Just exploring' },
-        },
+        options: cardOptions('bathrooms', 'timeline', [
+          text('asap', 'ASAP'),
+          text('1-3', '1–3 months'),
+          text('3-6', '3–6 months'),
+          text('exploring', 'Just exploring'),
+        ]),
       },
     },
     ADDRESS_STEP,

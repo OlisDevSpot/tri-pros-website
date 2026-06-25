@@ -36,7 +36,12 @@ export type FunnelAnswers = Partial<Record<StepId, AnswerValue>>
 export type OptionAsset
   = { kind: 'icon', name: string }
     | { kind: 'image', src: string, alt: string }
-export interface OptionContent { label: string, description?: string, asset?: OptionAsset }
+/**
+ * One card-select option. `id` is the stored answer value + the asset-path key;
+ * the options array IS the render order (no separate `optionIds`). Authored
+ * terse via `lib/card-options.ts` (`img`/`icon`/`text` + `cardOptions`).
+ */
+export interface CardOption { id: string, label: string, description?: string, asset?: OptionAsset }
 export interface HeroMedia { kind: 'image', src: string, alt: string }
 export interface HeroContent {
   headline: string
@@ -50,7 +55,7 @@ export interface HeroContent {
   /** Phrases within `headline` rendered in primary color (≤2 recommended). */
   highlightWords?: string[]
 }
-export interface CardSelectContent { title: string, subtitle?: string, options: Record<string, OptionContent> }
+export interface CardSelectContent { title: string, subtitle?: string, options: CardOption[] }
 
 export interface ZipContent {
   title: string
@@ -100,7 +105,7 @@ export type ContentOf<S extends FunnelStep> = ContentByKind[S['kind']]
 
 interface BaseStep<K extends string> { id: StepId, kind: K }
 export interface AddressStep extends BaseStep<'address'> { content: AddressContent }
-export interface CardSelectStep extends BaseStep<'card-select'> { optionIds: string[], content: CardSelectContent }
+export interface CardSelectStep extends BaseStep<'card-select'> { content: CardSelectContent }
 export interface ConfirmationStep extends BaseStep<'confirmation'> { content: ConfirmationContent }
 export interface PiiStep extends BaseStep<'pii-form'> { content: PiiContent }
 export interface ZipStep extends BaseStep<'zip'> { content: ZipContent }
