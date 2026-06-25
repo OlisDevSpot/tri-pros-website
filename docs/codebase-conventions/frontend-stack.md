@@ -74,6 +74,29 @@ Animations use `motion/react`, never `framer-motion`. Keep subtle: `scale: 1.02`
 
 Icons are `lucide-react`. Don't introduce a second icon library.
 
+### never-co-locate-shadow-and-overflow
+
+**Hard rule — do not violate.** `box-shadow` and `overflow-hidden`/`overflow-clip` must NEVER live on the same element. A shadow paints *outside* the box; overflow clips everything outside the box — so the element's own shadow (and every descendant's shadow) gets sliced at a hard edge. This is the single most common shadow bug: a soft shadow with a hard, straight cut. No shadow/blur tuning fixes it; the conflict is definitional.
+
+Use the **frame / clip split** (a.k.a. Pattern A): one element is the *frame* (radius + shadow + background, **no overflow**); a separate child is the *clip* (`overflow-hidden` + `rounded-[inherit]`) holding only the media/decor that must be clipped. `rounded-[inherit]` makes the clip match the frame's radius with zero duplication — the scalable half of the rule.
+
+```tsx
+<div className="rounded-md bg-card shadow-(--shadow-card)">   {/* frame — shadow breathes */}
+  <div className="overflow-hidden rounded-[inherit]">        {/* clip — media/decor only */}
+    <Image ... />
+  </div>
+</div>
+```
+
+Corollaries:
+- Need to contain bleed on one scroll axis without clipping shadows? Use `overflow-x-clip` (single axis), never `overflow-hidden` (both axes).
+- Shadowing an irregular/masked shape? `filter: drop-shadow()` on an *unclipped* ancestor follows the alpha shape — a descendant's overflow can't slice it.
+- A shared shell must never bake `overflow-hidden` into the element that consumers give a shadow to. Push the clip down to per-purpose child layers (media, decor) so the shell stays a pure frame.
+
+**Why**: centralizing the frame/clip split means one shell fix lets every consumer's shadow breathe, instead of re-patching the same hard-cut shadow ad-hoc in component after component.
+**Reference impl**: the funnel `<Block>` shell — the root is a pure frame (`relative w-full isolate`, no overflow) while `Block.Media` and `Block.Decor` are self-clipping layers. See `src/shared/domains/funnels/ui/block/{block-variants.ts,block-media.tsx,block-decor.tsx}`.
+**Enforced by**: convention (code review)
+
 ## Lint rules
 
 Run `pnpm lint` before marking any task complete. The non-obvious rules:
@@ -97,6 +120,7 @@ Run `pnpm lint` before marking any task complete. The non-obvious rules:
 - **Component file with three exported sub-components.** Split.
 - **`export default function Page() {}` with a re-named import.** Use named exports.
 - **`framer-motion` import.** Use `motion/react`.
+- **`overflow-hidden`/`overflow-clip` and `shadow-*` on the same element.** The shadow gets sliced at a hard edge. Split into frame + clip with `rounded-[inherit]` — see `never-co-locate-shadow-and-overflow`.
 
 ## See also
 
