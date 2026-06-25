@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
         Privacy Policy
       </h1>
       <p className="text-muted-foreground mb-10 text-sm">
-        Last updated: May 28, 2026
+        Last updated: June 25, 2026
       </p>
 
       <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8 [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-semibold">
@@ -129,6 +129,14 @@ export default function PrivacyPolicyPage() {
             improve your experience. You can control cookies through your
             browser settings. Disabling cookies may limit some site
             functionality.
+          </p>
+          <p>
+            <strong>Advertising &amp; conversion measurement.</strong>
+            {' We use advertising tools — including the Meta (Facebook/Instagram) Pixel and Conversions API — to measure the effectiveness of our ads and improve their relevance. When you submit a form, we may share a '}
+            <strong>cryptographically hashed (one-way, irreversible)</strong>
+            {' version of your contact details, such as your phone number, with Meta so it can match the conversion to an ad without exposing your raw information. We also share related identifiers such as cookie IDs, your IP address, and click identifiers. We do not share your raw phone number, name, or address with advertising partners for this purpose. You can manage ad personalization in your '}
+            <strong>Meta account settings</strong>
+            {' and limit tracking through your browser and device privacy controls.'}
           </p>
         </section>
 
