@@ -79,6 +79,10 @@ export const funnelsRouter = createTRPCRouter({
     .input(z.object({
       phone: e164,
       name: z.string().min(1).max(200),
+      // First/last kept distinct (not split from `name`) so Meta `fn`/`ln`
+      // match keys are clean — a concatenated name can't be split losslessly.
+      firstName: z.string().min(1).max(100),
+      lastName: z.string().min(1).max(100),
       city: z.string().min(1).max(100),
       state: z.string().length(2).optional(),
       zip: z.string().min(1).max(10),
@@ -155,6 +159,11 @@ export const funnelsRouter = createTRPCRouter({
             eventId: input.eventId,
             eventTime: Math.floor(nowMs / 1000),
             phone: input.phone,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            city: input.city,
+            state: input.state ?? 'CA', // Funnel is SoCal-only; CA is the safe default
+            zip: input.zip,
             externalId: customerId,
             fbp: funnelSource?.meta?.fbp ?? null,
             // Reconstruct fbc from the persisted fbclid when the pixel never set
@@ -164,7 +173,9 @@ export const funnelsRouter = createTRPCRouter({
               fbclid: funnelSource?.utm.fbclid,
               nowMs,
             }),
-            clientIp: ip,
+            // `clientIp()` returns the literal 'anonymous' when no trusted edge
+            // header is present — never send that to Meta as a real IP.
+            clientIp: ip === 'anonymous' ? null : ip,
             clientUserAgent: ua,
             eventSourceUrl: input.eventSourceUrl ?? null,
             contentCategory: input.pixel?.contentCategory ?? null,

@@ -8,6 +8,12 @@ export interface LeadEventArgs {
   eventId: string
   eventTime: number
   phone?: string | null
+  email?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
   externalId: string
   fbp?: string | null
   fbc?: string | null
@@ -20,7 +26,16 @@ export interface LeadEventArgs {
 }
 
 function buildUserData(args: LeadEventArgs): MetaUserData {
-  const hashed = metaClient.hashUserData({ phone: args.phone })
+  const hashed = metaClient.hashUserData({
+    phone: args.phone,
+    email: args.email,
+    firstName: args.firstName,
+    lastName: args.lastName,
+    city: args.city,
+    state: args.state,
+    zip: args.zip,
+    country: 'us', // Funnel is US-only.
+  })
   const userData: MetaUserData = {
     ...hashed,
     external_id: [metaClient.hashExternalId(args.externalId)],

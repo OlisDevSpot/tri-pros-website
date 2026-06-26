@@ -1,7 +1,8 @@
-import type { MetaServerEvent } from '@/shared/services/providers/meta/schemas/server-event'
+import type { MetaServerEvent, MetaUserData } from '@/shared/services/providers/meta/schemas/server-event'
 
 import { createHash } from 'node:crypto'
 
+import { toDigits } from '@/shared/lib/phone'
 import { META_GRAPH_BASE_URL } from '@/shared/services/providers/meta/constants'
 import { getMetaConfig } from '@/shared/services/providers/meta/lib/config'
 
@@ -9,32 +10,54 @@ function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex')
 }
 
-/** Meta normalization: trim, lowercase, strip spaces. Phone keeps digits only. */
-function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase()
-}
-function normalizePhone(phone: string): string {
-  // Meta wants digits incl. country code, no '+' or punctuation. Funnel phones
-  // are E.164 (+1XXXXXXXXXX); stripping non-digits yields 1XXXXXXXXXX.
-  return phone.replace(/\D/g, '')
-}
+// ─── Meta normalization — single source of truth ────────────────────────────
+// Each identifier must be normalized EXACTLY as Meta normalizes its own records
+// before SHA-256, or the hashes won't match and the signal is wasted. Rules per
+// the customer-information-parameters doc. The whole match-key surface reduces to
+// three normalizers (phone reuses the canonical `toDigits` from phone.ts):
+//   • toDigits     → ph  (funnel passes E.164 → `1XXXXXXXXXX`: country code, no '+')
+//   • lowerTrim    → em, st, country
+//   • stripToAlnum → fn, ln, ct  (and zp = stripToAlnum + first-5)
+const lowerTrim = (value: string): string => value.trim().toLowerCase()
+// Lowercase + drop whitespace & punctuation, keeping Unicode letters (diacritics)
+// and digits: "San Diego" → "sandiego", "O'Brien" → "obrien".
+const stripToAlnum = (value: string): string => lowerTrim(value).replace(/[^\p{L}\p{N}]/gu, '')
 
 function createMetaClient() {
   return {
     /**
-     * Hash phone/email into advanced-matching arrays. Returns only the keys
-     * present. Pure local helper exposed as a client method per
-     * client-is-the-superset-entry-point.
+     * Hash the advanced-matching identifiers Meta can match on. Returns only the
+     * keys that are present (and non-empty after normalization). Each field is
+     * normalized per Meta's rules so our SHA-256 matches Meta's own. Pure local
+     * helper exposed as a client method per client-is-the-superset-entry-point.
      */
-    hashUserData(input: { phone?: string | null, email?: string | null }): { ph?: string[], em?: string[] } {
-      const out: { ph?: string[], em?: string[] } = {}
-      if (input.phone) {
-        out.ph = [sha256(normalizePhone(input.phone))]
+    hashUserData(input: {
+      phone?: string | null
+      email?: string | null
+      firstName?: string | null
+      lastName?: string | null
+      city?: string | null
+      state?: string | null
+      zip?: string | null
+      country?: string | null
+    }): Pick<MetaUserData, 'ph' | 'em' | 'fn' | 'ln' | 'ct' | 'st' | 'zp' | 'country'> {
+      const hash = (raw: string | null | undefined, normalize: (v: string) => string): string[] | undefined => {
+        if (!raw) {
+          return undefined
+        }
+        const value = normalize(raw)
+        return value ? [sha256(value)] : undefined
       }
-      if (input.email) {
-        out.em = [sha256(normalizeEmail(input.email))]
+      return {
+        ph: hash(input.phone, toDigits),
+        em: hash(input.email, lowerTrim),
+        fn: hash(input.firstName, stripToAlnum),
+        ln: hash(input.lastName, stripToAlnum),
+        ct: hash(input.city, stripToAlnum),
+        st: hash(input.state, lowerTrim),
+        zp: hash(input.zip, value => stripToAlnum(value).slice(0, 5)),
+        country: hash(input.country, lowerTrim),
       }
-      return out
     },
 
     /** Hash a stable internal id (customer.id) for `external_id`. */
