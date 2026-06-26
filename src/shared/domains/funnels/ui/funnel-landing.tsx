@@ -100,12 +100,14 @@ export function FunnelLanding({ spec, ctx, children, variant, scrollToQuestionOn
         className="relative flex w-full flex-col items-center gap-16 overflow-x-clip pt-2.5 pb-10"
       >
         <div className="flex w-full flex-col items-center gap-8">
-          <div className={`w-full ${FUNNEL_RAIL_MAX_W} px-2.5`}>
-            <FunnelHero content={spec.hero} onCta={scrollToQuestion} ref={heroRef} scroll={heroScroll} />
+          {/* The first question now lives INSIDE the hero (entryQuestion), so the
+              question anchor rides the hero — every "back to the question" CTA and
+              the Back-return scroll land here, on the embedded Q1. */}
+          <div id={QUESTION_ANCHOR} className={`w-full ${FUNNEL_RAIL_MAX_W} scroll-mt-20 px-2.5`}>
+            <FunnelHero content={spec.hero} entryQuestion={children} ref={heroRef} scroll={heroScroll} />
           </div>
           <div className={`flex w-full ${FUNNEL_QUESTION_MAX_W} flex-col gap-8 px-2.5`}>
             <TrustBar />
-            <div id={QUESTION_ANCHOR} className="scroll-mt-20">{children}</div>
           </div>
         </div>
         <div className={`flex w-full ${FUNNEL_RAIL_MAX_W} flex-col gap-12 px-2.5`}>

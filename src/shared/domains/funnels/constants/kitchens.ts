@@ -109,7 +109,22 @@ export const kitchensFunnel: FunnelSpec = {
     { stepId: 'timeline', label: 'Timeline' },
   ],
   // Linear funnel: no `flow` — the engine advances through `steps` in order.
+  // Q1 (ownership) is the hero-embedded entry question: a low-friction binary
+  // that qualifies the lead before asking anything trade-specific. The
+  // kitchen-layout question follows as Q2. see ui/funnel-hero.tsx (entryQuestion)
   steps: [
+    {
+      id: 'ownership',
+      kind: 'card-select',
+      content: {
+        title: 'Do you own or rent your home?',
+        subtitle: 'Showcase projects are available to homeowners.',
+        options: cardOptions('kitchens', 'ownership', [
+          text('own', 'I own'),
+          text('rent', 'I rent'),
+        ]),
+      },
+    },
     {
       id: 'layout',
       kind: 'card-select',
@@ -122,18 +137,6 @@ export const kitchensFunnel: FunnelSpec = {
           img('island', 'Has an island'),
           icon('open', 'Open-concept'),
           icon('not-sure', 'Not sure'),
-        ]),
-      },
-    },
-    {
-      id: 'ownership',
-      kind: 'card-select',
-      content: {
-        title: 'Do you own or rent your home?',
-        subtitle: 'Showcase projects are available to homeowners.',
-        options: cardOptions('kitchens', 'ownership', [
-          text('own', 'I own my home'),
-          text('rent', 'I rent'),
         ]),
       },
     },

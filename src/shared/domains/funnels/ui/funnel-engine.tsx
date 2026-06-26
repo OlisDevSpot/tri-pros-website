@@ -14,6 +14,7 @@ import { useFunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
 import { useProgressiveEnrichment } from '@/shared/domains/funnels/hooks/use-progressive-enrichment'
 import { getFunnel } from '@/shared/domains/funnels/lib/registry'
 import { useFunnelTracking } from '@/shared/domains/funnels/lib/tracking/use-funnel-tracking'
+import { FunnelHeroEntry } from '@/shared/domains/funnels/ui/funnel-hero-entry'
 import { FunnelLanding } from '@/shared/domains/funnels/ui/funnel-landing'
 import { FunnelProgress } from '@/shared/domains/funnels/ui/funnel-progress'
 import { FunnelStickyHeader } from '@/shared/domains/funnels/ui/funnel-sticky-header'
@@ -69,9 +70,23 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
   )
 
   if (engine.isFirst) {
+    // Q1 renders as a COMPACT control inside the hero (not the dark spotlight),
+    // so the visitor answers without a click to "start". Non-card-select first
+    // steps (none today) fall back to the generic step element.
+    const heroEntry = engine.step.kind === 'card-select'
+      ? (
+          <FunnelHeroEntry
+            content={engine.step.content}
+            value={engine.value}
+            isAnswered={engine.value != null}
+            setValue={engine.setAnswer}
+            advance={engine.advance}
+          />
+        )
+      : stepEl
     return (
       <div data-funnel={spec.slug} className="min-h-dvh w-full">
-        <FunnelLanding spec={spec} ctx={ctx} variant={variant} scrollToQuestionOnMount={engine.value != null}>{stepEl}</FunnelLanding>
+        <FunnelLanding spec={spec} ctx={ctx} variant={variant} scrollToQuestionOnMount={engine.value != null}>{heroEntry}</FunnelLanding>
       </div>
     )
   }
@@ -84,30 +99,54 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
   return (
     <div data-funnel={spec.slug} className="min-h-dvh w-full">
       <FunnelStickyHeader opacity={stickyOpacity} widthClass={contentWidth} />
-      <div className={`mx-auto flex min-h-dvh w-full flex-col gap-8 px-5 pb-10 pt-16 ${contentWidth}`}>
+      {/* Decoupled three-zone scaffold (see the funnel UX notes): the progress
+          bar, the question, and the nav are INDEPENDENT regions so each holds its
+          own position. Progress pins to the top; the question lives on a
+          fixed-height stage; the nav holds a constant Y. Nothing re-centers as a
+          group, so step-to-step height changes never move the progress bar or the
+          buttons — predictable, minimal layout shift. */}
+      <div className={`mx-auto flex min-h-dvh w-full flex-col px-5 pb-10 pt-16 ${contentWidth}`}>
+        {/* ① Progress — pinned at the top, exactly where it was. */}
         <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={engine.step.id}
-            initial={reduceMotion ? false : STEP_VARIANTS.initial}
-            animate={STEP_VARIANTS.animate}
-            exit={reduceMotion ? undefined : STEP_VARIANTS.exit}
-            transition={FUNNEL_TRANSITION}
-            className="flex-1"
-          >
-            {stepEl}
-          </motion.div>
-        </AnimatePresence>
+
+        {/* ② Question stage — a FIXED-height frame between progress and nav. Its
+            outer box never resizes (not between a tall and a short question, not
+            mid cross-fade), so ① and ③ never move. Content centers inside
+            (min-h-full + justify-center); a taller-than-frame question scrolls
+            INTERNALLY and can never push the page. */}
+        <div className="mt-6 h-[clamp(21rem,56dvh,36rem)] overflow-x-clip overflow-y-auto">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={engine.step.id}
+              initial={reduceMotion ? false : STEP_VARIANTS.initial}
+              animate={STEP_VARIANTS.animate}
+              exit={reduceMotion ? undefined : STEP_VARIANTS.exit}
+              transition={FUNNEL_TRANSITION}
+              className="flex min-h-full w-full flex-col justify-start py-2"
+            >
+              {stepEl}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* ③ Nav — directly under the stage at a constant Y (upper-middle). */}
         {engine.hasNext
           ? (
-              <div className="flex items-center justify-between gap-3">
+              <div className="mt-6 flex items-center justify-between gap-3">
                 <Button variant="ghost" onClick={engine.back}>← Back</Button>
+                {/* Next stays available for ANY answered step (uniform rule). On
+                    card-select a tap also advances, but Next is the no-re-tap path
+                    for a Back-revisiting user who's keeping their answer. */}
                 {engine.value != null
                   ? <Button onClick={engine.advance}>Next →</Button>
                   : <span />}
               </div>
             )
           : null}
+
+        {/* Spacer — absorbs the rest of the viewport so the cluster stays
+            top-anchored and the nav keeps a constant Y instead of floating down. */}
+        <div className="flex-1" aria-hidden="true" />
       </div>
     </div>
   )

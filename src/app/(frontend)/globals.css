@@ -28,7 +28,10 @@
     0 6px 16px -8px oklch(0 0 0 / 0.1);
   --primary: oklch(0.6231 0.188 259.8145);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.6231 0.188 259.8145);
+  /* neutral raised surface — was mistakenly set to the saturated indigo --primary,
+     which made bg-secondary fills + secondary buttons/badges render solid blue with
+     unreadable dark text. Now a light neutral so secondary-foreground (dark) reads. */
+  --secondary: oklch(0.967 0.0029 264.5419);
   --secondary-foreground: oklch(0.2781 0.0296 256.848);
   --muted: oklch(0.967 0.0029 264.5419);
   --muted-foreground: oklch(0.551 0.0234 264.3637);
@@ -283,7 +286,8 @@
     0 8px 24px -8px oklch(0 0 0 / 0.4);
   --primary: oklch(0.6231 0.188 259.8145);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.6231 0.188 259.8145);
+  /* neutral raised surface — see :root note (was the saturated indigo --primary) */
+  --secondary: oklch(0.3032 0.0323 259.6666);
   --secondary-foreground: oklch(0.9288 0.0126 255.5078);
   --muted: oklch(0.3032 0.0323 259.6666);
   --muted-foreground: oklch(0.7457 0.0304 254.7208);

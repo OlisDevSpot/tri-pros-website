@@ -105,69 +105,66 @@ export function ZipStepView({ content, value, setValue, ctx }: StepProps<ZipStep
         {content.subtitle ? <p className="text-muted-foreground mt-1">{content.subtitle}</p> : null}
       </div>
 
-      {/* Horizontal row (#1): input + badge share one line. No badge → the input
-          owns the full width; on resolve the badge slides in from the right and
-          the input gives way. The row carries `layout`; the input uses
-          `layout="position"` so its width snaps (no scaleX → no text distortion)
-          while position stays continuous (#1). Fixed-height row → no vertical
-          shift regardless of badge/spinner state (#2). */}
-      <motion.div layout={!reduceMotion} className="mx-auto flex w-full max-w-md items-center gap-2">
-        <motion.div layout={reduceMotion ? false : 'position'} className="relative min-w-0 flex-1">
-          <Input
-            ref={inputRef}
-            inputMode="numeric"
-            maxLength={5}
-            placeholder="ZIP code"
-            value={zip}
-            onChange={e => setZip(e.target.value.replace(/\D/g, ''))}
-            className="text-center text-lg"
-          />
-          {pending
-            ? (
-                <Loader2
-                  className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin"
-                  aria-hidden="true"
-                />
-              )
-            : null}
-        </motion.div>
-        {/* Resolved place badge. The chip fades via opacity while `layout`
-            projection keeps its position continuous as the input gives way — no
-            scale keyframe, so nothing fights the projection (#1). The inner span
-            carries a translate-only slide-from-right; translate (unlike scale)
-            composes cleanly with layout projection and never distorts the text. */}
+      {/* Input owns its own row at full width. The live-resolve spinner sits
+          inside the field on the right; the resolved place is reported in the
+          shared slot below (not inline) so the eye tracks one vertical column. */}
+      <div className="relative mx-auto w-full max-w-md">
+        <Input
+          ref={inputRef}
+          inputMode="numeric"
+          maxLength={5}
+          placeholder="ZIP code"
+          value={zip}
+          onChange={e => setZip(e.target.value.replace(/\D/g, ''))}
+          className="text-center text-lg"
+        />
+        {pending
+          ? (
+              <Loader2
+                className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin"
+                aria-hidden="true"
+              />
+            )
+          : null}
+      </div>
+
+      {/* Unified result/error slot (#3): ONE fixed-height row between the input
+          and the button. It shows EITHER the resolved place (pin + city) OR a
+          validation message OR nothing — `resolved` and `statusMessage` are
+          mutually exclusive (resolved ⇒ found & in-area). The reserved height
+          means the button never moves across any state. */}
+      <div className="flex min-h-11 items-center justify-center" aria-live="polite">
         <AnimatePresence mode="wait" initial={false}>
           {resolved
             ? (
                 <motion.div
-                  key={resolved.zip}
-                  layout={!reduceMotion}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  key={`place-${resolved.zip}`}
+                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={FUNNEL_TRANSITION}
-                  className="border-primary/30 bg-primary/5 inline-flex shrink-0 items-center rounded-full border px-3 py-2"
+                  className="border-primary/30 bg-primary/5 inline-flex items-center gap-2 rounded-full border px-4 py-2"
                 >
-                  <motion.span
-                    initial={reduceMotion ? false : { x: 10 }}
-                    animate={{ x: 0 }}
-                    transition={FUNNEL_TRANSITION}
-                    className="inline-flex items-center gap-2"
-                  >
-                    <MapPin className="text-primary size-4 shrink-0" aria-hidden="true" />
-                    <span className="text-foreground whitespace-nowrap text-sm font-medium">{badgePlace}</span>
-                  </motion.span>
+                  <MapPin className="text-primary size-4 shrink-0" aria-hidden="true" />
+                  <span className="text-foreground whitespace-nowrap text-sm font-medium">{badgePlace}</span>
                 </motion.div>
               )
-            : null}
+            : statusMessage
+              ? (
+                  <motion.p
+                    key={`msg-${statusMessage}`}
+                    initial={reduceMotion ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={FUNNEL_TRANSITION}
+                    className="text-muted-foreground text-center text-sm"
+                  >
+                    {statusMessage}
+                  </motion.p>
+                )
+              : null}
         </AnimatePresence>
-      </motion.div>
-
-      {/* Reserved status slot (#2/#3): fixed min-height so the button never moves
-          across empty / pending / resolved / not-found / out-of-area states. */}
-      <p aria-live="polite" className="text-muted-foreground -my-2 min-h-10 text-center text-sm">
-        {statusMessage}
-      </p>
+      </div>
 
       <Button size="lg" disabled={!resolved} onClick={handleSubmit}>
         {content.inputCta ?? 'Check my area'}

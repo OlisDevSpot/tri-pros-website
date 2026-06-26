@@ -13,7 +13,7 @@ import { Input } from '@/shared/components/ui/input'
 import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { useDebouncedAsyncValidator } from '@/shared/domains/funnels/hooks/use-debounced-async-validator'
 import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
-import { firePixel, mintEventId } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
+import { firePixel, mintEventId, setAdvancedMatching } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
 import { piiSchema } from '@/shared/domains/funnels/schemas/pii.schema'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -75,6 +75,8 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
     const created = await submit.mutateAsync({
       phone: e164,
       name: lead.name,
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
       city: lead.city,
       state: lead.state,
       zip: lead.zip,
@@ -88,6 +90,16 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
         contentCategory: ctx.pixel.contentCategory,
         contentName: ctx.slug,
       },
+    })
+    // Set Advanced Matching from the collected PII (plaintext — the pixel hashes
+    // it) so the browser Lead carries the same match keys as the CAPI twin.
+    setAdvancedMatching({
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
+      phone: e164,
+      city: lead.city,
+      state: lead.state,
+      zip: lead.zip,
     })
     // Fire the browser Lead pixel only AFTER the server accepts + persists the
     // lead, sharing the same event_id as the server CAPI twin (dispatched inside

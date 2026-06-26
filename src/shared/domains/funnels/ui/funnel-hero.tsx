@@ -1,5 +1,5 @@
 import type { MotionValue } from 'motion/react'
-import type { Ref } from 'react'
+import type { ReactNode, Ref } from 'react'
 import type { HeroContent } from '@/shared/domains/funnels/types'
 import LogoOnLight from '@public/company/logo/logo-light-right.svg'
 import { ArrowDown } from 'lucide-react'
@@ -52,10 +52,15 @@ export interface HeroScroll {
  * backgrounds; we hardcode it here (the hero card is a bright surface) rather
  * than use the shared Logo component.
  *
- * `onCta` scrolls down to the embedded first question (the hero is above it).
+ * Entry: `entryQuestion` (the funnel's first step) renders IN PLACE OF the CTA,
+ * so a first-time visitor answers Q1 directly in the hero — no click to "start".
+ * It rides the same text group as the old CTA, so the scroll fade/lift
+ * choreography is unchanged. `onCta` is the legacy fallback (scroll-to-question)
+ * kept for when no `entryQuestion` is supplied.
  */
-export function FunnelHero({ content, onCta, ref, scroll }: {
+export function FunnelHero({ content, entryQuestion, onCta, ref, scroll }: {
   content: HeroContent
+  entryQuestion?: ReactNode
   onCta?: () => void
   ref?: Ref<HTMLElement>
   scroll?: HeroScroll | null
@@ -116,15 +121,19 @@ export function FunnelHero({ content, onCta, ref, scroll }: {
               )
             : null}
           <HeroTrustBadges />
-          {onCta
-            ? (
-                <FunnelCta onClick={onCta} className="mt-1 w-full @xs:w-auto">
-                  {content.ctaLabel ?? 'See if you qualify'}
-                  <ArrowDown className="size-4" />
-                </FunnelCta>
-              )
+          {entryQuestion
+            ? <div className="mt-1 w-full">{entryQuestion}</div>
+            : onCta
+              ? (
+                  <FunnelCta onClick={onCta} className="mt-1 w-full @xs:w-auto">
+                    {content.ctaLabel ?? 'See if you qualify'}
+                    <ArrowDown className="size-4" />
+                  </FunnelCta>
+                )
+              : null}
+          {!entryQuestion && content.prompt
+            ? <p className="text-sm font-medium text-(--hero-ink-muted)">{content.prompt}</p>
             : null}
-          {content.prompt ? <p className="text-sm font-medium text-(--hero-ink-muted)">{content.prompt}</p> : null}
         </motion.div>
       </div>
     </section>

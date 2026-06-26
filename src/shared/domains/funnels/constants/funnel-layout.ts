@@ -16,3 +16,12 @@ export const FUNNEL_RAIL_MAX_W = 'max-w-5xl'
  * and address steps constrain their single input narrower still, internally.)
  */
 export const FUNNEL_QUESTION_MAX_W = 'max-w-xl'
+
+/**
+ * Above this option count, a card-select question renders as a single-column
+ * list of rows instead of a 2-column card grid. Keeps dense questions (5–6
+ * options) scannable and identical across every funnel — the threshold lives
+ * here, not in any per-funnel spec.
+ * see docs/superpowers/specs/2026-06-26-funnel-card-select-layout-system-design.md
+ */
+export const CARD_SELECT_SINGLE_COLUMN_THRESHOLD = 4

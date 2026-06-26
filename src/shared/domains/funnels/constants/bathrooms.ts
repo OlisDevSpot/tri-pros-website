@@ -118,7 +118,22 @@ export const bathroomsFunnel: FunnelSpec = {
       { kind: 'licensing', content: {} },
     ],
   },
+  // Q1 (ownership) is the hero-embedded entry question — a low-friction binary
+  // that qualifies the lead before asking anything trade-specific. The
+  // which-bathroom question follows as Q2. see ui/funnel-hero.tsx (entryQuestion)
   steps: [
+    {
+      id: 'ownership',
+      kind: 'card-select',
+      content: {
+        title: 'Do you own or rent your home?',
+        subtitle: 'Showcase projects are available to homeowners.',
+        options: cardOptions('bathrooms', 'ownership', [
+          text('own', 'I own'),
+          text('rent', 'I rent'),
+        ]),
+      },
+    },
     {
       id: 'whichBathroom',
       kind: 'card-select',
@@ -129,18 +144,6 @@ export const bathroomsFunnel: FunnelSpec = {
           img('guest', 'Guest / hall bath'),
           img('powder', 'Powder room'),
           img('multiple', 'Multiple bathrooms'),
-        ]),
-      },
-    },
-    {
-      id: 'ownership',
-      kind: 'card-select',
-      content: {
-        title: 'Do you own or rent your home?',
-        subtitle: 'Showcase projects are available to homeowners.',
-        options: cardOptions('bathrooms', 'ownership', [
-          text('own', 'I own my home'),
-          text('rent', 'I rent'),
         ]),
       },
     },
