@@ -38,6 +38,8 @@ export function buildLeadInput(args: { ctx: FunnelContext, pii: PiiFormData, ans
         utm: ctx.utm,
         meta: { fbp, fbc },
         enrichment,
+        // Submission = agreement (no checkbox). Captured at submit time, client-side.
+        consent: { agreed: true as const, at: new Date().toISOString() },
       },
     },
   }

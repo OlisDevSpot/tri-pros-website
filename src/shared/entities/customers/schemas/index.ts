@@ -63,6 +63,16 @@ export type CustomerProfile = z.infer<typeof customerProfileSchema>
 export type PropertyProfile = z.infer<typeof propertyProfileSchema>
 export type FinancialProfile = z.infer<typeof financialProfileSchema>
 
+// Generic, self-describing funnel enrichment keyed by step id. `value` is the
+// resolved option label so no server-side label mirror is needed; `order` drives
+// display. The canonical server-side shape — the DAL mutation and the intake
+// service reference this type rather than re-declaring it.
+export const enrichmentRecordSchema = z.record(
+  z.string(),
+  z.object({ label: z.string(), value: z.string(), order: z.number().int() }),
+)
+export type EnrichmentRecord = z.infer<typeof enrichmentRecordSchema>
+
 export const leadMetaSchema = z.object({
   // ── operational (unchanged) ──
   mp3RecordingKey: z.string().optional(),
@@ -128,13 +138,17 @@ export const leadMetaSchema = z.object({
         fbp: z.string().nullable(),
         fbc: z.string().nullable(),
       }).partial().optional(),
-      // Generic, self-describing enrichment keyed by step id. JSONB-merge-safe
-      // (object keys merge under Postgres `||`). `value` is the resolved option
-      // label so no server-side label mirror is needed; `order` drives display.
-      enrichment: z.record(
-        z.string(),
-        z.object({ label: z.string(), value: z.string(), order: z.number().int() }),
-      ).optional(),
+      // Written ONLY via mergeFunnelEnrichment, which merges into this nested
+      // object atomically (`jsonb_set` at `{source,enrichment}`) — a plain
+      // top-level `||` on leadMetaJSON would replace the whole `source` and is
+      // NOT safe here. Shape: see enrichmentRecordSchema above.
+      enrichment: enrichmentRecordSchema.optional(),
+      // Implied TCPA consent captured at funnel submit (submission = agreement;
+      // the PII step shows the proximate disclaimer + the footer legal block).
+      // Boolean + ISO timestamp for now — a third-party consent-capture service
+      // may later replace this with richer evidence. Audit-only: the generic
+      // dial/SMS path never reads it.
+      consent: z.object({ agreed: z.literal(true), at: z.string() }).optional(),
     }),
   ]).optional(),
 })
