@@ -32,13 +32,17 @@
   - `FUNNEL_SUBMIT_DISCLAIMER: string` (proximate consent line under the PII submit button)
   - `FUNNEL_FOOTER_DISCLOSURE: string` (fuller TCPA disclosure for the footer legal block)
 
-- [ ] **Step 1: Draft the copy, then run a legal-compliance review**
+- [x] **Step 1: Legal-compliance review — DONE by controller (2026-06-27)**
 
-Dispatch the **Legal Compliance Checker** agent (via the Agent tool) on the two draft strings below, asking specifically about TCPA implied-consent sufficiency for SMS/call, "consent not a condition of purchase", message-frequency + "msg & data rates may apply", and STOP/HELP language. Fold its wording suggestions into the strings before writing the file. Prompt to send:
+The Legal Compliance Checker reviewed the draft TCPA wording and supplied the final
+strings used verbatim in Step 2 below. Its findings (folded in): String 1 needed
+message-frequency + STOP/HELP added and stronger technology naming ("autodialed and
+prerecorded" not just "automated means"); String 2 needed the Terms/Privacy
+reference added. It also confirmed "submission = agreement" is defensible given a
+retained consent record (timestamp — see Task 2). **Do not re-dispatch a compliance
+agent; transcribe the approved strings exactly.**
 
-> "Review this TCPA/SMS marketing consent copy for a home-remodeling lead funnel (California). The user submits a web form (no checkbox — submission is the agreement). (1) Proximate line under the submit button: '<FUNNEL_SUBMIT_DISCLAIMER draft>'. (2) Fuller footer disclosure: '<FUNNEL_FOOTER_DISCLOSURE draft>'. Is the implied-consent language sufficient for autodialed/prerecorded calls and SMS? Flag any missing required elements (consent-not-a-condition, msg frequency, msg & data rates, STOP/HELP) and give corrected wording."
-
-- [ ] **Step 2: Write `footer-copy.ts`** (use the compliance-reviewed wording; the defaults below are TCPA-sound starting points)
+- [ ] **Step 2: Write `footer-copy.ts`** (use these compliance-approved strings verbatim)
 
 ```ts
 /**
@@ -58,15 +62,16 @@ export function funnelFooterBlurb(trade: string): string {
 
 /**
  * Proximate consent shown directly under the PII submit button (replaces the
- * removed checkbox). Submission itself is the agreement; Terms/Privacy links are
- * rendered alongside this line by the component.
+ * removed checkbox). Submission itself is the agreement; the component renders
+ * functional Terms/Privacy links in the same block. Wording approved by the Legal
+ * Compliance Checker on 2026-06-27 — re-review on any change.
  */
 export const FUNNEL_SUBMIT_DISCLAIMER
-  = 'By tapping the button above you agree to our Terms & Privacy Policy and authorize Tri Pros Remodeling to contact you at the number provided by phone, text, and email about your project — including by automated means. Consent is not a condition of purchase. Msg & data rates may apply.'
+  = 'By tapping the button above, you agree to our Terms and Privacy Policy and authorize Tri Pros Remodeling to contact you at the number provided by phone, text, and email about your project — including by autodialed and prerecorded/automated messages. Consent is not a condition of purchase. Msg frequency varies; msg & data rates may apply. Reply STOP to opt out, HELP for help.'
 
-/** Fuller TCPA disclosure shown in the footer legal block. */
+/** Fuller TCPA disclosure shown in the footer legal block (links rendered by the component). */
 export const FUNNEL_FOOTER_DISCLOSURE
-  = 'By submitting your information you authorize Tri Pros Remodeling to contact you at the number provided by phone, text message (SMS), and email regarding your project and related offers, including via automated dialing technology and prerecorded messages. Consent is not a condition of any purchase. Message frequency varies; message and data rates may apply. Reply STOP to unsubscribe or HELP for help.'
+  = 'By submitting your information, you authorize Tri Pros Remodeling to contact you at the phone number provided by phone call, text message (SMS), and email regarding your remodeling project and related offers, including through automated telephone dialing technology and prerecorded or artificial voice messages. You understand that your consent is not a condition of purchasing any goods or services. Message frequency varies; message and data rates may apply. Reply STOP to unsubscribe at any time, or HELP for help. See our Terms of Service and Privacy Policy for details on how we handle your information.'
 ```
 
 - [ ] **Step 3: Type-check + lint**
