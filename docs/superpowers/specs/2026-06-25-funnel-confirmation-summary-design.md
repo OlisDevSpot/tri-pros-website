@@ -36,7 +36,42 @@ and no edit.
   local editor in/out; that is better than the `goTo` its header comment speculated
   about (jumping into a real card-select step would re-trigger auto-advance and replay
   the funnel tail). ⚠️ The prototype comment ("real build adds a goTo() to the engine")
-  is wrong — disregard it.
+  is wrong — disregard it. (Research confirmed card-select **auto-advances** on tile
+  tap: `setValue(id)` + `advance()` unconditionally — so an inline card editor must pass
+  a custom `advance` that commits+closes instead of navigating.)
+
+## Current-state validation (parallel research, 2026-06-27)
+
+Five read-only `code-explorer` agents swept the engine, step components, persistence,
+tracking, and design system. Findings (current code = source of truth):
+
+- **Confirmed:** StepProps is uniform across kinds; `reset` exists in the engine but is
+  not threaded to steps; `setAnswerFor` does not exist; `PiiAnswer` is `{ leadId }`.
+- **Tracking is fully decoupled from the confirmation render.** `CompleteRegistration`
+  fires by step *kind* in `useFunnelTracking` (mounted in `FunnelEngine`), guarded by a
+  per-mount `fired` ref. We can rebuild the confirmation JSX freely. **Start-over must be
+  client-only `engine.reset()` (no page navigation)** so the dedup ref survives and
+  pixels don't re-fire.
+- **Correction to earlier draft:** `enrichFunnelLead` does **not** go through
+  `customerCrud.update`. It uses a dedicated atomic DAL mutation `mergeFunnelEnrichment`
+  (`jsonb_set` on `source.enrichment` with a `WHERE …source.kind = 'funnel'` predicate)
+  that deliberately bypasses the CRUD `update.before`/`update.after` hooks. The consumer
+  path is unchanged — edits call the existing `enrichFunnelLead` (via `useEnrichLead`).
+- **`customerCrud.update` fires `propagateCustomerChangeJob.dispatchOrThrow` on every
+  update** (strict, GCal propagation). For a `{ name, phone }` contact edit this is
+  desirable (GCal events render the customer's name/phone) and mirrors what address edits
+  already trigger — but it means a contact edit depends on QStash being reachable.
+- **`{ name, phone }` partial update is null-safe** (`optionalPhoneSchema` passes absent
+  keys through as `undefined`; `buildUpdateSet` skips them) — no other column is touched.
+- **funnel-light + the content rail are inherited.** The funnel layout
+  (`funnels/layout.tsx`) supplies `funnel-light text-foreground`; `funnel-engine.tsx`
+  wraps the confirmation step in `max-w-5xl px-5 pt-20 pb-16`. The real step must **not**
+  re-add either. (The `/test` prototype adds both only because it is a standalone page.)
+- **Card-select layout changed** (`CARD_SELECT_SINGLE_COLUMN_THRESHOLD = 2`; new spec
+  `docs/superpowers/specs/2026-06-26-funnel-card-select-layout-system-design.md`): 3+-option
+  questions render as a single-column list, not a 2-col grid. The inline card editor must
+  reuse the **real** card-select rendering, not the prototype's now-stale grid (which also
+  violates the no-shadow+overflow rule). Required reading for the plan.
 
 ## Architecture
 
@@ -76,9 +111,9 @@ updates the local answer store via the engine and (2) persists to the backend:
 
 | Row | Editor (reused UI) | Persistence path |
 |-----|--------------------|------------------|
-| Project dim | card-select tile grid | `enrichFunnelLead` → `customerCrud.update(leadMetaJSON.source.enrichment)` |
-| Address | `AddressAutocomplete` | existing `setFunnelLeadAddress` → `customerCrud.update({address,city,state,zip})` |
-| Contact | name / phone inputs | **new** `setFunnelLeadContact` → `customerCrud.update({name,phone})` |
+| Project dim | **real** card-select list rendering (custom `advance` = commit+close) | existing `enrichFunnelLead` (`useEnrichLead`) → atomic `mergeFunnelEnrichment` DAL mutation (NOT `customerCrud.update`) |
+| Address | `AddressAutocomplete` in `<APIProvider>`, `defaultValue` from `answers.address` | existing `setFunnelLeadAddress` → `customerCrud.update({address,city,state,zip})` |
+| Contact | purpose-built name/phone inputs (NOT the PII form — it is create-only + fires the Lead pixel) | **new** `setFunnelLeadContact` → `customerCrud.update({name,phone})` |
 
 Persistence is **explicit on Save**, not via the mounted `useProgressiveEnrichment`
 effect. That effect dedupes on a monotonic `sentRef` set, so an edit-then-edit-back
@@ -104,8 +139,10 @@ address), input `{ leadId: uuid, name: 1..200, phone: e164 }`. New client hook
 
 ### C. Start over
 
-Confirm-gated button in the summary footer → engine `reset()` (sets engine state to
-`initial` → returns to step 1). The customer record is untouched; copy reassures the
+Confirm-gated button in the summary footer → engine `reset()`, **client-only (no page
+navigation/reload)** so the tracking `fired` ref survives and no pixel re-fires. Sets
+engine state to `initial` → returns to step 1. The customer record is untouched; copy
+reassures the
 request is already submitted ("your spot is safe").
 
 ## Contained changes to existing files
@@ -128,23 +165,37 @@ Under `ui/steps/confirmation/`:
 - `confirmation-step.tsx` (the view; replaces the body of the current
   `ui/steps/confirmation-step.tsx`) — frosted hero plate (success lockup + Call / See-our-work
   CTAs) using `--hero-plate` / `--hero-plate-ring` / `--shadow-hero` / `--hero-ink-soft`;
-  then a two-column block (what's-next timeline + summary card); manages `editing` state
-  and the AnimatePresence swap.
+  then a two-column block (what's-next timeline + summary card); the project carousel
+  below; manages `editing` state and the AnimatePresence swap. **Per-trade hero photo**
+  behind the frosted plate comes from `getTradeFacts(ctx.slug).meta.ogImage` (the
+  centralized trade object — kitchen/bathroom/staircase JPEGs), with a brand-gradient
+  fallback. Does **not** re-add `funnel-light` or the content rail (`max-w-5xl px-5
+  pt-20 pb-16`) — both are inherited from `funnels/layout.tsx` + `funnel-engine.tsx`.
 - `confirmation-summary-card.tsx` — sections + rows + start-over footer.
 - `confirmation-summary-row.tsx` — thumbnail/icon + label + value + edit pencil.
-- `confirmation-edit-card.tsx` — card-select tile grid editor.
-- `confirmation-edit-address.tsx` — address autocomplete editor.
-- `confirmation-edit-contact.tsx` — name/phone inputs editor.
+- `confirmation-edit-card.tsx` — card-select editor. Reuses the **real** card-select
+  option rendering (single-column list per the 2026-06-26 card-select-layout spec), not
+  the prototype's 2-col grid; passes a custom `advance` that commits + closes. Plan
+  decides reuse-vs-extract of the shared option-list piece.
+- `confirmation-edit-address.tsx` — address autocomplete editor (`<APIProvider>` wrapper,
+  `defaultValue` from `answers.address`, `onSelect` → `setFunnelLeadAddress`).
+- `confirmation-edit-contact.tsx` — purpose-built name/phone inputs → `setFunnelLeadContact`.
 - `confirmation-reset.tsx` — confirm-gated start-over control.
 
-Reuse: `ConfirmationTimeline` (existing), `OPTION_ICONS`, the card-tile styling from
-`card-select-step.tsx`, `AddressAutocomplete`, `Input`, `Button`. Reduced-motion paths
-preserved throughout. The project carousel is dropped (the prototype did); trivially
-re-addable below the summary if wanted.
+Reuse: `ConfirmationTimeline` (existing), `OPTION_ICONS`, the real card-select option
+rendering, `AddressAutocomplete` (+ `AddressPreview`), `Input`, `Button`,
+`getTradeFacts`. Reduced-motion paths preserved throughout. Follow the
+no-shadow+overflow frame/clip rule (`frontend-stack.md`) on any tile/photo with rounding.
+
+**The project carousel stays**, kept below the summary. Heading (decided):
+**`Recent {getTradeFacts(ctx.slug).meta.title} by Tri Pros`** — e.g. "Recent Kitchen
+Remodels by Tri Pros". `FunnelProjectCarousel` itself is unchanged (it already
+trade-filters by `slug`); only the heading string in the confirmation view changes.
 
 Tokens confirmed present in `globals.css`: `--shadow-hero`, `--hero-plate`,
 `--hero-plate-ring`, `--hero-ink-soft`, `--measure-prose`, `--fs-eyebrow`,
-`--tracking-eyebrow`.
+`--tracking-eyebrow`. (Note: `docs/design-system/tokens.md` is stale vs live values for
+`--background` and `--shadow-card` — out of scope here, flagged for separate cleanup.)
 
 ## Error handling
 
