@@ -4,10 +4,11 @@ import { ADDRESS_STEP } from '@/shared/domains/funnels/lib/steps/address-step'
 import { CONFIRMATION_STEP } from '@/shared/domains/funnels/lib/steps/confirmation-step'
 import { HOME_TYPE_STEP } from '@/shared/domains/funnels/lib/steps/home-type-step'
 import { PII_STEP } from '@/shared/domains/funnels/lib/steps/pii-step'
+import { TIMELINE_STEP } from '@/shared/domains/funnels/lib/steps/timeline-step'
 import { ZIP_STEP } from '@/shared/domains/funnels/lib/steps/zip-step'
 
-// @migration: the option-tile images (whichBathroom/age/scope) and the
-// before/after pairs currently resolve to PLACEHOLDER webps in
+// @migration: the option-tile images (whichBathroom/age/scope/accessibility/
+// timeline) and the before/after pairs currently resolve to PLACEHOLDER webps in
 // `public/funnels/bathrooms/**` (a generic "BATHROOM placeholder art" tile).
 // To ship real art, generate the 17 images per
 // `docs/superpowers/specs/2026-06-23-bathrooms-funnel-asset-prompts.md`, run
@@ -182,27 +183,14 @@ export const bathroomsFunnel: FunnelSpec = {
       kind: 'card-select',
       content: {
         title: 'Any accessibility or safety needs?',
-        subtitle: 'Aging-in-place upgrades are one of our specialties.',
         options: cardOptions('bathrooms', 'accessibility', [
-          text('curbless', 'Curbless / walk-in access'),
-          text('grab-bars', 'Grab bars & safety upgrades'),
-          text('not-needed', 'Not needed right now'),
+          img('curbless', 'Curbless / walk-in access'),
+          img('grab-bars', 'Grab bars & safety upgrades'),
+          img('not-needed', 'Not needed right now'),
         ]),
       },
     },
-    {
-      id: 'timeline',
-      kind: 'card-select',
-      content: {
-        title: 'When would you want to start?',
-        options: cardOptions('bathrooms', 'timeline', [
-          text('asap', 'ASAP'),
-          text('1-3', '1–3 months'),
-          text('3-6', '3–6 months'),
-          text('exploring', 'Just exploring'),
-        ]),
-      },
-    },
+    TIMELINE_STEP,
     ADDRESS_STEP,
     CONFIRMATION_STEP,
   ],

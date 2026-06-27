@@ -4,6 +4,7 @@ import { ADDRESS_STEP } from '@/shared/domains/funnels/lib/steps/address-step'
 import { CONFIRMATION_STEP } from '@/shared/domains/funnels/lib/steps/confirmation-step'
 import { HOME_TYPE_STEP } from '@/shared/domains/funnels/lib/steps/home-type-step'
 import { PII_STEP } from '@/shared/domains/funnels/lib/steps/pii-step'
+import { TIMELINE_STEP } from '@/shared/domains/funnels/lib/steps/timeline-step'
 import { ZIP_STEP } from '@/shared/domains/funnels/lib/steps/zip-step'
 
 export const kitchensFunnel: FunnelSpec = {
@@ -169,19 +170,7 @@ export const kitchensFunnel: FunnelSpec = {
         ]),
       },
     },
-    {
-      id: 'timeline',
-      kind: 'card-select',
-      content: {
-        title: 'When would you want to start?',
-        options: cardOptions('kitchens', 'timeline', [
-          text('asap', 'ASAP'),
-          text('1-3', '1–3 months'),
-          text('3-6', '3–6 months'),
-          text('exploring', 'Just exploring'),
-        ]),
-      },
-    },
+    TIMELINE_STEP,
     ADDRESS_STEP,
     CONFIRMATION_STEP,
   ],
