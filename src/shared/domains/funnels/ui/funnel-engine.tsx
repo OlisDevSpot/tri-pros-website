@@ -132,8 +132,11 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
           {/* ① Progress — pinned at the top, exactly where it was. */}
           <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
 
-          {/* ② Question stage — FIXED-height frame; content scrolls INTERNALLY. */}
-          <div className="mt-6 h-[clamp(21rem,56dvh,36rem)] overflow-x-clip overflow-y-auto">
+          {/* ② Question stage — FIXED-height frame; content scrolls INTERNALLY.
+              `overscroll-y-contain`: the stage is a nested scroller and the page now
+              scrolls too (footer below). Contain keeps the stage's overscroll from
+              chaining to the document, so touch devices don't fight over the gesture. */}
+          <div className="mt-6 h-[clamp(21rem,56dvh,36rem)] overflow-x-clip overflow-y-auto overscroll-y-contain">
             <div className="overflow-clip">
               <AnimatePresence mode="wait">
                 <motion.div
