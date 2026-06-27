@@ -7,14 +7,16 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
-import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { ROOTS } from '@/shared/config/roots'
+import { FUNNEL_SUBMIT_DISCLAIMER } from '@/shared/domains/funnels/constants/footer-copy'
 import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import { useDebouncedAsyncValidator } from '@/shared/domains/funnels/hooks/use-debounced-async-validator'
 import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
 import { firePixel, mintEventId, setAdvancedMatching } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
 import { piiSchema } from '@/shared/domains/funnels/schemas/pii.schema'
+import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { useTRPC } from '@/trpc/helpers'
 
 export function PiiFormStepView({ content, answers, ctx, setValue, advance }: StepProps<PiiStep>) {
@@ -30,7 +32,7 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
     resolver: zodResolver(piiSchema),
     mode: 'onBlur',
     reValidateMode: 'onBlur',
-    defaultValues: { firstName: '', lastName: '', phone: '', consent: false as unknown as true, _honeypot: '' },
+    defaultValues: { firstName: '', lastName: '', phone: '', _honeypot: '' },
   })
 
   const [firstName, lastName] = form.watch(['firstName', 'lastName'])
@@ -170,17 +172,6 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="consent"
-                      render={({ field }) => (
-                        <FormItem className="flex items-start gap-2">
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                          <FormLabel className="text-muted-foreground text-xs font-normal leading-snug">{content.consent}</FormLabel>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </motion.div>
                 )
               : null}
@@ -194,6 +185,17 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
         <Button type="submit" size="lg" disabled={!namesFilled || submit.isPending}>
           {submit.isPending ? 'Submitting…' : (content.cta ?? 'See if I qualify')}
         </Button>
+        {/* Submission = agreement (replaces the old consent checkbox). Proximate to
+            the action for TCPA; Terms/Privacy link back to the apex (funnels are on
+            subdomains, so a relative path 404s). The fuller disclosure lives in the
+            footer legal block. */}
+        <p className="text-muted-foreground text-center text-xs leading-snug">
+          {FUNNEL_SUBMIT_DISCLAIMER}
+          {' '}
+          <a href={mainSiteUrl(ROOTS.landing.terms())} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Terms</a>
+          {' · '}
+          <a href={mainSiteUrl(ROOTS.landing.privacy())} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Privacy Policy</a>
+        </p>
       </form>
     </Form>
   )

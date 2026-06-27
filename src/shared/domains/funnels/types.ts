@@ -77,7 +77,6 @@ export interface PiiContent {
   title: string
   subtitle?: string
   cta?: string
-  consent: string
   fields: PiiFieldLabels
 }
 
