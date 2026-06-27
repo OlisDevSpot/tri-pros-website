@@ -10,8 +10,12 @@ Server-only Graph API client for the Conversions API (CAPI). The browser Pixel
   that a browser fire also used unless they are the same logical event.
 - **One Pixel/Dataset** for all funnels. Trade rides on `custom_data.content_category`,
   funnel slug on `content_name`.
-- **Hashing is server-side.** `hashUserData` SHA-256s normalized phone/email.
-  The browser sends no PII.
+- **Hashing.** Server CAPI: `hashUserData` SHA-256s normalized identifiers
+  (ph/em/fn/ln/ct/st/zp/country) — see `client.ts`. Browser pixel: Advanced
+  Matching hands those identifiers to `fbq` in plaintext, which normalizes +
+  hashes them client-side before sending to Meta. So PII DOES leave the browser
+  (only Meta's own script sees it unhashed) — not "no PII". Both halves must
+  normalize identically or the hashes won't match across browser/server.
 - **No domain types** cross this client's signatures — translation lives in
   `meta-sync.service.ts`.
 

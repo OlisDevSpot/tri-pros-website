@@ -21,14 +21,16 @@ The question stage aligns content to the **top** (`justify-start`), not center. 
 ### 2. Count-based layout rule (type-agnostic)
 In the shared `CardSelectStepView`, a single threshold governs layout:
 
-- **`options.length > 4` → single-column list of rows.**
-- **`options.length ≤ 4` → 2-column card grid** (current vertical cards, equal-height rows).
+- **`options.length > THRESHOLD` → single-column list of rows.**
+- **`options.length ≤ THRESHOLD` → 2-column card grid** (vertical cards, equal-height rows).
 
-The threshold is one constant in the shared component → no per-funnel layout code. Today only the two media outliers (`layout`=6, `scope`=5) cross the threshold; text questions are all ≤4 and stay a grid. The rule is type-agnostic: a future >4 text question would also become rows (a full-width text row), which stays consistent.
+The threshold is one constant (`CARD_SELECT_SINGLE_COLUMN_THRESHOLD` in `constants/funnel-layout.ts`) in the shared component → no per-funnel layout code. The rule is type-agnostic: image, icon, and text questions all follow it.
+
+**Update 2026-06-27:** the threshold was lowered `4 → 2`. Every real question is 3+ options (the only 2-option step, hero-entry `ownership`, renders via its own panel and never reaches this component), so all card-select questions in every funnel — kitchens and bathrooms alike — now render as single-column lists. The 2-column grid path is retained only as the fallback for a hypothetical ≤2-tile question; no current question hits it. This makes the whole funnel flow uniformly single-column, derived purely from option count with zero per-funnel code.
 
 ### 3. Option row design ("Direction A")
 - Full-width, same `border-2 rounded-lg` and selected `primary border + tint` as the grid card → ONE selection language across grid and list.
-- Leading thumbnail at the image's native ratio (~96px) when the option carries an image/icon; text-only rows omit the thumbnail.
+- Leading thumbnail at the image's native ratio (~96px) when the option carries an image/icon. Every list question's options carry an asset (a placeholder image tile until real art exists) so all rows are a uniform height — no text-only options in a list question. (Updated 2026-06-27 — an earlier "selection radio for text rows" experiment was reverted; placeholder image tiles match the other questions far better.)
 - Label (+ optional description) vertically centered next to the thumbnail.
 - Same tap-to-select + first-answer-auto-advance behavior as the grid card.
 - Six rows ≈ ~470px → fits the fixed-height stage without internal scroll on normal screens; overflow scrolls internally (nav never moves).
