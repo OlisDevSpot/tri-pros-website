@@ -39,9 +39,9 @@
 | Registry | Serves | Why | Install ref |
 |---|---|---|---|
 | **Kibo UI** | Dashboard | One registry: Kanban, Gantt, Calendar, Dropzone, Editor, Table, Tree, List. Free, CSS-vars native. | `@kibo-ui` → `https://www.kibo-ui.com/r/{name}.json` |
-| **tablecn** (shadcn-table) | Dashboard | TanStack data table + virtualized grid w/ **server-side** sort/filter/pagination — pairs with our tRPC `usePaginatedQuery`. | `https://tablecn.com` registry |
+| **tablecn** (shadcn-table) | Dashboard | ⚠️ **Evaluated 2026-06-25 — abandoned (invasive).** Force-bumped `react-day-picker` ^9→^10 (broke our calendar + date-time-picker), scattered 25 files across new top-level dirs, and its registry assumes `@/config`+`@/types` aliases we lack → shadcn collapsed imports → ~24 tsc errors. Also overlaps our existing `src/shared/components/data-table/`. If we ever need advanced server-side tables, enhance our own table instead. | `https://tablecn.com` registry |
 | **Tailark** | Marketing | Tailwind **v4-native** marketing blocks (hero/features/pricing/FAQ/CTA/footer), plain editable code. | `@tailark/blocks` |
-| **Magic UI** | Marketing | ~21k★ MIT animated marketing kit (marquee, bento, hero video). `motion/react`-aligned. | `@magicui` → `https://magicui.design/r/{name}.json` |
+| **Magic UI** | Marketing | ✅ **Evaluated 2026-06-25 — clean & recommended for marketing.** ~21k★ MIT animated kit. Installed marquee, number-ticker, border-beam, shimmer-button, animated-shiny-text, aurora-text, blur-fade, bento-grid → all landed correctly in `src/shared/components/ui/`, no dep conflicts, on-brand in `.theme-marketing` (constrain aurora colors to brand-blue). Eval: `/magic-eval`. `motion/react`-aligned. | `@magicui` → `https://magicui.design/r/{name}.json` |
 | **tweakcn** | Both (once) | Visual theme editor → exports a Tailwind-v4 token theme as a registry item. Lock in the brand palette once. | exports theme registry URL · [tweakcn.com](https://tweakcn.com) |
 
 ### 🥈 Tier 2 — strong, adopt as needs arise
@@ -50,7 +50,7 @@
 |---|---|---|---|
 | **full-calendar** (jeraidi) | Dashboard | Drop-in DnD scheduling calendar, single-URL install. | `https://calendar.jeraidi.dev/r/full-calendar.json` |
 | **Plate** | Dashboard | 16k★ headless rich-text editor — notes, SOW/proposal editing. | `@plate` → `https://platejs.org/r/{name}.json` |
-| **Origin UI** | Dashboard | Hundreds of Tailwind-v4 form/data/nav primitives. | `https://originui.com/r/{name}.json` |
+| **Origin UI** | Dashboard | ⚠️ **Checked 2026-06-25 — rebranded.** `originui.com` now redirects to **coss.com/ui ("COSS UI")**, rebuilt on **Base UI (not Radix)**. Registry no longer cleanly enumerable (index 403/redirects). Base-UI primitives are a different integration story than our Radix/shadcn setup — defer unless we specifically want Base UI. | ~~`https://originui.com/r/{name}.json`~~ (dead) |
 | **Dice UI** | Dashboard | Accessible data-table pieces (sort/filter/action-bar) + WCAG. Same author as tablecn. | `https://diceui.com/r/{name}` |
 | **Aceternity UI** | Marketing | ~28k★ max visual impact (Aurora, Beams, 3D globe). Watch mobile perf. | `@aceternity` → `https://ui.aceternity.com/registry/{name}.json` |
 | **Launch UI** | Marketing | Hand-crafted landing kit, design-led. Verify v4. | `@launchui` → `https://launchuicomponents.com/r/{name}.json` |
@@ -98,12 +98,32 @@ shadcn/ui (app shell/forms) + Kibo/tablecn (dashboard) + Tailark/Magic UI (marke
 output is plain editable shadcn code over opinionated themed systems that fight our design tokens.
 
 <a id="alias-handling"></a>
-## Alias handling (TODO — resolve before first CLI install)
+## Install workflow (resolved 2026-06-25, first install: Kibo UI)
 
-`components.json` aliases are stale vs. actual code locations. Options:
-1. **Fix aliases** in `components.json` to `@/shared/components`, `@/shared/components/ui`, `@/shared/lib/utils`,
-   `@/shared/lib`, `@/shared/hooks` — cleanest long-term, lets CLI just work. (tsconfig only maps `@/* → ./src/*`.)
-2. **Install to temp + move** — `shadcn add` into a scratch dir, relocate files into `src/shared/components/ui`,
-   rewrite `@/components`/`@/lib/utils` imports to `@/shared/...`.
+**Aliases fixed.** `components.json` aliases now point at the real locations
+(`@/shared/components`, `@/shared/components/ui`, `@/shared/lib/utils`, `@/shared/lib`,
+`@/shared/hooks`). `shadcn add` now resolves shadcn primitives correctly and *skips*
+our themed versions instead of clobbering them.
 
-Decision: _pending_.
+**Gotchas learned installing Kibo:**
+1. **Answer `N` to overwrite prompts** — `--yes` does NOT auto-answer them. Run
+   `yes N | pnpm dlx shadcn@latest add @kibo-ui/<name> ...` to keep our themed primitives
+   (card/button/dialog/etc.) and write only the new component files.
+2. **Kibo files land in `src/components/kibo-ui/`** (not `src/shared/...`). They import only
+   `@/shared/...`, so relocate them to `src/shared/components/kibo-ui/` after install — zero
+   import breakage. (Or pass `shadcn add --path src/shared/components/kibo-ui`.)
+3. **eslint `--fix` can break vendored types** — it rewrote Kibo's `new Array(4)` → `Array.from({length:4})`
+   (`unknown[]` vs `any[]`), causing a tsc error; cast or revert. Also added a scoped
+   `/* eslint-disable ts/no-use-before-define */` to the vendored gantt file.
+4. **`interface` vs Kibo generics** — Kibo's `& Record<string, unknown>` constraints require an
+   index signature; our lint forces `interface` (no implicit index sig). Add `[key: string]: unknown`.
+5. **`@dnd-kit` SSR hydration mismatch** — dnd-kit's incrementing `aria-describedby` ids diverge
+   server/client. Render DnD components (gantt/kanban/list) client-only (mount gate) to avoid it.
+
+**⚠️ App-theme token bug surfaced:** the app theme maps `--secondary` to a saturated indigo
+(`oklch(0.6231 0.188 259.8145)` in both `:root` and `.dark`) instead of a neutral raised surface.
+Any shadcn/Kibo component using `bg-secondary` fills solid blue. Fix as part of the deferred
+app-theme re-point (DESIGN.md §4). The eval page works around it by pointing `--secondary` at `--muted`.
+
+**Live eval:** `src/app/(frontend)/kibo-eval/page.tsx` → route `/kibo-eval` (gantt, kanban, calendar,
+list, dropzone with Tri Pros sample data).
