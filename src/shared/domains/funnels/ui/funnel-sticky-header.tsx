@@ -18,7 +18,7 @@ import { toDialString } from '@/shared/lib/phone'
  * `logo-light-right.svg` (the artwork meant for light backgrounds) rather than
  * the shared Logo component, which switches on `dark:`. Same asset as the hero.
  */
-export function FunnelStickyHeader({ opacity, widthClass = 'max-w-xl' }: { opacity: MotionValue<number>, widthClass?: string }) {
+export function FunnelStickyHeader({ opacity, widthClass }: { opacity: MotionValue<number>, widthClass: string }) {
   const phone = contactInfo.find(c => c.accessor === 'phone')?.value ?? ''
   // Don't leave an invisible tap target floating over content when faded out.
   const pointerEvents = useTransform(opacity, v => (v < 0.1 ? 'none' : 'auto'))
