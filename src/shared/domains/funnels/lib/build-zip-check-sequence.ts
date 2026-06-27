@@ -10,13 +10,12 @@ export interface ZipCheckInput {
 /** One checklist line + how long it dwells before completing. */
 export interface ZipCheckTick { label: string, duration: number }
 
-// Cadence bands (ms). Earlier ticks are brisk; the final tick lingers to build
-// anticipation before the "qualified" reveal. Each duration is random within its
-// band on every run, so the sequence feels live rather than mechanical.
+// Cadence (ms). Earlier ticks are brisk and random within a band so the sequence
+// feels live; the FINAL tick is the anticipation beat — exactly twice as long as
+// a normal tick — held before the "qualified" reveal.
 const EARLY_MIN = 450
 const EARLY_MAX = 950
-const FINAL_MIN = 1100
-const FINAL_MAX = 1600
+const FINAL_MULTIPLIER = 4
 
 function randInt(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1))
@@ -42,6 +41,6 @@ export function buildZipCheckSequence(input: ZipCheckInput): ZipCheckTick[] {
   const lastIndex = labels.length - 1
   return labels.map((label, i) => ({
     label,
-    duration: i === lastIndex ? randInt(FINAL_MIN, FINAL_MAX) : randInt(EARLY_MIN, EARLY_MAX),
+    duration: randInt(EARLY_MIN, EARLY_MAX) * (i === lastIndex ? FINAL_MULTIPLIER : 1),
   }))
 }

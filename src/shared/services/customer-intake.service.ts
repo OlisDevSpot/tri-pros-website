@@ -1,12 +1,12 @@
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Customer } from '@/shared/db/schema/customers'
-import type { LeadMeta } from '@/shared/entities/customers/schemas'
+import type { EnrichmentRecord, LeadMeta } from '@/shared/entities/customers/schemas'
 import type { IntakeCore } from '@/shared/services/providers/gohighlevel/lib/normalize-bina-lead'
 
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { buildFunnelLeadNote } from '@/shared/domains/funnels/lib/build-funnel-lead-note'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { addCustomerNote } from '@/shared/entities/customers/dal/server/mutations'
+import { addCustomerNote, mergeFunnelEnrichment } from '@/shared/entities/customers/dal/server/mutations'
 import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/queries'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { enrollLeadJob } from '@/shared/services/providers/upstash/jobs/enroll-lead'
@@ -34,7 +34,7 @@ interface IngestLeadInput {
 
 interface EnrichFunnelLeadInput {
   leadId: string
-  enrichment: Record<string, { label: string, value: string, order: number }>
+  enrichment: EnrichmentRecord
 }
 
 interface SetFunnelLeadAddressInput {
@@ -138,33 +138,22 @@ function createCustomerIntakeService() {
     },
 
     // Guarded enrichment patch for an already-created funnel lead. The leadId is
-    // the capability; we refuse anything that isn't a funnel-sourced customer and
-    // only ever touch source.enrichment. Best-effort from the confirmation step.
+    // the capability; the funnel-kind check + the atomic source.enrichment merge
+    // both live in the DAL mutation (single jsonb_set statement — no race-prone
+    // read-modify-write here). Best-effort from each progressive step; a zero-row
+    // match means the lead isn't a funnel lead.
+    // see ../entities/customers/dal/server/mutations.ts#mergeFunnelEnrichment
     async enrichFunnelLead(
-      ctx: ScopedContext,
+      _ctx: ScopedContext,
       input: EnrichFunnelLeadInput,
     ): Promise<DalReturn<{ ok: true }>> {
-      const existing = await customerCrud.getById(ctx, { id: input.leadId })
-      if (!existing.success) {
-        return existing
+      const merged = await mergeFunnelEnrichment(input)
+      if (!merged.success) {
+        return merged
       }
-      const customer = existing.data
-      const leadMeta = customer?.leadMetaJSON
-      if (!customer || leadMeta?.source?.kind !== 'funnel') {
+      if (!merged.data.matched) {
         return dalError({ type: 'precondition-failed', reason: 'not_a_funnel_lead' })
       }
-      const nextLeadMeta: LeadMeta = {
-        ...leadMeta,
-        source: {
-          ...leadMeta.source,
-          enrichment: { ...leadMeta.source.enrichment, ...input.enrichment },
-        },
-      }
-      const updated = await customerCrud.update(ctx, { id: input.leadId, data: { leadMetaJSON: nextLeadMeta } })
-      if (!updated.success) {
-        return updated
-      }
-
       return dalSuccess({ ok: true })
     },
 
