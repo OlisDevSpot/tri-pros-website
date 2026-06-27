@@ -133,18 +133,36 @@
   --shadow-md: 0 4px 8px -2px oklch(0 0 0 / 0.1), 0 3px 10px -4px rgb(3 175 237 / 0.08);
   --shadow-lg: 0 12px 20px -6px oklch(0 0 0 / 0.12), 0 8px 22px -8px rgb(3 175 237 / 0.1);
   --shadow-xl: 0 24px 34px -8px oklch(0 0 0 / 0.14), 0 14px 32px -10px rgb(3 175 237 / 0.12);
-  /* hero (light frosted card on the brand photo): the funnel hero is a BRIGHT
-     wash, not a dark island. Copy rides a translucent warm card so the photo
-     bleeds THROUGH (backdrop-blur) and frames it, while near-black ink keeps
-     senior-grade contrast. Promoted from the /test legibility study (V2 warm).
-     All hero inks/fills derive from existing tokens via color-mix — no ad-hoc
-     values. Consumed by <FunnelHero> + <HeroTrustBadges>. See funnel-hero.tsx. */
+  /* hero (light card on the brand photo): the funnel hero is a BRIGHT wash, not
+     a dark island. Legibility comes from a centered radial "luminous scrim"
+     (--hero-scrim) painted over the photo — a real gradient, NOT backdrop-filter,
+     because the hero card is transformed/faded on scroll and an animated layer
+     forms a "backdrop root" that severs backdrop-filter from the sibling photo
+     (the cause of the weak-blur regression). The scrim is near-opaque at the core
+     for senior-grade dark-ink contrast and feathers to transparent before the
+     corners so the bathroom/kitchen photo still shows at the edges. The warm card
+     fill + ring + shadow ride on top as a structural frame. All hero inks/fills
+     derive from existing tokens via color-mix. Consumed by <FunnelHero> +
+     <HeroTrustBadges>. See funnel-hero.tsx + .hero-scrim below. */
   --shadow-hero: 0 16px 40px -24px rgb(0 0 0 / 0.2), 0 6px 16px -10px rgb(0 0 0 / 0.1);
-  --hero-plate: color-mix(in srgb, var(--background) 80%, transparent); /* warm frosted card fill */
+  --hero-plate: color-mix(
+    in srgb,
+    var(--background) 62%,
+    transparent
+  ); /* warm card fill — frame on top of the scrim (no blur to rely on) */
   --hero-plate-ring: color-mix(in srgb, var(--accent-ink) 12%, transparent); /* faint brand hairline */
   --hero-ink-soft: color-mix(in srgb, var(--foreground) 80%, var(--background)); /* subhead on the card */
   --hero-ink-muted: color-mix(in srgb, var(--foreground) 62%, var(--background)); /* microcopy on the card */
   --hero-pill-border: color-mix(in srgb, var(--accent-ink) 25%, transparent); /* scarcity pill hairline */
+  /* Radial luminous scrim — opaque warm core (legibility) → transparent corners
+     (reveal the photo). Centered slightly above mid where the headline sits. */
+  --hero-scrim: radial-gradient(
+    ellipse 105% 80% at 50% 42%,
+    color-mix(in srgb, var(--background) 95%, transparent) 0%,
+    color-mix(in srgb, var(--background) 82%, transparent) 36%,
+    color-mix(in srgb, var(--background) 45%, transparent) 60%,
+    transparent 82%
+  ); /* consumed by .hero-scrim */
 
   /* Q1 spotlight — the funnel's ONE dark moment, relocated from the hero to the
      first question to pull the eye to the section the visitor must act on. A
@@ -206,6 +224,32 @@
     --block-pad-compact: 1.5rem;
     --fs-headline: 1.75rem;
   }
+}
+
+/* Hero radial luminous scrim — the funnel hero's legibility layer (replaces the
+   fragile backdrop-blur). Painted over the photo, under the content; an animated
+   sibling so it fades with the hero on scroll. See --hero-scrim + funnel-hero.tsx. */
+.hero-scrim {
+  background-image: var(--hero-scrim);
+}
+
+/* Question-step canvas — a faint blueprint grid behind the funnel's QUESTION
+   pages only (never the landing hero, never the confirmation). Drafting-paper
+   rhythm in brand blue: a fine 32px minor grid plus a heavier 160px major line,
+   radially masked so it dissolves behind the centered question stage and reads
+   only as ambient texture out in the margins. <FunnelEngine> mounts this as a
+   fixed, compositor-only layer on the 'steps' view (no scroll repaint, nothing
+   animated). Positioning/clip utilities are applied in the JSX; this rule owns
+   only the paint. see funnel-engine.tsx */
+.funnel-grid-bg {
+  background-image:
+    linear-gradient(rgb(3 175 237 / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(3 175 237 / 0.05) 1px, transparent 1px),
+    linear-gradient(rgb(7 132 179 / 0.1) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgb(7 132 179 / 0.1) 1.5px, transparent 1.5px);
+  background-size: 32px 32px, 32px 32px, 160px 160px, 160px 160px;
+  -webkit-mask-image: radial-gradient(ellipse 120% 100% at 50% 30%, transparent 8%, black 66%);
+          mask-image: radial-gradient(ellipse 120% 100% at 50% 30%, transparent 8%, black 66%);
 }
 
 /* Dark stub — EXPLICIT opt-in only via `.theme-dark`. It must NOT auto-activate
@@ -399,6 +443,88 @@
     }
     to {
       transform: translateX(400%);
+    }
+  }
+
+  --animate-marquee: marquee var(--duration) infinite linear;
+
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+
+  --animate-shiny-text: shiny-text 8s infinite;
+
+  --animate-aurora: aurora 8s ease-in-out infinite alternate;
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes shimmer-slide {
+    to {
+      transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+  @keyframes spin-around {
+    0% {
+      transform: translateZ(0) rotate(0);
+    }
+    15%,
+    35% {
+      transform: translateZ(0) rotate(90deg);
+    }
+    65%,
+    85% {
+      transform: translateZ(0) rotate(270deg);
+    }
+    100% {
+      transform: translateZ(0) rotate(360deg);
+    }
+  }
+  @keyframes shiny-text {
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+  @keyframes aurora {
+    0% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
+    }
+    25% {
+      background-position: 50% 100%;
+      transform: rotate(5deg) scale(1.1);
+    }
+    50% {
+      background-position: 100% 50%;
+      transform: rotate(-3deg) scale(0.95);
+    }
+    75% {
+      background-position: 50% 0%;
+      transform: rotate(3deg) scale(1.05);
+    }
+    100% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
     }
   }
 }

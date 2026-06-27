@@ -55,15 +55,26 @@ export const CTA_PRESS_SPRING: Transition = { type: 'spring', stiffness: 400, da
 /** Idle sheen sweep — a light bar crosses the face, then pauses (~5s cadence). */
 export const CTA_SHEEN_TRANSITION: Transition = { duration: 1.1, repeat: Infinity, repeatDelay: 4, ease: 'easeInOut' }
 
-// ─── Hero scroll choreography ──────────────────────────────────────────────
+// ─── Hero scroll choreography (layered parallax scroll-away) ───────────────
 //
-// As the landing hero scrolls past, its text fades + lifts away and the big
-// logo cross-fades into the slim sticky header. Driven by a single
-// `useScroll({ target: heroRef, offset: HERO_SCROLL_OFFSET })` whose
-// `scrollYProgress` runs 0→1 over exactly the hero's own height. All ranges
-// are [input → output] pairs for `useTransform`. Translate/scale magnitudes
-// are gated behind `useReducedMotion()` in the engine (opacity is kept — it is
-// vestibular-safe and aids comprehension). see ../ui/funnel-engine.tsx
+// The hero EXITS as a layered parallax as it scrolls off — nothing collapses in
+// place (which would leave a dead full-height container with content stranded
+// below). Because it stays in normal flow, the section genuinely leaves and the
+// marketing content below rises naturally — no dead space, no pin, no height
+// animation. Two layers at different rates:
+//
+//   Foreground (card + Q1 + scrim) LEADS: fades fully + lifts UP faster than the
+//     scroll, so the copy clears first (per "exit upward = going away").
+//   Background photo TRAILS: drifts up slower than the scroll (the parallax lag)
+//     with a subtle zoom/perspective, so it visibly follows the content out.
+//
+// Driven by a single `useScroll({ target: heroRef, offset: HERO_SCROLL_OFFSET })`
+// whose `scrollYProgress` runs 0→1 over the hero's own height. Every value is
+// compositor-only (opacity / transform) — hardware-accelerated; NEVER width/
+// height/top/left (layout-shift-avoid). The photo layer is OVERSIZED vertically
+// in the hero so its parallax translate never reveals a gap. Translate/scale are
+// gated behind `useReducedMotion()` in the landing (parallax-subtle); opacity is
+// kept (vestibular-safe). see ../ui/funnel-landing.tsx, ../ui/funnel-hero.tsx
 
 // Each pair is (input range, output range) for `useTransform`. Kept as flat
 // `number[]` so they pass straight in; the offset stays `as const` (its members
@@ -72,21 +83,32 @@ export const CTA_SHEEN_TRANSITION: Transition = { duration: 1.1, repeat: Infinit
 /** `[targetEdge containerEdge]` pair → progress 0 at page top, 1 when hero fully scrolled past. */
 export const HERO_SCROLL_OFFSET = ['start start', 'end start'] as const
 
-/** Text group fades fully by the halfway point (premium "fade faster than you scroll"). */
-export const HERO_TEXT_OPACITY_IN = [0, 0.5]
-export const HERO_TEXT_OPACITY_OUT = [1, 0]
-/** Gentle upward lift of the text group, in px (negative = up). Gated by reduced motion. */
-export const HERO_TEXT_LIFT_PX = -120
+// ── Foreground (leads) ─────────────────────────────────────────────────────
+/** Content fades FULLY by ~0.4 (leads the photo; never lingers as a ghost). */
+export const HERO_CONTENT_OPACITY_IN = [0, 0.4]
+export const HERO_CONTENT_OPACITY_OUT = [1, 0]
+/** The lift: content rises faster than the scroll (px, negative = up) with a
+ *  whisper of scale-down for depth. Range runs a bit past the fade for momentum.
+ *  Gated by reduced motion. */
+export const HERO_CONTENT_FLOAT_IN = [0, 0.55]
+export const HERO_CONTENT_LIFT_PX = -180
+export const HERO_CONTENT_SCALE_TARGET = 0.96
 
-/** Big in-flow hero logo fades out before the slim bar finishes fading in. */
-export const HERO_LOGO_OPACITY_IN = [0.05, 0.45]
-export const HERO_LOGO_OPACITY_OUT = [1, 0]
-/** Slight shrink of the big logo as it leaves. Gated by reduced motion. */
-export const HERO_LOGO_SCALE_IN = [0, 0.45]
-export const HERO_LOGO_SCALE_TARGET = 0.85
+/** Radial legibility scrim fades just after the content (holds legibility while
+ *  the copy is visible, then clears so the photo reads clean as it trails out). */
+export const HERO_SCRIM_OPACITY_IN = [0, 0.5]
+export const HERO_SCRIM_OPACITY_OUT = [1, 0]
 
-/** Slim sticky bar cross-fades in (slight overlap with the logo fade = the crossfade). */
-export const HERO_HEADER_OPACITY_IN = [0.4, 0.75]
+// ── Background (trails) ────────────────────────────────────────────────────
+/** Parallax lag: the photo drifts UP slower than the scroll (negative = up, a
+ *  fraction of the content's lift) so it follows the copy out a beat behind. The
+ *  oversized photo layer (see funnel-hero) keeps it gap-free across this drift. */
+export const HERO_PHOTO_Y_PX = -64
+/** Subtle push-in zoom / perspective as the photo trails away. */
+export const HERO_PHOTO_SCALE_TARGET = 1.06
+
+/** Slim sticky bar cross-fades in once the copy has cleared (mid-exit). */
+export const HERO_HEADER_OPACITY_IN = [0.45, 0.8]
 export const HERO_HEADER_OPACITY_OUT = [0, 1]
 
 /**

@@ -16,16 +16,13 @@ import { DEFAULT_LANDING_BLOCKS } from '@/shared/domains/funnels/constants/defau
 import { FUNNEL_QUESTION_MAX_W, FUNNEL_RAIL_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import {
   FUNNEL_TRANSITION,
+  HERO_CONTENT_FLOAT_IN,
   HERO_CONTENT_LIFT_PX,
   HERO_CONTENT_OPACITY_IN,
   HERO_CONTENT_OPACITY_OUT,
-  HERO_CONTENT_SCALE_IN,
   HERO_CONTENT_SCALE_TARGET,
   HERO_HEADER_OPACITY_IN,
   HERO_HEADER_OPACITY_OUT,
-  HERO_PHOTO_CLIP_FROM,
-  HERO_PHOTO_CLIP_IN,
-  HERO_PHOTO_CLIP_TO,
   HERO_PHOTO_SCALE_TARGET,
   HERO_PHOTO_Y_PX,
   HERO_SCRIM_OPACITY_IN,
@@ -79,20 +76,20 @@ export function FunnelLanding({ spec, ctx, children, variant, scrollToQuestionOn
   const heroRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({ target: heroRef, offset: [...HERO_SCROLL_OFFSET] })
 
-  // Reduced motion gates only translate/scale (vestibular-unsafe); the opacity
+  // Reduced motion gates translate/scale (vestibular-unsafe); the opacity
   // cross-fades are kept — they aid comprehension and are motion-sickness-safe.
-  // The whole content group exits as one (kills the old empty-shell card); the
-  // photo parallaxes on its own layer behind it. see ./funnel-hero.tsx HeroScroll
+  // Layered parallax: foreground (content + scrim) LEADS — fades + lifts up
+  // faster; the photo TRAILS slower. All scrolls away in flow, so no dead
+  // container is left behind. see ./funnel-hero.tsx HeroScroll + ../constants/funnel-motion.ts
   const contentOpacity = useTransform(scrollYProgress, HERO_CONTENT_OPACITY_IN, HERO_CONTENT_OPACITY_OUT)
-  const contentScale = useTransform(scrollYProgress, HERO_CONTENT_SCALE_IN, [1, reduceMotion ? 1 : HERO_CONTENT_SCALE_TARGET])
-  const contentY = useTransform(scrollYProgress, HERO_CONTENT_SCALE_IN, [0, reduceMotion ? 0 : HERO_CONTENT_LIFT_PX])
+  const contentScale = useTransform(scrollYProgress, HERO_CONTENT_FLOAT_IN, [1, reduceMotion ? 1 : HERO_CONTENT_SCALE_TARGET])
+  const contentY = useTransform(scrollYProgress, HERO_CONTENT_FLOAT_IN, [0, reduceMotion ? 0 : HERO_CONTENT_LIFT_PX])
   const scrimOpacity = useTransform(scrollYProgress, HERO_SCRIM_OPACITY_IN, HERO_SCRIM_OPACITY_OUT)
+  // Photo trails: a slower upward drift + subtle zoom over the full range.
   const photoY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : HERO_PHOTO_Y_PX])
   const photoScale = useTransform(scrollYProgress, [0, 1], [1, reduceMotion ? 1 : HERO_PHOTO_SCALE_TARGET])
-  // clipPath crops (no distortion); reduced motion holds it at full (no shrink).
-  const photoClip = useTransform(scrollYProgress, HERO_PHOTO_CLIP_IN, [HERO_PHOTO_CLIP_FROM, reduceMotion ? HERO_PHOTO_CLIP_FROM : HERO_PHOTO_CLIP_TO])
   const headerOpacity = useTransform(scrollYProgress, HERO_HEADER_OPACITY_IN, HERO_HEADER_OPACITY_OUT)
-  const heroScroll: HeroScroll = { contentOpacity, contentScale, contentY, scrimOpacity, photoY, photoScale, photoClip }
+  const heroScroll: HeroScroll = { contentOpacity, contentScale, contentY, scrimOpacity, photoY, photoScale }
 
   // On a Back-return to the landing (Q1 already answered) jump to the question
   // so the Continue affordance is visible instead of buried under the hero.

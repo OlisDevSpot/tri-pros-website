@@ -19,9 +19,12 @@ export const FUNNEL_QUESTION_MAX_W = 'max-w-xl'
 
 /**
  * Above this option count, a card-select question renders as a single-column
- * list of rows instead of a 2-column card grid. Keeps dense questions (5–6
- * options) scannable and identical across every funnel — the threshold lives
+ * list of rows instead of a 2-column card grid. At `2`, every real question
+ * (all are 3+ options; the only 2-option step is the hero-entry `ownership`,
+ * which renders via its own panel) lists — so funnels read as a uniform
+ * single-column flow. The 2-column grid is retained only as the fallback for a
+ * genuine ≤2-tile question. Identical across every funnel — the threshold lives
  * here, not in any per-funnel spec.
  * see docs/superpowers/specs/2026-06-26-funnel-card-select-layout-system-design.md
  */
-export const CARD_SELECT_SINGLE_COLUMN_THRESHOLD = 4
+export const CARD_SELECT_SINGLE_COLUMN_THRESHOLD = 2

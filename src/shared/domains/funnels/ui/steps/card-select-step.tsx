@@ -11,11 +11,14 @@ import { cn } from '@/shared/lib/utils'
  * funnels (the rule lives here, not in any spec):
  *   • ≤ THRESHOLD options → 2-column card grid (vertical tiles, equal-height rows)
  *   • >  THRESHOLD options → single-column list of rows (leading thumbnail + label)
- * Both layouts share ONE selection language — `primary` border + tint. Picking
+ * Every option carries an `asset` (image tile or icon diagram) so list rows are a
+ * uniform height — there are no text-only options in a list question (use a
+ * placeholder image tile until real art exists). Both layouts share ONE selection language — `primary` border + tint. Picking
  * IS proceeding: tapping any option always sets the value and advances, whether
  * it's a first answer or a revisit reached via Back (re-tapping the current
- * selection also advances — tap = confirm + proceed). The shell's Next is hidden
- * for this step kind; the user never needs it.
+ * selection also advances — tap = confirm + proceed). The shell's Next still
+ * shows once answered, as the no-re-tap path for a Back-revisiting user keeping
+ * their answer.
  * see ../../../../../docs/superpowers/specs/2026-06-26-funnel-card-select-layout-system-design.md
  */
 export function CardSelectStepView({ content, value, setValue, advance }: StepProps<CardSelectStep>) {

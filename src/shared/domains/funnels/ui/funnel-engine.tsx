@@ -126,47 +126,57 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
     // takes its natural height (no `min-h-dvh`/spacer) so the footer follows it and
     // the document scrolls — on the PII step that also reveals the legal block.
     body = (
-      <>
-        <FunnelStickyHeader opacity={stickyOpacity} widthClass={contentWidth} />
-        <div className={`mx-auto flex w-full flex-col px-5 pb-10 pt-16 ${contentWidth}`}>
-          {/* ① Progress — pinned at the top, exactly where it was. */}
-          <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
+      <div className="relative">
+        {/* Blueprint grid — fixed, compositor-only canvas behind the question
+            stage ONLY (this 'steps' branch; never landing/confirmation). The grid
+            sits at z-0; everything below is lifted into a z-10 layer so it paints
+            on top. The sticky header stays `position: fixed` (no transform
+            ancestor here, so its viewport anchoring is intact). The grid layer is
+            clipped to the document height by the relative parent, so the footer
+            below it shows on a clean page. see globals.css `.funnel-grid-bg`. */}
+        <div aria-hidden className="funnel-grid-bg pointer-events-none fixed inset-0 z-0" />
+        <div className="relative z-10">
+          <FunnelStickyHeader opacity={stickyOpacity} widthClass={contentWidth} />
+          <div className={`mx-auto flex w-full flex-col px-5 pb-10 pt-16 ${contentWidth}`}>
+            {/* ① Progress — pinned at the top, exactly where it was. */}
+            <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
 
-          {/* ② Question stage — FIXED-height frame; content scrolls INTERNALLY.
+            {/* ② Question stage — FIXED-height frame; content scrolls INTERNALLY.
               `overscroll-y-contain`: the stage is a nested scroller and the page now
               scrolls too (footer below). Contain keeps the stage's overscroll from
               chaining to the document, so touch devices don't fight over the gesture. */}
-          <div className="mt-6 h-[clamp(21rem,56dvh,36rem)] overflow-x-clip overflow-y-auto overscroll-y-contain">
-            <div className="overflow-clip">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={engine.step.id}
-                  initial={reduceMotion ? false : STEP_VARIANTS.initial}
-                  animate={STEP_VARIANTS.animate}
-                  exit={reduceMotion ? undefined : STEP_VARIANTS.exit}
-                  transition={FUNNEL_TRANSITION}
-                  className="w-full py-2"
-                >
-                  {stepEl}
-                </motion.div>
-              </AnimatePresence>
+            <div className="mt-6 h-[clamp(21rem,56dvh,36rem)] overflow-x-clip overflow-y-auto overscroll-y-contain">
+              <div className="overflow-clip">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={engine.step.id}
+                    initial={reduceMotion ? false : STEP_VARIANTS.initial}
+                    animate={STEP_VARIANTS.animate}
+                    exit={reduceMotion ? undefined : STEP_VARIANTS.exit}
+                    transition={FUNNEL_TRANSITION}
+                    className="w-full py-2"
+                  >
+                    {stepEl}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
             </div>
-          </div>
 
-          {/* ③ Nav — directly under the stage at a constant Y. */}
-          {engine.hasNext
-            ? (
-                <div className="mt-6 flex items-center justify-between gap-3">
-                  <Button variant="ghost" onClick={engine.back}>← Back</Button>
-                  {engine.value != null
-                    ? <Button onClick={engine.advance}>Next →</Button>
-                    : <span />}
-                </div>
-              )
-            : null}
+            {/* ③ Nav — directly under the stage at a constant Y. */}
+            {engine.hasNext
+              ? (
+                  <div className="mt-6 flex items-center justify-between gap-3">
+                    <Button variant="ghost" onClick={engine.back}>← Back</Button>
+                    {engine.value != null
+                      ? <Button onClick={engine.advance}>Next →</Button>
+                      : <span />}
+                  </div>
+                )
+              : null}
+          </div>
+          <FunnelFooter ctx={ctx} />
         </div>
-        <FunnelFooter ctx={ctx} />
-      </>
+      </div>
     )
   }
 

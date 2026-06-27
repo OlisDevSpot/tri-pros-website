@@ -38,22 +38,32 @@ export function ZipStepView({ content, value, setValue, ctx }: StepProps<ZipStep
     if (!resolved) {
       return
     }
-    // Resolve already happened — persist the resolved value, then play the
-    // anticipation beat (#6) before advancing to qualified.
-    setValue({
-      zip: resolved.zip,
-      city: resolved.city,
-      state: resolved.state,
-      county: resolved.county,
-    })
+    // Resolve already happened — play the anticipation beat (#6) FIRST, then
+    // commit the answer on completion (in the checking branch's onComplete).
+    // The answer is deliberately NOT persisted here: committing `engine.value`
+    // makes the engine render its "Next →" nav, which would let the visitor skip
+    // the still-running checklist. Holding the commit until the beat finishes
+    // keeps `engine.value` null throughout, so there is no Next button to skip.
+    // `resolved` is stable across the beat (input is unmounted, so `zip` — the
+    // resolve effect's only key — can't change), so onComplete reads it safely.
     setPhase('checking')
   }
 
   if (phase === 'checking') {
     return (
       <ZipCheckProgress
-        input={{ zip: value?.zip ?? zip, city: value?.city ?? '', trade: getTradeFacts(ctx.slug).name }}
-        onComplete={() => setPhase('qualified')}
+        input={{ zip: resolved?.zip ?? zip, city: resolved?.city ?? '', trade: getTradeFacts(ctx.slug).name }}
+        onComplete={() => {
+          if (resolved) {
+            setValue({
+              zip: resolved.zip,
+              city: resolved.city,
+              state: resolved.state,
+              county: resolved.county,
+            })
+          }
+          setPhase('qualified')
+        }}
       />
     )
   }

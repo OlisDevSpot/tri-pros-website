@@ -1,5 +1,5 @@
 import type { ZipCheckInput } from '@/shared/domains/funnels/lib/build-zip-check-sequence'
-import { Check, MapPin } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
@@ -8,13 +8,12 @@ import { cn } from '@/shared/lib/utils'
 
 /**
  * "Checking your area" anticipation beat. The ZIP is already resolved before this
- * mounts, so this is pure choreography — an honest pause framed as a live scan of
- * the user's specific area, not claims of distinct backend calls. Two coordinated
- * pieces: a sonar map-pin centerpiece (primary = "scanning") and a vertical
- * timeline spine whose connectors fill green as each line confirms (green =
- * "verified"). Tokens only → brand-safe and identical across every funnel. All
- * ambient/looping motion is gated on useReducedMotion(); when reduced, states
- * still resolve, they just don't pulse or spin.
+ * mounts, so this is pure choreography — an honest pause, not claims of distinct
+ * backend calls. It reads as a REGULAR QUESTION (heading on top, content below)
+ * for consistency with every other step; the "content" is a vertical timeline
+ * spine whose connectors fill green as each line confirms (green = "verified").
+ * Tokens only → brand-safe and identical across funnels. Looping motion is gated
+ * on useReducedMotion(); reduced still resolves states, just without spin.
  *
  * The sequence (labels + per-tick cadence) is generated once per mount from
  * `input` via `buildZipCheckSequence` — dynamic labels, random durations,
@@ -47,30 +46,10 @@ export function ZipCheckProgress({ input, onComplete }: { input: ZipCheckInput, 
   }, [done, sequence.length])
 
   return (
-    <div className={cn('mx-auto flex w-full flex-col items-center gap-8 py-6', FUNNEL_QUESTION_MAX_W)}>
-      {/* Sonar centerpiece — concentric rings ripple out from a map pin, reading
-          as a live scan locked onto the user's area. Rings loop only when motion
-          is allowed; the static pin + disc carry the meaning otherwise. */}
-      <div className="relative flex size-28 items-center justify-center">
-        {!reduceMotion
-          ? [0, 1, 2].map(ring => (
-              <motion.span
-                key={ring}
-                className="border-primary/40 absolute inset-0 rounded-full border"
-                initial={{ scale: 0.35, opacity: 0.55 }}
-                animate={{ scale: 1, opacity: 0 }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut', delay: ring * 0.8 }}
-              />
-            ))
-          : null}
-        <div className="bg-primary/10 ring-primary/15 relative flex size-16 items-center justify-center rounded-full ring-1">
-          <MapPin className="text-primary size-7" aria-hidden="true" />
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center gap-1 text-center">
+    <div className={cn('mx-auto flex w-full flex-col gap-6', FUNNEL_QUESTION_MAX_W)}>
+      <div className="flex flex-col gap-1 text-center">
         <h2 className="text-foreground text-2xl font-semibold">Checking your area</h2>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground">
           Confirming availability near
           {' '}
           <span className="text-foreground font-medium">{place}</span>
@@ -81,7 +60,7 @@ export function ZipCheckProgress({ input, onComplete }: { input: ZipCheckInput, 
           flex-1 connector that stretches to the next dot; the connector turns
           green once its step confirms, so the spine fills top-down as the scan
           completes. The status row carries aria-live for SR announcements. */}
-      <ol className="flex w-full max-w-sm flex-col" aria-live="polite">
+      <ol className="mx-auto flex w-full max-w-sm flex-col" aria-live="polite">
         {sequence.map(({ label }, i) => {
           const complete = i < done
           const active = i === done
