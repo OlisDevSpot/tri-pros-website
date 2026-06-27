@@ -15,6 +15,7 @@ import { FUNNEL_QUESTION_MAX_W } from '@/shared/domains/funnels/constants/funnel
 import { useDebouncedAsyncValidator } from '@/shared/domains/funnels/hooks/use-debounced-async-validator'
 import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
 import { firePixel, mintEventId, setAdvancedMatching } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
+import { firesLeadOptimization } from '@/shared/domains/funnels/lib/tracking/lead-qualification'
 import { piiSchema } from '@/shared/domains/funnels/schemas/pii.schema'
 import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { useTRPC } from '@/trpc/helpers'
@@ -73,7 +74,12 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
       toast.error('Please enter a valid US phone number')
       return
     }
-    const eventId = mintEventId()
+    // Renters (ownership='rent') are ingested but excluded from Meta's Lead
+    // optimization: a missing eventId makes submitLead's CAPI twin no-op, and we
+    // skip the browser pixel below. Funnels without an ownership step always fire.
+    // see lib/tracking/lead-qualification.ts + ../../DOCS.md
+    const optimize = firesLeadOptimization(answers)
+    const eventId = optimize ? mintEventId() : undefined
     const created = await submit.mutateAsync({
       phone: e164,
       name: lead.name,
@@ -93,26 +99,28 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
         contentName: ctx.slug,
       },
     })
-    // Set Advanced Matching from the collected PII (plaintext — the pixel hashes
-    // it) so the browser Lead carries the same match keys as the CAPI twin.
-    setAdvancedMatching({
-      firstName: data.firstName.trim(),
-      lastName: data.lastName.trim(),
-      phone: e164,
-      city: lead.city,
-      state: lead.state,
-      zip: lead.zip,
-    })
-    // Fire the browser Lead pixel only AFTER the server accepts + persists the
-    // lead, sharing the same event_id as the server CAPI twin (dispatched inside
-    // submitLead) so Meta dedupes the pair. Firing before submit would count a
-    // Lead even when the server rejects (non-mobile / rate-limit / ingest error),
-    // and the user's retry would mint a fresh event_id → a duplicate Lead.
-    firePixel('Lead', {
-      eventId,
-      contentCategory: ctx.pixel.contentCategory,
-      contentName: ctx.slug,
-    })
+    if (optimize) {
+      // Set Advanced Matching from the collected PII (plaintext — the pixel hashes
+      // it) so the browser Lead carries the same match keys as the CAPI twin.
+      setAdvancedMatching({
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        phone: e164,
+        city: lead.city,
+        state: lead.state,
+        zip: lead.zip,
+      })
+      // Fire the browser Lead pixel only AFTER the server accepts + persists the
+      // lead, sharing the same event_id as the server CAPI twin (dispatched inside
+      // submitLead) so Meta dedupes the pair. Firing before submit would count a
+      // Lead even when the server rejects (non-mobile / rate-limit / ingest error),
+      // and the user's retry would mint a fresh event_id → a duplicate Lead.
+      firePixel('Lead', {
+        eventId,
+        contentCategory: ctx.pixel.contentCategory,
+        contentName: ctx.slug,
+      })
+    }
     setValue({ leadId: created.customerId })
     advance()
   }
