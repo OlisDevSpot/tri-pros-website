@@ -14,13 +14,15 @@ export function funnelFooterBlurb(trade: string): string {
 }
 
 /**
- * Proximate consent shown directly under the PII submit button (replaces the
- * removed checkbox). Submission itself is the agreement; the component renders
- * functional Terms/Privacy links in the same block. Wording approved by the Legal
- * Compliance Checker on 2026-06-27 — re-review on any change.
+ * Short proximate consent shown under the PII phone input (where the old consent
+ * checkbox was). Submission itself is the agreement; the component appends the
+ * functional Terms/Privacy links right after this lead-in. Deliberately brief —
+ * the full TCPA disclosure (autodialed/prerecorded, STOP/HELP, msg rates) lives in
+ * FUNNEL_FOOTER_DISCLOSURE, which now renders in the footer on every funnel step
+ * (including this one). Re-review with the Legal Compliance Checker on any change.
  */
 export const FUNNEL_SUBMIT_DISCLAIMER
-  = 'By tapping the button above, you agree to our Terms and Privacy Policy and authorize Tri Pros Remodeling to contact you at the number provided by phone, text, and email about your project — including by autodialed and prerecorded/automated messages. Consent is not a condition of purchase. Msg frequency varies; msg & data rates may apply. Reply STOP to opt out, HELP for help.'
+  = 'By submitting, you agree to be contacted about your project; consent isn\'t a condition of purchase. Read our'
 
 /** Fuller TCPA disclosure shown in the footer legal block (links rendered by the component). */
 export const FUNNEL_FOOTER_DISCLOSURE

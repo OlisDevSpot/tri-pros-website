@@ -172,6 +172,19 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
                         </FormItem>
                       )}
                     />
+                    {/* Short consent line in the old checkbox's place (revealed with
+                        the phone field). Submission = agreement; Terms/Privacy link to
+                        the apex (funnels are on subdomains, so a relative path 404s).
+                        The full TCPA disclosure lives in the footer legal block, which
+                        renders on every step including this one. */}
+                    <p className="text-muted-foreground text-left text-xs leading-snug">
+                      {FUNNEL_SUBMIT_DISCLAIMER}
+                      {' '}
+                      <a href={mainSiteUrl(ROOTS.landing.terms())} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Terms of Service</a>
+                      {' and '}
+                      <a href={mainSiteUrl(ROOTS.landing.privacy())} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Privacy Policy</a>
+                      .
+                    </p>
                   </motion.div>
                 )
               : null}
@@ -185,17 +198,6 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
         <Button type="submit" size="lg" disabled={!namesFilled || submit.isPending}>
           {submit.isPending ? 'Submitting…' : (content.cta ?? 'See if I qualify')}
         </Button>
-        {/* Submission = agreement (replaces the old consent checkbox). Proximate to
-            the action for TCPA; Terms/Privacy link back to the apex (funnels are on
-            subdomains, so a relative path 404s). The fuller disclosure lives in the
-            footer legal block. */}
-        <p className="text-muted-foreground text-center text-xs leading-snug">
-          {FUNNEL_SUBMIT_DISCLAIMER}
-          {' '}
-          <a href={mainSiteUrl(ROOTS.landing.terms())} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Terms</a>
-          {' · '}
-          <a href={mainSiteUrl(ROOTS.landing.privacy())} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Privacy Policy</a>
-        </p>
       </form>
     </Form>
   )

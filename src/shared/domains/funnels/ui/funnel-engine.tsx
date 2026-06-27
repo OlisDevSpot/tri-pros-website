@@ -121,16 +121,14 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
     )
   }
   else {
-    // PII is the submit step: it keeps the fixed question stage like any other
-    // step, but the page must scroll to reveal a legal block that peeks ~50% into
-    // the fold. So on PII we drop `min-h-dvh` + the spacer (let the cluster take
-    // natural height) and render the footer below it; the document then scrolls.
-    // Interior steps keep the exact single-viewport behavior (no footer).
-    const isPii = engine.step.kind === 'pii-form'
+    // Every step keeps the fixed question stage, with the shared footer below the
+    // cluster (branding + trust + legal on every step, every funnel). The cluster
+    // takes its natural height (no `min-h-dvh`/spacer) so the footer follows it and
+    // the document scrolls — on the PII step that also reveals the legal block.
     body = (
       <>
         <FunnelStickyHeader opacity={stickyOpacity} widthClass={contentWidth} />
-        <div className={`mx-auto flex w-full flex-col px-5 pb-10 pt-16 ${contentWidth} ${isPii ? '' : 'min-h-dvh'}`}>
+        <div className={`mx-auto flex w-full flex-col px-5 pb-10 pt-16 ${contentWidth}`}>
           {/* ① Progress — pinned at the top, exactly where it was. */}
           <FunnelProgress total={spec.steps.length} currentIndex={currentIndex} />
 
@@ -163,13 +161,8 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
                 </div>
               )
             : null}
-
-          {/* Spacer — only when filling the viewport (non-PII). On PII the footer
-              below carries the page instead, so the cluster stays its natural
-              height and the legal block peeks into the fold. */}
-          {isPii ? null : <div className="flex-1" aria-hidden="true" />}
         </div>
-        {isPii ? <FunnelFooter ctx={ctx} /> : null}
+        <FunnelFooter ctx={ctx} />
       </>
     )
   }
