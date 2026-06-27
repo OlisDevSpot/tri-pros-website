@@ -16,18 +16,24 @@ import { DEFAULT_LANDING_BLOCKS } from '@/shared/domains/funnels/constants/defau
 import { FUNNEL_QUESTION_MAX_W, FUNNEL_RAIL_MAX_W } from '@/shared/domains/funnels/constants/funnel-layout'
 import {
   FUNNEL_TRANSITION,
+  HERO_CONTENT_LIFT_PX,
+  HERO_CONTENT_OPACITY_IN,
+  HERO_CONTENT_OPACITY_OUT,
+  HERO_CONTENT_SCALE_IN,
+  HERO_CONTENT_SCALE_TARGET,
   HERO_HEADER_OPACITY_IN,
   HERO_HEADER_OPACITY_OUT,
-  HERO_LOGO_OPACITY_IN,
-  HERO_LOGO_OPACITY_OUT,
-  HERO_LOGO_SCALE_IN,
-  HERO_LOGO_SCALE_TARGET,
+  HERO_PHOTO_CLIP_FROM,
+  HERO_PHOTO_CLIP_IN,
+  HERO_PHOTO_CLIP_TO,
+  HERO_PHOTO_SCALE_TARGET,
+  HERO_PHOTO_Y_PX,
+  HERO_SCRIM_OPACITY_IN,
+  HERO_SCRIM_OPACITY_OUT,
   HERO_SCROLL_OFFSET,
-  HERO_TEXT_LIFT_PX,
-  HERO_TEXT_OPACITY_IN,
-  HERO_TEXT_OPACITY_OUT,
 } from '@/shared/domains/funnels/constants/funnel-motion'
 import { MARKETING_REGISTRY } from '@/shared/domains/funnels/constants/marketing-registry'
+import { FunnelFooter } from '@/shared/domains/funnels/ui/footer/funnel-footer'
 import { FunnelCta } from '@/shared/domains/funnels/ui/funnel-cta'
 import { FunnelHero } from '@/shared/domains/funnels/ui/funnel-hero'
 import { FunnelStickyHeader } from '@/shared/domains/funnels/ui/funnel-sticky-header'
@@ -75,12 +81,18 @@ export function FunnelLanding({ spec, ctx, children, variant, scrollToQuestionOn
 
   // Reduced motion gates only translate/scale (vestibular-unsafe); the opacity
   // cross-fades are kept — they aid comprehension and are motion-sickness-safe.
-  const textOpacity = useTransform(scrollYProgress, HERO_TEXT_OPACITY_IN, HERO_TEXT_OPACITY_OUT)
-  const textY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : HERO_TEXT_LIFT_PX])
-  const logoOpacity = useTransform(scrollYProgress, HERO_LOGO_OPACITY_IN, HERO_LOGO_OPACITY_OUT)
-  const logoScale = useTransform(scrollYProgress, HERO_LOGO_SCALE_IN, [1, reduceMotion ? 1 : HERO_LOGO_SCALE_TARGET])
+  // The whole content group exits as one (kills the old empty-shell card); the
+  // photo parallaxes on its own layer behind it. see ./funnel-hero.tsx HeroScroll
+  const contentOpacity = useTransform(scrollYProgress, HERO_CONTENT_OPACITY_IN, HERO_CONTENT_OPACITY_OUT)
+  const contentScale = useTransform(scrollYProgress, HERO_CONTENT_SCALE_IN, [1, reduceMotion ? 1 : HERO_CONTENT_SCALE_TARGET])
+  const contentY = useTransform(scrollYProgress, HERO_CONTENT_SCALE_IN, [0, reduceMotion ? 0 : HERO_CONTENT_LIFT_PX])
+  const scrimOpacity = useTransform(scrollYProgress, HERO_SCRIM_OPACITY_IN, HERO_SCRIM_OPACITY_OUT)
+  const photoY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : HERO_PHOTO_Y_PX])
+  const photoScale = useTransform(scrollYProgress, [0, 1], [1, reduceMotion ? 1 : HERO_PHOTO_SCALE_TARGET])
+  // clipPath crops (no distortion); reduced motion holds it at full (no shrink).
+  const photoClip = useTransform(scrollYProgress, HERO_PHOTO_CLIP_IN, [HERO_PHOTO_CLIP_FROM, reduceMotion ? HERO_PHOTO_CLIP_FROM : HERO_PHOTO_CLIP_TO])
   const headerOpacity = useTransform(scrollYProgress, HERO_HEADER_OPACITY_IN, HERO_HEADER_OPACITY_OUT)
-  const heroScroll: HeroScroll = { textOpacity, textY, logoOpacity, logoScale }
+  const heroScroll: HeroScroll = { contentOpacity, contentScale, contentY, scrimOpacity, photoY, photoScale, photoClip }
 
   // On a Back-return to the landing (Q1 already answered) jump to the question
   // so the Continue affordance is visible instead of buried under the hero.
@@ -129,6 +141,7 @@ export function FunnelLanding({ spec, ctx, children, variant, scrollToQuestionOn
           {FOOTER_CTA_LABEL}
           <ArrowUp className="size-4" />
         </FunnelCta>
+        <FunnelFooter ctx={ctx} />
       </motion.div>
     </>
   )
