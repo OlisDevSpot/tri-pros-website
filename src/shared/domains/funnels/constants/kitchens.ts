@@ -105,14 +105,17 @@ export const kitchensFunnel: FunnelSpec = {
   },
   enrichment: [
     { stepId: 'homeType', label: 'Home type' },
+    { stepId: 'layout', label: 'Kitchen layout' },
     { stepId: 'age', label: 'Project age' },
     { stepId: 'scope', label: 'Scope' },
     { stepId: 'timeline', label: 'Timeline' },
   ],
   // Linear funnel: no `flow` — the engine advances through `steps` in order.
   // Q1 (ownership) is the hero-embedded entry question: a low-friction binary
-  // that qualifies the lead before asking anything trade-specific. The
-  // kitchen-layout question follows as Q2. see ui/funnel-hero.tsx (entryQuestion)
+  // that qualifies the lead before asking anything trade-specific
+  // (see ui/funnel-hero.tsx, entryQuestion). It's followed by ZIP → home type →
+  // PII (lead creation), then the trade-specific enrichment questions begin with
+  // kitchen-layout.
   steps: [
     {
       id: 'ownership',
@@ -126,6 +129,9 @@ export const kitchensFunnel: FunnelSpec = {
         ]),
       },
     },
+    { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase kitchens are selected by neighborhood.' } },
+    HOME_TYPE_STEP,
+    PII_STEP,
     {
       id: 'layout',
       kind: 'card-select',
@@ -141,9 +147,6 @@ export const kitchensFunnel: FunnelSpec = {
         ]),
       },
     },
-    { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase kitchens are selected by neighborhood.' } },
-    PII_STEP,
-    HOME_TYPE_STEP,
     {
       id: 'age',
       kind: 'card-select',

@@ -30,8 +30,8 @@ export const bathroomsFunnel: FunnelSpec = {
   theme: { accent: 'primary' },
   pixel: { contentCategory: 'bathroom' },
   enrichment: [
-    { stepId: 'whichBathroom', label: 'Which bathroom' },
     { stepId: 'homeType', label: 'Home type' },
+    { stepId: 'whichBathroom', label: 'Which bathroom' },
     { stepId: 'age', label: 'Bathroom age' },
     { stepId: 'scope', label: 'Scope' },
     { stepId: 'accessibility', label: 'Accessibility' },
@@ -120,8 +120,10 @@ export const bathroomsFunnel: FunnelSpec = {
     ],
   },
   // Q1 (ownership) is the hero-embedded entry question — a low-friction binary
-  // that qualifies the lead before asking anything trade-specific. The
-  // which-bathroom question follows as Q2. see ui/funnel-hero.tsx (entryQuestion)
+  // that qualifies the lead before asking anything trade-specific
+  // (see ui/funnel-hero.tsx, entryQuestion). It's followed by ZIP → home type →
+  // PII (lead creation), then the trade-specific enrichment questions begin with
+  // which-bathroom.
   steps: [
     {
       id: 'ownership',
@@ -135,6 +137,9 @@ export const bathroomsFunnel: FunnelSpec = {
         ]),
       },
     },
+    { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase bathrooms are selected by neighborhood.' } },
+    HOME_TYPE_STEP,
+    PII_STEP,
     {
       id: 'whichBathroom',
       kind: 'card-select',
@@ -148,9 +153,6 @@ export const bathroomsFunnel: FunnelSpec = {
         ]),
       },
     },
-    { ...ZIP_STEP, content: { ...ZIP_STEP.content, subtitle: 'Showcase bathrooms are selected by neighborhood.' } },
-    PII_STEP,
-    HOME_TYPE_STEP,
     {
       id: 'age',
       kind: 'card-select',
