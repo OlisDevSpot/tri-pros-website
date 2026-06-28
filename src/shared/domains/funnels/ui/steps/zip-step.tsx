@@ -73,7 +73,7 @@ export function ZipStepView({ content, value, setValue, ctx }: StepProps<ZipStep
     return (
       <div className={`mx-auto flex w-full flex-col items-center gap-4 py-8 text-center ${FUNNEL_QUESTION_MAX_W}`} aria-live="polite">
         <p className="text-foreground text-xl font-semibold">
-          {content.qualifiesLabel ?? '✓ Great news — your area qualifies.'}
+          {content.qualifiesLabel ?? 'Looks like there\'s still availability in'}
         </p>
         {place
           ? (
@@ -115,70 +115,80 @@ export function ZipStepView({ content, value, setValue, ctx }: StepProps<ZipStep
         {content.subtitle ? <p className="text-muted-foreground mt-1">{content.subtitle}</p> : null}
       </div>
 
-      {/* Input owns its own row at full width. The live-resolve spinner sits
-          inside the field on the right; the resolved place is reported in the
-          shared slot below (not inline) so the eye tracks one vertical column. */}
-      <div className="relative mx-auto w-full max-w-md">
-        <Input
-          ref={inputRef}
-          inputMode="numeric"
-          maxLength={5}
-          placeholder="ZIP code"
-          value={zip}
-          onChange={e => setZip(e.target.value.replace(/\D/g, ''))}
-          className="text-center text-lg"
-        />
-        {pending
-          ? (
-              <Loader2
-                className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin"
-                aria-hidden="true"
-              />
-            )
-          : null}
-      </div>
-
-      {/* Unified result/error slot (#3): ONE fixed-height row between the input
-          and the button. It shows EITHER the resolved place (pin + city) OR a
-          validation message OR nothing — `resolved` and `statusMessage` are
-          mutually exclusive (resolved ⇒ found & in-area). The reserved height
-          means the button never moves across any state. */}
-      <div className="flex min-h-11 items-center justify-center" aria-live="polite">
-        <AnimatePresence mode="wait" initial={false}>
-          {resolved
+      {/* One tight action cluster: input → CTA → result read as a single unit,
+          12px apart, so the button sits right under the field (proximity). The
+          result slot is the LAST element; the question stage is top-anchored and
+          the engine's Back/Next nav lives OUTSIDE it, so nothing above the slot
+          moves when its contents change. */}
+      <div className="mx-auto flex w-full max-w-md flex-col gap-3">
+        {/* Input row. The live-resolve spinner sits inside the field on the right. */}
+        <div className="relative w-full">
+          <Input
+            ref={inputRef}
+            inputMode="numeric"
+            maxLength={5}
+            placeholder="ZIP code"
+            value={zip}
+            onChange={e => setZip(e.target.value.replace(/\D/g, ''))}
+            className="text-center text-lg"
+          />
+          {pending
             ? (
-                <motion.div
-                  key={`place-${resolved.zip}`}
-                  initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={FUNNEL_TRANSITION}
-                  className="border-primary/30 bg-primary/5 inline-flex items-center gap-2 rounded-full border px-4 py-2"
-                >
-                  <MapPin className="text-primary size-4 shrink-0" aria-hidden="true" />
-                  <span className="text-foreground whitespace-nowrap text-sm font-medium">{badgePlace}</span>
-                </motion.div>
+                <Loader2
+                  className="text-muted-foreground absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin"
+                  aria-hidden="true"
+                />
               )
-            : statusMessage
+            : null}
+        </div>
+
+        <Button size="lg" className="w-full" disabled={!resolved} onClick={handleSubmit}>
+          {content.inputCta ?? 'Check my area'}
+        </Button>
+
+        {/* Reserved-height result/error slot, directly under the CTA. Shows EITHER
+            the resolved place (lead-in + city pill) OR a validation message OR
+            nothing — `resolved` and `statusMessage` are mutually exclusive
+            (resolved ⇒ found & in-area). Fixed min-height keeps the swap between
+            states shift-free. */}
+        <div className="flex min-h-11 items-center justify-center" aria-live="polite">
+          <AnimatePresence mode="wait" initial={false}>
+            {resolved
               ? (
-                  <motion.p
-                    key={`msg-${statusMessage}`}
-                    initial={reduceMotion ? false : { opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                  <motion.div
+                    key={`place-${resolved.zip}`}
+                    initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
                     transition={FUNNEL_TRANSITION}
-                    className="text-muted-foreground text-center text-sm"
+                    className="flex flex-wrap items-center justify-center gap-2 text-center"
                   >
-                    {statusMessage}
-                  </motion.p>
+                    <span className="text-muted-foreground text-sm">
+                      {content.serviceableLabel ?? 'Looks like we service'}
+                    </span>
+                    <span className="border-primary/30 bg-primary/5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5">
+                      <MapPin className="text-primary size-4 shrink-0" aria-hidden="true" />
+                      <span className="text-foreground whitespace-nowrap text-sm font-medium">{badgePlace}</span>
+                    </span>
+                  </motion.div>
                 )
-              : null}
-        </AnimatePresence>
+              : statusMessage
+                ? (
+                    <motion.p
+                      key={`msg-${statusMessage}`}
+                      initial={reduceMotion ? false : { opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={FUNNEL_TRANSITION}
+                      className="text-muted-foreground text-center text-sm"
+                    >
+                      {statusMessage}
+                    </motion.p>
+                  )
+                : null}
+          </AnimatePresence>
+        </div>
       </div>
-
-      <Button size="lg" disabled={!resolved} onClick={handleSubmit}>
-        {content.inputCta ?? 'Check my area'}
-      </Button>
     </div>
   )
 }

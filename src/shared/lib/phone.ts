@@ -69,6 +69,27 @@ export function formatPhone(input: string | null | undefined): string {
 }
 
 /**
+ * Progressive `(xxx) xxx-xxxx` mask for AS-YOU-TYPE input. Unlike `formatPhone`
+ * (which only formats a complete, normalizable number), this formats partial
+ * input live and hard-caps at 10 national digits — so a masked field can never
+ * accept more characters than a US number has. Reformats from raw digits every
+ * keystroke, so backspace/paste/mid-string edits all stay correct.
+ */
+export function formatPhoneAsYouType(input: string): string {
+  const d = toDigits(input).slice(0, 10)
+  if (d.length === 0) {
+    return ''
+  }
+  if (d.length <= 3) {
+    return `(${d}`
+  }
+  if (d.length <= 6) {
+    return `(${d.slice(0, 3)}) ${d.slice(3)}`
+  }
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
+}
+
+/**
  * Value to place after `tel:` / `sms:` in an href. Uses E.164 (most reliable
  * across native dialers), falling back to the raw input when not a valid US
  * number — e.g. `href={`tel:${toDialString(phone)}`}`.

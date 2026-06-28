@@ -25,8 +25,6 @@ import {
   HERO_HEADER_OPACITY_OUT,
   HERO_PHOTO_SCALE_TARGET,
   HERO_PHOTO_Y_PX,
-  HERO_SCRIM_OPACITY_IN,
-  HERO_SCRIM_OPACITY_OUT,
   HERO_SCROLL_OFFSET,
 } from '@/shared/domains/funnels/constants/funnel-motion'
 import { MARKETING_REGISTRY } from '@/shared/domains/funnels/constants/marketing-registry'
@@ -78,18 +76,17 @@ export function FunnelLanding({ spec, ctx, children, variant, scrollToQuestionOn
 
   // Reduced motion gates translate/scale (vestibular-unsafe); the opacity
   // cross-fades are kept — they aid comprehension and are motion-sickness-safe.
-  // Layered parallax: foreground (content + scrim) LEADS — fades + lifts up
-  // faster; the photo TRAILS slower. All scrolls away in flow, so no dead
-  // container is left behind. see ./funnel-hero.tsx HeroScroll + ../constants/funnel-motion.ts
+  // The marketing plate LEADS — fades + lifts up faster; the photo TRAILS slower.
+  // The legibility scrim now lives INSIDE the plate, so it fades with the plate's
+  // opacity and needs no value of its own. see ./funnel-hero.tsx HeroScroll
   const contentOpacity = useTransform(scrollYProgress, HERO_CONTENT_OPACITY_IN, HERO_CONTENT_OPACITY_OUT)
   const contentScale = useTransform(scrollYProgress, HERO_CONTENT_FLOAT_IN, [1, reduceMotion ? 1 : HERO_CONTENT_SCALE_TARGET])
   const contentY = useTransform(scrollYProgress, HERO_CONTENT_FLOAT_IN, [0, reduceMotion ? 0 : HERO_CONTENT_LIFT_PX])
-  const scrimOpacity = useTransform(scrollYProgress, HERO_SCRIM_OPACITY_IN, HERO_SCRIM_OPACITY_OUT)
   // Photo trails: a slower upward drift + subtle zoom over the full range.
   const photoY = useTransform(scrollYProgress, [0, 1], [0, reduceMotion ? 0 : HERO_PHOTO_Y_PX])
   const photoScale = useTransform(scrollYProgress, [0, 1], [1, reduceMotion ? 1 : HERO_PHOTO_SCALE_TARGET])
   const headerOpacity = useTransform(scrollYProgress, HERO_HEADER_OPACITY_IN, HERO_HEADER_OPACITY_OUT)
-  const heroScroll: HeroScroll = { contentOpacity, contentScale, contentY, scrimOpacity, photoY, photoScale }
+  const heroScroll: HeroScroll = { contentOpacity, contentScale, contentY, photoY, photoScale }
 
   // On a Back-return to the landing (Q1 already answered) jump to the question
   // so the Continue affordance is visible instead of buried under the hero.

@@ -2,6 +2,7 @@ import type { AnswerValue, FunnelAnswers, FunnelSpec, FunnelStep, StepId } from 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { funnelStateKey } from '@/shared/domains/funnels/constants/storage-keys'
 import { defaultLinearNext } from '@/shared/domains/funnels/lib/funnel-flow'
+import { scrollFunnelToTop } from '@/shared/domains/funnels/lib/scroll-funnel-to-top'
 import { usePersistedState } from '@/shared/hooks/use-persisted-state'
 
 interface EngineState {
@@ -51,6 +52,12 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngineApi {
     setState(prev => ({ ...prev, answers: { ...prev.answers, [step.id]: next } }))
   }, [step.id, setState])
 
+  // `advance` / `back` carry a coupled side-effect: every move resets the page
+  // scroll to the top (see ../lib/scroll-funnel-to-top). Written here at the
+  // source — not at the call sites — so the Next/Back buttons, card-select / ZIP
+  // auto-advances, and the hero's Q1 all inherit it. The landing's own on-mount
+  // scroll (FunnelLanding `scrollToQuestionOnMount`) runs after a Back-return and
+  // settles on the question, so this never fights it.
   const advance = useCallback(() => {
     setState((prev) => {
       const nextId = spec.flow
@@ -61,6 +68,7 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngineApi {
       }
       return { ...prev, currentStepId: nextId, history: [...prev.history, prev.currentStepId] }
     })
+    scrollFunnelToTop()
   }, [spec, setState])
 
   const back = useCallback(() => {
@@ -72,6 +80,7 @@ export function useFunnelEngine(spec: FunnelSpec): FunnelEngineApi {
       const previousId = history.pop() as StepId
       return { ...prev, currentStepId: previousId, history }
     })
+    scrollFunnelToTop()
   }, [setState])
 
   const reset = useCallback(() => setState(initial), [setState, initial])

@@ -62,9 +62,11 @@ export interface ZipContent {
   subtitle?: string
   /** Input phase button — default "Check my area" */
   inputCta?: string
+  /** Input-phase lead-in shown before the resolved city pill — default "Looks like we service" */
+  serviceableLabel?: string
   /** Checking phase ({zip} placeholder supported) */
   checkingLabel?: string
-  /** Qualified headline */
+  /** Qualified headline (city rendered as the badge below) */
   qualifiesLabel?: string
   /** Not-in-area message */
   outOfAreaLabel?: string

@@ -236,11 +236,13 @@
 /* Question-step canvas — a faint blueprint grid behind the funnel's QUESTION
    pages only (never the landing hero, never the confirmation). Drafting-paper
    rhythm in brand blue: a fine 32px minor grid plus a heavier 160px major line,
-   radially masked so it dissolves behind the centered question stage and reads
-   only as ambient texture out in the margins. <FunnelEngine> mounts this as a
-   fixed, compositor-only layer on the 'steps' view (no scroll repaint, nothing
-   animated). Positioning/clip utilities are applied in the JSX; this rule owns
-   only the paint. see funnel-engine.tsx */
+   running UNIFORMLY edge-to-edge — no radial mask. (An earlier mask carved a
+   central ellipse out of the grid, which read as a stray "oval" sitting on the
+   texture and visually collided with the hero's own scrim; the lines are faint
+   enough — ~5% — that the dark question ink stays fully legible straight over
+   them.) <FunnelEngine> mounts this as a fixed, compositor-only layer on the
+   'steps' view (no scroll repaint, nothing animated). Positioning utilities are
+   applied in the JSX; this rule owns only the paint. see funnel-engine.tsx */
 .funnel-grid-bg {
   background-image:
     linear-gradient(rgb(3 175 237 / 0.05) 1px, transparent 1px),
@@ -252,8 +254,6 @@
     32px 32px,
     160px 160px,
     160px 160px;
-  -webkit-mask-image: radial-gradient(ellipse 120% 100% at 50% 30%, transparent 8%, black 66%);
-  mask-image: radial-gradient(ellipse 120% 100% at 50% 30%, transparent 8%, black 66%);
 }
 
 /* Dark stub — EXPLICIT opt-in only via `.theme-dark`. It must NOT auto-activate

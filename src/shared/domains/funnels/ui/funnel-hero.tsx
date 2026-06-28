@@ -12,20 +12,18 @@ import { HeroTrustBadges } from '@/shared/domains/funnels/ui/hero-trust-badges'
 /**
  * Scroll-linked MotionValues handed down from the landing's single useScroll.
  *
- * The hero exits as a layered PARALLAX: the foreground group (card + Q1 + scrim)
- * LEADS — fades + lifts up faster — while the background photo TRAILS slower
- * (`photo*`). It all scrolls away in normal flow, so nothing collapses in place
- * and no dead container is left behind. see ../constants/funnel-motion.ts.
+ * The hero exits as a layered PARALLAX: the marketing plate LEADS — fades + lifts
+ * up faster — while the background photo TRAILS slower (`photo*`). The legibility
+ * scrim now lives INSIDE the plate, so it fades with `contentOpacity` and needs no
+ * value of its own. Q1 stays put. see ../constants/funnel-motion.ts.
  */
 export interface HeroScroll {
-  /** Foreground content group (card + first-question) — fades fully (leads). */
+  /** Marketing plate (logo + headline + badges + its scrim) — fades fully (leads). */
   contentOpacity: MotionValue<number>
-  /** Slight scale-down of the content group for depth. */
+  /** Slight scale-down of the plate for depth. */
   contentScale: MotionValue<number>
-  /** Upward lift of the content group, in px (leads the photo). */
+  /** Upward lift of the plate, in px (leads the photo). */
   contentY: MotionValue<number>
-  /** Radial legibility scrim — fades with the content (its own layer). */
-  scrimOpacity: MotionValue<number>
   /** Background photo parallax drift (px DOWN — sinks/lags, revealing more image). */
   photoY: MotionValue<number>
   /** Subtle push-in zoom / perspective of the photo as it trails away. */
@@ -75,9 +73,11 @@ export interface HeroScroll {
  *
  * Entry: `entryQuestion` (the funnel's first step) renders as a SIBLING of the
  * frosted plate — its own panel on the photo, below the content — so a first-time
- * visitor answers Q1 directly in the hero with no click to "start". It fades with
- * the hero on scroll. `onCta` is the legacy fallback (scroll-to-question) kept for
- * when no `entryQuestion` is supplied.
+ * visitor answers Q1 directly in the hero with no click to "start". Unlike the
+ * plate, Q1 is OUTSIDE the scroll motion layer: it stays put (no fade/lift) while
+ * the marketing plate recedes, so the visitor can keep answering as the hero
+ * scrolls away. `onCta` is the legacy fallback (scroll-to-question) kept for when
+ * no `entryQuestion` is supplied.
  */
 export function FunnelHero({ content, entryQuestion, onCta, ref, scroll }: {
   content: HeroContent
@@ -113,29 +113,27 @@ export function FunnelHero({ content, entryQuestion, onCta, ref, scroll }: {
             </motion.div>
           )
         : null}
-      {/* Radial luminous scrim — the legibility layer (replaces backdrop-blur).
-          Over the photo, under the content; fades with the hero on scroll. */}
-      <motion.div
-        aria-hidden="true"
-        style={scroll ? { opacity: scroll.scrimOpacity } : undefined}
-        className="hero-scrim pointer-events-none absolute inset-0"
-      />
-      {/* The whole content group is ONE motion layer: frosted plate + Q1 recede
-          together (fade + scale + lift) so the plate's translucent background
-          leaves WITH its contents — no empty ghost card. The two children share
-          one `m` inset; the gap between them reveals a band of the photo, so the
-          question reads as its own section sitting ON the image. */}
-      <motion.div
-        style={scroll ? { opacity: scroll.contentOpacity, scale: scroll.contentScale, y: scroll.contentY } : undefined}
-        className="m-3 flex flex-col gap-4 will-change-[transform,opacity] @3xl:m-4"
-      >
-        {/* Warm content plate: a structural frame (fill + ring + shadow) riding on
-            the radial scrim — legibility is the scrim's job, not backdrop-blur. */}
-        <div className="flex flex-col gap-7 rounded-2xl bg-(--hero-plate) px-6 py-9 shadow-(--shadow-hero) ring-1 ring-(--hero-plate-ring) @3xl:px-11 @3xl:py-12">
-          <div className="self-center">
+      {/* Two siblings under ONE static wrapper: only the marketing plate (logo +
+          headline + Google/Yelp/BBB badges) recedes on scroll (fade + scale +
+          lift); the first-question panel below it STAYS PUT — no fade, no lift —
+          so the visitor keeps answering Q1 as the rest of the hero scrolls away.
+          The shared `m` inset + gap reveal a band of the photo between them. */}
+      <div className="m-3 flex flex-col gap-4 @3xl:m-4">
+        {/* Warm content plate — the ONLY part that recedes. Structural frame
+            (fill + ring + shadow) with the radial legibility scrim CONFINED inside
+            it (clipped by `overflow-hidden` + rounding), so the luminous oval backs
+            only THIS card's content and never washes over the Q1 panel or the bare
+            photo. The scrim is a plain child, so it fades with the plate. */}
+        <motion.div
+          style={scroll ? { opacity: scroll.contentOpacity, scale: scroll.contentScale, y: scroll.contentY } : undefined}
+          className="relative flex flex-col gap-7 overflow-hidden rounded-2xl bg-(--hero-plate) px-6 py-9 shadow-(--shadow-hero) ring-1 ring-(--hero-plate-ring) will-change-[transform,opacity] @3xl:px-11 @3xl:py-12"
+        >
+          {/* Legibility scrim — fills the plate, under the content (z-0). */}
+          <div aria-hidden="true" className="hero-scrim pointer-events-none absolute inset-0" />
+          <div className="relative z-10 self-center">
             <Image src={LogoOnLight} alt="Tri Pros Remodeling" width={200} height={54} priority className="h-12 w-auto @3xl:h-14" />
           </div>
-          <div className="flex flex-col items-center gap-5 text-center">
+          <div className="relative z-10 flex flex-col items-center gap-5 text-center">
             <h1 className="text-foreground text-balance font-serif text-[2rem] leading-(--lh-headline) font-bold tracking-tight @3xl:text-5xl @5xl:text-6xl">
               {headTail
                 ? (
@@ -161,10 +159,11 @@ export function FunnelHero({ content, entryQuestion, onCta, ref, scroll }: {
               : null}
             <HeroTrustBadges />
           </div>
-        </div>
+        </motion.div>
 
-        {/* First-question panel — a sibling sitting on the photo, inside the same
-            receding group so it dissolves with the card. */}
+        {/* First-question panel — STAYS PUT as the plate above recedes (it is NOT
+            wrapped in the scroll motion layer), so the visitor can keep answering
+            while the marketing copy scrolls away. */}
         {entryQuestion
           ? (
               <div className="w-full">
@@ -179,7 +178,7 @@ export function FunnelHero({ content, entryQuestion, onCta, ref, scroll }: {
                 </FunnelCta>
               )
             : null}
-      </motion.div>
+      </div>
     </section>
   )
 }

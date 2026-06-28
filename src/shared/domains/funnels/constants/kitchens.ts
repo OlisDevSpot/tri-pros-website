@@ -106,8 +106,8 @@ export const kitchensFunnel: FunnelSpec = {
   enrichment: [
     { stepId: 'homeType', label: 'Home type' },
     { stepId: 'layout', label: 'Kitchen layout' },
-    { stepId: 'age', label: 'Project age' },
     { stepId: 'scope', label: 'Scope' },
+    { stepId: 'age', label: 'Project age' },
     { stepId: 'timeline', label: 'Timeline' },
   ],
   // Linear funnel: no `flow` — the engine advances through `steps` in order.
@@ -148,19 +148,6 @@ export const kitchensFunnel: FunnelSpec = {
       },
     },
     {
-      id: 'age',
-      kind: 'card-select',
-      content: {
-        title: 'How old is your kitchen?',
-        options: cardOptions('kitchens', 'age', [
-          img('0-5', '0–5 years'),
-          img('5-15', '5–15 years'),
-          img('15-plus', '15+ years'),
-          img('original', 'Original / never renovated'),
-        ]),
-      },
-    },
-    {
       id: 'scope',
       kind: 'card-select',
       content: {
@@ -170,6 +157,19 @@ export const kitchensFunnel: FunnelSpec = {
           img('cabinets-counters', 'Cabinets + counters'),
           img('refresh', 'Cosmetic refresh'),
           img('not-sure', 'Not sure yet'),
+        ]),
+      },
+    },
+    {
+      id: 'age',
+      kind: 'card-select',
+      content: {
+        title: 'How old is your kitchen?',
+        options: cardOptions('kitchens', 'age', [
+          img('0-5', '0–5 years'),
+          img('5-15', '5–15 years'),
+          img('15-plus', '15+ years'),
+          img('original', 'Original / never renovated'),
         ]),
       },
     },

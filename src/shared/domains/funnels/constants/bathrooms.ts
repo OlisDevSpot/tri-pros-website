@@ -32,8 +32,8 @@ export const bathroomsFunnel: FunnelSpec = {
   enrichment: [
     { stepId: 'homeType', label: 'Home type' },
     { stepId: 'whichBathroom', label: 'Which bathroom' },
-    { stepId: 'age', label: 'Bathroom age' },
     { stepId: 'scope', label: 'Scope' },
+    { stepId: 'age', label: 'Bathroom age' },
     { stepId: 'accessibility', label: 'Accessibility' },
     { stepId: 'timeline', label: 'Timeline' },
   ],
@@ -154,6 +154,17 @@ export const bathroomsFunnel: FunnelSpec = {
       },
     },
     {
+      id: 'scope',
+      kind: 'card-select',
+      content: {
+        title: 'What are you picturing?',
+        options: cardOptions('bathrooms', 'scope', [
+          img('full-gut', 'Full gut remodel'),
+          img('partial', 'Partial renovation'),
+        ]),
+      },
+    },
+    {
       id: 'age',
       kind: 'card-select',
       content: {
@@ -163,17 +174,6 @@ export const bathroomsFunnel: FunnelSpec = {
           img('5-15', '5–15 years'),
           img('15-plus', '15+ years'),
           img('original', 'Original / never renovated'),
-        ]),
-      },
-    },
-    {
-      id: 'scope',
-      kind: 'card-select',
-      content: {
-        title: 'What are you picturing?',
-        options: cardOptions('bathrooms', 'scope', [
-          img('full-gut', 'Full gut remodel'),
-          img('partial', 'Partial renovation'),
         ]),
       },
     },

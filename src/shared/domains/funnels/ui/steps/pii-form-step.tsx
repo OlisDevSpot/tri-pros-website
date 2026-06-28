@@ -17,6 +17,7 @@ import { buildLeadInput } from '@/shared/domains/funnels/lib/build-lead-input'
 import { firePixel, mintEventId, setAdvancedMatching } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
 import { firesLeadOptimization } from '@/shared/domains/funnels/lib/tracking/lead-qualification'
 import { piiSchema } from '@/shared/domains/funnels/schemas/pii.schema'
+import { PhoneInput } from '@/shared/domains/funnels/ui/steps/phone-input'
 import { mainSiteUrl } from '@/shared/lib/main-site-url'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -175,7 +176,7 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>{content.fields.phone ?? 'Phone'}</FormLabel>
-                          <FormControl><Input type="tel" {...field} /></FormControl>
+                          <FormControl><PhoneInput {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

@@ -13,10 +13,12 @@ import { STORAGE_KEY_PREFIX } from '@/shared/constants/storage-keys'
  * - v2:    homeowner question moved to Q1 (all funnels).
  * - v2.01: kitchens & bathrooms — ZIP moved to Q2, home-type to Q3 (before PII),
  *          and the trade question moved to the first post-PII enrichment step.
+ * - v2.02: kitchens & bathrooms — scope ("What are you picturing?") moved ahead
+ *          of the age question.
  */
 const FUNNEL_STATE_VERSION: Record<FunnelSlug, string> = {
-  'kitchens': '2.01',
-  'bathrooms': '2.01',
+  'kitchens': '2.02',
+  'bathrooms': '2.02',
   'complete-interior': '2',
 }
 
