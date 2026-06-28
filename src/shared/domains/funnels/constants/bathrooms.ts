@@ -171,10 +171,7 @@ export const bathroomsFunnel: FunnelSpec = {
         title: 'What are you picturing?',
         options: cardOptions('bathrooms', 'scope', [
           img('full-gut', 'Full gut remodel'),
-          img('tub-to-shower', 'Tub → shower conversion'),
-          img('walk-in-shower', 'New walk-in shower'),
-          img('vanity-fixtures', 'Vanity + fixtures'),
-          img('cosmetic', 'Cosmetic refresh'),
+          img('partial', 'Partial renovation'),
         ]),
       },
     },
