@@ -65,8 +65,8 @@ export const CTA_SHEEN_TRANSITION: Transition = { duration: 1.1, repeat: Infinit
 //
 //   Foreground (card + Q1 + scrim) LEADS: fades fully + lifts UP faster than the
 //     scroll, so the copy clears first (per "exit upward = going away").
-//   Background photo TRAILS: drifts up slower than the scroll (the parallax lag)
-//     with a subtle zoom/perspective, so it visibly follows the content out.
+//   Background photo LAGS: drifts DOWN slower than the scroll (the parallax lag)
+//     with a subtle zoom, so it sinks and reveals more of the image as you scroll.
 //
 // Driven by a single `useScroll({ target: heroRef, offset: HERO_SCROLL_OFFSET })`
 // whose `scrollYProgress` runs 0→1 over the hero's own height. Every value is
@@ -99,12 +99,14 @@ export const HERO_CONTENT_SCALE_TARGET = 0.96
 export const HERO_SCRIM_OPACITY_IN = [0, 0.5]
 export const HERO_SCRIM_OPACITY_OUT = [1, 0]
 
-// ── Background (trails) ────────────────────────────────────────────────────
-/** Parallax lag: the photo drifts UP slower than the scroll (negative = up, a
- *  fraction of the content's lift) so it follows the copy out a beat behind. The
- *  oversized photo layer (see funnel-hero) keeps it gap-free across this drift. */
-export const HERO_PHOTO_Y_PX = -64
-/** Subtle push-in zoom / perspective as the photo trails away. */
+// ── Background (lags DOWN) ─────────────────────────────────────────────────
+/** Parallax lag: the photo drifts DOWN as you scroll (positive = down) — moving
+ *  slower than the page so it sinks and reveals MORE of the image (the bathroom /
+ *  kitchen) instead of lifting away with the copy. The oversized photo layer (see
+ *  funnel-hero, `-inset-y-32`) is sized to fully cover this downward drift — keep
+ *  the two in sync (drift must stay ≤ the vertical oversize). */
+export const HERO_PHOTO_Y_PX = 110
+/** Subtle push-in zoom for depth (also pads edge coverage during the drift). */
 export const HERO_PHOTO_SCALE_TARGET = 1.06
 
 /** Slim sticky bar cross-fades in once the copy has cleared (mid-exit). */

@@ -26,7 +26,7 @@ export interface HeroScroll {
   contentY: MotionValue<number>
   /** Radial legibility scrim — fades with the content (its own layer). */
   scrimOpacity: MotionValue<number>
-  /** Background photo parallax drift (px up — TRAILS the content). */
+  /** Background photo parallax drift (px DOWN — sinks/lags, revealing more image). */
   photoY: MotionValue<number>
   /** Subtle push-in zoom / perspective of the photo as it trails away. */
   photoScale: MotionValue<number>
@@ -91,15 +91,16 @@ export function FunnelHero({ content, entryQuestion, onCta, ref, scroll }: {
   const [headLead, headTail] = content.headline.split(/\s+—\s+/)
   return (
     <section ref={ref} className="@container relative isolate overflow-hidden rounded-2xl shadow-(--shadow-hero)">
-      {/* Photo layer — the TRAILING parallax layer. Oversized vertically
-          (`-inset-y-20`) so its upward drift never reveals a gap at the section
-          edges; the section's own `overflow-hidden` clips the overflow. Trails the
-          content out (slower) with a subtle zoom. */}
+      {/* Photo layer — the lagging parallax layer. Oversized vertically
+          (`-inset-y-32`) so its DOWNWARD drift never reveals a gap at the top
+          edge; the section's own `overflow-hidden` clips the overflow. As you
+          scroll, it sinks slower than the page (revealing more of the image) with
+          a subtle zoom. Oversize must stay ≥ HERO_PHOTO_Y_PX. */}
       {content.media
         ? (
             <motion.div
               style={scroll ? { y: scroll.photoY, scale: scroll.photoScale } : undefined}
-              className="absolute inset-x-0 -inset-y-20 -z-10 will-change-transform"
+              className="absolute inset-x-0 -inset-y-32 -z-10 will-change-transform"
             >
               <Image
                 src={content.media.src}
