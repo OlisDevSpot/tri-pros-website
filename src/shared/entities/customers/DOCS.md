@@ -142,3 +142,5 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 - `docs/plans/notion-crm-migration-design.md` — context for `notionContactId`
 - `memory/feedback-phone-visibility-threshold.md` — recent threshold-vs-equality fix
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — payload shape / runtime validation / deep-merge safety for the three JSONB profiles (`#three-jsonb-profiles`)
+- ADR-0005 — JSONB vs column vs child table (why the profiles stay JSONB but lead-attribution fields are columns)
