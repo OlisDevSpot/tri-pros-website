@@ -9,6 +9,7 @@ If you can't find a rule here, check the most-recent ADR first — newer archite
 | File | What it covers |
 |---|---|
 | [database-schema.md](./database-schema.md) | Schema files, pgEnum placement, UUID/timestamp conventions, barrel exports |
+| [jsonb-columns.md](./jsonb-columns.md) | When a field belongs in JSONB vs a column vs a child table; JSONB internal shape, runtime validation, merge safety, evolution playbook |
 | [enum-standardization.md](./enum-standardization.md) | Const array → TS type → pgEnum pipeline |
 | [trpc-procedures.md](./trpc-procedures.md) | Procedure types, router structure, app-router registration |
 | [dal-conventions.md](./dal-conventions.md) | DalReturn pattern, ScopedContext, return types, CRUD vs business |
