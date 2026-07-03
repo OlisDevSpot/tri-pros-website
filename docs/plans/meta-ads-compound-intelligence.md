@@ -1,3 +1,9 @@
+> ⚠️ **PARTIALLY SUPERSEDED (2026-07-03).** Campaign architecture, programs
+> (Equity Reset / StormGuard), landing pages, and creative-engine sections are
+> superseded by `docs/superpowers/specs/2026-07-03-meta-campaign-engine-design.md`
+> (campaign-as-code for the live kitchens/bathrooms funnels). Guardrail tiers,
+> KPI ranking, and budget projections remain valid reference.
+
 # Meta Ads Compound Intelligence System — Design Spec
 
 **Date**: 2026-04-04
