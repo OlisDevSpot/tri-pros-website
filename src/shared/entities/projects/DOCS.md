@@ -152,3 +152,5 @@ Migration order from ADR-0002: Proposal → Customer → Meeting → **Project**
 - `../customers/DOCS.md#signed-customer-eq-has-project` — "signed" = has ≥1 project
 - ADR-0002 — Entity Server System (target architecture for the pending migration)
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions (target for migration)
+- `docs/codebase-conventions/jsonb-columns.md#arrays-of-objects-vs-keyed-objects` — `beforeAfterPairsJSON` array-of-objects shape + write-boundary validation (`#before-after-pairs-jsonb-shape`)
+- ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)
