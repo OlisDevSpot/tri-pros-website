@@ -320,3 +320,5 @@ The compliance sweep (companion todo to this docs migration) will produce GitHub
 - `src/shared/entities/<entity>/DOCS.md` — per-entity business rules
 - `src/shared/entities/<entity>/lib/server-spec.ts` — entity specs
 - `src/shared/dal/server/types.ts` — canonical type definitions
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge safety governing `#jsonb-merge-columns-merge-on-update` (payload shape, validation, additive-partial vs whole-document)
+- ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)
