@@ -9,6 +9,7 @@ const REQUIRED = [
   'META_ACCESS_TOKEN',
   'META_AD_ACCOUNT_ID',
   'META_PAGE_ID',
+  'NEXT_PUBLIC_META_PIXEL_ID',
 ] as const
 
 for (const key of REQUIRED) {
@@ -24,4 +25,5 @@ export const metaEnv = {
   accessToken: process.env.META_ACCESS_TOKEN as string,
   adAccountId: process.env.META_AD_ACCOUNT_ID as string, // already act_ prefixed
   pageId: process.env.META_PAGE_ID as string,
+  pixelId: process.env.NEXT_PUBLIC_META_PIXEL_ID as string, // dataset/pixel — promoted_object for conversion-optimized ad sets
 } satisfies Record<string, string>
