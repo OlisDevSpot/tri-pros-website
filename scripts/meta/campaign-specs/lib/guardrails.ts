@@ -13,3 +13,17 @@ export function assertBudgetCeiling(specs: CampaignSpec[]): void {
     )
   }
 }
+
+/**
+ * Throws if any two specs share the same campaign `key`.
+ * A duplicate key produces two create-campaign ops that both write to the same lock
+ * entry, guaranteeing a permanent orphan. Call this before any API work.
+ */
+export function assertUniqueSpecKeys(specs: CampaignSpec[]): void {
+  const seen = new Set<string>()
+  for (const spec of specs) {
+    if (seen.has(spec.key))
+      throw new Error(`Duplicate campaign spec key: "${spec.key}". Keys must be unique.`)
+    seen.add(spec.key)
+  }
+}

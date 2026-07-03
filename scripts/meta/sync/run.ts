@@ -3,7 +3,7 @@
 // `--apply` executes. Never activates, never deletes; see design spec.
 import process from 'node:process'
 import { CAMPAIGN_SPECS } from '../campaign-specs/registry.js'
-import { assertBudgetCeiling } from '../campaign-specs/lib/guardrails.js'
+import { assertBudgetCeiling, assertUniqueSpecKeys } from '../campaign-specs/lib/guardrails.js'
 import { fetchAccountState } from '../lib/marketing-api.js'
 import { printError, printInfo } from '../lib/formatters.js'
 import { applyPlan } from './apply.js'
@@ -24,6 +24,7 @@ const OP_LABEL: Record<string, string> = {
 async function main() {
   const apply = process.argv.includes('--apply')
 
+  assertUniqueSpecKeys(CAMPAIGN_SPECS) // hard guardrail — duplicate keys cause double-creates
   assertBudgetCeiling(CAMPAIGN_SPECS) // hard guardrail — throws before any API call
 
   printInfo(`Loaded ${CAMPAIGN_SPECS.length} campaign specs. Fetching account state…`)

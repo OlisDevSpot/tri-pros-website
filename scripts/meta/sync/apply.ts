@@ -120,6 +120,17 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
     const ad = spec.ads.find(a => a.key === op.adKey)
     if (!ad)
       throw new Error(`No ad spec ${op.adKey} in campaign ${spec.key}`)
+    const adLockKey = `${spec.key}/${ad.key}`
+
+    // Validate adSetId BEFORE any billable API calls (image upload + creative creation).
+    // A missing adSetId from a hand-corrupted lock would otherwise strand an orphan
+    // creative and uploaded image at Meta with no ad to attach them to.
+    if (op.op === 'create-ad') {
+      const adSetId = lock.adSets[asKey]?.id
+      if (!adSetId)
+        throw new Error(`Cannot create ad ${adLockKey}: ad set id missing from lock`)
+    }
+
     const imagePath = adImagePath(spec, ad.imageFile)
     const imageHash = await ensureImage(lock, imagePath, op.imageSha)
     const creativeId = await createLinkAdCreative({
@@ -131,12 +142,9 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
       imageHash,
       ctaType: ad.ctaType,
     })
-    const adLockKey = `${spec.key}/${ad.key}`
 
     if (op.op === 'create-ad') {
-      const adSetId = lock.adSets[asKey]?.id
-      if (!adSetId)
-        throw new Error(`Cannot create ad ${adLockKey}: ad set id missing from lock`)
+      const adSetId = lock.adSets[asKey]!.id // already validated above
       const id = await createAd({ name: `${spec.key} — ${ad.key}`, adSetId, creativeId })
       lock.ads[adLockKey] = { id, creativeId, fp: adFp(spec, ad, op.imageSha) }
       writeLock(lock)

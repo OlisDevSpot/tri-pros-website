@@ -33,8 +33,8 @@ flag or config.
 
 - **Creates always PAUSED.** Every campaign, ad set, and ad is created with
   `status: PAUSED`. The engine never activates anything.
-- **Updates never send `status`.** Sync patches only the fields that differ from the
-  spec. `status` is excluded from every update payload.
+- **Updates never send `status`.** Updates re-send the full spec-derived body except
+  `campaign_id` (immutable) and `status` (never sent).
 - **No deletes, ever.** Objects removed from a spec become orphans — reported in the
   plan output, never deleted or paused by the engine.
 - **Budget ceiling.** `assertBudgetCeiling` (run before any API call) sums
