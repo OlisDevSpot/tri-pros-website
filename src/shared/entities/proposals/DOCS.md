@@ -243,3 +243,5 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - `docs/proposal/scope-presentation.md` — SOW UX
 - `docs/proposal/financing-presentation.md` — financing UX
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB payload shape, runtime validation, and deep-merge safety governing `formMetaJSON`/`projectJSON`/`fundingJSON`
+- ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind `#final-tcp-derived`)
