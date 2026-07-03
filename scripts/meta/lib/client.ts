@@ -1,8 +1,8 @@
 // scripts/meta/lib/client.ts
+import { META_GRAPH_BASE_URL } from '@/shared/services/providers/meta/constants'
 import { metaEnv } from './env.js'
 
-const API_VERSION = 'v21.0'
-const BASE_URL = `https://graph.facebook.com/${API_VERSION}`
+const BASE_URL = META_GRAPH_BASE_URL
 
 interface MetaErrorShape {
   message: string
