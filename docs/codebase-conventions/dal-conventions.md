@@ -123,3 +123,5 @@ The DAL layer is the hook execution engine for all entity lifecycle hooks. Both 
 - `docs/codebase-conventions/trpc-procedures.md` — how procedures call DAL
 - `src/shared/dal/server/types.ts` — canonical type definitions
 - `src/trpc/lib/dal-to-trpc.ts` — DalReturn → TRPCError mapper
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB deep-merge safety (opted-in per column via `spec.update.jsonbMergeColumns`, applied on the CRUD update path)
+- ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)
