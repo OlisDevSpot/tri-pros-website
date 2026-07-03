@@ -80,3 +80,4 @@ Every schema file is re-exported from `src/shared/db/schema/index.ts`. Imports f
 - `docs/codebase-conventions/enum-standardization.md` — enum pipeline
 - `src/shared/db/lib/schema-helpers.ts` — shared column helpers
 - `pnpm db:push:dev` runs schema sync against the dev DB (NEVER `pnpm db:push` for dev work)
+- `docs/codebase-conventions/jsonb-columns.md` — JSONB **payload** shape, runtime validation, and merge safety are governed here (this file covers the column itself; jsonb-columns.md covers what goes inside it). Placement rule (column vs JSONB vs child table): ADR-0005.
