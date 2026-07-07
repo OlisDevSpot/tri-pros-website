@@ -19,6 +19,32 @@
       "fp": "352c9593002fdf31ba8803364a6e4f5a1f4c391da6ed4b03e4a893e44635163c"
     }
   },
-  "ads": {},
-  "images": {}
+  "ads": {
+    "kitchens-leads/dream-kitchen-01": {
+      "id": "120248956016870713",
+      "creativeId": "4547001128853077",
+      "fp": "4b26e9d154003892ccc397a0483df0cc80ffc5931714d1519c71227c2a074910"
+    },
+    "kitchens-leads/before-after-01": {
+      "id": "120248956018240713",
+      "creativeId": "1814170942903641",
+      "fp": "d476fa45787d05141f21c6dd1351b65d10bedbad968450a70d82c5b7db4ad252"
+    },
+    "bathrooms-leads/spa-bathroom-01": {
+      "id": "120248956018620713",
+      "creativeId": "942547164910959",
+      "fp": "17fc86eb01e504b298bb369bddd3cff4b18d3ffecc257c76c0b62d8f903e8f42"
+    },
+    "bathrooms-leads/before-after-01": {
+      "id": "120248956018700713",
+      "creativeId": "2121269512147658",
+      "fp": "dcfd4971ab7834d8e6890240abb709d58043a63e2225755bfad6310800875611"
+    }
+  },
+  "images": {
+    "70c566e6bc2bea941f2deef76e2c422ad99746078d06fa1d648fd47b91577ee8": "e6e8e1be9e1c899a455b82f46f95e4cb",
+    "76a3cbe728869027065fb4be933b7a2c55ea5b338be3e5d95d8eb88e101e688d": "20573dd6df370b3086a721c0dd0e2fc9",
+    "694b9899c72d30b276d77fb80f83a3bbd6c7f55dbb5b85c3df68e82734f64f8d": "ff826d069c7f7b76beed0f431bdbe689",
+    "77b58770667b0faaaef2b33bb874ba1a6582e2e827de49618d44aea466328d15": "59d1e08bed6d7ddbc87f328845ce84a8"
+  }
 }
