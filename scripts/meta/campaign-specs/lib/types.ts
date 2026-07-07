@@ -16,8 +16,9 @@ export const adSetSpecSchema = z.object({
   key: specKey,
   name: z.string().min(1),
   dailyBudgetCents: z.number().int().positive(),
-  ageMin: z.number().int().min(18).max(100),
-  ageMax: z.number().int().min(18).max(100),
+  ageMin: z.number().int().min(18).max(65),
+  /** Meta rejects age_max > 65; 65 means "65+" (unbounded upper bucket). */
+  ageMax: z.number().int().min(18).max(65),
   /** Maps to promoted_object.custom_event_type — flip LEAD→SCHEDULE to graduate optimization. */
   optimizationEvent: z.enum(['LEAD', 'SCHEDULE']),
   geoZips: z.array(z.string().regex(/^\d{5}$/)).min(1),

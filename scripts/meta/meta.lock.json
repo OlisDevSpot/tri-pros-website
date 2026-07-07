@@ -1,0 +1,24 @@
+{
+  "campaigns": {
+    "kitchens-leads": {
+      "id": "120248955766690713",
+      "fp": "3dd49a451d06bf5a0794ab3a1ff51771b534e8448de77696629e3398f745a53e"
+    },
+    "bathrooms-leads": {
+      "id": "120248955766810713",
+      "fp": "a41e86a691bd592d0b51fe3c18c6f99da7ecaa8d4937e04f513026e7416e85ce"
+    }
+  },
+  "adSets": {
+    "kitchens-leads/service-area-35-70": {
+      "id": "120248955785630713",
+      "fp": "352c9593002fdf31ba8803364a6e4f5a1f4c391da6ed4b03e4a893e44635163c"
+    },
+    "bathrooms-leads/service-area-35-70": {
+      "id": "120248955785880713",
+      "fp": "352c9593002fdf31ba8803364a6e4f5a1f4c391da6ed4b03e4a893e44635163c"
+    }
+  },
+  "ads": {},
+  "images": {}
+}

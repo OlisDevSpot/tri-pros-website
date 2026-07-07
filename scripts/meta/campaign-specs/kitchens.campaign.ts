@@ -9,10 +9,10 @@ export const kitchensCampaign = defineCampaign({
   landingBaseUrl: 'https://kitchens.triprosremodeling.com/',
   adSet: {
     key: 'service-area-35-70',
-    name: 'Service-Area ZIPs · 35–70',
+    name: 'Service-Area ZIPs · 35–65+',
     dailyBudgetCents: 5_800, // $58/day ≈ $1,750/mo
     ageMin: 35,
-    ageMax: 70,
+    ageMax: 65, // Meta max — 65 means "65+" (unbounded upper bucket)
     optimizationEvent: 'LEAD', // graduate to 'SCHEDULE' once the CAPI event flows with volume
     geoZips: [...SERVICE_AREA_ZIPS],
   },
