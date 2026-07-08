@@ -9,7 +9,10 @@ export const adSpecSchema = z.object({
   description: z.string().optional(),
   /** Filename inside public/funnels/<funnelSlug>/ads/ — sync skips (warns) if missing on disk. */
   imageFile: z.string().min(1),
-  ctaType: z.enum(['LEARN_MORE', 'GET_QUOTE']),
+  // Showcase CTA rules (docs/marketing/showcase-offer.md#rules-for-ads):
+  // APPLY_NOW preferred, LEARN_MORE allowed. GET_QUOTE is intentionally NOT in
+  // this enum — quote-language contradicts the apply-to-be-chosen reframe.
+  ctaType: z.enum(['APPLY_NOW', 'LEARN_MORE']),
 })
 
 export const adSetSpecSchema = z.object({

@@ -1,9 +1,11 @@
 import { SERVICE_AREA_ZIPS } from '@/shared/constants/company/service-area-zips'
 import { defineCampaign } from './lib/define-campaign.js'
 
+// Ad copy implements the Showcase offer — vocabulary, framing, and CTA rules
+// are canonical in docs/marketing/showcase-offer.md. Read it before editing.
 export const bathroomsCampaign = defineCampaign({
   key: 'bathrooms-leads',
-  name: 'TPR — Bathrooms — Leads',
+  name: 'TPR — Bathroom Showcase — Leads',
   objective: 'OUTCOME_LEADS',
   funnelSlug: 'bathrooms',
   landingBaseUrl: 'https://bathrooms.triprosremodeling.com/',
@@ -18,23 +20,27 @@ export const bathroomsCampaign = defineCampaign({
   },
   ads: [
     {
-      key: 'spa-bathroom-01',
-      headline: 'Turn Your Bathroom Into a Retreat',
+      key: 'showcase-casting-01',
+      headline: 'We’re Selecting 5 Bathrooms in Your Area',
       primaryText:
-        'Outdated tub? Cramped layout? Southern California homeowners trust Tri Pros Remodeling to '
-        + 'rebuild bathrooms that feel like a daily upgrade — licensed, insured, and local. '
-        + 'Answer a few quick questions to book your free in-home design consultation.',
+        'A bathroom you’ll actually love — at a Showcase price. '
+        + 'Tri Pros Remodeling is selecting 5 bathrooms in your area to be featured in our showcase. '
+        + 'If selected, you get our best-of-the-best work at a Showcase price. '
+        + 'Homeowners only. See if your home qualifies.',
+      description: 'See if your home qualifies.',
       imageFile: 'spa-bathroom-01.jpg',
-      ctaType: 'LEARN_MORE',
+      ctaType: 'APPLY_NOW',
     },
     {
-      key: 'before-after-01',
-      headline: 'Real SoCal Bathrooms, Remodeled by Tri Pros',
+      key: 'showcase-proof-01',
+      headline: 'Your Bathroom Could Be Next — 5 Spots',
       primaryText:
-        'From tired to stunning — design, permits, and build handled by one licensed local team. '
-        + 'Your bathroom could be next. Tell us about your project and book a free in-home consultation.',
+        'From dated to Showcase-grade. Every bathroom we select gets AAA-quality work — '
+        + 'because it has to photograph beautifully. '
+        + 'We’re selecting 5 bathrooms in your area this month. See if your home qualifies.',
+      description: 'AAA-grade, at a Showcase price.',
       imageFile: 'before-after-01.jpg',
-      ctaType: 'GET_QUOTE',
+      ctaType: 'APPLY_NOW',
     },
   ],
 })

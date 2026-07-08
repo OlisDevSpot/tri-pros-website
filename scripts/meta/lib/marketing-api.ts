@@ -109,7 +109,7 @@ export interface CreativeInput {
   primaryText: string
   description?: string
   imageHash: string
-  ctaType: 'LEARN_MORE' | 'GET_QUOTE'
+  ctaType: 'APPLY_NOW' | 'LEARN_MORE'
 }
 
 export async function createLinkAdCreative(input: CreativeInput): Promise<string> {
