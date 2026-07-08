@@ -6,6 +6,13 @@ versioned code. Entry point: `pnpm meta sync` (dry-run) / `pnpm meta sync --appl
 Design spec: `docs/superpowers/specs/2026-07-03-meta-campaign-engine-design.md`.
 Measurement invariants: `src/shared/services/providers/meta/DOCS.md`.
 
+## showcase-offer
+
+Every campaign spec sells the **Showcase offer** — canonical definition,
+approved vocabulary, and ad rules (incl. CTA rules: `APPLY_NOW`/`LEARN_MORE`,
+never `GET_QUOTE`) live in `docs/marketing/showcase-offer.md`. Read it BEFORE
+writing or editing ad copy in `campaign-specs/*.campaign.ts`.
+
 ## campaign-as-code
 
 Specs in `scripts/meta/campaign-specs/` are the single source of truth for all

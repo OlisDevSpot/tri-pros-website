@@ -95,6 +95,7 @@ Trade (discipline)
 | **Multiplier** | Derived: `Price ÷ Cost`, displayed to 2 decimals (`2.04x`). Headline agent KPI. `—` when cost is 0. Format via `formatMultiplier` — never inline `.toFixed(2)`. |
 | **TCP** (Total Contract Price) | Total proposal price. `startingTcp` = initial quote, `finalTcp` = after incentives. A specific kind of Price. |
 | **Incentive** | Discount, tax-credit, cash-back, or exclusive-offer. Reduces TCP. Types: `discount \| tax-credit \| cash-back \| exclusive-offer \| other`. |
+| **Showcase (offer)** | The acquisition offer behind all live marketing funnels + Meta ads: a per-trade "casting call" — limited homes selected for a discounted AAA-grade remodel in exchange for photo/video rights + portfolio feature. Homeowner *applies to be chosen*, never "requests a quote." Canonical: `docs/marketing/showcase-offer.md`. `FunnelSpec.offer = 'showcase'`. |
 | **Finance Option** | A loan product (term, APR, provider). Customer selects one per proposal. |
 | **Finance Provider** | Lending company (Tesla, Sunrun, Mosaic, banks). Has many finance options. |
 

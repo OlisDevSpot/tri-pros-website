@@ -1,5 +1,12 @@
 # Showcase Funnel System — Design Spec
 
+> ℹ️ **§1 "The Offer" has been promoted to a living doc:**
+> `docs/marketing/showcase-offer.md` (2026-07-07) is now the canonical,
+> maintained definition of the Showcase offer for all funnels and ads. This spec
+> remains the historical design record. The §7 "human media buyer owns
+> business.facebook.com" division of labor is also superseded — campaigns are
+> code-managed via `pnpm meta sync` (`scripts/meta/DOCS.md`).
+
 **Status:** Design approved (brainstorm 2026-06-17). Ready for implementation plan.
 **Owner:** Oliver P
 **Scope:** The Meta-advertised, high-conversion lead funnels for the **Showcase** offer across three trades (Kitchen, Bathroom, Complete-Interior). Covers the offer definition, funnel UX, subdomain architecture, content model, CRM lead plumbing, and the Meta Pixel + Conversions API (CAPI) measurement layer.

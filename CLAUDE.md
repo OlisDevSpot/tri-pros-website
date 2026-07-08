@@ -38,7 +38,8 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 - `src/shared/entities/<entity>/DOCS.md` — per-entity invariants, derivations, gates (proposals/ is the canonical example)
 - `src/features/<feature>/DOCS.md` — feature-level UX/flow rules
 - `src/trpc/DOCS.md` — Entity Server System operational rules (server-side)
-- `docs/domain/ubiquitous-language.md` — canonical business terms
+- `docs/ubiquitous-language.md` — canonical business terms
+- `docs/marketing/showcase-offer.md` — THE Showcase offer (canonical for all funnels + ads)
 
 **Sales / company**
 - `docs/README.md` — master index

@@ -1,5 +1,13 @@
 # Funnels domain — business & UX rules
 
+## The offer {#showcase-offer}
+
+All live funnels (kitchens / bathrooms / complete-interior) implement the
+**Showcase offer** (`FunnelSpec.offer = 'showcase'`). The offer's canonical
+definition, approved vocabulary, guardrails, and rules for new funnels/ads live
+in `docs/marketing/showcase-offer.md` — read it BEFORE writing or changing any
+funnel copy or ad creative.
+
 ## Measurement (Meta Pixel + CAPI)
 
 The funnel auto-fires Meta events by CONVENTION — see
