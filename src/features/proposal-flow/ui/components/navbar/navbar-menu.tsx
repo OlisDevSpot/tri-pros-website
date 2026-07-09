@@ -1,7 +1,7 @@
 'use client'
 
 import { ExternalLinkIcon, EyeIcon, FileTextIcon, MoreVerticalIcon, ShieldIcon } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewModeToggle } from '@/features/proposal-flow/hooks/use-view-mode-toggle'
@@ -25,6 +25,8 @@ export function ProposalNavbarMenu({ variant }: Props) {
   const ability = useAbility()
   const { isAgent, toggle } = useViewModeToggle()
   const [mounted, setMounted] = useState(false)
+  const homeownerRef = useRef<HTMLButtonElement>(null)
+  const agentRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -34,6 +36,15 @@ export function ProposalNavbarMenu({ variant }: Props) {
   const token = proposal.data?.token
   const pdfUrl = proposalId && token ? getProposalPdfUrl(proposalId, token) : null
   const showViewToggle = mounted && ability.can('update', 'Proposal')
+
+  function handleRadioKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, otherRef: React.RefObject<HTMLButtonElement | null>) {
+    if (!['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp'].includes(event.key))
+      return
+
+    event.preventDefault()
+    toggle()
+    otherRef.current?.focus()
+  }
 
   return (
     <Popover>
@@ -52,6 +63,7 @@ export function ProposalNavbarMenu({ variant }: Props) {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={8} className="w-64 p-1.5">
+        {/* PopoverClose asChild → Button asChild → <a>: Radix Slot composition collapses all three onto the single anchor */}
         {pdfUrl
           ? (
               <PopoverClose asChild>
@@ -88,11 +100,14 @@ export function ProposalNavbarMenu({ variant }: Props) {
             </div>
             <div role="radiogroup" aria-label="View mode" className="flex gap-1 p-1">
               <Button
+                ref={homeownerRef}
                 type="button"
                 variant="ghost"
                 role="radio"
                 aria-checked={!isAgent}
+                tabIndex={isAgent ? -1 : 0}
                 onClick={() => isAgent && toggle()}
+                onKeyDown={event => handleRadioKeyDown(event, agentRef)}
                 className={cn(
                   'flex-1 gap-1.5 min-h-11 rounded-md text-sm font-medium',
                   !isAgent
@@ -104,11 +119,14 @@ export function ProposalNavbarMenu({ variant }: Props) {
                 Homeowner
               </Button>
               <Button
+                ref={agentRef}
                 type="button"
                 variant="ghost"
                 role="radio"
                 aria-checked={isAgent}
+                tabIndex={isAgent ? 0 : -1}
                 onClick={() => !isAgent && toggle()}
+                onKeyDown={event => handleRadioKeyDown(event, homeownerRef)}
                 className={cn(
                   'flex-1 gap-1.5 min-h-11 rounded-md text-sm font-medium',
                   isAgent
