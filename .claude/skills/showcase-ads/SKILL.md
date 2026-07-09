@@ -24,7 +24,7 @@ creative → Meta, PAUSED).
 - ⛔ Activation is human-only. Everything lands PAUSED. Never touch ACTIVE.
 - Logo intro is MANDATORY: `logoIntro` prop — lockup springs in centered over
   the cold open, docks into the watermark slot at `dockFrame` (+15f glide),
-  where the persistent watermark (same art file, `watermarkWidth` 150) takes
+  where the persistent watermark (same art file, `watermarkWidth` 150 for the lockup; schema default is 110 for the icon) takes
   over seamlessly. Use `brand/logo-dark-right.svg` for both.
 
 ## Assets & locations
@@ -67,7 +67,7 @@ framed crew/during still (2.5s, "OUR CREW, ON SITE") → morph #2, a DIFFERENT
 project, with zoom-out reveal + riser on its after moment (8s) → framed
 checkmarks clip (5s) → end card (4s). The inverted-reveal hook (after-first)
 is the DEFAULT hook pattern for transform-capable trades. VO = Gia
-(house voice), starts frame 15, and must include a line over morph #2.
+(house voice), retimed per reel so key words land on their beats (`voStartFrame` is 35 in the canonical example), and must include a line over morph #2.
 
 ```bash
 cd video && pnpm tsc
