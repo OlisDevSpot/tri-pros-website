@@ -68,7 +68,7 @@ export function buildUserContext(
   return {
     session: { user: { id: userId, role: userRole } } as ScopedContext['session'],
     ability,
-    scope: isOmni ? null : spec.visibility(userId),
+    scope: isOmni ? null : spec.visibility({ userId, ability }),
   }
 }
 

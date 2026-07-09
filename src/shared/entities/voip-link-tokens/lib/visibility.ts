@@ -1,4 +1,6 @@
 import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
+
 import { eq } from 'drizzle-orm'
 import { voipLinkTokens } from '@/shared/db/schema'
 
@@ -12,6 +14,6 @@ import { voipLinkTokens } from '@/shared/db/schema'
  *
  * see ../DOCS.md#visibility-via-creator
  */
-export function voipLinkTokenVisibility(userId: string): SQL {
+export function voipLinkTokenVisibility({ userId }: VisibilityScope): SQL {
   return eq(voipLinkTokens.createdByUserId, userId)
 }

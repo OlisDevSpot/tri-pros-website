@@ -44,6 +44,14 @@ export const SYSTEM_CONTEXT: ScopedContext = {
   scope: null,
 }
 
+// ── Visibility Scope ────────────────────────────────────────────────────
+
+/** Inputs a visibility predicate may branch on. userId for row-ownership; ability for capability-based views. */
+export interface VisibilityScope {
+  userId: string
+  ability: AppAbility
+}
+
 // ── Entity Server Spec ──────────────────────────────────────────────────
 
 /**
@@ -66,7 +74,7 @@ export interface EntityServerSpec<
 > {
   entityName: EntityName
   caslSubject: AppSubject
-  visibility: (userId: string) => SQL
+  visibility: (scope: VisibilityScope) => SQL
   table: TTable
   schemas: {
     insert: z.ZodObject<Record<string, z.ZodTypeAny>>

@@ -1,4 +1,6 @@
 import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
+
 import { sql } from 'drizzle-orm'
 
 /**
@@ -8,6 +10,6 @@ import { sql } from 'drizzle-orm'
  *
  * see ../DOCS.md#admin-only-visibility
  */
-export function appSettingVisibility(_userId: string): SQL {
+export function appSettingVisibility(_scope: VisibilityScope): SQL {
   return sql`FALSE`
 }

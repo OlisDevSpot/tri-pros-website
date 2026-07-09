@@ -1,4 +1,6 @@
 import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
+
 import { eq } from 'drizzle-orm'
 import { voipDids } from '@/shared/db/schema'
 
@@ -10,6 +12,6 @@ import { voipDids } from '@/shared/db/schema'
  * Super-admin queries bypass this via the omni-scope path.
  * see ../DOCS.md#visibility-via-assignment
  */
-export function voipDidVisibility(userId: string): SQL {
+export function voipDidVisibility({ userId }: VisibilityScope): SQL {
   return eq(voipDids.assignedUserId, userId)
 }

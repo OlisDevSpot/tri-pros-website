@@ -1,4 +1,6 @@
 import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
+
 import { eq } from 'drizzle-orm'
 import { voipCalls } from '@/shared/db/schema'
 
@@ -9,6 +11,6 @@ import { voipCalls } from '@/shared/db/schema'
  * Super-admin queries bypass this via the omni-scope path (see src/trpc/DOCS.md).
  * see ../DOCS.md#visibility-via-agent-ownership
  */
-export function voipCallVisibility(userId: string): SQL {
+export function voipCallVisibility({ userId }: VisibilityScope): SQL {
   return eq(voipCalls.agentUserId, userId)
 }

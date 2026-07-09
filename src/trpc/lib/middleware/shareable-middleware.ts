@@ -61,7 +61,7 @@ export function shareableMiddleware(spec: EntityServerSpec) {
     })
 
     const isOmni = ability.can('manage', 'all')
-    const scope = isOmni ? null : spec.visibility(ctx.session.user.id)
+    const scope = isOmni ? null : spec.visibility({ userId: ctx.session.user.id, ability })
 
     return next({
       ctx: {

@@ -1,4 +1,6 @@
 import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
+
 import { eq } from 'drizzle-orm'
 import { voipMessages } from '@/shared/db/schema'
 
@@ -12,6 +14,6 @@ import { voipMessages } from '@/shared/db/schema'
  * Super-admin queries bypass this via the omni-scope path.
  * see ../DOCS.md#visibility-via-agent-ownership
  */
-export function voipMessageVisibility(userId: string): SQL {
+export function voipMessageVisibility({ userId }: VisibilityScope): SQL {
   return eq(voipMessages.agentUserId, userId)
 }
