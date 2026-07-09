@@ -27,7 +27,12 @@ export async function GET(
 
   try {
     const buffer = await pdfService.generateProposalPdf(SYSTEM_CONTEXT, { proposalId })
-    const baseName = sanitizeFilename(`${companyInfo.nickname} Proposal - ${proposal.customer?.name ?? proposal.label ?? proposalId}`).replace(/"/g, '')
+    const baseName = sanitizeFilename(`${companyInfo.nickname} Proposal - ${proposal.customer?.name ?? proposal.label ?? proposalId}`)
+      .replace(/["\\]/g, '')
+      // Response headers are ByteStrings — non-Latin1 chars (emoji, most non-ASCII) throw.
+      // Keep printable ASCII only; fall back if the name was entirely non-ASCII.
+      .replace(/[^\x20-\x7E]/g, '')
+      .trim() || 'Proposal'
     return new Response(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'application/pdf',
