@@ -19,11 +19,15 @@ export interface MetaLock {
   ads: Record<string, AdLockEntry>
   /** sha256(image file bytes) → Meta image_hash (upload dedup) */
   images: Record<string, string>
+  /** sha256(video file bytes) → Meta video id (upload dedup; video files are gitignored, so the lock is the only durable mapping) */
+  videos: Record<string, string>
 }
 
 const LOCK_PATH = join(process.cwd(), 'scripts/meta/meta.lock.json')
 
-const EMPTY: MetaLock = { campaigns: {}, adSets: {}, ads: {}, images: {} }
+// readLock spreads EMPTY under the parsed file, so pre-`videos` committed locks
+// keep parsing (missing sections default to {}) and gain the field on next write.
+const EMPTY: MetaLock = { campaigns: {}, adSets: {}, ads: {}, images: {}, videos: {} }
 
 export function readLock(): MetaLock {
   if (!existsSync(LOCK_PATH))

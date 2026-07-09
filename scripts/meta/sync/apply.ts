@@ -1,5 +1,6 @@
 // scripts/meta/sync/apply.ts
-import type { CampaignSpec } from '../campaign-specs/lib/types.js'
+import type { AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
+import type { AdAssetShas } from './fingerprint.js'
 import type { MetaLock } from './lock.js'
 import type { PlanOp } from './diff.js'
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs'
@@ -10,15 +11,18 @@ import {
   createAd,
   createAdSet,
   createCampaign,
+  createCarouselAdCreative,
   createLinkAdCreative,
+  createVideoAdCreative,
   setAdCreative,
   updateAdSet,
   updateCampaignName,
   uploadAdImage,
+  uploadAdVideo,
 } from '../lib/marketing-api.js'
 import { printInfo, printSuccess } from '../lib/formatters.js'
 import { buildUrlTags } from './ad-link.js'
-import { adImagePath } from './diff.js'
+import { adImagePath, adVideoPath } from './diff.js'
 import { adFp, adSetFp, campaignFp } from './fingerprint.js'
 import { writeLock } from './lock.js'
 
@@ -47,6 +51,65 @@ async function ensureImage(lock: MetaLock, path: string, imageSha: string): Prom
   return hash
 }
 
+/** Upload + wait-for-processed if the video sha isn't in the lock yet; returns Meta video id. */
+async function ensureVideo(lock: MetaLock, path: string, videoSha: string): Promise<string> {
+  const existing = lock.videos[videoSha]
+  if (existing)
+    return existing
+  const videoId = await uploadAdVideo(path)
+  lock.videos[videoSha] = videoId
+  writeLock(lock)
+  return videoId
+}
+
+/** Format dispatch: upload the ad's assets (lock-deduped) and create its creative. */
+async function createCreativeForAd(lock: MetaLock, spec: CampaignSpec, ad: AdSpec, assetShas: AdAssetShas): Promise<string> {
+  const base = {
+    name: `${spec.key}/${ad.key}`,
+    baseUrl: spec.landingBaseUrl,
+    urlTags: buildUrlTags(spec, ad),
+  }
+
+  if (ad.format === 'carousel') {
+    const cards = []
+    for (const card of ad.cards) {
+      const imageHash = await ensureImage(lock, adImagePath(spec, card.imageFile), assetShas[card.imageFile])
+      cards.push({ imageHash, headline: card.headline, description: card.description })
+    }
+    return createCarouselAdCreative({
+      ...base,
+      primaryTexts: ad.primaryTexts,
+      multiShareOptimized: ad.multiShareOptimized,
+      cards,
+      ctaType: ad.ctaType,
+    })
+  }
+
+  if (ad.format === 'video') {
+    const videoId = await ensureVideo(lock, adVideoPath(spec, ad.videoFile), assetShas[ad.videoFile])
+    const thumbnailHash = await ensureImage(lock, adImagePath(spec, ad.thumbnailFile), assetShas[ad.thumbnailFile])
+    return createVideoAdCreative({
+      ...base,
+      headlines: ad.headlines,
+      primaryTexts: ad.primaryTexts,
+      descriptions: ad.descriptions,
+      videoId,
+      thumbnailHash,
+      ctaType: ad.ctaType,
+    })
+  }
+
+  const imageHash = await ensureImage(lock, adImagePath(spec, ad.imageFile), assetShas[ad.imageFile])
+  return createLinkAdCreative({
+    ...base,
+    headlines: ad.headlines,
+    primaryTexts: ad.primaryTexts,
+    descriptions: ad.descriptions,
+    imageHash,
+    ctaType: ad.ctaType,
+  })
+}
+
 export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: MetaLock): Promise<void> {
   // Order matters: campaigns → ad sets → ads (creations reference parent ids).
   const order: Record<PlanOp['op'], number> = {
@@ -56,13 +119,13 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
     'update-adset': 1,
     'create-ad': 2,
     'refresh-creative': 2,
-    'skip-ad-missing-image': 3,
+    'skip-ad-missing-asset': 3,
     'orphan': 3,
   }
   const sorted = [...plan].sort((a, b) => order[a.op] - order[b.op])
 
   for (const op of sorted) {
-    if (op.op === 'skip-ad-missing-image' || op.op === 'orphan')
+    if (op.op === 'skip-ad-missing-asset' || op.op === 'orphan')
       continue // reported by the printer; never acted on here
 
     const spec = specByKey(specs, op.campaignKey)
@@ -122,39 +185,28 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
       throw new Error(`No ad spec ${op.adKey} in campaign ${spec.key}`)
     const adLockKey = `${spec.key}/${ad.key}`
 
-    // Validate adSetId BEFORE any billable API calls (image upload + creative creation).
+    // Validate adSetId BEFORE any billable API calls (asset uploads + creative creation).
     // A missing adSetId from a hand-corrupted lock would otherwise strand an orphan
-    // creative and uploaded image at Meta with no ad to attach them to.
+    // creative and uploaded assets at Meta with no ad to attach them to.
     if (op.op === 'create-ad') {
       const adSetId = lock.adSets[asKey]?.id
       if (!adSetId)
         throw new Error(`Cannot create ad ${adLockKey}: ad set id missing from lock`)
     }
 
-    const imagePath = adImagePath(spec, ad.imageFile)
-    const imageHash = await ensureImage(lock, imagePath, op.imageSha)
-    const creativeId = await createLinkAdCreative({
-      name: `${spec.key}/${ad.key}`,
-      baseUrl: spec.landingBaseUrl,
-      urlTags: buildUrlTags(spec, ad),
-      headlines: ad.headlines,
-      primaryTexts: ad.primaryTexts,
-      descriptions: ad.descriptions,
-      imageHash,
-      ctaType: ad.ctaType,
-    })
+    const creativeId = await createCreativeForAd(lock, spec, ad, op.assetShas)
 
     if (op.op === 'create-ad') {
       const adSetId = lock.adSets[asKey]!.id // already validated above
       const id = await createAd({ name: `${spec.key} — ${ad.key}`, adSetId, creativeId })
-      lock.ads[adLockKey] = { id, creativeId, fp: adFp(spec, ad, op.imageSha) }
+      lock.ads[adLockKey] = { id, creativeId, fp: adFp(spec, ad, op.assetShas) }
       writeLock(lock)
       printSuccess(`ad created (PAUSED): ${adLockKey} → ${id}`)
       audit({ op: op.op, key: adLockKey, id, creativeId })
     }
     else {
       await setAdCreative(op.adId, creativeId)
-      lock.ads[adLockKey] = { id: op.adId, creativeId, fp: adFp(spec, ad, op.imageSha) }
+      lock.ads[adLockKey] = { id: op.adId, creativeId, fp: adFp(spec, ad, op.assetShas) }
       writeLock(lock)
       printSuccess(`creative refreshed: ${adLockKey}`)
       audit({ op: op.op, key: adLockKey, id: op.adId, creativeId })

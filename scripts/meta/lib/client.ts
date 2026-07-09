@@ -35,22 +35,16 @@ interface FetchOptions {
   body?: Record<string, unknown>
 }
 
-export async function metaFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { method = 'GET', params = {}, body } = options
-
+function buildUrl(endpoint: string, params: Record<string, string | number | boolean> = {}): URL {
   const url = new URL(`${BASE_URL}${endpoint}`)
   url.searchParams.set('access_token', metaEnv.accessToken)
-
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, String(value))
   }
+  return url
+}
 
-  const res = await fetch(url.toString(), {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  })
-
+async function parseMetaResponse<T>(res: Response): Promise<T> {
   let json: unknown
   try {
     json = await res.json()
@@ -73,4 +67,26 @@ export async function metaFetch<T>(endpoint: string, options: FetchOptions = {})
   }
 
   return json as T
+}
+
+export async function metaFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+  const { method = 'GET', params = {}, body } = options
+
+  const res = await fetch(buildUrl(endpoint, params).toString(), {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  return parseMetaResponse<T>(res)
+}
+
+/**
+ * Multipart POST for Graph file endpoints (e.g. /advideos). metaFetch sends
+ * JSON, which file uploads reject — this sends FormData and lets fetch set the
+ * multipart boundary header. Same URL/auth construction and error handling.
+ */
+export async function metaUpload<T>(endpoint: string, form: FormData): Promise<T> {
+  const res = await fetch(buildUrl(endpoint).toString(), { method: 'POST', body: form })
+  return parseMetaResponse<T>(res)
 }

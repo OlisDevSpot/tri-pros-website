@@ -64,3 +64,9 @@ scripts/data/
 scripts/meta/logs/
 # Ad creative videos — uploaded to Meta from disk, never served/deployed
 public/funnels/*/ads/videos/
+
+# Remotion ad-video package — deps, renders, and licensed/generated assets stay local
+video/node_modules/
+video/out/
+video/public/
+video/tsconfig.tsbuildinfo

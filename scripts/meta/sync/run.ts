@@ -17,7 +17,7 @@ const OP_LABEL: Record<string, string> = {
   'update-adset': '~ update ad set',
   'create-ad': '+ create ad (PAUSED)',
   'refresh-creative': '~ refresh creative',
-  'skip-ad-missing-image': '⚠ skip ad (image missing)',
+  'skip-ad-missing-asset': '⚠ skip ad (asset missing)',
   'orphan': '⏸ unmanaged (reported only)',
 }
 
@@ -44,10 +44,10 @@ async function main() {
       : 'campaignKey' in op
         ? op.campaignKey
         : `${op.kind} ${op.name} (${op.id})`
-    console.log(`  ${OP_LABEL[op.op]}  ${detail}${'imagePath' in op ? `\n      missing: ${op.imagePath}` : ''}`)
+    console.log(`  ${OP_LABEL[op.op]}  ${detail}${'assetPath' in op ? `\n      missing: ${op.assetPath}` : ''}`)
   }
 
-  const actionable = plan.filter(op => op.op !== 'orphan' && op.op !== 'skip-ad-missing-image')
+  const actionable = plan.filter(op => op.op !== 'orphan' && op.op !== 'skip-ad-missing-asset')
   if (!apply) {
     printInfo(`Dry run — ${actionable.length} actionable op(s). Re-run with --apply to execute.`)
     return

@@ -26,8 +26,15 @@ Activation (campaign/ad set/ad → ACTIVE) is human-only in Ads Manager.
 Ad copy (headline, primary text, description) lives typed in the campaign spec, not
 in `public/` (everything there is publicly served and guessable). Image files live in
 `public/funnels/<funnelSlug>/ads/` (committed, high-res source — NOT the compressed
-funnel WebPs). Missing image → that ad is skipped with a warning; the rest of the
-plan still runs.
+funnel WebPs). Video files live in `public/funnels/<funnelSlug>/ads/videos/`
+(gitignored — too large to commit; the lock's `videos` map is the durable
+sha → Meta-video-id record). Missing asset on disk → that ad is skipped with a
+warning; the rest of the plan still runs.
+
+Ads support three formats via the spec `format` field: `single-image` (default —
+specs without `format` parse unchanged), `carousel` (2–10 cards, one shared
+primary text), and `video` (uploaded + polled until processed; requires a
+`thumbnailFile` image).
 
 Campaign specs are validated on load via `defineCampaign` (Zod). The registry
 (`campaign-specs/registry.ts`) exports `CAMPAIGN_SPECS`; all other tooling imports

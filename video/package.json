@@ -1,0 +1,25 @@
+{
+  "name": "tri-pros-video",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render",
+    "tsc": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.487",
+    "@remotion/google-fonts": "4.0.487",
+    "@remotion/media": "4.0.487",
+    "@remotion/zod-types": "4.0.487",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "4.0.487",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.8.0"
+  }
+}

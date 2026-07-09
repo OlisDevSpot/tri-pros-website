@@ -1,5 +1,6 @@
 import type { AccountState } from '../lib/marketing-api.js'
-import type { CampaignSpec } from '../campaign-specs/lib/types.js'
+import type { AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
+import type { AdAssetShas } from './fingerprint.js'
 import type { MetaLock } from './lock.js'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -11,13 +12,30 @@ export type PlanOp =
   | { op: 'update-campaign', campaignKey: string, id: string }
   | { op: 'create-adset', campaignKey: string }
   | { op: 'update-adset', campaignKey: string, id: string }
-  | { op: 'create-ad', campaignKey: string, adKey: string, imageSha: string }
-  | { op: 'refresh-creative', campaignKey: string, adKey: string, adId: string, imageSha: string }
-  | { op: 'skip-ad-missing-image', campaignKey: string, adKey: string, imagePath: string }
+  | { op: 'create-ad', campaignKey: string, adKey: string, assetShas: AdAssetShas }
+  | { op: 'refresh-creative', campaignKey: string, adKey: string, adId: string, assetShas: AdAssetShas }
+  | { op: 'skip-ad-missing-asset', campaignKey: string, adKey: string, assetPath: string }
   | { op: 'orphan', kind: 'campaign' | 'adset' | 'ad', id: string, name: string }
 
 export function adImagePath(spec: CampaignSpec, imageFile: string): string {
   return join(process.cwd(), 'public/funnels', spec.funnelSlug, 'ads', imageFile)
+}
+
+export function adVideoPath(spec: CampaignSpec, videoFile: string): string {
+  return join(process.cwd(), 'public/funnels', spec.funnelSlug, 'ads/videos', videoFile)
+}
+
+/** Every on-disk asset an ad references, keyed by the spec filename. */
+export function adAssetPaths(spec: CampaignSpec, ad: AdSpec): Record<string, string> {
+  if (ad.format === 'carousel')
+    return Object.fromEntries(ad.cards.map(c => [c.imageFile, adImagePath(spec, c.imageFile)]))
+  if (ad.format === 'video') {
+    return {
+      [ad.videoFile]: adVideoPath(spec, ad.videoFile),
+      [ad.thumbnailFile]: adImagePath(spec, ad.thumbnailFile),
+    }
+  }
+  return { [ad.imageFile]: adImagePath(spec, ad.imageFile) }
 }
 
 export function computePlan(specs: CampaignSpec[], lock: MetaLock, state: AccountState): PlanOp[] {
@@ -74,23 +92,26 @@ export function computePlan(specs: CampaignSpec[], lock: MetaLock, state: Accoun
     for (const ad of spec.ads) {
       const adLockKey = `${spec.key}/${ad.key}`
       specBackedAdKeys.add(adLockKey)
-      const imagePath = adImagePath(spec, ad.imageFile)
-      if (!existsSync(imagePath)) {
-        ops.push({ op: 'skip-ad-missing-image', campaignKey: spec.key, adKey: ad.key, imagePath })
+      const assetPaths = adAssetPaths(spec, ad)
+      const missingPath = Object.values(assetPaths).find(path => !existsSync(path))
+      if (missingPath) {
+        ops.push({ op: 'skip-ad-missing-asset', campaignKey: spec.key, adKey: ad.key, assetPath: missingPath })
         continue
       }
-      const imageSha = sha256Hex(readFileSync(imagePath))
+      const assetShas: AdAssetShas = Object.fromEntries(
+        Object.entries(assetPaths).map(([file, path]) => [file, sha256Hex(readFileSync(path))]),
+      )
       const aLock = lock.ads[adLockKey]
       if (!aLock || !remoteIds.has(aLock.id)) {
         const adoptName = `${spec.key} — ${ad.key}`
         const adoptId = remoteAdByName.get(adoptName)
         if (adoptId)
-          ops.push({ op: 'refresh-creative', campaignKey: spec.key, adKey: ad.key, adId: adoptId, imageSha })
+          ops.push({ op: 'refresh-creative', campaignKey: spec.key, adKey: ad.key, adId: adoptId, assetShas })
         else
-          ops.push({ op: 'create-ad', campaignKey: spec.key, adKey: ad.key, imageSha })
+          ops.push({ op: 'create-ad', campaignKey: spec.key, adKey: ad.key, assetShas })
       }
-      else if (aLock.fp !== adFp(spec, ad, imageSha)) {
-        ops.push({ op: 'refresh-creative', campaignKey: spec.key, adKey: ad.key, adId: aLock.id, imageSha })
+      else if (aLock.fp !== adFp(spec, ad, assetShas)) {
+        ops.push({ op: 'refresh-creative', campaignKey: spec.key, adKey: ad.key, adId: aLock.id, assetShas })
       }
     }
   }

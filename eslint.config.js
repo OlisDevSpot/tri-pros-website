@@ -15,6 +15,9 @@ export default antfu({
     'src/payload-types.ts',
     'src/app/(payload)/admin/importMap.js',
 
+    // Remotion ad-video package — self-contained, own tsconfig/node_modules
+    'video/**',
+
     // don't lint .md files
     '**/*.md',
   ],

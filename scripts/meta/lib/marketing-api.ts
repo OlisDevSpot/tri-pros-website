@@ -2,7 +2,10 @@
 // Thin typed wrappers over metaFetch for the objects the sync engine manages.
 // HARD RULES (design spec): creates are always PAUSED; updates never touch
 // status; nothing here can delete. Activation is human-only in Ads Manager.
-import { metaFetch } from './client.js'
+import { readFileSync } from 'node:fs'
+import { basename } from 'node:path'
+import { setTimeout as sleep } from 'node:timers/promises'
+import { metaFetch, metaUpload } from './client.js'
 import { metaEnv } from './env.js'
 
 export interface RemoteObj {
@@ -102,6 +105,52 @@ export async function uploadAdImage(bytes: Buffer): Promise<string> {
   return first.hash
 }
 
+// Individual Advantage+ enhancement opt-outs (required since v22; the old
+// standard_enhancements bundle is deprecated). OPT_OUT keeps every creative
+// exactly as specced — no Meta auto-rewrites. Shared by all creative shapes.
+const CREATIVE_OPT_OUTS = {
+  creative_features_spec: {
+    image_enhancement: { enroll_status: 'OPT_OUT' },
+    text_generation: { enroll_status: 'OPT_OUT' },
+  },
+}
+
+const VIDEO_READY_POLL_INTERVAL_MS = 5_000
+const VIDEO_READY_TIMEOUT_MS = 5 * 60_000
+
+/** Meta processes uploads async; a creative referencing an unprocessed video is rejected. */
+async function waitForVideoReady(videoId: string): Promise<void> {
+  const deadline = Date.now() + VIDEO_READY_TIMEOUT_MS
+  while (true) {
+    const res = await metaFetch<{ status?: { video_status?: string } }>(`/${videoId}`, {
+      params: { fields: 'status' },
+    })
+    const videoStatus = res.status?.video_status
+    if (videoStatus === 'ready')
+      return
+    if (videoStatus === 'error')
+      throw new Error(`Meta video ${videoId} failed processing (video_status=error)`)
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `Meta video ${videoId} not ready after ${VIDEO_READY_TIMEOUT_MS / 1000}s `
+        + `(video_status=${videoStatus ?? 'unknown'}) — re-run sync to retry`,
+      )
+    }
+    await sleep(VIDEO_READY_POLL_INTERVAL_MS)
+  }
+}
+
+/** Non-chunked multipart upload — fine for files under ~50MB. Resolves once the video is processed. */
+export async function uploadAdVideo(filePath: string): Promise<string> {
+  const form = new FormData()
+  form.append('source', new Blob([new Uint8Array(readFileSync(filePath))]), basename(filePath))
+  const res = await metaUpload<{ id: string }>(`/${metaEnv.adAccountId}/advideos`, form)
+  if (!res.id)
+    throw new Error('advideos upload returned no video id')
+  await waitForVideoReady(res.id)
+  return res.id
+}
+
 export interface CreativeInput {
   name: string
   /** Clean landing URL — NO query params; tracking rides on urlTags. */
@@ -142,15 +191,116 @@ export async function createLinkAdCreative(input: CreativeInput): Promise<string
         ...(input.descriptions?.length ? { descriptions: input.descriptions.map(text => ({ text })) } : {}),
         optimization_type: 'DEGREES_OF_FREEDOM',
       },
-      // Individual Advantage+ enhancement opt-outs (required since v22; the old
-      // standard_enhancements bundle is deprecated). OPT_OUT keeps the creative
-      // exactly as specced — no Meta auto-rewrites.
-      degrees_of_freedom_spec: {
-        creative_features_spec: {
-          image_enhancement: { enroll_status: 'OPT_OUT' },
-          text_generation: { enroll_status: 'OPT_OUT' },
+      degrees_of_freedom_spec: CREATIVE_OPT_OUTS,
+      url_tags: input.urlTags,
+    },
+  })
+  return res.id
+}
+
+export interface CarouselCardInput {
+  imageHash: string
+  headline: string
+  description?: string
+}
+
+export interface CarouselCreativeInput {
+  name: string
+  /** Clean landing URL — NO query params; tracking rides on urlTags. */
+  baseUrl: string
+  /** Query string WITHOUT leading '?' — the UI "URL parameters" (Tracking) field. Meta appends at delivery. */
+  urlTags: string
+  primaryTexts: string[]
+  /** false = Meta must not reorder cards by predicted performance. */
+  multiShareOptimized: boolean
+  cards: CarouselCardInput[]
+  ctaType: 'APPLY_NOW' | 'LEARN_MORE'
+}
+
+export async function createCarouselAdCreative(input: CarouselCreativeInput): Promise<string> {
+  const res = await metaFetch<{ id: string }>(`/${metaEnv.adAccountId}/adcreatives`, {
+    method: 'POST',
+    body: {
+      name: input.name,
+      // UNVERIFIED write-path caution: asset_feed_spec bodies alongside
+      // link_data.child_attachments is NOT an empirically-verified combination
+      // (the verified multi-text shape was single-image link_data) and may
+      // conflict — so carousel creatives intentionally ship ONE primary text
+      // (primaryTexts[0]). If Meta later confirms the combo works, add the
+      // bodies-only asset_feed_spec here.
+      object_story_spec: {
+        page_id: metaEnv.pageId,
+        link_data: {
+          link: input.baseUrl,
+          message: input.primaryTexts[0],
+          multi_share_optimized: input.multiShareOptimized,
+          multi_share_end_card: false, // no Meta auto end-card — the last card stays ours
+          child_attachments: input.cards.map(card => ({
+            link: input.baseUrl,
+            image_hash: card.imageHash,
+            name: card.headline,
+            ...(card.description ? { description: card.description } : {}),
+            call_to_action: { type: input.ctaType },
+          })),
         },
       },
+      degrees_of_freedom_spec: CREATIVE_OPT_OUTS,
+      url_tags: input.urlTags,
+    },
+  })
+  return res.id
+}
+
+// UNVERIFIED write-path caution: multi-text via asset_feed_spec is empirically
+// verified for single-image link_data only. If Meta rejects it combined with
+// video_data, flip this to false — video_data already carries the first variant
+// of each text, so the fallback is exactly this one line.
+const VIDEO_ASSET_FEED_MULTI_TEXT = true
+
+export interface VideoCreativeInput {
+  name: string
+  /** Clean landing URL — NO query params; tracking rides on urlTags. */
+  baseUrl: string
+  /** Query string WITHOUT leading '?' — the UI "URL parameters" (Tracking) field. Meta appends at delivery. */
+  urlTags: string
+  headlines: string[]
+  primaryTexts: string[]
+  descriptions?: string[]
+  videoId: string
+  /** image_hash of the required thumbnail — Meta rejects video creatives without one. */
+  thumbnailHash: string
+  ctaType: 'APPLY_NOW' | 'LEARN_MORE'
+}
+
+export async function createVideoAdCreative(input: VideoCreativeInput): Promise<string> {
+  const res = await metaFetch<{ id: string }>(`/${metaEnv.adAccountId}/adcreatives`, {
+    method: 'POST',
+    body: {
+      name: input.name,
+      // video_data has NO top-level `link` field — the destination rides
+      // inside call_to_action.value.link.
+      object_story_spec: {
+        page_id: metaEnv.pageId,
+        video_data: {
+          video_id: input.videoId,
+          image_hash: input.thumbnailHash,
+          title: input.headlines[0],
+          message: input.primaryTexts[0],
+          ...(input.descriptions?.length ? { link_description: input.descriptions[0] } : {}),
+          call_to_action: { type: input.ctaType, value: { link: input.baseUrl } },
+        },
+      },
+      ...(VIDEO_ASSET_FEED_MULTI_TEXT
+        ? {
+            asset_feed_spec: {
+              bodies: input.primaryTexts.map(text => ({ text })),
+              titles: input.headlines.map(text => ({ text })),
+              ...(input.descriptions?.length ? { descriptions: input.descriptions.map(text => ({ text })) } : {}),
+              optimization_type: 'DEGREES_OF_FREEDOM',
+            },
+          }
+        : {}),
+      degrees_of_freedom_spec: CREATIVE_OPT_OUTS,
       url_tags: input.urlTags,
     },
   })

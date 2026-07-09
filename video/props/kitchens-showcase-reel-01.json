@@ -1,0 +1,24 @@
+{
+  "clips": [
+    { "src": "clips/kitchens-rosetta-push.mp4", "durationInFrames": 150 },
+    { "src": "clips/kitchens-picasso-orbit.mp4", "durationInFrames": 150 },
+    { "src": "clips/kitchens-detail-pan.mp4", "durationInFrames": 150 }
+  ],
+  "hook": "We’re Selecting 5 Kitchens in Your Area",
+  "checkmarks": ["AAA-grade materials", "Beautiful AND functional", "Built to be photographed"],
+  "captions": [
+    { "text": "We’re selecting 5 kitchens in your area", "startFrame": 75, "endFrame": 150 },
+    { "text": "for a AAA-grade remodel at a Showcase price", "startFrame": 150, "endFrame": 260 },
+    { "text": "featured in our portfolio", "startFrame": 260, "endFrame": 330 },
+    { "text": "Homeowners only — see if your home qualifies", "startFrame": 330, "endFrame": 445 }
+  ],
+  "voiceoverSrc": "audio/kitchens-vo-01.mp3",
+  "musicSrc": "audio/music-bed-01.mp3",
+  "musicVolume": 0.18,
+  "endCard": {
+    "headline": "Could Your Kitchen Be One of the 5?",
+    "sub": "AAA-grade work, at a Showcase price. Homeowners only.",
+    "cta": "See If Your Home Qualifies"
+  },
+  "endCardFrames": 120
+}
