@@ -96,6 +96,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'Meeting')
       can('create', 'Meeting')
       can('update', 'Meeting')
+      can('own', 'Meeting') // agents own the meetings they create (implicitly the sales rep)
 
       can('read', 'Proposal')
       can('create', 'Proposal')
@@ -168,6 +169,35 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
     // "Own record" enforcement happens at the DAL layer (see note above).
     case 'user':
       can('read', 'User')
+      break
+
+    // ── dispatcher ────────────────────────────────────────────────────────
+    // Internal lead-qualifier (e.g. a virtual assistant). Works the shared
+    // leads pool: qualifies leads and books appointments that land UNASSIGNED
+    // (system-owned) for the dispatch/assignment flow. NOT a sales agent —
+    // deliberately WITHOUT can('own','Meeting'), so meetings they create are
+    // owned by the system account, not by them. No proposal/project/calendar.
+    case 'dispatcher':
+      can('access', 'Dashboard')
+      can('read', 'LeadsPool') // sees the shared leads pool (drives visibility + phone + pipeline access)
+
+      can('read', 'Customer')
+      // Lead-contact fields only — NOT the sales-discovery JSON profiles.
+      can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
+
+      can('read', 'Meeting')
+      can('create', 'Meeting') // books appointments (lands unassigned — see resolve-owner.ts)
+      can('update', 'Meeting')
+      // Note: NO can('own','Meeting') — this is what makes their bookings unassigned.
+
+      can('read', 'User')
+
+      // Dial + text leads (voip-in-house verbs; row-scoping via visibility predicates).
+      can('read', 'VoipCall')
+      can('create', 'VoipCall')
+      can('read', 'VoipMessage')
+      can('create', 'VoipMessage')
+      can('read', 'VoipDid')
       break
   }
 

@@ -17,7 +17,7 @@ import type { EntityName } from './abilities'
 // 'manage' is CASL's built-in wildcard — means "all actions".
 // 'access' is our custom action for route/feature gating (e.g., Dashboard).
 // 'assign' is our custom action for reassigning ownership (e.g., meeting owner).
-export type AppAction = 'access' | 'assign' | 'create' | 'delete' | 'manage' | 'read' | 'update'
+export type AppAction = 'access' | 'assign' | 'create' | 'delete' | 'manage' | 'own' | 'read' | 'update'
 
 // Subjects (resources) that actions apply to.
 // `EntityName` covers the 5 business entities (Customer/Meeting/Proposal/Project/Activity).
@@ -26,6 +26,7 @@ export type AppAction = 'access' | 'assign' | 'create' | 'delete' | 'manage' | '
 //   - 'Dashboard'        route-level gate (dashboard access)
 //   - 'Calendar'         feature gate (GCal sync)
 //   - 'CustomerPipeline' feature gate (manage rehash/dead pipeline access)
+//   - 'LeadsPool'        feature gate (shared leads pool visibility)
 //   - 'User'             user-record reads (no Entity Server System integration yet)
 export type AppSubject
   = EntityName
@@ -33,6 +34,7 @@ export type AppSubject
     | 'Calendar'
     | 'CustomerPipeline'
     | 'Dashboard'
+    | 'LeadsPool'
     | 'User'
 
 // The main ability type used throughout the app.
