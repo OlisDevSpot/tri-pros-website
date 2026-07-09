@@ -111,7 +111,7 @@ function buildPreparedForBlock(proposal: ProposalWithCustomer): Content {
     customerLines.push({ text: customer.email })
   }
 
-  const date = new Date(proposal.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const date = new Date(proposal.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' })
   return {
     columns: [
       { width: '*', stack: customerLines },
