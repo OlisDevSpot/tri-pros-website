@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
-import { ViewModeToggleMobile } from '@/features/proposal-flow/ui/components/proposal/view-mode-toggle'
 import { Logo } from '@/shared/components/logo'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { ROOTS } from '@/shared/config/roots'
@@ -14,6 +13,7 @@ import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useActiveSection } from '@/shared/hooks/use-active-section'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { ProposalNavbarFrame } from './navbar-frame'
+import { ProposalNavbarMenu } from './navbar-menu'
 
 export function ProposalPageNavbar() {
   const isMobile = useIsMobile()
@@ -52,24 +52,27 @@ export function ProposalPageNavbar() {
       </Link>
       {!isMobile
         ? (
-            proposalSteps.map(step => (
-              <div
-                key={step.accessor}
-                className="flex-1 last-of-type:bg-primary h-full"
-              >
-                <Link
-                  className="h-full w-full flex items-center justify-center hover:bg-foreground/40 transition data-[active=true]:bg-foreground/40"
-                  href={`#${step.accessor}`}
-                  data-active={activeSectionId === step.accessor}
+            <>
+              {proposalSteps.map(step => (
+                <div
+                  key={step.accessor}
+                  className="flex-1 last-of-type:bg-primary h-full"
                 >
-                  {step.title}
-                </Link>
-              </div>
-            ))
+                  <Link
+                    className="h-full w-full flex items-center justify-center hover:bg-foreground/40 transition data-[active=true]:bg-foreground/40"
+                    href={`#${step.accessor}`}
+                    data-active={activeSectionId === step.accessor}
+                  >
+                    {step.title}
+                  </Link>
+                </div>
+              ))}
+              <ProposalNavbarMenu variant="desktop" />
+            </>
           )
         : (
             <div className="h-full w-full flex items-center justify-center gap-2 px-4">
-              <ViewModeToggleMobile />
+              <ProposalNavbarMenu variant="mobile" />
               <Select
                 value={activeSectionId}
                 onValueChange={(val) => {

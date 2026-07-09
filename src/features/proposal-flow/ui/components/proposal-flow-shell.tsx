@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react'
 
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
-import { ViewModeToggle } from '@/features/proposal-flow/ui/components/proposal/view-mode-toggle'
 
 interface Props {
   children: ReactNode
@@ -11,9 +10,10 @@ interface Props {
 
 /**
  * Client wrapper for the proposal-flow layout. Owns the page background
- * gradient, `data-view-mode` attribute, and the sticky desktop view-mode
- * toggle. The gradient accent swaps from primary (blue) to destructive
- * (red) when the agent is in agent mode.
+ * gradient and `data-view-mode` attribute. The gradient accent swaps from
+ * primary (blue) to destructive (red) when the agent is in agent mode. The
+ * view-mode toggle itself lives in the navbar kebab menu
+ * (`ProposalNavbarMenu`), not in this shell.
  */
 export function ProposalFlowShell({ children }: Props) {
   const viewMode = useViewMode()
@@ -30,7 +30,6 @@ export function ProposalFlowShell({ children }: Props) {
       data-no-gutter-stable
       data-view-mode={viewMode}
     >
-      <ViewModeToggle />
       {children}
     </div>
   )
