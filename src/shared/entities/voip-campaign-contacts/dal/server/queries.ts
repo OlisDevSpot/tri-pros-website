@@ -13,7 +13,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
-import { gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone, gatedPhoneSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { isCampaignLeadSql, isDncSql, isEligibleSql, isEnrolledSql, isRemovedSql, leadStatusCaseSql } from '@/shared/entities/voip-campaign-contacts/lib/lead-campaign-status'
 import { toDigits } from '@/shared/lib/phone'
 
@@ -276,8 +276,8 @@ export async function listLeadsPaginated(
   return dalDbOperation(async () => {
     // Phone is gated at the DAL (customers DOCS#phone-visibility-threshold) so a
     // leaked query can't expose it. Today the only caller is superAdminProcedure
-    // (isOmni → raw phone), but the gate makes a future scoped caller leak-proof.
-    const isOmni = ctx.ability == null || ctx.ability.can('manage', 'all')
+    // (canSeeUngatedPhone → raw phone), but the gate makes a future scoped caller leak-proof.
+    const canSeeUngated = canSeeUngatedPhone(ctx.ability)
 
     const statusPredicate
       = args.status === 'all'
@@ -338,7 +338,7 @@ export async function listLeadsPaginated(
             vc.ct_campaign_name AS "campaignName",
             part.enrolled_at AS "enrolledAt",
             customers.lead_source_id AS "leadSourceId",
-            ${gatedPhoneSql(isOmni)} AS phone,
+            ${gatedPhoneSql(canSeeUngated)} AS phone,
             ls.name AS "leadSourceName",
             COALESCE(part.dial_attempts, 0) AS "dialAttempts",
             customers.created_at AS "createdAt",

@@ -22,7 +22,7 @@ import { customers } from '@/shared/db/schema/customers'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { addCustomerNote } from '@/shared/entities/customers/dal/server/mutations'
 import { derivedPipelineSql, derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { toDigits } from '@/shared/lib/phone'
 import { constructionDataService } from '@/shared/services/construction-data.service'
@@ -124,7 +124,7 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
           .select({
             id: customers.id,
             name: customers.name,
-            phone: gatedPhoneSql(isOmni),
+            phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
             hasSentProposal: hasSentProposalSql(),
             address: customers.address,
           })

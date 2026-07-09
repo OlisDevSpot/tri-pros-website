@@ -25,12 +25,12 @@ A non-omni agent sees a customer only if they participate in **any** meeting tie
 
 ### phone-visibility-threshold
 
-Agents see a customer's phone number only when the customer has a proposal at status `sent` or `approved`. Super-admins always see it. Phone is **null-gated at the DAL layer** (via `gatedPhoneSql`), not by hiding in the UI — so leaked queries can't expose it.
+Agents see a customer's phone number only when the customer has a proposal at status `sent` or `approved`. Omni + leads-pool (dispatcher) + trusted server/token callers see it ungated. Phone is **null-gated at the DAL layer** (via `gatedPhoneSql`), not by hiding in the UI — so leaked queries can't expose it.
 
 UI surfaces also receive `hasSentProposal: boolean` so they can distinguish "phone null because gated" (show unlock CTA) from "phone null because the customer genuinely has no phone" (super-admin sees, agent shouldn't be told).
 
 **Why**: protects against agents shopping leads pre-commitment. Threshold (not equality) matters — phone stays unlocked through approval and project stages because forward progression only deepens the relationship.
-**Reference impl**: `lib/phone-gating-sql.ts` (`gatedPhoneSql`, `hasSentProposalSql`); `lib/can-see-phone.ts` (client-side render helper)
+**Reference impl**: `lib/phone-gating-sql.ts` (`gatedPhoneSql`, `canSeeUngatedPhone`, `hasSentProposalSql`); `lib/can-see-phone.ts` (client-side render helper)
 **Enforced by**: DAL-level SQL null-coalesce on every agent-facing query that exposes `customers.phone`
 **Related ping**: see `memory/feedback-phone-visibility-threshold.md` for the threshold-vs-equality history and the recent (2026-05-19) fix.
 

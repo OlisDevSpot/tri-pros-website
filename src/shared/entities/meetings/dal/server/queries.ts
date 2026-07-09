@@ -22,7 +22,7 @@ import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -175,14 +175,12 @@ export async function listMeetings(
       createdAt: meetings.createdAt,
     }, desc(meetings.createdAt))
 
-    const isOmni = ctx.scope === null
-
     const result = await paginate({
       query: () => db
         .select({
           ...getTableColumns(meetings),
           customerName: customers.name,
-          customerPhone: gatedPhoneSql(isOmni),
+          customerPhone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
           customerHasSentProposal: hasSentProposalSql(),
           customerAddress: customers.address,
           customerCity: customers.city,
@@ -286,7 +284,6 @@ export async function getByIdWithJoins(
   input: { id: string },
 ): Promise<DalReturn<MeetingWithCustomer | undefined>> {
   return dalDbOperation(async () => {
-    const isOmni = ctx.scope === null
     // Swap the raw phone column out of the customer projection so
     // destructuring `row.customer` can't accidentally leak the ungated value.
     const { phone: _customerPhone, ...customerCols } = getTableColumns(customers)
@@ -296,7 +293,7 @@ export async function getByIdWithJoins(
         ...getTableColumns(meetings),
         customer: {
           ...customerCols,
-          phone: gatedPhoneSql(isOmni),
+          phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
           hasSentProposal: hasSentProposalSql(),
         },
         ownerName: user.name,

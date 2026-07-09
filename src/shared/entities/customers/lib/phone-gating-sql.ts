@@ -1,14 +1,17 @@
+import type { AppAbility } from '@/shared/domains/permissions/types'
 import { sql } from 'drizzle-orm'
 import { customers } from '@/shared/db/schema/customers'
 
 /**
  * SQL helpers for phone-number gating. Server-only.
  * Rule: agents see phone once a proposal is sent OR later (sent | approved).
- * Super-admins always see it. see ../DOCS.md (when written: #phone-visibility-threshold)
+ * Omni/leads-pool/trusted callers see it ungated (see `canSeeUngatedPhone`).
+ * see ../DOCS.md (when written: #phone-visibility-threshold)
  *
  * Agent-facing queries that expose `customers.phone` MUST swap the column for
- * `gatedPhoneSql(isSuperAdmin)` and include `hasSentProposalSql()` so the
- * client can distinguish "locked" from "empty" in the unlock-notice render.
+ * `gatedPhoneSql(canSeeUngatedPhone(ctx.ability))` and include
+ * `hasSentProposalSql()` so the client can distinguish "locked" from "empty"
+ * in the unlock-notice render.
  * Server-side raw-phone consumers (GCal push, proposal delivery, email jobs)
  * reference `customers.phone` directly — those paths never reach agent eyes.
  *
@@ -30,8 +33,19 @@ export function hasSentProposalSql() {
   return sql<boolean>`${EXISTS_SENT_PROPOSAL}`
 }
 
-export function gatedPhoneSql(isSuperAdmin: boolean) {
-  if (isSuperAdmin) {
+/**
+ * Ungated-phone policy. Omni callers (super-admin), leads-pool workers
+ * (dispatchers, who dial leads), and trusted server/token paths (ability === null)
+ * see raw phone. Everyone else is gated behind a sent proposal.
+ */
+export function canSeeUngatedPhone(ability: AppAbility | null): boolean {
+  if (!ability)
+    return true // SYSTEM_CONTEXT / token path — already trusted upstream
+  return ability.can('manage', 'all') || ability.can('read', 'LeadsPool')
+}
+
+export function gatedPhoneSql(canSeeUngated: boolean) {
+  if (canSeeUngated) {
     return sql<string | null>`${customers.phone}`
   }
   return sql<string | null>`CASE WHEN ${EXISTS_SENT_PROPOSAL} THEN ${customers.phone} ELSE NULL END`

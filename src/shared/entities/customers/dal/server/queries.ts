@@ -9,7 +9,7 @@ import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
-import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { toNationalDigits } from '@/shared/lib/phone'
 import { queryNotionDatabase } from '@/shared/services/providers/notion/dal/query-notion-database'
 import { pageToContact } from '@/shared/services/providers/notion/lib/contacts/adapter'
@@ -18,17 +18,16 @@ export type { Customer }
 
 export type CustomerWithPhoneGate = Customer & { hasSentProposal: boolean }
 
-// Phone-gating column selection. The `ability` on ctx tells us whether the
-// caller is super-admin (sees real phone) or agent (sees gated null). When
-// ability is null (SYSTEM_CONTEXT — jobs, webhooks), we ungate fully because
-// SYSTEM-level callers never surface phone to a user.
+// Phone-gating column selection. `canSeeUngatedPhone` tells us whether the
+// caller is omni/leads-pool (sees real phone) or agent (sees gated null).
+// When ability is null (SYSTEM_CONTEXT — jobs, webhooks), we ungate fully
+// because SYSTEM-level callers never surface phone to a user.
 // see ../../DOCS.md#phone-visibility-threshold
 function customerSelectWithGate(ctx: ScopedContext) {
-  const isOmni = ctx.ability == null || ctx.ability.can('manage', 'all')
   const { phone: _phone, ...rest } = getTableColumns(customers)
   return {
     ...rest,
-    phone: gatedPhoneSql(isOmni),
+    phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
     hasSentProposal: hasSentProposalSql(),
   }
 }
