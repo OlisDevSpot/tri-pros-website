@@ -12,7 +12,9 @@ import {
 import { OUTCOME_PIPELINE_MAP } from '@/shared/domains/pipelines/lib/outcome-pipeline-map'
 import { addParticipant } from '@/shared/entities/meetings/dal/server/participants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
+import { resolveMeetingOwnerId } from '@/shared/entities/meetings/lib/resolve-owner'
 import { meetingVisibility } from '@/shared/entities/meetings/lib/visibility'
+import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
@@ -40,17 +42,20 @@ export const meetingServerSpec = {
   hooks: {
     create: {
       // see ../DOCS.md#meeting-owner-is-creator
-      // Authenticated callers: ownerId is forced to ctx.session.user.id —
-      // prevents wire clients from POSTing { ownerId: <someone-else> } and
-      // creating a meeting owned by another user. SYSTEM_CONTEXT callers
+      // Authenticated callers: ownerId is ALWAYS server-resolved — prevents wire
+      // clients from POSTing { ownerId: <someone-else> } and creating a meeting
+      // owned by another user. Resolution branches on the `own Meeting`
+      // capability (CASL), never on input and never on a role string: agents /
+      // super-admin own their meetings; dispatchers create unassigned
+      // (system-owned) ones — see ./resolve-owner.ts. SYSTEM_CONTEXT callers
       // (orchestrators like customers.createFromIntake) have ctx.session ===
       // null and supply ownerId explicitly — the hook passes their value
       // through unchanged.
-      before(input, ctx) {
-        if (ctx.session) {
-          return { ...input, ownerId: ctx.session.user.id }
+      async before(input, ctx) {
+        if (!ctx.session) {
+          return input
         }
-        return input
+        return { ...input, ownerId: await resolveMeetingOwnerId(ctx) }
       },
       // Merged from lifecycle.ts onCreated + onDuplicated (identical behavior).
       // Uses row.ownerId (not ctx.session.user.id) so the participant follows
@@ -61,7 +66,12 @@ export const meetingServerSpec = {
       // rather than silently dropping the event.
       // see docs/codebase-conventions/service-architecture.md#background-side-effects-via-qstash-jobs
       async after(row: Meeting, _ctx) {
-        await addParticipant(row.id, row.ownerId, 'owner')
+        const systemOwnerId = await getSystemOwnerId()
+        // info@ cannot attend — a system-owned (unassigned, dispatcher-booked)
+        // meeting has no owner participant. see ../DOCS.md#system-account-not-a-person
+        if (row.ownerId !== systemOwnerId) {
+          await addParticipant(row.id, row.ownerId, 'owner')
+        }
 
         if (row.scheduledFor) {
           await syncMeetingToGcalJob.dispatchOrThrow({ meetingId: row.id })
