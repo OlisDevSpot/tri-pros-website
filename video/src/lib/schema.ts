@@ -4,6 +4,16 @@ export const clipSchema = z.object({
   /** Filename under video/public/ (Remotion staticFile). */
   src: z.string(),
   durationInFrames: z.number().int().positive(),
+  /**
+   * `full` = full-bleed cover (needs a true 9:16 source clip).
+   * `framed` = editorial card on the dark brand ground — native aspect, no
+   * quality-destroying crop; use for landscape clips.
+   */
+  layout: z.enum(['full', 'framed']),
+  /** Width/height of the source clip — sizes the framed card. */
+  aspect: z.number().positive(),
+  /** Uppercase chip above a framed card (e.g. "THE SHOWCASE STANDARD"). */
+  label: z.string().nullable(),
 })
 
 export const captionSchema = z.object({
@@ -16,8 +26,9 @@ export const showcaseReelSchema = z.object({
   clips: z.array(clipSchema).min(1),
   /** Kinetic hook headline over the first clip (0–~2.5s). */
   hook: z.string(),
-  /** Checkmark rows overlaid mid-reel; empty array = skip the overlay. */
+  /** Checkmark rows shown above the framed card of clips[checkmarkClipIndex]. */
   checkmarks: z.array(z.string()).max(4),
+  checkmarkClipIndex: z.number().int().nullable(),
   /** Burned-in captions mirroring the voiceover (most viewers watch muted). */
   captions: z.array(captionSchema),
   voiceoverSrc: z.string().nullable(),

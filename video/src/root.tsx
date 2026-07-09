@@ -19,12 +19,13 @@ export function RemotionRoot() {
       })}
       defaultProps={{
         clips: [
-          { src: 'clips/kitchen-01.mp4', durationInFrames: 150 },
-          { src: 'clips/kitchen-02.mp4', durationInFrames: 150 },
-          { src: 'clips/kitchen-03.mp4', durationInFrames: 150 },
+          { src: 'clips/kitchen-01.mp4', durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
+          { src: 'clips/kitchen-02.mp4', durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
+          { src: 'clips/kitchen-03.mp4', durationInFrames: 150, layout: 'framed' as const, aspect: 1.5706, label: null },
         ],
         hook: 'We’re Selecting 5 Kitchens in Your Area',
         checkmarks: ['AAA-grade materials', 'Beautiful AND functional', 'Built to be photographed'],
+        checkmarkClipIndex: 2,
         captions: [],
         voiceoverSrc: null,
         musicSrc: null,

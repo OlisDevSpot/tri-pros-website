@@ -11,13 +11,15 @@ import {
 import { CaptionTrack } from '../components/caption-track'
 import { CheckmarkList } from '../components/checkmark-list'
 import { EndCard } from '../components/end-card'
+import { FramedClip } from '../components/framed-clip'
 import { HookTitle } from '../components/hook-title'
 import { SafeZone } from '../components/safe-zone'
 
 /**
- * The Showcase 9:16 reel: hook headline over clip 1 → b-roll with captions
- * (+ optional checkmark overlay on clip 2) → branded end card.
- * All timing derives from props so one composition serves every trade/variant.
+ * The Showcase 9:16 reel: hook headline over clip 1 → proof clips (full-bleed
+ * portrait or framed editorial card for landscape sources) with burned-in
+ * captions → branded end card. All timing derives from props so one
+ * composition serves every trade/variant.
  */
 export function ShowcaseReel(props: ShowcaseReelProps) {
   const frame = useCurrentFrame()
@@ -30,23 +32,42 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
   const musicLevel = captionActive ? props.musicVolume : Math.min(0.35, props.musicVolume * 2)
 
   let clipStart = 0
-  const clipSequences = props.clips.map((clip) => {
+  const clipSequences = props.clips.map((clip, index) => {
     const from = clipStart
     clipStart += clip.durationInFrames
-    return { ...clip, from }
+    return { ...clip, from, index }
   })
 
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
       {clipSequences.map(clip => (
         <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames}>
-          <AbsoluteFill>
-            <OffthreadVideo
-              src={staticFile(clip.src)}
-              muted
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          </AbsoluteFill>
+          {clip.layout === 'framed'
+            ? (
+                <FramedClip
+                  src={clip.src}
+                  aspect={clip.aspect}
+                  label={clip.label}
+                  above={
+                    props.checkmarkClipIndex === clip.index && props.checkmarks.length > 0
+                      ? (
+                          <div style={{ transform: 'scale(0.72)', transformOrigin: 'bottom center' }}>
+                            <CheckmarkList items={props.checkmarks} />
+                          </div>
+                        )
+                      : undefined
+                  }
+                />
+              )
+            : (
+                <AbsoluteFill>
+                  <OffthreadVideo
+                    src={staticFile(clip.src)}
+                    muted
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </AbsoluteFill>
+              )}
         </Sequence>
       ))}
 
@@ -67,14 +88,6 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
         </SafeZone>
       </Sequence>
 
-      {props.checkmarks.length > 0 && clipSequences[1] && (
-        <Sequence from={clipSequences[1].from} durationInFrames={clipSequences[1].durationInFrames}>
-          <SafeZone>
-            <CheckmarkList items={props.checkmarks} />
-          </SafeZone>
-        </Sequence>
-      )}
-
       <Sequence from={hookFrames} durationInFrames={clipsTotal - hookFrames}>
         <SafeZone>
           <CaptionTrack
@@ -91,7 +104,11 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
         <EndCard content={props.endCard} />
       </Sequence>
 
-      {props.voiceoverSrc && <Audio src={staticFile(props.voiceoverSrc)} />}
+      {props.voiceoverSrc && (
+        <Sequence from={15}>
+          <Audio src={staticFile(props.voiceoverSrc)} />
+        </Sequence>
+      )}
       {props.musicSrc && (
         <Audio
           src={staticFile(props.musicSrc)}
