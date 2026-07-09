@@ -225,8 +225,9 @@ function contactValue(accessor: 'mainOffice' | 'phone' | 'email'): string {
 
 async function loadLogoDataUrl(): Promise<string | null> {
   try {
-    const buf = await readFile(path.join(process.cwd(), 'public/company/logo/logo-dark-right.jpg'))
-    return `data:image/jpeg;base64,${buf.toString('base64')}`
+    // "light" variant = dark lettering for light backgrounds — the PDF page is white.
+    const buf = await readFile(path.join(process.cwd(), 'public/company/logo/logo-light-right.png'))
+    return `data:image/png;base64,${buf.toString('base64')}`
   }
   catch (error) {
     console.error('[proposal-pdf] logo load failed — rendering text-only header', error)

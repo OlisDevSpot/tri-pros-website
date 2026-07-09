@@ -48,7 +48,7 @@ const nextConfig: NextConfig = {
     // logo from public/ for the branded header.
     '/api/proposals/[proposalId]/pdf': [
       './node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/data/**/*',
-      './public/company/logo/logo-dark-right.jpg',
+      './public/company/logo/logo-light-right.png',
     ],
     // The funnel OG image route reads its font + background photos + logo from
     // public/ via fs at render time (see funnels/lib/og/og-assets.ts). NFT
