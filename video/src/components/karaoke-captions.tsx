@@ -1,15 +1,15 @@
-import type { Caption } from '@remotion/captions'
-import { createTikTokStyleCaptions } from '@remotion/captions'
+import type { WordInput } from '../lib/paginate-captions'
 import { useMemo } from 'react'
 import { spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { BODY_FONT } from '../lib/fonts'
+import { paginateCaptions } from '../lib/paginate-captions'
 import { BRAND } from '../lib/tokens'
 
 /**
- * CapCut-style karaoke captions: short pages of 3–5 words, the currently
- * spoken word highlighted in brand blue with a scale pop. Timing is absolute
- * audio ms from whisper — the highlight flips at word START and cannot drift.
- * Rendered inside SafeZone; `vertical` positions the caption centerline.
+ * CapCut-style karaoke captions: 3-word single-line pages, the currently
+ * spoken word highlighted in brand blue with a scale pop. Page visibility is
+ * gapless (paginate-captions.ts); the highlight flips on each word's true
+ * whisper timing, so neither the page nor the highlight can lag the voice.
  */
 export function KaraokeCaptions({
   wordCaptions,
@@ -17,7 +17,7 @@ export function KaraokeCaptions({
   hideBeforeFrame,
   vertical,
 }: {
-  wordCaptions: Caption[]
+  wordCaptions: WordInput[]
   voStartFrame: number
   /** Suppress pages while the hook title owns the screen (no double text). */
   hideBeforeFrame: number
@@ -25,16 +25,13 @@ export function KaraokeCaptions({
 }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
-  const { pages } = useMemo(
-    () => createTikTokStyleCaptions({ captions: wordCaptions, combineTokensWithinMilliseconds: 1200 }),
-    [wordCaptions],
-  )
+  const pages = useMemo(() => paginateCaptions(wordCaptions), [wordCaptions])
 
   if (frame < hideBeforeFrame)
     return null
 
   const audioMs = ((frame - voStartFrame) / fps) * 1000
-  const page = pages.find(p => audioMs >= p.startMs && audioMs < p.startMs + p.durationMs)
+  const page = pages.find(p => audioMs >= p.startMs && audioMs < p.endMs)
   if (!page)
     return null
 
@@ -62,11 +59,11 @@ export function KaraokeCaptions({
         style={{
           fontFamily: BODY_FONT,
           fontWeight: 800,
-          fontSize: 58,
+          fontSize: 56,
           lineHeight: 1.3,
           textAlign: 'center',
           textTransform: 'uppercase',
-          maxWidth: '94%',
+          whiteSpace: 'nowrap',
           color: '#ffffff',
           WebkitTextStroke: '10px rgba(0,0,0,0.9)',
           paintOrder: 'stroke',
@@ -78,11 +75,6 @@ export function KaraokeCaptions({
       >
         {page.tokens.map((token, i) => {
           const active = token.fromMs <= audioMs && token.toMs > audioMs
-          // Explicit separator spaces — createTikTokStyleCaptions normalizes
-          // token whitespace inconsistently, so never rely on it for layout.
-          const word = token.text.trim()
-          if (!word)
-            return null
           return (
             <span key={`${token.fromMs}-${i}`} style={{ whiteSpace: 'pre' }}>
               {i > 0 ? ' ' : ''}
@@ -93,7 +85,7 @@ export function KaraokeCaptions({
                   transform: active ? 'scale(1.1)' : 'scale(1)',
                 }}
               >
-                {word}
+                {token.text}
               </span>
             </span>
           )
