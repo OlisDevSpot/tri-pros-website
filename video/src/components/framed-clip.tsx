@@ -16,6 +16,7 @@ export function FramedClip({
   aspect,
   label,
   above,
+  kenBurns = 'in',
 }: {
   src: string
   kind: 'video' | 'image'
@@ -23,6 +24,7 @@ export function FramedClip({
   aspect: number
   label: string | null
   above?: ReactNode
+  kenBurns?: 'in' | 'out'
 }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
@@ -64,7 +66,7 @@ export function FramedClip({
               transform: `scale(${0.96 + enter * 0.04})`,
             }}
           >
-            <ClipMedia src={src} kind={kind} durationInFrames={durationInFrames} />
+            <ClipMedia src={src} kind={kind} durationInFrames={durationInFrames} kenBurns={kenBurns} />
           </div>
           <div style={{ flex: 1 }} />
         </div>

@@ -2,6 +2,7 @@ import type { ShowcaseReelProps } from '../lib/schema'
 import {
   AbsoluteFill,
   Audio,
+  Easing,
   Img,
   interpolate,
   Sequence,
@@ -17,6 +18,9 @@ import { FramedClip } from '../components/framed-clip'
 import { HookTitle } from '../components/hook-title'
 import { SafeZone } from '../components/safe-zone'
 
+// replaced by import in Task 5
+const DOCK_FRAMES = 15
+
 /**
  * The Showcase 9:16 reel: hook headline over clip 1 → proof clips (full-bleed
  * portrait or framed editorial card for landscape sources) with burned-in
@@ -27,7 +31,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
   const frame = useCurrentFrame()
   const clipsTotal = props.clips.reduce((sum, c) => sum + c.durationInFrames, 0)
   const total = clipsTotal + props.endCardFrames
-  const hookFrames = Math.min(75, props.clips[0]!.durationInFrames)
+  const hookEnd = props.hookStartFrame + props.hookDurationInFrames
 
   // Duck the music bed while the voiceover talks.
   const voActive = props.wordCaptions.length > 0
@@ -53,6 +57,17 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
     return Math.max(acc, interpolate(elapsed, [0, 10], [p.scale, 1], { extrapolateRight: 'clamp' }))
   }, 1)
 
+  // Zoom-out reveal: after-shot arrives oversized and settles (150→100% over 10f).
+  const revealScale = props.zoomOutReveals.reduce((acc, f) => {
+    const elapsed = frame - f
+    if (elapsed < 0)
+      return acc
+    return Math.max(acc, interpolate(elapsed, [0, 10], [1.5, 1], {
+      extrapolateRight: 'clamp',
+      easing: Easing.out(Easing.cubic),
+    }))
+  }, 1)
+
   // Luma flash: white overlay peaking exactly ON each flash frame (6f total).
   const flashOpacity = props.flashFrames.reduce(
     (acc, f) => Math.max(acc, interpolate(frame, [f - 3, f, f + 3], [0, 0.9, 0], {
@@ -64,7 +79,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
 
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <AbsoluteFill style={{ transform: `scale(${punchScale})` }}>
+      <AbsoluteFill style={{ transform: `scale(${punchScale * revealScale})` }}>
         {clipSequences.map(clip => (
         <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames}>
           {clip.layout === 'framed'
@@ -75,6 +90,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                   durationInFrames={clip.durationInFrames}
                   aspect={clip.aspect}
                   label={clip.label}
+                  kenBurns={clip.kenBurns}
                   above={
                     props.checkmarkClipIndex === clip.index && props.checkmarks.length > 0
                       ? (
@@ -88,27 +104,23 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
               )
             : (
                 <AbsoluteFill>
-                  <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} />
+                  <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} kenBurns={clip.kenBurns} />
                 </AbsoluteFill>
               )}
         </Sequence>
         ))}
       </AbsoluteFill>
 
-      {props.watermarkSrc && (
-        <Sequence durationInFrames={clipsTotal}>
-          <div
-            style={{
-              position: 'absolute',
-              top: '14%',
-              right: '6%',
-              opacity: 0.85,
-            }}
-          >
-            <Img src={staticFile(props.watermarkSrc)} style={{ width: 110 }} />
-          </div>
-        </Sequence>
-      )}
+      {props.watermarkSrc && (() => {
+        const watermarkFrom = props.logoIntro ? props.logoIntro.dockFrame + DOCK_FRAMES : 0
+        return (
+          <Sequence from={watermarkFrom} durationInFrames={clipsTotal - watermarkFrom}>
+            <div style={{ position: 'absolute', top: '14%', right: '6%', opacity: 0.85 }}>
+              <Img src={staticFile(props.watermarkSrc)} style={{ width: props.watermarkWidth }} />
+            </div>
+          </Sequence>
+        )
+      })()}
 
       {/* Subtle bottom gradient keeps captions legible over bright footage. */}
       <AbsoluteFill
@@ -121,7 +133,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
         }}
       />
 
-      <Sequence durationInFrames={hookFrames}>
+      <Sequence from={props.hookStartFrame} durationInFrames={props.hookDurationInFrames}>
         <SafeZone>
           <HookTitle text={props.hook} />
         </SafeZone>
@@ -134,21 +146,21 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                 <KaraokeCaptions
                   wordCaptions={props.wordCaptions}
                   voStartFrame={props.voStartFrame}
-                  hideBeforeFrame={hookFrames}
+                  hideBeforeFrame={hookEnd}
                   vertical={props.captionVertical}
                 />
               </SafeZone>
             </Sequence>
           )
         : (
-            <Sequence from={hookFrames} durationInFrames={clipsTotal - hookFrames}>
+            <Sequence from={hookEnd} durationInFrames={clipsTotal - hookEnd}>
               <SafeZone>
                 <CaptionTrack
                   vertical={props.captionVertical}
                   captions={props.captions.map(c => ({
                     ...c,
-                    startFrame: c.startFrame - hookFrames,
-                    endFrame: c.endFrame - hookFrames,
+                    startFrame: c.startFrame - hookEnd,
+                    endFrame: c.endFrame - hookEnd,
                   }))}
                 />
               </SafeZone>

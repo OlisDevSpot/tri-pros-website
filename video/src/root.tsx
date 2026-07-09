@@ -19,11 +19,13 @@ export function RemotionRoot() {
       })}
       defaultProps={{
         clips: [
-          { src: 'clips/kitchen-01.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
-          { src: 'clips/kitchen-02.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
-          { src: 'clips/kitchen-03.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'framed' as const, aspect: 1.5706, label: null },
+          { src: 'clips/kitchen-01.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null, kenBurns: 'in' as const },
+          { src: 'clips/kitchen-02.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null, kenBurns: 'in' as const },
+          { src: 'clips/kitchen-03.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'framed' as const, aspect: 1.5706, label: null, kenBurns: 'in' as const },
         ],
         hook: 'We’re Selecting 5 Kitchens in Your Area',
+        hookStartFrame: 0,
+        hookDurationInFrames: 75,
         checkmarks: ['AAA-grade materials', 'Beautiful AND functional', 'Built to be photographed'],
         checkmarkClipIndex: 2,
         captions: [],
@@ -36,6 +38,9 @@ export function RemotionRoot() {
         voiceoverSrc: null,
         musicSrc: null,
         watermarkSrc: 'brand/logo-dark.svg',
+        watermarkWidth: 110,
+        logoIntro: null,
+        zoomOutReveals: [],
         musicVolume: 0.12,
         endCard: {
           headline: 'Could Your Kitchen Be One of the 5?',

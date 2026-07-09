@@ -8,10 +8,12 @@ export function ClipMedia({
   src,
   kind,
   durationInFrames,
+  kenBurns = 'in',
 }: {
   src: string
   kind: 'video' | 'image'
   durationInFrames: number
+  kenBurns?: 'in' | 'out'
 }) {
   const frame = useCurrentFrame()
 
@@ -25,9 +27,12 @@ export function ClipMedia({
     )
   }
 
-  const zoom = interpolate(frame, [0, durationInFrames], [1, 1.08], {
-    extrapolateRight: 'clamp',
-  })
+  const zoom = interpolate(
+    frame,
+    [0, durationInFrames],
+    kenBurns === 'in' ? [1, 1.08] : [1.08, 1],
+    { extrapolateRight: 'clamp' },
+  )
   return (
     <Img
       src={staticFile(src)}
