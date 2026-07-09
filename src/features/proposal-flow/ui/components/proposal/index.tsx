@@ -9,12 +9,14 @@ import { customizableSections, generateProposalSteps } from '@/features/proposal
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
+import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { useTRPC } from '@/trpc/helpers'
 
 import { Heading } from './heading'
+import { PdfFallbackCard } from './pdf-fallback-card'
 
 export function Proposal() {
   const params = useParams() as { proposalId: string }
@@ -113,6 +115,9 @@ export function Proposal() {
                 )}
               </div>
             ))}
+            {token && (
+              <PdfFallbackCard pdfUrl={getProposalPdfUrl(params.proposalId, token)} />
+            )}
           </motion.div>
         </div>
       </div>
