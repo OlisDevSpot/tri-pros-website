@@ -116,4 +116,4 @@ props.wordCaptions = scriptWords.map((word, j) => ({
   ...result[j],
 }))
 writeFileSync(propsPath, `${JSON.stringify(props, null, 2)}\n`)
-console.log(`✅ ${mapped.length} word captions (${Math.round(matchRatio * 100)}% script match) → ${propsPath}`)
+console.log(`✅ ${scriptWords.length} word captions (${Math.round(matchRatio * 100)}% script match) → ${propsPath}`)
