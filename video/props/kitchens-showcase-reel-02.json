@@ -1,0 +1,398 @@
+{
+  "clips": [
+    {
+      "src": "stills/kitchens-picasso-after.png",
+      "kind": "image",
+      "durationInFrames": 75,
+      "layout": "full",
+      "aspect": 0.5625,
+      "label": null,
+      "kenBurns": "out"
+    },
+    {
+      "src": "clips/kitchens-picasso-transform.mp4",
+      "kind": "video",
+      "durationInFrames": 240,
+      "layout": "full",
+      "aspect": 0.5625,
+      "label": null,
+      "kenBurns": "in"
+    },
+    {
+      "src": "stills/kitchens-during-construction-01.png",
+      "kind": "image",
+      "durationInFrames": 75,
+      "layout": "framed",
+      "aspect": 1.4906,
+      "label": "OUR CREW, ON SITE",
+      "kenBurns": "in"
+    },
+    {
+      "src": "clips/kitchens-travertine-transform.mp4",
+      "kind": "video",
+      "durationInFrames": 240,
+      "layout": "full",
+      "aspect": 0.5625,
+      "label": null,
+      "kenBurns": "in"
+    },
+    {
+      "src": "clips/kitchens-island-track.mp4",
+      "kind": "video",
+      "durationInFrames": 150,
+      "layout": "framed",
+      "aspect": 1.5706,
+      "label": null,
+      "kenBurns": "in"
+    }
+  ],
+  "hook": "We’re Selecting 5 Kitchens in Your Area",
+  "hookStartFrame": 40,
+  "hookDurationInFrames": 75,
+  "checkmarks": [
+    "AAA-grade materials",
+    "Beautiful AND functional",
+    "Built to be photographed"
+  ],
+  "checkmarkClipIndex": 4,
+  "captions": [],
+  "wordCaptions": [
+    {
+      "text": "We're",
+      "startMs": 80,
+      "endMs": 340,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " selecting",
+      "startMs": 340,
+      "endMs": 850,
+      "timestampMs": 620,
+      "confidence": 0.998911
+    },
+    {
+      "text": " five",
+      "startMs": 850,
+      "endMs": 1040,
+      "timestampMs": 1060,
+      "confidence": 0.734814
+    },
+    {
+      "text": " kitchens",
+      "startMs": 1040,
+      "endMs": 1540,
+      "timestampMs": 1380,
+      "confidence": 0.982729
+    },
+    {
+      "text": " in",
+      "startMs": 1540,
+      "endMs": 1670,
+      "timestampMs": 1620,
+      "confidence": 0.978679
+    },
+    {
+      "text": " your",
+      "startMs": 1670,
+      "endMs": 1930,
+      "timestampMs": 1760,
+      "confidence": 0.990308
+    },
+    {
+      "text": " area",
+      "startMs": 1930,
+      "endMs": 2290,
+      "timestampMs": 2100,
+      "confidence": 0.990365
+    },
+    {
+      "text": " for",
+      "startMs": 2290,
+      "endMs": 2430,
+      "timestampMs": 2360,
+      "confidence": 0.845334
+    },
+    {
+      "text": " a",
+      "startMs": 2430,
+      "endMs": 2490,
+      "timestampMs": 2520,
+      "confidence": 0.990777
+    },
+    {
+      "text": " Showcase",
+      "startMs": 2490,
+      "endMs": 3120,
+      "timestampMs": 2860,
+      "confidence": 0.6419
+    },
+    {
+      "text": " remodel!",
+      "startMs": 3120,
+      "endMs": 4075,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " AAA-grade",
+      "startMs": 4075,
+      "endMs": 5030,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " materials,",
+      "startMs": 5030,
+      "endMs": 6080,
+      "timestampMs": 5720,
+      "confidence": 0.991563
+    },
+    {
+      "text": " built",
+      "startMs": 6080,
+      "endMs": 6340,
+      "timestampMs": 6180,
+      "confidence": 0.456105
+    },
+    {
+      "text": " to",
+      "startMs": 6340,
+      "endMs": 6500,
+      "timestampMs": 6420,
+      "confidence": 0.983543
+    },
+    {
+      "text": " be",
+      "startMs": 6500,
+      "endMs": 6650,
+      "timestampMs": 6560,
+      "confidence": 0.998725
+    },
+    {
+      "text": " photographed...",
+      "startMs": 6650,
+      "endMs": 7760,
+      "timestampMs": 7080,
+      "confidence": 0.997041
+    },
+    {
+      "text": " at",
+      "startMs": 7760,
+      "endMs": 7880,
+      "timestampMs": 7860,
+      "confidence": 0.730699
+    },
+    {
+      "text": " a",
+      "startMs": 7880,
+      "endMs": 8000,
+      "timestampMs": 8020,
+      "confidence": 0.996662
+    },
+    {
+      "text": " Showcase",
+      "startMs": 8000,
+      "endMs": 8850,
+      "timestampMs": 8380,
+      "confidence": 0.93863
+    },
+    {
+      "text": " price.",
+      "startMs": 8850,
+      "endMs": 9800,
+      "timestampMs": 8900,
+      "confidence": 0.990204
+    },
+    {
+      "text": " And",
+      "startMs": 9800,
+      "endMs": 10160,
+      "timestampMs": 10040,
+      "confidence": 0.990743
+    },
+    {
+      "text": " we",
+      "startMs": 10160,
+      "endMs": 10400,
+      "timestampMs": 10180,
+      "confidence": 0.992718
+    },
+    {
+      "text": " do",
+      "startMs": 10400,
+      "endMs": 10640,
+      "timestampMs": 10320,
+      "confidence": 0.998906
+    },
+    {
+      "text": " it",
+      "startMs": 10640,
+      "endMs": 11520,
+      "timestampMs": 10440,
+      "confidence": 0.999207
+    },
+    {
+      "text": " again...",
+      "startMs": 11520,
+      "endMs": 11520,
+      "timestampMs": 10740,
+      "confidence": 0.999176
+    },
+    {
+      "text": " and",
+      "startMs": 11520,
+      "endMs": 11930,
+      "timestampMs": 11780,
+      "confidence": 0.992898
+    },
+    {
+      "text": " again.",
+      "startMs": 11930,
+      "endMs": 13040,
+      "timestampMs": 12120,
+      "confidence": 0.997417
+    },
+    {
+      "text": " Homeowners",
+      "startMs": 13040,
+      "endMs": 13910,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " only",
+      "startMs": 13910,
+      "endMs": 14560,
+      "timestampMs": 13900,
+      "confidence": 0.899475
+    },
+    {
+      "text": " —",
+      "startMs": 14560,
+      "endMs": 14561,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " see",
+      "startMs": 14560,
+      "endMs": 14950,
+      "timestampMs": 14820,
+      "confidence": 0.999173
+    },
+    {
+      "text": " if",
+      "startMs": 14950,
+      "endMs": 15110,
+      "timestampMs": 14940,
+      "confidence": 0.998216
+    },
+    {
+      "text": " your",
+      "startMs": 15110,
+      "endMs": 15560,
+      "timestampMs": 15100,
+      "confidence": 0.994658
+    },
+    {
+      "text": " home",
+      "startMs": 15560,
+      "endMs": 15990,
+      "timestampMs": 15400,
+      "confidence": 0.998235
+    },
+    {
+      "text": " qualifies.",
+      "startMs": 15990,
+      "endMs": 16310,
+      "timestampMs": 15960,
+      "confidence": 0.998445
+    }
+  ],
+  "voStartFrame": 35,
+  "captionVertical": 0.58,
+  "punchIns": [
+    {
+      "frame": 157,
+      "scale": 1.18
+    },
+    {
+      "frame": 275,
+      "scale": 1.2
+    },
+    {
+      "frame": 393,
+      "scale": 1.15
+    }
+  ],
+  "flashFrames": [
+    75
+  ],
+  "zoomOutReveals": [
+    612
+  ],
+  "logoIntro": {
+    "src": "brand/logo-dark-right.svg",
+    "enterFrame": 0,
+    "dockFrame": 40
+  },
+  "sfx": [
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 55,
+      "volume": 0.2
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 75,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/whoosh2.wav",
+      "frame": 312,
+      "volume": 0.35
+    },
+    {
+      "src": "audio/sfx/whoosh2.wav",
+      "frame": 387,
+      "volume": 0.28
+    },
+    {
+      "src": "audio/sfx/riser-short.wav",
+      "frame": 572,
+      "volume": 0.35
+    },
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 660,
+      "volume": 0.22
+    },
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 669,
+      "volume": 0.26
+    },
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 678,
+      "volume": 0.3
+    },
+    {
+      "src": "audio/sfx/thud.wav",
+      "frame": 780,
+      "volume": 0.4
+    }
+  ],
+  "voiceoverSrc": "audio/kitchens-vo-gia-v1.mp3",
+  "musicSrc": "audio/music-bed-02-upbeat.m4a",
+  "watermarkSrc": "brand/logo-dark-right.svg",
+  "watermarkWidth": 150,
+  "musicVolume": 0.12,
+  "endCard": {
+    "headline": "Could Your Kitchen Be One of the 5?",
+    "sub": "AAA-grade work, at a Showcase price. Homeowners only.",
+    "cta": "See If Your Home Qualifies"
+  },
+  "endCardFrames": 120
+}
