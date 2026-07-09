@@ -27,8 +27,8 @@ passes ~$100 — do not optimize resolution/duration down for credits.
 
 - VO gains one short line over morph #2 (e.g. "And we do it again, and
   again.") so the second transform is narrated, then `transcribe.mjs` reruns
-  and captions re-sync automatically. Voice: Mabel v2 unless Oliver's pending
-  verdict on the five alternative takes says otherwise.
+  and captions re-sync automatically. Voice: **Gia** (Oliver's pick from the
+  take round, 2026-07-09) — regenerate the full VO with her, not just the new line.
 - Truthfulness: Travertine has 3 genuine same-room kitchen pairs in
   `projects.before_after_pairs_json` (confidence 0.85–0.9); pick the most
   dramatic angle by eyeballing the pairs. Same-room rule intact.
