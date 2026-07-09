@@ -22,6 +22,10 @@ creative → Meta, PAUSED).
   in Ads Manager (menu-level, fine). Photoreal AI HUMANS with visible faces ⇒
   prominent overlay — avoid; branded crew shots pose workers FROM BEHIND.
 - ⛔ Activation is human-only. Everything lands PAUSED. Never touch ACTIVE.
+- Logo intro is MANDATORY: `logoIntro` prop — lockup springs in centered over
+  the cold open, docks into the watermark slot at `dockFrame` (+15f glide),
+  where the persistent watermark (same art file, `watermarkWidth` 150) takes
+  over seamlessly. Use `brand/logo-dark-right.svg` for both.
 
 ## Assets & locations
 
@@ -56,9 +60,14 @@ ground; label chip or checkmark rows above via `checkmarkClipIndex`), hook
 word-stagger on clip 1, captions mirror the VO (muted viewers), `watermarkSrc`
 icon top-right, logo end card with CTA pill.
 
-House timeline: portrait hook (5s) → framed crew/during still (2.5s, "OUR
-CREW, ON SITE") → transform (8s) → framed island/checkmarks (5s) → end card
-(4s). Vary per brief; VO ≈ 13s starting at frame 15.
+House timeline (v5 baseline — `props/kitchens-showcase-reel-02.json` is the
+canonical example): cold open on an AFTER beauty frame with the logo intro
+(2.5s) → hard snap to the BEFORE (shutter + flash) → morph #1 plays (8s) →
+framed crew/during still (2.5s, "OUR CREW, ON SITE") → morph #2, a DIFFERENT
+project, with zoom-out reveal + riser on its after moment (8s) → framed
+checkmarks clip (5s) → end card (4s). The inverted-reveal hook (after-first)
+is the DEFAULT hook pattern for transform-capable trades. VO = Gia
+(house voice), starts frame 15, and must include a line over morph #2.
 
 ```bash
 cd video && pnpm tsc
@@ -95,6 +104,13 @@ active word = brand blue + 1.1 pop, heavy stroke-under-fill). Gotcha solved in
 the component: a thick WebkitTextStroke visually swallows word spaces —
 `wordSpacing` compensates; never remove it.
 
+Pagination is ours, not the library's (`src/lib/paginate-captions.ts`,
+unit-tested): max 3 words / 16 chars per page (single line, can never
+overflow), sentence punctuation breaks pages, and timing is GAPLESS — a page
+appears the moment its predecessor's last word ends and holds until its
+successor appears, so pages can never lag the voice or blink out between
+sentences.
+
 Upgrade path when a direct ElevenLabs key exists: `/v1/text-to-speech/{voice}/
 with-timestamps` returns synthesis-native character timing (zero drift by
 construction, no whisper needed) — restructure transcribe.mjs around it then.
@@ -118,13 +134,21 @@ levels). READ both before designing any new variant. Composition rules:
   peaked on chapter cuts), `sfx` (cues; grammar: whoosh=motion, riser peaks ON
   the reveal frame starting 30–60f before, boom=landing; riser→cut→boom),
   `captionVertical` (~0.55–0.62), `*word*` caption emphasis (one per line),
-  per-clip `layout`/`kind`, `checkmarkClipIndex`, safe zone 14/35/6 built in.
+  per-clip `layout`/`kind`, `checkmarkClipIndex`, safe zone 14/35/6,
+  `zoomOutReveals` (array of frames; 150%→100% scale over 10f on
+  after-arrivals), `hookStartFrame`/`hookDurationInFrames` (hook window —
+  karaoke pages stay suppressed until the sum elapses), per-clip
+  `kenBurns: "in" | "out"` — all built in.
+- Default accent map (house standard — deviate only with reason): snap =
+  shutter + white flash · logo dock = quiet click · reveal = riser peaking ON
+  the reveal + zoom-out · checkmark rows = ascending clicks · end card = soft
+  thud.
 - SFX assets live in `video/public/audio/sfx/` (AI-generated via `seed_audio`;
   regenerate freely). Beat-sync for free: prompt sonilo with an explicit BPM
   ("120 BPM" → beat = 15f @30fps) and snap cut frames to that grid.
 - Not yet implemented (add on demand): whip pan (SVG directional blur), speed
-  ramps/time-remap, karaoke word-highlight captions (needs word timestamps),
-  wipe/slider reveal, color pop. Parameterizations are in the reference doc.
+  ramps/time-remap, wipe/slider reveal, color pop. Parameterizations are in
+  the reference doc.
 
 ## Edit mode (the 90%-good workflow)
 
