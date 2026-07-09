@@ -102,8 +102,7 @@ services/providers/<name>/
   webhooks/                 inbound-payload Zod (what the provider sends us)
     <resource>.ts           per-event-class payload Zod (often discriminated union)
   lib/                      OPTIONAL — only for pure-local helpers that are large enough to warrant a file
-                            and are NOT actions on the client (e.g., `sanitize-filename.ts`,
-                            `access-token-cache.ts`, `config.ts` when env vars are optional —
+                            and are NOT actions on the client (e.g., `access-token-cache.ts`, `config.ts` when env vars are optional —
                             see `provider-env-config-when-optional` below). Most providers won't
                             need this directory. Webhook signature verification is NOT here — it's
                             a method on the client.
@@ -118,7 +117,7 @@ A provider always has `client.ts`, even for a one-endpoint integration. Auth + e
 
 **`lib/` is the exception, not the rule:**
 - Most providers don't need a `lib/` directory at all — the client absorbs the action surface; schemas + types live in `schemas/` / `webhooks/` / `types.ts`.
-- A `lib/` file is appropriate ONLY for pure-local helpers that are too large to inline in `client.ts` AND are not invoked as client methods (e.g., a token-refresh cache used internally by the client itself, a filename sanitizer used by call sites that produce multipart bodies, a `config.ts` that hosts the provider's env var fragment + runtime-config builder — see `provider-env-config-when-optional` below).
+- A `lib/` file is appropriate ONLY for pure-local helpers that are too large to inline in `client.ts` AND are not invoked as client methods (e.g., a token-refresh cache used internally by the client itself, a `config.ts` that hosts the provider's env var fragment + runtime-config builder — see `provider-env-config-when-optional` below).
 - Webhook signature verification, JWT minting, TwiML/payload building are **client methods**, NOT `lib/` files. They are interactions with the provider's ecosystem, even when no HTTP round-trip happens.
 
 **Anti-patterns:**
