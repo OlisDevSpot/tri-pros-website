@@ -163,9 +163,10 @@ function buildScopeOfWork(
  * Each SOW section opens with a header "card" — a borderless single-row
  * table whose first cell is a slim brand-accent bar and whose second cell
  * holds the section metadata (number + title, trade/scopes, price) and the
- * leading description prose on a light fill. The card marks where a new
- * scope starts while scrolling; the line items (phase headings, bullet
- * lists) flow below it as regular full-width page content.
+ * leading description prose on a light fill. Every section opens its own
+ * page (the first lands on page 2 via the cover's trailing break), so the
+ * header card is never trimmed by a page split; the line items (phase
+ * headings, bullet lists) flow below it as regular full-width content.
  */
 function buildSowSection(
   section: ProposalWithCustomer['projectJSON']['data']['sow'][number],
@@ -192,6 +193,9 @@ function buildSowSection(
   }
 
   const parts: Content[] = [{
+    // Section 1 already opens page 2 (cover breaks after itself); an
+    // unconditional break here would insert a blank page before it.
+    ...(index > 0 ? { pageBreak: 'before' as const } : {}),
     table: {
       widths: [4, '*'],
       body: [[
