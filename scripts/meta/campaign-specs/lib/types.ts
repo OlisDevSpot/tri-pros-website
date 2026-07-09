@@ -4,9 +4,12 @@ const specKey = z.string().regex(/^[a-z0-9-]+$/, 'spec keys are kebab-case slugs
 
 export const adSpecSchema = z.object({
   key: specKey, // stable identity — renaming a key = new ad at Meta
-  headline: z.string().min(1).max(255),
-  primaryText: z.string().min(1),
-  description: z.string().optional(),
+  /** 1–5 headline variants (Meta `titles`, ≤255 chars each). */
+  headlines: z.array(z.string().min(1).max(255)).min(1).max(5),
+  /** 1–5 primary-text variants (Meta `bodies`, ≤1024 chars each) — multiple options reduce creative fatigue. */
+  primaryTexts: z.array(z.string().min(1).max(1024)).min(1).max(5),
+  /** 0–5 link-description variants (≤255 chars each). */
+  descriptions: z.array(z.string().min(1).max(255)).max(5).optional(),
   /** Filename inside public/funnels/<funnelSlug>/ads/ — sync skips (warns) if missing on disk. */
   imageFile: z.string().min(1),
   // Showcase CTA rules (docs/marketing/showcase-offer.md#rules-for-ads):

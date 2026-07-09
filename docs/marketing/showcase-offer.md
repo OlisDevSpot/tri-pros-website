@@ -101,9 +101,15 @@ Any Meta ad (or other paid placement) implementing Showcase must:
 2. Close with the qualification ask ("See if your home qualifies") — never a
    quote/estimate/consultation ask.
 3. CTA button: `APPLY_NOW` (preferred) or `LEARN_MORE`. **Never `GET_QUOTE`.**
-4. Land on the trade's funnel subdomain with the standard UTM convention
-   (`utm_source=meta&utm_medium=paid&utm_campaign=<campaignKey>&utm_content=<adKey>`).
-5. Campaign-as-code: ads live in `scripts/meta/campaign-specs/*.campaign.ts`
+4. Land on the trade's funnel subdomain. The link itself stays CLEAN; the UTM
+   convention (`utm_source=meta&utm_medium=paid&utm_campaign=<campaignKey>&utm_content=<adKey>`)
+   rides on the creative's `url_tags` (the Ads Manager "URL parameters" tracking
+   field) — Meta appends it at delivery.
+5. Every ad carries **multiple primary-text variants** (up to 5; Meta text
+   options, reduces creative fatigue): at least one checkmark-list variant
+   (✅ benefits), one narrative variant, one hook-question variant. Emojis
+   sparingly — hook, don't decorate.
+6. Campaign-as-code: ads live in `scripts/meta/campaign-specs/*.campaign.ts`
    (see `scripts/meta/DOCS.md#campaign-as-code`) — never hand-built in Ads Manager.
 
 ## where-the-code-enforces-it

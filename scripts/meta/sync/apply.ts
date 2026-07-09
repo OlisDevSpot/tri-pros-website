@@ -17,7 +17,7 @@ import {
   uploadAdImage,
 } from '../lib/marketing-api.js'
 import { printInfo, printSuccess } from '../lib/formatters.js'
-import { buildAdLink } from './ad-link.js'
+import { buildUrlTags } from './ad-link.js'
 import { adImagePath } from './diff.js'
 import { adFp, adSetFp, campaignFp } from './fingerprint.js'
 import { writeLock } from './lock.js'
@@ -135,10 +135,11 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
     const imageHash = await ensureImage(lock, imagePath, op.imageSha)
     const creativeId = await createLinkAdCreative({
       name: `${spec.key}/${ad.key}`,
-      link: buildAdLink(spec, ad),
-      headline: ad.headline,
-      primaryText: ad.primaryText,
-      description: ad.description,
+      baseUrl: spec.landingBaseUrl,
+      urlTags: buildUrlTags(spec, ad),
+      headlines: ad.headlines,
+      primaryTexts: ad.primaryTexts,
+      descriptions: ad.descriptions,
       imageHash,
       ctaType: ad.ctaType,
     })

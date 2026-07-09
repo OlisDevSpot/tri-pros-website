@@ -104,10 +104,13 @@ export async function uploadAdImage(bytes: Buffer): Promise<string> {
 
 export interface CreativeInput {
   name: string
-  link: string
-  headline: string
-  primaryText: string
-  description?: string
+  /** Clean landing URL — NO query params; tracking rides on urlTags. */
+  baseUrl: string
+  /** Query string WITHOUT leading '?' — the UI "URL parameters" (Tracking) field. Meta appends at delivery. */
+  urlTags: string
+  headlines: string[]
+  primaryTexts: string[]
+  descriptions?: string[]
   imageHash: string
   ctaType: 'APPLY_NOW' | 'LEARN_MORE'
 }
@@ -117,17 +120,38 @@ export async function createLinkAdCreative(input: CreativeInput): Promise<string
     method: 'POST',
     body: {
       name: input.name,
+      // Standard-ad-set multi-text shape (verified empirically 2026-07-07):
+      // link_data anchors link/image/CTA + FIRST text variant; asset_feed_spec
+      // carries ALL variants with DEGREES_OF_FREEDOM (= Ads Manager "Add text
+      // option"). The images/ad_formats/link_urls asset-feed form is Dynamic
+      // Creative-only and fails with "link field is required" here.
       object_story_spec: {
         page_id: metaEnv.pageId,
         link_data: {
-          link: input.link,
-          message: input.primaryText,
-          name: input.headline,
-          ...(input.description ? { description: input.description } : {}),
+          link: input.baseUrl,
+          message: input.primaryTexts[0],
+          name: input.headlines[0],
+          ...(input.descriptions?.length ? { description: input.descriptions[0] } : {}),
           image_hash: input.imageHash,
-          call_to_action: { type: input.ctaType, value: { link: input.link } },
+          call_to_action: { type: input.ctaType },
         },
       },
+      asset_feed_spec: {
+        bodies: input.primaryTexts.map(text => ({ text })),
+        titles: input.headlines.map(text => ({ text })),
+        ...(input.descriptions?.length ? { descriptions: input.descriptions.map(text => ({ text })) } : {}),
+        optimization_type: 'DEGREES_OF_FREEDOM',
+      },
+      // Individual Advantage+ enhancement opt-outs (required since v22; the old
+      // standard_enhancements bundle is deprecated). OPT_OUT keeps the creative
+      // exactly as specced — no Meta auto-rewrites.
+      degrees_of_freedom_spec: {
+        creative_features_spec: {
+          image_enhancement: { enroll_status: 'OPT_OUT' },
+          text_generation: { enroll_status: 'OPT_OUT' },
+        },
+      },
+      url_tags: input.urlTags,
     },
   })
   return res.id
