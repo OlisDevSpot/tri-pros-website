@@ -120,7 +120,7 @@ function buildPreparedForBlock(proposal: ProposalWithCustomer): Content {
         stack: [
           { text: 'PROPOSAL', style: 'sectionLabel' },
           { text: `Date: ${date}` },
-          { text: `Valid for: ${proposal.projectJSON.data.validThroughTimeframe}` },
+          { text: `Contract timeframe: ${proposal.projectJSON.data.validThroughTimeframe}` },
         ],
       },
     ],
@@ -155,21 +155,57 @@ function buildScopeOfWork(
 ): Content[] {
   const parts: Content[] = [{ text: 'Scope of Work', style: 'sectionTitle' }]
   sow.forEach((section, i) => {
-    parts.push({ text: `${i + 1}. ${section.title || 'Untitled scope'}`, style: 'itemTitle' })
-    const metaLine = [
-      `Trade: ${section.trade.label}`,
-      section.scopes.length > 0 ? `Scopes: ${section.scopes.map(s => s.label).join(', ')}` : null,
-    ].filter(Boolean).join('   •   ')
-    parts.push({ text: metaLine, style: 'meta', margin: [0, 0, 0, 6] })
-    if (pricingMode === 'breakdown' && section.financials.sectionPrice) {
-      parts.push({ text: `Section price: ${formatAsDollars(section.financials.sectionPrice)}`, style: 'sectionPrice' })
-    }
-    const doc = safeParseDoc(section.contentJSON)
-    if (doc) {
-      parts.push(...(tiptapToPdfmake(doc) as Content[]))
-    }
+    parts.push(buildSowSectionCard(section, i, pricingMode))
   })
   return parts
+}
+
+/**
+ * Each SOW section renders as a "card": a borderless single-row table
+ * whose first cell is a slim brand-accent bar and whose second cell holds
+ * the section content on a light fill. The fill/bar repeat on every page
+ * when a long description splits, so the card doubles as a scroll marker
+ * for where one scope ends and the next begins.
+ */
+function buildSowSectionCard(
+  section: ProposalWithCustomer['projectJSON']['data']['sow'][number],
+  index: number,
+  pricingMode: 'total' | 'breakdown',
+): Content {
+  const metaLine = [
+    `Trade: ${section.trade.label}`,
+    section.scopes.length > 0 ? `Scopes: ${section.scopes.map(s => s.label).join(', ')}` : null,
+  ].filter(Boolean).join('   •   ')
+
+  const inner: Content[] = [
+    { text: `${index + 1}. ${section.title || 'Untitled scope'}`, style: 'itemTitle', margin: [0, 0, 0, 2] },
+    { text: metaLine, style: 'meta', margin: [0, 0, 0, 6] },
+  ]
+  if (pricingMode === 'breakdown' && section.financials.sectionPrice) {
+    inner.push({ text: `Section price: ${formatAsDollars(section.financials.sectionPrice)}`, style: 'sectionPrice' })
+  }
+  const doc = safeParseDoc(section.contentJSON)
+  if (doc) {
+    inner.push(...(tiptapToPdfmake(doc) as Content[]))
+  }
+
+  return {
+    table: {
+      widths: [4, '*'],
+      body: [[
+        { text: '', fillColor: '#334155', border: [false, false, false, false] },
+        { stack: inner, fillColor: '#F4F6F9', border: [false, false, false, false] },
+      ]],
+    },
+    layout: {
+      defaultBorder: false,
+      paddingLeft: (col: number) => col === 0 ? 0 : 14,
+      paddingRight: () => 14,
+      paddingTop: () => 12,
+      paddingBottom: () => 12,
+    },
+    margin: [0, 0, 0, 14],
+  }
 }
 
 function buildInvestment(
