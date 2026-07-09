@@ -43,6 +43,13 @@ const nextConfig: NextConfig = {
     '/api/qstash-jobs': [
       './node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/data/**/*',
     ],
+    // The proposal PDF route renders via pdfmake→pdfkit (same AFM/ICC
+    // runtime reads as qstash-jobs — see comment above) and fs-reads the
+    // logo from public/ for the branded header.
+    '/api/proposals/[proposalId]/pdf': [
+      './node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/data/**/*',
+      './public/company/logo/logo-dark-right.jpg',
+    ],
     // The funnel OG image route reads its font + background photos + logo from
     // public/ via fs at render time (see funnels/lib/og/og-assets.ts). NFT
     // can't trace runtime process.cwd() reads, so force-ship the assets next to
