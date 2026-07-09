@@ -1,4 +1,4 @@
-import type { Column, Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces'
+import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces'
 import type { TiptapNode } from './tiptap-to-pdfmake'
 import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
 import { readFile } from 'node:fs/promises'
@@ -11,10 +11,11 @@ import { formatPhone } from '@/shared/lib/phone'
 import { tiptapToPdfmake } from './tiptap-to-pdfmake'
 
 /**
- * Builds the full customer-facing proposal PDF: branded header, prepared-for
- * block, project overview, scope of work (trades/scopes/rich text), investment
- * table, agreement notes. Always homeowner-safe — never reads cost lines or
- * margin data, and the final price is derived via computeFinalTcp.
+ * Builds the full customer-facing proposal PDF: a bordered cover page
+ * (company + customer identity), scope-of-work sections from page 2, and
+ * the investment breakdown on its own closing page. Always homeowner-safe
+ * — never reads cost lines or margin data, and the final price is derived
+ * via computeFinalTcp.
  * see @/shared/entities/proposals/DOCS.md#final-tcp-derived
  */
 export async function buildProposalDocDefinition(proposal: ProposalWithCustomer): Promise<TDocumentDefinitions> {
@@ -24,15 +25,7 @@ export async function buildProposalDocDefinition(proposal: ProposalWithCustomer)
   const logoDataUrl = await loadLogoDataUrl()
 
   const content: Content[] = [
-    buildBrandedHeader(logoDataUrl),
-    {
-      canvas: [{ type: 'line', x1: 0, y1: 0, x2: 483, y2: 0, lineWidth: 1, lineColor: '#334155' }],
-      margin: [0, 0, 0, 20],
-    },
-    { text: 'Project Proposal', style: 'docTitle' },
-    { text: project.label || proposal.label || 'Proposal', style: 'subtitle' },
-    buildPreparedForBlock(proposal),
-    ...buildProjectOverview(project),
+    ...buildCoverPage(proposal, logoDataUrl),
     ...buildScopeOfWork(project.sow, pricingMode),
     ...buildInvestment(project.sow, funding, pricingMode),
     ...(project.agreementNotes
@@ -45,20 +38,32 @@ export async function buildProposalDocDefinition(proposal: ProposalWithCustomer)
 
   return {
     content,
-    footer: (currentPage, pageCount) => ({
-      columns: [
-        { text: `${companyInfo.name}  •  ${contactValue('phone')}  •  ${contactValue('email')}`, style: 'footer' },
-        { text: `Page ${currentPage} of ${pageCount}`, alignment: 'right', style: 'footer' },
-      ],
-      margin: [56, 16, 56, 0],
-    }),
+    // Double-rule frame on the cover page only — drawn on the background
+    // layer at absolute coordinates so it never interacts with content flow.
+    background: (currentPage, pageSize) => currentPage === 1
+      ? {
+          canvas: [
+            { type: 'rect', x: 20, y: 20, w: pageSize.width - 40, h: pageSize.height - 40, lineWidth: 1.5, lineColor: '#334155' },
+            { type: 'rect', x: 26, y: 26, w: pageSize.width - 52, h: pageSize.height - 52, lineWidth: 0.5, lineColor: '#334155' },
+          ],
+        }
+      : undefined,
+    // No footer on the cover — it carries the company block itself, and a
+    // page-number line would sit inside the decorative frame.
+    footer: (currentPage, pageCount) => currentPage === 1
+      ? null
+      : {
+          columns: [
+            { text: `${companyInfo.name}  •  ${contactValue('phone')}  •  ${contactValue('email')}`, style: 'footer' },
+            { text: `Page ${currentPage} of ${pageCount}`, alignment: 'right', style: 'footer' },
+          ],
+          margin: [56, 16, 56, 0],
+        },
     defaultStyle: { font: 'Roboto', fontSize: 10, lineHeight: 1.3 },
     styles: {
-      docTitle: { fontSize: 20, bold: true, margin: [0, 0, 0, 2] },
-      subtitle: { fontSize: 11, color: '#666', margin: [0, 0, 0, 20] },
-      companyName: { fontSize: 14, bold: true, margin: [0, 0, 0, 2] },
+      coverMeta: { fontSize: 9.5, color: '#555', alignment: 'center', margin: [0, 0, 0, 2] },
+      coverLabel: { fontSize: 9, bold: true, color: '#888', alignment: 'center', characterSpacing: 2, margin: [0, 0, 0, 8] },
       meta: { fontSize: 8.5, color: '#666', margin: [0, 0, 0, 1] },
-      sectionLabel: { fontSize: 8, bold: true, color: '#888', margin: [0, 0, 0, 4] },
       sectionTitle: { fontSize: 14, bold: true, margin: [0, 20, 0, 8] },
       itemTitle: { fontSize: 12, bold: true, margin: [0, 12, 0, 2] },
       sectionPrice: { fontSize: 10, bold: true, color: '#334155', margin: [0, 0, 0, 4] },
@@ -72,88 +77,82 @@ export async function buildProposalDocDefinition(proposal: ProposalWithCustomer)
   }
 }
 
-function buildBrandedHeader(logoDataUrl: string | null): Content {
-  const license = licenses[0]
-  const left: Column = {
-    width: '*',
-    stack: [
-      { text: companyInfo.name, style: 'companyName' },
-      { text: contactValue('mainOffice'), style: 'meta' },
-      { text: `${contactValue('phone')}  •  ${contactValue('email')}`, style: 'meta' },
-      { text: `CA License #${license.licenseNumber} — ${license.type}`, style: 'meta' },
-    ],
-  }
-  if (!logoDataUrl) {
-    return { columns: [left], margin: [0, 0, 0, 12] }
-  }
-  return {
-    columns: [left, { width: 140, image: logoDataUrl, fit: [140, 48], alignment: 'right' }],
-    margin: [0, 0, 0, 12],
-  }
-}
-
-function buildPreparedForBlock(proposal: ProposalWithCustomer): Content {
+/**
+ * Ceremonial first page inside the decorative frame: centered company
+ * block (logo, contact, license), proposal title + date, and the
+ * prepared-for customer block. Project-overview fields (summary,
+ * objectives, areas, efficiency benefits) render here too when present —
+ * in practice they are usually empty, keeping the cover minimal. Ends
+ * with a page break so the first SOW section always opens page 2.
+ */
+function buildCoverPage(proposal: ProposalWithCustomer, logoDataUrl: string | null): Content[] {
+  const project = proposal.projectJSON.data
   const customer = proposal.customer
+  const license = licenses[0]
+  const date = new Date(proposal.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' })
   const addressLine = customer?.address
     ? `${customer.address}, ${customer.city ?? ''} ${customer.state ?? 'CA'} ${customer.zip ?? ''}`.replace(/\s+/g, ' ').trim()
     : null
-  const customerLines: Content[] = [
-    { text: 'PREPARED FOR', style: 'sectionLabel' },
-    { text: customer?.name ?? '—', bold: true },
+
+  const parts: Content[] = [
+    logoDataUrl
+      ? { image: logoDataUrl, fit: [190, 64], alignment: 'center', margin: [0, 96, 0, 14] } satisfies Content
+      : { text: companyInfo.name, fontSize: 24, bold: true, alignment: 'center', margin: [0, 112, 0, 14] } satisfies Content,
+    { text: contactValue('mainOffice'), style: 'coverMeta' },
+    { text: `${contactValue('phone')}   •   ${contactValue('email')}`, style: 'coverMeta' },
+    { text: `CA License #${license.licenseNumber} — ${license.type}`, style: 'coverMeta' },
+    buildCoverOrnament(52),
+    { text: 'PROJECT PROPOSAL', style: 'coverLabel' },
+    { text: project.label || proposal.label || 'Proposal', fontSize: 24, bold: true, alignment: 'center', margin: [48, 0, 48, 10] },
+    { text: `${date}   •   Contract timeframe: ${project.validThroughTimeframe}`, style: 'coverMeta' },
+    buildCoverOrnament(52),
+    { text: 'PREPARED FOR', style: 'coverLabel' },
+    { text: customer?.name ?? '—', fontSize: 15, bold: true, alignment: 'center', margin: [0, 0, 0, 5] },
   ]
   if (addressLine) {
-    customerLines.push({ text: addressLine })
+    parts.push({ text: addressLine, style: 'coverMeta' })
   }
-  if (customer?.phone) {
-    customerLines.push({ text: formatPhone(customer.phone) })
-  }
-  if (customer?.email) {
-    customerLines.push({ text: customer.email })
+  const contactBits = [
+    customer?.phone ? formatPhone(customer.phone) : null,
+    customer?.email ?? null,
+  ].filter(Boolean).join('   •   ')
+  if (contactBits) {
+    parts.push({ text: contactBits, style: 'coverMeta' })
   }
 
-  const date = new Date(proposal.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' })
-  return {
-    columns: [
-      { width: '*', stack: customerLines },
-      {
-        width: 180,
-        stack: [
-          { text: 'PROPOSAL', style: 'sectionLabel' },
-          { text: `Date: ${date}` },
-          { text: `Contract timeframe: ${proposal.projectJSON.data.validThroughTimeframe}` },
-        ],
-      },
-    ],
-    margin: [0, 0, 0, 8],
+  if (project.summary) {
+    parts.push(buildCoverOrnament(36))
+    parts.push({ text: project.summary, italics: true, color: '#555', alignment: 'center', lineHeight: 1.5, margin: [64, 0, 64, 0] })
   }
+  const overviewLines = [
+    project.projectObjectives.length > 0 ? `Objectives: ${project.projectObjectives.join('  •  ')}` : null,
+    project.homeAreasUpgrades.length > 0 ? `Areas of the home: ${project.homeAreasUpgrades.join(', ')}` : null,
+    project.energyBenefits ? `Efficiency benefits: ${project.energyBenefits}` : null,
+  ].filter((line): line is string => line !== null)
+  if (overviewLines.length > 0) {
+    parts.push({ text: '', margin: [0, 14, 0, 0] })
+    parts.push(...overviewLines.map(line => ({ text: line, style: 'coverMeta', margin: [64, 0, 64, 3] } satisfies Content)))
+  }
+
+  parts.push({ text: '', pageBreak: 'after' })
+  return parts
 }
 
-function buildProjectOverview(project: ProposalWithCustomer['projectJSON']['data']): Content[] {
-  const parts: Content[] = []
-  if (project.summary) {
-    parts.push({ text: project.summary, margin: [0, 0, 0, 8] })
+/** Short centered divider line used to separate cover-page blocks. */
+function buildCoverOrnament(verticalGap: number): Content {
+  // Content width is 500 (letter 612 minus 56pt margins); a 96pt rule
+  // centered on it runs from x=202 to x=298.
+  return {
+    canvas: [{ type: 'line', x1: 202, y1: 0, x2: 298, y2: 0, lineWidth: 0.75, lineColor: '#334155' }],
+    margin: [0, verticalGap, 0, verticalGap],
   }
-  if (project.projectObjectives.length > 0) {
-    parts.push({ text: 'Project objectives', bold: true, margin: [0, 4, 0, 2] })
-    parts.push({ ul: [...project.projectObjectives], margin: [0, 0, 0, 8] })
-  }
-  if (project.homeAreasUpgrades.length > 0) {
-    parts.push({ text: `Areas of the home: ${project.homeAreasUpgrades.join(', ')}`, margin: [0, 0, 0, 4] })
-  }
-  if (project.energyBenefits) {
-    parts.push({ text: `Efficiency benefits: ${project.energyBenefits}`, margin: [0, 0, 0, 4] })
-  }
-  if (parts.length === 0) {
-    return []
-  }
-  return [{ text: 'Project Overview', style: 'sectionTitle' }, ...parts]
 }
 
 function buildScopeOfWork(
   sow: ProposalWithCustomer['projectJSON']['data']['sow'],
   pricingMode: 'total' | 'breakdown',
 ): Content[] {
-  const parts: Content[] = [{ text: 'Scope of Work', style: 'sectionTitle' }]
+  const parts: Content[] = []
   sow.forEach((section, i) => {
     parts.push(...buildSowSection(section, i, pricingMode))
   })
@@ -278,7 +277,8 @@ function buildInvestment(
   rows.push([{ text: 'Deposit due at signing' }, { text: formatAsDollars(funding.depositAmount), alignment: 'right' }])
 
   return [
-    { text: 'Investment', style: 'sectionTitle' },
+    // The investment breakdown always opens its own closing page.
+    { text: 'Investment', style: 'sectionTitle', pageBreak: 'before' },
     { table: { widths: ['*', 'auto'], body: rows }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 12] },
   ]
 }
