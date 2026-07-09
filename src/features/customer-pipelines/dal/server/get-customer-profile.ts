@@ -22,6 +22,7 @@ import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-t
 interface CustomerProfileViewer {
   userId: string
   isSuperAdmin: boolean
+  canSeeUngated: boolean
 }
 
 export async function getCustomerProfile(customerId: string, viewer: CustomerProfileViewer): Promise<CustomerProfileData> {
@@ -30,7 +31,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
   const [customer] = await db
     .select({
       ...customerCols,
-      phone: gatedPhoneSql(viewer.isSuperAdmin),
+      phone: gatedPhoneSql(viewer.canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
     })
     .from(customers)

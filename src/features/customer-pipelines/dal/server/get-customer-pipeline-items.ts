@@ -16,22 +16,22 @@ import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/l
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
-export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false): Promise<CustomerPipelineItem[]> {
+export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false, canSeeUngated = false): Promise<CustomerPipelineItem[]> {
   if (pipeline === 'leads') {
-    return getLeadsPipelineItems(isOmni)
+    return getLeadsPipelineItems(canSeeUngated)
   }
 
   if (pipeline === 'projects') {
-    return getProjectsPipelineItems(userId, isOmni)
+    return getProjectsPipelineItems(userId, isOmni, canSeeUngated)
   }
 
   // Rehash / dead pipelines: find customers with meetings in this pipeline (non-project meetings)
   if (pipeline !== 'fresh') {
-    return getRehashOrDeadPipelineItems(userId, pipeline, isOmni)
+    return getRehashOrDeadPipelineItems(userId, pipeline, isOmni, canSeeUngated)
   }
 
   // Fresh pipeline: full query with computed stages
-  return getFreshPipelineItems(userId, isOmni)
+  return getFreshPipelineItems(userId, isOmni, canSeeUngated)
 }
 
 /**
@@ -40,12 +40,12 @@ export async function getCustomerPipelineItems(userId: string, pipeline: Pipelin
  * been scheduled for an in-home consultation yet.
  * Stage comes from customers.pipelineStage (repurposed for leads).
  */
-async function getLeadsPipelineItems(isOmni: boolean): Promise<CustomerPipelineItem[]> {
+async function getLeadsPipelineItems(canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .select({
       id: customers.id,
       name: customers.name,
-      phone: gatedPhoneSql(isOmni),
+      phone: gatedPhoneSql(canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
       email: customers.email,
       address: customers.address,
@@ -91,12 +91,12 @@ async function getLeadsPipelineItems(isOmni: boolean): Promise<CustomerPipelineI
  * Finds distinct customers who have at least one meeting with the given pipeline value
  * and no projectId (non-project meetings only).
  */
-async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, isOmni: boolean): Promise<CustomerPipelineItem[]> {
+async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .selectDistinctOn([customers.id], {
       id: customers.id,
       name: customers.name,
-      phone: gatedPhoneSql(isOmni),
+      phone: gatedPhoneSql(canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
       email: customers.email,
       address: customers.address,
@@ -144,12 +144,12 @@ async function getRehashOrDeadPipelineItems(userId: string, pipeline: Pipeline, 
  * Fresh pipeline items — full query with computed stages, proposals, reps.
  * Filters meetings by pipeline = 'fresh' AND projectId IS NULL.
  */
-async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<CustomerPipelineItem[]> {
+async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   const rows = await db
     .select({
       customerId: customers.id,
       customerName: customers.name,
-      customerPhone: gatedPhoneSql(isOmni),
+      customerPhone: gatedPhoneSql(canSeeUngated),
       customerHasSentProposal: hasSentProposalSql(),
       customerEmail: customers.email,
       customerAddress: customers.address,
@@ -333,7 +333,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean): Promise<C
  * with their most recently created project's data attached.
  * Stage comes from projects.pipelineStage.
  */
-async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promise<CustomerPipelineItem[]> {
+async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeUngated: boolean): Promise<CustomerPipelineItem[]> {
   // Get projects with customer data
   const projectRows = await db
     .select({
@@ -346,7 +346,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean): Promis
       projectCreatedAt: projects.createdAt,
       customerId: customers.id,
       customerName: customers.name,
-      customerPhone: gatedPhoneSql(isOmni),
+      customerPhone: gatedPhoneSql(canSeeUngated),
       customerHasSentProposal: hasSentProposalSql(),
       customerEmail: customers.email,
       customerAddress: customers.address,

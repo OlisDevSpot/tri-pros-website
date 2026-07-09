@@ -12,6 +12,7 @@ import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
+import { canSeeUngatedPhone } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { r2Client } from '@/shared/services/providers/r2/client'
@@ -28,7 +29,7 @@ export const customerPipelinesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id
       const isOmni = ctx.ability.can('manage', 'all')
-      return getCustomerPipelineItems(userId, input?.pipeline ?? 'fresh', isOmni)
+      return getCustomerPipelineItems(userId, input?.pipeline ?? 'fresh', isOmni, canSeeUngatedPhone(ctx.ability))
     }),
 
   moveCustomerPipelineItem: agentProcedure
@@ -64,7 +65,7 @@ export const customerPipelinesRouter = createTRPCRouter({
     }))
     .query(async ({ input, ctx }) => {
       const isSuperAdmin = ctx.ability.can('manage', 'all')
-      return getCustomerProfile(input.customerId, { userId: ctx.session.user.id, isSuperAdmin })
+      return getCustomerProfile(input.customerId, { userId: ctx.session.user.id, isSuperAdmin, canSeeUngated: canSeeUngatedPhone(ctx.ability) })
     }),
 
   getRecordingUrl: agentProcedure

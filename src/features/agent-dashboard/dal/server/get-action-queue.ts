@@ -114,13 +114,13 @@ const TIER_ORDER: Record<ActionTier, number> = {
   NO_PROPOSAL: 5,
 }
 
-export async function getActionQueue(userId: string, isOmni = false): Promise<ActionItem[]> {
+export async function getActionQueue(userId: string, isOmni = false, canSeeUngated = false): Promise<ActionItem[]> {
   // 1. Sent proposals with view data
   const sentProposals = await db
     .select({
       id: proposals.id,
       customerName: sql<string>`COALESCE(${customers.name}, 'Unknown')`.as('customer_name'),
-      customerPhone: gatedPhoneSql(isOmni).as('customer_phone'),
+      customerPhone: gatedPhoneSql(canSeeUngated).as('customer_phone'),
       customerEmail: sql<string | null>`${customers.email}`.as('customer_email'),
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'trade'->>'label'`.as('trade'),
       sentAt: proposals.sentAt,
