@@ -64,7 +64,7 @@ Replace the throwing stub `generateProposalPdf` (line 14) with the same shape as
 
 - Missing token → 401. Proposal not found → 404. `proposal.token !== token` → 401.
 - Calls `pdfService.generateProposalPdf(SYSTEM_CONTEXT, { proposalId })`.
-- Returns buffer with `Content-Type: application/pdf` and `Content-Disposition: inline; filename="<sanitized>.pdf"` — filename like `Tri Pros Proposal - {customer name}.pdf`. The `sanitize-filename` helper is generic, not Zoho-specific — **relocate it to `src/shared/lib/sanitize-filename.ts`** and update the single zoho-sign import (importing from `providers/zoho-sign/lib` into an API route would violate provider boundaries).
+- Returns buffer with `Content-Type: application/pdf` and `Content-Disposition: inline; filename="<sanitized>.pdf"` — filename like `Tri Pros Proposal - {customer name}.pdf`. The `sanitize-filename` helper is generic, not Zoho-specific — **relocate it to `src/shared/lib/sanitize-filename.ts`** and update both importers (`assemble-envelope.ts`, `zoho-sync.service.ts`) — importing from `providers/zoho-sign/lib` into an API route would violate provider boundaries. `service-architecture.md#provider-directory-shape` cites this file as its provider-lib example and must be updated in the same change.
 - Render failure → 500 with logged error (fail fast, no silent suppression).
 
 **Vercel tracing:** add this route path to `next.config.ts` `outputFileTracingIncludes` with the same pdfkit data glob used for `/api/qstash-jobs` (`./node_modules/.pnpm/pdfkit@*/node_modules/pdfkit/js/data/**/*`). Without it the route 500s on Vercel with missing-AFM-font errors (memory: pdfkit-direct-dep).
