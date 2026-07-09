@@ -27,6 +27,8 @@ export function RemotionRoot() {
         checkmarks: ['AAA-grade materials', 'Beautiful AND functional', 'Built to be photographed'],
         checkmarkClipIndex: 2,
         captions: [],
+        wordCaptions: [],
+        voStartFrame: 15,
         captionVertical: 0.58,
         punchIns: [],
         flashFrames: [],

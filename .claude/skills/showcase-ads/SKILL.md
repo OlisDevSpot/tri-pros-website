@@ -70,12 +70,41 @@ QA every render: extract frames at each beat, view them, check safe zones /
 caption legibility / logo presence. Copy the mp4 (+ any audio takes needing a
 decision) to `/mnt/c/Users/porat/Downloads/` and stop for Oliver's review.
 
+## Captions — word-synced, CapCut-style (MANDATORY for every reel)
+
+Captions are karaoke word-highlight, timed from the audio itself — NEVER
+hand-timed frames (they drift), and the hook title is NEVER duplicated as a
+subtitle (VO line 1 plays UNDER the hook title; karaoke pages are suppressed
+until the hook exits).
+
+Pipeline (after generating any VO):
+```bash
+cd video && node scripts/transcribe.mjs \
+  --audio public/audio/<vo-file> \
+  --script "<the exact VO script text>" \
+  --props props/<reel>.json
+```
+This installs whisper.cpp 1.5.5 + small.en on first run (~2 min), extracts DTW
+word timestamps, and reconciles against the KNOWN script — output text is
+always exactly the script words (never ASR garble like "Triple A grade");
+unmatched runs get interpolated timing. Writes `wordCaptions` into the props.
+`voStartFrame` in props anchors audio time to composition frames.
+
+Rendering: `KaraokeCaptions` (pages via createTikTokStyleCaptions @1200ms,
+active word = brand blue + 1.1 pop, heavy stroke-under-fill). Gotcha solved in
+the component: a thick WebkitTextStroke visually swallows word spaces —
+`wordSpacing` compensates; never remove it.
+
+Upgrade path when a direct ElevenLabs key exists: `/v1/text-to-speech/{voice}/
+with-timestamps` returns synthesis-native character timing (zero drift by
+construction, no whisper needed) — restructure transcribe.mjs around it then.
+
 ## Editing patterns — how variants stay different yet high-quality
 
-Full research library (terminology, frame params, 2026 benchmarks, sources):
-`references/editing-patterns.md` (symlink; canonical file lives at
-`docs/marketing/editing/editing-patterns.md`). READ it before designing any
-new variant. Composition rules:
+Research libraries (symlinks; canonical files live in `docs/marketing/editing/`):
+`references/editing-patterns.md` (patterns, frame params, benchmarks) and
+`references/sfx-and-accents.md` (SFX palette, licenses, accent numbers, mixing
+levels). READ both before designing any new variant. Composition rules:
 
 - **Every variant picks: 1 hook pattern + 1 accent transition + 1 caption
   style.** Vary these three across variants (creative-fatigue rotation);

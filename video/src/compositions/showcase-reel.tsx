@@ -10,6 +10,7 @@ import {
 } from 'remotion'
 import { CaptionTrack } from '../components/caption-track'
 import { CheckmarkList } from '../components/checkmark-list'
+import { KaraokeCaptions } from '../components/karaoke-captions'
 import { ClipMedia } from '../components/clip-media'
 import { EndCard } from '../components/end-card'
 import { FramedClip } from '../components/framed-clip'
@@ -28,9 +29,14 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
   const total = clipsTotal + props.endCardFrames
   const hookFrames = Math.min(75, props.clips[0]!.durationInFrames)
 
-  // Duck the music bed while a caption (≈ the voiceover) is active.
-  const captionActive = props.captions.some(c => frame >= c.startFrame && frame < c.endFrame)
-  const musicLevel = captionActive ? props.musicVolume : Math.min(0.35, props.musicVolume * 2)
+  // Duck the music bed while the voiceover talks.
+  const voActive = props.wordCaptions.length > 0
+    ? (() => {
+        const audioMs = ((frame - props.voStartFrame) / 30) * 1000
+        return props.wordCaptions.some(w => audioMs >= w.startMs - 200 && audioMs < w.endMs + 200)
+      })()
+    : props.captions.some(c => frame >= c.startFrame && frame < c.endFrame)
+  const musicLevel = voActive ? props.musicVolume : Math.min(0.35, props.musicVolume * 2)
 
   let clipStart = 0
   const clipSequences = props.clips.map((clip, index) => {
@@ -121,25 +127,40 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
         </SafeZone>
       </Sequence>
 
-      <Sequence from={hookFrames} durationInFrames={clipsTotal - hookFrames}>
-        <SafeZone>
-          <CaptionTrack
-            vertical={props.captionVertical}
-            captions={props.captions.map(c => ({
-              ...c,
-              startFrame: c.startFrame - hookFrames,
-              endFrame: c.endFrame - hookFrames,
-            }))}
-          />
-        </SafeZone>
-      </Sequence>
+      {props.wordCaptions.length > 0
+        ? (
+            <Sequence durationInFrames={clipsTotal}>
+              <SafeZone>
+                <KaraokeCaptions
+                  wordCaptions={props.wordCaptions}
+                  voStartFrame={props.voStartFrame}
+                  hideBeforeFrame={hookFrames}
+                  vertical={props.captionVertical}
+                />
+              </SafeZone>
+            </Sequence>
+          )
+        : (
+            <Sequence from={hookFrames} durationInFrames={clipsTotal - hookFrames}>
+              <SafeZone>
+                <CaptionTrack
+                  vertical={props.captionVertical}
+                  captions={props.captions.map(c => ({
+                    ...c,
+                    startFrame: c.startFrame - hookFrames,
+                    endFrame: c.endFrame - hookFrames,
+                  }))}
+                />
+              </SafeZone>
+            </Sequence>
+          )}
 
       <Sequence from={clipsTotal} durationInFrames={props.endCardFrames}>
         <EndCard content={props.endCard} />
       </Sequence>
 
       {props.voiceoverSrc && (
-        <Sequence from={15}>
+        <Sequence from={props.voStartFrame}>
           <Audio src={staticFile(props.voiceoverSrc)} />
         </Sequence>
       )}

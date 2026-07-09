@@ -9,8 +9,10 @@
     "tsc": "tsc --noEmit"
   },
   "dependencies": {
+    "@remotion/captions": "4.0.487",
     "@remotion/cli": "4.0.487",
     "@remotion/google-fonts": "4.0.487",
+    "@remotion/install-whisper-cpp": "4.0.487",
     "@remotion/media": "4.0.487",
     "@remotion/zod-types": "4.0.487",
     "react": "^19.0.0",

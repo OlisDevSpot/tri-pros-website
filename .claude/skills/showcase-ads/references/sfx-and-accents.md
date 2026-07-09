@@ -1,0 +1,1 @@
+../../../../docs/marketing/editing/sfx-and-accents.md
