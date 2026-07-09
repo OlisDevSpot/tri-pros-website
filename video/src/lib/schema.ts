@@ -3,6 +3,8 @@ import { z } from 'zod'
 export const clipSchema = z.object({
   /** Filename under video/public/ (Remotion staticFile). */
   src: z.string(),
+  /** `video` plays the file; `image` shows a still with a slow Ken Burns push. */
+  kind: z.enum(['video', 'image']),
   durationInFrames: z.number().int().positive(),
   /**
    * `full` = full-bleed cover (needs a true 9:16 source clip).
@@ -33,6 +35,8 @@ export const showcaseReelSchema = z.object({
   captions: z.array(captionSchema),
   voiceoverSrc: z.string().nullable(),
   musicSrc: z.string().nullable(),
+  /** Small icon-logo watermark, top-right in the safe zone (null = off). */
+  watermarkSrc: z.string().nullable(),
   /** Music bed level while the voiceover talks (ducked); ~0.15–0.25. */
   musicVolume: z.number().min(0).max(1),
   endCard: z.object({

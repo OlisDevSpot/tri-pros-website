@@ -2,14 +2,15 @@ import type { ShowcaseReelProps } from '../lib/schema'
 import {
   AbsoluteFill,
   Audio,
+  Img,
   interpolate,
-  OffthreadVideo,
   Sequence,
   staticFile,
   useCurrentFrame,
 } from 'remotion'
 import { CaptionTrack } from '../components/caption-track'
 import { CheckmarkList } from '../components/checkmark-list'
+import { ClipMedia } from '../components/clip-media'
 import { EndCard } from '../components/end-card'
 import { FramedClip } from '../components/framed-clip'
 import { HookTitle } from '../components/hook-title'
@@ -46,6 +47,8 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
             ? (
                 <FramedClip
                   src={clip.src}
+                  kind={clip.kind}
+                  durationInFrames={clip.durationInFrames}
                   aspect={clip.aspect}
                   label={clip.label}
                   above={
@@ -61,15 +64,26 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
               )
             : (
                 <AbsoluteFill>
-                  <OffthreadVideo
-                    src={staticFile(clip.src)}
-                    muted
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
+                  <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} />
                 </AbsoluteFill>
               )}
         </Sequence>
       ))}
+
+      {props.watermarkSrc && (
+        <Sequence durationInFrames={clipsTotal}>
+          <div
+            style={{
+              position: 'absolute',
+              top: '14%',
+              right: '6%',
+              opacity: 0.85,
+            }}
+          >
+            <Img src={staticFile(props.watermarkSrc)} style={{ width: 110 }} />
+          </div>
+        </Sequence>
+      )}
 
       {/* Subtle bottom gradient keeps captions legible over bright footage. */}
       <AbsoluteFill

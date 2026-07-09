@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { AbsoluteFill, OffthreadVideo, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion'
+import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { BODY_FONT } from '../lib/fonts'
 import { BRAND } from '../lib/tokens'
+import { ClipMedia } from './clip-media'
 import { SafeZone } from './safe-zone'
 
 /**
@@ -10,11 +11,15 @@ import { SafeZone } from './safe-zone'
  */
 export function FramedClip({
   src,
+  kind,
+  durationInFrames,
   aspect,
   label,
   above,
 }: {
   src: string
+  kind: 'video' | 'image'
+  durationInFrames: number
   aspect: number
   label: string | null
   above?: ReactNode
@@ -59,11 +64,7 @@ export function FramedClip({
               transform: `scale(${0.96 + enter * 0.04})`,
             }}
           >
-            <OffthreadVideo
-              src={staticFile(src)}
-              muted
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            <ClipMedia src={src} kind={kind} durationInFrames={durationInFrames} />
           </div>
           <div style={{ flex: 1 }} />
         </div>

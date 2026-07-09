@@ -66,7 +66,9 @@ scripts/meta/logs/
 public/funnels/*/ads/videos/
 
 # Remotion ad-video package — deps, renders, and licensed/generated assets stay local
+# (brand/ is the committed exception: small deterministic logo assets)
 video/node_modules/
 video/out/
-video/public/
+video/public/*
+!video/public/brand/
 video/tsconfig.tsbuildinfo

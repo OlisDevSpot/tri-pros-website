@@ -1,23 +1,25 @@
 {
   "clips": [
-    { "src": "clips/kitchens-rosetta-portrait-push.mp4", "durationInFrames": 150, "layout": "full", "aspect": 0.5625, "label": null },
-    { "src": "clips/kitchens-picasso-transform.mp4", "durationInFrames": 240, "layout": "full", "aspect": 0.5625, "label": null },
-    { "src": "clips/kitchens-island-track.mp4", "durationInFrames": 150, "layout": "framed", "aspect": 1.5706, "label": null }
+    { "src": "clips/kitchens-rosetta-portrait-push.mp4", "kind": "video", "durationInFrames": 150, "layout": "full", "aspect": 0.5625, "label": null },
+    { "src": "stills/kitchens-during-construction-01.png", "kind": "image", "durationInFrames": 75, "layout": "framed", "aspect": 1.4906, "label": "OUR CREW, ON SITE" },
+    { "src": "clips/kitchens-picasso-transform.mp4", "kind": "video", "durationInFrames": 240, "layout": "full", "aspect": 0.5625, "label": null },
+    { "src": "clips/kitchens-island-track.mp4", "kind": "video", "durationInFrames": 150, "layout": "framed", "aspect": 1.5706, "label": null }
   ],
   "hook": "We’re Selecting 5 Kitchens in Your Area",
   "checkmarks": ["AAA-grade materials", "Beautiful AND functional", "Built to be photographed"],
-  "checkmarkClipIndex": 2,
+  "checkmarkClipIndex": 3,
   "captions": [
     { "text": "We’re selecting 5 kitchens in your area", "startFrame": 80, "endFrame": 155 },
-    { "text": "for a Showcase remodel", "startFrame": 155, "endFrame": 210 },
-    { "text": "AAA-grade materials, built to be photographed", "startFrame": 210, "endFrame": 300 },
-    { "text": "— at a Showcase price", "startFrame": 300, "endFrame": 355 },
-    { "text": "Homeowners only.", "startFrame": 355, "endFrame": 400 },
-    { "text": "See if your home qualifies", "startFrame": 400, "endFrame": 470 }
+    { "text": "for a Showcase remodel", "startFrame": 155, "endFrame": 225 },
+    { "text": "AAA-grade materials, built to be photographed", "startFrame": 225, "endFrame": 320 },
+    { "text": "— at a Showcase price", "startFrame": 320, "endFrame": 370 },
+    { "text": "Homeowners only.", "startFrame": 370, "endFrame": 415 },
+    { "text": "See if your home qualifies", "startFrame": 415, "endFrame": 500 }
   ],
-  "voiceoverSrc": "audio/kitchens-vo-sterling.mp3",
-  "musicSrc": "audio/music-bed-01.m4a",
-  "musicVolume": 0.18,
+  "voiceoverSrc": "audio/kitchens-vo-mabel-v2.mp3",
+  "musicSrc": "audio/music-bed-02-upbeat.m4a",
+  "watermarkSrc": "brand/logo-dark.svg",
+  "musicVolume": 0.12,
   "endCard": {
     "headline": "Could Your Kitchen Be One of the 5?",
     "sub": "AAA-grade work, at a Showcase price. Homeowners only.",

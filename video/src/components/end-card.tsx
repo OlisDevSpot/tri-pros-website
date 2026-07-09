@@ -1,4 +1,4 @@
-import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
+import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion'
 import { BODY_FONT, DISPLAY_FONT } from '../lib/fonts'
 import { BRAND } from '../lib/tokens'
 
@@ -30,19 +30,10 @@ export function EndCard({ content }: { content: EndCardContent }) {
         padding: '0 8%',
       }}
     >
-      <div
-        style={{
-          fontFamily: BODY_FONT,
-          fontWeight: 700,
-          fontSize: 34,
-          letterSpacing: '0.22em',
-          textTransform: 'uppercase',
-          color: BRAND.cream,
-          opacity: enter,
-        }}
-      >
-        Tri Pros Remodeling
-      </div>
+      <Img
+        src={staticFile('brand/logo-dark-right.svg')}
+        style={{ width: 560, opacity: enter }}
+      />
       <div
         style={{
           fontFamily: DISPLAY_FONT,

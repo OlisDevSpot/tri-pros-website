@@ -19,9 +19,9 @@ export function RemotionRoot() {
       })}
       defaultProps={{
         clips: [
-          { src: 'clips/kitchen-01.mp4', durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
-          { src: 'clips/kitchen-02.mp4', durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
-          { src: 'clips/kitchen-03.mp4', durationInFrames: 150, layout: 'framed' as const, aspect: 1.5706, label: null },
+          { src: 'clips/kitchen-01.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
+          { src: 'clips/kitchen-02.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'full' as const, aspect: 0.5625, label: null },
+          { src: 'clips/kitchen-03.mp4', kind: 'video' as const, durationInFrames: 150, layout: 'framed' as const, aspect: 1.5706, label: null },
         ],
         hook: 'We’re Selecting 5 Kitchens in Your Area',
         checkmarks: ['AAA-grade materials', 'Beautiful AND functional', 'Built to be photographed'],
@@ -29,7 +29,8 @@ export function RemotionRoot() {
         captions: [],
         voiceoverSrc: null,
         musicSrc: null,
-        musicVolume: 0.18,
+        watermarkSrc: 'brand/logo-dark.svg',
+        musicVolume: 0.12,
         endCard: {
           headline: 'Could Your Kitchen Be One of the 5?',
           sub: 'AAA-grade work, at a Showcase price. Homeowners only.',
