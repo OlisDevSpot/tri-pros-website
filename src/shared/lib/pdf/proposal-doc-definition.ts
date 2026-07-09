@@ -155,23 +155,24 @@ function buildScopeOfWork(
 ): Content[] {
   const parts: Content[] = [{ text: 'Scope of Work', style: 'sectionTitle' }]
   sow.forEach((section, i) => {
-    parts.push(buildSowSectionCard(section, i, pricingMode))
+    parts.push(...buildSowSection(section, i, pricingMode))
   })
   return parts
 }
 
 /**
- * Each SOW section renders as a "card": a borderless single-row table
- * whose first cell is a slim brand-accent bar and whose second cell holds
- * the section content on a light fill. The fill/bar repeat on every page
- * when a long description splits, so the card doubles as a scroll marker
- * for where one scope ends and the next begins.
+ * Each SOW section opens with a header "card" — a borderless single-row
+ * table whose first cell is a slim brand-accent bar and whose second cell
+ * holds the section metadata (number + title, trade/scopes, price) and the
+ * leading description prose on a light fill. The card marks where a new
+ * scope starts while scrolling; the line items (phase headings, bullet
+ * lists) flow below it as regular full-width page content.
  */
-function buildSowSectionCard(
+function buildSowSection(
   section: ProposalWithCustomer['projectJSON']['data']['sow'][number],
   index: number,
   pricingMode: 'total' | 'breakdown',
-): Content {
+): Content[] {
   const metaLine = [
     `Trade: ${section.trade.label}`,
     section.scopes.length > 0 ? `Scopes: ${section.scopes.map(s => s.label).join(', ')}` : null,
@@ -184,12 +185,14 @@ function buildSowSectionCard(
   if (pricingMode === 'breakdown' && section.financials.sectionPrice) {
     inner.push({ text: `Section price: ${formatAsDollars(section.financials.sectionPrice)}`, style: 'sectionPrice' })
   }
+
   const doc = safeParseDoc(section.contentJSON)
-  if (doc) {
-    inner.push(...(tiptapToPdfmake(doc) as Content[]))
+  const { lead, rest } = splitLeadingProse(doc?.content ?? [])
+  if (lead.length > 0) {
+    inner.push(...(tiptapToPdfmake({ type: 'doc', content: lead }) as Content[]))
   }
 
-  return {
+  const parts: Content[] = [{
     table: {
       widths: [4, '*'],
       body: [[
@@ -200,12 +203,38 @@ function buildSowSectionCard(
     layout: {
       defaultBorder: false,
       paddingLeft: (col: number) => col === 0 ? 0 : 14,
-      paddingRight: () => 14,
+      paddingRight: (col: number) => col === 0 ? 0 : 14,
       paddingTop: () => 12,
       paddingBottom: () => 12,
     },
-    margin: [0, 0, 0, 14],
+    margin: [0, 0, 0, 8],
+  }]
+  if (rest.length > 0) {
+    parts.push(...(tiptapToPdfmake({ type: 'doc', content: rest }) as Content[]))
   }
+  parts.push({ text: '', margin: [0, 0, 0, 14] })
+  return parts
+}
+
+/**
+ * Splits a SOW body into its opening prose (the "Description: …" block our
+ * SOW editor template puts first, plus any immediately following
+ * paragraphs) and the line items after it. The lead goes inside the header
+ * card; the rest flows full-width below. Stops at the first list,
+ * horizontal rule, or second heading — those are line-item structure, not
+ * description.
+ */
+function splitLeadingProse(blocks: TiptapNode[]): { lead: TiptapNode[], rest: TiptapNode[] } {
+  let cut = 0
+  for (const [i, node] of blocks.entries()) {
+    const isOpeningHeading = node.type === 'heading' && i === 0
+    if (node.type === 'paragraph' || isOpeningHeading) {
+      cut = i + 1
+      continue
+    }
+    break
+  }
+  return { lead: blocks.slice(0, cut), rest: blocks.slice(cut) }
 }
 
 function buildInvestment(

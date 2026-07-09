@@ -54,8 +54,11 @@ function renderBlock(node: TiptapNode): PdfMakeContent | null {
       return { text: extractPlaintext(node), style: 'quote', margin: [8, 4, 0, 4] }
     }
     case 'horizontalRule': {
+      // 500 = letter width (612) minus the 56pt page margins our proposal
+      // doc uses. pdfmake canvases draw at absolute width without clipping,
+      // so anything wider silently crosses the right margin.
       return {
-        canvas: [{ type: 'line', x1: 0, y1: 0, x2: 515, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }],
+        canvas: [{ type: 'line', x1: 0, y1: 0, x2: 500, y2: 0, lineWidth: 0.5, lineColor: '#cccccc' }],
         margin: [0, 4, 0, 4],
       }
     }
