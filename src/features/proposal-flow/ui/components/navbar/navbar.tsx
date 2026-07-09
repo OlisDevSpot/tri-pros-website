@@ -72,7 +72,6 @@ export function ProposalPageNavbar() {
           )
         : (
             <div className="h-full w-full flex items-center justify-center gap-2 px-4">
-              <ProposalNavbarMenu variant="mobile" />
               <Select
                 value={activeSectionId}
                 onValueChange={(val) => {
@@ -94,6 +93,7 @@ export function ProposalPageNavbar() {
                   ))}
                 </SelectContent>
               </Select>
+              <ProposalNavbarMenu variant="mobile" />
             </div>
           )}
     </ProposalNavbarFrame>

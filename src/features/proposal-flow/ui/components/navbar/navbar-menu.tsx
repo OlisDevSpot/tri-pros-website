@@ -56,7 +56,7 @@ export function ProposalNavbarMenu({ variant }: Props) {
           className={cn(
             variant === 'desktop'
               ? 'h-full w-12 rounded-none hover:bg-foreground/40 data-[state=open]:bg-foreground/40'
-              : 'size-11 rounded-lg shrink-0 bg-card/50 active:bg-card data-[state=open]:bg-card',
+              : 'size-9 rounded-lg shrink-0 active:bg-card/50 data-[state=open]:bg-card/50',
           )}
         >
           <MoreVerticalIcon className="size-5" />
