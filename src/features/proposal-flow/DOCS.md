@@ -52,6 +52,8 @@ Steps are filtered by user role via `generateProposalSteps(userRole)` — curren
 **Reference impl**: `hooks/use-view-mode.ts`
 **Enforced by**: CASL ability check inside the hook (single chokepoint)
 
+The toggle UI itself lives in the navbar kebab popover (`ui/components/navbar/navbar-menu.tsx:ProposalNavbarMenu`, replacing the old fixed desktop pill and mobile navbar toggle icon), driven by `hooks/use-view-mode-toggle.ts:useViewModeToggle`. `useViewMode` remains the CASL-gated source of truth the toggle writes through — the popover only renders when `ability.can('update', 'Proposal')`.
+
 ### customizable-sections-vs-static
 
 Most steps are **static**: their content comes from constants + portfolio data. Two steps are **customizable**: agents edit `funding` and `agreement` per proposal (defined in `proposal-steps.ts:customizableSections`).

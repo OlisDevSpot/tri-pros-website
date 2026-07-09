@@ -63,6 +63,19 @@ A proposal can be read AND updated by an unauthenticated client via `?token=<sha
 **Reference impl**: `lib/server-spec.ts:shareable`
 **Enforced by**: `shareableMiddleware` (entity toolkit); see ADR-0002 §4 and [`../../trpc/DOCS.md`](../../trpc/DOCS.md) (when written)
 
+### PDF export is token-gated and homeowner-safe {#pdf-export-token-gated}
+
+`GET /api/proposals/[proposalId]/pdf?token=` renders the full proposal PDF
+on demand via `pdfService.generateProposalPdf` (pdfmake). Auth mirrors the
+summary route: exact `proposal.token` match, no CASL — the token is the
+authorization (see #shareable-via-token). The document is ALWAYS the
+homeowner view: pricing respects `pricingMode`, the final price is derived
+via `computeFinalTcp`, and the generator never reads
+`sow[].financials.costLines`. There is no agent variant.
+
+**Anti-pattern:** adding cost lines, margin data, or an "agent mode" to the
+PDF — anyone with the share token can fetch it.
+
 ### visibility-via-meeting-participation
 
 Non-omni agents see a proposal only if they participate in the proposal's meeting (any role). Super-admins (`ability.can('manage', 'all')`) bypass scoping — caller passes `ctx.scope = null`.
