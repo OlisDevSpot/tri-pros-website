@@ -16,10 +16,8 @@ import { ClipMedia } from '../components/clip-media'
 import { EndCard } from '../components/end-card'
 import { FramedClip } from '../components/framed-clip'
 import { HookTitle } from '../components/hook-title'
+import { DOCK_FRAMES, LogoIntro } from '../components/logo-intro'
 import { SafeZone } from '../components/safe-zone'
-
-// replaced by import in Task 5
-const DOCK_FRAMES = 15
 
 /**
  * The Showcase 9:16 reel: hook headline over clip 1 → proof clips (full-bleed
@@ -121,6 +119,17 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
           </Sequence>
         )
       })()}
+
+      {props.logoIntro && (
+        <Sequence durationInFrames={props.logoIntro.dockFrame + DOCK_FRAMES}>
+          <LogoIntro
+            src={props.logoIntro.src}
+            enterFrame={props.logoIntro.enterFrame}
+            dockFrame={props.logoIntro.dockFrame}
+            watermarkWidth={props.watermarkWidth}
+          />
+        </Sequence>
+      )}
 
       {/* Subtle bottom gradient keeps captions legible over bright footage. */}
       <AbsoluteFill
