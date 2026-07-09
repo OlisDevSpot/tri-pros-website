@@ -72,3 +72,7 @@ video/out/
 video/public/*
 !video/public/brand/
 video/tsconfig.tsbuildinfo
+
+# whisper.cpp install for caption transcription (video/scripts/transcribe.mjs)
+video/.whisper/
+video/public/audio/*.16k.wav
