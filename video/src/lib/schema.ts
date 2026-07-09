@@ -19,9 +19,24 @@ export const clipSchema = z.object({
 })
 
 export const captionSchema = z.object({
+  /** `*word*` marks the emphasis word (brand blue + scale); max one per line. */
   text: z.string(),
   startFrame: z.number().int().min(0),
   endFrame: z.number().int().min(1),
+})
+
+/** Punch-in: hard 1-frame scale jump on the clips layer, decaying back over ~10f. */
+export const punchInSchema = z.object({
+  frame: z.number().int().min(0),
+  /** 1.10–1.15 hard, ≤1.20 (digital zoom quality ceiling). */
+  scale: z.number().min(1).max(1.2),
+})
+
+/** SFX cue — transient must land ON the visual hit frame (editing-patterns.md). */
+export const sfxSchema = z.object({
+  src: z.string(),
+  frame: z.number().int().min(0),
+  volume: z.number().min(0).max(1),
 })
 
 export const showcaseReelSchema = z.object({
@@ -33,6 +48,14 @@ export const showcaseReelSchema = z.object({
   checkmarkClipIndex: z.number().int().nullable(),
   /** Burned-in captions mirroring the voiceover (most viewers watch muted). */
   captions: z.array(captionSchema),
+  /** Caption centerline within the safe zone (0 top … 1 bottom); ~0.55–0.62. */
+  captionVertical: z.number().min(0).max(1),
+  /** Punch zooms on stressed VO words / downbeats. */
+  punchIns: z.array(punchInSchema),
+  /** White luma-flash transitions — peak opacity ON these frames (4–6f total). */
+  flashFrames: z.array(z.number().int().min(0)),
+  /** SFX cues (whoosh/riser/boom/click — see the skill's SFX grammar). */
+  sfx: z.array(sfxSchema),
   voiceoverSrc: z.string().nullable(),
   musicSrc: z.string().nullable(),
   /** Small icon-logo watermark, top-right in the safe zone (null = off). */

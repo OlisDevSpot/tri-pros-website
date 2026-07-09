@@ -1,0 +1,1 @@
+../../../../docs/marketing/editing/editing-patterns.md

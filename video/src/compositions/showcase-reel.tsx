@@ -39,9 +39,27 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
     return { ...clip, from, index }
   })
 
+  // Punch-in: hard scale jump on the hit frame, decaying back over 10f.
+  const punchScale = props.punchIns.reduce((acc, p) => {
+    const elapsed = frame - p.frame
+    if (elapsed < 0)
+      return acc
+    return Math.max(acc, interpolate(elapsed, [0, 10], [p.scale, 1], { extrapolateRight: 'clamp' }))
+  }, 1)
+
+  // Luma flash: white overlay peaking exactly ON each flash frame (6f total).
+  const flashOpacity = props.flashFrames.reduce(
+    (acc, f) => Math.max(acc, interpolate(frame, [f - 3, f, f + 3], [0, 0.9, 0], {
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    })),
+    0,
+  )
+
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      {clipSequences.map(clip => (
+      <AbsoluteFill style={{ transform: `scale(${punchScale})` }}>
+        {clipSequences.map(clip => (
         <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames}>
           {clip.layout === 'framed'
             ? (
@@ -68,7 +86,8 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                 </AbsoluteFill>
               )}
         </Sequence>
-      ))}
+        ))}
+      </AbsoluteFill>
 
       {props.watermarkSrc && (
         <Sequence durationInFrames={clipsTotal}>
@@ -105,6 +124,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
       <Sequence from={hookFrames} durationInFrames={clipsTotal - hookFrames}>
         <SafeZone>
           <CaptionTrack
+            vertical={props.captionVertical}
             captions={props.captions.map(c => ({
               ...c,
               startFrame: c.startFrame - hookFrames,
@@ -132,6 +152,16 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
               extrapolateRight: 'clamp',
             })}
         />
+      )}
+      {props.sfx.map(cue => (
+        <Sequence key={`${cue.src}-${cue.frame}`} from={cue.frame}>
+          <Audio src={staticFile(cue.src)} volume={cue.volume} />
+        </Sequence>
+      ))}
+
+      {/* Luma flash sits above everything except nothing — it masks the cut. */}
+      {flashOpacity > 0 && (
+        <AbsoluteFill style={{ background: '#ffffff', opacity: flashOpacity }} />
       )}
     </AbsoluteFill>
   )

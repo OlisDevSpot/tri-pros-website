@@ -9,12 +9,25 @@
   "checkmarks": ["AAA-grade materials", "Beautiful AND functional", "Built to be photographed"],
   "checkmarkClipIndex": 3,
   "captions": [
-    { "text": "We’re selecting 5 kitchens in your area", "startFrame": 80, "endFrame": 155 },
+    { "text": "We’re selecting *5 kitchens* in your area", "startFrame": 80, "endFrame": 155 },
     { "text": "for a Showcase remodel", "startFrame": 155, "endFrame": 225 },
-    { "text": "AAA-grade materials, built to be photographed", "startFrame": 225, "endFrame": 320 },
-    { "text": "— at a Showcase price", "startFrame": 320, "endFrame": 370 },
-    { "text": "Homeowners only.", "startFrame": 370, "endFrame": 415 },
-    { "text": "See if your home qualifies", "startFrame": 415, "endFrame": 500 }
+    { "text": "*AAA-grade* materials, built to be photographed", "startFrame": 225, "endFrame": 320 },
+    { "text": "— at a *Showcase price*", "startFrame": 320, "endFrame": 370 },
+    { "text": "*Homeowners* only.", "startFrame": 370, "endFrame": 415 },
+    { "text": "See if your home *qualifies*", "startFrame": 415, "endFrame": 500 }
+  ],
+  "captionVertical": 0.58,
+  "punchIns": [
+    { "frame": 240, "scale": 1.1 },
+    { "frame": 330, "scale": 1.12 },
+    { "frame": 430, "scale": 1.08 }
+  ],
+  "flashFrames": [225, 615],
+  "sfx": [
+    { "src": "audio/sfx/whoosh.wav", "frame": 145, "volume": 0.5 },
+    { "src": "audio/sfx/boom.wav", "frame": 225, "volume": 0.65 },
+    { "src": "audio/sfx/riser-short.wav", "frame": 585, "volume": 0.45 },
+    { "src": "audio/sfx/boom.wav", "frame": 615, "volume": 0.7 }
   ],
   "voiceoverSrc": "audio/kitchens-vo-mabel-v2.mp3",
   "musicSrc": "audio/music-bed-02-upbeat.m4a",

@@ -27,7 +27,7 @@ creative → Meta, PAUSED).
 
 | What | Where |
 |---|---|
-| Brand logos (committed) | `video/public/brand/` — `logo-dark-right.svg` (end card), `logo-dark.svg` (icon watermark), `logo-dark-bottom.svg` (shirt prints). "dark" = white+blue art for dark grounds; light-theme variants in `public/company/logo/` |
+| Brand logos (committed) | `video/public/brand/` — `logo-dark-right.svg` (end card), `logo-dark.svg` (icon watermark), `logo-dark-bottom.svg` (shirt prints). ⚠️ NAMING TRAP: the `logo-dark-*` files are the LIGHT-COLORED art (white letters + blue mark) FOR dark grounds. On navy shirts / dark backgrounds Oliver's rule is: letters must be WHITE and visible ⇒ ALWAYS `logo-dark-*` files. The `logo-light-*` files (black letters, for light grounds) are wrong on navy and live in `public/company/logo/` |
 | Generated clips/stills/audio (gitignored) | `video/public/{clips,stills,audio}/` — regenerable; the props JSON is the durable recipe |
 | Props JSON (committed = the creative's source of truth) | `video/props/<trade>-<concept>-NN.json` |
 | Renders | `video/out/` (gitignored); deliver drafts to `/mnt/c/Users/porat/Downloads/` |
@@ -40,7 +40,9 @@ Check `higgsfield account status` first; `higgsfield workspace list` + `workspac
 
 - **B-roll clip** (single-plane push/orbit/track): `kling3_0 --start-image <img> --duration 5 --aspect_ratio 9:16 --sound off`. ⚠️ Output follows the START IMAGE aspect — pre-crop the photo to 9:16 (sharp, pick crop window visually) for full-bleed; keep landscape only for framed-card layout.
 - **Before→after transform** (the money shot): `seedance_2_0 --start-image <before> --end-image <after> --duration 8 --resolution 1080p --aspect_ratio 9:16 --generate_audio false` — honors 9:16 even from landscape inputs. Same-room pairs only.
-- **During/crew still**: `nano_banana_2 --image-references <before> --image-references <after> --image-references public/company/logo/logo-dark-bottom.jpg --aspect_ratio 3:2 --resolution 2k` + prompt: same room mid-construction consistent with both references, two workers in navy shirts, logo from third reference printed large on shirt BACKS, natural poses, faces away from camera, contractor-progress-photo realism. Verify logo fidelity; re-roll if mangled.
+- **During/crew still** (two-step, logo fidelity is the hard part):
+  1. Scene: `nano_banana_2 --image-references <before> --image-references <after> --image-references <shirt-print-ref> --aspect_ratio 3:2 --resolution 2k` + prompt: same room mid-construction consistent with both references, two workers in navy shirts, logo from third reference printed large on shirt BACKS, natural poses, faces away from camera, contractor-progress-photo realism.
+  2. Logo pass (first pass always mangles the lockup): build a pixel-exact shirt-print reference — rasterize `video/public/brand/logo-dark-bottom.svg` (WHITE letters — see naming trap above) onto a navy swatch with sharp (`sharp(svg,{density:300}).resize(900)` composited on `{r:34,g:48,b:74}`), then `nano_banana_pro --image-references <scene> --image-references <swatch>` + prompt: keep scene EXACTLY, replace both shirt-back prints with the exact logo — mark + "TRI PROS" + "REMODELING" letter-perfect, warped to fabric. Verify legibility at 100%; re-roll until the company name reads.
 - **VO**: `text2speech_v2 --variant elevenlabs --voice_id <id> --voice_type preset` — voices via `higgsfield voices list` (female: Mabel `fa64fba4…`, Gia `530df032…`, Quinn `80914268…`, Tallulah; male: Sterling `dc382508…`). Liveliness comes from script punctuation (contractions, "!", "…", em-dash beats). Generate 2–3 takes for Oliver to pick; iterate until the vibe lands.
 - **Music bed**: `sonilo_music --duration 30 --prompt "<style>, no vocals"`. House default: upbeat feel-good (bright acoustic strums, claps, light driving percussion, optimistic, radio-ad polish). Mixed quiet: `musicVolume` 0.12 (ducks under VO; peaks ~0.24).
 - Always `--wait`; run long jobs via background Bash. Download result URLs with curl into the scratchpad, then copy keepers into `video/public/`.
@@ -67,6 +69,33 @@ pnpm exec remotion render ShowcaseReel out/<name>.mp4 --props=props/<name>.json
 QA every render: extract frames at each beat, view them, check safe zones /
 caption legibility / logo presence. Copy the mp4 (+ any audio takes needing a
 decision) to `/mnt/c/Users/porat/Downloads/` and stop for Oliver's review.
+
+## Editing patterns — how variants stay different yet high-quality
+
+Full research library (terminology, frame params, 2026 benchmarks, sources):
+`references/editing-patterns.md` (symlink; canonical file lives at
+`docs/marketing/editing/editing-patterns.md`). READ it before designing any
+new variant. Composition rules:
+
+- **Every variant picks: 1 hook pattern + 1 accent transition + 1 caption
+  style.** Vary these three across variants (creative-fatigue rotation);
+  keep transition style consistent WITHIN an ad.
+- Hook rotation for Showcase: inverted reveal (after-first — THE remodeling
+  hook) · cold open · text-punch · freeze-frame open · match-cut open.
+- Rhythm: visual change every 2–4s; macro re-hook every 5–8s; hooks decay
+  ~37%/week — rotate weekly.
+- Schema knobs already implemented in `ShowcaseReel`: `punchIns` (hard scale
+  jump on stressed VO words/downbeats, 1.10–1.15), `flashFrames` (luma flash
+  peaked on chapter cuts), `sfx` (cues; grammar: whoosh=motion, riser peaks ON
+  the reveal frame starting 30–60f before, boom=landing; riser→cut→boom),
+  `captionVertical` (~0.55–0.62), `*word*` caption emphasis (one per line),
+  per-clip `layout`/`kind`, `checkmarkClipIndex`, safe zone 14/35/6 built in.
+- SFX assets live in `video/public/audio/sfx/` (AI-generated via `seed_audio`;
+  regenerate freely). Beat-sync for free: prompt sonilo with an explicit BPM
+  ("120 BPM" → beat = 15f @30fps) and snap cut frames to that grid.
+- Not yet implemented (add on demand): whip pan (SVG directional blur), speed
+  ramps/time-remap, karaoke word-highlight captions (needs word timestamps),
+  wipe/slider reveal, color pop. Parameterizations are in the reference doc.
 
 ## Edit mode (the 90%-good workflow)
 
