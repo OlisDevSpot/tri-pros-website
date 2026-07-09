@@ -5,14 +5,24 @@ import type { ScopedContext } from '@/shared/dal/server/types'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 
+import { buildProposalDocDefinition } from '@/shared/lib/pdf/proposal-doc-definition'
 import { renderPdf } from '@/shared/lib/pdf/render-pdf'
 import { buildSowDocDefinition } from '@/shared/lib/pdf/sow-doc-definition'
 
 /** Proposal PDFs, finance forms, printable documents */
 function createPDFService() {
   return {
-    generateProposalPdf: async (_ctx: ScopedContext, _params: { proposalId: string }): Promise<Buffer> => {
-      throw new Error('pdfService.generateProposalPdf not implemented')
+    /**
+     * Full customer-facing proposal PDF (branding, customer block, SOW,
+     * homeowner-safe pricing). Served by /api/proposals/[proposalId]/pdf.
+     */
+    generateProposalPdf: async (ctx: ScopedContext, { proposalId }: { proposalId: string }): Promise<Buffer> => {
+      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
+      if (!proposal) {
+        throw new Error(`pdfService.generateProposalPdf: proposal ${proposalId} not found`)
+      }
+      const docDef = await buildProposalDocDefinition(proposal)
+      return renderPdf(docDef)
     },
 
     generateFinanceForm: async (_ctx: ScopedContext, _params: { proposalId: string }): Promise<Buffer> => {
