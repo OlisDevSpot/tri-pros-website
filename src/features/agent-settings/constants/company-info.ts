@@ -10,5 +10,4 @@ export const COMPANY_INFO = {
 
 export const USEFUL_LINKS = [
   { label: 'Company Website', href: 'https://triprosremodeling.com', external: true },
-  { label: 'Monday.com', href: 'https://app.monday.com', external: true },
 ] as const

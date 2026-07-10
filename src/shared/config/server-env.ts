@@ -52,9 +52,6 @@ const envSchema = z.object({
   // RESEND — fragment lives at providers/resend/lib/config.ts
   ...resendEnvFragment.shape,
 
-  // MONDAY
-  MONDAY_API_TOKEN: z.string(),
-
   // ZOHO SIGN
   ZOHO_SIGN_DEV_TOKEN: z.string().optional(),
   ZOHO_SIGN_CLIENT_ID: z.string().optional(),
