@@ -122,7 +122,7 @@ export async function getActionQueue(userId: string, isOmni = false, canSeeUngat
       customerName: sql<string>`COALESCE(${customers.name}, 'Unknown')`.as('customer_name'),
       customerPhone: gatedPhoneSql(canSeeUngated).as('customer_phone'),
       customerEmail: sql<string | null>`${customers.email}`.as('customer_email'),
-      trade: sql<string | null>`${proposals.projectJSON}->'data'->'trade'->>'label'`.as('trade'),
+      trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
       sentAt: proposals.sentAt,
       viewCount: count(proposalViews.id),
       lastViewedAt: max(proposalViews.viewedAt),
