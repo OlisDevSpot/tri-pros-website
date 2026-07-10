@@ -27,8 +27,6 @@
     "portfolio": "tsx scripts/portfolio-manager.ts",
     "migrate:notes": "tsx scripts/migrate-notes-to-activities.ts",
     "migrate:notes:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notes-to-activities.ts",
-    "migrate:notion": "tsx scripts/migrate-notion-contacts.ts",
-    "migrate:notion:dev": "DRIZZLE_TARGET=dev tsx scripts/migrate-notion-contacts.ts",
     "migrate:proposal-kind": "NODE_ENV=production tsx scripts/migrate-proposal-kind.ts",
     "migrate:proposal-kind:dev": "tsx scripts/migrate-proposal-kind.ts",
     "backfill:trades": "NODE_ENV=production tsx scripts/backfill-interested-trades-raw.ts",
