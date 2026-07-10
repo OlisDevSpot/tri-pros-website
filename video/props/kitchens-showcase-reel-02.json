@@ -373,22 +373,11 @@
   ],
   "voStartFrame": 35,
   "captionVertical": 0.58,
-  "punchIns": [
-    {
-      "frame": 167,
-      "scale": 1.18
-    },
-    {
-      "frame": 284,
-      "scale": 1.2
-    }
-  ],
+  "punchIns": [],
   "flashFrames": [
     75
   ],
-  "zoomOutReveals": [
-    300
-  ],
+  "zoomOutReveals": [],
   "logoIntro": {
     "src": "brand/logo-dark-right.svg",
     "enterFrame": 0,

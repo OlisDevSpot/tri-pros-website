@@ -152,14 +152,20 @@ levels). READ both before designing any new variant. Composition rules:
   hook) · cold open · text-punch · freeze-frame open · match-cut open.
 - Rhythm: visual change every 2–4s; macro re-hook every 5–8s; hooks decay
   ~37%/week — rotate weekly.
-- Schema knobs already implemented in `ShowcaseReel`: `punchIns` (hard scale
-  jump on stressed VO words/downbeats, 1.10–1.15), `flashFrames` (luma flash
+- ⛔ **One motion per moment (Oliver, draft-3 AND draft-5 feedback — twice).**
+  `punchIns` and `zoomOutReveals` are DEPRECATED — hard scale pops read as
+  "two quick zoom ins and zoom outs" and got rejected in back-to-back drafts.
+  Each photo/clip gets exactly ONE entrance (fade or kenBurns — never both a
+  scale effect AND a fade/kenBurns), and never stack two scale animations
+  within ~1s of each other or straddling a cut. Emphasis comes from sfx +
+  caption highlight, not frame-scale jolts. Leave both arrays `[]`.
+- Schema knobs already implemented in `ShowcaseReel`: `punchIns` (deprecated,
+  see above), `flashFrames` (luma flash
   peaked on chapter cuts), `sfx` (cues; grammar: whoosh=motion, riser peaks ON
   the reveal frame starting 30–60f before, boom=landing; riser→cut→boom),
   `captionVertical` (~0.55–0.62), `*word*` caption emphasis (one per line),
   per-clip `layout`/`kind`, `checkmarkClipIndex`, safe zone 14/35/6,
-  `zoomOutReveals` (array of frames; 135%→100% eased over 18f on
-  after-arrivals — gentle, never choppy), `hookStartFrame`/`hookDurationInFrames`
+  `zoomOutReveals` (deprecated, see above), `hookStartFrame`/`hookDurationInFrames`
   (hook window — karaoke pages stay suppressed until the sum elapses),
   per-clip `kenBurns: "in" | "out"`, per-clip `transitionIn: "none" | "fade"`
   (10f opacity mix over the still-running previous clip — DEFAULT for
@@ -173,8 +179,8 @@ levels). READ both before designing any new variant. Composition rules:
   built in.
 - Default accent map (house standard — deviate only with reason): snap =
   shutter + white flash · logo dock = quiet click · reveal = riser peaking ON
-  the reveal + zoom-out · checkmark rows = ascending clicks · end card = soft
-  thud.
+  the reveal (audio only — no zoom) · checkmark rows = ascending clicks ·
+  end card = soft thud.
 - **"Again & again" pattern** (Oliver, 2026-07-09): on repeat-words in the VO
   ("again... and again"), pair a `photoBurst` photo entrance + shutter SFX ON
   each word's frame (`round(voStartFrame + startMs*30/1000)` from
