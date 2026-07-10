@@ -23,7 +23,7 @@ The in-home meeting is the primary sales event in TPR's funnel. Everything befor
 - [ ] Charged laptop or tablet with proposal system accessible
 - [ ] Material samples for the relevant trade(s)
 - [ ] Portfolio loaded (2-3 projects from the same trade the customer needs)
-- [ ] DocuSign accessible and ready (for same-day close)
+- [ ] Zoho Sign accessible and ready (for same-day close)
 
 ### Conviction Check
 Before you walk in the door, ask yourself:
@@ -318,7 +318,7 @@ The full follow-up protocol is in `sales/follow-up-cadence.md`.
 ## Post-Meeting Actions (Within 24 Hours)
 
 - [ ] Create proposal in system — use everything you learned in the meeting
-- [ ] Send proposal via DocuSign
+- [ ] Send proposal via Zoho Sign
 - [ ] Log deal in CRM (move to appropriate stage)
 - [ ] Create follow-up task for the agreed date/time
 - [ ] Note objections, concerns, and what the customer emphasized — use these in follow-up

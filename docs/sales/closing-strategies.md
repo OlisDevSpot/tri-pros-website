@@ -45,7 +45,7 @@ This primes the emotional brain right before you ask for the logical decision. S
 **Script**:
 > "Alright — based on everything we've talked about, I think this is a really strong fit. Let's go ahead and get started. I can pull up the agreement right here and walk you through it — it only takes a few minutes."
 
-Then open DocuSign or the proposal system and begin.
+Then open Zoho Sign or the proposal system and begin.
 
 **Why it works**: Many customers don't close themselves — they need permission to say yes. The assumptive close gives them that permission without putting them in a confrontational position.
 
@@ -123,18 +123,18 @@ For scripted objection responses, see `sales/objection-handlers.md`.
 
 ---
 
-## When to Use DocuSign During the Meeting (On-the-Spot Close)
+## When to Use Zoho Sign During the Meeting (On-the-Spot Close)
 
 **Ideal scenario**: Customer says yes, or uses positive language like "let's do it" / "sounds good."
 
 **How to execute**:
 1. Open the proposal system on your tablet/laptop
 2. Review the proposal together (quickly — don't re-present everything)
-3. Open DocuSign: "I'll pull up the agreement — it's just a few pages, and I'll walk you through each section."
+3. Open Zoho Sign: "I'll pull up the agreement — it's just a few pages, and I'll walk you through each section."
 4. Let them sign on your device or send to their email and let them sign on their phone
 
 **On-the-spot signing tips**:
-- Have DocuSign pre-loaded with the right template
+- Have Zoho Sign pre-loaded with the right template
 - Make the review conversational, not formal
 - Don't leave the room while they're signing — stay present and answer questions
 
@@ -156,7 +156,7 @@ For scripted objection responses, see `sales/objection-handlers.md`.
 
 After any signature (in-person or remote):
 
-1. Confirm DocuSign completed — both parties receive copies
+1. Confirm Zoho Sign completed — both parties receive copies
 2. Update CRM deal stage to "Won"
 3. Send a brief congratulatory message: "Excited to get started — you'll hear from us within [X] business days to schedule the project kickoff."
 4. Note any specific commitments you made (timeline, incentive, materials) — make sure they're in the agreement
