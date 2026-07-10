@@ -18,13 +18,13 @@ Most contracts are not signed on the first attempt. Research across home improve
 
 ### Day 0 — Proposal Sent
 
-**Action**: Send proposal via DocuSign / proposal system
+**Action**: Send proposal via Zoho Sign / proposal system
 
 **Message**: Brief, warm email or text confirming the proposal is on its way.
 
 > "Hi [Name] — great meeting you today. Your proposal is on its way to your inbox. Take a look when you get a chance, and let me know if anything needs clarification. I'll follow up with you [day/time we agreed on]."
 
-**CRM action**: Move the TPR CRM deal to "Proposal Sent." Create Monday follow-up task for Day 1.
+**CRM action**: Move the TPR CRM deal to "Proposal Sent." Create a follow-up task in the app for Day 1.
 
 ---
 
@@ -132,12 +132,12 @@ Agent notification is sent via email when a proposal is viewed (see `src/shared/
 
 | Day | Action | CRM Update |
 |---|---|---|
-| 0 | Send proposal | TPR CRM: "Proposal Sent"; Monday: create follow-up task |
-| 1 | Call on view trigger | TPR CRM: log call; Monday: mark task complete |
-| 3 | Value-add touch | TPR CRM: log contact; Monday: create Day 7 task |
+| 0 | Send proposal | TPR CRM: "Proposal Sent"; App: create follow-up task |
+| 1 | Call on view trigger | TPR CRM: log call; App: mark task complete |
+| 3 | Value-add touch | TPR CRM: log contact; App: create Day 7 task |
 | 7 | Urgency close attempt | TPR CRM: log; update deal probability |
 | 14+ | Monthly nurture | TPR CRM: tag "Nurture"; set recurring reminder |
-| Close | Signed | TPR CRM: "Won"; Monday: project kickoff |
+| Close | Signed | TPR CRM: "Won"; App: project kickoff |
 | No | Not interested | TPR CRM: "Lost" with reason; tag for future reactivation |
 
 ---

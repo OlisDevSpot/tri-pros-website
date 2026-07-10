@@ -38,7 +38,7 @@ This vision statement should reference specific things the customer said during 
 
 **What to include**: Name, address, email(s), phone.
 
-**Key action**: Enter **both** decision-makers' emails if you have them. This ensures both people receive the DocuSign and can review it together.
+**Key action**: Enter **both** decision-makers' emails if you have them. This ensures both people receive the Zoho Sign request and can review it together.
 
 **Common mistake**: Entering only one email, then the other spouse says "I never saw it" — and the conversation dies.
 
@@ -133,13 +133,13 @@ Only add scopes the customer expressed interest in. Don't assume.
 
 ### Step 7 — Agreement / Terms
 
-**What to include**: Scope summary, total contract price, key terms, DocuSign signature block.
+**What to include**: Scope summary, total contract price, key terms, Zoho Sign signature block.
 
 **Before sending, verify**:
 - [ ] All scope items match what was discussed in the meeting
 - [ ] Total price matches the number you quoted verbally
 - [ ] Incentive (if applicable) is reflected in the total
-- [ ] Both decision-makers' emails are in the DocuSign recipient list
+- [ ] Both decision-makers' emails are in the Zoho Sign recipient list
 - [ ] Your agent contact info is visible on the document
 
 ---

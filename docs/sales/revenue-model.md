@@ -17,7 +17,7 @@ Agent visits home → Discovery → Presentation → Price → Close attempt
   ↓
 PROPOSAL CREATED & SENT
   ↓
-Multi-step proposal built in system → DocuSign sent via email
+Multi-step proposal built in system → Zoho Sign sent via email
   ↓
 FOLLOW-UP
   ↓
@@ -25,7 +25,7 @@ Proposal view tracked → Agent notified → Cadenced follow-up
   ↓
 SIGNED CONTRACT
   ↓
-DocuSign completed → Project enters production queue
+Zoho Sign completed → Project enters production queue
   ↓
 PROJECT DELIVERED
   ↓
@@ -83,7 +83,7 @@ For full meeting framework, see `sales/in-home-meeting-playbook.md`.
 6. Financing options
 7. Agreement / terms
 
-**Delivery**: DocuSign envelope sent to customer email. Agent is notified when the proposal is viewed.
+**Delivery**: Zoho Sign request sent to customer email. Agent is notified when the proposal is viewed.
 
 **Key metric**: Proposal creation rate; proposal open rate
 
@@ -106,9 +106,9 @@ For proposal creation guidance, see `proposal/creation-guide.md`.
 
 ## Stage 5: Signed Contract
 
-**Close mechanism**: DocuSign — can be completed by customer digitally, on any device, at any time.
+**Close mechanism**: Zoho Sign — can be completed by customer digitally, on any device, at any time.
 
-**Supports same-day close**: Agent can open DocuSign on a tablet in the customer's home and walk them through signing before leaving.
+**Supports same-day close**: Agent can open Zoho Sign on a tablet in the customer's home and walk them through signing before leaving.
 
 **Key metric**: Close rate (proposals sent → signed); average contract size
 
@@ -118,7 +118,7 @@ For proposal creation guidance, see `proposal/creation-guide.md`.
 
 **Handoff**: Signed contract → project enters production workflow
 
-**Tracking**: Monday.com items updated; project status visible to team
+**Tracking**: project status tracked in the app, visible to team
 
 **Post-project**: Request for review/testimonial, referral ask
 
@@ -143,8 +143,8 @@ For proposal creation guidance, see `proposal/creation-guide.md`.
 | System | Role |
 |---|---|
 | TPR CRM | Deal pipeline (customer stages, activity logging, follow-up) |
-| Monday.com | Task management, project tracking, lead follow-up |
-| DocuSign | E-signature for contracts |
+| TPR app | Task management, project tracking, lead follow-up |
+| Zoho Sign | E-signature for contracts |
 | TPR Proposal System | Proposal creation, delivery, view tracking |
 | Upstash QStash | Background jobs (email notifications on proposal view, etc.) |
 | Resend | Transactional emails (proposal sent, proposal viewed alert) |
