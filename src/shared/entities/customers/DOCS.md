@@ -115,14 +115,6 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 **Reference impl**: `customerServerSpec.hooks.update.before` at `src/shared/entities/customers/lib/server-spec.ts` — nullifies cached coords whenever the update payload contains any of `address`/`city`/`state`/`zip` AND no explicit `latitude`/`longitude` (the geocode write-back path).
 **Enforced by**: spec hook — fires for every `customerCrud.update` caller (routers, services, jobs). Previously enforced by convention in `business.updateCustomerContact`, which is now deleted; the hook is now the only enforcement point.
 
-### notion-contact-link
-
-`notionContactId` is the link to a customer's Notion contact record. Unique. Set during the one-time Notion-to-app migration; null for customers created natively.
-
-**Why**: Notion was the prior CRM; the migration designs in `docs/plans/notion-crm-migration-design.md` complete the move. Until then, `notionContactId` is the bridge that lets us cross-reference.
-**Reference impl**: column `notionContactId`
-**Enforced by**: DB unique constraint; will become irrelevant once Notion CRM migration ships
-
 ## Anti-patterns
 
 - **Reading `customers.pipeline` raw in a UI query.** Use `derivedPipelineSql()` for the 5-bucket classification.
@@ -139,7 +131,6 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 - [`../meetings/DOCS.md`](../meetings/DOCS.md) (when written) — meeting participation is the visibility bridge
 - [`../projects/DOCS.md`](../projects/DOCS.md) (when written) — projects = signed customer
 - [`../lead-sources/DOCS.md`](../lead-sources/DOCS.md) (when written) — attribution + segment classification (shares `customers.pipeline` semantics)
-- `docs/plans/notion-crm-migration-design.md` — context for `notionContactId`
 - `memory/feedback-phone-visibility-threshold.md` — recent threshold-vs-equality fix
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
 - `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — payload shape / runtime validation / deep-merge safety for the three JSONB profiles (`#three-jsonb-profiles`)

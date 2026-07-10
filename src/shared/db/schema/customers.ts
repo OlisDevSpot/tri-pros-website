@@ -11,7 +11,6 @@ import { customerPipelineEnum, leadTypeEnum } from './meta'
 
 export const customers = pgTable('customers', {
   id,
-  notionContactId: text('notion_contact_id').unique(),
   qbCustomerId: text('qb_customer_id'),
   name: text('name').notNull(),
   phone: text('phone'),

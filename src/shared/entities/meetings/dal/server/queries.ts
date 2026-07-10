@@ -96,7 +96,6 @@ export interface MeetingCustomer {
   city: string
   state: string | null
   zip: string
-  notionContactId: string | null
   qbCustomerId: string | null
   latitude: number | null
   longitude: number | null
