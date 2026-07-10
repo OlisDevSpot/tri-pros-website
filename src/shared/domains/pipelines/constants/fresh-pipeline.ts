@@ -45,8 +45,8 @@ export const FRESH_BLOCKED_MESSAGES: Record<string, string> = {
   'needs_confirmation->meeting_scheduled': 'Scheduling a meeting\u2026',
   'meeting_completed->proposal_sent': 'Create a proposal from the meeting page',
   'meeting_completed->follow_up_scheduled': 'Schedule a follow-up meeting from the meeting page',
-  'proposal_sent->contract_sent': 'Contracts are sent via DocuSign',
-  'contract_sent->approved': 'Approval happens when the customer signs via DocuSign',
+  'proposal_sent->contract_sent': 'Contracts are sent via Zoho Sign',
+  'contract_sent->approved': 'Approval happens when the customer signs via Zoho Sign',
   'declined->meeting_scheduled': 'Schedule a new follow-up meeting from the customer profile',
   'default': 'This transition is not supported via drag',
 }
