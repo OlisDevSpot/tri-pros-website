@@ -15,6 +15,7 @@
 | Migration safety | Branch-rehearsed cutover per blob (additive schema → parity-checked backfill → Neon-branch rehearsal → prod cutover → frozen `*_deprecated` column for one release → drop) |
 | Merge machinery | Delete entirely after Wave 2 (`jsonbMergeColumns`, the three helpers, `deepMergeJsonb`, the locked-transaction branch). Sanctioned fallback for a future genuine need: single-statement `jsonb_recursive_merge` SQL, documented in conventions, not built |
 | Amendment (Oliver) | `costLines[]` and `leadMeta.source` promotion are IN scope — both central to live ops (proposal financials; ads attribution reporting) |
+| Calculation standard (Addendum A) | Section incentives reduce final TCP (formula unified, W0) · financials freeze at envelope creation · monthly payment live pre-freeze, terms snapshotted on freeze · three-stage lifecycle replaces blanket never-persist rule |
 
 ## 2. Per-blob verdicts
 
@@ -51,11 +52,11 @@ Each blob was run through the decision tree (findings doc §8.2). Verdicts:
 | Data | Verdict |
 |---|---|
 | `formMetaJSON` (~6 flat fields) | Columns on `proposals` (`envelopeDocumentIds` → pgEnum array column). Resolves its missing-runtime-validation hole for free |
-| `fundingJSON.data.incentives[]` | Child table `proposal_incentives(id, proposal_id FK, type discriminator, position, + per-variant fields with CHECK constraints)`. Deletes the hand-written `finalTcpExpr` SQL mirror — final TCP becomes a plain `SUM` over a join |
+| `fundingJSON.data.incentives[]` | Child table `proposal_incentives(id, proposal_id FK, sow_item_id FK NULLABLE, type discriminator, position, label, amount_cents, + per-variant CHECKs)`. `sow_item_id NULL` = global incentive; set = section-scoped (see Addendum A — section incentives officially reduce price, so they are financial facts and live here too, migrated in W3). Deletes the hand-written `finalTcpExpr` SQL mirror — final TCP becomes a plain `SUM` over a join |
 | `fundingJSON` remainder (`data.*` scalars, `meta`) | Columns on `proposals` where flat; evaluated in Wave 3 detail design (small) |
 | `projectJSON.data.sow[]` | Child table `proposal_sow_items(id, proposal_id FK, position, trade fields, content/html columns, section-level financial scalars)` |
 | `sow[].financials.costLines[]` (**in scope per amendment**) | Child table `proposal_cost_lines(id, sow_item_id FK, position, label, amount, ...)` — grandchild of proposals |
-| `sow[].financials.incentives[]` (per-section) | Stays JSONB-on-row in `proposal_sow_items` initially; promotion trigger documented (same shape as proposal_incentives if ever aggregated) |
+| `sow[].financials.incentives[]` (per-section) | **Amended (Addendum A)**: migrate into `proposal_incentives` with `sow_item_id` set (W3). They officially reduce final TCP, so they must be SUMmable rows, not blob residue |
 
 ### Explicitly stays JSONB (sanctioned, documented)
 
@@ -74,6 +75,24 @@ All new child tables follow the codified cheap tier (`docs/how-to/add-an-entity.
 relations): schema + `relations()` + DAL functions on the parent entity + procedures on the parent's
 router. **No new entity folders, CASL subjects, routers, or server-specs.** Reads follow the house
 batch-fetch idiom (`inArray` batch, not LEFT JOIN — `meetings/dal/server/participants.ts` precedent).
+
+### Wave 0 — pricing correctness punch list (immediate, pre-decomposition)
+
+Small, urgent fixes from the calculation audit (Addendum A) — shippable now, independent of schema
+work:
+
+1. **Unify the final-TCP formula** to the ruled semantics (`finalTcp = max(0, startingTcp − global
+   discount incentives − section incentives)`): update `computeFinalTcp` (+ DOCS.md#final-tcp-derived),
+   extend `finalTcpExpr` with the section-incentives term (temporary jsonb SQL, deleted in W2/W3),
+   and align PDF (`proposal-doc-definition.ts`), AI summary route, and Zoho `tcp` context — all
+   currently overstating the price vs the customer-facing UI.
+2. Unify the two amortization functions into ONE helper with one APR convention + zero-rate guard
+   (`getLoanValues` currently NaNs at 0%; `computeDealMonthlyPayment` takes percent while
+   `getLoanValues` takes fraction — a swapped call site is wrong by 100×).
+3. Fix the broken JSON path in `agent-dashboard/dal/server/get-action-queue.ts` (`projectJSON->
+   'data'->'trade'` — real path is `data->sow->0->trade`; the action-queue trade is always NULL today).
+4. Fix `build-proposal-defaults.ts` hard-coding `type: 'discount'` for all meeting incentives
+   (informational meeting incentives must not become price-reducing).
 
 ### Wave 1 — zero-table wins + stop the bleeding
 
@@ -173,14 +192,75 @@ decomposed + 3 proposals deregistered — only `leadMetaJSON` remains, handled i
 
 ## 7. Out of scope
 
-- Tables for `additionalPainPoints` and per-section SOW `incentives[]` (documented promotion triggers).
+- A table for `additionalPainPoints` (documented promotion trigger). (Per-section SOW incentives
+  were originally out of scope here but moved IN scope by Addendum A — they affect final TCP.)
 - Any change to the sanctioned-JSONB list (§2 last block).
 - Drizzle relational-query (`with:`) adoption — house batch-fetch idiom stays.
 - Testing-framework bootstrap (tracked separately: `docs/plans/2026-07-07-testing-bootstrap-handoff.md`);
   parity checks + tsc/lint are this program's verification layer.
 - `_v` schema-version backfill for the sanctioned-JSONB survivors (revisit after W3).
 
-## 8. Risks
+## 8. Addendum A — Proposal Calculation Standard (2026-07-09)
+
+> Research base: 3-agent session (internal calculation audit, derived-financial-data patterns,
+> SQL/app single-source mechanisms). Gates W2/W3 encoding of any formula into SQL.
+
+### A.1 Business rulings (Oliver, 2026-07-09)
+
+1. **Section incentives REDUCE the final price.** Canonical formula becomes
+   `finalTcp = max(0, startingTcp − Σ global 'discount' incentives − Σ section incentives)`.
+   The proposal-flow UI was right; PDF/Zoho/list/rollups were overstating — fixed in Wave 0.
+2. **Financials freeze at envelope creation** (extends the existing agreement-context lock that
+   already freezes age + envelopeDocumentIds when `signingRequestId != null`). Discarding the
+   envelope un-freezes; signature makes it permanent. Post-signature price changes are new
+   documents (AWD / change orders — vocabulary already exists). The freeze gate lives in the
+   proposals DAL/service layer and covers ALL financial fields and child rows, including the
+   share-token path (which today can mutate a signed proposal's price).
+3. **Monthly payment stays a live derivation** of `finance_options` pre-freeze (quotes track
+   current rates by intent); at the freeze event the selected option's `interestRate` +
+   `termInMonths` are snapshotted onto the proposal so frozen documents reproduce forever.
+
+### A.2 The three-stage lifecycle standard (supersedes blanket "never persist derived values")
+
+| Stage | Rule | Mechanism |
+|---|---|---|
+| **Drafting** | Compute on read; derived values NEVER persisted as truth | Pure TS functions in `entities/proposals/lib/` (keystroke-latency form recalc — a TS implementation always exists) |
+| **Lists/reports** | Store a derived ROLLUP as a cache, recomputed at one choke point | `proposals.final_tcp_cents` column; every financial mutation in the proposals DAL ends with a one-statement SQL recompute (`GREATEST(0, starting_tcp_cents − SUM over proposal_incentives)`). Idempotent + self-healing: re-running always converges from rows, so verify = repair |
+| **Frozen (envelope created)** | Snapshot = the rows themselves become immutable + stamped outputs; append-only afterward | DAL freeze gate on `signingRequestId`; finance terms copied on-freeze; corrections via AWD |
+
+Consistency guards: (a) a PGlite property test pins the TS previewer to the SQL recompute (any
+sign/clamp/rounding divergence = red CI); (b) a periodic verify/repair script diffs stored vs
+recomputed over prod; (c) `calc_version` integer column on proposals, bumped when the formula or
+rounding policy changes, with a changelog in `proposals/DOCS.md`.
+
+**Rejected mechanisms** (evidence in research doc): Postgres generated columns for the rollup
+(cannot reference other rows — PG docs), plain/materialized views (drizzle-kit push friction;
+staleness), triggers (drizzle-kit has zero trigger support; push never runs custom migrations),
+SQL-as-only-implementation (killed by draft-form UX). Row-local generated columns ARE adopted
+where they fit: `proposal_cost_lines.amount_cents GENERATED AS (qty * unit_price_cents)` class.
+
+### A.3 Sequencing interaction with the waves
+
+- **W0** fixes the formula everywhere (incl. a temporary section-incentives jsonb term in
+  `finalTcpExpr`).
+- **W2** creates `proposal_incentives` (global rows; `sow_item_id` column present but unused) and
+  introduces `final_tcp_cents` + the DAL recompute choke point. The recompute temporarily includes
+  ONE documented jsonb term (section incentives still in `projectJSON` until W3) — confined to the
+  single recompute statement, nowhere else. `finalTcpExpr` deleted.
+- **W3** migrates section incentives into `proposal_incentives(sow_item_id)`; the recompute drops
+  its jsonb term and becomes pure SUM-over-rows. Freeze gate extends to the new child tables.
+- **Money**: all new financial columns are integer cents (`*_cents bigint`); agent-facing forms
+  stay whole-dollar; conversion at the DAL boundary; no floats in stored money. Rounding points
+  documented in DOCS.md as part of `calc_version` 1.
+
+### A.4 Convention updates required
+
+- Amend the derived-values rule (`docs/codebase-conventions/` + memory) from "never persist the
+  computation" to the three-stage standard above (draft: never persist · list: persist-as-cache at
+  the choke point · frozen: persist-as-fact at the business event).
+- `proposals/DOCS.md#final-tcp-derived` rewritten with the ruled formula + freeze semantics.
+
+## 9. Risks
 
 | Risk | Mitigation |
 |---|---|
