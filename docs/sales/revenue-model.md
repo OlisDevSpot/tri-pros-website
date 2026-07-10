@@ -46,7 +46,7 @@ Post-project review / referral request
 
 **Key metric**: Appointment set rate (calls → booked meetings)
 
-**CRM entry point**: Lead is created in **Notion** with contact information and appointment date/time.
+**CRM entry point**: Lead is created in **the TPR app** with contact information and appointment date/time.
 
 ---
 
@@ -98,7 +98,7 @@ For proposal creation guidance, see `proposal/creation-guide.md`.
 **System support**: Proposal view tracking is built in; see `sales/follow-up-cadence.md` for the full follow-up schedule.
 
 **CRM updates**:
-- **Notion**: Deal stage updated as proposal progresses (Sent → Viewed → In Negotiation → Won/Lost) Task items for follow-up activities
+- **TPR app**: Deal stage updated as proposal progresses (Sent → Viewed → In Negotiation → Won/Lost) Task items for follow-up activities
 
 **Key metric**: Proposal-to-signed rate; days-to-sign
 

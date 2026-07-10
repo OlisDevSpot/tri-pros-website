@@ -1,6 +1,6 @@
 # Task: Notion CRM Migration
 
-**Status:** 🔴 READY — unblocked, execute first before pipeline-native-customers
+**Status:** ✅ COMPLETED — app is the customer source of truth; Notion CRM bridge fully removed 2026-07-09 (see docs/plans/2026-07-09-legacy-crm-removal-implementation-plan.md)
 **Branch:** `migrating-notion`
 **Spec:** [`docs/plans/notion-crm-migration-design.md`](../plans/notion-crm-migration-design.md)
 **Plan:** [`docs/plans/notion-crm-migration-plan.md`](../plans/notion-crm-migration-plan.md)

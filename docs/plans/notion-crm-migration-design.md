@@ -1,4 +1,7 @@
 # Notion CRM Migration — Design Spec
+
+> ✅ **Completed.** Migration executed; the remaining Notion-customer bridge (sync job, DAL, contacts module, `notion_contact_id` column) was removed 2026-07-09 — see `docs/plans/2026-07-09-legacy-crm-removal-implementation-plan.md`.
+
 **Date:** 2026-03-19
 **Scope:** Contacts → Meetings → Proposals (Projects excluded)
 **Approach:** Enrich `customers` table, URL-param intake forms, one-time Notion sync, decouple Notion from meeting creation

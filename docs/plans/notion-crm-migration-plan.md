@@ -1,5 +1,7 @@
 # Notion CRM Migration Implementation Plan
 
+> ✅ **Completed.** Migration executed; the remaining Notion-customer bridge (sync job, DAL, contacts module, `notion_contact_id` column) was removed 2026-07-09 — see `docs/plans/2026-07-09-legacy-crm-removal-implementation-plan.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Transfer ownership of lead intake and contact management from Notion into the app — building a token-authenticated public intake form, migrating existing Notion contacts to Postgres, and removing Notion from the meeting creation flow.
