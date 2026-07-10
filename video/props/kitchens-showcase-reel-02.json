@@ -1,40 +1,44 @@
 {
   "clips": [
     {
-      "src": "stills/kitchens-tableau-after.png",
+      "src": "stills/kitchens-funnel-after.png",
       "kind": "image",
       "durationInFrames": 75,
       "layout": "full",
       "aspect": 0.5625,
       "label": null,
-      "kenBurns": "out"
+      "kenBurns": "out",
+      "transitionIn": "none"
     },
     {
-      "src": "clips/kitchens-tableau-transform.mp4",
+      "src": "clips/kitchens-funnel-transform.mp4",
       "kind": "video",
       "durationInFrames": 240,
       "layout": "full",
       "aspect": 0.5625,
       "label": null,
-      "kenBurns": "in"
+      "kenBurns": "in",
+      "transitionIn": "none"
     },
     {
       "src": "stills/kitchens-during-construction-01.png",
       "kind": "image",
-      "durationInFrames": 75,
+      "durationInFrames": 66,
       "layout": "framed",
       "aspect": 1.4906,
       "label": "OUR CREW, ON SITE",
-      "kenBurns": "in"
+      "kenBurns": "in",
+      "transitionIn": "fade"
     },
     {
-      "src": "clips/kitchens-rosetta-portrait-push.mp4",
-      "kind": "video",
+      "src": "stills/kitchens-final-rosetta.jpg",
+      "kind": "image",
       "durationInFrames": 150,
       "layout": "full",
-      "aspect": 0.5625,
+      "aspect": 1.5696,
       "label": null,
-      "kenBurns": "in"
+      "kenBurns": "in",
+      "transitionIn": "none"
     },
     {
       "src": "clips/kitchens-island-track.mp4",
@@ -43,7 +47,8 @@
       "layout": "framed",
       "aspect": 1.5706,
       "label": null,
-      "kenBurns": "in"
+      "kenBurns": "in",
+      "transitionIn": "fade"
     }
   ],
   "hook": "We’re Selecting 5 Kitchens in Your Area",
@@ -320,10 +325,6 @@
     {
       "frame": 275,
       "scale": 1.2
-    },
-    {
-      "frame": 393,
-      "scale": 1.15
     }
   ],
   "flashFrames": [
@@ -349,28 +350,33 @@
       "volume": 0.5
     },
     {
-      "src": "audio/sfx/whoosh2.wav",
-      "frame": 312,
-      "volume": 0.35
-    },
-    {
-      "src": "audio/sfx/whoosh2.wav",
-      "frame": 387,
-      "volume": 0.28
-    },
-    {
       "src": "audio/sfx/riser-short.wav",
       "frame": 255,
       "volume": 0.35
     },
     {
+      "src": "audio/sfx/whoosh2.wav",
+      "frame": 312,
+      "volume": 0.35
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 381,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 393,
+      "volume": 0.5
+    },
+    {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 570,
+      "frame": 561,
       "volume": 0.22
     },
     {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 579,
+      "frame": 570,
       "volume": 0.26
     },
     {
@@ -380,7 +386,7 @@
     },
     {
       "src": "audio/sfx/thud.wav",
-      "frame": 690,
+      "frame": 681,
       "volume": 0.4
     }
   ],
@@ -394,5 +400,25 @@
     "sub": "AAA-grade work, at a Showcase price. Homeowners only.",
     "cta": "See If Your Home Qualifies"
   },
-  "endCardFrames": 120
+  "endCardFrames": 120,
+  "hookScrimOpacity": 0.45,
+  "brandBlock": {
+    "logoSrc": "brand/logo-dark-right.svg",
+    "line1": "Licensed & Insured · CSLB #1076760",
+    "line2": "Southern California"
+  },
+  "brandClipIndex": 4,
+  "photoBurst": {
+    "clipIndex": 3,
+    "photos": [
+      {
+        "src": "stills/kitchens-final-rosetta.jpg",
+        "frame": 381
+      },
+      {
+        "src": "stills/kitchens-tableau-after.png",
+        "frame": 393
+      }
+    ]
+  }
 }

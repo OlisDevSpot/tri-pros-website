@@ -18,6 +18,12 @@ export const clipSchema = z.object({
   label: z.string().nullable(),
   /** Ken Burns direction for `kind: 'image'`: slow push in, or settle out. */
   kenBurns: z.enum(['in', 'out']).default('in'),
+  /**
+   * How this clip enters. `fade` = 10f opacity ramp over the still-running
+   * previous clip (fluid). `none` = hard cut (reserve for the snap moment,
+   * paired with flash + shutter).
+   */
+  transitionIn: z.enum(['none', 'fade']).default('none'),
 })
 
 export const captionSchema = z.object({
@@ -97,8 +103,35 @@ export const showcaseReelSchema = z.object({
   watermarkWidth: z.number().positive().default(110),
   /** Opening logo entrance→dock; null = no logo intro (end card only). */
   logoIntro: logoIntroSchema.nullable().default(null),
-  /** Zoom-out reveals: 150→100% over 10f starting at each frame (after-shot arrivals). */
+  /** Zoom-out reveals: 135→100% over 18f eased, starting at each frame (after-shot arrivals). */
   zoomOutReveals: z.array(z.number().int().min(0)).default([]),
+  /**
+   * Dark scrim behind the hook title + logo intro so cold-open text reads
+   * over bright footage. Peak opacity; fades in over the first 8f, out over
+   * 12f after the hook exits. 0 = off.
+   */
+  hookScrimOpacity: z.number().min(0).max(1).default(0),
+  /**
+   * Branded info block filling the space UNDER a framed card (logo lockup +
+   * two lines, staggered entrance). Anchored to clips[brandClipIndex].
+   */
+  brandBlock: z
+    .object({ logoSrc: z.string(), line1: z.string(), line2: z.string() })
+    .nullable()
+    .default(null),
+  brandClipIndex: z.number().int().nullable().default(null),
+  /**
+   * Camera-snap photo montage over clips[clipIndex]: each photo enters
+   * full-bleed at its absolute frame with a shutter-pop settle (pair each
+   * frame with a shutter SFX cue). Later photos stack on top.
+   */
+  photoBurst: z
+    .object({
+      clipIndex: z.number().int(),
+      photos: z.array(z.object({ src: z.string(), frame: z.number().int().min(0) })),
+    })
+    .nullable()
+    .default(null),
   /** Music bed level while the voiceover talks (ducked); ~0.15–0.25. */
   musicVolume: z.number().min(0).max(1),
   endCard: z.object({

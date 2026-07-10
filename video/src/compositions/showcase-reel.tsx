@@ -9,8 +9,10 @@ import {
   staticFile,
   useCurrentFrame,
 } from 'remotion'
+import { BrandBlock } from '../components/brand-block'
 import { CaptionTrack } from '../components/caption-track'
 import { CheckmarkList } from '../components/checkmark-list'
+import { PhotoBurst } from '../components/photo-burst'
 import { KaraokeCaptions } from '../components/karaoke-captions'
 import { ClipMedia } from '../components/clip-media'
 import { EndCard } from '../components/end-card'
@@ -40,11 +42,23 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
     : props.captions.some(c => frame >= c.startFrame && frame < c.endFrame)
   const musicLevel = voActive ? props.musicVolume : Math.min(0.35, props.musicVolume * 2)
 
+  // Fade transitions: an incoming `fade` clip ramps opacity over the still-
+  // running previous clip (its Sequence is extended beneath), so cuts read
+  // fluid instead of popping. `none` stays a hard cut for the snap moment.
+  const FADE_FRAMES = 10
   let clipStart = 0
   const clipSequences = props.clips.map((clip, index) => {
     const from = clipStart
     clipStart += clip.durationInFrames
-    return { ...clip, from, index }
+    const next = props.clips[index + 1]
+    const holdUnder = next?.transitionIn === 'fade' ? FADE_FRAMES : 0
+    const enterOpacity = clip.transitionIn === 'fade'
+      ? interpolate(frame, [from, from + FADE_FRAMES], [0, 1], {
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
+        })
+      : 1
+    return { ...clip, from, index, holdUnder, enterOpacity }
   })
 
   // Punch-in: hard scale jump on the hit frame, decaying back over 10f.
@@ -55,12 +69,13 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
     return Math.max(acc, interpolate(elapsed, [0, 10], [p.scale, 1], { extrapolateRight: 'clamp' }))
   }, 1)
 
-  // Zoom-out reveal: after-shot arrives oversized and settles (150→100% over 10f).
+  // Zoom-out reveal: after-shot arrives oversized and settles — gentle
+  // (135% over 18f, eased) so it reads as a reveal, never a choppy pop.
   const revealScale = props.zoomOutReveals.reduce((acc, f) => {
     const elapsed = frame - f
     if (elapsed < 0)
       return acc
-    return Math.max(acc, interpolate(elapsed, [0, 10], [1.5, 1], {
+    return Math.max(acc, interpolate(elapsed, [0, 18], [1.35, 1], {
       extrapolateRight: 'clamp',
       easing: Easing.out(Easing.cubic),
     }))
@@ -79,35 +94,65 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
     <AbsoluteFill style={{ background: '#000000' }}>
       <AbsoluteFill style={{ transform: `scale(${punchScale * revealScale})` }}>
         {clipSequences.map(clip => (
-        <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames}>
-          {clip.layout === 'framed'
-            ? (
-                <FramedClip
-                  src={clip.src}
-                  kind={clip.kind}
-                  durationInFrames={clip.durationInFrames}
-                  aspect={clip.aspect}
-                  label={clip.label}
-                  kenBurns={clip.kenBurns}
-                  above={
-                    props.checkmarkClipIndex === clip.index && props.checkmarks.length > 0
-                      ? (
-                          <div style={{ transform: 'scale(0.72)', transformOrigin: 'bottom center' }}>
-                            <CheckmarkList items={props.checkmarks} />
-                          </div>
-                        )
-                      : undefined
-                  }
-                />
-              )
-            : (
-                <AbsoluteFill>
-                  <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} kenBurns={clip.kenBurns} />
-                </AbsoluteFill>
-              )}
+        <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames + clip.holdUnder}>
+          <AbsoluteFill style={{ opacity: clip.enterOpacity }}>
+            {clip.layout === 'framed'
+              ? (
+                  <FramedClip
+                    src={clip.src}
+                    kind={clip.kind}
+                    durationInFrames={clip.durationInFrames}
+                    aspect={clip.aspect}
+                    label={clip.label}
+                    kenBurns={clip.kenBurns}
+                    above={
+                      props.checkmarkClipIndex === clip.index && props.checkmarks.length > 0
+                        ? (
+                            <div style={{ transform: 'scale(0.72)', transformOrigin: 'bottom center' }}>
+                              <CheckmarkList items={props.checkmarks} />
+                            </div>
+                          )
+                        : undefined
+                    }
+                  />
+                )
+              : (
+                  <AbsoluteFill>
+                    <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} kenBurns={clip.kenBurns} />
+                  </AbsoluteFill>
+                )}
+            {props.photoBurst?.clipIndex === clip.index && (
+              <PhotoBurst
+                photos={props.photoBurst.photos.map(p => ({ ...p, frame: p.frame - clip.from }))}
+              />
+            )}
+            {props.brandClipIndex === clip.index && props.brandBlock && (
+              <BrandBlock
+                logoSrc={props.brandBlock.logoSrc}
+                line1={props.brandBlock.line1}
+                line2={props.brandBlock.line2}
+              />
+            )}
+          </AbsoluteFill>
         </Sequence>
         ))}
       </AbsoluteFill>
+
+      {/* Hook scrim: dark overlay so the cold-open headline + logo read over
+          bright footage; fades out as the hook exits. */}
+      {props.hookScrimOpacity > 0 && (
+        <AbsoluteFill
+          style={{
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 45%, rgba(0,0,0,0.75) 100%)',
+            opacity: interpolate(
+              frame,
+              [0, 8, hookEnd, hookEnd + 12],
+              [0, props.hookScrimOpacity, props.hookScrimOpacity, 0],
+              { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' },
+            ),
+          }}
+        />
+      )}
 
       {props.watermarkSrc && (() => {
         const watermarkFrom = props.logoIntro ? props.logoIntro.dockFrame + DOCK_FRAMES : 0
