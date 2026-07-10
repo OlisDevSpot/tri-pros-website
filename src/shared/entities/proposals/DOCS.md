@@ -105,13 +105,16 @@ When `status` transitions to `approved`, a Project is created automatically and 
 
 ### final-tcp-derived
 
-The final contract price is computed from `fundingJSON.data`:
+**Formula** (business ruling 2026-07-09, spec Addendum A — section incentives reduce the price):
 
-```
-finalTcp = max(0, startingTcp − Σ discount-typed incentives)
-```
+    finalTcp = max(0, startingTcp − Σ global incentives where type='discount' − Σ ALL section incentives)
 
-Only `discount`-typed incentives reduce TCP; `exclusive-offer` incentives are informational and don't affect price. In `breakdown` pricing mode the form syncs `startingTcp = Σ sectionPrices + miscPrice` before saving, so the helper is pricing-mode-agnostic.
+Canonical implementation: `computeFinalTcp({ funding, sow })` in `lib/compute-final-tcp.ts` — it now
+requires BOTH the funding data and the SOW sections. The SQL mirror in `dal/server/queries.ts`
+(`finalTcpExpr`) implements the same formula for list filter/sort and is parity-checked by
+`scripts/verify-final-tcp-parity.ts`; it is temporary and will be replaced by the stored
+`final_tcp_cents` rollup in decomposition Wave 2
+(see `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` Addendum A).
 
 **Never persisted.** Always re-derive at read time. SQL filter/sort on price uses a Drizzle `sql<number>` expression that mirrors the helper exactly.
 
