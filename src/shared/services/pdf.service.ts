@@ -9,7 +9,10 @@ import { buildProposalDocDefinition } from '@/shared/lib/pdf/proposal-doc-defini
 import { renderPdf } from '@/shared/lib/pdf/render-pdf'
 import { buildSowDocDefinition } from '@/shared/lib/pdf/sow-doc-definition'
 
-/** Proposal PDFs, finance forms, printable documents */
+/**
+ * Proposal PDFs, finance forms, printable documents.
+ * see docs/codebase-conventions/pdf-documents.md#the-pipeline
+ */
 function createPDFService() {
   return {
     /**

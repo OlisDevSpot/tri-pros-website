@@ -17,6 +17,7 @@ import { tiptapToPdfmake } from './tiptap-to-pdfmake'
  * — never reads cost lines or margin data, and the final price is derived
  * via computeFinalTcp.
  * see @/shared/entities/proposals/DOCS.md#final-tcp-derived
+ * see docs/codebase-conventions/pdf-documents.md#layout-geometry
  */
 export async function buildProposalDocDefinition(proposal: ProposalWithCustomer): Promise<TDocumentDefinitions> {
   const project = proposal.projectJSON.data
