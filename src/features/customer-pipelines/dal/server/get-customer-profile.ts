@@ -71,6 +71,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       createdAt: proposals.createdAt,
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
       fundingJSON: proposals.fundingJSON,
+      projectJSON: proposals.projectJSON,
       sowRaw: sql<string | null>`${proposals.projectJSON}->'data'->'sow'`.as('sow_raw'),
       viewCount: count(proposalViews.id).as('view_count'),
     })
@@ -113,7 +114,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       status: p.status,
       token: p.token,
       trade: p.trade,
-      value: computeFinalTcp(p.fundingJSON.data),
+      value: computeFinalTcp({ funding: p.fundingJSON.data, sow: p.projectJSON.data.sow }),
       sentAt: p.sentAt,
       contractSentAt: p.contractSentAt,
       viewCount: p.viewCount,

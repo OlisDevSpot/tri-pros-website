@@ -135,7 +135,8 @@ function createAccountingService() {
         .filter(Boolean)
         .map((proposal) => {
           const funding = proposal.fundingJSON?.data
-          const amount = funding ? computeFinalTcp(funding) : 0
+          const sow = proposal.projectJSON?.data.sow ?? []
+          const amount = funding ? computeFinalTcp({ funding, sow }) : 0
           return {
             Amount: amount,
             DetailType: 'SalesItemLineDetail' as const,

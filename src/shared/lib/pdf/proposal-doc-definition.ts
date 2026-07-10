@@ -277,7 +277,7 @@ function buildInvestment(
   }
   rows.push([
     { text: 'Final contract price', bold: true, fontSize: 12 },
-    { text: formatAsDollars(computeFinalTcp(funding)), bold: true, fontSize: 12, alignment: 'right' },
+    { text: formatAsDollars(computeFinalTcp({ funding, sow })), bold: true, fontSize: 12, alignment: 'right' },
   ])
   rows.push([{ text: 'Deposit due at signing' }, { text: formatAsDollars(funding.depositAmount), alignment: 'right' }])
 

@@ -81,7 +81,7 @@ export const PROPOSAL_COLUMNS = {
     label: 'Price',
     sortable: true,
     format: 'currency',
-    accessorFn: row => computeFinalTcp(row.fundingJSON.data),
+    accessorFn: row => computeFinalTcp({ funding: row.fundingJSON.data, sow: row.projectJSON.data.sow }),
   },
   status: {
     label: 'Status',

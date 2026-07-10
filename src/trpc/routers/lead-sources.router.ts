@@ -213,10 +213,10 @@ export const leadSourcesRouter = createTRPCRouter({
         db.$count(customers, rangeWhere),
         db.$count(customers, and(baseMatch, isSignedCustomerSql())),
         // Approved proposals belonging to customers from this lead source.
-        // Hydrate fundingJSON only — no SQL-side TCP extraction. Aggregate via
+        // Hydrate fundingJSON + projectJSON — no SQL-side TCP extraction. Aggregate via
         // computeFinalTcp + computeProjectValue semantics (sum approved values).
         db
-          .select({ fundingJSON: proposals.fundingJSON })
+          .select({ fundingJSON: proposals.fundingJSON, projectJSON: proposals.projectJSON })
           .from(proposals)
           .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
           .innerJoin(customers, eq(customers.id, meetings.customerId))
@@ -225,7 +225,7 @@ export const leadSourcesRouter = createTRPCRouter({
 
       let totalSales = 0
       for (const p of approvedProposals) {
-        totalSales += computeFinalTcp(p.fundingJSON.data)
+        totalSales += computeFinalTcp({ funding: p.fundingJSON.data, sow: p.projectJSON.data.sow })
       }
       totalSales = Math.round(totalSales)
 

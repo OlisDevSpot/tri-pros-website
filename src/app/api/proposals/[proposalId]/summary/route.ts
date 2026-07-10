@@ -118,7 +118,7 @@ export async function GET(
     }
   }
 
-  lines.push(`\n**Final Contract Price:** ${formatAsDollars(computeFinalTcp(fund))}`)
+  lines.push(`\n**Final Contract Price:** ${formatAsDollars(computeFinalTcp({ funding: fund, sow: proj.sow }))}`)
   lines.push(`**Deposit:** ${formatAsDollars(fund.depositAmount)}`)
   lines.push(`**Cash in Deal:** ${formatAsDollars(fund.cashInDeal)}`)
 

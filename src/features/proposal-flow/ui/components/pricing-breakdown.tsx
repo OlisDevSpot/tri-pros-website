@@ -19,14 +19,13 @@ export function PricingBreakdown({ proposalData, viewMode = 'customer' }: Props)
   const { pricingMode } = proposalData.formMetaJSON
   const sow = proposalData.projectJSON.data.sow
   const { incentives: globalIncentives, miscPrice, startingTcp } = proposalData.fundingJSON.data
-  const globalTcp = computeFinalTcp(proposalData.fundingJSON.data)
 
-  // Section incentives reduce the price the homeowner pays
+  // Canonical formula (spec Addendum A): section incentives reduce the price.
+  const finalTcp = computeFinalTcp({ funding: proposalData.fundingJSON.data, sow })
   const totalSectionIncentives = sow.reduce(
     (sum, section) => sum + computeSectionIncentives(section),
     0,
   )
-  const finalTcp = Math.max(0, globalTcp - totalSectionIncentives)
 
   // In breakdown mode, section incentives render inline under their
   // section's price row. In total mode, they go in the global block.
