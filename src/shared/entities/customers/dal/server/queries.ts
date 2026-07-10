@@ -1,7 +1,5 @@
-import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Customer } from '@/shared/db/schema/customers'
-import type { Contact } from '@/shared/services/providers/notion/lib/contacts/schema'
 
 import { and, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
@@ -11,8 +9,6 @@ import { customers } from '@/shared/db/schema/customers'
 import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { toNationalDigits } from '@/shared/lib/phone'
-import { queryNotionDatabase } from '@/shared/services/providers/notion/dal/query-notion-database'
-import { pageToContact } from '@/shared/services/providers/notion/lib/contacts/adapter'
 
 export type { Customer }
 
@@ -126,48 +122,9 @@ export async function listCustomers(
 }
 
 // ── System-level upserts ──────────────────────────────────────────────────────
-// These run under SYSTEM_CONTEXT (Notion sync, webhook ingestion). They write
-// the customers table directly because they predate the entity-server pattern
-// and are scheduled for migration to customerCrud.create in a follow-up. For
-// now, signature-standardize them.
-
-export async function upsertCustomerFromNotion(
-  _ctx: ScopedContext,
-  input: { contact: Contact },
-): Promise<DalReturn<Customer>> {
-  return dalDbOperation(async () => {
-    const { contact } = input
-    const now = new Date().toISOString()
-    const [customer] = await db
-      .insert(customers)
-      .values({
-        notionContactId: contact.id,
-        name: contact.name,
-        phone: contact.phone,
-        email: contact.email,
-        address: contact.address,
-        city: contact.city,
-        state: contact.state,
-        zip: contact.zip,
-        syncedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: customers.notionContactId,
-        set: {
-          name: contact.name,
-          phone: contact.phone ?? null,
-          email: contact.email ?? null,
-          address: contact.address ?? null,
-          city: contact.city ?? '',
-          state: contact.state ?? null,
-          zip: contact.zip ?? '',
-          syncedAt: now,
-        },
-      })
-      .returning()
-    return customer
-  })
-}
+// Runs under SYSTEM_CONTEXT (funnel/webhook ingestion). Writes the customers
+// table directly because it predates the entity-server pattern and is
+// scheduled for migration to customerCrud.create in a follow-up.
 
 interface HomeownerData {
   name: string
@@ -207,32 +164,5 @@ export async function findOrCreateCustomerFromHomeowner(
       })
       .returning()
     return customer
-  })
-}
-
-// ── Notion full sync ──────────────────────────────────────────────────────────
-
-export async function syncAllCustomers(
-  ctx: ScopedContext,
-): Promise<DalReturn<{ upserted: number }>> {
-  return dalDbOperation(async () => {
-    const pages = await queryNotionDatabase('contacts') as PageObjectResponse[] | undefined
-    if (!pages) {
-      return { upserted: 0 }
-    }
-    let upserted = 0
-    for (const page of pages) {
-      try {
-        const contact = pageToContact(page)
-        const result = await upsertCustomerFromNotion(ctx, { contact })
-        if (result.success) {
-          upserted++
-        }
-      }
-      catch {
-        // Skip malformed Notion contacts — do not abort the full sync
-      }
-    }
-    return { upserted }
   })
 }
