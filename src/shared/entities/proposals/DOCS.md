@@ -118,6 +118,8 @@ requires BOTH the funding data and the SOW sections. The SQL mirror in `dal/serv
 
 **Never persisted.** Always re-derive at read time. SQL filter/sort on price uses a Drizzle `sql<number>` expression that mirrors the helper exactly.
 
+**Pricing-mode invariant**: in breakdown pricing mode, the form keeps `startingTcp = Σ sectionPrice + miscPrice` in sync client-side (`funding-fields.tsx`) — this is what makes the formula above pricing-mode-agnostic and lets the PDF Subtotal reconcile with the form's Contract Price. This sync is client-side only today; no server-side enforcement exists yet.
+
 **Why**: line-item edits would silently invalidate a stored TCP. Single source of truth; SQL mirror keeps server-side filtering correct.
 **Reference impl**: `lib/compute-final-tcp.ts` (JS); `dal/server/queries.ts:listProposals` `finalTcpExpr` (SQL mirror)
 **Enforced by**: convention (no `final_tcp` column exists; field was removed from `fundingDataSchema` in commit `a6c431e`)

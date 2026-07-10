@@ -76,9 +76,9 @@ export function FundingFields({ pricingMode }: Props) {
   }
 
   useEffect(() => {
-    // finalTcp is derived via `computeFinalTcp(fundingData)` — never set here.
+    // finalTcp is derived via `computeFinalTcp({ funding, sow })` — never set here.
     // In breakdown mode, sync startingTcp to Σ sectionPrice + miscPrice so the
-    // canonical formula (startingTcp − discounts) stays correct.
+    // canonical formula (startingTcp − global discounts − section incentives) stays correct.
     if (pricingMode !== 'breakdown') {
       return
     }

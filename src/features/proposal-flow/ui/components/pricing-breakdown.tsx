@@ -3,7 +3,7 @@
 import type { InsertProposalSchema } from '@/shared/db/schema'
 import { CheckIcon } from 'lucide-react'
 import { ExpandableLineItems } from '@/shared/components/expandable-line-items'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { computeFinalTcp, computeTotalSectionIncentives } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { computeSectionIncentives, hasIncentives } from '@/shared/entities/proposals/lib/compute-sow-financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
@@ -22,10 +22,7 @@ export function PricingBreakdown({ proposalData, viewMode = 'customer' }: Props)
 
   // Canonical formula (spec Addendum A): section incentives reduce the price.
   const finalTcp = computeFinalTcp({ funding: proposalData.fundingJSON.data, sow })
-  const totalSectionIncentives = sow.reduce(
-    (sum, section) => sum + computeSectionIncentives(section),
-    0,
-  )
+  const totalSectionIncentives = computeTotalSectionIncentives(sow)
 
   // In breakdown mode, section incentives render inline under their
   // section's price row. In total mode, they go in the global block.
