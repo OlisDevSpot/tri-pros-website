@@ -1,7 +1,7 @@
 {
   "clips": [
     {
-      "src": "stills/kitchens-picasso-after.png",
+      "src": "stills/kitchens-tableau-after.png",
       "kind": "image",
       "durationInFrames": 75,
       "layout": "full",
@@ -10,7 +10,7 @@
       "kenBurns": "out"
     },
     {
-      "src": "clips/kitchens-picasso-transform.mp4",
+      "src": "clips/kitchens-tableau-transform.mp4",
       "kind": "video",
       "durationInFrames": 240,
       "layout": "full",
@@ -28,9 +28,9 @@
       "kenBurns": "in"
     },
     {
-      "src": "clips/kitchens-travertine-transform.mp4",
+      "src": "clips/kitchens-rosetta-portrait-push.mp4",
       "kind": "video",
-      "durationInFrames": 240,
+      "durationInFrames": 150,
       "layout": "full",
       "aspect": 0.5625,
       "label": null,
@@ -330,7 +330,7 @@
     75
   ],
   "zoomOutReveals": [
-    612
+    300
   ],
   "logoIntro": {
     "src": "brand/logo-dark-right.svg",
@@ -360,27 +360,27 @@
     },
     {
       "src": "audio/sfx/riser-short.wav",
-      "frame": 572,
+      "frame": 255,
       "volume": 0.35
     },
     {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 660,
+      "frame": 570,
       "volume": 0.22
     },
     {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 669,
+      "frame": 579,
       "volume": 0.26
     },
     {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 678,
+      "frame": 588,
       "volume": 0.3
     },
     {
       "src": "audio/sfx/thud.wav",
-      "frame": 780,
+      "frame": 690,
       "volume": 0.4
     }
   ],
