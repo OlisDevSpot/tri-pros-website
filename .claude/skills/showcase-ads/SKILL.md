@@ -87,7 +87,10 @@ framed crew/during still (2.5s, "OUR CREW, ON SITE") → morph #2, a DIFFERENT
 project, with zoom-out reveal + riser on its after moment (8s) → framed
 checkmarks clip (5s) → end card (4s). The inverted-reveal hook (after-first)
 is the DEFAULT hook pattern for transform-capable trades. VO = Gia
-(house voice), retimed per reel so key words land on their beats (`voStartFrame` is 35 in the canonical example), and must include a line over morph #2.
+(house voice), retimed per reel so key words land on their beats (`voStartFrame` is 35 in the canonical example). The script MUST name "Tri Pros Remodeling"
+(Oliver's branding rule; house placement: "And at Tri Pros Remodeling? We do
+it again..." — the brand line lands over the crew card) and carry a
+repeat-word run for the photo burst.
 
 ```bash
 cd video && pnpm tsc
