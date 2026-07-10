@@ -23,7 +23,7 @@
     {
       "src": "stills/kitchens-during-construction-01.png",
       "kind": "image",
-      "durationInFrames": 66,
+      "durationInFrames": 105,
       "layout": "framed",
       "aspect": 1.4906,
       "label": "OUR CREW, ON SITE",
@@ -33,7 +33,7 @@
     {
       "src": "stills/kitchens-final-rosetta.jpg",
       "kind": "image",
-      "durationInFrames": 150,
+      "durationInFrames": 186,
       "layout": "full",
       "aspect": 1.5696,
       "label": null,
@@ -65,265 +65,321 @@
     {
       "text": "We're",
       "startMs": 80,
-      "endMs": 340,
+      "endMs": 330,
       "timestampMs": null,
       "confidence": null
     },
     {
       "text": " selecting",
-      "startMs": 340,
-      "endMs": 850,
-      "timestampMs": 620,
-      "confidence": 0.998911
+      "startMs": 330,
+      "endMs": 920,
+      "timestampMs": 640,
+      "confidence": 0.998713
     },
     {
       "text": " five",
-      "startMs": 850,
-      "endMs": 1040,
-      "timestampMs": 1060,
-      "confidence": 0.734814
+      "startMs": 920,
+      "endMs": 1110,
+      "timestampMs": 1160,
+      "confidence": 0.667488
     },
     {
       "text": " kitchens",
-      "startMs": 1040,
-      "endMs": 1540,
-      "timestampMs": 1380,
-      "confidence": 0.982729
+      "startMs": 1110,
+      "endMs": 1640,
+      "timestampMs": 1520,
+      "confidence": 0.987897
     },
     {
       "text": " in",
-      "startMs": 1540,
-      "endMs": 1670,
-      "timestampMs": 1620,
-      "confidence": 0.978679
+      "startMs": 1640,
+      "endMs": 1760,
+      "timestampMs": 1760,
+      "confidence": 0.979232
     },
     {
       "text": " your",
-      "startMs": 1670,
-      "endMs": 1930,
-      "timestampMs": 1760,
-      "confidence": 0.990308
+      "startMs": 1760,
+      "endMs": 2010,
+      "timestampMs": 1940,
+      "confidence": 0.992894
     },
     {
       "text": " area",
-      "startMs": 1930,
-      "endMs": 2290,
-      "timestampMs": 2100,
-      "confidence": 0.990365
+      "startMs": 2010,
+      "endMs": 2550,
+      "timestampMs": 2360,
+      "confidence": 0.986849
     },
     {
       "text": " for",
-      "startMs": 2290,
-      "endMs": 2430,
-      "timestampMs": 2360,
-      "confidence": 0.845334
+      "startMs": 2550,
+      "endMs": 2660,
+      "timestampMs": 2600,
+      "confidence": 0.852581
     },
     {
       "text": " a",
-      "startMs": 2430,
-      "endMs": 2490,
-      "timestampMs": 2520,
-      "confidence": 0.990777
+      "startMs": 2660,
+      "endMs": 2740,
+      "timestampMs": 2820,
+      "confidence": 0.992583
     },
     {
       "text": " Showcase",
-      "startMs": 2490,
-      "endMs": 3120,
-      "timestampMs": 2860,
-      "confidence": 0.6419
+      "startMs": 2740,
+      "endMs": 3350,
+      "timestampMs": 3200,
+      "confidence": 0.725964
     },
     {
       "text": " remodel!",
-      "startMs": 3120,
-      "endMs": 4075,
+      "startMs": 3350,
+      "endMs": 4385,
       "timestampMs": null,
       "confidence": null
     },
     {
       "text": " AAA-grade",
-      "startMs": 4075,
-      "endMs": 5030,
+      "startMs": 4385,
+      "endMs": 5420,
       "timestampMs": null,
       "confidence": null
     },
     {
       "text": " materials,",
-      "startMs": 5030,
-      "endMs": 6080,
-      "timestampMs": 5720,
-      "confidence": 0.991563
+      "startMs": 5420,
+      "endMs": 6440,
+      "timestampMs": 6080,
+      "confidence": 0.996004
     },
     {
       "text": " built",
-      "startMs": 6080,
-      "endMs": 6340,
-      "timestampMs": 6180,
-      "confidence": 0.456105
+      "startMs": 6440,
+      "endMs": 6820,
+      "timestampMs": 6680,
+      "confidence": 0.889505
     },
     {
       "text": " to",
-      "startMs": 6340,
-      "endMs": 6500,
-      "timestampMs": 6420,
-      "confidence": 0.983543
+      "startMs": 6820,
+      "endMs": 6930,
+      "timestampMs": 6880,
+      "confidence": 0.923784
     },
     {
       "text": " be",
-      "startMs": 6500,
-      "endMs": 6650,
-      "timestampMs": 6560,
-      "confidence": 0.998725
+      "startMs": 6930,
+      "endMs": 7080,
+      "timestampMs": 7020,
+      "confidence": 0.999247
     },
     {
       "text": " photographed...",
-      "startMs": 6650,
-      "endMs": 7760,
-      "timestampMs": 7080,
-      "confidence": 0.997041
+      "startMs": 7080,
+      "endMs": 8070,
+      "timestampMs": 7500,
+      "confidence": 0.997727
     },
     {
       "text": " at",
-      "startMs": 7760,
-      "endMs": 7880,
-      "timestampMs": 7860,
-      "confidence": 0.730699
+      "startMs": 8070,
+      "endMs": 8170,
+      "timestampMs": 8160,
+      "confidence": 0.66296
     },
     {
       "text": " a",
-      "startMs": 7880,
-      "endMs": 8000,
-      "timestampMs": 8020,
-      "confidence": 0.996662
+      "startMs": 8170,
+      "endMs": 8290,
+      "timestampMs": 8380,
+      "confidence": 0.997994
     },
     {
       "text": " Showcase",
-      "startMs": 8000,
-      "endMs": 8850,
-      "timestampMs": 8380,
-      "confidence": 0.93863
+      "startMs": 8290,
+      "endMs": 9210,
+      "timestampMs": 8700,
+      "confidence": 0.97
     },
     {
       "text": " price.",
-      "startMs": 8850,
-      "endMs": 9800,
-      "timestampMs": 8900,
-      "confidence": 0.990204
+      "startMs": 9210,
+      "endMs": 9960,
+      "timestampMs": 9240,
+      "confidence": 0.996757
     },
     {
       "text": " And",
-      "startMs": 9800,
-      "endMs": 10160,
-      "timestampMs": 10040,
-      "confidence": 0.990743
+      "startMs": 9960,
+      "endMs": 10210,
+      "timestampMs": 10180,
+      "confidence": 0.993115
     },
     {
-      "text": " we",
-      "startMs": 10160,
-      "endMs": 10400,
-      "timestampMs": 10180,
-      "confidence": 0.992718
+      "text": " at",
+      "startMs": 10210,
+      "endMs": 10425,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " Tri",
+      "startMs": 10425,
+      "endMs": 10640,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " Pros",
+      "startMs": 10640,
+      "endMs": 10950,
+      "timestampMs": 10820,
+      "confidence": 0.308011
+    },
+    {
+      "text": " Remodeling?",
+      "startMs": 10950,
+      "endMs": 12000,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " We",
+      "startMs": 12000,
+      "endMs": 12250,
+      "timestampMs": 12140,
+      "confidence": 0.970065
     },
     {
       "text": " do",
-      "startMs": 10400,
-      "endMs": 10640,
-      "timestampMs": 10320,
-      "confidence": 0.998906
+      "startMs": 12250,
+      "endMs": 12540,
+      "timestampMs": 12300,
+      "confidence": 0.998818
     },
     {
       "text": " it",
-      "startMs": 10640,
-      "endMs": 11520,
-      "timestampMs": 10440,
-      "confidence": 0.999207
+      "startMs": 12540,
+      "endMs": 12830,
+      "timestampMs": 12420,
+      "confidence": 0.999192
     },
     {
       "text": " again...",
-      "startMs": 11520,
-      "endMs": 11520,
-      "timestampMs": 10740,
-      "confidence": 0.999176
+      "startMs": 12830,
+      "endMs": 13600,
+      "timestampMs": 12740,
+      "confidence": 0.998788
     },
     {
       "text": " and",
-      "startMs": 11520,
-      "endMs": 11930,
-      "timestampMs": 11780,
-      "confidence": 0.992898
+      "startMs": 13600,
+      "endMs": 14180,
+      "timestampMs": 13840,
+      "confidence": 0.989308
+    },
+    {
+      "text": " again...",
+      "startMs": 14180,
+      "endMs": 15160,
+      "timestampMs": 14200,
+      "confidence": 0.996903
+    },
+    {
+      "text": " and",
+      "startMs": 15160,
+      "endMs": 15620,
+      "timestampMs": 15400,
+      "confidence": 0.998034
+    },
+    {
+      "text": " again...",
+      "startMs": 15620,
+      "endMs": 16880,
+      "timestampMs": 15720,
+      "confidence": 0.998951
+    },
+    {
+      "text": " and",
+      "startMs": 16880,
+      "endMs": 17380,
+      "timestampMs": 17200,
+      "confidence": 0.998163
     },
     {
       "text": " again.",
-      "startMs": 11930,
-      "endMs": 13040,
-      "timestampMs": 12120,
-      "confidence": 0.997417
+      "startMs": 17380,
+      "endMs": 18720,
+      "timestampMs": 17560,
+      "confidence": 0.999032
     },
     {
       "text": " Homeowners",
-      "startMs": 13040,
-      "endMs": 13910,
+      "startMs": 18720,
+      "endMs": 19520,
       "timestampMs": null,
       "confidence": null
     },
     {
       "text": " only",
-      "startMs": 13910,
-      "endMs": 14560,
-      "timestampMs": 13900,
-      "confidence": 0.899475
+      "startMs": 19520,
+      "endMs": 20120,
+      "timestampMs": 19600,
+      "confidence": 0.91652
     },
     {
       "text": " —",
-      "startMs": 14560,
-      "endMs": 14561,
+      "startMs": 20120,
+      "endMs": 20121,
       "timestampMs": null,
       "confidence": null
     },
     {
       "text": " see",
-      "startMs": 14560,
-      "endMs": 14950,
-      "timestampMs": 14820,
-      "confidence": 0.999173
+      "startMs": 20120,
+      "endMs": 20460,
+      "timestampMs": 20400,
+      "confidence": 0.998468
     },
     {
       "text": " if",
-      "startMs": 14950,
-      "endMs": 15110,
-      "timestampMs": 14940,
-      "confidence": 0.998216
+      "startMs": 20460,
+      "endMs": 20680,
+      "timestampMs": 20520,
+      "confidence": 0.997809
     },
     {
       "text": " your",
-      "startMs": 15110,
-      "endMs": 15560,
-      "timestampMs": 15100,
-      "confidence": 0.994658
+      "startMs": 20680,
+      "endMs": 21130,
+      "timestampMs": 20700,
+      "confidence": 0.99398
     },
     {
       "text": " home",
-      "startMs": 15560,
-      "endMs": 15990,
-      "timestampMs": 15400,
-      "confidence": 0.998235
+      "startMs": 21130,
+      "endMs": 21580,
+      "timestampMs": 20980,
+      "confidence": 0.998523
     },
     {
       "text": " qualifies.",
-      "startMs": 15990,
-      "endMs": 16310,
-      "timestampMs": 15960,
-      "confidence": 0.998445
+      "startMs": 21580,
+      "endMs": 21910,
+      "timestampMs": 21560,
+      "confidence": 0.998209
     }
   ],
   "voStartFrame": 35,
   "captionVertical": 0.58,
   "punchIns": [
     {
-      "frame": 157,
+      "frame": 167,
       "scale": 1.18
     },
     {
-      "frame": 275,
+      "frame": 284,
       "scale": 1.2
     }
   ],
@@ -361,36 +417,46 @@
     },
     {
       "src": "audio/sfx/shutter.wav",
-      "frame": 381,
+      "frame": 420,
       "volume": 0.5
     },
     {
       "src": "audio/sfx/shutter.wav",
-      "frame": 393,
+      "frame": 460,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 504,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 556,
       "volume": 0.5
     },
     {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 561,
+      "frame": 636,
       "volume": 0.22
     },
     {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 570,
+      "frame": 645,
       "volume": 0.26
     },
     {
       "src": "audio/sfx/uiclick.wav",
-      "frame": 588,
+      "frame": 654,
       "volume": 0.3
     },
     {
       "src": "audio/sfx/thud.wav",
-      "frame": 681,
+      "frame": 756,
       "volume": 0.4
     }
   ],
-  "voiceoverSrc": "audio/kitchens-vo-gia-v1.mp3",
+  "voiceoverSrc": "audio/kitchens-vo-gia-v2.mp3",
   "musicSrc": "audio/music-bed-02-upbeat.m4a",
   "watermarkSrc": "brand/logo-dark-right.svg",
   "watermarkWidth": 150,
@@ -413,11 +479,19 @@
     "photos": [
       {
         "src": "stills/kitchens-final-rosetta.jpg",
-        "frame": 381
+        "frame": 420
+      },
+      {
+        "src": "stills/kitchens-final-after2.webp",
+        "frame": 460
       },
       {
         "src": "stills/kitchens-tableau-after.png",
-        "frame": 393
+        "frame": 504
+      },
+      {
+        "src": "stills/kitchens-picasso-after.png",
+        "frame": 556
       }
     ]
   }
