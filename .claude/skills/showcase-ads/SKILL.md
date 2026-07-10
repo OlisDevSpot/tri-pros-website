@@ -43,7 +43,22 @@ creative → Meta, PAUSED).
 Check `higgsfield account status` first; `higgsfield workspace list` + `workspace set <id>` if "No workspace selected". Costs: Kling 3.0 5s ≈ 10cr · Seedance 2.0 1080p ≈ 9cr/s · nano_banana_2 2k still ≈ 6cr · TTS ≈ 0.6cr · sonilo 30s ≈ 2cr.
 
 - **B-roll clip** (single-plane push/orbit/track): `kling3_0 --start-image <img> --duration 5 --aspect_ratio 9:16 --sound off`. ⚠️ Output follows the START IMAGE aspect — pre-crop the photo to 9:16 (sharp, pick crop window visually) for full-bleed; keep landscape only for framed-card layout.
-- **Before→after transform** (the money shot): `seedance_2_0 --start-image <before> --end-image <after> --duration 8 --resolution 1080p --aspect_ratio 9:16 --generate_audio false` — honors 9:16 even from landscape inputs. Same-room pairs only.
+- **Before→after transform** (the money shot): `seedance_2_0 --start-image <before> --end-image <after> --duration 8 --resolution 1080p --aspect_ratio 9:16 --generate_audio false` — honors 9:16 even from landscape inputs. Same-room pairs only. ⚠️ GATE: never generate until Oliver has picked the base pair (see next bullet) — morph quality is decided by the pair, not the model.
+- **Base-pair selection (HITL — MANDATORY before any morph spend)**: the base
+  images are the bottleneck of the whole AI video. Assemble ALL candidate
+  same-room pairs (DB `before_after_pairs_json` + eyeball unpaired
+  before/after media), score each with the rubric, build side-by-side
+  composites (before LEFT, after RIGHT; sharp) for the top ≥4 into
+  `/mnt/c/Users/porat/Downloads/`, and STOP for Oliver's pick. Rubric, in
+  priority order: (1) same exact area of the home — gate, disqualify if
+  landmarks can't confirm it; (2) camera vantage match (same wall, similar
+  height/distance/FOV) — the #1 morph killer; (3) landmark continuity
+  (window/door/ceiling geometry in both, roughly same frame position — these
+  anchor the morph); (4) transformation drama (delta reads in <1s); (5) both
+  images sharp/well-exposed/high-res; (6) 9:16 crop survivability (Reels are
+  vertical). Inventory report convention:
+  `.superpowers/research/kitchen-pair-inventory.md` (per-trade files as
+  produced).
 - **During/crew still** (two-step, logo fidelity is the hard part):
   1. Scene: `nano_banana_2 --image-references <before> --image-references <after> --image-references <shirt-print-ref> --aspect_ratio 3:2 --resolution 2k` + prompt: same room mid-construction consistent with both references, two workers in navy shirts, logo from third reference printed large on shirt BACKS, natural poses, faces away from camera, contractor-progress-photo realism.
   2. Logo pass (first pass always mangles the lockup): build a pixel-exact shirt-print reference — rasterize `video/public/brand/logo-dark-bottom.svg` (WHITE letters — see naming trap above) onto a navy swatch with sharp (`sharp(svg,{density:300}).resize(900)` composited on `{r:34,g:48,b:74}`), then `nano_banana_pro --image-references <scene> --image-references <swatch>` + prompt: keep scene EXACTLY, replace both shirt-back prints with the exact logo — mark + "TRI PROS" + "REMODELING" letter-perfect, warped to fabric. Verify legibility at 100%; re-roll until the company name reads.
