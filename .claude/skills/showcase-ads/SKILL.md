@@ -58,7 +58,12 @@ Check `higgsfield account status` first; `higgsfield workspace list` + `workspac
   images sharp/well-exposed/high-res; (6) 9:16 crop survivability (Reels are
   vertical). Inventory report convention:
   `.superpowers/research/kitchen-pair-inventory.md` (per-trade files as
-  produced).
+  produced). Oliver's ruling (2026-07-09): funnel ASPIRATIONAL pairs — real
+  before photo + AI concept-render after derived from it (e.g.
+  `public/funnels/kitchens/before-1.webp`/`after-1.webp`) — are APPROVED
+  morph bases; perfect-angle by construction, most fluid transforms. Always
+  upscale bases to 4k first (`bytedance_image_upscale --resolution 4k`,
+  ~2cr) before Seedance.
 - **During/crew still** (two-step, logo fidelity is the hard part):
   1. Scene: `nano_banana_2 --image-references <before> --image-references <after> --image-references <shirt-print-ref> --aspect_ratio 3:2 --resolution 2k` + prompt: same room mid-construction consistent with both references, two workers in navy shirts, logo from third reference printed large on shirt BACKS, natural poses, faces away from camera, contractor-progress-photo realism.
   2. Logo pass (first pass always mangles the lockup): build a pixel-exact shirt-print reference — rasterize `video/public/brand/logo-dark-bottom.svg` (WHITE letters — see naming trap above) onto a navy swatch with sharp (`sharp(svg,{density:300}).resize(900)` composited on `{r:34,g:48,b:74}`), then `nano_banana_pro --image-references <scene> --image-references <swatch>` + prompt: keep scene EXACTLY, replace both shirt-back prints with the exact logo — mark + "TRI PROS" + "REMODELING" letter-perfect, warped to fabric. Verify legibility at 100%; re-roll until the company name reads.
@@ -150,14 +155,29 @@ levels). READ both before designing any new variant. Composition rules:
   the reveal frame starting 30–60f before, boom=landing; riser→cut→boom),
   `captionVertical` (~0.55–0.62), `*word*` caption emphasis (one per line),
   per-clip `layout`/`kind`, `checkmarkClipIndex`, safe zone 14/35/6,
-  `zoomOutReveals` (array of frames; 150%→100% scale over 10f on
-  after-arrivals), `hookStartFrame`/`hookDurationInFrames` (hook window —
-  karaoke pages stay suppressed until the sum elapses), per-clip
-  `kenBurns: "in" | "out"` — all built in.
+  `zoomOutReveals` (array of frames; 135%→100% eased over 18f on
+  after-arrivals — gentle, never choppy), `hookStartFrame`/`hookDurationInFrames`
+  (hook window — karaoke pages stay suppressed until the sum elapses),
+  per-clip `kenBurns: "in" | "out"`, per-clip `transitionIn: "none" | "fade"`
+  (10f opacity mix over the still-running previous clip — DEFAULT for
+  framed/proof cards; reserve `"none"` for the snap), `hookScrimOpacity`
+  (~0.45 — MANDATORY dark scrim so the cold-open headline + logo read over
+  bright footage), `brandBlock` + `brandClipIndex` (logo lockup + rule +
+  license lines filling the dead space under the framed checkmark card —
+  house baseline; copy from `src/shared/constants/company/`, e.g. "Licensed &
+  Insured · CSLB #1076760"), `photoBurst` (camera-snap montage over a clip:
+  each photo enters full-bleed with shutter-pop settle at its frame) — all
+  built in.
 - Default accent map (house standard — deviate only with reason): snap =
   shutter + white flash · logo dock = quiet click · reveal = riser peaking ON
   the reveal + zoom-out · checkmark rows = ascending clicks · end card = soft
   thud.
+- **"Again & again" pattern** (Oliver, 2026-07-09): on repeat-words in the VO
+  ("again... and again"), pair a `photoBurst` photo entrance + shutter SFX ON
+  each word's frame (`round(voStartFrame + startMs*30/1000)` from
+  wordCaptions) — every "again" = camera click + a NEW finished-kitchen photo
+  (distinct real projects, correct trade — verify each photo's room type
+  visually before use).
 - SFX assets live in `video/public/audio/sfx/` (AI-generated via `seed_audio`;
   regenerate freely). Beat-sync for free: prompt sonilo with an explicit BPM
   ("120 BPM" → beat = 15f @30fps) and snap cut frames to that grid.
