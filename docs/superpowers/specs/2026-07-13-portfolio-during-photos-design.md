@@ -25,7 +25,40 @@ sit credibly in the same gallery.
 | Worker rule | Two workers max, faces away from camera, navy shirts `rgb(34,48,74)` with white `logo-dark-bottom` lockup large on shirt backs |
 | HITL gate | All candidates delivered to Windows Downloads as contact sheet; Oliver picks winners before finalization (mirrors the morph base-pair gate) |
 
-## Approach
+## ⚠️ REVISION 2026-07-13 (v2) — real-base pipeline. Supersedes scene generation below.
+
+Oliver's ruling after reviewing the first batch: **generated scenes drift in site
+dimensions/proportions. The scene must BE the real photo.** Never regenerate the
+scene from references; edit a real photo and ONLY add workers.
+
+**v2 pipeline (canonical):**
+1. **Base = a real photo**, EXIF-rotated via sharp `.rotate()`, kept at its
+   NATIVE aspect ratio (portrait phone shots stay portrait — pass the matching
+   `--aspect_ratio` to nano_banana_pro or it recomposes to 1:1).
+   - Project has real during photos (Altura 25, Olympia 14, Riviera 2) → use them.
+   - Only afters → crew does finish/punch-list work consistent with the visible
+     state (sweeping, joint top-up, grill install, door adjustment).
+   - Only befores → crew does day-one prep (measuring, masking, floor protection).
+   - NEVER show a phase that contradicts the base's visible state.
+2. **Single edit pass**: `nano_banana_pro --image-references <base> --image-references <swatch> --aspect_ratio <native>`
+   + prompt: "REAL photo from our job site. Keep EXACTLY — same angle, framing,
+   lighting, proportions, every object unchanged. Do not rebuild/redraw/restyle
+   ANY part. ONLY change: add two workers [task matching visible state] at
+   realistic scale, shadows matching the photo's light, faces away, navy shirts
+   with the exact logo from the second reference on shirt BACKS, letter-perfect.
+   Same grain/exposure/color temperature. Nothing else changes." Cap added props
+   to what the task strictly needs (one broom, one bucket).
+3. Logo/face touch-up re-roll if needed (same pass, ~2cr).
+
+Validated 2026-07-13: Altura during-5 (grading crew), Riviera during-2 (gunite
+inspection — dog preserved), Atlas garage-driveway (finish detail). All
+pixel-true to the base sites.
+
+The v1 scene-generation approach below is retained for reference and for AD
+stills where no real base exists (framed crew card) — do NOT use it for
+portfolio gallery photos.
+
+## Approach (v1 — superseded for portfolio use)
 
 Extend the proven showcase-ads two-step recipe (`.claude/skills/showcase-ads/SKILL.md`,
 "During/crew still") with per-project anchoring:
