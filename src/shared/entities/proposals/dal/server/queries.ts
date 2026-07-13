@@ -153,7 +153,9 @@ export async function listProposals(
         )
       : undefined
 
-    // SQL mirror of `computeFinalTcp`. see ../../DOCS.md#final-tcp-derived
+    // SQL mirror of `computeFinalTcp` (incl. section incentives — spec Addendum A).
+    // Temporary jsonb form: W2 replaces this with the stored final_tcp_cents rollup.
+    // see ../../DOCS.md#final-tcp-derived
     const finalTcpExpr = sql<number>`GREATEST(
       0::numeric,
       COALESCE((${proposals.fundingJSON}->'data'->>'startingTcp')::numeric, 0)
@@ -161,6 +163,11 @@ export async function listProposals(
           SELECT SUM((inc->>'amount')::numeric)
           FROM jsonb_array_elements(${proposals.fundingJSON}->'data'->'incentives') AS inc
           WHERE inc->>'type' = 'discount'
+        ), 0)
+      - COALESCE((
+          SELECT SUM((si->>'amount')::numeric)
+          FROM jsonb_array_elements(${proposals.projectJSON}->'data'->'sow') AS sec,
+               jsonb_array_elements(COALESCE(sec->'financials'->'incentives', '[]'::jsonb)) AS si
         ), 0)
     )`
 

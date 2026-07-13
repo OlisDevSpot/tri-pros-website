@@ -29,7 +29,7 @@ export function buildProposalContext(
     kind: proposal.kind,
     isSenior: isSeniorByAge(ageForSeniorCheck),
     isLongSow: isLongSow(sowText),
-    finalTcp: computeFinalTcp(proposal.fundingJSON.data),
+    finalTcp: computeFinalTcp({ funding: proposal.fundingJSON.data, sow: proposal.projectJSON.data.sow ?? [] }),
     sowText,
     originalContractDate,
   }

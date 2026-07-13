@@ -63,7 +63,7 @@ export function CreateNewProposalView() {
 
   function buildMutationData(data: ProposalFormSchema) {
     const sow = data.project.data.sow.filter(s => !!s.trade.id) as SOW[]
-    const { totalProjectDiscounts } = getProposalAggregates(data)
+    const { finalTcp } = getProposalAggregates(data)
 
     return {
       label: data.project.data.label,
@@ -78,7 +78,7 @@ export function CreateNewProposalView() {
         // finalTcp is derived — never written. See `computeFinalTcp`.
         data: {
           ...data.funding.data,
-          cashInDeal: data.funding.data.startingTcp - totalProjectDiscounts,
+          cashInDeal: finalTcp,
         },
         meta: data.funding.meta,
       },

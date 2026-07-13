@@ -230,8 +230,8 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
   )
 
   // Fetch individual proposals per customer for card display + value calculation.
-  // We fetch the full fundingJSON and compute finalTcp in TS via the
-  // canonical `computeFinalTcp` helper — no SQL path extracts.
+  // We fetch the full fundingJSON + projectJSON and compute finalTcp in TS via
+  // the canonical `computeFinalTcp` helper — no SQL path extracts.
   const proposalDetailRows = await db
     .select({
       customerId: meetings.customerId,
@@ -241,6 +241,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       status: proposals.status,
       createdAt: proposals.createdAt,
       fundingJSON: proposals.fundingJSON,
+      projectJSON: proposals.projectJSON,
     })
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
@@ -256,7 +257,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     if (!r.customerId) {
       continue
     }
-    const value = computeFinalTcp(r.fundingJSON.data)
+    const value = computeFinalTcp({ funding: r.fundingJSON.data, sow: r.projectJSON.data.sow })
     const arr = proposalDetailMap.get(r.customerId) ?? []
     arr.push({ id: r.proposalId, token: r.token, value, status: r.status, createdAt: r.createdAt })
     proposalDetailMap.set(r.customerId, arr)
@@ -399,8 +400,8 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
 
   // Fetch proposals per meeting
   const meetingIds = meetingRows.map(m => m.meetingId)
-  // Fetch full fundingJSON per proposal; finalTcp is computed in TS via
-  // `computeFinalTcp` rather than extracted SQL-side.
+  // Fetch full fundingJSON + projectJSON per proposal; finalTcp is computed
+  // in TS via `computeFinalTcp` rather than extracted SQL-side.
   const proposalRows = meetingIds.length > 0
     ? await db
         .select({
@@ -411,6 +412,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
           createdAt: proposals.createdAt,
           approvedAt: proposals.approvedAt,
           fundingJSON: proposals.fundingJSON,
+          projectJSON: proposals.projectJSON,
         })
         .from(proposals)
         .where(inArray(proposals.meetingId, meetingIds))
@@ -424,7 +426,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
     if (!p.meetingId) {
       continue
     }
-    const value = computeFinalTcp(p.fundingJSON.data)
+    const value = computeFinalTcp({ funding: p.fundingJSON.data, sow: p.projectJSON.data.sow })
     const arr = proposalsByMeeting.get(p.meetingId) ?? []
     arr.push({ id: p.proposalId, token: p.token, value, status: p.status, createdAt: p.createdAt })
     proposalsByMeeting.set(p.meetingId, arr)

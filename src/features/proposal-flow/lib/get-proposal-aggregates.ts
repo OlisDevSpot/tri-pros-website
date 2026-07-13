@@ -15,6 +15,6 @@ export function getProposalAggregates(proposal: ProposalFormSchema | InsertPropo
   return {
     totalSOWPriceBreakdown,
     totalProjectDiscounts: computeTotalDiscounts(fundingJSON.data),
-    finalTcp: computeFinalTcp(fundingJSON.data),
+    finalTcp: computeFinalTcp({ funding: fundingJSON.data, sow: projectJSON.data.sow }),
   }
 }

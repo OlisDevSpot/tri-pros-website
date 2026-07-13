@@ -76,7 +76,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     // clamp cashInDeal to the current final TCP so a downward revision of
     // startingTcp / discounts cannot leave a cash-in-deal that exceeds
     // what the homeowner actually owes.
-    const nextFinalTcp = computeFinalTcp(rawData.funding.data)
+    const nextFinalTcp = computeFinalTcp({ funding: rawData.funding.data, sow: rawData.project.data.sow })
 
     return {
       id: proposalId,

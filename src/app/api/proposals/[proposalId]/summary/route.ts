@@ -106,7 +106,12 @@ export async function GET(
     lines.push(`- **Contract Price:** ${formatAsDollars(fund.startingTcp)}`)
   }
 
-  if (fund.incentives.length > 0) {
+  const sectionIncentiveLines = proj.sow.flatMap(s =>
+    (s.financials.incentives ?? []).map(inc =>
+      `- Discount: -${formatAsDollars(inc.amount)}${inc.label ? ` (${inc.label})` : s.title ? ` (${s.title})` : ''}`,
+    ),
+  )
+  if (fund.incentives.length > 0 || sectionIncentiveLines.length > 0) {
     lines.push('\n**Incentives:**')
     for (const inc of fund.incentives) {
       if (inc.type === 'discount') {
@@ -116,9 +121,10 @@ export async function GET(
         lines.push(`- Exclusive Offer: ${inc.offer}${inc.notes ? ` — ${inc.notes}` : ''}`)
       }
     }
+    lines.push(...sectionIncentiveLines)
   }
 
-  lines.push(`\n**Final Contract Price:** ${formatAsDollars(computeFinalTcp(fund))}`)
+  lines.push(`\n**Final Contract Price:** ${formatAsDollars(computeFinalTcp({ funding: fund, sow: proj.sow }))}`)
   lines.push(`**Deposit:** ${formatAsDollars(fund.depositAmount)}`)
   lines.push(`**Cash in Deal:** ${formatAsDollars(fund.cashInDeal)}`)
 

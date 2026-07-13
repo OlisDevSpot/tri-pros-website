@@ -1,4 +1,5 @@
 import type { DealStructure } from '@/shared/entities/meetings/schemas'
+import { amortizedMonthlyPayment } from '@/shared/lib/loan-calculations'
 
 /**
  * Derived-value helpers for a meeting's `dealStructure` scratchpad.
@@ -16,10 +17,9 @@ export function computeDealFinalTcp(deal: DealStructure | null | undefined): num
 }
 
 /**
- * Amortized monthly when mode === 'finance':
- *   monthlyPayment = (P · r) / (1 − (1 + r)^−n)
- * where P = finalTcp, r = apr / 100 / 12, n = termMonths.
- * Zero-interest falls back to P / n. Returns 0 if any input missing or mode != 'finance'.
+ * Amortized monthly when mode === 'finance': computes payment via canonical amortization.
+ * Delegates to `amortizedMonthlyPayment(finalTcp, apr, termMonths)` which handles
+ * both standard amortization and zero-interest cases. Returns 0 if any input missing or mode != 'finance'.
  */
 export function computeDealMonthlyPayment(deal: DealStructure | null | undefined): number {
   if (!deal || deal.mode !== 'finance') {
@@ -31,11 +31,7 @@ export function computeDealMonthlyPayment(deal: DealStructure | null | undefined
   if (finalTcp <= 0 || termMonths <= 0) {
     return 0
   }
-  if (apr === 0) {
-    return finalTcp / termMonths
-  }
-  const monthlyRate = apr / 100 / 12
-  return (finalTcp * monthlyRate) / (1 - (1 + monthlyRate) ** -termMonths)
+  return amortizedMonthlyPayment(finalTcp, apr, termMonths)
 }
 
 /**

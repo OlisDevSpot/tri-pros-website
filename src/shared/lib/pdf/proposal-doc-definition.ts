@@ -275,9 +275,17 @@ function buildInvestment(
       ])
     }
   }
+  for (const section of sow) {
+    for (const inc of section.financials.incentives ?? []) {
+      rows.push([
+        { text: `Discount — ${inc.label || section.title || 'Section'}`, color: '#166534' },
+        { text: `-${formatAsDollars(inc.amount)}`, alignment: 'right', color: '#166534' },
+      ])
+    }
+  }
   rows.push([
     { text: 'Final contract price', bold: true, fontSize: 12 },
-    { text: formatAsDollars(computeFinalTcp(funding)), bold: true, fontSize: 12, alignment: 'right' },
+    { text: formatAsDollars(computeFinalTcp({ funding, sow })), bold: true, fontSize: 12, alignment: 'right' },
   ])
   rows.push([{ text: 'Deposit due at signing' }, { text: formatAsDollars(funding.depositAmount), alignment: 'right' }])
 

@@ -41,13 +41,18 @@ export function buildProposalDefaults(
       defaults.funding.data.cashInDeal = computeDealFinalTcp(ds)
     }
 
-    // Map incentives
+    // Map incentives. Only positive amounts may become price-reducing
+    // 'discount' incentives on the proposal — a zero/absent amount at the
+    // meeting stage is informational and must not survive the handoff as a
+    // price cut. see spec Addendum A (#256).
     if (ds.incentives && ds.incentives.length > 0) {
-      defaults.funding.data.incentives = ds.incentives.map(inc => ({
-        type: 'discount' as const,
-        amount: inc.amount,
-        notes: `${inc.label} (${inc.source})`,
-      }))
+      defaults.funding.data.incentives = ds.incentives
+        .filter(inc => (inc.amount ?? 0) > 0)
+        .map(inc => ({
+          type: 'discount' as const,
+          amount: inc.amount ?? 0,
+          notes: `${inc.label} (${inc.source})`,
+        }))
     }
   }
 
