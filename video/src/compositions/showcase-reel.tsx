@@ -141,6 +141,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                 )}
             {props.photoBurst?.clipIndex === clip.index && (
               <PhotoBurst
+                style={props.photoBurst.style ?? 'fullbleed'}
                 photos={props.photoBurst.photos.map(p => ({ ...p, frame: p.frame - clip.from }))}
               />
             )}
