@@ -1,11 +1,11 @@
 'use client'
 
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 
 import { Badge } from '@/shared/components/ui/badge'
 
 interface Props {
-  customer: Pick<Customer, 'triggerEvent' | 'decisionTimeline' | 'outcomePriority' | 'householdType'> | null | undefined
+  customer: Pick<CustomerWithProfile, 'triggerEvent' | 'decisionTimeline' | 'outcomePriority' | 'householdType'> | null | undefined
 }
 
 export function CustomerProfileKeyInsights({ customer }: Props) {

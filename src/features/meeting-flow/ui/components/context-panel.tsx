@@ -1,6 +1,7 @@
 'use client'
 
-import type { Customer, Meeting } from '@/shared/db/schema'
+import type { Meeting } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
 import { useCallback } from 'react'
 import { ContextPanelSection } from '@/features/meeting-flow/ui/components/context-panel-section'
@@ -46,7 +47,7 @@ const OUTCOME_FIELDS: ProfileFieldConfig[] = [
 ]
 
 interface ContextPanelProps {
-  customer: Customer | null
+  customer: CustomerWithProfile | null
   isOpen: boolean
   meeting: Meeting
   onContextChange: (patch: Record<string, unknown>) => void

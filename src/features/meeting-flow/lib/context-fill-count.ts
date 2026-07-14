@@ -1,4 +1,5 @@
-import type { Customer, Meeting } from '@/shared/db/schema'
+import type { Meeting } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
 
 import { CUSTOMER_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-profile-fields'
@@ -46,7 +47,7 @@ export const CONTEXT_TOTAL_FIELDS
  * Counts how many context panel fields have been filled in.
  * Uses shared field definitions for customer profile sections.
  */
-export function computeContextFilledCount(meeting: Meeting, customer: Customer | null): number {
+export function computeContextFilledCount(meeting: Meeting, customer: CustomerWithProfile | null): number {
   const ctx = (meeting.contextJSON ?? {}) as Record<string, unknown>
   const customerRow = customer as unknown as Record<string, unknown> | null
 

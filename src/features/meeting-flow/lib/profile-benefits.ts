@@ -1,4 +1,4 @@
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 
 export interface ProfileBenefit {
@@ -12,7 +12,7 @@ export interface ProfileBenefit {
  * Returns the top 3-4 most resonant benefits for this customer.
  */
 export function getProfileBenefits(
-  customer: Customer | null,
+  customer: CustomerWithProfile | null,
   tradeSelections: TradeSelection[],
 ): ProfileBenefit[] {
   const benefits: ProfileBenefit[] = []

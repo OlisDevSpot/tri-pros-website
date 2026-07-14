@@ -1,5 +1,5 @@
 import type { CustomerAgeGroup } from '@/shared/constants/enums/customers'
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 
 import { CUSTOMER_PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 
@@ -25,12 +25,13 @@ export function isSeniorByAge(age: number | null | undefined): boolean {
 }
 
 /**
- * True if any customer-profile column (sales-psychology bucket, epic
- * #256/#259) has been filled — preserves the pre-Wave-1 "does
- * customerProfileJSON have data?" gate now that the blob is columns.
+ * True if any customer-profile column (sales-psychology bucket, Addendum B
+ * `customer_profiles` child table) has been filled — preserves the
+ * pre-Wave-1 "does customerProfileJSON have data?" gate now that the blob is
+ * a joined child row.
  */
 export function hasCustomerProfileData(
-  customer: Pick<Customer, (typeof CUSTOMER_PROFILE_COLUMN_KEYS)[number]> | null | undefined,
+  customer: Pick<CustomerWithProfile, (typeof CUSTOMER_PROFILE_COLUMN_KEYS)[number]> | null | undefined,
 ): boolean {
   if (!customer) {
     return false

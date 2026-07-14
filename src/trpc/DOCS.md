@@ -200,11 +200,14 @@ defined field, throwing `FORBIDDEN` on the first failure.
 
 Implication: per-entity field-restricted grants in `abilities.ts` are
 enforced automatically. For example, the agent grant
-`can('update', 'Customer', [...PROFILE_COLUMN_KEYS])` (the 24 columns the
-profile trio decomposed into — see `../shared/entities/customers/DOCS.md#three-jsonb-profiles`)
-means agents can call `crud.update({ data: { triggerEvent: '...' } })`
-but NOT `crud.update({ data: { phone: '...' } })` — the gate rejects
-the second call automatically without any per-entity router code.
+`can('update', 'Customer', ['age'])` (Addendum B, 2026-07-14 — the 23
+sales-discovery fields that used to be field-restricted `Customer` columns
+now live on the `customer_profiles` child table, gated by its own
+`CustomerProfile` CASL subject instead — see
+`../shared/entities/customers/DOCS.md#three-jsonb-profiles`) means agents
+can call `crud.update({ data: { age: 42 } })` but NOT
+`crud.update({ data: { phone: '...' } })` — the gate rejects the second
+call automatically without any per-entity router code.
 
 **Reference impl**: `src/trpc/lib/create-crud-router.ts` — `assertCanUpdateFields` helper.
 

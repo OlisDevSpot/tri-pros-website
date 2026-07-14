@@ -1,16 +1,17 @@
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { CustomerFormValues } from '@/shared/entities/customers/types'
 
 import { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 
 /**
- * Seeds the edit-form defaults straight off the customer row's profile-trio
- * columns (epic #256/#259) — no more JSONB blob spreads.
+ * Seeds the edit-form defaults straight off the composed customer+profile row
+ * (Addendum B — profile-trio columns live on the `customer_profiles` child
+ * table; `age` stays on `customers`) — no more JSONB blob spreads.
  */
-export function buildCustomerFormDefaults(customer: Customer): CustomerFormValues {
+export function buildCustomerFormDefaults(customer: CustomerWithProfile): CustomerFormValues {
   const profileDefaults = Object.fromEntries(
     PROFILE_COLUMN_KEYS.map(key => [key, customer[key] ?? undefined]),
-  ) as Partial<Pick<Customer, (typeof PROFILE_COLUMN_KEYS)[number]>>
+  ) as Partial<Pick<CustomerWithProfile, (typeof PROFILE_COLUMN_KEYS)[number]>>
 
   return {
     name: customer.name ?? '',
@@ -20,6 +21,7 @@ export function buildCustomerFormDefaults(customer: Customer): CustomerFormValue
     city: customer.city ?? '',
     state: customer.state ?? '',
     zip: customer.zip ?? '',
+    age: customer.age ?? undefined,
     ...profileDefaults,
   }
 }

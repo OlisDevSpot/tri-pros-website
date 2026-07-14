@@ -1,9 +1,13 @@
 import type { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 
+import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
+import { customerProfilePatchSchema } from '@/shared/db/schema'
+import { upsertCustomerProfile } from '@/shared/entities/customers/dal/server/mutations'
 import { getCustomer } from '@/shared/entities/customers/dal/server/queries'
 import { customerSchemas, customerServerSpec } from '@/shared/entities/customers/lib/server-spec'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 
 import { createTRPCRouter } from '../../init'
 import { createCrudRouter } from '../../lib/create-crud-router'
@@ -25,22 +29,43 @@ export const customersRouter = createEntityRouter(customerServerSpec, (entity) =
     //
     // crud.update uses the framework's field-level CASL enforcement (added in
     // create-crud-router.ts). The agent CASL grant on 'Customer' is field-
-    // restricted to 24 profile columns (PROFILE_COLUMN_KEYS); the gate rejects any
-    // field outside that allow list automatically.
+    // restricted to just `age` now (Addendum B, 2026-07-14) — the 23
+    // sales-discovery columns moved to the `customer_profiles` child table
+    // and go through `profile.upsert` below, gated on the CustomerProfile
+    // subject instead.
     crud: createCrudRouter({
       spec: customerServerSpec,
       schemas: { ...customerSchemas, id: z.string().uuid() },
       authedProcedure: entity.authedProcedure,
       shareableProcedure: entity.shareableProcedure,
       handlers: {
-        // Cast: getCustomer returns CustomerWithPhoneGate (Customer & { hasSentProposal })
-        // which is a structural superset of Row<typeof customers>. The CrudHandlers
-        // contract types getById as Row<TTable> | undefined — the extra
-        // hasSentProposal field is harmless (callers that don't read it see the
-        // standard row shape). The framework-level type for handlers.getById
-        // doesn't admit phantom enrichments, so the cast is necessary.
+        // Cast: getCustomer returns CustomerWithProfile (a structural superset
+        // of Row<typeof customers> — phone-gated + flattened-spread joined
+        // against customer_profiles). The CrudHandlers contract types getById
+        // as Row<TTable> | undefined — the extra fields are harmless (callers
+        // that don't read them see the standard row shape). The
+        // framework-level type for handlers.getById doesn't admit phantom
+        // enrichments, so the cast is necessary.
         getById: async (ctx, input) => getCustomer(ctx, input) as ReturnType<typeof customerCrud.getById>,
       },
+    }),
+
+    // ── Profile (customer_profiles 1:1 child table, Addendum B) ─────────
+    // Own CASL subject ('CustomerProfile') — different permission boundary
+    // than Customer's contact/identity fields. Lazy upsert: row-exists =
+    // discovery data has been collected.
+    profile: createTRPCRouter({
+      upsert: entity.authedProcedure
+        .input(z.object({ id: z.string().uuid(), data: customerProfilePatchSchema }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.ability.cannot('update', 'CustomerProfile')) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'You do not have permission to update the customer profile.',
+            })
+          }
+          return dalToTrpc(await upsertCustomerProfile(ctx, { customerId: input.id, patch: input.data }))
+        }),
     }),
 
     // ── Business queries + entity-specific mutations ────────────────────

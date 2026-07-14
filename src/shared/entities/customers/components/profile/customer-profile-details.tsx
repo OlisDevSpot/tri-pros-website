@@ -1,6 +1,6 @@
 'use client'
 
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 import type { LeadMeta } from '@/shared/entities/customers/schemas'
 
@@ -14,7 +14,7 @@ import { ProfileCard } from './profile-card'
 
 interface Props {
   editForm: ReturnType<typeof useCustomerEditForm>
-  customer: Customer
+  customer: CustomerWithProfile
   leadMetaJSON: LeadMeta | null | undefined
 }
 

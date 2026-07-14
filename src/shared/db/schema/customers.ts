@@ -1,33 +1,14 @@
-import type { CustomerProfile, FinancialProfile, LeadMeta, Pain, PropertyProfile } from '@/shared/entities/customers/schemas'
-import { boolean, doublePrecision, integer, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import type { CustomerProfile, FinancialProfile, LeadMeta, PropertyProfile } from '@/shared/entities/customers/schemas'
+import { doublePrecision, integer, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
-import { leadMetaSchema, painSchema, PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
+import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { leadSourcesTable } from './lead-sources'
-import {
-  creditScoreRangeEnum,
-  customerAgeGroupEnum,
-  customerPipelineEnum,
-  decisionTimelineEnum,
-  foundationTypeEnum,
-  householdTypeEnum,
-  hvacComponentEnum,
-  hvacTypeEnum,
-  insulationLevelEnum,
-  leadTypeEnum,
-  outcomePriorityEnum,
-  priorContractorExperienceEnum,
-  roofTypeEnum,
-  sellPlanEnum,
-  triggerEventEnum,
-  windowsTypeEnum,
-  yearBuiltRangeEnum,
-  yearsInHomeEnum,
-} from './meta'
+import { customerPipelineEnum, leadTypeEnum } from './meta'
 
 export const customers = pgTable('customers', {
   id,
@@ -57,33 +38,13 @@ export const customers = pgTable('customers', {
    * scripts/backfill-wave1-columns.ts. Dropped next release.
    */
   financialProfileJSONDeprecated: jsonb('financial_profile_json').$type<FinancialProfile>(),
-  // ── Wave-1 decomposition: customerProfileJSON → columns (epic #256 / #259) ──
-  triggerEvent: triggerEventEnum('trigger_event'),
-  mainPainAccessor: text('main_pain_accessor'),
-  mainPainUrgency: integer('main_pain_urgency'),
-  additionalPainPoints: jsonb('additional_pain_points').$type<Pain[]>(),
-  outcomePriority: outcomePriorityEnum('outcome_priority'),
-  timeInHome: yearsInHomeEnum('time_in_home'),
-  householdType: householdTypeEnum('household_type'),
-  priorContractorExperience: priorContractorExperienceEnum('prior_contractor_experience'),
-  constructionOutlookFavorabilityRating: integer('construction_outlook_favorability_rating'),
-  sellPlan: sellPlanEnum('sell_plan'),
-  decisionTimeline: decisionTimelineEnum('decision_timeline'),
-  projectNecessityRating: integer('project_necessity_rating'),
-  ageGroup: customerAgeGroupEnum('age_group'),
+  // `age` deliberately stays a plain column here (Addendum B.2, 2026-07-14) —
+  // identity-adjacent, written by anonymous homeowners via the contracts
+  // share-token flow, read by legal envelope rules. The other 23 former
+  // customerProfileJSON/propertyProfileJSON/financialProfileJSON fields now
+  // live on the `customer_profiles` 1:1 child table (PK-as-FK) — see
+  // ../schema/customer-profiles.ts.
   age: integer('age'),
-  // ── propertyProfileJSON → columns ──
-  hoa: boolean('hoa'),
-  yearBuilt: yearBuiltRangeEnum('year_built'),
-  roofType: roofTypeEnum('roof_type'),
-  foundationType: foundationTypeEnum('foundation_type'),
-  hvacType: hvacTypeEnum('hvac_type'),
-  hvacComponents: hvacComponentEnum('hvac_components'),
-  windowsType: windowsTypeEnum('windows_type'),
-  insulationLevel: insulationLevelEnum('insulation_level'),
-  // ── financialProfileJSON → columns ──
-  numQuotesReceived: integer('num_quotes_received'),
-  creditScore: creditScoreRangeEnum('credit_score'),
   leadSourceId: uuid('lead_source_id').references(() => leadSourcesTable.id, { onDelete: 'set null' }),
   leadType: leadTypeEnum('lead_type'),
   leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),
@@ -128,15 +89,10 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   // regardless of caller (funnel E.164, agent-typed "(818)…", webhook raw).
   // see @/shared/lib/phone
   phone: optionalPhoneSchema,
-  // .nullable() on every profile-trio bounded field below — the edit form
-  // (epic #256/#259) sends an explicit `null` to clear a field, distinct
-  // from `undefined` (field untouched, omitted from the patch entirely).
-  additionalPainPoints: z.array(painSchema).nullable().optional(),
-  mainPainUrgency: z.number().int().min(1).max(10).nullable().optional(),
-  constructionOutlookFavorabilityRating: z.number().int().min(1).max(10).nullable().optional(),
-  projectNecessityRating: z.number().int().min(1).max(10).nullable().optional(),
+  // Explicit `null` clears the field, distinct from `undefined` (field
+  // untouched, omitted from the patch entirely) — same convention the
+  // customer_profiles child table's patch schema uses.
   age: z.number().int().min(CUSTOMER_AGE_MIN).max(CUSTOMER_AGE_MAX).nullable().optional(),
-  numQuotesReceived: z.number().int().min(0).nullable().optional(),
 }).omit({
   id: true,
   createdAt: true,
@@ -147,15 +103,3 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   financialProfileJSONDeprecated: true,
 })
 export type InsertCustomerSchema = z.infer<typeof insertCustomerSchema>
-
-// Flat patch schema over the 24 profile-trio columns (epic #256/#259) — every
-// writer that used to merge into the three JSONB blobs (meeting-flow router,
-// customer edit form, contracts age-patch) now sends a subset of this shape.
-// Defined here rather than entities/customers/schemas/index.ts to avoid an
-// import cycle (this file already imports PROFILE_COLUMN_KEYS from there).
-const PROFILE_COLUMNS_PICK = Object.fromEntries(
-  PROFILE_COLUMN_KEYS.map(k => [k, true]),
-) as Record<(typeof PROFILE_COLUMN_KEYS)[number], true>
-
-export const profileColumnsPatchSchema = insertCustomerSchema.pick(PROFILE_COLUMNS_PICK).partial()
-export type ProfileColumnsPatch = z.infer<typeof profileColumnsPatchSchema>

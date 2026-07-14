@@ -64,9 +64,13 @@ export type CustomerProfile = z.infer<typeof customerProfileSchema>
 export type PropertyProfile = z.infer<typeof propertyProfileSchema>
 export type FinancialProfile = z.infer<typeof financialProfileSchema>
 
-// ── Wave-1 decomposition: the 24 columns that replaced the three JSONB
+// ── Addendum B (2026-07-14): the 23 columns that live on the `customer_profiles`
+// 1:1 child table (PK-as-FK on customers.id) — replaced the three JSONB
 // profile blobs (epic #256 / #259). Property names are identical to the old
 // blob field names (mainPainPoint split into mainPainAccessor/mainPainUrgency).
+// `age` is NOT here — it stays a plain column on `customers` (identity-adjacent,
+// written by anonymous homeowners via the contracts share-token flow; see
+// customers.ts and the Addendum B.2 superseded-verdicts table).
 // Grouped so callers can iterate/display per-section while still having the
 // flat union for CASL + patch validation.
 // see ../DOCS.md#three-jsonb-profiles
@@ -84,7 +88,6 @@ export const CUSTOMER_PROFILE_COLUMN_KEYS = [
   'decisionTimeline',
   'projectNecessityRating',
   'ageGroup',
-  'age',
 ] as const
 export const PROPERTY_PROFILE_COLUMN_KEYS = [
   'hoa',
@@ -102,6 +105,8 @@ export const PROFILE_COLUMN_KEYS = [
   ...PROPERTY_PROFILE_COLUMN_KEYS,
   ...FINANCIAL_PROFILE_COLUMN_KEYS,
 ] as const
+/** TS-side property-key union for the `customer_profiles` child table. */
+export type ProfileKey = (typeof PROFILE_COLUMN_KEYS)[number]
 
 // Generic, self-describing funnel enrichment keyed by step id. `value` is the
 // resolved option label so no server-side label mirror is needed; `order` drives

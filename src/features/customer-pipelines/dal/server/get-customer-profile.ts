@@ -5,6 +5,7 @@ import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
+import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
@@ -12,6 +13,7 @@ import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
 // Local viewer shape for this DAL. The customers entity used to export a
@@ -31,10 +33,12 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
   const [customer] = await db
     .select({
       ...customerCols,
+      ...profileCols(),
       phone: gatedPhoneSql(viewer.canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
     })
     .from(customers)
+    .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
     .where(and(
       eq(customers.id, customerId),
       viewer.isSuperAdmin ? undefined : userCanSeeCustomer(viewer.userId, customers.id),

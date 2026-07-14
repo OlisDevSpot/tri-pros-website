@@ -27,8 +27,7 @@ import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 // one line in ENTITY_NAMES.
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
-import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
-import { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
+import { CUSTOMER, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
@@ -42,6 +41,7 @@ import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
 
 export const ENTITY_NAMES = [
   CUSTOMER,
+  CUSTOMER_PROFILE,
   MEETING,
   PROPOSAL,
   PROJECT,
@@ -91,8 +91,15 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('access', 'Dashboard')
 
       can('read', 'Customer')
-      can('update', 'Customer', [...PROFILE_COLUMN_KEYS])
+      // `age` is the only Customer-owned field an agent may write directly —
+      // the other 23 sales-discovery fields moved to the customer_profiles
+      // child table (Addendum B, 2026-07-14) and are gated below on the
+      // CustomerProfile subject instead.
+      can('update', 'Customer', ['age'])
       // Note: no can('create', 'Customer') — intentional
+
+      can('read', 'CustomerProfile')
+      can('update', 'CustomerProfile')
 
       can('read', 'Meeting')
       can('create', 'Meeting')

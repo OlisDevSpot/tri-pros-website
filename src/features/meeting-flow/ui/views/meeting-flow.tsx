@@ -2,7 +2,7 @@
 
 import type { MeetingFlowContext } from '@/features/meeting-flow/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
@@ -133,7 +133,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     return {
       meetingId,
       customerId: meeting.customerId ?? null,
-      customer: customer as Customer | null,
+      customer: customer as CustomerWithProfile | null,
       flowState: meeting.flowStateJSON ?? null,
       onFlowStateChange: handleFlowStateChange,
       onCustomerProfileChange: handleCustomerProfileChange,
@@ -141,7 +141,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   }, [meeting, meetingId, customer, handleFlowStateChange, handleCustomerProfileChange])
 
   const contextFilledCount = useMemo(
-    () => (meeting ? computeContextFilledCount(meeting, customer as Customer | null) : 0),
+    () => (meeting ? computeContextFilledCount(meeting, customer as CustomerWithProfile | null) : 0),
     [meeting, customer],
   )
 
@@ -280,7 +280,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
       {/* Overlay sheets */}
       <ContextPanel
-        customer={customer as Customer | null}
+        customer={customer as CustomerWithProfile | null}
         isOpen={contextOpen}
         meeting={meeting}
         onAgentNotesChange={handleAgentNotesChange}

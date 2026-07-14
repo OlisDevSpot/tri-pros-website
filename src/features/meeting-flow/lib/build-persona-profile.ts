@@ -1,4 +1,4 @@
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 import type {
   CustomerPersonaProfile,
@@ -20,9 +20,10 @@ import {
   SEVERITY_WEIGHT,
 } from '@/features/meeting-flow/constants/persona-profile-maps'
 
-// Profile-trio columns (epic #256/#259) — the customer row projected down to
-// just the fields the persona builder reads.
-export type PersonaProfileCustomer = Pick<Customer, (typeof PROFILE_COLUMN_KEYS)[number]>
+// Profile-trio columns (Addendum B `customer_profiles` child table) — the
+// composed customer+profile row projected down to just the fields the
+// persona builder reads.
+export type PersonaProfileCustomer = Pick<CustomerWithProfile, (typeof PROFILE_COLUMN_KEYS)[number]>
 
 export interface BuildPersonaProfileInput {
   customer: PersonaProfileCustomer | null | undefined

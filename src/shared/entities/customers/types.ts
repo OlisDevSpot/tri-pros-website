@@ -1,6 +1,7 @@
 import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
-import type { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
+import type { ProfileKey } from '@/shared/entities/customers/schemas'
 import type { SowTradeScope } from '@/shared/entities/proposals/types'
 
 export type CustomerProfileMeeting
@@ -38,8 +39,9 @@ export interface ProfileFieldConfig {
   max?: number
 }
 
-// Flat form shape — profile-trio columns (epic #256/#259) sit directly on
-// the form values alongside contact fields; no more nested JSONB sections.
+// Flat form shape — profile-trio columns (child table, Addendum B) sit
+// directly on the form values alongside contact fields and `age` (plain
+// Customer column); no more nested JSONB sections.
 export type CustomerFormValues = {
   name: string
   phone: string
@@ -48,10 +50,10 @@ export type CustomerFormValues = {
   city: string
   state: string
   zip: string
-} & Partial<Pick<Customer, (typeof PROFILE_COLUMN_KEYS)[number]>>
+} & Partial<Pick<Customer, 'age'>> & Partial<Pick<CustomerWithProfile, ProfileKey>>
 
 export interface CustomerProfileData {
-  customer: Customer & { hasSentProposal: boolean }
+  customer: CustomerWithProfile
   meetings: CustomerProfileMeeting[]
   allProposals: CustomerProfileProposal[]
   notes: CustomerNote[]

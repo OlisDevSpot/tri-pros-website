@@ -81,42 +81,58 @@ A "senior" customer has two distinct definitions depending on the data path:
 
 ### three-jsonb-profiles
 
-**Decomposed to columns (Wave 1, epic #256/#259).** The three profile blobs
-(`customerProfileJSON`, `propertyProfileJSON`, `financialProfileJSON`) are frozen —
-`*Deprecated` columns with zero writers, read only by the one-time backfill script,
-dropped next release. Every field they used to hold is now a real column on
-`customers`, grouped by three key-registries in `schemas/index.ts`:
+**Decomposed to a 1:1 child table (Addendum B, 2026-07-14 — supersedes the Wave-1
+wide-column build).** The three profile blobs (`customerProfileJSON`,
+`propertyProfileJSON`, `financialProfileJSON`) are frozen — `*Deprecated` columns
+with zero writers, read only by the one-time backfill script, dropped next release.
+Every field they used to hold (except `age`) now lives on `customer_profiles`, a
+1:1 child table keyed `customer_id` PK-as-FK (`ON DELETE CASCADE`, house precedent
+`voip_campaign_contacts`). `age` stays a plain column on `customers` — it's
+identity-adjacent (written by anonymous homeowners via the contracts share-token
+flow, read by legal envelope rules), not sales-discovery data. The child columns
+are grouped by three key-registries in `schemas/index.ts`:
 
 | Registry | Purpose |
 |---|---|
-| `CUSTOMER_PROFILE_COLUMN_KEYS` | Sales psychology — trigger event, pains, decision timeline, age, etc. |
+| `CUSTOMER_PROFILE_COLUMN_KEYS` | Sales psychology — trigger event, pains, decision timeline, etc. (no `age` — see above) |
 | `PROPERTY_PROFILE_COLUMN_KEYS` | Property facts — year built, roof type, HVAC, foundation, etc. |
 | `FINANCIAL_PROFILE_COLUMN_KEYS` | Credit score range, # quotes received |
 
-`PROFILE_COLUMN_KEYS` is the flat union of all three, used where the write/permission
-boundary doesn't care which sub-registry a field belongs to. Two shape changes from the
-old blobs: `mainPainPoint: { accessor, urgencyRating }` split into two scalar columns
-(`mainPainAccessor` / `mainPainUrgency`) since a nested object can't be a column;
-`additionalPainPoints` stays an **array** and lives on as its own JSONB array column
-(`additional_pain_points`) rather than exploding into N columns — order-independent
-collections still belong in JSONB per `jsonb-columns.md#arrays-of-objects-vs-keyed-objects`.
+`PROFILE_COLUMN_KEYS` is the flat union of all three (23 keys), used where the
+write/permission boundary doesn't care which sub-registry a field belongs to. Two
+shape changes from the old blobs: `mainPainPoint: { accessor, urgencyRating }`
+split into two scalar columns (`mainPainAccessor` / `mainPainUrgency`) since a
+nested object can't be a column; `additionalPainPoints` stays an **array** and
+lives on as its own JSONB array column (`additional_pain_points`, now on the child
+table) rather than exploding into N columns — order-independent collections still
+belong in JSONB per `jsonb-columns.md#arrays-of-objects-vs-keyed-objects`.
 
-Fields are still filled progressively — agents patch whichever columns they have data
-for. Writes are now **flat partial patches through `customerCrud.update`** (plain column
-`.set()`, no JSONB merge involved) rather than a merged JSONB write; each column is
-individually nullable so `undefined` (omitted) vs explicit `null` (clear) behaves exactly
-like the old partial-blob semantics. UI still uses field registries
+Fields are still filled progressively — row-exists on `customer_profiles` IS the
+"has discovery data been collected" signal (lazy upsert; ~18% of customers have a
+row). Writes go through `upsertCustomerProfile` (`dal/server/mutations.ts`, wraps
+the generic `upsertOneToOne` helper) via the `customersRouter.profile.upsert`
+tRPC procedure — a single-statement `INSERT … ON CONFLICT (customer_id) DO UPDATE`,
+not a `customerCrud.update` patch. Each column is individually nullable so
+`undefined` (omitted) vs explicit `null` (clear) behaves exactly like the old
+partial-blob semantics. Reads use a **flattened-spread leftJoin** (`profileCols()`
+helper in `lib/profile-select.ts`) at the three sites that need the full composed
+row (`CustomerWithProfile`, exported from `dal/server/queries.ts`): customers'
+`getCustomer`, the customer-pipelines `getCustomerProfile` feature query, and
+meetings' `getByIdWithJoins`. UI still uses field registries
 (`constants/customer-profile-fields.ts`, `property-profile-fields.ts`,
 `financial-profile-fields.ts`) to drive the edit form per group.
 
-**Why**: the blobs were correctly-shaped JSONB by the old placement rule, but the
-decomposition program (`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md`)
-found these fields dense enough (near-100% fill by the time a customer reaches the
-profile-editing stage) and individually permission-relevant enough (CASL gates writes
-per-field-group) to promote to columns — killing three JSONB-merge registrations for
-free with no new tables.
-**Reference impl**: `schemas/index.ts` (`CUSTOMER_PROFILE_COLUMN_KEYS` / `PROPERTY_PROFILE_COLUMN_KEYS` / `FINANCIAL_PROFILE_COLUMN_KEYS` / `PROFILE_COLUMN_KEYS`); `src/shared/db/schema/customers.ts` (columns + frozen `*Deprecated` blobs)
-**Enforced by**: Zod validation on `insertCustomerSchema` (entity-router update path); CASL gates all 24 keys as one group — `can('update', 'Customer', [...PROFILE_COLUMN_KEYS])` in `src/shared/domains/permissions/abilities.ts`
+**Why**: the original Wave-1 verdict put these fields as nullable columns
+directly on `customers`. Addendum B's Sub-Entity Standard (6-agent research
+program, 2026-07-14) reclassified them: they're a **named domain concept**
+(a sales-discovery snapshot) with a real permission boundary (own CASL subject)
+and row-existence semantics ("has discovery data been collected" is meaningful) —
+the `*_COLUMN_KEYS` constants needed to re-group the table's own columns was
+itself the smell that the group wanted to be a table.
+**Reference impl**: `src/shared/db/schema/customer-profiles.ts` (table + patch
+schema); `schemas/index.ts` (`CUSTOMER_PROFILE_COLUMN_KEYS` / `PROPERTY_PROFILE_COLUMN_KEYS` / `FINANCIAL_PROFILE_COLUMN_KEYS` / `PROFILE_COLUMN_KEYS` / `ProfileKey`); `dal/server/mutations.ts` (`upsertCustomerProfile`); `dal/server/queries.ts` (`CustomerWithProfile`); `lib/profile-select.ts` (`profileCols`)
+**Enforced by**: Zod validation on `customerProfilePatchSchema` (child-table patch); CASL gates the whole child table as one subject — `can('read'/'update', 'CustomerProfile')` in `src/shared/domains/permissions/abilities.ts` (separate from `can('update', 'Customer', ['age'])`)
+see `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §10 (Addendum B)
 
 ### lead-attribution-fields
 
@@ -145,7 +161,8 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 - **Hardcoding `status === 'sent'` for phone-unlock UI logic.** Use `hasSentProposal` (the boolean computed by `hasSentProposalSql`) — it already encodes the threshold.
 - **Storing computed `isSigned` on the customer row.** Always derive via `isSignedCustomerSql` (or check projects directly).
 - **Setting `pipelineStage` on a customer that has meetings.** It's meaningless for non-leads.
-- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** Frozen Wave-1 blobs, zero writers, dropped next release. Patch the real columns via `customerCrud.update` — see `#three-jsonb-profiles`.
+- **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** Frozen Wave-1 blobs, zero writers, dropped next release. Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
+- **Reading `customer.triggerEvent` (or any profile-trio field) straight off a bare `Customer` row.** Those fields live on the `customer_profiles` child table now — use the composed `CustomerWithProfile` type (flattened-spread joined) or `CustomerProfileRow | null`, never a `Partial` spread off `Customer` that would compile even when the join is missing.
 - **Bypassing the senior-age path mismatch.** Customer profile = bucket; contract flow = precise number. Pick the right helper.
 
 ## See also
@@ -156,5 +173,5 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 - [`../lead-sources/DOCS.md`](../lead-sources/DOCS.md) (when written) — attribution + segment classification (shares `customers.pipeline` semantics)
 - `memory/feedback-phone-visibility-threshold.md` — recent threshold-vs-equality fix
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics; `leadMetaJSON` is the sole remaining registration (the profile trio at `#three-jsonb-profiles` decomposed to plain columns in Wave 1 and never merged)
-- ADR-0005 — JSONB vs column vs child table (why the profiles stay JSONB but lead-attribution fields are columns)
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics; `leadMetaJSON` is the sole remaining registration (the profile trio at `#three-jsonb-profiles` decomposed to a child table in Addendum B and never merged)
+- ADR-0005 — JSONB vs column vs child table (superseded for the profile trio by Addendum B §10 of the decomposition-program design doc; `age` and lead-attribution fields still apply)
