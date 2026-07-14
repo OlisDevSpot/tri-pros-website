@@ -68,7 +68,13 @@ Check `higgsfield account status` first; `higgsfield workspace list` + `workspac
   1. Scene: `nano_banana_2 --image-references <before> --image-references <after> --image-references <shirt-print-ref> --aspect_ratio 3:2 --resolution 2k` + prompt: same room mid-construction consistent with both references, two workers in navy shirts, logo from third reference printed large on shirt BACKS, natural poses, faces away from camera, contractor-progress-photo realism.
   2. Logo pass (first pass always mangles the lockup): build a pixel-exact shirt-print reference — rasterize `video/public/brand/logo-dark-bottom.svg` (WHITE letters — see naming trap above) onto a navy swatch with sharp (`sharp(svg,{density:300}).resize(900)` composited on `{r:34,g:48,b:74}`), then `nano_banana_pro --image-references <scene> --image-references <swatch> --aspect_ratio <same-as-scene>` + prompt: keep scene EXACTLY, replace both shirt-back prints with the exact logo — mark + "TRI PROS" + "REMODELING" letter-perfect, warped to fabric. ⚠️ nano_banana_pro DEFAULTS TO 1:1 — always pass `--aspect_ratio` to match the scene pass or the edit recomposes square. Verify legibility at 100%; re-roll until the company name reads. Portfolio-page variant of this recipe (per-project anchoring, real-during style ref, phase vocab): `docs/superpowers/specs/2026-07-13-portfolio-during-photos-design.md`.
 - **VO**: `text2speech_v2 --variant elevenlabs --voice_id <id> --voice_type preset` — voices via `higgsfield voices list` (female: Mabel `fa64fba4…`, Gia `530df032…`, Quinn `80914268…`, Tallulah; male: Sterling `dc382508…`). Liveliness comes from script punctuation (contractions, "!", "…", em-dash beats). Generate 2–3 takes for Oliver to pick; iterate until the vibe lands.
-- **Music bed**: `sonilo_music --duration 30 --prompt "<style>, no vocals"`. House default: upbeat feel-good (bright acoustic strums, claps, light driving percussion, optimistic, radio-ad polish). Mixed quiet: `musicVolume` 0.12 (ducks under VO; peaks ~0.24).
+- **Music bed**: rotate via `video/public/audio/music-manifest.json` — pick a
+  bed whose file ≠ the previous reel's bed, per the ledger
+  (`references/variation-axes.md` axis 5). Generate a new bed with
+  `sonilo_music --duration 30 --prompt "<style>, no vocals"` only when the
+  library has a real gap; always put an explicit BPM in the prompt. Snap
+  chapter cuts + SFX hits to the bed's downbeat grid (`1800/bpm` frames
+  @30fps). Mixed quiet: `musicVolume` 0.12 (ducks under VO; peaks ~0.24).
 - Always `--wait`; run long jobs via background Bash. Download result URLs with curl into the scratchpad, then copy keepers into `video/public/`.
 
 ## Assemble & render (Remotion, `video/` package)
@@ -80,17 +86,40 @@ ground; label chip or checkmark rows above via `checkmarkClipIndex`), hook
 word-stagger on clip 1, captions mirror the VO (muted viewers), `watermarkSrc`
 icon top-right, logo end card with CTA pill.
 
-House timeline (v5 baseline — `props/kitchens-showcase-reel-02.json` is the
-canonical example): cold open on an AFTER beauty frame with the logo intro
-(2.5s) → hard snap to the BEFORE (shutter + flash) → morph #1 plays (8s) →
-framed crew/during still (2.5s, "OUR CREW, ON SITE") → morph #2, a DIFFERENT
-project, with zoom-out reveal + riser on its after moment (8s) → framed
-checkmarks clip (5s) → end card (4s). The inverted-reveal hook (after-first)
+**The fixed narrative skeleton** (sequence only — presentation comes from the
+variation menus, see below): cold open on an AFTER beauty frame with the logo
+intro → hard snap to the BEFORE (shutter + flash) → transform morph #1 →
+framed crew/during card ("OUR CREW, ON SITE") → morph #2 (a DIFFERENT
+project) with a photo-burst hero over its after moment → framed
+proof/checkmarks card → end card. The inverted-reveal hook (after-first)
 is the DEFAULT hook pattern for transform-capable trades. VO = Gia
-(house voice), retimed per reel so key words land on their beats (`voStartFrame` is 35 in the canonical example). The script MUST name "Tri Pros Remodeling"
-(Oliver's branding rule; house placement: "And at Tri Pros Remodeling? We do
-it again..." — the brand line lands over the crew card) and carry a
-repeat-word run for the photo burst.
+(house voice), retimed per reel so key words land on their beats. The script
+MUST name "Tri Pros Remodeling" (Oliver's branding rule; house placement:
+"And at Tri Pros Remodeling? We do it again..." — the brand line lands over
+the crew card) and carry a repeat-word run for the photo burst.
+
+⚠️ **Every step's PRESENTATION comes from the variation menus
+(`references/variation-axes.md`)** — `kitchens-showcase-reel-02.json` is ONE
+point in variation space; copying its presentation values into a new reel is
+a defect, not a shortcut.
+
+## Variation axes + ledger (MANDATORY for create mode)
+
+Full menus, schema mappings, and pacing/music tables:
+`references/variation-axes.md`. Enforcement log: `video/props/variation-ledger.md`.
+
+**Hard rule:** a new reel may not repeat the immediately previous reel's value
+on ANY of the first five axes — hook treatment, transition family, card
+language, pacing profile, music bed. The remaining two axes (signature
+accent, text content) vary at discretion but are always recorded.
+
+**Workflow:** draft the creative direction from the ledger (one value per
+axis 1–5, each differing from the previous reel, plus a one-line rationale
+per pick) BEFORE any asset generation, and present it AT THE SAME STOP as the
+base-pair gallery — one combined HITL gate (pair pick + creative direction
+approval), never a separate round-trip. After Oliver's approval, the props
+file realizes the direction. Append the ledger row in the SAME COMMIT as the
+props file.
 
 ```bash
 cd video && pnpm tsc
@@ -102,12 +131,12 @@ QA every render: extract frames at each beat, view them, check safe zones /
 caption legibility / logo presence. Copy the mp4 (+ any audio takes needing a
 decision) to `/mnt/c/Users/porat/Downloads/` and stop for Oliver's review.
 
-## Captions — word-synced, CapCut-style (MANDATORY for every reel)
+## Captions — build-as-spoken reveal (MANDATORY for every reel)
 
-Captions are karaoke word-highlight, timed from the audio itself — NEVER
-hand-timed frames (they drift), and the hook title is NEVER duplicated as a
-subtitle (VO line 1 plays UNDER the hook title; karaoke pages are suppressed
-until the hook exits).
+Captions are word-synced, timed from the audio itself — NEVER hand-timed
+frames (they drift), and the hook title is NEVER duplicated as a subtitle (VO
+line 1 plays UNDER the hook title; caption pages are suppressed until the
+hook exits).
 
 Pipeline (after generating any VO):
 ```bash
@@ -122,8 +151,20 @@ always exactly the script words (never ASR garble like "Triple A grade");
 unmatched runs get interpolated timing. Writes `wordCaptions` into the props.
 `voStartFrame` in props anchors audio time to composition frames.
 
-Rendering: `KaraokeCaptions` (pages via createTikTokStyleCaptions @1200ms,
-active word = brand blue + 1.1 pop, heavy stroke-under-fill). Gotcha solved in
+Mark 1–3 emphasis spans per script with `*word*` — always the offer-loaded
+words ("AAA-grade", "Showcase price", trade-specific hero phrases like "spa
+feeling"). `transcribe.mjs` strips the markers for word-matching and carries
+the flag onto the matched `wordCaptions` entry as `emphasis: true`.
+
+Rendering: `RevealCaptions` (`src/components/reveal-captions.tsx`) — build-
+as-spoken: each word fades/rises in over ~3f exactly at its own whisper-timed
+start, so the line visibly assembles under the narrator's voice and holds
+until the sentence completes. Emphasis words (marked `*word*` above) render
+in the house emphasis serif (`EMPHASIS_FONT` in `video/src/lib/fonts.ts` —
+provisional Playfair italic pending Oliver's pick from the rendered samples;
+freeze per the variation-system spec once decided), brand blue, ~1.15×
+scale; base words stay white heavy stroke-under-fill for legibility over
+bright footage. Gotcha solved in
 the component: a thick WebkitTextStroke visually swallows word spaces —
 `wordSpacing` compensates; never remove it.
 
@@ -159,24 +200,30 @@ levels). READ both before designing any new variant. Composition rules:
   scale effect AND a fade/kenBurns), and never stack two scale animations
   within ~1s of each other or straddling a cut. Emphasis comes from sfx +
   caption highlight, not frame-scale jolts. Leave both arrays `[]`.
-- Schema knobs already implemented in `ShowcaseReel`: `punchIns` (deprecated,
-  see above), `flashFrames` (luma flash
-  peaked on chapter cuts), `sfx` (cues; grammar: whoosh=motion, riser peaks ON
-  the reveal frame starting 30–60f before, boom=landing; riser→cut→boom),
-  `captionVertical` (~0.55–0.62), `*word*` caption emphasis (one per line),
-  per-clip `layout`/`kind`, `checkmarkClipIndex`, safe zone 14/35/6,
-  `zoomOutReveals` (deprecated, see above), `hookStartFrame`/`hookDurationInFrames`
-  (hook window — karaoke pages stay suppressed until the sum elapses),
-  per-clip `kenBurns: "in" | "out"`, per-clip `transitionIn: "none" | "fade"`
-  (10f opacity mix over the still-running previous clip — DEFAULT for
-  framed/proof cards; reserve `"none"` for the snap), `hookScrimOpacity`
-  (~0.45 — MANDATORY dark scrim so the cold-open headline + logo read over
-  bright footage), `brandBlock` + `brandClipIndex` (logo lockup + rule +
-  license lines filling the dead space under the framed checkmark card —
-  house baseline; copy from `src/shared/constants/company/`, e.g. "Licensed &
-  Insured · CSLB #1076760"), `photoBurst` (camera-snap montage over a clip:
-  each photo enters full-bleed with shutter-pop settle at its frame) — all
-  built in.
+- Schema knobs already implemented in `ShowcaseReel` (full menu mapping:
+  `references/variation-axes.md`): `punchIns` (deprecated, see above),
+  `flashFrames` (luma flash peaked on chapter cuts), `sfx` (cues; grammar:
+  whoosh=motion, riser peaks ON the reveal frame starting 30–60f before,
+  boom=landing; riser→cut→boom), `captionVertical` (~0.55–0.62), `*word*`
+  caption emphasis (`RevealCaptions`, one per line), per-clip `layout`/`kind`,
+  `checkmarkClipIndex`, safe zone 14/35/6, `zoomOutReveals` (deprecated, see
+  above), `hookStartFrame`/`hookDurationInFrames` (hook window — caption
+  pages stay suppressed until the sum elapses), `hookStyle` (`wordStagger` ·
+  `punch` · `freeze` · `typewriter` — axis 1), per-clip `kenBurns: { zoom:
+  "in"|"out", pan: "none"|"left"|"right"|"up"|"down" }` (legacy string form
+  still parses), per-clip `transitionIn: "none"|"fade"|"whip"|"wipe"|"dissolve"|"zoomPunch"`
+  + `transitionDirection` (whip/wipe only — axis 2; reserve `"none"` for the
+  snap), per-clip `cardStyle: "native"|"polaroid"|"split"|"letterbox"|"offset"`
+  + `secondarySrc` (split card's still-image after half — axis 3),
+  `photoBurst.style: "fullbleed"|"polaroid-scatter"|"grid"` (axis 3),
+  `colorPops`/`screenShakes` (signature accents — axis 6; spacing
+  constraints in `variation-axes.md`), `hookScrimOpacity` (~0.45 — MANDATORY
+  dark scrim so the cold-open headline + logo read over bright footage),
+  `brandBlock` + `brandClipIndex` (logo lockup + rule + license lines filling
+  the dead space under the framed checkmark card — house baseline; copy from
+  `src/shared/constants/company/`, e.g. "Licensed & Insured · CSLB
+  #1076760"), `photoBurst` (camera-snap montage over a clip: each photo
+  enters full-bleed with shutter-pop settle at its frame) — all built in.
 - Default accent map (house standard — deviate only with reason): snap =
   shutter + white flash · logo dock = quiet click · reveal = riser peaking ON
   the reveal (audio only — no zoom) · checkmark rows = ascending clicks ·
@@ -190,9 +237,8 @@ levels). READ both before designing any new variant. Composition rules:
 - SFX assets live in `video/public/audio/sfx/` (AI-generated via `seed_audio`;
   regenerate freely). Beat-sync for free: prompt sonilo with an explicit BPM
   ("120 BPM" → beat = 15f @30fps) and snap cut frames to that grid.
-- Not yet implemented (add on demand): whip pan (SVG directional blur), speed
-  ramps/time-remap, wipe/slider reveal, color pop. Parameterizations are in
-  the reference doc.
+- Not yet implemented (add on demand): speed ramps/time-remap.
+  Parameterizations are in the reference doc.
 
 ## Edit mode (the 90%-good workflow)
 
