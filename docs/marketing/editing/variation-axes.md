@@ -28,10 +28,9 @@ either side changes, reconcile both in the same change.
 - **Brand system:** logo intro + dock, watermark, end-card layout, brand
   block content, safe zones (14/35/6).
 - **Caption style:** the build-as-spoken `RevealCaptions` system — words
-  fade/rise at whisper timing; emphasis via `*word*` markup — a constant
-  once its emphasis font is picked and frozen. Until Oliver picks from the
-  rendered samples in his Downloads, Playfair Display italic is the
-  PROVISIONAL default (`EMPHASIS_FONT` in `video/src/lib/fonts.ts`).
+  fade/rise at whisper timing; emphasis via `*word*` markup. Emphasis serif
+  FROZEN 2026-07-14 (Oliver's pick from three rendered samples): Playfair
+  Display italic (`EMPHASIS_FONT` in `video/src/lib/fonts.ts`).
 - **All copy rules** in `docs/marketing/showcase-offer.md` (casting-call
   framing, `APPLY_NOW`, no pricing, homeowners only).
 - **One motion per moment** (Oliver, draft-3 + draft-5 rulings, 2026-07-13):

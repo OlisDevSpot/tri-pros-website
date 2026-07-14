@@ -161,8 +161,7 @@ as-spoken: each word fades/rises in over ~3f exactly at its own whisper-timed
 start, so the line visibly assembles under the narrator's voice and holds
 until the sentence completes. Emphasis words (marked `*word*` above) render
 in the house emphasis serif (`EMPHASIS_FONT` in `video/src/lib/fonts.ts` —
-provisional Playfair italic pending Oliver's pick from the rendered samples;
-freeze per the variation-system spec once decided), brand blue, ~1.15×
+FROZEN: Playfair Display italic, Oliver's pick 2026-07-14), brand blue, ~1.15×
 scale; base words stay white heavy stroke-under-fill for legibility over
 bright footage. Gotcha solved in
 the component: a thick WebkitTextStroke visually swallows word spaces —
