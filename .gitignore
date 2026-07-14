@@ -76,3 +76,8 @@ video/tsconfig.tsbuildinfo
 # whisper.cpp install for caption transcription (video/scripts/transcribe.mjs)
 video/.whisper/
 video/public/audio/*.16k.wav
+
+# Music-bed manifest is the committed deliverable — audio files themselves stay local
+!video/public/audio/
+video/public/audio/*
+!video/public/audio/music-manifest.json
