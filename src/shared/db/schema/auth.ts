@@ -1,6 +1,6 @@
 import type z from 'zod'
 
-import type { AgentProfile } from '@/shared/entities/users/schemas'
+import type { AgentProfile, HeadshotCropData } from '@/shared/entities/users/schemas'
 import { relations } from 'drizzle-orm'
 import { boolean, index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
@@ -26,7 +26,11 @@ export const user = pgTable('user', {
   birthdate: text('birthdate'),
   startDate: text('start_date'),
   funFact: text('fun_fact'),
-  agentProfileJSON: jsonb('agent_profile_json').$type<AgentProfile>(),
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  agentProfileJSONDeprecated: jsonb('agent_profile_json').$type<AgentProfile>(),
   // ── Wave-1 decomposition: agentProfileJSON → columns (epic #256 / #259) ──
   quote: text('quote'),
   bio: text('bio'),
@@ -36,7 +40,7 @@ export const user = pgTable('user', {
   certifications: text('certifications').array(),
   headshotUrl: text('headshot_url'),
   // Stays JSONB per spec §2: single-writer, replaced-whole, two fixed sub-objects.
-  headshotCropData: jsonb('headshot_crop_data').$type<AgentProfile['headshotCropData']>(),
+  headshotCropData: jsonb('headshot_crop_data').$type<HeadshotCropData>(),
 })
 
 export const session = pgTable(

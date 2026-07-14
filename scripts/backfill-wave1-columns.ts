@@ -168,7 +168,7 @@ async function backfillUsers(stats: Stats) {
   const rows = await db.select().from(user)
   for (const row of rows) {
     try {
-      const ap = row.agentProfileJSON
+      const ap = row.agentProfileJSONDeprecated
       if (!ap) {
         stats.skipped++
         continue

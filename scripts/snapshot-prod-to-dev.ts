@@ -102,7 +102,7 @@ const TABLES = [
   def({
     table: schema.user,
     tagColumns: ['name', 'nickname'],
-    skipColumns: ['agentProfileJSON'],
+    skipColumns: ['agentProfileJSONDeprecated'],
   }),
 
   // ── Reference data ────────────────────────────────────────────────

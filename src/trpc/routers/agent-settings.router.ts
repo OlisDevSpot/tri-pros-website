@@ -3,11 +3,13 @@ import { z } from 'zod'
 
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema'
-import { agentProfileSchema } from '@/shared/entities/users/schemas'
+import { updateUserProfile } from '@/shared/entities/users/dal/server/mutations'
+import { headshotCropDataSchema } from '@/shared/entities/users/schemas'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
 import { agentProcedure, createTRPCRouter } from '../init'
+import { dalToTrpc } from '../lib/dal-to-trpc'
 
 export const agentSettingsRouter = createTRPCRouter({
   getProfile: agentProcedure.query(async ({ ctx }) => {
@@ -20,31 +22,29 @@ export const agentSettingsRouter = createTRPCRouter({
     return profile ?? null
   }),
 
+  // Clients send ONLY the fields they own (brand section vs. headshot
+  // upload) — disjoint patches are what kill the race; see
+  // users/dal/server/mutations.ts#updateUserProfile.
   updateProfile: agentProcedure
     .input(
       z.object({
-        agentProfileJSON: agentProfileSchema.nullish(),
+        quote: z.string().nullish(),
+        bio: z.string().nullish(),
+        yearsOfExperience: z.number().int().min(0).nullish(),
+        tradeSpecialties: z.array(z.string()).nullish(),
+        languagesSpoken: z.array(z.string()).nullish(),
+        certifications: z.array(z.string()).nullish(),
+        headshotUrl: z.string().nullish(),
+        headshotCropData: headshotCropDataSchema.nullish(),
         birthdate: z.string().nullish(),
         funFact: z.string().nullish(),
         phone: z.string().nullish(),
         startDate: z.string().nullish(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      const [updated] = await db
-        .update(user)
-        .set({
-          agentProfileJSON: input.agentProfileJSON,
-          birthdate: input.birthdate,
-          funFact: input.funFact,
-          phone: input.phone,
-          startDate: input.startDate,
-        })
-        .where(eq(user.id, ctx.session.user.id))
-        .returning()
-
-      return updated
-    }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await updateUserProfile(ctx.session.user.id, input)),
+    ),
 
   getHeadshotUploadUrl: agentProcedure
     .input(
