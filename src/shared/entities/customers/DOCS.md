@@ -108,7 +108,7 @@ table) rather than exploding into N columns — order-independent collections st
 belong in JSONB per `jsonb-columns.md#arrays-of-objects-vs-keyed-objects`.
 
 Fields are still filled progressively — row-exists on `customer_profiles` IS the
-"has discovery data been collected" signal (lazy upsert; ~18% of customers have a
+"has discovery data been collected" signal (lazy upsert; ~12% of customers have a
 row). Writes go through `upsertCustomerProfile` (`dal/server/mutations.ts`, wraps
 the generic `upsertOneToOne` helper) via the `customersRouter.profile.upsert`
 tRPC procedure — a single-statement `INSERT … ON CONFLICT (customer_id) DO UPDATE`,

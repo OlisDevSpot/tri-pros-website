@@ -104,6 +104,77 @@ need — don't jump straight to a full column migration:
   steps, and the pre-change checklist) live in
   `docs/codebase-conventions/jsonb-columns.md`; this ADR is the *why*.
 
+## Amended 2026-07-14 (Wave 1, epic #256) — The Sub-Entity Standard
+
+Ratified by Oliver after a 6-agent research program (requirements extraction, app-wide
+sub-entity inventory, industry research, in-stack DX prototype, 2 adversarial critics),
+triggered by his review of the Wave-1 wide-table build (PR #260): "the `*_COLUMN_KEYS`
+constants re-encode a boundary that should be structural."
+
+**Supersedes this ADR's prior one-to-one default.** The placement rule above only ever
+gave two answers for a field cluster — COLUMN or CHILD TABLE-for-collections — so a
+cohesive **one-to-one** cluster always fell through to "promote to columns on the
+parent" by omission. That default is wrong when the cluster is a named domain concept
+with its own structural shape. This amendment adds the missing third answer.
+
+**The rule**: a cohesive field cluster becomes its own table when it is a **named
+domain concept** (a noun in the ubiquitous language) AND differs from its parent in
+≥1 structural way:
+
+1. **Optionality** — row-exists carries business meaning ("discovery data has been
+   collected")
+2. **Permission boundary** — different actors write it than write the parent (own
+   CASL subject)
+3. **Lifecycle** — written by a **different actor or at a different trigger/time**
+   than the parent (a differently-named setter with the same actor+trigger does NOT
+   count)
+4. **Growth trajectory** — documented pressure to collect more data per item
+5. **Future references** — other entities will plausibly point at it
+
+Shape by cardinality:
+
+- **1:1 cluster** → child table, **PK-as-FK** (`parent_id uuid PRIMARY KEY
+  REFERENCES … ON DELETE CASCADE` — house precedent `voip_campaign_contacts`).
+  Reads: **flattened-spread leftJoin** in the owning DAL, composed type exported.
+  Writes: single-statement lazy upsert (`INSERT … ON CONFLICT (parent_id) DO
+  UPDATE`) when row-existence is semantic, eager (parent-create transaction) when
+  every parent must have one. Own CASL subject.
+- **1:many repeating group / anything SUMmed or filtered** → child table, own PK +
+  FK (+ `position` when ordered). Reads: batch-fetch idiom (`inArray`), NO CASL
+  subject or router unless it has its own verbs.
+- **Dynamic-key map** → child table with `UNIQUE(parent_id, key)`.
+
+Stays as columns on the parent: clusters sharing ALL structural characteristics with
+the parent (DDD embedded value), tiny clusters (~≤4 fields) with the same
+actor+trigger, and any field whose writers/readers are structurally parent-coupled.
+
+Stays JSONB (sanctioned, unchanged by this amendment): true whole-document flow
+state; immutable capture snapshots; per-feature config; **identity-free value
+arrays replaced whole and never SQL-queried** — each such array carries a
+documented promotion trigger for the day it needs identity, FKs, or per-item
+updates (e.g. `additionalPainPoints`, promotes the day pain points need identity).
+Typed financial line items are never JSONB.
+
+**The smell test (codified)**: if a table needs a TypeScript constant to re-group
+its own columns (a `*_COLUMN_KEYS` array driving permissions or patch schemas), the
+group is domain structure being hand-maintained in a second place — it wanted to be
+a table. (Display/form section metadata, e.g. `*_PROFILE_FIELDS`, is fine — sections
+within one concept are a UI concern, not a permission or lifecycle boundary.)
+
+**Reference impl**: `customer_profiles` (Wave 1 rework, epic #259) —
+`src/shared/db/schema/customer-profiles.ts`. The 23 sales-discovery/property/
+financial fields decomposed off `customers` into a 1:1 child table; `age` stays a
+plain column on `customers` — it fails all five criteria (same actor, same
+trigger, identity-adjacent, read by legal envelope rules structurally coupled to
+the parent row).
+
+Full rule text, cardinality shapes, and the write/read mechanism (`upsertOneToOne`
+helper + hand-written business-DAL mutation per child) live in
+`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §10
+(Addendum B). Operational checklist:
+`docs/codebase-conventions/jsonb-columns.md#sub-entity-decision-tree`. DAL
+mechanism: `docs/codebase-conventions/dal-conventions.md#one-to-one-child-tables`.
+
 ## See also
 
 - `docs/codebase-conventions/jsonb-columns.md` — operational rules + dev checklist

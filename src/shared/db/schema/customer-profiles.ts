@@ -25,7 +25,7 @@ import {
 } from './meta'
 
 // 1:1 sales-discovery profile. Row-exists = discovery data has been collected
-// (lazy upsert; ~18% of customers). `age` deliberately lives on customers —
+// (lazy upsert; ~12% of customers). `age` deliberately lives on customers —
 // written by anonymous homeowners (contracts flow), read by envelope rules.
 // see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
 export const customerProfiles = pgTable('customer_profiles', {

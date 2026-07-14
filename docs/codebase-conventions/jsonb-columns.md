@@ -29,6 +29,70 @@ constrain (ADR-0005 context).
 **Reference impl**: `#final-tcp-derived` in `src/shared/entities/proposals/DOCS.md`.
 **Enforced by**: the pre-change checklist below + PR review.
 
+### sub-entity-decision-tree
+
+For a **cohesive one-to-one field cluster** being pulled off a table, the three-way
+test above isn't specific enough — it only distinguishes column/JSONB/child-table
+for collections. Run this checklist (Addendum B, spec §10; ADR-0005 amended
+2026-07-14) before defaulting a 1:1 cluster to "nullable columns on the parent":
+
+1. **Is it a named domain concept?** A noun in `docs/domain/ubiquitous-language.md`
+   — not just "fields we happened to collect at the same intake step." If no →
+   columns on the parent, stop here.
+2. **Does it differ from the parent in ≥1 structural way?**
+   - **Optionality** — row-exists carries business meaning ("has this data been
+     collected")
+   - **Permission boundary** — different actors write it than write the parent
+     (wants its own CASL subject)
+   - **Lifecycle** — written by a different actor OR at a different trigger/time
+     than the parent (a differently-named setter with the same actor+trigger does
+     NOT count)
+   - **Growth trajectory** — documented pressure to collect more data per item
+   - **Future references** — other entities will plausibly FK to it
+
+   None apply → columns on parent (DDD embedded value / tiny same-actor cluster).
+   ≥1 applies → own table.
+3. **Pick the shape by cardinality**:
+   - **1:1** → child table, PK-as-FK (`parent_id uuid PRIMARY KEY REFERENCES …
+     ON DELETE CASCADE`). Reads: flattened-spread leftJoin, composed type
+     exported. Writes: lazy upsert (`upsertOneToOne`, see
+     `dal-conventions.md#one-to-one-child-tables`) when row-existence is
+     semantic, eager (parent-create transaction) when every parent must have
+     one. Own CASL subject.
+   - **1:many / summed / filtered** → child table, own PK + FK (+ `position`
+     when ordered). Reads: batch-fetch (`inArray`). NO CASL subject or router
+     unless it has its own verbs.
+   - **Dynamic-key map** → child table, `UNIQUE(parent_id, key)`.
+
+**The smell test**: if the cluster needs a TypeScript constant to re-group a
+table's own columns (a `*_COLUMN_KEYS` array driving permissions or patch
+schemas), that's domain structure being hand-maintained in a second place — it
+wanted to be a table. (Display/form section metadata, e.g. `*_PROFILE_FIELDS`,
+is fine — sections within one concept are a UI concern, not a structural
+difference.)
+
+**Sanctioned JSONB categories** (unaffected by this rule — these were never 1:1
+clusters headed for column promotion): whole-document flow state; immutable
+capture snapshots; per-feature config; identity-free value arrays replaced whole
+and never SQL-queried, each with a documented promotion trigger
+(`additionalPainPoints` — promotes the day pain points need identity, FKs, or
+per-item updates).
+
+**Why**: the customer profile trio was promoted to nullable columns on
+`customers` in the original Wave-1 verdict; review of that build surfaced that
+the `*_COLUMN_KEYS` constants needed to re-group those columns were themselves
+the smell — the trio is a named domain concept with real optionality and
+permission-boundary differences from `customers`. Reworked into
+`customer_profiles`, a 1:1 child table.
+**Reference impl**: `src/shared/db/schema/customer-profiles.ts`;
+`src/shared/entities/customers/DOCS.md#three-jsonb-profiles`.
+**Enforced by**: convention + PR review; mechanism detailed at
+`dal-conventions.md#one-to-one-child-tables`.
+
+**See also**: ADR-0005 (amended 2026-07-14) for the *why*;
+`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §10
+(Addendum B) for the full rationale and research trail.
+
 ### flat-over-nested
 
 Prefer a flat document over deep nesting. One or two levels max. Deep nesting makes

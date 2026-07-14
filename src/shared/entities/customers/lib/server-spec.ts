@@ -32,6 +32,9 @@ export const customerSchemas = {
   update: updateCustomerSchema,
 }
 
+// duplicate (default createCrudDal impl) copies only `customers` columns — it
+// does NOT copy the customer's `customer_profiles` child row. See
+// docs/codebase-conventions/dal-conventions.md#one-to-one-child-tables.
 export const customerServerSpec = {
   entityName: CUSTOMER,
   caslSubject: CUSTOMER,

@@ -83,6 +83,58 @@ Both live under `src/shared/entities/<entity>/dal/server/` (or `src/shared/dal/s
 **Reference impl**: `src/shared/entities/proposals/dal/server/queries.ts` (mix of CRUD via spec + business reads)
 **Enforced by**: convention + ADR-0002
 
+### one-to-one-child-tables
+
+A 1:1 child table (Sub-Entity Standard — ADR-0005 amended 2026-07-14 +
+`jsonb-columns.md#sub-entity-decision-tree`) is keyed **PK-as-FK**
+(`parent_id uuid PRIMARY KEY REFERENCES parent(id) ON DELETE CASCADE`) — house
+precedent `voip_campaign_contacts`, reference impl `customer_profiles`
+(`src/shared/db/schema/customer-profiles.ts`).
+
+**Writes**: lazy upsert via the shared `upsertOneToOne(table, fkColumn, parentId,
+set)` helper (`src/shared/dal/server/lib/upsert-one-to-one.ts`) — a
+single-statement `INSERT … ON CONFLICT (parent_id) DO UPDATE`, filtering
+`undefined` (untouched) but passing an explicit `null` through (a real clear).
+Not wired into `createCrudDal` — no entity/children registry exists yet.
+Instead, a hand-written **business-DAL mutation** wraps it per child table (e.g.
+`upsertCustomerProfile` in `customers/dal/server/mutations.ts`), which:
+
+1. Zod-validates the patch against the child's own patch schema
+   (`createInsertSchema(child).omit({fk, timestamps}).partial()`),
+2. probes the parent row **under `ctx.scope`** first — a scoped
+   parent-existence guard, since the child table has no visibility predicate
+   of its own (the parent's predicate is the only gate),
+3. calls `upsertOneToOne` and unwraps with `dalVerifySuccess`.
+
+Promote to a spec-level `children` registry on the CRUD factory only after the
+rule-of-three (three hand-written child mutations following the same shape).
+
+**Reads**: flattened-spread leftJoin in the owning entity's business DAL —
+`leftJoin(child, eq(child.parentId, parent.id))` with a spread of the child's
+own columns (minus FK + timestamps) into the select, producing a composed type
+(e.g. `CustomerWithProfile`) exported from the DAL file.
+
+**Hard type rule**: consumers accept the composed type or `ChildRow | null` —
+**never** a `Partial<ChildFields>` spread lifted off the composed type. A
+`Partial` spread compiles even when the join was never added at a new call
+site, silently reading `undefined` where the row is actually `null` for every
+un-joined row. Only the exported composed type or an explicit `| null` catches
+the missing join at compile time.
+
+**CRUD `duplicate` slot does NOT copy child rows** — `createCrudDal`'s
+`duplicateImpl` only ever touches `spec.table` (the parent); a duplicated
+parent row gets zero child rows unless a caller explicitly re-upserts one.
+Document this per entity (a one-line comment on the entity's server spec is
+enough) — don't assume `duplicate` silently propagates children.
+
+**Reference impl**: `customer_profiles` (`customers` entity) — schema
+`src/shared/db/schema/customer-profiles.ts`; upsert
+`src/shared/entities/customers/dal/server/mutations.ts` (`upsertCustomerProfile`);
+join `src/shared/entities/customers/dal/server/queries.ts` (`getCustomer`) +
+`src/shared/entities/customers/lib/profile-select.ts` (`profileCols`).
+**Enforced by**: convention + PR review; Zod on the child patch schema; tsc on
+the hard type rule.
+
 ### no-barrel-files-in-dal
 
 DAL directories (`dal/server/`, `dal/client/`) do not have `index.ts` barrel files. Imports use the full path: `import { listProposals } from '@/shared/entities/proposals/dal/server/queries'`.
