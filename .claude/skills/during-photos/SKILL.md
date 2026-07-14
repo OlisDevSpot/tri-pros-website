@@ -5,6 +5,14 @@ description: Use when a portfolio project needs "during construction" photos, wh
 
 # During Photos — branded crew inserted into REAL job-site photos
 
+> **PRODUCTION BASELINE (Oliver, 2026-07-14).** The v5 pipeline is the approved
+> standard for all portfolio during photos, now and for every future project
+> added to the portfolio. Standard package: **1–3 during photos per project**.
+> The HITL gate is NEVER skipped, including bulk runs: candidates go to
+> Oliver's Downloads first; only after his manual pick do images move to
+> optimize-image-assets → repo → R2 → seed (linked to the project's "during"
+> bucket in the gallery data).
+
 ## Iron rule (Oliver's ruling, 2026-07-13)
 
 **The scene must BE a real photo. Never generate the scene.** Generated scenes
@@ -80,6 +88,30 @@ people; across a project's set, vary count and orientation too.
 Litmus test before generating: could this exact person, doing this exact
 motion, with this exact tool, appear in a genuine phone photo taken at that
 second of that phase? If any element is there "for looks", cut it.
+
+## Cross-project variation (Oliver, 2026-07-14 — MANDATORY for every run)
+
+Variation must exist not only within a photo and within a project's set, but
+ACROSS the whole portfolio. A visitor browsing several project galleries must
+never feel the same crew was stamped into every job.
+
+**Procedure — before generating for ANY project:**
+1. Read `variation-ledger.md` (same directory). It records, per project photo:
+   base type, crew count, orientation mix, task family, and each worker's
+   appearance signature.
+2. Choose specs that AVOID repeating another project's signature: no two
+   projects may share the same (count, orientation, task-family) triple as the
+   dominant look of their set, and no worker appearance signature (build +
+   hair/headwear + pants + accessory) may recur across projects.
+3. After candidates pass QA and ship to Downloads, APPEND the new rows to
+   `variation-ledger.md` in the same commit as any ledger learnings.
+
+**Spread targets across the portfolio** (soft quotas — bend for realism, never
+for convenience): counts ≈ 40% solo / 40% crew-2 / 20% crew-3; orientations ≈
+half backs-dominant, half mixed/front; task families follow each base's phase —
+never default to the same task twice when the phase offers alternatives
+(measuring, marking, material staging, compacting, cutting, setting, screeding,
+cleanup are all distinct families).
 
 ## THE TEMPLATE (single nano_banana_pro edit pass)
 
