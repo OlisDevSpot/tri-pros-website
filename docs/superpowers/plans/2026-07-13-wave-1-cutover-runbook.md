@@ -7,10 +7,10 @@
   ```bash
   grep -c 'override: true' drizzle.config.ts
   ```
-  should output `1`. This branch fixed drizzle-kit to preload `.env` (Neon uses `DATABASE_URL` from `.env`), but `.env.local` overrides only work in worktrees with `override: true`. The prod cutover push runs from the MAIN checkout (no `.env.local`), so `pnpm db:push` resolves `DATABASE_URL` from `.env` as always. Confirm this configuration before proceeding.
+  should output `2` (one comment mention + the config call). This branch fixed drizzle-kit to preload `.env` (Neon uses `DATABASE_URL` from `.env`), but `.env.local` overrides only work in worktrees with `override: true`. The prod cutover push runs from the MAIN checkout (no `.env.local`), so `pnpm db:push` resolves `DATABASE_URL` from `.env` as always. Confirm this configuration before proceeding.
 
 **Step 1: Pre-drop Notion ID snapshot**
-- `node --env-file=.env .superpowers/sdd/snapshot-notion-ids.mjs` — fresh pre-drop export of `customers.notion_contact_id` (Wave-1 prod push drops it — Notion retirement rider, commit 14dbd44b).
+- `pnpm tsx scripts/snapshot-notion-contact-ids.ts` — run from the repo root on `main`, AFTER merging, reading PROD `DATABASE_URL`. Fresh pre-drop export of `customers.notion_contact_id` (Wave-1 prod push drops it — Notion retirement rider, commit 14dbd44b). Writes the JSON file next to cwd — move it somewhere safe immediately. (A 2026-07-13 snapshot, 83 rows, also exists locally as backup.)
 
 **Step 2: Rehearsal** — create a Neon branch off PRODUCTION (`mcp Neon create_branch` or console), point `DATABASE_URL_OVERRIDE` at it, then:
 
@@ -20,11 +20,11 @@
    b. `pnpm tsx scripts/backfill-wave1-columns.ts --dry-run` then live run then re-run (idempotency) — require `mismatches=0` `errors=0` all runs
       
       **Rehearsal rehearsal notes:**
-      - The backfill will log exactly **7** `↷` legacy-enum mappings on customers (see `LEGACY_ENUM_MAP` in `scripts/backfill-wave1-columns.ts` — mapping decisions recorded in the Wave-1 PR). Verify the count is exactly 7; more means new legacy values appeared since the 2026-07-13 audit — **stop and extend the map** if count differs.
+      - The backfill will log `↷` legacy-enum mappings on customers (see `LEGACY_ENUM_MAP` in `scripts/backfill-wave1-columns.ts` — mapping decisions recorded in the Wave-1 PR). Expect ↷ lines covering exactly **7 distinct customer rows** (≈10 lines — several rows map two fields). Review each ↷ against the mapping decisions recorded in the Wave-1 PR; any ↷ value NOT in `LEGACY_ENUM_MAP`'s documented set, or an 8th distinct row, means new legacy data appeared since the 2026-07-13 audit — **stop and extend the map**.
       - The dev snapshot skips `agentProfileJSON`, so the users backfill path first touches real data HERE. Prod has exactly 1 of 8 users with a profile (2026-07-13 audit). After rehearsal backfill completes, manually:
         ```sql
         SELECT id, name, quote, bio, headshot_url, headshot_crop_data 
-          FROM users WHERE agent_profile_json IS NOT NULL LIMIT 1;
+          FROM "user" WHERE agent_profile_json IS NOT NULL LIMIT 1;
         ```
         Eyeball that user's `quote`, `bio`, `headshot_url`, and `headshot_crop_data` values against the original blob to confirm the decomposition preserved all data.
 
