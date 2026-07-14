@@ -186,6 +186,8 @@ rules (no pricing, homeowners only, AAA-grade/Showcase-price value line):
   `clips[checkmarkClipIndex]`). Current named set — **`checkmarks-v1`**
   (used by both shipped reels):
   `["AAA-grade materials", "Beautiful AND functional", "Built to be photographed"]`
+  **`checkmarks-v2`** (reel kitchens-03):
+  `["AAA-grade finishes", "Camera-ready results", "Homeowners only"]`
 - **End-card sets** (`endCard: { headline, sub, cta }`). Current pattern —
   trade-templated headline `"Could Your {Trade} Be One of the 5?"`, sub
   `"AAA-grade work, at a Showcase price. Homeowners only."`, cta `"See If
