@@ -47,15 +47,32 @@ a mid-construction scene" — stop; that is the superseded v1 approach
 | Base available | Crew task vocabulary |
 |---|---|
 | Real `during-*` photo (best) | Work matching the visible phase: grading → rake/wheelbarrow/compactor; gunite shell → trowel check, tape-measure layout; framing → level, nail gun; drywall → mud, sanding pole |
-| Only `after-*`/`hero-after` | Finish/punch-list only: sweeping, joint top-up, appliance install, door adjustment, final wipe-down. NEVER un-build the scene |
-| Only `before-*`/`hero-before` | Day-one prep only: measuring, marking, masking, laying floor protection, walking the site with a clipboard |
-| Empty folder (Verona, Oasis) | STOP — nothing to anchor; report to Oliver |
+| `before-*`/`hero-before` | Day-one prep only: measuring, marking, masking, laying floor protection, walking the site with a clipboard |
+| `after-*`/`hero-after` | ⛔ BANNED as base (Oliver 2026-07-14) — during photos come ONLY from before or during bases; a finished scene with workers reads as staged |
+| Empty folder (Verona, Oasis) or only afters (Atlas) | STOP — no valid base; report to Oliver |
 | Base has a visible real person | Skip that base (unbranded worker next to branded inserts reads wrong) or crop them out first |
 | Base has third-party watermark (all Monique photos: "Concierge Home Remodeling") | STOP and flag — editing around it fabricates; Oliver must supply cleaned originals first |
 
 Pick bases that are sharp, well-exposed, and have open ground/floor where
 workers plausibly stand. 2400px+ preferred; below ~1000px expect the model to
 invent detail when upscaling — acceptable, but check landmarks after.
+
+## Crew variation axes (Oliver 2026-07-14 — vary these per generation)
+
+Every generation picks a value on each axis so no two during photos feel like
+the same crew stamped in. Within one image, workers must be visibly different
+people; across a project's set, vary count and orientation too.
+
+| Axis | Values | Rules |
+|---|---|---|
+| **Count** | 1, 2, or 3 | Match the task: solo detail work = 1; carrying/setting = 2; pour/paver/pebble crews = 3. Don't crowd small frames |
+| **Orientation** | backs (logo visible — default), mixed (some back, some profile/front), front | Front-facing workers look AT THEIR WORK — absorbed, head angled down/aside, NEVER at the camera. Front view shows plain navy shirt (logo is on the back only) |
+| **Appearance** | per worker pick 2–3 differentiators: build (stocky/lean/tall/short), hair (buzzed/curly/graying/tied back) or ball cap/beanie, skin tone (vary naturally), pants (tan work pants/gray canvas/dark jeans), one accessory max (hi-viz vest, tool belt, knee pads, wrist brace, watch) | Differentiators must contrast BETWEEN workers in the same frame. Never stack >3 per worker — over-accessorized reads as costume |
+| **Hands & tools (realism anchor)** | say what EACH hand is doing | "left hand steadies the paver, right hand taps it with the rubber mallet" beats "installing pavers". Tool must belong to the visible phase; grip must be biomechanically right |
+
+Litmus test before generating: could this exact person, doing this exact
+motion, with this exact tool, appear in a genuine phone photo taken at that
+second of that phase? If any element is there "for looks", cut it.
 
 ## THE TEMPLATE (single nano_banana_pro edit pass)
 
@@ -67,34 +84,46 @@ higgsfield generate create nano_banana_pro \
 ```
 
 > The first reference is a REAL photo from our {PROJECT_CONTEXT — one clause:
-> what the photo shows}. Keep this photo EXACTLY as it is: same camera angle,
-> same framing, same lighting, same proportions, and every existing surface,
-> object, and shadow unchanged{ — including <notable element: pet, vehicle,
-> material pile> if present}. Do not rebuild, redraw, restyle, or move ANY part
-> of the existing scene. The ONLY change: add two construction workers
-> {WHERE — into the graded dirt / inside the empty shell / on the driveway} at
-> realistic scale for their distance from the camera, with shadows and lighting
-> that match the photo's light. Both workers face away from the camera, faces
-> not visible. They wear matching deep-navy t-shirts with the company logo from
-> the second reference image printed large and centered on their shirt BACKS —
-> the house-shaped mark in white and light blue, TRI PROS, and REMODELING below
-> it, letter-perfect — plus work pants and work boots. {POSE — one clause per
-> worker, task-correct biomechanics: kneeling on knee pad to tile, leaning into
-> a rake stroke, two hands on a trowel}. {PROPS — cap at what the task strictly
-> needs, e.g. "A single push broom and one bucket are the only objects added."}
-> Their integration must look like they were in the original photo: same grain,
-> same exposure, same color temperature. Nothing else changes. No watermarks or
-> text overlays anywhere.
+> what the photo shows}{ — for unusual angles or <1200px bases, add the FRAME
+> LAYOUT: what runs where, left/right anchors}. Keep this photo EXACTLY as it
+> is: same camera angle, same framing, same lighting, same proportions, and
+> every existing surface, object, and shadow unchanged{ — including <notable
+> element: pet, vehicle, material pile> if present}. Do not rebuild, redraw,
+> restyle, rotate, or recompose ANY part of the existing scene. The ONLY
+> change: add {COUNT: one/two/three} construction worker(s) {WHERE — into the
+> graded dirt / inside the empty shell} at realistic scale for their distance
+> from the camera, with shadows and lighting that match the photo's light.
+> {CREW_BLOCK — one sentence per worker, see below}. All wear the same
+> deep-navy t-shirt with the company logo from the second reference image
+> printed large and centered on the shirt BACK ONLY — the house-shaped mark in
+> white and light blue, TRI PROS, and REMODELING below it, letter-perfect —
+> the shirt front is plain navy; plus work boots. {PROPS — cap at what the
+> task strictly needs, e.g. "A single push broom and one bucket are the only
+> objects added."} The workers are clearly different people. Their integration
+> must look like they were in the original photo: same grain, same exposure,
+> same color temperature. Nothing else changes. No watermarks or text overlays
+> anywhere.
+
+**CREW_BLOCK — one sentence per worker, four beats each:**
+`{APPEARANCE: 2–3 differentiators} worker {ORIENTATION: seen from behind, shirt-back logo to camera / in profile / facing the camera but looking down at his work, never at the camera} {ACTION: task verb with phase-correct tool} — {HANDS: what left and right hand are each doing}.`
+
+Example: "A stocky worker with a gray beanie and tan work pants, seen from
+behind with the shirt-back logo to camera, kneels tying rebar — left hand
+holding the bar crossing, right hand twisting the tie wire with pliers."
 
 Slot rules: ONE construction phase's vocabulary only; task-appropriate PPE only
-(no hard hats in residential interiors — reads as stock photo); two workers max.
+(no hard hats in residential interiors — reads as stock photo); 1–3 workers
+per the Crew variation axes above.
 
 ## QA gate (check at 100% zoom before delivering to Downloads)
 
-- [ ] Logo letter-perfect on BOTH shirt backs: mark + "TRI PROS" + "REMODELING",
-      white/light-blue ONLY (v1 once rendered it rainbow) — re-roll if not
-- [ ] No face visible (a down-turned profile sliver is borderline — prefer re-roll
-      with "only the top and back of his head")
+- [ ] Logo letter-perfect on every VISIBLE shirt back: mark + "TRI PROS" +
+      "REMODELING", white/light-blue ONLY (v1 once rendered it rainbow); front-facing
+      workers show plain navy front — re-roll if a logo appears on a chest
+- [ ] Orientation matches the crew spec; front/profile workers look at their
+      WORK, never at the camera; faces natural, no uncanny AI stare — re-roll
+- [ ] Workers read as different people (build/hair/skin/pants contrast); ≤3
+      differentiators each, ≤1 accessory each
 - [ ] Landmarks unchanged vs base (walls, windows, piles, pets, horizon) — diff
       them side by side; drift = re-roll with stronger "keep EXACTLY" anchors
 - [ ] Worker scale & shadow direction match the photo
@@ -119,3 +148,4 @@ this file is canonical over memory.
 - 2026-07-14 — top-down drone base (Bliss): model kept every element but ROTATED the composition 90° → for unusual angles or <1200px bases, spell out the frame layout in the prompt ("walkway runs HORIZONTALLY, street along the LEFT, mailbox bottom center") and forbid rotate/mirror/recompose; one re-roll fixed it.
 - 2026-07-14 — drone/top-down IS viable: kneeling, bent-forward workers show shirt-back logos legibly from directly above.
 - 2026-07-14 — skill validated 5/5 projects (Altura, Olympia, Riviera, Atlas, Bliss); Altura during-20 correctly rejected for visible real person; Monique correctly blocked on watermark rule.
+- 2026-07-14 — Oliver: after-photos BANNED as bases (before/during only — the Atlas/Bliss punch-list images are superseded); crew becomes a variation API: count 1–3, orientation backs/mixed/front, per-worker appearance differentiators, hands-level action detail. Template rewritten with CREW_BLOCK.
