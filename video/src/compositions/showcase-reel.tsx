@@ -223,7 +223,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
 
       <Sequence from={props.hookStartFrame} durationInFrames={props.hookDurationInFrames}>
         <SafeZone>
-          <HookTitle text={props.hook} />
+          <HookTitle text={props.hook} style={props.hookStyle ?? 'wordStagger'} />
         </SafeZone>
       </Sequence>
 
