@@ -9,9 +9,9 @@ description: Use when a portfolio project needs "during construction" photos, wh
 > standard for all portfolio during photos, now and for every future project
 > added to the portfolio. Standard package: **1–3 during photos per project**.
 > The HITL gate is NEVER skipped, including bulk runs: candidates go to
-> Oliver's Downloads first; only after his manual pick do images move to
-> optimize-image-assets → repo → R2 → seed (linked to the project's "during"
-> bucket in the gallery data).
+> Oliver's Downloads first; only after his manual pick do images move into the
+> project's during bucket via `scripts/add-during-media.ts`. The pipeline
+> operates on EXISTING DB projects only — see API surface.
 
 ## Iron rule (Oliver's ruling, 2026-07-13)
 
@@ -24,12 +24,25 @@ a mid-construction scene" — stop; that is the superseded v1 approach
 
 ## API surface (the contract every run fulfills)
 
+**The pipeline decorates EXISTING projects — it NEVER creates one (Oliver's
+ruling, 2026-07-14, after a same-day rollback of 18 wrongly-created projects).
+A "project" means a row in the `projects` table; its photos live in
+`mediaFiles` rows bucketed by `phase` (before/during/after/uncategorized) with
+R2-hosted URLs. The whole loop: existing project → its own before/during
+photos as bases → branded during candidates → Oliver's HITL pick → insert
+winners back into THAT project's during bucket.**
+
 | | |
 |---|---|
-| **Input** | project title (folder under `public/portfolio-photos/projects/<Title>/`), optional base-photo pick, optional crew task, count N (default 1) |
-| **Output (candidate)** | edited PNG(s) → `/mnt/c/Users/porat/Downloads/tri-pros-during-REALBASE-<project>-<task>.png` for Oliver's HITL pick — MANDATORY gate, never skip |
-| **Output (approved)** | optimize-image-assets skill → `public/portfolio-photos/projects/<Title>/during-<next-free-N>.webp`; prod needs R2 upload to `portfolio-photos` bucket + re-seed (see `src/shared/db/seeds/data/media-files.ts`) |
+| **Input** | an existing project **accessor** (query `projects` + its `mediaFiles` where phase in before/during — those URLs are the ONLY base pool), optional base pick, optional crew task, count 1–3 |
+| **Output (candidate)** | edited PNG(s) → `/mnt/c/Users/porat/Downloads/tri-pros-during-<accessor>-<task>-<crew>.png` for Oliver's HITL pick — MANDATORY gate, never skip |
+| **Output (approved)** | `pnpm tsx scripts/add-during-media.ts <accessor> <file...>` — converts to webp, uploads to R2 `projects/<projectId>/during/<uuid>.webp`, inserts the `mediaFiles` row (phase='during') on that same project. Refuses unknown accessors by design |
+| **Environment** | scripts hit the DB selected by NODE_ENV (dev by default); prod promotion is a separate explicit Oliver decision |
 | **Cost** | ~2 cr per edit pass; re-rolls cheap — iterate freely |
+
+Legacy note: `public/portfolio-photos/projects/<Title>/` folders and the
+`media-files.ts` seed are a LEGACY path — the live portfolio is the scraper-
+imported DB projects. Do not stage new projects from disk folders.
 
 ## Preflight (self-healing — run each check, repair before proceeding)
 
@@ -64,7 +77,7 @@ a mid-construction scene" — stop; that is the superseded v1 approach
 | Real `during-*` photo (best) | Work matching the visible phase: grading → rake/wheelbarrow/compactor; gunite shell → trowel check, tape-measure layout; framing → level, nail gun; drywall → mud, sanding pole |
 | `before-*`/`hero-before` | Day-one prep only: measuring, marking, masking, laying floor protection, walking the site with a clipboard |
 | `after-*`/`hero-after` | ⛔ BANNED as base (Oliver 2026-07-14) — during photos come ONLY from before or during bases; a finished scene with workers reads as staged |
-| Empty folder or only afters | Check the RAW MEDIA TROVE first: `/mnt/c/Users/porat/Downloads/Projects Photos-20251122T231352Z-1-001/Projects Photos/` (Drive export, per-trade + per-address folders, some with real `Before N.JPG` sets) — e.g. "Dry Landscaping/Ostella Dr, Los Angeles" = Oasis bases. Project↔folder mapping is by city/scope inference; confirm with Oliver before final publish. If the trove has nothing either: STOP — report to Oliver. (Blocked as of 2026-07-14: Atlas, Bliss, Verona — afters/night-only everywhere; Monique — afters only, though clean unwatermarked originals live in `Downloads/arcadia-kitchen-remodel/`) |
+| Project has no before/during media rows | STOP — report to Oliver. Do NOT reach for disk folders or the Downloads raw trove to invent bases for it, and NEVER create a new project to house orphan photos |
 | Base has a visible real person | Skip that base (unbranded worker next to branded inserts reads wrong) or crop them out first |
 | Base has third-party watermark (all Monique photos: "Concierge Home Remodeling") | STOP and flag — editing around it fabricates; Oliver must supply cleaned originals first |
 
@@ -229,3 +242,4 @@ this file is canonical over memory.
 - 2026-07-14 — v6: <1200px bases invite zoom-RECOMPOSE (edge objects deleted, framing tightened), not just rotation — LEAD the prompt with a four-edge anchor block naming what sits at each edge. Phone-screenshot bases are salvageable (crop letterbox/home-indicator via sharp .extract). Video frames are a legitimate during-source but crew videos have real people in ~every frame.
 - 2026-07-14 — v6: parallel batch agents each invented worker signatures blind to one another → three near-identical "tall·buzzed·tan" variants slipped through (roof/bathroom1/altura-grading). For future bulk runs, pre-partition an appearance palette per agent in the dispatch prompts.
 - 2026-07-14 — v6: PII hazard in raw trove — the ADU folder photo contains a legible blueprint with a customer name/address (also has embedded real workers; blocked). Never use bases with readable customer PII.
+- 2026-07-14 — WORKFLOW CORRECTION (Oliver): a bulk run wrongly CREATED 18 new projects from disk/trove photos — all rolled back same day (rows + R2 objects deleted). The pipeline decorates EXISTING DB projects only: bases come from the project's own before/during mediaFiles, winners go back via `scripts/add-during-media.ts`. API surface + base-selection table rewritten; map the gameplan and confirm with Oliver before any bulk operation that touches the DB.
