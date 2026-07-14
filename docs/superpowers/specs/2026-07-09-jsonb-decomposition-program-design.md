@@ -269,3 +269,80 @@ where they fit: `proposal_cost_lines.amount_cents GENERATED AS (qty * unit_price
 | `customers` table grows wide (~23 + 8 promoted columns) | Postgres columns are cheap (TOAST); list views select explicit columns already; acceptable by design |
 | W2 funding-form slice creates a half-refactored proposal form | Scoped consciously: only the incentives field-array path changes in W2; the rest of the form untouched until W3 |
 | Losing merge machinery before all callers are migrated | Deletion is sequenced LAST in W2, after every registered column is decomposed or deregistered; tsc catches any survivor referencing `jsonbMergeColumns` |
+
+## 10. Addendum B — The Sub-Entity Standard (2026-07-14)
+
+Supersedes specific §2/§3 items below. Origin: Oliver's design review of the Wave-1 wide-table
+build (PR #260) — "the `*_COLUMN_KEYS` constants re-encode a boundary that should be structural" —
+followed by a 6-agent research program (requirements extraction, app-wide sub-entity inventory,
+industry research, in-stack DX prototype, 2 adversarial critics). Decisions ratified by Oliver
+2026-07-14.
+
+### B.1 The rule (replaces §2's "one-to-one default: columns on parent")
+
+A cohesive field cluster becomes its OWN TABLE when it is a **named domain concept** (a noun in
+the ubiquitous language) AND differs from its parent in ≥1 structural way:
+
+1. **Optionality** — row-exists carries business meaning ("discovery data has been collected")
+2. **Permission boundary** — different actors write it than write the parent (own CASL subject)
+3. **Lifecycle** — written by a **different actor or at a different trigger/time** than the parent
+   (a differently-named setter with the same actor+trigger does NOT count)
+4. **Growth trajectory** — documented pressure to collect more data per item
+5. **Future references** — other entities will plausibly point at it
+
+Shape by cardinality:
+- **1:1 cluster** → child table, **PK-as-FK** (`parent_id uuid PRIMARY KEY REFERENCES … ON DELETE
+  CASCADE`) — house precedent `voip_campaign_contacts`. Reads: **flattened-spread leftJoin** in the
+  owning DAL, composed type exported. Writes: single-statement lazy upsert
+  (`INSERT … ON CONFLICT (parent_id) DO UPDATE`) when row-existence is semantic; eager (in the
+  parent-create transaction) when every parent must have one. Own CASL subject.
+- **1:many repeating group / anything SUMmed or filtered** → child table, own PK + FK
+  (+ `position` when ordered). Reads: house **batch-fetch idiom** (`inArray`), NO CASL subject or
+  router unless it has its own verbs. (This amends §3's blanket "no CASL subjects, LEFT JOIN"
+  preamble: that preamble now applies to 1:many children only; 1:1 children get subject + join.)
+- **Dynamic-key map** → child table with `UNIQUE(parent_id, key)`.
+
+Stays as columns on the parent: clusters sharing ALL structural characteristics with the parent
+(DDD embedded value), tiny clusters (~≤4 fields) with the same actor+trigger, and any field whose
+writers/readers are structurally parent-coupled (see `age`, B.3).
+
+Stays JSONB (sanctioned): true whole-document flow state; immutable capture snapshots; per-feature
+config; **identity-free value arrays replaced whole and never SQL-queried** (e.g.
+`additionalPainPoints` — each carries a documented promotion trigger). Typed financial line items
+are NEVER JSONB.
+
+**The smell test (codified):** if you need a TypeScript constant to re-group a table's columns
+(a `*_COLUMN_KEYS` array driving permissions/patch schemas), the group is domain structure being
+hand-maintained in a second place — it wanted to be a table. (Display/form section metadata like
+`*_PROFILE_FIELDS` is fine — sections within one concept are a UI concern.)
+
+**Mechanism:** shared `upsertOneToOne` helper + hand-written business-DAL mutation per child
+(dal-conventions crud-vs-business split); patch schema = `createInsertSchema(child)
+.omit({fk, timestamps}).partial()`. Promote to a spec-level `children` registry on the CRUD
+factory only after the rule-of-three. Known seams to guard per child: forgotten-join (hard type
+rule: consumers accept `ChildRow | null`, never Partial spreads off the composed type), CRUD
+`duplicate` slot does not copy children (document or override), child upserts need a scoped
+parent-existence guard (visibility predicates reference the parent).
+
+### B.2 Superseded verdicts
+
+| Item | Old verdict (§2/§3) | New verdict |
+|---|---|---|
+| customers profile trio | nullable columns on `customers` (W1) | **ONE child table `customer_profiles`** (PK-as-FK, lazy upsert): all trio fields EXCEPT `age`. Sections remain display metadata. CASL: `can('read'/'update','CustomerProfile')`; the 24-field grant on Customer is REMOVED. Dispatcher reads: status quo (may read; writes stay walled) |
+| `age` | (inside the trio) | **stays a column on `customers`** — written by anonymous homeowners (contracts share-token flow), read by legal envelope rules; identity-adjacent, not discovery data. Agents keep a small field grant `can('update','Customer',['age'])` |
+| `user.agentProfileJSON` | nullable columns on `user` (W1) | **UNCHANGED — columns stand as built.** ~8 user rows ever; better-auth `additionalFields` already partitions cleanly; a table is over-engineering at this scale |
+| lead_sources voip campaigns policy | columns + FK (W1) | **UNCHANGED — columns stand as built** (same actor + same trigger as parent config = anti-test) |
+| leadMeta hot fields (W2) | columns on `customers` (STI-hybrid on parent) | **child table `customer_lead_attribution`** (1:1, PK-as-FK): `kind` pgEnum + `funnel_slug`, `offer`, `utm_*` columns + the immutable JSONB residue column ON the child. Customers stays thin; ads reporting joins |
+| notion_contact_id cutover rider | pre-drop snapshot mandated | **snapshot ceremony DELETED** — Oliver ruled the data pure legacy (Notion retired for CRM); the prod push simply drops the column |
+
+All other verdicts (incentives, SOW, cost lines, enrichment, sanctioned-JSONB list) unchanged —
+they were already rule-consistent. `customer_enrichment` stays W2 (composite-key upsert, not
+`upsertOneToOne` — no shared machinery gained by pulling it forward).
+
+### B.3 Why prod migrates once
+
+PR #260 was never cut over — prod never received the wide-table schema. The branch is reworked in
+place: prod goes blobs → child tables in a single §4-protocol cutover. Surviving verbatim from the
+wide-table build: 16 pgEnums, Zod bounds, LEGACY_ENUM_MAP + parity harness, races-dead write
+semantics, display machinery, drizzle isolation fix, proposals deregistration, docs truth-pass,
+voip + agentProfile cutovers (both stand as built).
