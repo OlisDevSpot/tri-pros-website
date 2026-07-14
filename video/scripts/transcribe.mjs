@@ -8,6 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { downloadWhisperModel, installWhisperCpp, toCaptions, transcribe } from '@remotion/install-whisper-cpp'
+import { parseScriptEmphasis } from './lib/parse-emphasis.mjs'
 
 const args = process.argv.slice(2)
 function arg(name) {
@@ -47,7 +48,7 @@ const { captions } = toCaptions({ whisperCppOutput: output })
 // whisper's timing; unmatched runs get timing interpolated across the gap
 // between surrounding matches (which is where the garbled ASR tokens live).
 const normalize = w => w.toLowerCase().replace(/[^a-z0-9']/g, '')
-const scriptWords = script.split(/\s+/).filter(Boolean)
+const { words: scriptWords, emphasis } = parseScriptEmphasis(script)
 const a = captions.map(c => normalize(c.text))
 const b = scriptWords.map(normalize)
 
@@ -114,6 +115,7 @@ const props = JSON.parse(readFileSync(propsPath, 'utf8'))
 props.wordCaptions = scriptWords.map((word, j) => ({
   text: `${j === 0 ? '' : ' '}${word}`,
   ...result[j],
+  emphasis: emphasis[j],
 }))
 writeFileSync(propsPath, `${JSON.stringify(props, null, 2)}\n`)
 console.log(`✅ ${scriptWords.length} word captions (${Math.round(matchRatio * 100)}% script match) → ${propsPath}`)

@@ -65,3 +65,12 @@ test('last page lingers 300ms past its final word', () => {
 test('empty input yields no pages', () => {
   assert.deepEqual(paginateCaptions([]), [])
 })
+
+test('emphasis flag rides through to tokens', () => {
+  const pages = paginateCaptions([
+    { text: 'a', startMs: 0, endMs: 100 },
+    { text: ' spa', startMs: 100, endMs: 300, emphasis: true },
+    { text: ' feeling', startMs: 300, endMs: 600, emphasis: true },
+  ])
+  assert.deepEqual(pages[0]!.tokens.map(t => t.emphasis ?? false), [false, true, true])
+})

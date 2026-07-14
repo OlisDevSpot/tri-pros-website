@@ -2,6 +2,7 @@ export interface CaptionToken {
   text: string
   fromMs: number
   toMs: number
+  emphasis?: boolean
 }
 
 export interface CaptionPage {
@@ -15,6 +16,7 @@ export interface WordInput {
   text: string
   startMs: number
   endMs: number
+  emphasis?: boolean
 }
 
 const MAX_WORDS = 3
@@ -26,7 +28,7 @@ const SENTENCE_END = /[.!?…]$/
 
 export function paginateCaptions(words: WordInput[]): CaptionPage[] {
   const tokens: CaptionToken[] = words
-    .map(word => ({ text: word.text.trim(), fromMs: word.startMs, toMs: word.endMs }))
+    .map(word => ({ text: word.text.trim(), fromMs: word.startMs, toMs: word.endMs, emphasis: word.emphasis ?? false }))
     .filter(token => token.text.length > 0)
   if (tokens.length === 0)
     return []
