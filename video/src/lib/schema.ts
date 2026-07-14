@@ -1,5 +1,24 @@
 import { z } from 'zod'
 
+export const kenBurnsSchema = z.union([
+  z.enum(['in', 'out']),
+  z.object({
+    zoom: z.enum(['in', 'out']),
+    pan: z.enum(['none', 'left', 'right', 'up', 'down']),
+  }),
+])
+export type KenBurns = z.infer<typeof kenBurnsSchema>
+
+/**
+ * Remotion passes RAW input props (zod validates, never transforms) — always
+ * normalize at the use-site; undefined-safe for props written pre-expansion.
+ */
+export function normalizeKenBurns(v: KenBurns | undefined): { zoom: 'in' | 'out', pan: 'none' | 'left' | 'right' | 'up' | 'down' } {
+  if (v === undefined)
+    return { zoom: 'in', pan: 'none' }
+  return typeof v === 'string' ? { zoom: v, pan: 'none' } : v
+}
+
 export const clipSchema = z.object({
   /** Filename under video/public/ (Remotion staticFile). */
   src: z.string(),
@@ -16,14 +35,19 @@ export const clipSchema = z.object({
   aspect: z.number().positive(),
   /** Uppercase chip above a framed card (e.g. "THE SHOWCASE STANDARD"). */
   label: z.string().nullable(),
-  /** Ken Burns direction for `kind: 'image'`: slow push in, or settle out. */
-  kenBurns: z.enum(['in', 'out']).default('in'),
+  /** Card treatment when layout is `framed` — see variation-axes.md. */
+  cardStyle: z.enum(['native', 'polaroid', 'split', 'letterbox', 'offset']).default('native'),
+  /** Second source for `cardStyle: 'split'` (src = BEFORE half, secondarySrc = AFTER half). */
+  secondarySrc: z.string().nullable().default(null),
+  /** Ken Burns for `kind: 'image'`: legacy string or `{ zoom, pan }` object. */
+  kenBurns: kenBurnsSchema.default('in'),
   /**
-   * How this clip enters. `fade` = 10f opacity ramp over the still-running
-   * previous clip (fluid). `none` = hard cut (reserve for the snap moment,
-   * paired with flash + shutter).
+   * How this clip enters (ONE transition family per reel — variation-axes.md).
+   * `none` = hard cut, reserved for the snap moment.
    */
-  transitionIn: z.enum(['none', 'fade']).default('none'),
+  transitionIn: z.enum(['none', 'fade', 'whip', 'wipe', 'dissolve', 'zoomPunch']).default('none'),
+  /** Motion direction for whip/wipe. */
+  transitionDirection: z.enum(['left', 'right', 'up', 'down']).default('left'),
 })
 
 export const captionSchema = z.object({
@@ -66,6 +90,8 @@ export const wordCaptionSchema = z.object({
   endMs: z.number(),
   timestampMs: z.number().nullable(),
   confidence: z.number().nullable(),
+  /** Marked `*word*` in the VO script — renders in the luxe serif + brand blue. */
+  emphasis: z.boolean().default(false),
 })
 
 export const showcaseReelSchema = z.object({
@@ -74,6 +100,8 @@ export const showcaseReelSchema = z.object({
   hook: z.string(),
   hookStartFrame: z.number().int().min(0).default(0),
   hookDurationInFrames: z.number().int().positive().default(75),
+  /** Hook text treatment — one of the variation-axis menu (axis 1). */
+  hookStyle: z.enum(['wordStagger', 'punch', 'freeze', 'typewriter']).default('wordStagger'),
   /** Checkmark rows shown above the framed card of clips[checkmarkClipIndex]. */
   checkmarks: z.array(z.string()).max(4),
   checkmarkClipIndex: z.number().int().nullable(),
@@ -89,10 +117,14 @@ export const showcaseReelSchema = z.object({
   voStartFrame: z.number().int().min(0),
   /** Caption centerline within the safe zone (0 top … 1 bottom); ~0.55–0.62. */
   captionVertical: z.number().min(0).max(1),
-  /** Punch zooms on stressed VO words / downbeats. */
+  /** @deprecated One motion per moment (2026-07-13) — leave []; kept for legacy props. */
   punchIns: z.array(punchInSchema),
   /** White luma-flash transitions — peak opacity ON these frames (4–6f total). */
   flashFrames: z.array(z.number().int().min(0)),
+  /** Color pops: desaturated 45f hold → snap to full color ON each frame. */
+  colorPops: z.array(z.number().int().min(0)).default([]),
+  /** Impact shakes: 10f decaying translate jitter at each frame (boom moments). */
+  screenShakes: z.array(z.object({ frame: z.number().int().min(0), intensity: z.number().min(0).max(1) })).default([]),
   /** SFX cues (whoosh/riser/boom/click — see the skill's SFX grammar). */
   sfx: z.array(sfxSchema),
   voiceoverSrc: z.string().nullable(),
@@ -103,7 +135,7 @@ export const showcaseReelSchema = z.object({
   watermarkWidth: z.number().positive().default(110),
   /** Opening logo entrance→dock; null = no logo intro (end card only). */
   logoIntro: logoIntroSchema.nullable().default(null),
-  /** Zoom-out reveals: 135→100% over 18f eased, starting at each frame (after-shot arrivals). */
+  /** @deprecated One motion per moment (2026-07-13) — leave []; kept for legacy props. */
   zoomOutReveals: z.array(z.number().int().min(0)).default([]),
   /**
    * Dark scrim behind the hook title + logo intro so cold-open text reads
@@ -129,6 +161,8 @@ export const showcaseReelSchema = z.object({
     .object({
       clipIndex: z.number().int(),
       photos: z.array(z.object({ src: z.string(), frame: z.number().int().min(0) })),
+      /** Burst treatment — full-bleed snaps (house v5), polaroid scatter, or 2×2 grid assemble. */
+      style: z.enum(['fullbleed', 'polaroid-scatter', 'grid']).default('fullbleed'),
     })
     .nullable()
     .default(null),
