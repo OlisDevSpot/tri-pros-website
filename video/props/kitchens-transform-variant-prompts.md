@@ -38,6 +38,22 @@ geometry constraint verbatim.
 see prompt-writing lesson below (this prompt predates the lesson; v6's
 output happened to stay clean, but don't tempt it).
 
+## after-walkthrough — mandatory companion clip (Oliver 2026-07-14)
+
+Every morph gets a walkthrough of the finished space cut in after it (the
+morph is tail-trimmed at build completion; the walkthrough carries the
+remaining VO beats — full recipe in SKILL.md). House prompt:
+
+> Professional real-estate videography walkthrough of this exact finished kitchen: the camera glides forward at a slow walking pace from the entry, drifting gently past the marble waterfall island, with subtle handheld micro-sway — smooth and stable, like an expert videographer moving through the space. Parallax gradually reveals the range, backsplash and open shelving. Warm natural daylight, pristine empty room, no people. Photorealistic, one continuous take, no cuts, no text.
+
+`seedance_2_0 --start-image <same after-4k as the morph's end-image>
+--duration 6 --resolution 1080p --aspect_ratio 9:16 --generate_audio false`.
+For other trades: swap the named landmarks ("past the freestanding tub,
+revealing the double vanity and tile surround" for bathrooms); keep the
+walking-pace glide, micro-sway, no-people, and one-continuous-take wording
+verbatim. Start image MUST be the morph's end-image so the cut from morph →
+walkthrough reads continuous.
+
 ## Prompt-writing lessons (from the losing four + QA)
 
 - NEVER name physical camera equipment ("tripod", "camera") — v1 rendered a

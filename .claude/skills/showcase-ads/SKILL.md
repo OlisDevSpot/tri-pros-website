@@ -44,6 +44,26 @@ Check `higgsfield account status` first; `higgsfield workspace list` + `workspac
 
 - **B-roll clip** (single-plane push/orbit/track): `kling3_0 --start-image <img> --duration 5 --aspect_ratio 9:16 --sound off`. ⚠️ Output follows the START IMAGE aspect — pre-crop the photo to 9:16 (sharp, pick crop window visually) for full-bleed; keep landscape only for framed-card layout.
 - **Before→after transform** (the money shot): `seedance_2_0 --start-image <before> --end-image <after> --duration 8 --resolution 1080p --aspect_ratio 9:16 --generate_audio false` — honors 9:16 even from landscape inputs. Same-room pairs only. ⚠️ GATE: never generate until Oliver has picked the base pair (see next bullet) — morph quality is decided by the pair, not the model. PROMPT: use the HOUSE PROMPTS in `video/props/kitchens-transform-variant-prompts.md` — demo-rebuild (primary) or day-cycles (rotation alternate), adapted per trade. Oliver's ruling (2026-07-13): the morph must feel BUILT, not conjured — fast-motion worker silhouettes, jobsite mid-states, locked-off static shot. Never name camera equipment in a prompt ("tripod" got rendered into the scene).
+- **After-walkthrough clip (MANDATORY companion to every morph — Oliver 2026-07-14)**:
+  a raw Seedance morph finishes the build ~5–6s in and holds STATIC on the
+  final frame while the VO keeps talking — never ship that dead tail.
+  1. Find the build-completion frame: extract 1s-interval stills from the
+     morph, spot the first frame that matches the after state, and TRIM the
+     clip by setting its `durationInFrames` to completion +~10f (tail-trim =
+     shorter duration; needs no code change).
+  2. Generate the walkthrough: `seedance_2_0 --start-image <same after-4k
+     used as the morph's end-image> --duration 6 --resolution 1080p
+     --aspect_ratio 9:16 --generate_audio false` with the house walkthrough
+     prompt (verbatim in `video/props/kitchens-transform-variant-prompts.md`):
+     professional-videographer glide — camera moves forward at slow walking
+     pace with subtle handheld micro-sway, parallax revealing the space, no
+     people, one continuous take. Same lesson as morphs: never name camera
+     equipment.
+  3. Timeline: trimmed morph → the reel's transition family → walkthrough
+     carries the rest of the morph slot's VO beats. Because the walkthrough
+     starts on the exact after frame, the cut reads continuous. The two clips
+     together fill the pacing table's "Morph 1" slot (walkthrough may stretch
+     it up to ~+60f if the VO needs the room).
 - **Base-pair selection (HITL — MANDATORY before any morph spend)**: the base
   images are the bottleneck of the whole AI video. Assemble ALL candidate
   same-room pairs (DB `before_after_pairs_json` + eyeball unpaired
@@ -88,8 +108,10 @@ icon top-right, logo end card with CTA pill.
 
 **The fixed narrative skeleton** (sequence only — presentation comes from the
 variation menus, see below): cold open on an AFTER beauty frame with the logo
-intro → hard snap to the BEFORE (shutter + flash) → transform morph #1 →
-framed crew/during card ("OUR CREW, ON SITE") → morph #2 (a DIFFERENT
+intro → hard snap to the BEFORE (shutter + flash) → transform morph #1
+(tail-trimmed at build completion) → after-walkthrough glide of the finished
+space (see the walkthrough recipe above — mandatory) → framed crew/during
+card ("OUR CREW, ON SITE") → morph #2 (a DIFFERENT
 project) with a photo-burst hero over its after moment → framed
 proof/checkmarks card → end card. The inverted-reveal hook (after-first)
 is the DEFAULT hook pattern for transform-capable trades. VO = Gia

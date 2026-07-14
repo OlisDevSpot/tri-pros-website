@@ -19,7 +19,11 @@ either side changes, reconcile both in the same change.
   Showcase price → brand line ("And at Tri Pros Remodeling? We do it again…")
   → again-run → homeowners only → "see if your home qualifies".
 - **Narrative sequence** (the house timeline): cold open on AFTER beauty frame
-  → hard snap to BEFORE → transform morph → crew/during card → photo-burst
+  → hard snap to BEFORE → transform morph (tail-trimmed at build completion)
+  → after-walkthrough glide of the finished space (mandatory companion clip,
+  Oliver 2026-07-14 — recipe in SKILL.md; the pair shares the "Morph 1"
+  pacing slot, walkthrough may stretch it up to ~+60f for VO room) →
+  crew/during card → photo-burst
   hero → proof/checkmarks card → end card. The *sequence* is fixed; every
   step's *presentation* varies (axes below).
 - **Snap moment treatment:** always hard cut + white flash + shutter SFX — it
