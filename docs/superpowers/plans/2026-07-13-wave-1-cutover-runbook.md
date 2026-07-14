@@ -33,11 +33,9 @@ to an earlier Wave-1 push. Confirmed via `git diff origin/main..HEAD -- src/shar
   `daily_dial_volume_cap`, `message_template_overrides_json`,
   `voip_inhouse_config_json`. (`voip_config_json` unchanged physically, re-typed
   deprecated.)
-- **`CREATE TYPE`** for 16 new pgEnums: `trigger_event`, `outcome_priority`,
-  `years_in_home`, `household_type`, `prior_contractor_experience`, `sell_plan`,
-  `decision_timeline`, `customer_age_group`, `year_built_range`,
-  `credit_score_range`, `roof_type`, `foundation_type`, `hvac_type`,
-  `hvac_component`, `windows_type`, `insulation_level`.
+- **ZERO `CREATE TYPE` statements** — the Closed Vocabulary Standard (spec Addendum C,
+  2026-07-14) stores all 16 customer_profiles vocabularies as `text({ enum })` columns.
+  **Any `CREATE TYPE` in the plan = abort** (means stale schema code).
 - **`DROP COLUMN customers.notion_contact_id` + its unique constraint** — pre-existing
   pending drop (code already dropped it in commit `14dbd44b`, merged to `origin/main`
   well before this epic; prod's live schema just hasn't caught up yet). Bundled into
@@ -74,8 +72,9 @@ already-set var). Then:
    a. `pnpm drizzle-kit push` against the REHEARSAL branch only. Verify the plan
       matches "What the prod push actually contains" above exactly: `CREATE TABLE
       customer_profiles`, the three `ADD COLUMN` batches (user/customers/lead_sources),
-      16 `CREATE TYPE` statements, and the single `notion_contact_id` drop + its
-      unique constraint. **Any other drop = stop, do not proceed to (b).**
+      ZERO `CREATE TYPE` statements, and the single `notion_contact_id` drop + its
+      unique constraint. **Any other drop, or any `CREATE TYPE` = stop, do not
+      proceed to (b).**
 
    b. `pnpm tsx scripts/backfill-wave1-columns.ts --dry-run` then live run then
       re-run (idempotency) — require `mismatches=0` `errors=0` on every table, every

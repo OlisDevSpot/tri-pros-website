@@ -21,28 +21,10 @@ import {
   voipMessageStatuses,
 } from '@/shared/constants/enums'
 import {
-  creditScoreRanges,
-  customerAgeGroups,
-  decisionTimelines,
-  householdTypes,
-  outcomePriorities,
-  priorContractorExperiences,
-  sellPlans,
-  triggerEvents,
-  yearBuiltRanges,
-  yearsInHomeRanges,
-} from '@/shared/constants/enums/customers'
-import {
   constructionTypes,
-  foundationTypes,
   homeAreas,
-  hvacComponents,
-  hvacTypes,
-  insulationLevels,
-  roofTypes,
   tradeLocations,
   variableDataTypes,
-  windowsTypes,
 } from '@/shared/domains/construction/constants/enums'
 
 export const activityTypeEnum = pgEnum('activity_type', activityTypes)
@@ -87,21 +69,7 @@ export const voipLinkTokenTypeEnum = pgEnum('voip_link_token_type', voipLinkToke
 // source of truth for lead lifecycle (perfect separation, confirmed 2026-06-04).
 // voip_campaign_status enum deleted 2026-06-04; see constants/enums/voip.ts.
 
-// WAVE-1 DECOMPOSITION: customerProfileJSON / propertyProfileJSON /
-// financialProfileJSON → columns (epic #256 / #259).
-export const triggerEventEnum = pgEnum('trigger_event', triggerEvents)
-export const outcomePriorityEnum = pgEnum('outcome_priority', outcomePriorities)
-export const yearsInHomeEnum = pgEnum('years_in_home', yearsInHomeRanges)
-export const householdTypeEnum = pgEnum('household_type', householdTypes)
-export const priorContractorExperienceEnum = pgEnum('prior_contractor_experience', priorContractorExperiences)
-export const sellPlanEnum = pgEnum('sell_plan', sellPlans)
-export const decisionTimelineEnum = pgEnum('decision_timeline', decisionTimelines)
-export const customerAgeGroupEnum = pgEnum('customer_age_group', customerAgeGroups)
-export const yearBuiltRangeEnum = pgEnum('year_built_range', yearBuiltRanges)
-export const creditScoreRangeEnum = pgEnum('credit_score_range', creditScoreRanges)
-export const roofTypeEnum = pgEnum('roof_type', roofTypes)
-export const foundationTypeEnum = pgEnum('foundation_type', foundationTypes)
-export const hvacTypeEnum = pgEnum('hvac_type', hvacTypes)
-export const hvacComponentEnum = pgEnum('hvac_component', hvacComponents)
-export const windowsTypeEnum = pgEnum('windows_type', windowsTypes)
-export const insulationLevelEnum = pgEnum('insulation_level', insulationLevels)
+// WAVE-1 DECOMPOSITION (epic #256/#259): the customer_profiles vocabularies
+// are `text(..., { enum })` columns, NOT pgEnums — per the Closed Vocabulary
+// Standard (enum-standardization.md#text-with-enum). No new pgEnum is minted
+// here without a documented DB-side consumer.

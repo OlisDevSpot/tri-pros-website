@@ -346,3 +346,29 @@ place: prod goes blobs → child tables in a single §4-protocol cutover. Surviv
 wide-table build: 16 pgEnums, Zod bounds, LEGACY_ENUM_MAP + parity harness, races-dead write
 semantics, display machinery, drizzle isolation fix, proposals deregistration, docs truth-pass,
 voip + agentProfile cutovers (both stand as built).
+
+## 11. Addendum C — Closed Vocabulary Standard (2026-07-14)
+
+Ratified by Oliver mid-cutover (he stopped the Wave-1 prod push at the sight of 16 `CREATE
+TYPE` statements — prod would have gone from 23 to 39 enum types, growing every wave).
+
+**The rule:** closed-vocabulary fields are stored as plain `text` columns with Drizzle's
+`{ enum: constArray }` config — same compile-time union, same drizzle-zod derivation, zero
+catalog objects. Validation lives at the DAL boundary (Zod), where every write already
+passes. pgEnum requires a documented DB-side consumer (SQL ordering/casts/external reader);
+zero exist today. Canonical: `docs/codebase-conventions/enum-standardization.md#text-with-enum`.
+
+**Evidence:** the const arrays were already the single source of truth (pgEnums were mirrors
+— the same second-place hand-maintenance smell Addendum B codified for COLUMN_KEYS); the
+LEGACY_ENUM_MAP ceremony existed solely because pgEnums calcify labels; no SQL anywhere
+depends on enum semantics; the discovery fields are never SQL-filtered.
+
+**Program impact:**
+- Wave 1 reworked pre-prod (prod never saw any of the 16 types): `customer_profiles`
+  vocabularies are `text({ enum })`; the 16 pgEnum defs deleted from `meta.ts`. The prod
+  push now contains ZERO `CREATE TYPE`.
+- Waves 2–3 mint NO new pgEnums (`lead_source_kind`, incentive `type` discriminator, etc.
+  are all `text({ enum })`).
+- The 23 pre-existing prod enums convert opportunistically (any migration touching a table
+  converts its enum columns in the same push); a deferred dedicated sweep for the remainder
+  is tracked as a GitHub issue (subagent-friendly, low context).
