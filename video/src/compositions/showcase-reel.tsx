@@ -114,7 +114,22 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
           filter: saturation < 1 ? `saturate(${saturation})` : undefined,
         }}
       >
-        {clipSequences.map(clip => (
+        {clipSequences.map((clip) => {
+          // Burst backdrop blur: once the first burst photo lands, the base
+          // clip defocuses (12f ramp) so incoming photos read against a calm
+          // ground instead of competing with a moving background (Oliver
+          // 2026-07-14). scale(1.04) hides the blur's edge fringing.
+          const burstHere = props.photoBurst?.clipIndex === clip.index ? props.photoBurst : null
+          const burstStartLocal = burstHere && burstHere.photos.length > 0
+            ? Math.min(...burstHere.photos.map(p => p.frame)) - clip.from
+            : null
+          const burstBlur = burstStartLocal === null
+            ? 0
+            : interpolate(frame - clip.from, [burstStartLocal, burstStartLocal + 12], [0, 14], {
+                extrapolateLeft: 'clamp',
+                extrapolateRight: 'clamp',
+              })
+          return (
         <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames + clip.holdUnder}>
           <AbsoluteFill
             style={{
@@ -124,6 +139,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
               filter: clip.exit.filter ?? clip.enter.filter,
             }}
           >
+            <AbsoluteFill style={burstBlur > 0 ? { filter: `blur(${burstBlur}px)`, transform: 'scale(1.04)' } : undefined}>
             {clip.layout === 'framed'
               ? (
                   <FramedClip
@@ -151,6 +167,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                     <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} kenBurns={clip.kenBurns ?? 'in'} />
                   </AbsoluteFill>
                 )}
+            </AbsoluteFill>
             {props.photoBurst?.clipIndex === clip.index && (
               <PhotoBurst
                 style={props.photoBurst.style ?? 'fullbleed'}
@@ -181,7 +198,8 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: `${clip.wipeEdgePct}%`, height: 4, background: BRAND.blue }} />
           )}
         </Sequence>
-        ))}
+          )
+        })}
       </AbsoluteFill>
 
       {/* Hook scrim: dark overlay so the cold-open headline + logo read over

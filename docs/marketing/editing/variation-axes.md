@@ -52,7 +52,7 @@ either side changes, reconcile both in the same change.
 | 3 | **Card language** | cards: framed-native · polaroid · split-compare · letterboxed-wide · offset-editorial. Burst styles: full-bleed snap · polaroid scatter · grid assemble | must differ from previous reel |
 | 4 | **Pacing profile** | standard (v5 timings) · brisk (shorter holds, more cuts, montage feel) · cinematic (longer holds — Ken Burns spreads over more frames so it slows for free — dissolve-heavy) | must differ from previous reel |
 | 5 | **Music bed** | curated library rotation (see below) | must differ from previous reel |
-| 6 | **Signature accent** (one per reel, respecting one-motion-per-moment) | color-pop on reveal · screen-shake (translate-only) on boom · Ken Burns pan permutation · flash-frame accents · sfx-forward minimalism (no visual accent) | free, recorded |
+| 6 | **Signature accent** (one per reel, respecting one-motion-per-moment) | screen-shake (translate-only) on boom · Ken Burns pan permutation · flash-frame accents · sfx-forward minimalism (no visual accent). ⛔ color-pop DEPRECATED (Oliver 2026-07-14: desaturated/b&w sections rejected — never use) | free, recorded |
 | 7 | **Text content** | checkmark copy set, end-card headline phrasing (within offer rules) | free, recorded |
 
 **Hard rule:** a new reel may not repeat the immediately previous reel's value
@@ -154,12 +154,10 @@ Free axis (no must-differ rule) but respect one-motion-per-moment: these are
 audio/color/shake accents layered on top of the clip's single entrance
 motion, never a second scale effect.
 
-- **Color-pop on reveal** → `colorPops: number[]` (frames). Each pop holds
-  desaturated for 45f before the frame, then snaps to full color over 3f
-  (`video/src/lib/accents.ts` `colorPopSaturation`). **Entries must be ≥48
-  frames apart** (45f hold + 3f snap, half-open window) — the resolver
-  checks pops in array order and returns on first match, so a pop placed
-  inside another pop's window never fires (silent no-op, not an error).
+- ⛔ **Color-pop — DEPRECATED (Oliver 2026-07-14).** The 45f desaturated
+  hold reads as unrequested black-and-white footage ("doesn't look good").
+  Schema knob (`colorPops`) survives for legacy props only — always leave
+  it `[]`.
 - **Screen-shake (translate-only) on boom** → `screenShakes: { frame,
   intensity }[]`, 10f decaying jitter, translate only (no scale — keeps
   one-motion-per-moment intact). **Entries must be ≥10 frames apart** for the

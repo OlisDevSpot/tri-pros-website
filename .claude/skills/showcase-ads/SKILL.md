@@ -10,6 +10,33 @@ One skill, four operations. Parse the request into one of:
 **asset** (regenerate one piece: clip/VO/music/still) · **publish** (approved
 creative → Meta, PAUSED).
 
+## The prime directive: consistent quality, deliberate variation
+
+Every output must be BOTH: (a) a high-quality ad that honors the fixed core
+business requirements — the Canonical rules below, the offer doc, the brand
+system, truthfulness, the house constants in
+`references/variation-axes.md` — and (b) noticeably DIFFERENT from the reels
+before it: a different home-upgrade story/trade, different pacing, different
+hook and text, different transitions and music. Sameness across reels is a
+defect (creative fatigue: hooks decay ~37%/week and near-duplicates compete
+with themselves); so is off-brand novelty. The variation axes + ledger are
+the enforcement mechanism for "different"; the canonical rules are what
+never moves. Hold both at once.
+
+## Media chain-of-custody (consistency across generated clips)
+
+Generative models INVENT details — the demo-rebuild morph added three
+pendant lights that don't exist in the after photo it was aimed at. Any
+clip that plays after another clip in the timeline must therefore be seeded
+from the ACTUAL media it follows, not from the original source image:
+extract the preceding clip's final frame (at its TRIMMED duration), 4k-
+upscale it, and use that as the next generation's `--start-image`; name the
+landmarks visible in that frame in the prompt ("the three brass pendant
+lights over the island") and state "every fixture, light, and finish stays
+exactly as shown in the starting frame". Re-roll until the seam is
+invisible — spending extra generations on continuity is always worth it.
+Verify with side-by-side stills of the boundary frames before assembling.
+
 ## Canonical rules (read before any copy/creative decision)
 
 - `docs/marketing/showcase-offer.md` — THE offer. Vocabulary, guardrails,
@@ -51,17 +78,20 @@ Check `higgsfield account status` first; `higgsfield workspace list` + `workspac
      morph, spot the first frame that matches the after state, and TRIM the
      clip by setting its `durationInFrames` to completion +~10f (tail-trim =
      shorter duration; needs no code change).
-  2. Generate the walkthrough: `seedance_2_0 --start-image <same after-4k
-     used as the morph's end-image> --duration 6 --resolution 1080p
-     --aspect_ratio 9:16 --generate_audio false` with the house walkthrough
-     prompt (verbatim in `video/props/kitchens-transform-variant-prompts.md`):
+  2. Generate the walkthrough: `seedance_2_0 --start-image <the extracted
+     FINAL FRAME of the trimmed morph, 4k-upscaled — NEVER the original
+     after photo; see Media chain-of-custody above> --duration 6
+     --resolution 1080p --aspect_ratio 9:16 --generate_audio false` with the
+     house walkthrough prompt (verbatim in
+     `video/props/kitchens-transform-variant-prompts.md`):
      professional-videographer glide — camera moves forward at slow walking
      pace with subtle handheld micro-sway, parallax revealing the space, no
-     people, one continuous take. Same lesson as morphs: never name camera
-     equipment.
+     people, one continuous take; name the landmarks visible in the seed
+     frame. Same lesson as morphs: never name camera equipment.
   3. Timeline: trimmed morph → the reel's transition family → walkthrough
      carries the rest of the morph slot's VO beats. Because the walkthrough
-     starts on the exact after frame, the cut reads continuous. The two clips
+     starts on the morph's exact final frame, the cut reads continuous —
+     verify with side-by-side boundary stills. The two clips
      together fill the pacing table's "Morph 1" slot (walkthrough may stretch
      it up to ~+60f if the VO needs the room).
 - **Base-pair selection (HITL — MANDATORY before any morph spend)**: the base
@@ -236,9 +266,12 @@ levels). READ both before designing any new variant. Composition rules:
   + `transitionDirection` (whip/wipe only — axis 2; reserve `"none"` for the
   snap), per-clip `cardStyle: "native"|"polaroid"|"split"|"letterbox"|"offset"`
   + `secondarySrc` (split card's still-image after half — axis 3),
-  `photoBurst.style: "fullbleed"|"polaroid-scatter"|"grid"` (axis 3),
-  `colorPops`/`screenShakes` (signature accents — axis 6; spacing
-  constraints in `variation-axes.md`), `hookScrimOpacity` (~0.45 — MANDATORY
+  `photoBurst.style: "fullbleed"|"polaroid-scatter"|"grid"` (axis 3; the
+  burst clip's base media auto-blurs from the first photo's frame — built
+  into the composition, Oliver 2026-07-14 — so photos land on a defocused
+  ground), `screenShakes` (signature accent — axis 6; spacing constraints
+  in `variation-axes.md`; ⛔ `colorPops` DEPRECATED — Oliver 2026-07-14,
+  desaturated/b&w sections rejected, leave `[]`), `hookScrimOpacity` (~0.45 — MANDATORY
   dark scrim so the cold-open headline + logo read over bright footage),
   `brandBlock` + `brandClipIndex` (logo lockup + rule + license lines filling
   the dead space under the framed checkmark card — house baseline; copy from

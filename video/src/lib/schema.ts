@@ -121,7 +121,7 @@ export const showcaseReelSchema = z.object({
   punchIns: z.array(punchInSchema),
   /** White luma-flash transitions — peak opacity ON these frames (4–6f total). */
   flashFrames: z.array(z.number().int().min(0)),
-  /** Color pops: desaturated 45f hold → snap to full color ON each frame. */
+  /** @deprecated Oliver ruling 2026-07-14 — desaturated sections rejected ("black-and-white... doesn't look good"). Leave []; kept for legacy props. */
   colorPops: z.array(z.number().int().min(0)).default([]),
   /** Impact shakes: 10f decaying translate jitter at each frame (boom moments). */
   screenShakes: z.array(z.object({ frame: z.number().int().min(0), intensity: z.number().min(0).max(1) })).default([]),

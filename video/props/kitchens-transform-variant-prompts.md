@@ -46,13 +46,21 @@ remaining VO beats — full recipe in SKILL.md). House prompt:
 
 > Professional real-estate videography walkthrough of this exact finished kitchen: the camera glides forward at a slow walking pace from the entry, drifting gently past the marble waterfall island, with subtle handheld micro-sway — smooth and stable, like an expert videographer moving through the space. Parallax gradually reveals the range, backsplash and open shelving. Warm natural daylight, pristine empty room, no people. Photorealistic, one continuous take, no cuts, no text.
 
-`seedance_2_0 --start-image <same after-4k as the morph's end-image>
---duration 6 --resolution 1080p --aspect_ratio 9:16 --generate_audio false`.
-For other trades: swap the named landmarks ("past the freestanding tub,
-revealing the double vanity and tile surround" for bathrooms); keep the
-walking-pace glide, micro-sway, no-people, and one-continuous-take wording
-verbatim. Start image MUST be the morph's end-image so the cut from morph →
-walkthrough reads continuous.
+`seedance_2_0 --start-image <extracted final frame of the TRIMMED morph,
+4k-upscaled> --duration 6 --resolution 1080p --aspect_ratio 9:16
+--generate_audio false`.
+⚠️ MEDIA CHAIN-OF-CUSTODY (Oliver 2026-07-14): the start image is the
+morph's ACTUAL last frame — never the original after photo. Morphs invent
+details (demo-rebuild added three pendant lights that aren't in the after
+photo); seeding from the source photo produces a visible
+different-room seam. Name the seed frame's landmarks in the prompt ("the
+three brass pendant lights over the island") and add "every fixture,
+light, and finish stays exactly as shown in the starting frame". For other
+trades: swap the named landmarks ("past the freestanding tub, revealing
+the double vanity and tile surround" for bathrooms); keep the walking-pace
+glide, micro-sway, no-people, and one-continuous-take wording verbatim.
+Verify continuity with side-by-side boundary stills; re-roll until the
+seam is invisible.
 
 ## Prompt-writing lessons (from the losing four + QA)
 
