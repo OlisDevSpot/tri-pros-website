@@ -200,8 +200,9 @@ defined field, throwing `FORBIDDEN` on the first failure.
 
 Implication: per-entity field-restricted grants in `abilities.ts` are
 enforced automatically. For example, the agent grant
-`can('update', 'Customer', ['customerProfileJSON', 'propertyProfileJSON', 'financialProfileJSON'])`
-means agents can call `crud.update({ data: { customerProfileJSON: {...} } })`
+`can('update', 'Customer', [...PROFILE_COLUMN_KEYS])` (the 24 columns the
+profile trio decomposed into — see `../shared/entities/customers/DOCS.md#three-jsonb-profiles`)
+means agents can call `crud.update({ data: { triggerEvent: '...' } })`
 but NOT `crud.update({ data: { phone: '...' } })` — the gate rejects
 the second call automatically without any per-entity router code.
 
