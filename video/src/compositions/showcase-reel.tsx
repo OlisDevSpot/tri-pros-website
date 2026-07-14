@@ -13,7 +13,7 @@ import { BrandBlock } from '../components/brand-block'
 import { CaptionTrack } from '../components/caption-track'
 import { CheckmarkList } from '../components/checkmark-list'
 import { PhotoBurst } from '../components/photo-burst'
-import { KaraokeCaptions } from '../components/karaoke-captions'
+import { RevealCaptions } from '../components/reveal-captions'
 import { ClipMedia } from '../components/clip-media'
 import { EndCard } from '../components/end-card'
 import { FramedClip } from '../components/framed-clip'
@@ -243,7 +243,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
         ? (
             <Sequence durationInFrames={clipsTotal}>
               <SafeZone>
-                <KaraokeCaptions
+                <RevealCaptions
                   wordCaptions={props.wordCaptions}
                   voStartFrame={props.voStartFrame}
                   hideBeforeFrame={hookEnd}
