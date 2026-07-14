@@ -22,6 +22,7 @@ import { DOCK_FRAMES, LogoIntro } from '../components/logo-intro'
 import { SafeZone } from '../components/safe-zone'
 import { enterStyle, exitStyle, TRANSITION_FRAMES, wipeEdge } from '../lib/transitions'
 import { BRAND } from '../lib/tokens'
+import { colorPopSaturation, screenShakeOffset } from '../lib/accents'
 
 /**
  * The Showcase 9:16 reel: hook headline over clip 1 → proof clips (full-bleed
@@ -83,6 +84,12 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
     }))
   }, 1)
 
+  // Color pop: desaturate leading into pop, snap to full color.
+  const saturation = colorPopSaturation(frame, props.colorPops ?? [])
+
+  // Screen shake: impact-driven jitter.
+  const shake = screenShakeOffset(frame, props.screenShakes ?? [])
+
   // Luma flash: white overlay peaking exactly ON each flash frame (6f total).
   const flashOpacity = props.flashFrames.reduce(
     (acc, f) => Math.max(acc, interpolate(frame, [f - 3, f, f + 3], [0, 0.9, 0], {
@@ -101,7 +108,12 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
           <filter id="whip-blur-y"><feGaussianBlur stdDeviation="0 40" /></filter>
         </defs>
       </svg>
-      <AbsoluteFill style={{ transform: `scale(${punchScale * revealScale})` }}>
+      <AbsoluteFill
+        style={{
+          transform: `translate(${shake.x}px, ${shake.y}px) scale(${punchScale * revealScale})`,
+          filter: saturation < 1 ? `saturate(${saturation})` : undefined,
+        }}
+      >
         {clipSequences.map(clip => (
         <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames + clip.holdUnder}>
           <AbsoluteFill
