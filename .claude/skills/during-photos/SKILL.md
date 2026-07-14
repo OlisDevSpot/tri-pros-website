@@ -28,14 +28,22 @@ a mid-construction scene" — stop; that is the superseded v1 approach
 1. `higgsfield account status` — expect account + credits. If "No workspace
    selected": `higgsfield workspace list` + `workspace set <id>`. If auth
    expired: tell Oliver to run `higgsfield auth login` (browser OAuth).
-2. Shirt swatch exists? Session-scoped — REBUILD each session into the scratchpad:
+2. Shirt swatches exist? Session-scoped — REBUILD each session into the scratchpad.
+   The uniform has TWO prints (Oliver 2026-07-14): BACK = large white-letter
+   lockup (`logo-dark-bottom.svg` @ resize(900)); FRONT = small tone-on-tone
+   chest logo on the upper LEFT chest (`public/company/logo/logo-light-bottom.svg`
+   @ resize(400) — black letters + blue R; on navy it reads subtle, blue R pops).
    ```js
    const sharp = require('<repo>/node_modules/sharp');
-   const logo = await sharp('<repo>/video/public/brand/logo-dark-bottom.svg', {density:300}).resize(900).png().toBuffer();
-   await sharp({create:{width:1200,height:1200,channels:3,background:{r:34,g:48,b:74}}})
-     .composite([{input:logo,gravity:'center'}]).jpeg({quality:95}).toFile('<scratch>/shirt-print-swatch.jpg');
+   const navy = {create:{width:1200,height:1200,channels:3,background:{r:34,g:48,b:74}}};
+   const back = await sharp('<repo>/video/public/brand/logo-dark-bottom.svg', {density:300}).resize(900).png().toBuffer();
+   await sharp(navy).composite([{input:back,gravity:'center'}]).jpeg({quality:95}).toFile('<scratch>/shirt-print-swatch.jpg');
+   const chest = await sharp('<repo>/public/company/logo/logo-light-bottom.svg', {density:300}).resize(400).png().toBuffer();
+   await sharp(navy).composite([{input:chest,gravity:'center'}]).jpeg({quality:95}).toFile('<scratch>/chest-print-swatch.jpg');
    ```
-   ⚠️ Naming trap: `logo-dark-*` files are the WHITE-letter art FOR dark grounds — always this file on navy, never `logo-light-*`.
+   ⚠️ Naming trap: `logo-dark-*` = WHITE-letter art FOR dark grounds (shirt BACKS);
+   `logo-light-*` = black-letter art — normally for light grounds, but Oliver's
+   uniform spec uses it as the tone-on-tone FRONT chest print on navy.
 3. Base photo prep — ALWAYS `sharp(base).rotate().resize(2400 max)` first:
    phone photos carry EXIF rotation the CLI ignores; verify true W×H from
    sharp's output, then map to the CLOSEST nano_banana_pro aspect
@@ -66,7 +74,7 @@ people; across a project's set, vary count and orientation too.
 | Axis | Values | Rules |
 |---|---|---|
 | **Count** | 1, 2, or 3 | Match the task: solo detail work = 1; carrying/setting = 2; pour/paver/pebble crews = 3. Don't crowd small frames |
-| **Orientation** | backs (logo visible — default), mixed (some back, some profile/front), front | Front-facing workers look AT THEIR WORK — absorbed, head angled down/aside, NEVER at the camera. Front view shows plain navy shirt (logo is on the back only) |
+| **Orientation** | backs (logo visible — default), mixed (some back, some profile/front), front | Front-facing workers look AT THEIR WORK — absorbed, head angled down/aside, NEVER at the camera. Front view shows the SMALL chest logo on the upper left chest (tone-on-tone `logo-light-bottom` print — see preflight); pass the chest swatch as a third reference whenever any worker shows front or profile |
 | **Appearance** | per worker pick 2–3 differentiators: build (stocky/lean/tall/short), hair (buzzed/curly/graying/tied back) or ball cap/beanie, skin tone (vary naturally), pants (tan work pants/gray canvas/dark jeans), one accessory max (hi-viz vest, tool belt, knee pads, wrist brace, watch) | Differentiators must contrast BETWEEN workers in the same frame. Never stack >3 per worker — over-accessorized reads as costume |
 | **Hands & tools (realism anchor)** | say what EACH hand is doing | "left hand steadies the paver, right hand taps it with the rubber mallet" beats "installing pavers". Tool must belong to the visible phase; grip must be biomechanically right |
 
@@ -95,9 +103,12 @@ higgsfield generate create nano_banana_pro \
 > from the camera, with shadows and lighting that match the photo's light.
 > {CREW_BLOCK — one sentence per worker, see below}. All wear the same
 > deep-navy t-shirt with the company logo from the second reference image
-> printed large and centered on the shirt BACK ONLY — the house-shaped mark in
+> printed large and centered on the shirt BACK — the house-shaped mark in
 > white and light blue, TRI PROS, and REMODELING below it, letter-perfect —
-> the shirt front is plain navy; plus work boots. {PROPS — cap at what the
+> and on the FRONT a small palm-sized version of the chest logo from the third
+> reference image printed on the upper left chest: subtle dark tone-on-tone art
+> where the blue R stands out{omit this front clause and the third reference
+> when every worker is seen from behind}; plus work boots. {PROPS — cap at what the
 > task strictly needs, e.g. "A single push broom and one bucket are the only
 > objects added."} The workers are clearly different people. Their integration
 > must look like they were in the original photo: same grain, same exposure,
@@ -118,8 +129,10 @@ per the Crew variation axes above.
 ## QA gate (check at 100% zoom before delivering to Downloads)
 
 - [ ] Logo letter-perfect on every VISIBLE shirt back: mark + "TRI PROS" +
-      "REMODELING", white/light-blue ONLY (v1 once rendered it rainbow); front-facing
-      workers show plain navy front — re-roll if a logo appears on a chest
+      "REMODELING", white/light-blue ONLY (v1 once rendered it rainbow)
+- [ ] Front/profile workers show the SMALL tone-on-tone chest logo on the upper
+      LEFT chest (blue R visible, dark letters subtle) — re-roll if it renders
+      large, white, centered, or on the wrong side
 - [ ] Orientation matches the crew spec; front/profile workers look at their
       WORK, never at the camera; faces natural, no uncanny AI stare — re-roll
 - [ ] Workers read as different people (build/hair/skin/pants contrast); ≤3
@@ -152,3 +165,4 @@ this file is canonical over memory.
 - 2026-07-14 — v3 validated 5/5 (Altura crew-3 mixed, Olympia tank crew-2 / wine-cellar solo / quartz-film solo-front, Riviera bond-beam crew-2). Front-quarter + hands-level specs land precisely ("left palm flat, right hand peeling film" rendered exactly).
 - 2026-07-14 — model may CO-OPT an existing scene prop into the worker's hands (wine-cellar test bottle ended up being placed by the worker). Usually MORE realistic, but it moves a landmark — check it's narratively right during QA, re-roll only if it breaks the phase story.
 - 2026-07-14 — mislabeled files exist: Riviera `hero-before.jpeg` is actually a DURING (fresh bond-beam pour, real workers at frame edges — cropped via sharp extract before use). Altura befores are all night shots (unusable). Verify what a file actually shows; never trust the filename.
+- 2026-07-14 — Oliver's uniform spec: FRONT of shirt carries a small `logo-light-bottom` chest print on the upper left chest (tone-on-tone on navy, blue R pops) — front-facing workers are now fully brandable. Chest swatch added to preflight; template + QA updated.
