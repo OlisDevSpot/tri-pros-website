@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import type { KenBurns } from '../lib/schema'
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { BODY_FONT } from '../lib/fonts'
 import { BRAND } from '../lib/tokens'
@@ -24,7 +25,7 @@ export function FramedClip({
   aspect: number
   label: string | null
   above?: ReactNode
-  kenBurns?: 'in' | 'out'
+  kenBurns?: KenBurns
 }) {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
