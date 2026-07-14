@@ -1,7 +1,7 @@
 import process from 'node:process'
 import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { customers, leadSourcesTable, user } from '@/shared/db/schema'
+import { customerProfiles, customers, leadSourcesTable, user } from '@/shared/db/schema'
 import {
   customerProfileSchema,
   financialProfileSchema,
@@ -32,7 +32,9 @@ const LEGACY_ENUM_MAP: Record<string, Record<string, string | null>> = {
   creditScore: { '650–700': '600 – 700', '750–800': '700+' },
 }
 
-// blobField -> column property (identical names except mainPainPoint split)
+// blobField -> customer_profiles column property (identical names except
+// mainPainPoint split). `age` is handled separately — it stays a plain
+// column on `customers`, not part of the 23-field child-table patch.
 const CUSTOMER_SCALARS = [
   'triggerEvent',
   'outcomePriority',
@@ -44,7 +46,6 @@ const CUSTOMER_SCALARS = [
   'decisionTimeline',
   'projectNecessityRating',
   'ageGroup',
-  'age',
   'additionalPainPoints',
 ] as const
 const PROPERTY_SCALARS = [
@@ -97,6 +98,7 @@ function normalizeLegacyEnums(
 
 async function backfillCustomers(stats: Stats) {
   const rows = await db.select().from(customers)
+  const childStats = { written: 0, skipped: 0, wouldWrite: 0 }
   for (const row of rows) {
     try {
       let cp = row.customerProfileJSONDeprecated
@@ -119,38 +121,67 @@ async function backfillCustomers(stats: Stats) {
       if (fp)
         financialProfileSchema.parse(fp)
 
-      const patch: Record<string, unknown> = {}
-      for (const k of CUSTOMER_SCALARS) patch[k] = cp?.[k as keyof typeof cp] ?? null
-      patch.mainPainAccessor = cp?.mainPainPoint?.accessor ?? null
-      patch.mainPainUrgency = cp?.mainPainPoint?.urgencyRating ?? null
-      for (const k of PROPERTY_SCALARS) patch[k] = pp?.[k as keyof typeof pp] ?? null
-      for (const k of FINANCIAL_SCALARS) patch[k] = fp?.[k as keyof typeof fp] ?? null
+      // `age` stays a plain column on customers (Addendum B.2) — unchanged
+      // mechanism, independent of whether the child row gets written.
+      const agePatch = { age: cp?.age ?? null }
+
+      // The 23 moved fields land on customer_profiles (1:1 child, PK-as-FK).
+      const patch23: Record<string, unknown> = {}
+      for (const k of CUSTOMER_SCALARS) patch23[k] = cp?.[k as keyof typeof cp] ?? null
+      patch23.mainPainAccessor = cp?.mainPainPoint?.accessor ?? null
+      patch23.mainPainUrgency = cp?.mainPainPoint?.urgencyRating ?? null
+      for (const k of PROPERTY_SCALARS) patch23[k] = pp?.[k as keyof typeof pp] ?? null
+      for (const k of FINANCIAL_SCALARS) patch23[k] = fp?.[k as keyof typeof fp] ?? null
+
+      // Row-exists semantics (see customer-profiles.ts): a child row is only
+      // written when discovery data actually landed in one of the 23 moved
+      // fields. A blob containing ONLY `age` writes customers.age and leaves
+      // NO all-null child row behind.
+      const hasChildData = Object.values(patch23).some(v => v !== null)
 
       if (DRY_RUN) {
         stats.wouldWrite++
+        if (hasChildData)
+          childStats.wouldWrite++
+        else
+          childStats.skipped++
         continue
       }
-      await db.update(customers).set(patch).where(eq(customers.id, row.id))
 
-      // Parity: re-read and diff every mapped field
-      const [after] = await db.select().from(customers).where(eq(customers.id, row.id))
+      await db.update(customers).set(agePatch).where(eq(customers.id, row.id))
+      if (hasChildData) {
+        await db.insert(customerProfiles)
+          .values({ customerId: row.id, ...patch23 } as any)
+          .onConflictDoUpdate({ target: customerProfiles.customerId, set: patch23 as any })
+        childStats.written++
+      }
+      else {
+        childStats.skipped++
+      }
+
+      // Parity: re-read and diff every mapped field — customers.age always,
+      // the child row only when we expected one (else assert its absence).
       const diffs: string[] = []
-      for (const k of CUSTOMER_SCALARS) {
-        if (!isEqualJson(after[k as keyof typeof after], cp?.[k as keyof typeof cp] ?? null))
-          diffs.push(`customer.${k}`)
+      const [afterCustomer] = await db.select({ age: customers.age }).from(customers).where(eq(customers.id, row.id))
+      if (!isEqualJson(afterCustomer?.age, cp?.age ?? null))
+        diffs.push('customer.age')
+
+      const [afterProfile] = await db.select().from(customerProfiles).where(eq(customerProfiles.customerId, row.id))
+      if (hasChildData) {
+        if (!afterProfile) {
+          diffs.push('customer_profiles: expected row, found none')
+        }
+        else {
+          for (const [k, v] of Object.entries(patch23)) {
+            if (!isEqualJson(afterProfile[k as keyof typeof afterProfile], v))
+              diffs.push(`profile.${k}`)
+          }
+        }
       }
-      if (!isEqualJson(after.mainPainAccessor, cp?.mainPainPoint?.accessor ?? null))
-        diffs.push('mainPainAccessor')
-      if (!isEqualJson(after.mainPainUrgency, cp?.mainPainPoint?.urgencyRating ?? null))
-        diffs.push('mainPainUrgency')
-      for (const k of PROPERTY_SCALARS) {
-        if (!isEqualJson(after[k as keyof typeof after], pp?.[k as keyof typeof pp] ?? null))
-          diffs.push(`property.${k}`)
+      else if (afterProfile) {
+        diffs.push('customer_profiles: unexpected row (all 23 fields null)')
       }
-      for (const k of FINANCIAL_SCALARS) {
-        if (!isEqualJson(after[k as keyof typeof after], fp?.[k as keyof typeof fp] ?? null))
-          diffs.push(`financial.${k}`)
-      }
+
       if (diffs.length > 0) {
         stats.mismatches++
         console.error(`✗ customers ${row.id}: parity diff on ${diffs.join(', ')}`)
@@ -162,6 +193,7 @@ async function backfillCustomers(stats: Stats) {
       console.error(`✗ customers ${row.id}:`, err instanceof Error ? err.message : err)
     }
   }
+  console.log(`customers → customer_profiles: written=${childStats.written} skipped=${childStats.skipped} wouldWrite=${childStats.wouldWrite}${DRY_RUN ? ' (dry-run)' : ''}`)
 }
 
 async function backfillUsers(stats: Stats) {
