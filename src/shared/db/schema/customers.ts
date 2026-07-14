@@ -1,13 +1,33 @@
-import type z from 'zod'
-import type { CustomerProfile, FinancialProfile, LeadMeta, PropertyProfile } from '@/shared/entities/customers/schemas'
-import { doublePrecision, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import type { CustomerProfile, FinancialProfile, LeadMeta, Pain, PropertyProfile } from '@/shared/entities/customers/schemas'
+import { boolean, doublePrecision, integer, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import z from 'zod'
+import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
+import { customerProfileSchema, financialProfileSchema, leadMetaSchema, painSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
 import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { leadSourcesTable } from './lead-sources'
-import { customerPipelineEnum, leadTypeEnum } from './meta'
+import {
+  creditScoreRangeEnum,
+  customerAgeGroupEnum,
+  customerPipelineEnum,
+  decisionTimelineEnum,
+  foundationTypeEnum,
+  householdTypeEnum,
+  hvacComponentEnum,
+  hvacTypeEnum,
+  insulationLevelEnum,
+  leadTypeEnum,
+  outcomePriorityEnum,
+  priorContractorExperienceEnum,
+  roofTypeEnum,
+  sellPlanEnum,
+  triggerEventEnum,
+  windowsTypeEnum,
+  yearBuiltRangeEnum,
+  yearsInHomeEnum,
+} from './meta'
 
 export const customers = pgTable('customers', {
   id,
@@ -25,6 +45,33 @@ export const customers = pgTable('customers', {
   customerProfileJSON: jsonb('customer_profile_json').$type<CustomerProfile>(),
   propertyProfileJSON: jsonb('property_profile_json').$type<PropertyProfile>(),
   financialProfileJSON: jsonb('financial_profile_json').$type<FinancialProfile>(),
+  // ── Wave-1 decomposition: customerProfileJSON → columns (epic #256 / #259) ──
+  triggerEvent: triggerEventEnum('trigger_event'),
+  mainPainAccessor: text('main_pain_accessor'),
+  mainPainUrgency: integer('main_pain_urgency'),
+  additionalPainPoints: jsonb('additional_pain_points').$type<Pain[]>(),
+  outcomePriority: outcomePriorityEnum('outcome_priority'),
+  timeInHome: yearsInHomeEnum('time_in_home'),
+  householdType: householdTypeEnum('household_type'),
+  priorContractorExperience: priorContractorExperienceEnum('prior_contractor_experience'),
+  constructionOutlookFavorabilityRating: integer('construction_outlook_favorability_rating'),
+  sellPlan: sellPlanEnum('sell_plan'),
+  decisionTimeline: decisionTimelineEnum('decision_timeline'),
+  projectNecessityRating: integer('project_necessity_rating'),
+  ageGroup: customerAgeGroupEnum('age_group'),
+  age: integer('age'),
+  // ── propertyProfileJSON → columns ──
+  hoa: boolean('hoa'),
+  yearBuilt: yearBuiltRangeEnum('year_built'),
+  roofType: roofTypeEnum('roof_type'),
+  foundationType: foundationTypeEnum('foundation_type'),
+  hvacType: hvacTypeEnum('hvac_type'),
+  hvacComponents: hvacComponentEnum('hvac_components'),
+  windowsType: windowsTypeEnum('windows_type'),
+  insulationLevel: insulationLevelEnum('insulation_level'),
+  // ── financialProfileJSON → columns ──
+  numQuotesReceived: integer('num_quotes_received'),
+  creditScore: creditScoreRangeEnum('credit_score'),
   leadSourceId: uuid('lead_source_id').references(() => leadSourcesTable.id, { onDelete: 'set null' }),
   leadType: leadTypeEnum('lead_type'),
   leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),
@@ -72,6 +119,12 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   // regardless of caller (funnel E.164, agent-typed "(818)…", webhook raw).
   // see @/shared/lib/phone
   phone: optionalPhoneSchema,
+  additionalPainPoints: z.array(painSchema).optional(),
+  mainPainUrgency: z.number().int().min(1).max(10).optional(),
+  constructionOutlookFavorabilityRating: z.number().int().min(1).max(10).optional(),
+  projectNecessityRating: z.number().int().min(1).max(10).optional(),
+  age: z.number().int().min(CUSTOMER_AGE_MIN).max(CUSTOMER_AGE_MAX).optional(),
+  numQuotesReceived: z.number().int().min(0).optional(),
 }).omit({
   id: true,
   createdAt: true,

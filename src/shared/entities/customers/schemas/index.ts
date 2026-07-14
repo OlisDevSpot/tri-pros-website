@@ -26,6 +26,7 @@ export const painSchema = z.object({
   accessor: z.string(),
   urgencyRating: z.number().int().min(1).max(10),
 })
+export type Pain = z.infer<typeof painSchema>
 
 export const customerProfileSchema = z.object({
   triggerEvent: z.enum(triggerEvents),

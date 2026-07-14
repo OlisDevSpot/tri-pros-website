@@ -2,7 +2,7 @@ import type z from 'zod'
 
 import type { AgentProfile } from '@/shared/entities/users/schemas'
 import { relations } from 'drizzle-orm'
-import { boolean, index, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { createSelectSchema } from 'drizzle-zod'
 
 import { userRoleEnum } from './meta'
@@ -27,6 +27,16 @@ export const user = pgTable('user', {
   startDate: text('start_date'),
   funFact: text('fun_fact'),
   agentProfileJSON: jsonb('agent_profile_json').$type<AgentProfile>(),
+  // ── Wave-1 decomposition: agentProfileJSON → columns (epic #256 / #259) ──
+  quote: text('quote'),
+  bio: text('bio'),
+  yearsOfExperience: integer('years_of_experience'),
+  tradeSpecialties: text('trade_specialties').array(),
+  languagesSpoken: text('languages_spoken').array(),
+  certifications: text('certifications').array(),
+  headshotUrl: text('headshot_url'),
+  // Stays JSONB per spec §2: single-writer, replaced-whole, two fixed sub-objects.
+  headshotCropData: jsonb('headshot_crop_data').$type<AgentProfile['headshotCropData']>(),
 })
 
 export const session = pgTable(
