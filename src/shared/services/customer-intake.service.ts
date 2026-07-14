@@ -83,8 +83,8 @@ function createCustomerIntakeService() {
       // A dropped enqueue only means the lead isn't auto-dialed (admin can still
       // "Enroll all"), so best-effort `dispatch` — never breaks ingest.
       // see docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md
-      const voipPolicy = sourceResult.data.voipConfigJSON?.campaigns
-      if (voipPolicy?.enabled && voipPolicy.autoEnroll && voipPolicy.defaultCampaignId) {
+      const source = sourceResult.data
+      if (source.voipCampaignsEnabled && source.voipAutoEnroll && source.defaultCampaignId) {
         void enrollLeadJob.dispatch({ customerId: customer.id })
       }
 

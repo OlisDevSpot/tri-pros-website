@@ -81,19 +81,23 @@ A customer's lead source is tracked as `customers.leadSourceId` (FK with `onDele
 
 ### voip-campaigns-policy-lives-on-the-source
 
-A source's CloudTalk-campaign policy lives on `voipConfigJSON.campaigns` (`schemas.ts:voipCampaignsPolicySchema`), NOT on the campaign — campaigns are pools, never source-owned (see `../voip-campaigns/DOCS.md#admin-binding`). Three fields, each set via the Setup tab's per-source policy table through the single `setVoipCampaignsPolicy` patch-merge mutation:
+A source's CloudTalk-campaign policy lives on plain `lead_sources` columns (epic #256/#259 — split out of the old `voipConfigJSON.campaigns` blob; see `voipConfigJSONDeprecated` in `src/shared/db/schema/lead-sources.ts`), NOT on the campaign — campaigns are pools, never source-owned (see `../voip-campaigns/DOCS.md#admin-binding`). Fields, each set via the Setup tab's per-source policy table through the single `setVoipCampaignsPolicy` mutation (plain column UPDATE, no read-modify-write):
 
-| Field | Meaning | Where enforced |
+| Column | Meaning | Where enforced |
 |---|---|---|
-| `enabled` | Master VoIP-campaigns kill switch for the source | Auto-enroll dispatch gate (`customerIntakeService.ingestLead`). Does NOT block manual/bulk enroll. |
-| `autoEnroll` | Auto-enroll new leads from this source on ingest | Same dispatch gate. Inert without `enabled` + `defaultCampaignId`. |
-| `defaultCampaignId` | The source's default campaign (a `voip_campaigns.id` reference) | `enroll()` falls back to it when no explicit `campaignId` is passed (`enrollment.service.ts`); pre-selected by "Enroll all". |
+| `voip_campaigns_enabled` | Master VoIP-campaigns kill switch for the source | Auto-enroll dispatch gate (`customerIntakeService.ingestLead`). Does NOT block manual/bulk enroll. |
+| `voip_auto_enroll` | Auto-enroll new leads from this source on ingest | Same dispatch gate. Inert without `voip_campaigns_enabled` + `default_campaign_id`. |
+| `default_campaign_id` | The source's default campaign — a real FK → `voip_campaigns.id`, `onDelete: 'set null'` | `enroll()` falls back to it when no explicit `campaignId` is passed (`enrollment.service.ts`); pre-selected by "Enroll all". |
+| `daily_dial_volume_cap` | Optional per-source daily dial ceiling | voip-campaigns dialing/pacing logic |
+| `message_template_overrides_json` | Optional per-source SMS template overrides | voip-campaigns messaging |
 
-**Auto-enroll gate**: `ingestLead` dispatches `enrollLeadJob` (best-effort) iff `enabled && autoEnroll && defaultCampaignId`. The gate lives at the dispatch site; `enroll()` itself ignores `enabled`/`autoEnroll` so manual and bulk enroll always work regardless of source policy.
+`voip_inhouse_config_json` is a separate column owned by the voip-in-house EPIC (typed by `schemas.ts:voipInHousePolicySchema`) — the two EPICs' writers never contend on one blob now.
 
-**Why**: a campaign is a shared pool (the catch-all belongs to no source); a *default* is a one-directional source→campaign pointer (many-to-one). Auto-enroll is opt-in per source so cold/partner sources don't silently dial new leads.
-**Reference impl**: `schemas.ts:voipCampaignsPolicySchema`; `dal/server/mutations.ts:setVoipCampaignsPolicy`; spec `docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md`
-**Enforced by**: Zod (`voipCampaignsPolicySchema`); the `ingestLead` dispatch gate
+**Auto-enroll gate**: `ingestLead` dispatches `enrollLeadJob` (best-effort) iff `voipCampaignsEnabled && voipAutoEnroll && defaultCampaignId` (unset `defaultCampaignId` ⇒ auto-enroll inert — no guessing). The gate lives at the dispatch site; `enroll()` itself ignores `enabled`/`autoEnroll` so manual and bulk enroll always work regardless of source policy.
+
+**Why**: a campaign is a shared pool (the catch-all belongs to no source); a *default* is a one-directional source→campaign pointer (many-to-one, now a real FK). Auto-enroll is opt-in per source so cold/partner sources don't silently dial new leads. Plain columns (vs. the old JSONB blob) mean concurrent toggles touch disjoint columns atomically — the prior read-modify-write race is structurally gone.
+**Reference impl**: `src/shared/db/schema/lead-sources.ts` (columns); `dal/server/mutations.ts:setVoipCampaignsPolicy`; spec `docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md`
+**Enforced by**: Postgres FK (`default_campaign_id` → `voip_campaigns.id`); the `ingestLead` dispatch gate
 
 ## Anti-patterns
 
@@ -103,7 +107,7 @@ A source's CloudTalk-campaign policy lives on `voipConfigJSON.campaigns` (`schem
 - **Reading `customers.pipeline` directly to bucket lead-source customers.** Use `buildSegmentWhere` — it composes the partition invariant with `notSigned`.
 - **Denormalizing the lead-source name onto the customer.** Use the FK; reports should join.
 - **Gating manual/bulk enroll on `enabled`/`autoEnroll`.** Those flags gate ONLY auto-enroll-on-ingest (at the `ingestLead` dispatch site). `enroll()` deliberately ignores them so an admin can always manually enroll from a disabled source.
-- **Putting campaign policy on `voip_campaigns`.** Policy is source-owned (`voipConfigJSON.campaigns`); campaigns stay pools.
+- **Putting campaign policy on `voip_campaigns`.** Policy is source-owned (`voip_campaigns_enabled` / `voip_auto_enroll` / `default_campaign_id` columns on `lead_sources`); campaigns stay pools.
 
 ## See also
 

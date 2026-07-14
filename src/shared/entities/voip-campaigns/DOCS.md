@@ -23,8 +23,9 @@ source.
 
 A lead source's **default** campaign — used to pre-select the campaign in
 "Enroll all" and to auto-enroll new leads on ingest (when the source's policy
-sets `enabled && autoEnroll`) — lives on
-`lead_sources.voipConfigJSON.campaigns.defaultCampaignId`, set via the Setup tab.
+sets `enabled && autoEnroll`) — lives on `lead_sources.default_campaign_id`
+(a real FK → `voip_campaigns.id`, `onDelete: 'set null'`; epic #256/#259), set
+via the Setup tab.
 Auto-enroll is dispatched best-effort by `enrollLeadJob` from
 `customerIntakeService.ingestLead`; see
 `docs/superpowers/specs/2026-06-17-source-anchored-setup-auto-enroll-design.md`.

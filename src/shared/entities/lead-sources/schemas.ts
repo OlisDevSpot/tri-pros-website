@@ -23,7 +23,13 @@ export type LeadSourceFormConfig = z.infer<typeof leadSourceFormConfigSchema>
 // identity lives in the voip_campaigns + voip_contact_attributes tables.
 // see docs/plans/voip/INTEGRATION-SEAM.md §9
 
-// voip-campaigns sub-object (CloudTalk-side policy). Shape per §9.
+/**
+ * @deprecated Wave-1 frozen (epic #256/#259). The campaigns policy now lives
+ * on plain `lead_sources` columns (voipCampaignsEnabled/voipAutoEnroll/
+ * defaultCampaignId/dailyDialVolumeCap/messageTemplateOverridesJSON). Kept
+ * only to type `voipConfigJSONDeprecated` and for the backfill script's parse
+ * gate.
+ */
 export const voipCampaignsPolicySchema = z.object({
   enabled: z.boolean().default(true), // per-source kill switch
   autoEnroll: z.boolean().default(false), // bina=true, home_depot=false
@@ -52,6 +58,12 @@ export const voipInHousePolicySchema = z.object({
 })
 export type VoipInHousePolicy = z.infer<typeof voipInHousePolicySchema>
 
+/**
+ * @deprecated Wave-1 frozen (epic #256/#259). Types the frozen
+ * `voipConfigJSONDeprecated` column only — kept for the backfill script's Zod
+ * gate. `inHouse` now lives on its own live column, `voipInHouseConfigJSON`
+ * (typed by `voipInHousePolicySchema`, which stays live).
+ */
 export const voipConfigSchema = z.object({
   campaigns: voipCampaignsPolicySchema.optional(),
   inHouse: voipInHousePolicySchema.optional(),

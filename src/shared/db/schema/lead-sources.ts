@@ -3,7 +3,7 @@ import type z from 'zod'
 import type { LeadSourceFormConfig, VoipConfig, VoipInHousePolicy } from '@/shared/entities/lead-sources/schemas'
 import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { leadSourceFormConfigSchema, voipConfigSchema } from '@/shared/entities/lead-sources/schemas'
+import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { voipCampaigns } from './voip-campaigns'
 
@@ -13,12 +13,12 @@ export const leadSourcesTable = pgTable('lead_sources', {
   slug: text('slug').notNull().unique(),
   token: text('token').notNull().unique(),
   formConfigJSON: jsonb('form_config_json').$type<LeadSourceFormConfig>().notNull(),
-  // Per-source VoIP policy. Each EPIC owns a sub-object (`campaigns` for
-  // voip-campaigns, `inHouse` for voip-in-house). APP-side policy only —
-  // CT-runtime identity lives in voip_campaigns + voip_contact_attributes tables.
-  // see docs/plans/voip/INTEGRATION-SEAM.md §9
-  voipConfigJSON: jsonb('voip_config_json').$type<VoipConfig>(),
-  // ── Wave-1 decomposition: voipConfigJSON.campaigns → columns (epic #256 / #259) ──
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  voipConfigJSONDeprecated: jsonb('voip_config_json').$type<VoipConfig>(),
+  // ── Wave-1 decomposition: voipConfigJSONDeprecated.campaigns → columns (epic #256 / #259) ──
   // Ownership semantics unchanged: policy is SOURCE-owned; campaigns stay pools.
   // Unset defaultCampaignId ⇒ auto-enroll inert (no guessing).
   // see src/shared/entities/lead-sources/DOCS.md
@@ -36,14 +36,21 @@ export const leadSourcesTable = pgTable('lead_sources', {
   updatedAt,
 })
 
+// No override for the deprecated blob — uniform with how customers.ts
+// handles its frozen profile trio (drizzle-zod infers from the column's
+// `.$type<>()`). Frozen; select-side typing precision doesn't matter.
 export const selectLeadSourceSchema = createSelectSchema(leadSourcesTable, {
   formConfigJSON: leadSourceFormConfigSchema,
-  voipConfigJSON: voipConfigSchema.nullable(),
 })
 export type LeadSourceRecord = z.infer<typeof selectLeadSourceSchema>
 
 export const insertLeadSourceSchema = createInsertSchema(leadSourcesTable, {
   formConfigJSON: leadSourceFormConfigSchema,
-  voipConfigJSON: voipConfigSchema.optional(),
-}).omit({ id: true, createdAt: true, updatedAt: true })
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  // Wave-1 frozen — no caller may write the deprecated blob anymore.
+  voipConfigJSONDeprecated: true,
+})
 export type InsertLeadSource = z.infer<typeof insertLeadSourceSchema>

@@ -209,7 +209,7 @@ async function backfillLeadSources(stats: Stats) {
   const rows = await db.select().from(leadSourcesTable)
   for (const row of rows) {
     try {
-      const vc = row.voipConfigJSON
+      const vc = row.voipConfigJSONDeprecated
       if (!vc) {
         stats.skipped++
         continue
