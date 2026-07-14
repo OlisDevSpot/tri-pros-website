@@ -121,6 +121,8 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                     aspect={clip.aspect}
                     label={clip.label}
                     kenBurns={clip.kenBurns ?? 'in'}
+                    cardStyle={clip.cardStyle ?? 'native'}
+                    secondarySrc={clip.secondarySrc ?? null}
                     above={
                       props.checkmarkClipIndex === clip.index && props.checkmarks.length > 0
                         ? (
