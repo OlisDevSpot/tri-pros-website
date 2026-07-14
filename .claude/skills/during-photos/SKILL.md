@@ -129,8 +129,13 @@ higgsfield generate create nano_banana_pro \
 > every existing surface, object, and shadow unchanged{ — including <notable
 > element: pet, vehicle, material pile> if present}. Do not rebuild, redraw,
 > restyle, rotate, or recompose ANY part of the existing scene. The ONLY
-> change: add {COUNT: one/two/three} construction worker(s) {WHERE — into the
-> graded dirt / inside the empty shell} at realistic scale for their distance
+> change: add {COUNT: one/two/three} construction worker(s) {for COUNT=1 write
+> it as "exactly ONE construction worker — a single person, alone, absolutely
+> no other people anywhere in the frame" — a bare "one" gets upgraded to two
+> when the task reads two-person} {WHERE — into the graded dirt / inside the
+> empty shell; if the worker adds new material, also pin the surface with
+> negations ("NOT on the street, NOT in the gutter") and say where the new
+> material may lie} at realistic scale for their distance
 > from the camera, with shadows and lighting that match the photo's light.
 > {CREW_BLOCK — one sentence per worker, see below}. All wear the same
 > deep-navy t-shirt with the company logo from the second reference image
@@ -176,6 +181,10 @@ per the Crew variation axes above.
       them side by side; drift = re-roll with stronger "keep EXACTLY" anchors
 - [ ] Worker scale & shadow direction match the photo
 - [ ] No watermark/text anywhere; no invented signage
+- [ ] ALL pre-existing in-scene text unchanged at 100% (machine decals, yard
+      signs, tool/wheelbarrow brand labels) — the model re-spells text near
+      inserted workers; pin known labels in the prompt ("stays exactly as
+      printed, pixel-identical")
 - [ ] Aspect matches base (nano_banana_pro DEFAULTS TO 1:1 — if output came back
       square you forgot `--aspect_ratio`)
 
@@ -207,3 +216,16 @@ this file is canonical over memory.
 - 2026-07-14 — raw media trove discovered: Downloads Drive export "Projects Photos" holds per-address folders with real Before sets; "Ostella Dr, Los Angeles" (patchy lawn + flagstone steppers → turf) inferred = Oasis. Bases live OUTSIDE the repo — survey the trove before declaring a project blocked. Ostella Before 7/8 rejected for visible people (pool swimmers, homeowner at table); 6/10/11 clean.
 - 2026-07-14 — tape-measure poses: "stretching the tape" renders the tape standing VERTICALLY in mid-air ~50% — specify "taut and LOW along the ground, hovering just inches above the grass" and which hand holds the housing at knee height.
 - 2026-07-14 — model may silently REMOVE a thin foreground obstacle (canopy pole) where the worker is inserted — anchor skinny vertical objects by name + "MUST stay exactly where it is" and add REMOVE to the forbidden verbs.
+- 2026-07-14 — v6: "add one construction worker" rendered TWO when the visible task reads two-person (bucket pour at a material pile) → for solos always write "add exactly ONE construction worker — a single person, alone, absolutely no other people anywhere in the frame"; fixed on re-roll. Template COUNT slot updated.
+- 2026-07-14 — v6: new-material placement drifts to the nearest "natural" spot — worker + rock landed in the street GUTTER beside the supply pile instead of the specified parkway bed (twice) → name the target surface with negations ("NOT on the street, NOT in the gutter"), give relative elevation ("one step higher than the street"), and constrain where the new material may lie ("only on the dirt bed, well inside its edges"); fixed on second re-roll.
+- 2026-07-14 — v6: small/distant back logo garbles REMODELING (dusk gunite-shell shot rendered "N6MODELING") → append a spelling anchor: "the word REMODELING spelled exactly R-E-M-O-D-E-L-I-N-G in white spaced capitals — every letterform sharp, correctly spelled, no invented or distorted characters"; fixed on re-roll. Use whenever the worker is far from camera or the light is flat/dusk.
+- 2026-07-14 — v6 bulk run (7 parallel agents, 20 candidates across 18 projects, ~24 edit passes + re-rolls ≈ 100cr). Systemic findings below; per-photo specs in variation-ledger.md.
+- 2026-07-14 — v6: CHEST-PRINT SMALL TEXT is below the model's reliable text size — the "REMODELING" sub-line garbled on MOST front/profile rolls across four independent agents (mark + "TRI PROS" usually survive; worst on distant workers and <1000px bases; v5's close-framed solo was the lucky case, not the norm). Mitigations: prefer backs; bring front-facing workers CLOSE to camera; treat sub-line softness as an HITL judgment call. OPEN QUESTION for Oliver: relax the chest spec to mark + "TRI PROS" only?
+- 2026-07-14 — v6: logo can render solid RED (all workers, one pass) — add "in white and light blue ONLY — never red, never orange, never any other color" when it strikes. Spelling anchors also fix ~1/6 back-print garbles; for multi-worker shots write "on ALL <N> shirt backs… correctly spelled".
+- 2026-07-14 — v6: PROFILE orientation is sticky — the model collapses profiles to back view when the prompt describes the big back print in detail. Fix: de-emphasize the back print ("turned away, barely visible"), spell "true side view, both shoulders on the camera axis, nose toward frame edge", and put the wearer's LEFT side toward camera so the chest print is on the visible side (for away-angled workers the model paints it on whichever pec is visible). Reach-up profile poses migrate the print onto the SLEEVE (3/3, prompt-resistant) — avoid chest print + overhead reach; go backs instead.
+- 2026-07-14 — v6: pose physics — kneeling workers gravitate to the nearest large flat surface (one rendered ON the countertop; pin "both feet on the FLOOR"); crouch/fasten tasks naturally render back-to-camera (correct physics — assign outward-facing tasks like carrying when you need a front view); tape measures: keep SHORT ("about four feet"), "only ONE tape measure in the scene", never extending toward camera (else it spans the room or spawns two housings).
+- 2026-07-14 — v6: only stage workers on ground PLAINLY VISIBLE in frame — a work area occluded behind foreground structures makes the model hallucinate a new visible substrate (new bed/tree/task relocation, 3/3 rolls; Manshma dropped for this).
+- 2026-07-14 — v6: negative tool bans backfire ("no claw hammer anywhere" made the hammer MORE prominent) — prefer positive hand-by-hand specs and simply omit unwanted objects.
+- 2026-07-14 — v6: <1200px bases invite zoom-RECOMPOSE (edge objects deleted, framing tightened), not just rotation — LEAD the prompt with a four-edge anchor block naming what sits at each edge. Phone-screenshot bases are salvageable (crop letterbox/home-indicator via sharp .extract). Video frames are a legitimate during-source but crew videos have real people in ~every frame.
+- 2026-07-14 — v6: parallel batch agents each invented worker signatures blind to one another → three near-identical "tall·buzzed·tan" variants slipped through (roof/bathroom1/altura-grading). For future bulk runs, pre-partition an appearance palette per agent in the dispatch prompts.
+- 2026-07-14 — v6: PII hazard in raw trove — the ADU folder photo contains a legible blueprint with a customer name/address (also has embedded real workers; blocked). Never use bases with readable customer PII.
