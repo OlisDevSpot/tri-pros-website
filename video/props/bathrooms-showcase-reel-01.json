@@ -1,0 +1,498 @@
+{
+  "clips": [
+    {
+      "src": "stills/bathrooms-funnel-after.png",
+      "kind": "image",
+      "durationInFrames": 75,
+      "layout": "full",
+      "aspect": 0.5625,
+      "label": null,
+      "kenBurns": "out",
+      "transitionIn": "none"
+    },
+    {
+      "src": "clips/bathrooms-funnel-transform.mp4",
+      "kind": "video",
+      "durationInFrames": 240,
+      "layout": "full",
+      "aspect": 0.5625,
+      "label": null,
+      "kenBurns": "in",
+      "transitionIn": "none"
+    },
+    {
+      "src": "stills/bathrooms-during-construction-01.png",
+      "kind": "image",
+      "durationInFrames": 105,
+      "layout": "framed",
+      "aspect": 1.5004,
+      "label": "OUR CREW, ON SITE",
+      "kenBurns": "in",
+      "transitionIn": "fade"
+    },
+    {
+      "src": "stills/bathrooms-final-picasso.jpg",
+      "kind": "image",
+      "durationInFrames": 186,
+      "layout": "full",
+      "aspect": 0.7502,
+      "label": null,
+      "kenBurns": "in",
+      "transitionIn": "none"
+    },
+    {
+      "src": "clips/bathrooms-meridian-push.mp4",
+      "kind": "video",
+      "durationInFrames": 150,
+      "layout": "framed",
+      "aspect": 1.5,
+      "label": null,
+      "kenBurns": "in",
+      "transitionIn": "fade"
+    }
+  ],
+  "hook": "We’re Selecting 5 Bathrooms in Your Area",
+  "hookStartFrame": 40,
+  "hookDurationInFrames": 75,
+  "checkmarks": [
+    "AAA-grade materials",
+    "Beautiful AND functional",
+    "Built to be photographed"
+  ],
+  "checkmarkClipIndex": 4,
+  "captions": [],
+  "wordCaptions": [
+    {
+      "text": "We're",
+      "startMs": 90,
+      "endMs": 320,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " selecting",
+      "startMs": 320,
+      "endMs": 900,
+      "timestampMs": 600,
+      "confidence": 0.998721
+    },
+    {
+      "text": " five",
+      "startMs": 900,
+      "endMs": 1220,
+      "timestampMs": 1080,
+      "confidence": 0.660123
+    },
+    {
+      "text": " bathrooms",
+      "startMs": 1220,
+      "endMs": 1760,
+      "timestampMs": 1600,
+      "confidence": 0.980959
+    },
+    {
+      "text": " in",
+      "startMs": 1760,
+      "endMs": 1840,
+      "timestampMs": 1840,
+      "confidence": 0.972355
+    },
+    {
+      "text": " your",
+      "startMs": 1840,
+      "endMs": 2000,
+      "timestampMs": 1980,
+      "confidence": 0.990299
+    },
+    {
+      "text": " area",
+      "startMs": 2000,
+      "endMs": 2440,
+      "timestampMs": 2360,
+      "confidence": 0.981861
+    },
+    {
+      "text": " for",
+      "startMs": 2440,
+      "endMs": 2660,
+      "timestampMs": 2640,
+      "confidence": 0.872159
+    },
+    {
+      "text": " a",
+      "startMs": 2660,
+      "endMs": 2730,
+      "timestampMs": 2840,
+      "confidence": 0.988011
+    },
+    {
+      "text": " Showcase",
+      "startMs": 2730,
+      "endMs": 3400,
+      "timestampMs": 3220,
+      "confidence": 0.718876
+    },
+    {
+      "text": " remodel!",
+      "startMs": 3400,
+      "endMs": 4295,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " AAA-grade",
+      "startMs": 4295,
+      "endMs": 5190,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " materials,",
+      "startMs": 5190,
+      "endMs": 6400,
+      "timestampMs": 6080,
+      "confidence": 0.995868
+    },
+    {
+      "text": " built",
+      "startMs": 6460,
+      "endMs": 6820,
+      "timestampMs": 6600,
+      "confidence": 0.894889
+    },
+    {
+      "text": " to",
+      "startMs": 6820,
+      "endMs": 7060,
+      "timestampMs": 6840,
+      "confidence": 0.950171
+    },
+    {
+      "text": " be",
+      "startMs": 7060,
+      "endMs": 7100,
+      "timestampMs": 6980,
+      "confidence": 0.998715
+    },
+    {
+      "text": " photographed...",
+      "startMs": 7100,
+      "endMs": 8180,
+      "timestampMs": 7480,
+      "confidence": 0.997411
+    },
+    {
+      "text": " at",
+      "startMs": 8200,
+      "endMs": 8360,
+      "timestampMs": 8300,
+      "confidence": 0.87851
+    },
+    {
+      "text": " a",
+      "startMs": 8360,
+      "endMs": 8450,
+      "timestampMs": 8500,
+      "confidence": 0.997961
+    },
+    {
+      "text": " Showcase",
+      "startMs": 8450,
+      "endMs": 9170,
+      "timestampMs": 8900,
+      "confidence": 0.934463
+    },
+    {
+      "text": " price.",
+      "startMs": 9170,
+      "endMs": 9570,
+      "timestampMs": 9420,
+      "confidence": 0.995799
+    },
+    {
+      "text": " And",
+      "startMs": 9900,
+      "endMs": 10220,
+      "timestampMs": 10440,
+      "confidence": 0.989074
+    },
+    {
+      "text": " at",
+      "startMs": 10220,
+      "endMs": 10310,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " Tri",
+      "startMs": 10310,
+      "endMs": 10460,
+      "timestampMs": 10820,
+      "confidence": 0.515993
+    },
+    {
+      "text": " Pros",
+      "startMs": 10460,
+      "endMs": 11365,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " Remodeling?",
+      "startMs": 11365,
+      "endMs": 12270,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " We",
+      "startMs": 12270,
+      "endMs": 12380,
+      "timestampMs": 12520,
+      "confidence": 0.554531
+    },
+    {
+      "text": " do",
+      "startMs": 12380,
+      "endMs": 12540,
+      "timestampMs": 12700,
+      "confidence": 0.997215
+    },
+    {
+      "text": " it",
+      "startMs": 12540,
+      "endMs": 12810,
+      "timestampMs": 12840,
+      "confidence": 0.998925
+    },
+    {
+      "text": " again...",
+      "startMs": 12810,
+      "endMs": 13430,
+      "timestampMs": 13140,
+      "confidence": 0.996345
+    },
+    {
+      "text": " and",
+      "startMs": 13800,
+      "endMs": 14170,
+      "timestampMs": 14140,
+      "confidence": 0.96404
+    },
+    {
+      "text": " again...",
+      "startMs": 14170,
+      "endMs": 14610,
+      "timestampMs": 14460,
+      "confidence": 0.993585
+    },
+    {
+      "text": " and",
+      "startMs": 15300,
+      "endMs": 15700,
+      "timestampMs": 15660,
+      "confidence": 0.988459
+    },
+    {
+      "text": " again...",
+      "startMs": 15700,
+      "endMs": 16300,
+      "timestampMs": 16000,
+      "confidence": 0.996428
+    },
+    {
+      "text": " and",
+      "startMs": 16800,
+      "endMs": 17340,
+      "timestampMs": 17380,
+      "confidence": 0.963488
+    },
+    {
+      "text": " again.",
+      "startMs": 17340,
+      "endMs": 18800,
+      "timestampMs": 18000,
+      "confidence": 0.921205
+    },
+    {
+      "text": " Homeowners",
+      "startMs": 18800,
+      "endMs": 19730,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " only",
+      "startMs": 19730,
+      "endMs": 20050,
+      "timestampMs": 19840,
+      "confidence": 0.901586
+    },
+    {
+      "text": " —",
+      "startMs": 20050,
+      "endMs": 20540,
+      "timestampMs": null,
+      "confidence": null
+    },
+    {
+      "text": " see",
+      "startMs": 20540,
+      "endMs": 20640,
+      "timestampMs": 20720,
+      "confidence": 0.793192
+    },
+    {
+      "text": " if",
+      "startMs": 20640,
+      "endMs": 20670,
+      "timestampMs": 20860,
+      "confidence": 0.996428
+    },
+    {
+      "text": " your",
+      "startMs": 20670,
+      "endMs": 20890,
+      "timestampMs": 21020,
+      "confidence": 0.991157
+    },
+    {
+      "text": " home",
+      "startMs": 20890,
+      "endMs": 21110,
+      "timestampMs": 21300,
+      "confidence": 0.997748
+    },
+    {
+      "text": " qualifies.",
+      "startMs": 21110,
+      "endMs": 21610,
+      "timestampMs": 21780,
+      "confidence": 0.998367
+    }
+  ],
+  "voStartFrame": 35,
+  "captionVertical": 0.58,
+  "punchIns": [
+    {
+      "frame": 164,
+      "scale": 1.18
+    },
+    {
+      "frame": 288,
+      "scale": 1.2
+    }
+  ],
+  "flashFrames": [
+    75
+  ],
+  "zoomOutReveals": [
+    300
+  ],
+  "logoIntro": {
+    "src": "brand/logo-dark-right.svg",
+    "enterFrame": 0,
+    "dockFrame": 40
+  },
+  "sfx": [
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 55,
+      "volume": 0.2
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 75,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/riser-short.wav",
+      "frame": 255,
+      "volume": 0.35
+    },
+    {
+      "src": "audio/sfx/whoosh2.wav",
+      "frame": 312,
+      "volume": 0.35
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 420,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 460,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 506,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/shutter.wav",
+      "frame": 555,
+      "volume": 0.5
+    },
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 636,
+      "volume": 0.22
+    },
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 645,
+      "volume": 0.26
+    },
+    {
+      "src": "audio/sfx/uiclick.wav",
+      "frame": 654,
+      "volume": 0.3
+    },
+    {
+      "src": "audio/sfx/thud.wav",
+      "frame": 756,
+      "volume": 0.4
+    }
+  ],
+  "voiceoverSrc": "audio/bathrooms-vo-gia-t1.mp3",
+  "musicSrc": "audio/music-bed-02-upbeat.m4a",
+  "watermarkSrc": "brand/logo-dark-right.svg",
+  "watermarkWidth": 150,
+  "musicVolume": 0.12,
+  "endCard": {
+    "headline": "Could Your Bathroom Be One of the 5?",
+    "sub": "AAA-grade work, at a Showcase price. Homeowners only.",
+    "cta": "See If Your Home Qualifies"
+  },
+  "endCardFrames": 120,
+  "hookScrimOpacity": 0.45,
+  "brandBlock": {
+    "logoSrc": "brand/logo-dark-right.svg",
+    "line1": "Licensed & Insured · CSLB #1076760",
+    "line2": "Southern California"
+  },
+  "brandClipIndex": 4,
+  "photoBurst": {
+    "clipIndex": 3,
+    "photos": [
+      {
+        "src": "stills/bathrooms-final-picasso.jpg",
+        "frame": 420
+      },
+      {
+        "src": "stills/bathrooms-final-powder.jpg",
+        "frame": 460
+      },
+      {
+        "src": "stills/bathrooms-final-meridian.jpg",
+        "frame": 506
+      },
+      {
+        "src": "stills/bathrooms-final-marble.webp",
+        "frame": 555
+      }
+    ]
+  }
+}
