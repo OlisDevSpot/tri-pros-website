@@ -20,6 +20,8 @@ import { FramedClip } from '../components/framed-clip'
 import { HookTitle } from '../components/hook-title'
 import { DOCK_FRAMES, LogoIntro } from '../components/logo-intro'
 import { SafeZone } from '../components/safe-zone'
+import { enterStyle, exitStyle, TRANSITION_FRAMES, wipeEdge } from '../lib/transitions'
+import { BRAND } from '../lib/tokens'
 
 /**
  * The Showcase 9:16 reel: hook headline over clip 1 → proof clips (full-bleed
@@ -42,23 +44,23 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
     : props.captions.some(c => frame >= c.startFrame && frame < c.endFrame)
   const musicLevel = voActive ? props.musicVolume : Math.min(0.35, props.musicVolume * 2)
 
-  // Fade transitions: an incoming `fade` clip ramps opacity over the still-
-  // running previous clip (its Sequence is extended beneath), so cuts read
-  // fluid instead of popping. `none` stays a hard cut for the snap moment.
-  const FADE_FRAMES = 10
+  // Transitions: the incoming clip renders ON TOP of the still-running
+  // previous clip (its Sequence extends TRANSITION_FRAMES beneath). The
+  // incoming gets enterStyle, the outgoing gets exitStyle (whip/zoomPunch
+  // move it out; fade/dissolve/wipe leave it playing until covered).
   let clipStart = 0
   const clipSequences = props.clips.map((clip, index) => {
     const from = clipStart
     clipStart += clip.durationInFrames
     const next = props.clips[index + 1]
-    const holdUnder = next?.transitionIn === 'fade' ? FADE_FRAMES : 0
-    const enterOpacity = clip.transitionIn === 'fade'
-      ? interpolate(frame, [from, from + FADE_FRAMES], [0, 1], {
-          extrapolateLeft: 'clamp',
-          extrapolateRight: 'clamp',
-        })
-      : 1
-    return { ...clip, from, index, holdUnder, enterOpacity }
+    const nextTransition = next?.transitionIn ?? 'none'
+    const nextDirection = next?.transitionDirection ?? 'left'
+    const nextFrom = from + clip.durationInFrames
+    const holdUnder = TRANSITION_FRAMES[nextTransition]
+    const enter = enterStyle(clip.transitionIn ?? 'none', clip.transitionDirection ?? 'left', frame - from)
+    const exit = exitStyle(nextTransition, nextDirection, frame - nextFrom)
+    const edge = wipeEdge(clip.transitionIn ?? 'none', frame - from)
+    return { ...clip, from, index, holdUnder, enter, exit, wipeEdgePct: edge }
   })
 
   // Punch-in: hard scale jump on the hit frame, decaying back over 10f.
@@ -92,10 +94,24 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
 
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
+      {/* Directional motion-blur filters for whip transitions (referenced by url()). */}
+      <svg width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <filter id="whip-blur-x"><feGaussianBlur stdDeviation="40 0" /></filter>
+          <filter id="whip-blur-y"><feGaussianBlur stdDeviation="0 40" /></filter>
+        </defs>
+      </svg>
       <AbsoluteFill style={{ transform: `scale(${punchScale * revealScale})` }}>
         {clipSequences.map(clip => (
         <Sequence key={clip.src} from={clip.from} durationInFrames={clip.durationInFrames + clip.holdUnder}>
-          <AbsoluteFill style={{ opacity: clip.enterOpacity }}>
+          <AbsoluteFill
+            style={{
+              opacity: clip.enter.opacity * clip.exit.opacity,
+              transform: clip.exit.transform !== 'none' ? clip.exit.transform : clip.enter.transform,
+              clipPath: clip.enter.clipPath,
+              filter: clip.exit.filter ?? clip.enter.filter,
+            }}
+          >
             {clip.layout === 'framed'
               ? (
                   <FramedClip
@@ -134,6 +150,21 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
               />
             )}
           </AbsoluteFill>
+          {/* The divider sits at the exact edge the clip-path above reveals up to, so it
+              must live in an unclipped sibling layer — nesting it inside the clipPath'd
+              AbsoluteFill would clip the divider itself away along with the hidden strip. */}
+          {clip.wipeEdgePct !== null && (clip.transitionDirection ?? 'left') === 'left' && (
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${clip.wipeEdgePct}%`, width: 4, background: BRAND.blue }} />
+          )}
+          {clip.wipeEdgePct !== null && (clip.transitionDirection ?? 'left') === 'right' && (
+            <div style={{ position: 'absolute', top: 0, bottom: 0, right: `${clip.wipeEdgePct}%`, width: 4, background: BRAND.blue }} />
+          )}
+          {clip.wipeEdgePct !== null && (clip.transitionDirection ?? 'left') === 'up' && (
+            <div style={{ position: 'absolute', left: 0, right: 0, top: `${clip.wipeEdgePct}%`, height: 4, background: BRAND.blue }} />
+          )}
+          {clip.wipeEdgePct !== null && (clip.transitionDirection ?? 'left') === 'down' && (
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: `${clip.wipeEdgePct}%`, height: 4, background: BRAND.blue }} />
+          )}
         </Sequence>
         ))}
       </AbsoluteFill>
