@@ -28,6 +28,7 @@ import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { CUSTOMER } from '@/shared/entities/customers/lib/constants'
+import { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
@@ -90,7 +91,7 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('access', 'Dashboard')
 
       can('read', 'Customer')
-      can('update', 'Customer', ['customerProfileJSON', 'propertyProfileJSON', 'financialProfileJSON'])
+      can('update', 'Customer', [...PROFILE_COLUMN_KEYS])
       // Note: no can('create', 'Customer') — intentional
 
       can('read', 'Meeting')

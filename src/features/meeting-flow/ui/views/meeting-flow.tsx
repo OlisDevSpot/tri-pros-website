@@ -35,6 +35,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { hasCustomerProfileData } from '@/shared/entities/customers/lib/customer-predicates'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -90,15 +91,16 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     })
   }, [meeting?.flowStateJSON, meetingId, updateMeeting])
 
-  const handleCustomerProfileChange = useCallback((jsonbKey: string, patch: Record<string, unknown>) => {
+  const handleCustomerProfileChange = useCallback((patch: Record<string, unknown>) => {
     if (!customer?.id) {
       return
     }
-    const currentSection = (customer as unknown as Record<string, unknown>)[jsonbKey] ?? {}
+    // Flat column patch (epic #256/#259) — send only the changed field(s),
+    // no read-modify-merge needed since each column IS the field.
     updateCustomerProfile.mutate({
       meetingId,
       customerId: customer.id,
-      [jsonbKey]: { ...(currentSection as Record<string, unknown>), ...patch },
+      patch,
     })
   }, [customer, meetingId, updateCustomerProfile])
 
@@ -241,7 +243,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
           </div>
           <div className="pointer-events-auto">
             <PersonaProfileTrigger
-              hasData={!!customer?.customerProfileJSON}
+              hasData={hasCustomerProfileData(customer)}
               onClick={() => setPersonaOpen(true)}
             />
           </div>

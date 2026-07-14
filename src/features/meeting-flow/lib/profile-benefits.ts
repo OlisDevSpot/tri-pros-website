@@ -16,11 +16,10 @@ export function getProfileBenefits(
   tradeSelections: TradeSelection[],
 ): ProfileBenefit[] {
   const benefits: ProfileBenefit[] = []
-  const profile = customer?.customerProfileJSON
-  const householdType = profile?.householdType
-  const triggerEvent = profile?.triggerEvent
-  const outcomePriority = profile?.outcomePriority
-  const sellPlan = profile?.sellPlan
+  const householdType = customer?.householdType
+  const triggerEvent = customer?.triggerEvent
+  const outcomePriority = customer?.outcomePriority
+  const sellPlan = customer?.sellPlan
   const painPoints = tradeSelections.flatMap(t => t.painPoints)
   const tradeNames = tradeSelections.map(t => t.tradeName.toLowerCase())
 

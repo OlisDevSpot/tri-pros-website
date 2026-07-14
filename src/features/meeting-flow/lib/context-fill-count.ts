@@ -22,9 +22,12 @@ function isFilled(value: unknown): boolean {
 
 function countFilledFromFields(
   fields: ProfileFieldConfig[],
-  data: Record<string, unknown>,
+  customer: Record<string, unknown> | null,
 ): number {
-  return fields.filter(f => isFilled(data[f.id])).length
+  if (!customer) {
+    return 0
+  }
+  return fields.filter(f => isFilled(customer[f.id])).length
 }
 
 /**
@@ -45,9 +48,7 @@ export const CONTEXT_TOTAL_FIELDS
  */
 export function computeContextFilledCount(meeting: Meeting, customer: Customer | null): number {
   const ctx = (meeting.contextJSON ?? {}) as Record<string, unknown>
-  const customerProfile = (customer?.customerProfileJSON ?? {}) as Record<string, unknown>
-  const propertyProfile = (customer?.propertyProfileJSON ?? {}) as Record<string, unknown>
-  const financialProfile = (customer?.financialProfileJSON ?? {}) as Record<string, unknown>
+  const customerRow = customer as unknown as Record<string, unknown> | null
 
   // Meeting-specific fields (not derived from shared definitions)
   const situationalFilled = [ctx.decisionMakersPresent, meeting.agentNotes].filter(isFilled).length
@@ -59,10 +60,11 @@ export function computeContextFilledCount(meeting: Meeting, customer: Customer |
   ].filter(isFilled).length
   const outcomeFilled = [meeting.meetingOutcome].filter(isFilled).length
 
-  // Customer profile fields (derived from shared definitions)
-  const customerProfileFilled = countFilledFromFields(CUSTOMER_PROFILE_FIELDS, customerProfile)
-  const propertyFilled = countFilledFromFields(PROPERTY_PROFILE_FIELDS, propertyProfile)
-  const financialFilled = countFilledFromFields(FINANCIAL_PROFILE_FIELDS, financialProfile)
+  // Customer profile fields — read directly off the customer row's columns
+  // (profile trio decomposed to columns in Wave 1, #259).
+  const customerProfileFilled = countFilledFromFields(CUSTOMER_PROFILE_FIELDS, customerRow)
+  const propertyFilled = countFilledFromFields(PROPERTY_PROFILE_FIELDS, customerRow)
+  const financialFilled = countFilledFromFields(FINANCIAL_PROFILE_FIELDS, customerRow)
 
   return situationalFilled
     + customerProfileFilled

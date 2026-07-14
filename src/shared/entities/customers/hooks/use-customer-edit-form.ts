@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { buildCustomerFormDefaults } from '@/shared/entities/customers/lib/build-customer-form-defaults'
+import { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 import { useTRPC } from '@/trpc/helpers'
 
 export function useCustomerEditForm(customer: Customer) {
@@ -20,7 +21,10 @@ export function useCustomerEditForm(customer: Customer) {
   const { invalidateCustomer } = useInvalidation()
 
   const canEditContact = ability.can('update', 'Customer', 'name')
-  const canEditProfiles = ability.can('update', 'Customer', 'customerProfileJSON')
+  // `triggerEvent` is a representative probe field — CASL grants the whole
+  // PROFILE_COLUMN_KEYS group together (abilities.ts), so any one member is
+  // equivalent to "can edit the profile-trio columns" (epic #256/#259).
+  const canEditProfiles = ability.can('update', 'Customer', 'triggerEvent')
   const canEdit = canEditContact || canEditProfiles
 
   const form = useForm<CustomerFormValues>({
@@ -42,17 +46,25 @@ export function useCustomerEditForm(customer: Customer) {
   async function handleSave(values: CustomerFormValues) {
     const promises: Promise<unknown>[] = []
 
+    // Flat column patch (epic #256/#259) — only send the profile-trio keys
+    // RHF marked dirty (changed from the row-seeded defaults), so untouched
+    // fields stay omitted (undefined) rather than overwriting with defaults.
+    // An explicit clear surfaces as a dirty field whose value is `undefined`
+    // (empty input) — normalize that to `null` so it's an explicit clear,
+    // not a no-op.
     if (canEditProfiles) {
-      promises.push(
-        profileMutation.mutateAsync({
-          id: customer.id,
-          data: {
-            customerProfileJSON: values.customerProfileJSON,
-            financialProfileJSON: values.financialProfileJSON,
-            propertyProfileJSON: values.propertyProfileJSON,
-          },
-        }),
-      )
+      const dirtyProfileKeys = PROFILE_COLUMN_KEYS.filter(k => form.formState.dirtyFields[k])
+      if (dirtyProfileKeys.length > 0) {
+        const patch = Object.fromEntries(
+          dirtyProfileKeys.map(k => [k, values[k] ?? null]),
+        ) as Partial<Pick<Customer, (typeof PROFILE_COLUMN_KEYS)[number]>>
+        promises.push(
+          profileMutation.mutateAsync({
+            id: customer.id,
+            data: patch,
+          }),
+        )
+      }
     }
 
     if (canEditContact) {

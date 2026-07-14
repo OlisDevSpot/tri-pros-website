@@ -3,7 +3,7 @@ import { boolean, doublePrecision, integer, jsonb, pgTable, text, timestamp, uui
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
-import { customerProfileSchema, financialProfileSchema, leadMetaSchema, painSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import { leadMetaSchema, painSchema, PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
@@ -42,9 +42,21 @@ export const customers = pgTable('customers', {
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
   geocodedAt: timestamp('geocoded_at', { mode: 'string', withTimezone: true }),
-  customerProfileJSON: jsonb('customer_profile_json').$type<CustomerProfile>(),
-  propertyProfileJSON: jsonb('property_profile_json').$type<PropertyProfile>(),
-  financialProfileJSON: jsonb('financial_profile_json').$type<FinancialProfile>(),
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  customerProfileJSONDeprecated: jsonb('customer_profile_json').$type<CustomerProfile>(),
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  propertyProfileJSONDeprecated: jsonb('property_profile_json').$type<PropertyProfile>(),
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  financialProfileJSONDeprecated: jsonb('financial_profile_json').$type<FinancialProfile>(),
   // ── Wave-1 decomposition: customerProfileJSON → columns (epic #256 / #259) ──
   triggerEvent: triggerEventEnum('trigger_event'),
   mainPainAccessor: text('main_pain_accessor'),
@@ -103,31 +115,47 @@ export const customers = pgTable('customers', {
   updatedAt,
 })
 
-export const selectCustomerSchema = createSelectSchema(customers, {
-  propertyProfileJSON: propertyProfileSchema.nullable(),
-  financialProfileJSON: financialProfileSchema.nullable(),
-})
+// No overrides for the three *Deprecated blobs — uniform with how
+// customerProfileJSON already worked pre-Wave-1 (drizzle-zod infers from the
+// column's `.$type<>()`). Frozen; select-side typing precision doesn't matter.
+export const selectCustomerSchema = createSelectSchema(customers)
 export type Customer = z.infer<typeof selectCustomerSchema>
 
 export const insertCustomerSchema = createInsertSchema(customers, {
-  customerProfileJSON: customerProfileSchema.optional(),
-  propertyProfileJSON: propertyProfileSchema.optional(),
-  financialProfileJSON: financialProfileSchema.optional(),
   leadMetaJSON: leadMetaSchema.optional(),
   // Canonical storage chokepoint: every write through createCrudDal parses this
   // schema, so phone is normalized to bare 10-digit national (or null) here —
   // regardless of caller (funnel E.164, agent-typed "(818)…", webhook raw).
   // see @/shared/lib/phone
   phone: optionalPhoneSchema,
-  additionalPainPoints: z.array(painSchema).optional(),
-  mainPainUrgency: z.number().int().min(1).max(10).optional(),
-  constructionOutlookFavorabilityRating: z.number().int().min(1).max(10).optional(),
-  projectNecessityRating: z.number().int().min(1).max(10).optional(),
-  age: z.number().int().min(CUSTOMER_AGE_MIN).max(CUSTOMER_AGE_MAX).optional(),
-  numQuotesReceived: z.number().int().min(0).optional(),
+  // .nullable() on every profile-trio bounded field below — the edit form
+  // (epic #256/#259) sends an explicit `null` to clear a field, distinct
+  // from `undefined` (field untouched, omitted from the patch entirely).
+  additionalPainPoints: z.array(painSchema).nullable().optional(),
+  mainPainUrgency: z.number().int().min(1).max(10).nullable().optional(),
+  constructionOutlookFavorabilityRating: z.number().int().min(1).max(10).nullable().optional(),
+  projectNecessityRating: z.number().int().min(1).max(10).nullable().optional(),
+  age: z.number().int().min(CUSTOMER_AGE_MIN).max(CUSTOMER_AGE_MAX).nullable().optional(),
+  numQuotesReceived: z.number().int().min(0).nullable().optional(),
 }).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  // Wave-1 frozen — no caller may write the deprecated blobs anymore.
+  customerProfileJSONDeprecated: true,
+  propertyProfileJSONDeprecated: true,
+  financialProfileJSONDeprecated: true,
 })
 export type InsertCustomerSchema = z.infer<typeof insertCustomerSchema>
+
+// Flat patch schema over the 24 profile-trio columns (epic #256/#259) — every
+// writer that used to merge into the three JSONB blobs (meeting-flow router,
+// customer edit form, contracts age-patch) now sends a subset of this shape.
+// Defined here rather than entities/customers/schemas/index.ts to avoid an
+// import cycle (this file already imports PROFILE_COLUMN_KEYS from there).
+const PROFILE_COLUMNS_PICK = Object.fromEntries(
+  PROFILE_COLUMN_KEYS.map(k => [k, true]),
+) as Record<(typeof PROFILE_COLUMN_KEYS)[number], true>
+
+export const profileColumnsPatchSchema = insertCustomerSchema.pick(PROFILE_COLUMNS_PICK).partial()
+export type ProfileColumnsPatch = z.infer<typeof profileColumnsPatchSchema>

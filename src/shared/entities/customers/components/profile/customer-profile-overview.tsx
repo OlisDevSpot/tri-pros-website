@@ -22,10 +22,8 @@ export function CustomerProfileOverview({ data, editForm, onMutationSuccess }: P
       <div className="space-y-4 md:min-h-0 md:w-2/5 md:overflow-y-auto md:pr-1">
         <CustomerRecordingPlayer customerId={data.customer.id} />
         <CustomerProfileDetails
+          customer={data.customer}
           editForm={editForm}
-          customerProfileJSON={data.customer.customerProfileJSON as Record<string, unknown> | null}
-          propertyProfileJSON={data.customer.propertyProfileJSON as Record<string, unknown> | null}
-          financialProfileJSON={data.customer.financialProfileJSON as Record<string, unknown> | null}
           leadMetaJSON={data.customer.leadMetaJSON}
         />
       </div>

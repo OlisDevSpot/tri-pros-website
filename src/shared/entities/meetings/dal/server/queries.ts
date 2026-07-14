@@ -6,6 +6,7 @@
 import type { MeetingParticipantRole } from '@/shared/constants/enums'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { Customer } from '@/shared/db/schema/customers'
 import type { Meeting } from '@/shared/db/schema/meetings'
 
 import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
@@ -86,33 +87,12 @@ export type MeetingWithCustomer = Meeting & {
   hasApprovedProposal: boolean
 }
 
-/** Customer shape embedded in a single-meeting read. */
-export interface MeetingCustomer {
-  id: string
-  name: string
-  phone: string | null
-  email: string | null
-  address: string | null
-  city: string
-  state: string | null
-  zip: string
-  qbCustomerId: string | null
-  latitude: number | null
-  longitude: number | null
-  geocodedAt: string | null
-  customerProfileJSON: any
-  propertyProfileJSON: any
-  financialProfileJSON: any
-  leadSourceId: string | null
-  leadType: string | null
-  leadMetaJSON: any
-  pipeline: string
-  pipelineStage: string | null
-  syncedAt: string
-  createdAt: string
-  updatedAt: string
-  hasSentProposal: boolean
-}
+/**
+ * Customer shape embedded in a single-meeting read — every customer column
+ * (profile-trio columns flat per epic #256/#259, plus the three frozen
+ * `*Deprecated` blobs) plus the derived `hasSentProposal` flag.
+ */
+export type MeetingCustomer = Customer & { hasSentProposal: boolean }
 
 // ── listMeetings ────────────────────────────────────────────────────────
 

@@ -64,6 +64,45 @@ export type CustomerProfile = z.infer<typeof customerProfileSchema>
 export type PropertyProfile = z.infer<typeof propertyProfileSchema>
 export type FinancialProfile = z.infer<typeof financialProfileSchema>
 
+// ── Wave-1 decomposition: the 24 columns that replaced the three JSONB
+// profile blobs (epic #256 / #259). Property names are identical to the old
+// blob field names (mainPainPoint split into mainPainAccessor/mainPainUrgency).
+// Grouped so callers can iterate/display per-section while still having the
+// flat union for CASL + patch validation.
+// see ../DOCS.md#three-jsonb-profiles
+export const CUSTOMER_PROFILE_COLUMN_KEYS = [
+  'triggerEvent',
+  'mainPainAccessor',
+  'mainPainUrgency',
+  'additionalPainPoints',
+  'outcomePriority',
+  'timeInHome',
+  'householdType',
+  'priorContractorExperience',
+  'constructionOutlookFavorabilityRating',
+  'sellPlan',
+  'decisionTimeline',
+  'projectNecessityRating',
+  'ageGroup',
+  'age',
+] as const
+export const PROPERTY_PROFILE_COLUMN_KEYS = [
+  'hoa',
+  'yearBuilt',
+  'roofType',
+  'foundationType',
+  'hvacType',
+  'hvacComponents',
+  'windowsType',
+  'insulationLevel',
+] as const
+export const FINANCIAL_PROFILE_COLUMN_KEYS = ['numQuotesReceived', 'creditScore'] as const
+export const PROFILE_COLUMN_KEYS = [
+  ...CUSTOMER_PROFILE_COLUMN_KEYS,
+  ...PROPERTY_PROFILE_COLUMN_KEYS,
+  ...FINANCIAL_PROFILE_COLUMN_KEYS,
+] as const
+
 // Generic, self-describing funnel enrichment keyed by step id. `value` is the
 // resolved option label so no server-side label mirror is needed; `order` drives
 // display. The canonical server-side shape — the DAL mutation and the intake

@@ -99,9 +99,9 @@ async function backfillCustomers(stats: Stats) {
   const rows = await db.select().from(customers)
   for (const row of rows) {
     try {
-      let cp = row.customerProfileJSON
-      const pp = row.propertyProfileJSON
-      let fp = row.financialProfileJSON
+      let cp = row.customerProfileJSONDeprecated
+      const pp = row.propertyProfileJSONDeprecated
+      let fp = row.financialProfileJSONDeprecated
       if (!cp && !pp && !fp) {
         stats.skipped++
         continue

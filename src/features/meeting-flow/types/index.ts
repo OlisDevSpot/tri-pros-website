@@ -89,7 +89,7 @@ export interface MeetingFlowContext {
   customer: Customer | null
   flowState: MeetingFlowState | null
   onFlowStateChange: (patch: Partial<MeetingFlowState>) => void
-  onCustomerProfileChange: (jsonbKey: string, patch: Record<string, unknown>) => void
+  onCustomerProfileChange: (patch: Record<string, unknown>) => void
 }
 
 // ── Calendar Event ──────────────────────────────────────────────────────────

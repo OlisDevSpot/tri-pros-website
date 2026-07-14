@@ -13,7 +13,8 @@ import {
   meetingPainTypes,
 } from '@/shared/constants/enums/meetings'
 
-// Field IDs map 1:1 to keys inside the JSONB section specified by jsonbKey.
+// Field IDs map 1:1 to columns on the target entity (customer profile-trio
+// columns, epic #256/#259, or meeting.contextJSON keys).
 // `entity` determines whether the field is saved to the meeting or the customer.
 
 export const INTAKE_STEPS = [
@@ -23,7 +24,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'mainPain',
-        jsonbKey: 'customerProfileJSON',
         label: 'Primary pain point',
         options: meetingPainTypes,
         type: 'select',
@@ -31,7 +31,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'secondaryPain',
-        jsonbKey: 'customerProfileJSON',
         label: 'Secondary pain point (if any)',
         options: meetingPainTypes,
         type: 'select',
@@ -39,7 +38,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'triggerEvent',
-        jsonbKey: 'customerProfileJSON',
         label: 'What triggered this visit?',
         options: triggerEvents,
         type: 'select',
@@ -47,7 +45,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'outcomePriority',
-        jsonbKey: 'customerProfileJSON',
         label: 'What matters most to them?',
         options: outcomePriorities,
         type: 'select',
@@ -62,7 +59,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'meeting',
         id: 'decisionMakersPresent',
-        jsonbKey: 'contextJSON',
         label: 'Who is present today',
         options: meetingDecisionMakersPresentOptions,
         type: 'select',
@@ -70,7 +66,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'householdType',
-        jsonbKey: 'customerProfileJSON',
         label: 'Household type',
         options: householdTypes,
         type: 'select',
@@ -85,7 +80,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'timeInHome',
-        jsonbKey: 'customerProfileJSON',
         label: 'Years in this home',
         options: yearsInHomeRanges,
         type: 'select',
@@ -93,7 +87,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'sellPlan',
-        jsonbKey: 'customerProfileJSON',
         label: 'Planning to sell?',
         options: sellPlans,
         type: 'select',
@@ -101,7 +94,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'yearBuilt',
-        jsonbKey: 'propertyProfileJSON',
         label: 'Year home was built',
         options: yearBuiltRanges,
         type: 'select',
@@ -109,7 +101,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'hoa',
-        jsonbKey: 'propertyProfileJSON',
         label: 'HOA?',
         type: 'boolean',
       },
@@ -123,7 +114,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'numQuotesReceived',
-        jsonbKey: 'financialProfileJSON',
         label: 'How many other quotes have they received?',
         min: 0,
         placeholder: '0',
@@ -132,7 +122,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'projectNecessityRating',
-        jsonbKey: 'customerProfileJSON',
         label: 'How necessary is this project to them? (1–10)',
         max: 10,
         min: 1,
@@ -141,7 +130,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'constructionOutlookFavorabilityRating',
-        jsonbKey: 'customerProfileJSON',
         label: 'How favorable is their outlook on construction? (1–10)',
         max: 10,
         min: 1,
@@ -157,7 +145,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'creditScore',
-        jsonbKey: 'financialProfileJSON',
         label: 'Estimated credit score range',
         options: creditScoreRanges,
         type: 'select',
@@ -165,7 +152,6 @@ export const INTAKE_STEPS = [
       {
         entity: 'customer',
         id: 'priorContractorExperience',
-        jsonbKey: 'customerProfileJSON',
         label: 'Prior contractor experience',
         options: priorContractorExperiences,
         type: 'select',
