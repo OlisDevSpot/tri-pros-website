@@ -116,3 +116,6 @@ this file is canonical over memory.
 - 2026-07-13 — "faces away" ignored ~50% for kneeling/leaning poses → explicit "only the top and back of his head" phrasing works; edit pass can fix without disturbing scene (once added a ball cap — acceptable).
 - 2026-07-13 — all Monique originals carry a Concierge Home Remodeling watermark → project blocked for during-photos until cleaned originals exist.
 - 2026-07-13 — real cost ~2cr/edit pass (skill table's 6cr figure is for 2k nano_banana_2 stills), monthly credits refill; iterate freely.
+- 2026-07-14 — top-down drone base (Bliss): model kept every element but ROTATED the composition 90° → for unusual angles or <1200px bases, spell out the frame layout in the prompt ("walkway runs HORIZONTALLY, street along the LEFT, mailbox bottom center") and forbid rotate/mirror/recompose; one re-roll fixed it.
+- 2026-07-14 — drone/top-down IS viable: kneeling, bent-forward workers show shirt-back logos legibly from directly above.
+- 2026-07-14 — skill validated 5/5 projects (Altura, Olympia, Riviera, Atlas, Bliss); Altura during-20 correctly rejected for visible real person; Monique correctly blocked on watermark rule.
