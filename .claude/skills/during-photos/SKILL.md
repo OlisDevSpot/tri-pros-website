@@ -56,7 +56,7 @@ a mid-construction scene" — stop; that is the superseded v1 approach
 | Real `during-*` photo (best) | Work matching the visible phase: grading → rake/wheelbarrow/compactor; gunite shell → trowel check, tape-measure layout; framing → level, nail gun; drywall → mud, sanding pole |
 | `before-*`/`hero-before` | Day-one prep only: measuring, marking, masking, laying floor protection, walking the site with a clipboard |
 | `after-*`/`hero-after` | ⛔ BANNED as base (Oliver 2026-07-14) — during photos come ONLY from before or during bases; a finished scene with workers reads as staged |
-| Empty folder (Verona, Oasis) or only afters (Atlas) | STOP — no valid base; report to Oliver |
+| Empty folder or only afters | Check the RAW MEDIA TROVE first: `/mnt/c/Users/porat/Downloads/Projects Photos-20251122T231352Z-1-001/Projects Photos/` (Drive export, per-trade + per-address folders, some with real `Before N.JPG` sets) — e.g. "Dry Landscaping/Ostella Dr, Los Angeles" = Oasis bases. Project↔folder mapping is by city/scope inference; confirm with Oliver before final publish. If the trove has nothing either: STOP — report to Oliver. (Blocked as of 2026-07-14: Atlas, Bliss, Verona — afters/night-only everywhere; Monique — afters only, though clean unwatermarked originals live in `Downloads/arcadia-kitchen-remodel/`) |
 | Base has a visible real person | Skip that base (unbranded worker next to branded inserts reads wrong) or crop them out first |
 | Base has third-party watermark (all Monique photos: "Concierge Home Remodeling") | STOP and flag — editing around it fabricates; Oliver must supply cleaned originals first |
 
@@ -105,9 +105,12 @@ higgsfield generate create nano_banana_pro \
 > printed large and centered on the shirt BACK — the house-shaped mark in
 > white and light blue, TRI PROS, and REMODELING below it, letter-perfect —
 > and on the FRONT the exact same logo printed small, palm-sized, on the
-> upper LEFT chest (the wearer's left side, over the heart), same white and
-> light-blue art at chest-pocket scale{omit this front clause when every
-> worker is seen from behind}; plus work boots. {PROPS — cap at what the
+> upper LEFT chest (the wearer's left side, over the heart){for camera-facing
+> workers ADD the camera-space anchor — "because he faces the camera, this
+> small chest logo appears on the RIGHT half of his chest as seen in the
+> image" — "wearer's left" alone flips ~50%}, same white and light-blue art
+> at chest-pocket scale{omit this front clause when every worker is seen from
+> behind}; plus work boots. {PROPS — cap at what the
 > task strictly needs, e.g. "A single push broom and one bucket are the only
 > objects added."} The workers are clearly different people. Their integration
 > must look like they were in the original photo: same grain, same exposure,
@@ -168,3 +171,7 @@ this file is canonical over memory.
 - 2026-07-14 — Oliver's uniform spec: FRONT of shirt carries a small `logo-light-bottom` chest print on the upper left chest (tone-on-tone on navy, blue R pops) — front-facing workers are now fully brandable. Chest swatch added to preflight; template + QA updated.
 - 2026-07-14 — v4 validated 5/5 with chest logos. Model renders the chest print well but is INCONSISTENT about which chest side (wearer-left vs wearer-right varies per roll) — if Oliver standardizes a side, pin it in the CREW_BLOCK ("on the wearer's LEFT chest, over the heart") and QA it. Model may also plausibly embellish lighting (lit the wine-cellar downlights) — judgment call at QA.
 - 2026-07-14 — Oliver correction (v5): the front chest print is the SAME `logo-dark-bottom` white-letter lockup as the back, just small — NOT `logo-light-bottom`. One swatch now serves both prints; the third reference is gone; chest side pinned to the wearer's LEFT ("top left of the shirt"). Preflight, orientation axis, template, and QA updated.
+- 2026-07-14 — v5 validated 3/3 on Oasis. Chest-side fix that WORKS: "wearer's LEFT" alone still flipped ~50% — adding camera-space phrasing ("because he faces the camera, this small chest logo appears on the RIGHT half of his chest as seen in the image") landed it correctly. Use both phrasings together for any front-facing worker.
+- 2026-07-14 — raw media trove discovered: Downloads Drive export "Projects Photos" holds per-address folders with real Before sets; "Ostella Dr, Los Angeles" (patchy lawn + flagstone steppers → turf) inferred = Oasis. Bases live OUTSIDE the repo — survey the trove before declaring a project blocked. Ostella Before 7/8 rejected for visible people (pool swimmers, homeowner at table); 6/10/11 clean.
+- 2026-07-14 — tape-measure poses: "stretching the tape" renders the tape standing VERTICALLY in mid-air ~50% — specify "taut and LOW along the ground, hovering just inches above the grass" and which hand holds the housing at knee height.
+- 2026-07-14 — model may silently REMOVE a thin foreground obstacle (canopy pole) where the worker is inserted — anchor skinny vertical objects by name + "MUST stay exactly where it is" and add REMOVE to the forbidden verbs.
