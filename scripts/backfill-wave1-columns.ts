@@ -32,6 +32,44 @@ const LEGACY_ENUM_MAP: Record<string, Record<string, string | null>> = {
   creditScore: { '650–700': '600 – 700', '750–800': '700+' },
 }
 
+// Dead pre-Zod blob KEYS (2026-07-14 rehearsal eyeball audit; ruling recorded
+// in PR #260). Whole keys no current schema knows, distinct from the enum-LABEL
+// map above:
+//  - decisionUrgencyRating → decisionTimeline (salvaged — old key name for the
+//    same concept; sub-month urgency values collapse to 'ASAP')
+//  - familyStatus → dropped (no target concept in customer_profiles; data stays
+//    recoverable in the frozen blob until the next-release blob drop)
+const LEGACY_URGENCY_TO_TIMELINE: Record<string, string> = { 'ASAP': 'ASAP', '1–2 weeks': 'ASAP' }
+
+function normalizeLegacyKeys(
+  blob: Record<string, unknown> | null | undefined,
+  rowId: string,
+): Record<string, unknown> | null {
+  if (!blob)
+    return null
+  const normalized = { ...blob }
+  if ('decisionUrgencyRating' in normalized) {
+    const raw = String(normalized.decisionUrgencyRating)
+    delete normalized.decisionUrgencyRating
+    const mapped = LEGACY_URGENCY_TO_TIMELINE[raw]
+    if (mapped == null) {
+      console.warn(`↷ customers ${rowId}: decisionUrgencyRating "${raw}" → DROPPED (unmappable)`)
+    }
+    else if (normalized.decisionTimeline != null) {
+      console.warn(`↷ customers ${rowId}: decisionUrgencyRating "${raw}" → DROPPED (decisionTimeline already set)`)
+    }
+    else {
+      normalized.decisionTimeline = mapped
+      console.warn(`↷ customers ${rowId}: decisionUrgencyRating "${raw}" → decisionTimeline "${mapped}"`)
+    }
+  }
+  if ('familyStatus' in normalized) {
+    console.warn(`↷ customers ${rowId}: familyStatus "${String(normalized.familyStatus)}" → DROPPED (dead legacy key)`)
+    delete normalized.familyStatus
+  }
+  return normalized
+}
+
 // blobField -> customer_profiles column property (identical names except
 // mainPainPoint split). `age` is handled separately — it stays a plain
 // column on `customers`, not part of the 23-field child-table patch.
@@ -109,7 +147,8 @@ async function backfillCustomers(stats: Stats) {
         continue
       }
 
-      // Normalize legacy enum labels BEFORE Zod parse
+      // Normalize legacy KEYS then legacy enum labels BEFORE Zod parse
+      cp = normalizeLegacyKeys(cp, row.id) as any
       cp = normalizeLegacyEnums(cp, ['householdType', 'ageGroup', 'triggerEvent'], row.id, 'customers') as any
       fp = normalizeLegacyEnums(fp, ['creditScore'], row.id, 'customers') as any
 

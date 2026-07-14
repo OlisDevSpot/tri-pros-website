@@ -66,7 +66,10 @@ follow-up mini-push — see Step 5): `customer_profile_json`, `property_profile_
   proceeding.
 
 **Step 1: Rehearsal** — create a Neon branch off PRODUCTION (`mcp Neon create_branch`
-or console), point `DATABASE_URL_OVERRIDE` at it, then:
+or console), then export `DATABASE_URL` pointing at it in the shell (a shell-exported
+`DATABASE_URL` wins: `drizzle.config.ts` only overrides from `.env.local` — which
+doesn't define `DATABASE_URL` — and the plain `.env` load never overwrites an
+already-set var). Then:
 
    a. `pnpm drizzle-kit push` against the REHEARSAL branch only. Verify the plan
       matches "What the prod push actually contains" above exactly: `CREATE TABLE
@@ -81,14 +84,14 @@ or console), point `DATABASE_URL_OVERRIDE` at it, then:
       **Rehearsal notes (dev-verified figures below — PROD numbers may differ; treat
       these as the shape to expect, not exact counts):**
 
-      - **Legacy-enum mapping**: the backfill logs `↷` lines for customers whose
-        blob data uses a retired enum label (see `LEGACY_ENUM_MAP` in
-        `scripts/backfill-wave1-columns.ts` — mapping decisions recorded in the
-        Wave-1 PR). Dev showed exactly **7 distinct customer rows** (10 log lines —
-        three rows hit two fields each). Review every `↷` against
-        `LEGACY_ENUM_MAP`'s documented set; any value NOT in that map, or an 8th
-        distinct row, means new legacy data appeared since the last audit — **stop
-        and extend the map**.
+      - **Legacy-enum + legacy-key mapping**: the backfill logs `↷` lines for
+        customers whose blob data uses a retired enum label (`LEGACY_ENUM_MAP`)
+        or a dead pre-Zod blob KEY (`normalizeLegacyKeys` — `decisionUrgencyRating`
+        salvaged into `decisionTimeline`, `familyStatus` dropped; rulings 2026-07-14
+        in PR #260). The 2026-07-14 rehearsal (exact dev clone) showed **7 distinct
+        customer rows, 15 log lines**. Review every `↷` against the documented
+        sets; any value NOT in a map, or an 8th distinct row, means new legacy
+        data appeared since the last audit — **stop and extend the map**.
       - **`customers → customer_profiles` child-row split**: the backfill prints a
         dedicated line, `customers → customer_profiles: written=<n> skipped=<n>
         wouldWrite=<n>`. Dev showed `written=23 skipped=10` — 23 of the 33 customers
