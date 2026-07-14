@@ -36,7 +36,36 @@ Status legend: `candidate` = in Oliver's Downloads awaiting HITL pick ·
 | Roof (trove) | tri-pros-during-v6-roof-underlayment-crew2 | candidate | during (tear-off to plywood, low-slope) | 2 | backs | setting (underlayment roll + tacker) | tall·buzzed·tan·gloves / stocky·curly·gray-canvas |
 | Windows (trove: Windows & Doors) | tri-pros-during-v6-windows-doormeasure-crew2 | candidate | before (old patio slider) | 2 | mixed | measuring (opening measure) | lean·beanie·tan / short·cap·gray-canvas |
 | ExtPaint (trove: Exterior Paint) | tri-pros-during-v6-extpaint-scraping-solo | candidate | during (peeling siding, prep) | 1 | backs | prep (paint scraping) | broad·graying·gray-canvas |
+| picasso | tri-pros-during-picasso-flooring-solo-back | candidate | during (herringbone LVP) | 1 | backs | flooring (plank set) | broad·shaved·olive-cargo·red-boots |
+| picasso | tri-pros-during-picasso-drywall-crew2-mixed | candidate | during (drywall) | 2 | mixed | drywall (pole sand + mud pan) | tall-lean·olive-cargo / stocky·shaved·auburn-beard·red-boots |
+| picasso | tri-pros-during-picasso-scratchcoat-solo-front | candidate | during (tile prep) | 1 | front | tile-prep (scratch coat) ⚠︎chest sub-line soft | broad·auburn-beard·olive-cargo·red-boots |
+| travertine | tri-pros-during-travertine-flooring-solo-back | candidate | during (LVP mid-install) | 1 | backs kneeling | flooring (tapping block + mallet) | heavyset·salt-pepper·charcoal |
+| travertine | tri-pros-during-travertine-drywall-crew2-backs | candidate | during (taped drywall) | 2 | backs | drywall (mud + pole sander) | heavyset·salt-pepper / slim·ear-muffs·charcoal |
+| travertine | tri-pros-during-travertine-windowseal-solo-back | candidate | during (new windows) | 1 | back-quarter | sealing (jamb caulk) | salt-pepper·ear-muffs·charcoal |
+| eclipse | tri-pros-during-eclipse-compacting-solo-back | candidate | during (graded dirt) | 1 | backs | compacting (hand tamper) | athletic·backward-cap·brown-carpenter |
+| eclipse | tri-pros-during-eclipse-marking-crew2-backs | candidate | before (parkway dirt) | 2 | backs | marking (stake + spray) ⚠︎plate drift | ponytail·brown-carpenter / backward-cap·sweatband |
+| eclipse | tri-pros-during-eclipse-prep-crew2-mixed | candidate | before (side walkway) | 2 | mixed | prep (taping + rosin paper) | ponytail·sweatband·lean / backward-cap·brown-carpenter |
+| sunrise | tri-pros-during-sunrise-sweeping-solo | candidate | during (OSB re-deck) | 1 | backs | cleanup (broom co-opt) | stocky·silver-buzz·khaki |
+| sunrise | tri-pros-during-sunrise-rollcarry-solo | candidate | during (old membrane) | 1 | back-¾ | staging (roll carry) | stocky·silver-buzz·tan-gloves |
+| emmie | tri-pros-during-emmie-measuring-solo | candidate | before (utility closet) | 1 | backs | measuring (closet tape) | stocky·safety-glasses-up·gloves-in-belt |
+| tableau | tri-pros-during-tableau-cabinetinstall-crew2 | candidate | during (kitchen mid-install) | 2 | mixed | setting (cabinet join + level) | silver-buzz·khaki / stocky·safety-glasses-up |
+| juanita | tri-pros-during-juanita-fabricpin-crew2 | candidate | during (weed fabric, people cropped) | 2 | backs | prep (fabric pinning) | wiry·black-jeans / broad·sun-sleeves·pouch |
+| juanita | tri-pros-during-juanita-sitesurvey-solo | candidate | before (gravel yard) | 1 | front | survey (clipboard) | curly-ginger·black-jeans |
+| meridian | tri-pros-during-meridian-floorprotect-crew2 | candidate | before (bathroom) | 2 | backs ⚠︎far chest soft | prep (floor protection) | broad·pouch·black-jeans / wiry·sun-sleeves |
+| quartzite | tri-pros-during-quartzite-sweep-solo | candidate | during (LVP install) | 1 | backs | cleanup (sweep, broom co-opt) | curly-ginger·sun-sleeves |
+| fulcrum | tri-pros-during-fulcrum-lumbercarry-crew2 | candidate | during (framing) | 2 | backs | carrying (lumber board) | wiry·pouch / black-jeans·sun-sleeves |
+| volute | tri-pros-during-volute-formwork-solo | candidate | during (footing forms) | 1 | backs | formwork (level check) | athletic·camo-cap·stone-gray |
+| amoria | tri-pros-during-amoria-patching-crew2 | candidate | during (paint prep) | 2 | mixed | patching (stucco crack) ⚠︎chest sub-line soft | athletic·stone-gray / goatee·earplugs-cord |
+| amoria | tri-pros-during-amoria-dropcloth-solo-front | candidate | during (masked doors) | 1 | front | prep (drop cloth) | camo-cap·goatee |
+| biggal | tri-pros-during-biggal-pipestrap-solo | candidate | during (flat roof, bare deck) | 1 | back-¾ kneeling | mech rough-in (pipe strap) | stone-gray·earplugs-cord |
+| biggal | tri-pros-during-biggal-conduit-crew2 | candidate | during (HVAC unit) | 2 | backs | fit-out (PVC + conduit) | athletic·camo-cap / broad·earplugs-cord |
+| larry | tri-pros-during-larry-tearoff-crew2 | candidate | during (tear-off deck, street cropped) | 2 | backs | demo (pry bar + sweep) | balding·gray-fringe·olive-drab / compact·sun-hat |
+| larry | tri-pros-during-larry-rollcarry-solo | candidate | during (plywood re-sheet) | 1 | backs | staging (roll carry) ⚠︎model added tool-belt | sun-hat·olive-drab·knee-pads |
+| paragon | tri-pros-during-paragon-tileset-solo | candidate | during (tile half-laid, person cropped) | 1 | backs kneeling | setting (floor tile) | compact·balding·gray-fringe·knee-pads |
+| solstice | tri-pros-during-solstice-cleanup-crew2 | candidate | during (gutted interior, 700px) | 2 | backs | cleanup (broom + bucket) | compact·balding·olive-drab / sun-hat·knee-pads |
 
 **Blocked/dropped 2026-07-14** (no valid base or re-rolls exhausted): Atlas, Bliss, Verona, Monique (afters only) · Genesis Dr, Stepping Stones, Turf, Multiple EE (afters/people only) · ADU (real workers + customer-PII blueprint) · Manshma (occluded-strip hallucination 3/3) · HVAC (sleeve-print migration 3/3).
 
 **2026-07-14 import → ROLLED BACK same day**: the 28 candidates were briefly imported as 18 NEW projects — WRONG WORKFLOW (Oliver: the pipeline decorates EXISTING DB projects, never creates them). All 18 projects + media rows + R2 objects deleted; DB restored to the 47 real projects. The 28 PNGs remain in Downloads as candidates; the v4/v5/v6 rows above stay as variation history. Correct upload path: `pnpm add-during-media <accessor> <files...>`.
+
+**2026-07-14 existing-project sweep (v7)**: 27 candidates across ALL 16 DB projects with before/during bases (7 agents, pre-partitioned palettes — zero signature collisions). Awaiting Oliver's picks; upload via `pnpm tsx scripts/add-during-media.ts <accessor> <files...>`.

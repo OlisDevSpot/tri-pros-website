@@ -192,6 +192,8 @@ per the Crew variation axes above.
       differentiators each, ≤1 accessory each
 - [ ] Landmarks unchanged vs base (walls, windows, piles, pets, horizon) — diff
       them side by side; drift = re-roll with stronger "keep EXACTLY" anchors
+- [ ] Base clearance AND output checked at 100% zoom for background people
+      (street bands, deep background) — blurred pedestrians hide at preview scale
 - [ ] Worker scale & shadow direction match the photo
 - [ ] No watermark/text anywhere; no invented signage
 - [ ] ALL pre-existing in-scene text unchanged at 100% (machine decals, yard
@@ -243,3 +245,10 @@ this file is canonical over memory.
 - 2026-07-14 — v6: parallel batch agents each invented worker signatures blind to one another → three near-identical "tall·buzzed·tan" variants slipped through (roof/bathroom1/altura-grading). For future bulk runs, pre-partition an appearance palette per agent in the dispatch prompts.
 - 2026-07-14 — v6: PII hazard in raw trove — the ADU folder photo contains a legible blueprint with a customer name/address (also has embedded real workers; blocked). Never use bases with readable customer PII.
 - 2026-07-14 — WORKFLOW CORRECTION (Oliver): a bulk run wrongly CREATED 18 new projects from disk/trove photos — all rolled back same day (rows + R2 objects deleted). The pipeline decorates EXISTING DB projects only: bases come from the project's own before/during mediaFiles, winners go back via `scripts/add-during-media.ts`. API surface + base-selection table rewritten; map the gameplan and confirm with Oliver before any bulk operation that touches the DB.
+- 2026-07-14 — v7 sweep (16 existing DB projects, 27 candidates, 0 blocked; ~59 edit passes). Pre-partitioned appearance palettes per agent eliminated signature collisions. Systemic findings:
+- 2026-07-14 — v7: IN-SCENE TEXT is the #1 re-roll driver — document-style labels (EnergyGuide), box labels, and license plates re-spell/mirror on EVERY roll even letter-by-letter-pinned (8+ failures across 4 agents). ONLY reliable fixes: crop the text object out of the base (sharp .extract) or pick text-free bases. Distant BLURRY signage is saveable: "keep it exactly as blurry as the reference; never invent letters". Plates = treat like watermarks.
+- 2026-07-14 — v7: spelling-anchor upgrades that worked: "capital R with a full straight vertical stem" (fixes AEMODELING), negative-letter form "ending in I-N-G, never I-N-O" (when the plain spellout fails), a SEPARATE spelling anchor for the chest print, and "the mark is never replaced by plain giant letters" (one roll swapped the lockup for a giant TRI wordmark).
+- 2026-07-14 — v7: chest-side verdict — camera-space anchor + "if the print appears on the left half as seen in the image, that placement is WRONG" is reliable ONLY for workers CLOSE to camera in low/kneeling poses; mid-distance full-body front workers flip or garble ~2/3. Rule: front orientation only for close-framed workers; everyone else backs/profile.
+- 2026-07-14 — v7: landmark-removal generalizes — ANY mid-size prop near the insertion zone (wheelbarrow, ladder, leaf blower) can vanish even when named in the keep-clause; each needs the per-object anchor "MUST stay exactly where it is, pixel-identical — do NOT remove" (+ REMOVE in the forbidden verbs). Material stacks drift in COUNT (4 rolls → 9) — pin exact counts; branded props duplicate — pin "only ONE".
+- 2026-07-14 — v7: pose findings — steep top-down close solos are camera-stare magnets (gaze negations fail; prefer standing/side tasks); plain-fabric pin needed for patterned caps (camo invited invented embroidery); color anchors on mid-ground appliances are weak (orange vac → tan 2/3); model may add an unrequested accessory (tool belt) — HITL call.
+- 2026-07-14 — v7: base clearance requires a 100%-ZOOM people scan of background/street bands — blurred pedestrians are invisible at preview scale (larry base shipped one roll before being caught). QA gate amended.
