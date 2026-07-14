@@ -105,7 +105,7 @@ impl: `mergeFunnelEnrichment` (`src/shared/entities/customers/dal/server/mutatio
 which does `jsonb_set(lead_meta_json, '{source,enrichment}', ...)`.
 
 **Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts` (`buildUpdateSet`);
-`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §2 (Wave 2 removal plan).
+`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §3 (Wave 2).
 **Enforced by**: `createCrudDal` merge path reading `spec.update.jsonbMergeColumns`.
 
 ### evolution-playbook

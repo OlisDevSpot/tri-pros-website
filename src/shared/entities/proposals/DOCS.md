@@ -104,7 +104,7 @@ updates REPLACE the column (plain CRUD path). They were previously registered in
 prevented field-clearing — deregistered because no caller ever sent a partial.
 Do not re-register: a whole-document writer + `||` merge resurrects deleted keys.
 Full decomposition of these blobs lands in Waves 2–3
-(see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §2).
+(see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §2 verdicts + §3 wave structure).
 
 ### final-tcp-derived
 
