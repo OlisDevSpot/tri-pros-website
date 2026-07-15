@@ -22,6 +22,7 @@
 - **Immutable-capture rule** (this wave's design decision): `customer_lead_attribution.capture_json` stores the FULL immutable capture snapshot (typed `LeadMeta`) **minus `source.enrichment`** (the one mutable part, which lives exclusively in `customer_enrichment` rows). The promoted hot-field columns are query projections of that immutable snapshot — duplication is safe because the snapshot never changes after capture. Never write `capture_json` outside intake/backfill.
 - **Git**: work on a feature branch `feat/<issue>-wave-2-child-tables` (create a GitHub issue on epic #256 first, mirroring #259). Stage by explicit path, never `git add -A`. Commits end with the Co-Authored-By trailer. PR opens with `Closes #<issue>`, preflight `pnpm lint && pnpm tsc`.
 - The frozen Wave-1 blob columns (`customer_profile_json`, `property_profile_json`, `financial_profile_json`, `agent_profile_json`, `voip_config_json`) are NOT dropped in this wave's code — the drop rides the W2 prod push via the runbook (Task 10 decision gate).
+- **Deprecation ledger**: `docs/plans/jsonb-decomposition-deprecation-ledger.md` is the standing dead-code register for the program. Every task that deletes a ledger row checks it off with the commit hash IN THE SAME COMMIT; every new bridge/frozen path this wave creates is already registered there. Task 11 reconciles the ledger before the PR opens.
 
 ---
 
@@ -333,7 +334,15 @@ Structure mirrors `scripts/backfill-wave1-columns.ts` (read it first — flag pa
 /* eslint-disable no-console */
 // Wave-2 backfill: leadMetaJSON → customer_lead_attribution + customer_enrichment;
 // fundingJSON.data.incentives → proposal_incentives; final_tcp_cents recompute.
-// Idempotent (upsert / delete-then-insert semantics) — re-run = verify/repair.
+//
+// ⚠️ CUTOVER-WINDOW-ONLY for the proposals section: it treats the BLOB as the
+// source of truth. Once the cutover release flips writers (blob incentives
+// blanked, rows canonical), a full re-run would overwrite live rows with stale
+// blob data. Post-deploy verification MUST run with --skip-proposals; the
+// proposals check becomes SQL (zero NULL final_tcp_cents) + flows. Delete this
+// script when lead_meta_json drops — see docs/plans/jsonb-decomposition-deprecation-ledger.md.
+//
+// Idempotent PRE-cutover (upsert / delete-then-insert semantics) — re-run = verify/repair.
 // Parity: read back and diff vs the source blob; TS computeFinalTcp pins the
 // SQL recompute (Addendum A.2 guard). Non-zero diff or per-row Zod failure ⇒
 // exit 1, no partial success reporting. see spec §4.
@@ -348,6 +357,7 @@ import { createScriptDb } from './lib/script-db'
 
 const db = createScriptDb()
 const DRY_RUN = process.argv.includes('--dry-run')
+const SKIP_PROPOSALS = process.argv.includes('--skip-proposals')
 
 interface Stats { written: number, wouldWrite: number, skipped: number, mismatches: number, errors: number }
 const newStats = (): Stats => ({ written: 0, wouldWrite: 0, skipped: 0, mismatches: 0, errors: 0 })
@@ -491,9 +501,11 @@ async function backfillProposals(): Promise<Stats> {
 }
 
 async function main() {
-  console.log(`[backfill-wave2] ${DRY_RUN ? 'DRY RUN' : 'LIVE'}`)
+  console.log(`[backfill-wave2] ${DRY_RUN ? 'DRY RUN' : 'LIVE'}${SKIP_PROPOSALS ? ' (proposals SKIPPED — post-cutover mode)' : ''}`)
   let failed = false
-  for (const [label, fn] of [['customers → attribution/enrichment', backfillCustomers], ['proposals → incentives/final_tcp_cents', backfillProposals]] as const) {
+  const sections = [['customers → attribution/enrichment', backfillCustomers] as const]
+  if (!SKIP_PROPOSALS) sections.push(['proposals → incentives/final_tcp_cents', backfillProposals] as const)
+  for (const [label, fn] of sections) {
     const s = await fn()
     console.log(`${label}: written=${s.written} wouldWrite=${s.wouldWrite} skipped=${s.skipped} mismatches=${s.mismatches} errors=${s.errors}`)
     if (s.mismatches > 0 || s.errors > 0) failed = true
@@ -1237,6 +1249,7 @@ Copy the Wave-1 runbook structure (`2026-07-13-wave-1-cutover-runbook.md`) exact
 - **Expected prod push plan**: `CREATE TABLE` × 3 (`customer_lead_attribution`, `customer_enrichment`, `proposal_incentives` + 2 CHECKs), `ALTER TABLE proposals ADD COLUMN final_tcp_cents, calc_version`, 4× enum→text `ALTER COLUMN` + 4× `DROP TYPE` (prod enums 23 → 19), ZERO `CREATE TYPE`. Include the manual enum-conversion SQL from Task 2 Step 5 as the fallback if push can't cast.
 - **Decision gate — Wave-1 frozen-column drops**: IF the three outstanding W1 smoke flows (funnel intake, agent settings, campaigns policy card) are verified before cutover, the 5 frozen W1 blob columns (`customer_profile_json`, `property_profile_json`, `financial_profile_json`, `agent_profile_json`, `voip_config_json`) ride this push (schema edit: delete the 5 `*Deprecated` properties first). Otherwise they wait for the W3 push. Ask Oliver at cutover time.
 - **Abort rule**: any UNEXPECTED drop in the push plan = abort (only the 5 sanctioned W1 drops may appear, and only if the gate above passed).
+- **Post-deploy verification**: re-run the backfill **with `--skip-proposals`** (⚠️ NEVER a full re-run after the deploy — writers have flipped and the proposals section would overwrite live incentive rows with stale blob data); proposals verified via SQL instead: `SELECT count(*) FROM proposals WHERE final_tcp_cents IS NULL` must be 0.
 - **Post-deploy flows**: funnel intake → attribution + enrichment rows in prod; progressive enrichment (answer a later funnel step) → row upserted; customer profile Funnel Intake panel; proposal edit incentives → rows + `final_tcp_cents`; proposals list price sort; proposal PDF + AI summary show discounts; Zoho envelope creation on a draft (context tcp correct); frozen-check: editing a sent-to-sign proposal's incentives → `proposal_financials_frozen` error.
 - **Next release**: drop `customers.lead_meta_json` (frozen this wave) + any W1 columns deferred by the gate.
 - **Rollback story**: frozen `lead_meta_json` untouched for one release; blob `fundingJSON.data.incentives` values remain in old rows (writers blank only on next save); Neon PITR backstop.
@@ -1250,8 +1263,57 @@ git commit -m "docs(runbook): Wave-2 staged cutover — rehearsal ladder, enum-c
 
 ---
 
+### Task 11: Dead-code cleanup pass — ledger reconciliation
+
+**Files:**
+- Modify: `docs/plans/jsonb-decomposition-deprecation-ledger.md` (check rows off with commit hashes)
+- Delete: `docs/plans/2026-06-27-jsonb-deep-merge-handoff.md`
+- Delete: `docs/plans/2026-06-27-jsonb-deep-merge-implementation-plan.md`
+- Delete: `docs/superpowers/plans/2026-07-03-ws2-jsonb-deep-merge.md`
+- Modify: `/home/olis-solutions/.claude/projects/-home-olis-solutions-olis-v3-nextjs-tri-pros-website/memory/project-funnel-capture-and-jsonb-merge.md` + `memory/project-jsonb-strategy-research.md` + `memory/MEMORY.md` hooks (merge mechanism → historical; W2 status; ledger pointer)
+
+This task exists so NOTHING dead floats into future sessions unaccounted for. It runs LAST, before the PR opens.
+
+- [ ] **Step 1: Verify every "deleted during W2" ledger row is actually gone**
+
+Run each sweep; every one must return zero code hits (doc hits only where the ledger says tombstone-style prose is expected):
+
+```bash
+grep -rn "mergeFunnelEnrichment" src/
+grep -rn "jsonbMergeColumns" src/          # zero hits — types, specs, comments all gone
+grep -rn "buildUpdateSet" src/
+grep -rn "finalTcpExpr" src/
+grep -rn "leadMetaJSON\b" src/             # only leadMetaJSONDeprecated (schema + 2 legacy scripts + backfill) may remain
+grep -rn "toRows\|LEGACY_ENRICHMENT_LABELS" src/shared/entities/customers/components/
+```
+
+Any hit = a missed deletion — fix it in this task, don't defer.
+
+- [ ] **Step 2: Delete the three superseded deep-merge design docs**
+
+They describe BUILDING the machinery this wave deleted — actively misleading to future sessions. `git rm` all three (paths above). Search for inbound references first (`grep -rn "jsonb-deep-merge\|ws2-jsonb" docs/ src/ memory/ CLAUDE.md`) and update any pointer to reference the decomposition spec + ledger instead.
+
+- [ ] **Step 3: Check off ledger rows + register survivors**
+
+In the ledger: mark every "deleted DURING implementation" row `[x] deleted (<commit>)`; mark the superseded-docs rows; confirm the "frozen/scaffolding" and "dies in W3" sections list every bridge this wave actually shipped (add any the implementation introduced that the plan didn't foresee — that's the point of the reconciliation).
+
+- [ ] **Step 4: Memory truth-pass**
+
+Update the two memory files (merge-hazard rule → "historical; mechanism deleted Wave 2, see ledger"; jsonb-strategy status → "W2 implemented on branch; W3 = SOW") and their MEMORY.md hook lines.
+
+- [ ] **Step 5: Final verify + commit**
+
+```bash
+pnpm tsc && pnpm lint
+git add docs/plans/jsonb-decomposition-deprecation-ledger.md
+git rm docs/plans/2026-06-27-jsonb-deep-merge-handoff.md docs/plans/2026-06-27-jsonb-deep-merge-implementation-plan.md docs/superpowers/plans/2026-07-03-ws2-jsonb-deep-merge.md
+git commit -m "chore: Wave-2 dead-code pass — ledger reconciled, superseded deep-merge docs deleted"
+```
+
+---
+
 ## Execution notes
 
-- **Task order is load-bearing**: 1→2→3 (schema+backfill so dev has data), 4→5 (customers additive then flip), 6→7 (proposals additive then flip), 8 (machinery deletion LAST of code — after 5's deregistration), 9→10 (docs/runbook).
+- **Task order is load-bearing**: 1→2→3 (schema+backfill so dev has data), 4→5 (customers additive then flip), 6→7 (proposals additive then flip), 8 (machinery deletion LAST of code — after 5's deregistration), 9→10 (docs/runbook), 11 (dead-code ledger reconciliation, always final).
 - After all tasks: `pnpm lint && pnpm tsc`, open PR with `Closes #<issue>`, paste the dev backfill parity output into the PR body. Prod cutover is exclusively human-driven via the Task-10 runbook.
 - **Known W2-accepted debts** (do NOT fix here): startingTcp + section incentives remain jsonb inside the single recompute statement (W3); blob-wide financial freeze gate beyond `replaceProposalIncentives` (W3 write refactor); `fundingJSON.data.incentives` key still exists in the Zod shape as the form/transport format (dies with fundingJSON in W3); PGlite property test for TS↔SQL parity deferred to the testing bootstrap (`docs/plans/2026-07-07-testing-bootstrap-handoff.md`) — the backfill parity check covers it operationally.
