@@ -10,7 +10,7 @@
  *
  * Usage:
  *   pnpm tsx scripts/verify-proposal-kind.ts          # dev DB
- *   NODE_ENV=production pnpm tsx scripts/verify-proposal-kind.ts   # prod DB
+ *   DRIZZLE_TARGET=prod pnpm tsx scripts/verify-proposal-kind.ts   # prod DB
  *
  * No writes, no transactions — safe to run any time, including against prod.
  */
@@ -22,8 +22,8 @@ const NEW_INDEX = 'proposals_one_approved_initial_sale_per_meeting_idx'
 const OLD_INDEX = 'proposals_one_initial_sale_per_meeting_idx'
 
 async function main() {
-  const env = process.env.NODE_ENV === 'production' ? 'PROD' : 'DEV'
-  console.log(`\nNODE_ENV=${process.env.NODE_ENV ?? 'undefined'} → ${env} DB\n`)
+  const env = process.env.DRIZZLE_TARGET === 'prod' ? 'PROD' : 'DEV'
+  console.log(`\nDRIZZLE_TARGET=${process.env.DRIZZLE_TARGET ?? '(unset)'} → ${env} DB\n`)
 
   console.log(`[1] Index presence`)
   const newIdx = await db.execute(sql`

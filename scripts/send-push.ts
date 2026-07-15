@@ -12,8 +12,8 @@
  *   pnpm push:test --to oliver@triprosremodeling.com --title "New lead" --body "Bob from Pasadena" --navigate /dashboard/customers
  *   pnpm push:test --to oliver@triprosremodeling.com --title "Proposal viewed" --navigate /dashboard/customers/abc123/proposals/xyz789
  *
- * Picks dev DB (DATABASE_DEV_URL) by default because NODE_ENV defaults to
- * 'development'. Set NODE_ENV=production to target the prod DB.
+ * Picks dev DB (DATABASE_DEV_URL) by default.
+ * Set DRIZZLE_TARGET=prod to target the prod DB.
  */
 import process from 'node:process'
 import './lib/load-env'

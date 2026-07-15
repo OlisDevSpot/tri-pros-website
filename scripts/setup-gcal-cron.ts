@@ -28,18 +28,18 @@
  *   ... -- --apply --force                 # bypass dupe guard
  *
  * URL resolution:
- *   - NODE_ENV=production → derives prod base URL from `APP_HOSTS.prod[0]`
+ *   - DRIZZLE_TARGET=prod → derives prod base URL from `APP_HOSTS.prod[0]`
  *     (the canonical host list in roots.ts). Bypasses publicUrl() entirely
  *     so this script can be run from a dev box (where NGROK_URL or a dev
  *     NEXT_PUBLIC_BASE_URL would otherwise leak in) and still target the
  *     real prod endpoint.
- *   - NODE_ENV=development → uses `publicUrl()`, which returns
+ *   - default (no target) → uses `publicUrl()`, which returns
  *     `NGROK_URL ?? NEXT_PUBLIC_BASE_URL`. The dev script runs through
  *     ngrok so QStash can deliver to the local app.
  *
  * Safety guards:
  *   - QSTASH_TOKEN unset → server-env.ts crashes the import, before any call.
- *   - NODE_ENV=production AND resolved URL contains "ngrok"|"localhost"|
+ *   - DRIZZLE_TARGET=prod AND resolved URL contains "ngrok"|"localhost"|
  *     "127.0.0.1" → refuse. Defends against future changes to APP_HOSTS.prod
  *     that would put a non-public host into the prod URL.
  *   - dev mode AND resolved URL is plain http://localhost → refuse with a
@@ -65,7 +65,7 @@ function assertReachableDestination(url: string, isProd: boolean): void {
   const looksDev = /ngrok|localhost|127\.0\.0\.1/i.test(url)
   if (isProd && looksDev) {
     console.error('')
-    console.error(`✗ Refusing: NODE_ENV=production but resolved URL looks dev-ish: ${url}`)
+    console.error(`✗ Refusing: DRIZZLE_TARGET=prod but resolved URL looks dev-ish: ${url}`)
     console.error('  This usually means .env.local has NGROK_URL set and is leaking into a prod')
     console.error('  invocation. Run from an environment where only NEXT_PUBLIC_BASE_URL (the prod')
     console.error('  origin) is exported, or unset NGROK_URL for this invocation.')
@@ -84,7 +84,7 @@ async function main() {
   const apply = process.argv.includes('--apply')
   const force = process.argv.includes('--force')
 
-  const isProd = process.env.NODE_ENV === 'production'
+  const isProd = process.env.DRIZZLE_TARGET === 'prod'
   // Prod path skips publicUrl() so dev-box invocations don't pick up
   // NGROK_URL or a dev-shaped NEXT_PUBLIC_BASE_URL from .env.local.
   const baseUrl = isProd ? PROD_BASE_URL : publicUrl()
@@ -92,7 +92,7 @@ async function main() {
 
   console.log('--- SETUP GCAL RENEWAL CRON ---')
   console.log(`Mode:        ${apply ? 'APPLY' : 'dry-run (pass --apply to create)'}`)
-  console.log(`NODE_ENV:    ${process.env.NODE_ENV ?? '(unset)'}`)
+  console.log(`DB target:   ${process.env.DRIZZLE_TARGET ?? '(unset → dev)'}`)
   console.log(`Base URL:    ${baseUrl}`)
   console.log(`Destination: ${destination}`)
   console.log(`Cron:        ${CRON} (every 12h)`)

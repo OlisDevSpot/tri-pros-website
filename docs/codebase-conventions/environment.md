@@ -4,6 +4,26 @@ Environment variables are validated at startup with Zod — the app exits with a
 
 ## Rules
 
+### environment-axes
+
+Three orthogonal questions, three separate levers — never conflate them (spec: `docs/superpowers/specs/2026-07-15-env-axes-design.md`):
+
+| Question | Lever | Values |
+|---|---|---|
+| Optimized build or dev build? | `NODE_ENV` | Set by Next.js tooling only — **never set by hand** |
+| Am I the deployed production site? | `VERCEL_ENV` | Injected by Vercel (`production` \| `preview` \| `development`); absent locally |
+| Which DB should this process touch? | `DRIZZLE_TARGET` | `prod` \| `dev`; **unset never silently means prod** |
+
+Concretely:
+
+- **Production safety gates** (`server-env.ts`: `META_TEST_EVENT_CODE`, `VOIP_DEV_OVERRIDE_NUMBER` must-not-be-set-in-prod) key on `VERCEL_ENV === 'production'`. A local shell can never trip them, no matter which DB it targets; a forbidden var in the Vercel prod env config fails the prod build — the right moment.
+- **DB selection** (`src/shared/db/index.ts`): explicit `DRIZZLE_TARGET` wins; unset → the deployed prod site gets `DATABASE_URL`, everything else gets `DATABASE_DEV_URL`. Same rule in `drizzle.config.ts`, `db-reset.ts`, `db-seed.ts`, and standalone scripts.
+- **CLI scripts** import the app's `@/shared/db` singleton normally and reach prod via `DRIZZLE_TARGET=prod pnpm tsx scripts/<script>.ts`. Prod-writing package scripts carry the prefix explicitly (`db:push:prod`, `backfill:*`, `migrate:*`); `NODE_ENV=production tsx …` is retired everywhere.
+
+**Why**: `NODE_ENV=production` from a local shell is a false claim ("I am an optimized production runtime") made to get prod data — it trips deployment gates that protect features scripts can't even reach, and Next.js docs explicitly say to use a different variable for environment concepts. Splitting the axes lets a script say exactly what it means: "prod *data*, not prod *runtime*".
+**Reference impl**: `src/shared/config/server-env.ts` (gates), `src/shared/db/index.ts` (selection), `scripts/lib/describe-target-db.ts` (operator banner)
+**Enforced by**: convention + the gates themselves (VERCEL_ENV can't be satisfied locally by accident)
+
 ### env-validated-at-startup
 
 All env vars are declared with Zod in two files:

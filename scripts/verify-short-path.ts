@@ -5,7 +5,7 @@
  * contractService, inspects the Zoho draft to confirm it has exactly 1
  * file (template only — short path doesn't attach), and cleans up.
  *
- * Run: NODE_ENV=production DATABASE_URL=... ZOHO_SIGN_*=... \
+ * Run: DRIZZLE_TARGET=prod DATABASE_URL=... ZOHO_SIGN_*=... \
  *      pnpm tsx scripts/verify-short-path.ts
  */
 import assert from 'node:assert/strict'

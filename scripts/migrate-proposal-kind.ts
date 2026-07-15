@@ -49,16 +49,16 @@
  *  src/shared/entities/proposals/DOCS.md#kind-derived-from-meeting-project.)
  *
  * Usage:
- *   pnpm migrate:proposal-kind:dev    # dev DB (default NODE_ENV)
- *   pnpm migrate:proposal-kind        # prod DB (sets NODE_ENV=production)
+ *   pnpm migrate:proposal-kind:dev    # dev DB (default)
+ *   pnpm migrate:proposal-kind        # prod DB (sets DRIZZLE_TARGET=prod)
  */
 import './lib/load-env'
 import { sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 
 async function main() {
-  const isProd = process.env.NODE_ENV === 'production'
-  console.log(`NODE_ENV=${process.env.NODE_ENV ?? 'undefined'} → ${isProd ? 'PROD' : 'DEV'} DB`)
+  const isProd = process.env.DRIZZLE_TARGET === 'prod'
+  console.log(`DRIZZLE_TARGET=${process.env.DRIZZLE_TARGET ?? '(unset)'} → ${isProd ? 'PROD' : 'DEV'} DB`)
 
   await db.transaction(async (tx) => {
     console.log('\n[1/5] Ensuring proposal_kind enum + kind column exist...')

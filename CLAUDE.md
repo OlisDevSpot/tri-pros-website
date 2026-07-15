@@ -18,8 +18,10 @@ pnpm dev:mobile       # Dev + ngrok tunnel + QR (mobile testing)
 pnpm tunnel           # ngrok tunnel only
 pnpm lint             # ESLint
 pnpm tsc              # Type-check (NEVER pnpm build unless explicitly asked)
-pnpm db:push:dev      # Push schema to dev DB (NEVER pnpm db:push — that's prod)
-pnpm db:reset / db:seed / db:snapshot
+pnpm db:push:dev      # Push schema to dev DB (prod = explicit db:push:prod, only when asked)
+pnpm db:reset:dev / db:seed:dev / db:snapshot
+# Scripts target the prod DB ONLY via DRIZZLE_TARGET=prod — never NODE_ENV.
+# Canonical: docs/codebase-conventions/environment.md#environment-axes
 pnpm push:test --to <email> --title "..." [--body "..."] [--navigate /path]
 pnpm dispatch help    # Parallel issue work
 ```

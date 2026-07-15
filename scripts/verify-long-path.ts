@@ -7,7 +7,7 @@
  * proposal is left in its current "stuck" state for Task 15 to handle
  * properly post-deploy.
  *
- * Run: NODE_ENV=production DATABASE_URL=... ZOHO_SIGN_*=... \
+ * Run: DRIZZLE_TARGET=prod DATABASE_URL=... ZOHO_SIGN_*=... \
  *      pnpm tsx scripts/verify-long-path.ts
  */
 import assert from 'node:assert/strict'

@@ -18,10 +18,10 @@
  *   - skips customers that already have a non-empty `interestedTradesRaw`
  *   - resolving the same data twice yields the same result
  *
- * Target DB is chosen by NODE_ENV (the runtime db client reads DATABASE_URL vs
- * DATABASE_DEV_URL by NODE_ENV — see memory/feedback-runtime-db-env):
+ * Target DB is chosen by DRIZZLE_TARGET (the runtime db client reads DATABASE_URL
+ * vs DATABASE_DEV_URL — see docs/codebase-conventions/environment.md#environment-axes):
  *   dev :  pnpm backfill:trades:dev      (or: tsx scripts/backfill-interested-trades-raw.ts)
- *   prod:  pnpm backfill:trades          (NODE_ENV=production)
+ *   prod:  pnpm backfill:trades          (DRIZZLE_TARGET=prod)
  *
  * Flags:
  *   --dry-run   report what WOULD change; write nothing.
@@ -39,7 +39,7 @@ import { constructionDataService } from '@/shared/services/construction-data.ser
 const DRY_RUN = process.argv.includes('--dry-run')
 
 async function main() {
-  const target = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'dev'
+  const target = process.env.DRIZZLE_TARGET === 'prod' ? 'PRODUCTION' : 'dev'
   console.log(`[backfill:trades] target=${target}${DRY_RUN ? ' (DRY RUN — no writes)' : ''}`)
 
   // tradeId → name map (exact lookup; the picked ids are real app trades).

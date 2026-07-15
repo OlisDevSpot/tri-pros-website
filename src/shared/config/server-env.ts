@@ -29,6 +29,12 @@ expand(config({ path: '.env' }))
 const envSchema = z.object({
   // General
   NODE_ENV: z.enum(['development', 'preview', 'production']).default('development'),
+  // Deployment environment — injected by Vercel into every build/invocation
+  // (production | preview | development). Never exists on a local machine, so
+  // it answers "am I the deployed prod site?" in a way a laptop can't fake by
+  // accident. NODE_ENV answers only "optimized build or dev build?".
+  // see docs/codebase-conventions/environment.md#environment-axes
+  VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   PORT: z.coerce.number().default(3000),
   NEXT_PUBLIC_BASE_URL: z.string(),
@@ -169,16 +175,24 @@ catch (e) {
 // stays as a clean default: the value is fully parsed and never reassigned.
 export default env
 
-// Production safety gate: VOIP_DEV_OVERRIDE_NUMBER reroutes all outbound voice/SMS
-// to a single test number — invaluable in dev/preview, catastrophic in production.
-if (env.NODE_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
+// Production safety gates key on VERCEL_ENV (the deployment environment), NOT
+// NODE_ENV (the build mode). VERCEL_ENV === 'production' is true only on the
+// deployed production site — a local CLI script can never trip these gates,
+// no matter which DB it targets (DRIZZLE_TARGET=prod). If a forbidden var is
+// ever added to the Vercel prod env config, the gate fails the production
+// build/boot — exactly when we want to hear about it.
+// see docs/codebase-conventions/environment.md#environment-axes
+
+// VOIP_DEV_OVERRIDE_NUMBER reroutes all outbound voice/SMS to a single test
+// number — invaluable in dev/preview, catastrophic in production.
+if (env.VERCEL_ENV === 'production' && env.VOIP_DEV_OVERRIDE_NUMBER) {
   throw new Error('VOIP_DEV_OVERRIDE_NUMBER must NOT be set in production')
 }
 
-// Production safety gate: META_TEST_EVENT_CODE tags CAPI events for Events Manager
-// → Test Events, which Meta EXCLUDES from optimization + reporting. Set in prod it
-// would silently divert every real Lead out of ad optimization — fail boot instead.
-if (env.NODE_ENV === 'production' && env.META_TEST_EVENT_CODE) {
+// META_TEST_EVENT_CODE tags CAPI events for Events Manager → Test Events,
+// which Meta EXCLUDES from optimization + reporting. Set in prod it would
+// silently divert every real Lead out of ad optimization — fail boot instead.
+if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
   throw new Error('META_TEST_EVENT_CODE must NOT be set in production (test events are excluded from optimization)')
 }
 

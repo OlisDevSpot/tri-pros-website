@@ -16,10 +16,10 @@
  *     name+city+zip present, else skip+report); >1 → skip+report (ambiguous).
  *   - Idempotent: a second run no-ops.
  *
- * Target DB is chosen by NODE_ENV (runtime db client reads DATABASE_URL vs
- * DATABASE_DEV_URL by NODE_ENV — see memory/feedback-runtime-db-env):
+ * Target DB is chosen by DRIZZLE_TARGET (runtime db client reads DATABASE_URL
+ * vs DATABASE_DEV_URL — see docs/codebase-conventions/environment.md#environment-axes):
  *   dev :  pnpm seed:bina-contacts:dev -- --file=<path>
- *   prod:  pnpm seed:bina-contacts     -- --file=<path>            (NODE_ENV=production)
+ *   prod:  pnpm seed:bina-contacts     -- --file=<path>            (DRIZZLE_TARGET=prod)
  *
  * Flags:
  *   --file=<path>   REQUIRED. Path to the Bina contacts CSV.
@@ -175,7 +175,7 @@ function buildPayload(row: Record<string, string>): BinaContactPayload {
 }
 
 async function main() {
-  const target = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'dev'
+  const target = process.env.DRIZZLE_TARGET === 'prod' ? 'PRODUCTION' : 'dev'
 
   if (!fileArg) {
     console.error('[seed:bina] missing required --file=<path>')
