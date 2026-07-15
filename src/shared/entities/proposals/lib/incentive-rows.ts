@@ -14,13 +14,16 @@ export function incentiveRowsToDomain(rows: ProposalIncentiveRow[]): Incentive[]
           type: 'discount' as const,
           amount: (row.amountCents ?? 0) / 100,
           ...(row.notes != null ? { notes: row.notes } : {}),
-          ...(row.expiresAt != null ? { expiresAt: row.expiresAt } : {}),
+          // pg text-mode timestamptz ("2026-08-01 19:00:00+00") ≠ ISO 8601 —
+          // incentiveSchema.expiresAt is z.iso.datetime() and rejects pg's
+          // format, so re-edit-and-save would fail validation without this.
+          ...(row.expiresAt != null ? { expiresAt: new Date(row.expiresAt).toISOString() } : {}),
         }
       : {
           type: 'exclusive-offer' as const,
           offer: row.offer ?? '',
           ...(row.notes != null ? { notes: row.notes } : {}),
-          ...(row.expiresAt != null ? { expiresAt: row.expiresAt } : {}),
+          ...(row.expiresAt != null ? { expiresAt: new Date(row.expiresAt).toISOString() } : {}),
         })
 }
 
