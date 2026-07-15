@@ -275,6 +275,10 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 **Reference impl**: `lib/server-spec.ts:duplicate` (exclude + overrides config); `lib/server-spec.ts:hooks.create.before` (kind + token derivation fires on every create, including duplicates)
 **Enforced by**: declarative duplicate config on the spec
 
+**Global incentive rows ARE copied — via a router-level override, not the spec.** `proposal_incentives` (Wave 2 child table) is invisible to `spec.duplicate` — the generic `duplicateImpl` (`dal-conventions.md`'s "CRUD `duplicate` slot does NOT copy child rows" rule) only ever touches `spec.table`, and `create.after` would recompute `final_tcp_cents` against zero rows, silently dropping discounts/exclusive-offers and overstating the duplicate's price. `dal/server/duplicate.ts:duplicateProposalWithIncentives` wraps `proposalCrud.duplicate`, copies the source proposal's GLOBAL rows (`sow_item_id IS NULL`) onto the new id, and re-runs `recomputeProposalFinancials`. Wired as the `crud.duplicate` handler override in `proposals.router/index.ts` (see `create-crud-router.ts`'s `handlers` escape hatch — same pattern `customers.router` uses for `getById`). This is the override the dal-conventions rule tells you to write.
+**Reference impl**: `dal/server/duplicate.ts:duplicateProposalWithIncentives`; wired in `src/trpc/routers/proposals.router/index.ts`
+**Enforced by**: router-level handler override (bypasses the generic DAL duplicate, not spec-declarative)
+
 ## Anti-patterns
 
 - **Inferring contract state from proposal-lifecycle signals.** `proposal.status === 'sent'` says nothing about envelope state. If your code reads like `if (isSent && !contractStatus) → assume sync in flight`, stop — that's exactly the bug ADR-0004 retires. Treat proposal and contract lifecycles as independent (`#proposal-contract-independence`).
