@@ -2,13 +2,13 @@ import type { CustomerProfile, FinancialProfile, LeadMeta, PropertyProfile } fro
 import { doublePrecision, integer, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
+import { customerPipelines, leadTypes } from '@/shared/constants/enums'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { leadSourcesTable } from './lead-sources'
-import { customerPipelineEnum, leadTypeEnum } from './meta'
 
 export const customers = pgTable('customers', {
   id,
@@ -46,12 +46,12 @@ export const customers = pgTable('customers', {
   // ../schema/customer-profiles.ts.
   age: integer('age'),
   leadSourceId: uuid('lead_source_id').references(() => leadSourcesTable.id, { onDelete: 'set null' }),
-  leadType: leadTypeEnum('lead_type'),
+  leadType: text('lead_type', { enum: leadTypes }),
   leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),
   // Coarse 3-bucket customer-level pipeline. UI uses a 5-bucket derived
   // classification that explodes `active` based on downstream records.
   // see src/shared/entities/customers/DOCS.md#derived-5-bucket-pipeline
-  pipeline: customerPipelineEnum('pipeline').notNull().default('active'),
+  pipeline: text('pipeline', { enum: customerPipelines }).notNull().default('active'),
   // Lead-funnel stage for customers in the `leads` derived pipeline (no meetings yet).
   // see src/shared/entities/customers/DOCS.md#pipeline-stage-only-for-leads
   pipelineStage: text('pipeline_stage'),

@@ -2,8 +2,6 @@ import { pgEnum } from 'drizzle-orm/pg-core'
 import {
   activityEntityTypes,
   activityTypes,
-  customerPipelines,
-  leadTypes,
   mediaPhases,
   meetingOutcomes,
   meetingParticipantRoles,
@@ -11,8 +9,6 @@ import {
   meetingTypes,
   projectStatuses,
   projectTypes,
-  proposalKinds,
-  proposalStatuses,
   userRoles,
   viewSources,
   voipCallStatuses,
@@ -44,19 +40,9 @@ export const meetingOutcomeEnum = pgEnum('meeting_outcome', meetingOutcomes)
 export const meetingParticipantRoleEnum = pgEnum('meeting_participant_role', meetingParticipantRoles)
 export const meetingTypeEnum = pgEnum('meeting_type', meetingTypes)
 
-// PROPOSALS
-export const proposalStatusEnum = pgEnum('proposal_status', proposalStatuses)
-export const proposalKindEnum = pgEnum('proposal_kind', proposalKinds)
-
-// CUSTOMER PIPELINES
-export const customerPipelineEnum = pgEnum('customer_pipeline', customerPipelines)
-
 // PIPELINES
 export const meetingPipelineEnum = pgEnum('meeting_pipeline', meetingPipelines)
 export const projectStatusEnum = pgEnum('project_status', projectStatuses)
-
-// LEADS
-export const leadTypeEnum = pgEnum('lead_type', leadTypes)
 
 // VOIP IN-HOUSE (Twilio — agent ↔ already-known-customer comms)
 // 4 enums per 2026-05-30 grill. See docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS.

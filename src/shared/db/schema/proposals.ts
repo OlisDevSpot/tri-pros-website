@@ -2,28 +2,28 @@ import type { ProposalStatus } from '@/shared/constants/enums'
 import type { FormMetaSection, FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
 
 import { relations, sql } from 'drizzle-orm'
-import { integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { bigint, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 
+import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
 import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { financeOptions } from './finance-options'
 import { meetings } from './meetings'
-import { proposalKindEnum, proposalStatusEnum } from './meta'
 
 export type { ProposalStatus }
 
 export const proposals = pgTable('proposals', {
   id,
   label,
-  status: proposalStatusEnum('status').notNull().default('draft'),
+  status: text('status', { enum: proposalStatuses }).notNull().default('draft'),
   // Frozen at insert: 'initial-sale' if the proposal's meeting has no
   // project yet, 'additional-work' if it does. See createProposal DAL for
   // the derivation. Drives Zoho envelope assembly + project-creation
   // gating in the proposal table.
-  kind: proposalKindEnum('kind').notNull().default('initial-sale'),
+  kind: text('kind', { enum: proposalKinds }).notNull().default('initial-sale'),
   ownerId: text('owner_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
@@ -35,6 +35,15 @@ export const proposals = pgTable('proposals', {
   formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>().notNull(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
   fundingJSON: jsonb('funding_JSON').$type<FundingSection>().notNull(),
+
+  // Stage-2 rollup cache (Addendum A.2): recomputed by the SINGLE choke point
+  // recomputeProposalFinancials after every financial mutation. Idempotent +
+  // self-healing (re-running always converges from rows). Nullable only for
+  // the backfill window — treat null as "not yet computed", never as $0-truth.
+  finalTcpCents: bigint('final_tcp_cents', { mode: 'number' }),
+  // Bumped when the TCP formula or rounding policy changes; changelog in
+  // ../entities/proposals/DOCS.md#final-tcp-derived. v1 = 2026-07-09 ruling.
+  calcVersion: integer('calc_version').notNull().default(1),
 
   meetingId: uuid('meeting_id')
     .references(() => meetings.id, { onDelete: 'set null' }),
@@ -90,6 +99,8 @@ export const insertProposalSchema = createInsertSchema(proposals, {
 }).omit({
   id: true,
   updatedAt: true,
+  finalTcpCents: true,
+  calcVersion: true,
 }).extend({
   // Server-derived fields: hooks.create.before sets these. Optional so
   // clients don't send them (hook fills in), but Zod doesn't strip them.

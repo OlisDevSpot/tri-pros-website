@@ -57,7 +57,11 @@ const exclusiveOfferIncentiveSchema = z.object({
   expiresAt: z.iso.datetime().optional(),
 })
 
-const incentiveSchema = z.discriminatedUnion('type', [discountIncentiveSchema, exclusiveOfferIncentiveSchema])
+// Closed vocabulary for proposal_incentives.type (text({ enum }), never pgEnum).
+export const incentiveTypes = ['discount', 'exclusive-offer'] as const
+
+export const incentiveSchema = z.discriminatedUnion('type', [discountIncentiveSchema, exclusiveOfferIncentiveSchema])
+export type Incentive = z.infer<typeof incentiveSchema>
 
 // MAIN SCHEMA BUILDING BLOCKS
 
