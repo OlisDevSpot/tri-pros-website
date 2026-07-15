@@ -27,7 +27,7 @@ import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 // one line in ENTITY_NAMES.
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
-import { CUSTOMER, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
+import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
@@ -42,6 +42,7 @@ import { VOIP_MESSAGE } from '@/shared/entities/voip-messages/lib/constants'
 export const ENTITY_NAMES = [
   CUSTOMER,
   CUSTOMER_PROFILE,
+  CUSTOMER_LEAD_ATTRIBUTION,
   MEETING,
   PROPOSAL,
   PROJECT,
@@ -100,6 +101,10 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
 
       can('read', 'CustomerProfile')
       can('update', 'CustomerProfile')
+
+      // 1:1 attribution child (Addendum B) — SYSTEM-written at capture, immutable
+      // afterward. Agents can read for context; no update grant.
+      can('read', 'CustomerLeadAttribution')
 
       can('read', 'Meeting')
       can('create', 'Meeting')
@@ -192,6 +197,9 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'Customer')
       // Lead-contact fields only — NOT the sales-discovery JSON profiles.
       can('update', 'Customer', ['name', 'phone', 'email', 'address', 'city', 'state', 'zip', 'pipelineStage'])
+
+      // 1:1 attribution child (Addendum B) — read-only, SYSTEM-written at capture.
+      can('read', 'CustomerLeadAttribution')
 
       can('read', 'Meeting')
       can('create', 'Meeting') // books appointments (lands unassigned — see resolve-owner.ts)

@@ -5,16 +5,19 @@
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 import type { CustomerProfilePatch, CustomerProfileRow } from '@/shared/db/schema/customer-profiles'
-import type { EnrichmentRecord } from '@/shared/entities/customers/schemas'
+import type { EnrichmentRecord, LeadMeta } from '@/shared/entities/customers/schemas'
 
 import { and, eq, sql } from 'drizzle-orm'
 import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { upsertOneToOne } from '@/shared/dal/server/lib/upsert-one-to-one'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
+import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
+import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customerProfilePatchSchema, customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
+import { splitLeadMeta } from '../../lib/split-lead-meta'
 
 /**
  * Append a note to a customer. `authorId` null = system/webhook-originated note
@@ -111,5 +114,69 @@ export async function upsertCustomerProfile(
     return dalVerifySuccess(
       await upsertOneToOne(customerProfiles, customerProfiles.customerId, input.customerId, validated),
     )
+  })
+}
+
+/**
+ * Capture-time attribution write (SYSTEM-only — no client surface). Called by
+ * customerIntakeService.ingestLead right after customerCrud.create. Upsert so
+ * re-ingest of an existing lead refreshes the snapshot idempotently.
+ */
+export async function upsertLeadAttribution(
+  input: { customerId: string, leadMeta: LeadMeta },
+): Promise<DalReturn<{ ok: true }>> {
+  return dalDbOperation(async () => {
+    const { attribution, enrichment } = splitLeadMeta(input.leadMeta)
+    dalVerifySuccess(await upsertOneToOne(
+      customerLeadAttribution,
+      customerLeadAttribution.customerId,
+      input.customerId,
+      attribution,
+    ))
+    const rows = Object.entries(enrichment).map(([stepId, e]) => ({
+      customerId: input.customerId,
+      stepId,
+      label: e.label,
+      value: e.value,
+      order: e.order,
+    }))
+    for (const row of rows) {
+      await db.insert(customerEnrichment).values(row).onConflictDoUpdate({
+        target: [customerEnrichment.customerId, customerEnrichment.stepId],
+        set: { label: row.label, value: row.value, order: row.order },
+      })
+    }
+    return { ok: true as const }
+  })
+}
+
+/**
+ * Progressive funnel enrichment → rows. Replaces mergeFunnelEnrichment's
+ * bespoke jsonb_set with plain INSERT … ON CONFLICT (customer_id, step_id)
+ * DO UPDATE (spec §3 W2.1). Monotonic and idempotent like its predecessor:
+ * out-of-order sends only ever ADD/refresh keys. The funnel-kind check is the
+ * capability gate — a non-funnel/absent lead returns matched:false. Still
+ * bypasses customerCrud.update on purpose (no geocode/GCal side effects).
+ */
+export async function upsertFunnelEnrichment(
+  input: { leadId: string, enrichment: EnrichmentRecord },
+): Promise<DalReturn<{ matched: boolean }>> {
+  return dalDbOperation(async () => {
+    const [attr] = await db
+      .select({ kind: customerLeadAttribution.kind })
+      .from(customerLeadAttribution)
+      .where(eq(customerLeadAttribution.customerId, input.leadId))
+    if (attr?.kind !== 'funnel') {
+      return { matched: false }
+    }
+    for (const [stepId, e] of Object.entries(input.enrichment)) {
+      await db.insert(customerEnrichment)
+        .values({ customerId: input.leadId, stepId, label: e.label, value: e.value, order: e.order })
+        .onConflictDoUpdate({
+          target: [customerEnrichment.customerId, customerEnrichment.stepId],
+          set: { label: e.label, value: e.value, order: e.order },
+        })
+    }
+    return { matched: true }
   })
 }
