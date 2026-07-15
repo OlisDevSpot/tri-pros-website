@@ -65,19 +65,6 @@ scripts/meta/logs/
 # Ad creative videos — uploaded to Meta from disk, never served/deployed
 public/funnels/*/ads/videos/
 
-# Remotion ad-video package — deps, renders, and licensed/generated assets stay local
-# (brand/ is the committed exception: small deterministic logo assets)
-video/node_modules/
-video/out/
-video/public/*
-!video/public/brand/
-video/tsconfig.tsbuildinfo
-
-# whisper.cpp install for caption transcription (video/scripts/transcribe.mjs)
-video/.whisper/
-video/public/audio/*.16k.wav
-
-# Music-bed manifest is the committed deliverable — audio files themselves stay local
-!video/public/audio/
-video/public/audio/*
-!video/public/audio/music-manifest.json
+# Remotion ad-video package — LOCAL ONLY, never committed or deployed (ruling 2026-07-15).
+# It produces Meta ad artifacts, not app code; it lives in-repo purely for agent context.
+/video/
