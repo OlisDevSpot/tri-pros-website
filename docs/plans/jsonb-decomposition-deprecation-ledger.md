@@ -35,14 +35,18 @@
 
 | | Item | Where (pre-deletion) | Killed by |
 |---|---|---|---|
-| [ ] | `mergeFunnelEnrichment` (bespoke `jsonb_set`) | `entities/customers/dal/server/mutations.ts:61-81` | Task 5 → `upsertFunnelEnrichment` rows |
-| [ ] | `buildUpdateSet` (the `\|\|` merge) + doc block | `src/shared/dal/server/lib/create-crud-dal.ts:95-165` | Task 8 |
-| [ ] | `spec.update.jsonbMergeColumns` option | `src/shared/dal/server/types.ts:87` + registration `entities/customers/lib/server-spec.ts:51-55` | Tasks 5 + 8 |
-| [ ] | `finalTcpExpr` SQL mirror | `entities/proposals/dal/server/queries.ts:159-172` (+3 call sites) | Task 7 → `final_tcp_cents` |
-| [ ] | `FunnelIntakePanel` `toRows()` + legacy-flat tolerance + its `LEGACY_ENRICHMENT_LABELS` import | `entities/customers/components/profile/funnel-intake-panel.tsx` | Task 5 (backfill normalizes legacy shapes into rows) |
-| [ ] | Stale merge-mechanism comments/doc sections (`jsonbMergeColumns` mentions in `src/trpc/DOCS.md`, `customers.router/index.ts`, `proposals/DOCS.md`, `proposal-flow/DOCS.md`, `meetings/DOCS.md`, `voip-campaigns.router.ts`, `upsert-one-to-one.ts`, `use-enrich-lead.ts` + `use-progressive-enrichment.ts` jsonb_set headers) | per Task 9 sweep list | Task 9 |
+| [x] deleted (`215790be`) | `mergeFunnelEnrichment` (bespoke `jsonb_set`) | `entities/customers/dal/server/mutations.ts:61-81` | Task 5 → `upsertFunnelEnrichment` rows |
+| [x] deleted (`3da808ed`) | `buildUpdateSet` (the `\|\|` merge) + doc block | `src/shared/dal/server/lib/create-crud-dal.ts:95-165` | Task 8 |
+| [x] deleted (`215790be` registration, `3da808ed` mechanism) | `spec.update.jsonbMergeColumns` option | `src/shared/dal/server/types.ts:87` + registration `entities/customers/lib/server-spec.ts:51-55` | Tasks 5 + 8 |
+| [x] deleted (`e54052e2`) | `finalTcpExpr` SQL mirror | `entities/proposals/dal/server/queries.ts:159-172` (+3 call sites) | Task 7 → `final_tcp_cents` |
+| [x] deleted (`215790be`) | `FunnelIntakePanel` `toRows()` + legacy-flat tolerance + its `LEGACY_ENRICHMENT_LABELS` import | `entities/customers/components/profile/funnel-intake-panel.tsx` | Task 5 (backfill normalizes legacy shapes into rows) |
+| [x] deleted (`6b205945`, fix `349e203c`) | Stale merge-mechanism comments/doc sections (`jsonbMergeColumns` mentions in `src/trpc/DOCS.md`, `customers.router/index.ts`, `proposals/DOCS.md`, `proposal-flow/DOCS.md`, `meetings/DOCS.md`, `voip-campaigns.router.ts`, `upsert-one-to-one.ts`, `use-enrich-lead.ts` + `use-progressive-enrichment.ts` jsonb_set headers) | per Task 9 sweep list | Task 9 — note: these files now carry INTENTIONAL tombstone prose explaining the deletion (`grep jsonbMergeColumns` still hits them by design; verified at Task 11 as sanctioned, not stale) |
+| [x] deleted (this task's commit — see ledger-reconciliation commit in `git log`) | `scripts/verify-final-tcp-parity.ts` (orphaned Wave-0 SQL-mirror script; its `finalTcpExpr` counterpart is gone, nothing imports it) | `scripts/` | Task 11 — found during ledger reconciliation, not foreseen by the original plan; zero live references confirmed (`grep -rn "verify-final-tcp-parity" src/ docs/ package.json` → only historical mentions in dated plan docs, e.g. `docs/superpowers/specs/2026-07-14-proposal-financials-facade-design.md:242` which proposes reusing it — flagged for that future author since the script is now gone) |
 
 ## Wave 2 — frozen/scaffolding — kill trigger: the release AFTER the W2 prod push
+
+Reconciled at Task 11: all four rows confirmed still present exactly as described (not
+yet due — kill trigger is the release after prod cutover, which hasn't happened).
 
 | | Item | Where | Notes |
 |---|---|---|---|
@@ -53,22 +57,27 @@
 
 ## Wave 2 — bridges that die in W3 (do NOT delete before the SOW wave)
 
+Reconciled at Task 11 against what actually shipped (commits `75ed52fb`, `e54052e2`) —
+all five foreseen bridges shipped as planned; no additional bridge was introduced beyond
+these (customers-side attribution/enrichment is a permanent nested composed read, not a
+temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:CustomerFullView`).
+
 | | Item | Where | W3 replacement |
 |---|---|---|---|
-| [ ] | `getFullView` incentive hydration bridge (rows → `fundingJSON.data.incentives`) | `entities/proposals/dal/server/queries.ts` | dies with `fundingJSON` itself |
-| [ ] | Recompute jsonb residues: `startingTcp` base + section-incentives term inside `recomputeProposalFinancials` | `entities/proposals/dal/server/mutations.ts` | `starting_tcp_cents` column + `proposal_incentives(sow_item_id)` rows |
-| [ ] | `incentives: []` blank-write in `buildMutationData` (edit + create views) | `features/proposal-flow/ui/views/` | dies with fundingJSON decomposition |
-| [ ] | Freeze-gate gap: only `replaceProposalIncentives` + `applyEnvelopeContext` are gated; blob-wide financial freeze | proposals DAL | W3 write refactor extends the gate (Addendum A.1.2) |
-| [ ] | `proposal-doc-definition.ts` / AI-summary / Zoho-context reading blob-shaped `funding`/`sow` | via getFullView bridge | W3 flips them to rows |
+| [ ] | `getFullView` incentive hydration bridge (rows → `fundingJSON.data.incentives`) | `entities/proposals/dal/server/queries.ts` (confirmed: `listProposalIncentives` + `incentiveRowsToDomain` rehydrate into `fundingJSON.data.incentives` at read time) | dies with `fundingJSON` itself |
+| [ ] | Recompute jsonb residues: `startingTcp` base + section-incentives term inside `recomputeProposalFinancials` | `entities/proposals/dal/server/mutations.ts` (confirmed present, comment cites "W3") | `starting_tcp_cents` column + `proposal_incentives(sow_item_id)` rows |
+| [ ] | `incentives: []` blank-write in `buildMutationData` (edit + create views) | `features/proposal-flow/ui/views/edit-proposal-view.tsx` + `create-new-proposal-view.tsx` (confirmed both) | dies with fundingJSON decomposition |
+| [ ] | Freeze-gate gap: only `replaceProposalIncentives` + `applyEnvelopeContext` are gated; blob-wide financial freeze | proposals DAL (confirmed: no other write path is freeze-gated yet) | W3 write refactor extends the gate (Addendum A.1.2) |
+| [ ] | `proposal-doc-definition.ts` / AI-summary / Zoho-context reading blob-shaped `funding`/`sow` | via getFullView bridge (confirmed: `pdf.service.ts` + proposal-flow query/view consumers all read through `getFullView`, none read `proposal_incentives` directly) | W3 flips them to rows |
 
 ## Superseded design docs — kill trigger: plan Task 11 (this wave)
 
 | | Item | Why confusing if left |
 |---|---|---|
-| [ ] | `docs/plans/2026-06-27-jsonb-deep-merge-handoff.md` | Describes BUILDING the deep-merge machinery Wave 2 deletes — direct contradiction of current architecture |
-| [ ] | `docs/plans/2026-06-27-jsonb-deep-merge-implementation-plan.md` | same |
-| [ ] | `docs/superpowers/plans/2026-07-03-ws2-jsonb-deep-merge.md` | same ("WS-2" deep-merge workstream, superseded by the decomposition program) |
-| [ ] | Memory truth-pass: `memory/project-funnel-capture-and-jsonb-merge.md` (jsonb-merge rule now historical), `memory/project-jsonb-strategy-research.md` (status → W2 shipped, W3 next) | Recalled memories asserting the merge mechanism exists would mislead future sessions |
+| [x] deleted (this task's commit) | `docs/plans/2026-06-27-jsonb-deep-merge-handoff.md` | Describes BUILDING the deep-merge machinery Wave 2 deletes — direct contradiction of current architecture. Inbound refs checked: only historical mentions inside other dated plan/spec docs (`2026-07-09-jsonb-research-findings-and-relational-decomposition.md`, `2026-06-27-funnel-data-capture-unified-design.md`, `2026-07-03-jsonb-restructure-design.md`, `2026-07-03-ws5-lead-meta-table.md`) — left as-is per convention (point-in-time design records); no live/evergreen doc (DOCS.md, codebase-conventions, CLAUDE.md) pointed at it |
+| [x] deleted (this task's commit) | `docs/plans/2026-06-27-jsonb-deep-merge-implementation-plan.md` | same — same inbound-ref sweep result |
+| [x] deleted (this task's commit) | `docs/superpowers/plans/2026-07-03-ws2-jsonb-deep-merge.md` | same ("WS-2" deep-merge workstream, superseded by the decomposition program) — same inbound-ref sweep result |
+| [x] memory truth-pass complete (Task 9 + Task 11) | Memory: `memory/project-funnel-capture-and-jsonb-merge.md` (jsonb-merge rule reframed HISTORICAL, points at this ledger), `memory/project-jsonb-strategy-research.md` (already current as of Task 9 — Wave 2 IMPLEMENTED status, verified not stale), `memory/feedback-runtime-db-env.md` (flagged as possibly-stale by the T11 controller re: pre-env-axes-refactor NODE_ENV/script-db.ts pattern; verified against current code — a parallel session already rewrote it to the current DRIZZLE_TARGET truth alongside landing `0803126a` on main, so no change was needed here), `memory/MEMORY.md` hook lines for all three verified current | Recalled memories asserting the merge mechanism exists would mislead future sessions |
 
 ## Wave 3 (pre-registered, expand when W3 is planned)
 
