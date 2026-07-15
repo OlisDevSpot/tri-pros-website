@@ -118,6 +118,12 @@ export const enrichmentRecordSchema = z.record(
 )
 export type EnrichmentRecord = z.infer<typeof enrichmentRecordSchema>
 
+// Closed vocabulary for customer_lead_attribution.kind — mirrors the
+// leadMetaSchema source discriminated-union literals below. text({ enum }),
+// never pgEnum. see docs/codebase-conventions/enum-standardization.md#text-with-enum
+export const leadSourceKinds = ['bina', 'generic', 'funnel'] as const
+export type LeadSourceKind = (typeof leadSourceKinds)[number]
+
 export const leadMetaSchema = z.object({
   // ── operational (unchanged) ──
   mp3RecordingKey: z.string().optional(),
