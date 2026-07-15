@@ -39,8 +39,7 @@ export async function upsertOneToOne<TTable extends PgTable>(
 
     // PgColumn.name is the DB-side snake_case name; `.values()` needs the
     // TS-side (camelCase) property key — resolve it by reference identity
-    // against the table's own column map (same technique create-crud-dal
-    // uses for jsonbMergeColumns key resolution).
+    // against the table's own column map.
     const tableCols = table as unknown as Record<string, PgColumn>
     const fkKey = Object.entries(tableCols).find(([, col]) => col === fkColumn)?.[0]
     if (!fkKey) {

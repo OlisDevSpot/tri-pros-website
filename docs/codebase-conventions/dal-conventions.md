@@ -175,5 +175,5 @@ The DAL layer is the hook execution engine for all entity lifecycle hooks. Both 
 - `docs/codebase-conventions/trpc-procedures.md` — how procedures call DAL
 - `src/shared/dal/server/types.ts` — canonical type definitions
 - `src/trpc/lib/dal-to-trpc.ts` — DalReturn → TRPCError mapper
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge safety (top-level-only `||` via `spec.update.jsonbMergeColumns`; sole remaining registration `customers.leadMetaJSON`, mechanism deleted in Wave 2 of epic #256)
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — the `jsonbMergeColumns` mechanism was deleted in Wave 2 of epic #256; nested/dynamic-key data now goes through a 1:1 or dynamic-key child table instead (`#one-to-one-child-tables` above; reference impl `customer_enrichment` + `upsertFunnelEnrichment`, `src/shared/entities/customers/dal/server/mutations.ts`)
 - ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)

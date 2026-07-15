@@ -140,11 +140,71 @@ A customer's lead origin is captured by three fields:
 
 - `leadSourceId` (FK to `lead_sources`) — which campaign/channel attributed the lead
 - `leadType` (enum) — broad classification (`facebook_ad`, `referral`, etc.)
-- `leadMetaJSON` (Zod-validated) — source-specific metadata (mp3 recording key, scheduled-for date, requested trades)
+- `leadMetaJSONDeprecated` — **frozen (Wave 2, epic #256)**, zero writers, dropped next
+  release. The source-specific payload it used to hold now lives on
+  `customer_lead_attribution` + `customer_enrichment` — see `#lead-attribution-child`.
 
-**Why**: separates "which campaign" (FK) from "what kind" (enum) from "campaign-specific payload" (JSONB). Each gets to evolve independently.
-**Reference impl**: schema lines `leadSourceId / leadType / leadMetaJSON`; `schemas/index.ts:leadMetaSchema`
+**Why**: separates "which campaign" (FK) from "what kind" (enum) from "campaign-specific payload" (now a child table, was JSONB). Each gets to evolve independently.
+**Reference impl**: schema lines `leadSourceId / leadType / leadMetaJSONDeprecated`; `schemas/index.ts:leadMetaSchema` (still the Zod shape for the immutable `capture_json` snapshot)
 **Enforced by**: Zod on insert/update
+
+### lead-attribution-child
+
+`leadMetaJSON` was decomposed (Wave 2, epic #256) into two child tables — a 1:1
+attribution snapshot plus a dynamic-key enrichment map — per the Sub-Entity Standard
+(ADR-0005 amended 2026-07-14):
+
+- **`customer_lead_attribution`** (1:1, PK-as-FK `customer_id`). Written **once**, at
+  capture, by the intake service (`upsertLeadAttribution`); **immutable afterward** —
+  there is no update path. Hot ads-reporting columns (`kind`, `funnel_slug`, `offer`,
+  `utm_source` / `utm_medium` / `utm_campaign` / `utm_content` / `utm_term`) are promoted
+  out to real columns for filter/sort/join; `capture_json` holds the raw typed `LeadMeta`
+  snapshot **minus `source.enrichment`** (enrichment lives in the sibling table below —
+  duplicating the promoted fields inside `capture_json` too is safe by design, since the
+  snapshot never changes after capture, so the duplication can't drift).
+- **`customer_enrichment`** (dynamic-key child, `UNIQUE(customer_id, step_id)`). The one
+  **mutable** part of the former blob — progressive funnel enrichment (a homeowner filling
+  in more steps over multiple visits) writes here via plain `INSERT … ON CONFLICT
+  (customer_id, step_id) DO UPDATE` (`upsertFunnelEnrichment`), replacing the old bespoke
+  `jsonb_set(lead_meta_json, '{source,enrichment}', ...)` mutation entirely. `value` is the
+  resolved option label (self-describing, no server-side label mirror); `order` drives
+  display.
+
+**Immutable-capture rule**: `customer_lead_attribution` has no update handler and no
+writer calls one — attribution is a fact about how the lead arrived, fixed at the moment
+it arrived. If a correction is ever needed, it's a data-fix script against the row, not an
+application code path.
+
+**SYSTEM-only writes**: both tables are written exclusively from `customerIntakeService`
+(`upsertLeadAttribution` at capture, `upsertFunnelEnrichment` on progressive funnel steps)
+via `funnelsRouter` `baseProcedure` endpoints running under `SYSTEM_CONTEXT` — never through
+`customerCrud.update` or any authenticated agent mutation. CASL subject
+`CustomerLeadAttribution` is **read-only** for `agent` and `dispatcher`
+(`can('read', 'CustomerLeadAttribution')`, no `update`/`create` grant — see
+`src/shared/domains/permissions/abilities.ts`); `customer_enrichment` has no CASL subject
+of its own (read alongside its parent attribution row where needed; it has no
+authenticated write path to gate).
+
+**Reads**: `getCustomerAttribution` (`dal/server/queries.ts`) returns the
+`customer_lead_attribution` row by `customerId`; enrichment rows are batch-fetched
+separately where needed (no composed join type today — the two tables serve different
+read patterns: attribution is fetched with the customer, enrichment is fetched per
+funnel-progress UI).
+
+**Why**: attribution and enrichment have different structural shapes (1:1 fact vs.
+dynamic-key collection) and different lifecycles (write-once vs. progressively-filled) —
+exactly the Sub-Entity Standard's criteria for separate tables rather than one blob doing
+both jobs.
+**Reference impl**: `src/shared/db/schema/customer-lead-attribution.ts`,
+`src/shared/db/schema/customer-enrichment.ts`; `dal/server/mutations.ts`
+(`upsertLeadAttribution`, `upsertFunnelEnrichment`); `dal/server/queries.ts`
+(`getCustomerAttribution`); `lib/split-lead-meta.ts` (splits a captured `LeadMeta` into
+the attribution row + enrichment rows at intake time);
+`src/shared/services/customer-intake.service.ts`.
+**Enforced by**: Zod (`leadMetaSchema` at the funnel-intake write boundary); CASL
+(`CustomerLeadAttribution` read-only grant); convention (no CRUD update handler exists for
+either table)
+see `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §10 (Addendum B)
 
 ### geocoding-stored-on-customer
 
@@ -163,6 +223,7 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 - **Setting `pipelineStage` on a customer that has meetings.** It's meaningless for non-leads.
 - **Writing to `customerProfileJSONDeprecated` / `propertyProfileJSONDeprecated` / `financialProfileJSONDeprecated`.** Frozen Wave-1 blobs, zero writers, dropped next release. Patch the real columns via `upsertCustomerProfile` (`age` via `customerCrud.update`) — see `#three-jsonb-profiles`.
 - **Reading `customer.triggerEvent` (or any profile-trio field) straight off a bare `Customer` row.** Those fields live on the `customer_profiles` child table now — use the composed `CustomerWithProfile` type (flattened-spread joined) or `CustomerProfileRow | null`, never a `Partial` spread off `Customer` that would compile even when the join is missing.
+- **Writing to `leadMetaJSONDeprecated`, or attempting to update `customer_lead_attribution`.** Frozen Wave-2 blob, zero writers, dropped next release. Attribution is write-once via `upsertLeadAttribution` at capture; there is no update path by design — see `#lead-attribution-child`.
 - **Bypassing the senior-age path mismatch.** Customer profile = bucket; contract flow = precise number. Pick the right helper.
 
 ## See also
@@ -173,5 +234,5 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 - [`../lead-sources/DOCS.md`](../lead-sources/DOCS.md) (when written) — attribution + segment classification (shares `customers.pipeline` semantics)
 - `memory/feedback-phone-visibility-threshold.md` — recent threshold-vs-equality fix
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics; `leadMetaJSON` is the sole remaining registration (the profile trio at `#three-jsonb-profiles` decomposed to a child table in Addendum B and never merged)
-- ADR-0005 — JSONB vs column vs child table (superseded for the profile trio by Addendum B §10 of the decomposition-program design doc; `age` and lead-attribution fields still apply)
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics; the `jsonbMergeColumns` mechanism `leadMetaJSON` was once registered in was deleted entirely in Wave 2 (see `#lead-attribution-child`)
+- ADR-0005 — JSONB vs column vs child table (superseded for the profile trio by Addendum B §10 of the decomposition-program design doc, and for lead attribution by the same Addendum B — see `#lead-attribution-child`; `age` still applies as a plain column)

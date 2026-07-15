@@ -127,9 +127,11 @@ export const voipCampaignsRouter = createTRPCRouter({
 
   /**
    * Set a campaign's automated SMS cadence config. Full-replace of the
-   * `sms_cadence` JSONB (the spec defines no jsonbMergeColumns, so the messages
-   * array is replaced, not merged). Resync-safe — upsertCampaignByCtId never
-   * writes this column. see src/shared/entities/voip-campaigns/DOCS.md#sms-cadence
+   * `sms_cadence` JSONB — the `update` handler always plain-replaces a column
+   * now (the `jsonbMergeColumns` opt-in mechanism was deleted in Wave 2, epic
+   * #256), so the messages array is replaced, not merged, by construction.
+   * Resync-safe — upsertCampaignByCtId never writes this column.
+   * see src/shared/entities/voip-campaigns/DOCS.md#sms-cadence
    */
   setCampaignSmsCadence: superAdminProcedure
     .input(z.object({

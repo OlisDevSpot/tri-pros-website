@@ -5,11 +5,13 @@ boundary, how to merge it safely, and how to evolve it. **The *why* (the three-w
 placement rule + promotion ladder) is ADR-0005** — this file is the operational rules.
 
 JSONB columns in this codebase carry typed domain blobs (`contextJSON`, `flowStateJSON`,
-`formMetaJSON`, `projectJSON`, `fundingJSON`, `leadMetaJSON`, `formConfigJSON`, …). Their
+`formMetaJSON`, `projectJSON`, `fundingJSON`, `formConfigJSON`, …). Their
 Zod schemas live in `src/shared/entities/<domain>/schemas/index.ts`. (The customer profile
 trio — `customerProfileJSON` / `propertyProfileJSON` / `financialProfileJSON` — was
 decomposed to plain columns in Wave 1 of epic #256; see
-`src/shared/entities/customers/DOCS.md#three-jsonb-profiles`.)
+`src/shared/entities/customers/DOCS.md#three-jsonb-profiles`. `leadMetaJSON` was frozen and
+split into the `customer_lead_attribution` 1:1 child + `customer_enrichment` dynamic-key rows
+in Wave 2; see `src/shared/entities/customers/DOCS.md#lead-attribution-child`.)
 
 ## Rules
 
@@ -146,31 +148,44 @@ second line the DB enforces regardless of write path.
 
 ### never-shallow-merge-nested
 
-Never let a partial nested object through Postgres `||` — it is a **shallow, top-level-only**
-merge. `COALESCE(col, '{}'::jsonb) || value::jsonb` replaces any key present in `value`
-wholesale; if that key's value is itself an object, its siblings-of-siblings inside are gone,
-not merged. There is no row lock and no re-parse of the merged whole — it's a single SQL
-expression.
+**Mechanism deleted (Wave 2, epic #256).** `spec.update.jsonbMergeColumns`, the
+`create-crud-dal.ts:buildUpdateSet` merge branch, and the scoped `jsonb_set` reference
+impl (`mergeFunnelEnrichment`) no longer exist in this codebase. This section stays as
+the tombstone for the hazard it used to guard against — the hazard itself is still real
+Postgres behavior, it just no longer has app-level plumbing wrapped around it.
 
-**What `spec.update.jsonbMergeColumns` actually does**: the CRUD update path
-(`create-crud-dal.ts:buildUpdateSet`) merges **top-level keys only** for columns opted in
-via this list. That's safe **only** while every caller sends a *complete* value for any
-nested key it touches — i.e. the column's writers are additive-partial at the top level
-(new top-level keys arrive over time) but never send a partial value for an existing nested
-object. It is not a general deep-merge and must not be treated as one.
+**The underlying fact doesn't go away with the mechanism**: Postgres `||` is a **shallow,
+top-level-only** merge. `COALESCE(col, '{}'::jsonb) || value::jsonb` replaces any key
+present in `value` wholesale; if that key's value is itself an object, its
+siblings-of-siblings inside are gone, not merged. There is no row lock and no re-parse of
+the merged whole — it's a single SQL expression. If you ever hand-write a `||` merge
+against a JSONB column, this still applies to you.
 
-**Sole remaining registration**: `customers.leadMetaJSON` (until Wave 2 of epic #256 deletes
-the mechanism entirely per the decomposition program spec). `proposals` was deregistered in
-Wave 1 — see `#jsonb-merge-on-update` in `src/shared/entities/proposals/DOCS.md`.
+**Replacement pattern for nested/dynamic-key data**: a child table with
+`UNIQUE(parent_id, key)`, written by a plain `INSERT … ON CONFLICT (parent_id, key) DO
+UPDATE` per key — there's no blob to merge into, so the shallow-merge hazard can't occur.
+Reference impl: `customer_enrichment` (`UNIQUE(customer_id, step_id)`), written by
+`upsertFunnelEnrichment` and `upsertLeadAttribution`
+(`src/shared/entities/customers/dal/server/mutations.ts`) — this retired the former
+bespoke `jsonb_set(lead_meta_json, '{source,enrichment}', ...)` entirely. See
+`#sub-entity-decision-tree` for when a dynamic-key map earns a child table over a JSONB
+keyed object.
 
-**For a genuine nested key-level patch**, don't reach for `jsonbMergeColumns` at all — write a
-scoped `jsonb_set` at the exact path, atomically, outside the generic CRUD merge. Reference
-impl: `mergeFunnelEnrichment` (`src/shared/entities/customers/dal/server/mutations.ts:57`),
-which does `jsonb_set(lead_meta_json, '{source,enrichment}', ...)`.
+**Sanctioned fallback for a future genuine key-level blob patch** (documented here, NOT
+built — spec §5.1): if a column is legitimately whole-document AND a future need requires
+patching one nested key atomically without a full read-modify-write, the house answer is a
+single-statement `jsonb_recursive_merge(col, patch)` SQL function — a recursive
+`jsonb_each`/`jsonb_typeof` walk that merges object keys and lets the patch win on
+scalar/array conflicts, invoked as one SQL expression (no row lock, no app-side loop). Do
+not reintroduce `jsonbMergeColumns`-style declarative config for this — write the scoped
+merge SQL for that one column when the need is real.
 
-**Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts` (`buildUpdateSet`);
-`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §3 (Wave 2).
-**Enforced by**: `createCrudDal` merge path reading `spec.update.jsonbMergeColumns`.
+**Reference impl**: `src/shared/entities/customers/dal/server/mutations.ts`
+(`upsertFunnelEnrichment`, `upsertLeadAttribution`) — the decomposition that replaced this
+mechanism; `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §3
+(Wave 2 deletion) and §5 (standardization deliverables, sanctioned fallback).
+**Enforced by**: tsc (no surviving reference to the deleted config compiles); PR review for
+any new hand-written `||` merge against a JSONB column.
 
 ### evolution-playbook
 
@@ -199,8 +214,9 @@ still physically lives in JSONB.
 5. **One canonical key per concept**, matching ubiquitous-language?
 6. **Zod schema exists AND is parsed at the write boundary?** `.$type<>()` alone is a
    no-op. (`#zod-parse-at-write-boundary`.)
-7. **If updated with partial data, is it in `spec.update.jsonbMergeColumns`** — and is it
-   an additive-partial writer (not whole-document)? Never `||`. (`#never-shallow-merge-nested`.)
+7. **If the data has nested or dynamic-key partial updates, does it need a child table**
+   (`UNIQUE(parent_id, key)` + `INSERT … ON CONFLICT`) instead of a JSONB blob? Never
+   hand-write a `||` merge against a nested JSONB column. (`#never-shallow-merge-nested`.)
 8. **Making an existing JSONB field hot?** Climb the promotion ladder (ADR-0005).
 9. **Changing an existing shape?** Expand-and-contract with a `_v` bump.
 

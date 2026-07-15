@@ -97,13 +97,19 @@ When `status` transitions to `approved`, a Project is created automatically and 
 
 ### jsonb-merge-on-update
 
-**Retired (Wave 1, epic #256).** `formMetaJSON`, `projectJSON`, `fundingJSON` are
-whole-document columns: every writer reconstructs and submits the full blob, so
-updates REPLACE the column (plain CRUD path). They were previously registered in
-`spec.update.jsonbMergeColumns`, which shallow-merged top-level keys and silently
-prevented field-clearing — deregistered because no caller ever sent a partial.
-Do not re-register: a whole-document writer + `||` merge resurrects deleted keys.
-Full decomposition of these blobs lands in Waves 2–3
+**Retired (Wave 1, epic #256); the mechanism itself deleted entirely (Wave 2).**
+`formMetaJSON`, `projectJSON`, `fundingJSON` are whole-document columns: every writer
+reconstructs and submits the full blob, so updates REPLACE the column (plain CRUD path).
+They were previously registered in `spec.update.jsonbMergeColumns`, which shallow-merged
+top-level keys and silently prevented field-clearing — deregistered in Wave 1 because no
+caller ever sent a partial. As of Wave 2, `spec.update.jsonbMergeColumns` no longer exists
+at all (deleted along with `createCrudDal`'s merge branch and the `mergeFunnelEnrichment`
+reference impl) — `update` unconditionally plain-replaces every column now, so there is
+nothing to re-register into. Do not hand-write a `||` merge against these columns either:
+Postgres `||` is still shallow and would resurrect deleted keys the same way the deleted
+mechanism did. See `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested`.
+Global incentives moved out of `fundingJSON` into `proposal_incentives` in Wave 2 (see
+`#final-tcp-derived`); the rest of these blobs decompose in Wave 3
 (see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §2 verdicts + §3 wave structure).
 
 ### final-tcp-derived
@@ -121,6 +127,41 @@ rollup by `recomputeProposalFinancials`, and list filter/sort read that column d
 
 **Rollup, not blob.** The homeowner-facing value is re-derived at read time via `computeFinalTcp`
 on getFullView-hydrated data; list price filter/sort read the `final_tcp_cents` rollup column.
+
+**The three-stage lifecycle standard** (Addendum A.2 — supersedes the old blanket "never
+persist derived values" rule):
+
+| Stage | Rule | Mechanism |
+|---|---|---|
+| **Drafting** | Compute on read; derived values NEVER persisted as truth | `computeFinalTcp` in `lib/compute-final-tcp.ts` — pure TS, keystroke-latency form recalc |
+| **Lists/reports** | Store a derived ROLLUP as a cache, recomputed at one choke point | `proposals.final_tcp_cents` column; `recomputeProposalFinancials` runs after every financial mutation. Idempotent + self-healing — re-running always converges from rows, so verify = repair |
+| **Frozen (envelope created)** | Snapshot = the rows themselves become immutable; append-only afterward | Freeze gate on `signingRequestId` (see below); corrections via AWD, never in-place edits |
+
+`recomputeProposalFinancials` is THE financial-rollup choke point — a single idempotent SQL
+statement (`GREATEST(0, starting_tcp_cents − SUM over proposal_incentives − …)`). As of Wave 2
+it carries **two documented jsonb residues**, confined to this one statement and nowhere
+else: the `startingTcp` base read from `fundingJSON.data.startingTcp`, and the section-incentives
+term read from `projectJSON.data.sow[].financials.incentives[]`. Both die in Wave 3 when
+section incentives migrate into `proposal_incentives(sow_item_id)` and the recompute becomes a
+pure `SUM` over rows. Global incentives already live in `proposal_incentives` (`sow_item_id IS
+NULL`) as of Wave 2.
+
+**Freeze gate**: `replaceProposalIncentives` (the write path for global incentive rows) refuses
+while `proposal.signingRequestId != null` (`precondition-failed: proposal_financials_frozen`).
+This covers the W2 slice — child financial rows freeze with the proposal once an envelope
+exists. The blob-wide financial freeze (covering `fundingJSON`/`projectJSON` financial fields
+too, including the share-token update path) lands with the Wave 3 write refactor; until then,
+those blob fields are not yet gated by `signingRequestId`.
+**Reference impl**: `dal/server/mutations.ts:replaceProposalIncentives`,
+`dal/server/mutations.ts:recomputeProposalFinancials`.
+
+**`calc_version`** (`proposals.calc_version`, integer, default `1`) bumps whenever the formula
+or rounding policy changes, so historical rows can be told apart from rows computed under a
+newer rule:
+
+| Version | Effective | Formula |
+|---|---|---|
+| `1` | 2026-07-09 | `max(0, startingTcp − Σ global 'discount' incentives − Σ ALL section incentives)`, integer cents (`ROUND(x * 100)`), no floats stored |
 
 **Pricing-mode invariant**: in breakdown pricing mode, the form keeps `startingTcp = Σ sectionPrice + miscPrice` in sync client-side (`funding-fields.tsx`) — this is what makes the formula above pricing-mode-agnostic and lets the PDF Subtotal reconcile with the form's Contract Price. This sync is client-side only today; no server-side enforcement exists yet.
 
@@ -241,7 +282,7 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - **Branching envelope content on a single dimension (age alone).** The retired `buildSigningRequest` picked tpr-HI base/senior purely from `customer.customerAge >= 65`, which silently shipped tpr-HI envelopes for additional-work proposals (which should ship AWD). All envelope-content decisions must flow through the registry's `applicableKinds` + `perKindRules` (multi-dimensional: kind × age × isLongSow). See ADR-0004 amendment 2026-05-28.
 - **Storing `finalTcp`.** Always derive via `computeFinalTcp` — see `#final-tcp-derived`.
 - **Setting `kind` from client input.** Server-derived; omitted from insert/update schemas.
-- **Re-registering `formMetaJSON` / `projectJSON` / `fundingJSON` in `jsonbMergeColumns`.** Retired Wave 1 — every writer sends the whole document; merging would resurrect deliberately-cleared fields. See `#jsonb-merge-on-update`.
+- **Hand-writing a `||` merge against `formMetaJSON` / `projectJSON` / `fundingJSON`.** The `jsonbMergeColumns` mechanism these were once registered in (Retired Wave 1) was deleted entirely in Wave 2 — every writer sends the whole document; a `||` merge would resurrect deliberately-cleared fields the same way the old mechanism did. See `#jsonb-merge-on-update`.
 - **Adding a CASL check on the share-token path.** Token IS authorization; CASL is `null`.
 - **Setting `converted_to_project` meeting outcome manually.** Derived from proposal approval.
 - **Computing project start date by adding 3 calendar days to signing.** Use `cslbEarliestStartDate(signingDate, isSenior)` — Sundays don't count.
@@ -261,5 +302,5 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - `docs/proposal/scope-presentation.md` — SOW UX
 - `docs/proposal/financing-presentation.md` — financing UX
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics; `formMetaJSON`/`projectJSON`/`fundingJSON` are whole-document writers and are NOT registered (see `#jsonb-merge-on-update`)
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics (mechanism deleted Wave 2); `formMetaJSON`/`projectJSON`/`fundingJSON` are whole-document writers, always plain-replaced (see `#jsonb-merge-on-update`)
 - ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind `#final-tcp-derived`)

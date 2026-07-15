@@ -65,7 +65,8 @@ Most steps are **static**: their content comes from constants + portfolio data. 
 
 ### sow-edits-merge-jsonb-not-replace
 
-**Retired (Wave 1, epic #256).** `projectJSON` is a whole-document column — see
+**Retired (Wave 1, epic #256; the merge mechanism itself was deleted entirely in Wave
+2).** `projectJSON` is a whole-document column — see
 `../../shared/entities/proposals/DOCS.md#jsonb-merge-on-update`. Scope-of-Work edits
 write to `projectJSON.data.sow` via the proposal entity router's update mutation, and
 the client reconstructs and submits the full `projectJSON` document on every save
@@ -73,7 +74,9 @@ the client reconstructs and submits the full `projectJSON` document on every sav
 
 **Why**: the column was previously registered in `jsonbMergeColumns` on the (mistaken)
 assumption that SOW edits were partial; every writer actually sends the whole document,
-so the merge config was deregistered rather than fixing a race that never existed.
+so the merge config was deregistered rather than fixing a race that never existed. The
+`jsonbMergeColumns` mechanism no longer exists at all as of Wave 2 — `update` always
+plain-replaces a column now, so this is simply how `update` behaves, not an opt-out.
 **Reference impl**: `ui/views/edit-proposal-view.tsx` seeds mutation state from `proposal.data.projectJSON` and rebuilds the whole object (`projectJSON: rawData.project`) before calling `updateProposal.mutate`.
 **Enforced by**: convention (whole-document writer discipline)
 
@@ -117,7 +120,7 @@ When a Zoho webhook fires, contracts service updates these timestamps and the pa
 
 - **Adding a new step without role gating.** Even if it's visible to both today, the `roles` field is the future seam — don't drop it.
 - **Bypassing `useViewMode`.** Always go through the hook so the CASL gate runs. Reading `searchParams.get('view')` directly is a bug.
-- **Sending a partial `projectJSON` / `fundingJSON` object on update.** Both are whole-document columns (retired from `jsonbMergeColumns` in Wave 1) — always reconstruct and submit the full object. See `../../shared/entities/proposals/DOCS.md#jsonb-merge-on-update`.
+- **Sending a partial `projectJSON` / `fundingJSON` object on update.** Both are whole-document columns; `update` always plain-replaces (the `jsonbMergeColumns` mechanism these were deregistered from in Wave 1 was deleted entirely in Wave 2) — always reconstruct and submit the full object. See `../../shared/entities/proposals/DOCS.md#jsonb-merge-on-update`.
 - **Storing a denormalized "contract status" enum.** Derive from the timestamp columns.
 - **Manual proposal status flips inside the flow** (e.g., setting `status = 'approved'` from a button). Approval is a contract-event consequence (`completed` webhook), or the explicit approve mutation.
 - **Putting cost-line edits in the customer view.** Cost lines are agent-only — they show margin/multiplier info that must not leak to homeowners.

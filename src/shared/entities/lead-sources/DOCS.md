@@ -10,7 +10,9 @@ This directory holds: schemas (`schemas.ts`), constants (action configs, custome
 LeadSource ──► [public intake form] ──► Customer (via leadSourceId)
                                             │
                                             ├─ leadType (enum)
-                                            └─ leadMetaJSON (source-specific payload)
+                                            └─ customer_lead_attribution (source-specific
+                                               payload — child table, Wave 2; see
+                                               ../customers/DOCS.md#lead-attribution-child)
 ```
 
 ## Rules
@@ -111,7 +113,8 @@ A source's CloudTalk-campaign policy lives on plain `lead_sources` columns (epic
 
 ## See also
 
-- `../customers/DOCS.md#lead-attribution-fields` — customer-side of attribution (leadSourceId / leadType / leadMetaJSON)
+- `../customers/DOCS.md#lead-attribution-fields` — customer-side of attribution (`leadSourceId` / `leadType`; the former `leadMetaJSON` payload)
+- `../customers/DOCS.md#lead-attribution-child` — `customer_lead_attribution` + `customer_enrichment` child tables (Wave 2 decomposition of the former `leadMetaJSON` blob)
 - `../customers/DOCS.md#derived-5-bucket-pipeline` — the `customers.pipeline` column that segments build on
 - `../customers/DOCS.md#signed-customer-eq-has-project` — shared definition of "signed"
 - `docs/plans/notion-crm-migration-design.md` — historical context (lead sources replaced Notion intake)

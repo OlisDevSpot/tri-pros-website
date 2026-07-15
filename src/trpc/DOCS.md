@@ -261,14 +261,13 @@ When `spec.shareable` is set, `getById` and `update` accept `?token=` and bypass
 
 ### jsonb-merge-columns-merge-on-update
 
-Opt-in per column via `spec.update.jsonbMergeColumns`: the `update` handler applies a single-statement, top-level-only merge `COALESCE(col, '{}'::jsonb) || value::jsonb` (shallow merge — callers must send complete values for any nested key they touch) instead of replacing the column. The default `createCrudDal` honors this list.
-
-**Sole remaining registration**: `customers.leadMetaJSON` (until Wave 2 of epic #256 deletes the mechanism entirely per the decomposition program spec). `proposals` was deregistered in Wave 1 (see `#jsonb-merge-on-update` in `src/shared/entities/proposals/DOCS.md`); the customer profile trio was decomposed to plain columns in Wave 1 (see `#three-jsonb-profiles` in `src/shared/entities/customers/DOCS.md`).
-
-**Why this existed**: forms submit partial JSONB state across multi-step flows; full replacement would wipe prior steps. Declared once in the spec rather than per-call. **Deprecated in Wave 1; mechanism deleted entirely in Wave 2.**
-
-**Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts:buildUpdateSet` (merge application); `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §3 (Wave 2 deletion plan).
-**Enforced by**: convention (handler reads spec; no new registrations accepted)
+**Deleted (Wave 2, epic #256).** `spec.update.jsonbMergeColumns` and the `createCrudDal`
+merge branch that read it no longer exist — `update` always plain-replaces a column now.
+Nested/dynamic-key partial data goes through a child table instead; see
+`docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` for the
+replacement pattern and `src/shared/entities/customers/DOCS.md#lead-attribution-child`
+for the reference migration (`customers.leadMetaJSON` → `customer_lead_attribution` +
+`customer_enrichment`).
 
 ### dont-import-server-only-trpc-into-client
 
@@ -327,5 +326,5 @@ The compliance sweep (companion todo to this docs migration) will produce GitHub
 - `src/shared/entities/<entity>/DOCS.md` — per-entity business rules
 - `src/shared/entities/<entity>/lib/server-spec.ts` — entity specs
 - `src/shared/dal/server/types.ts` — canonical type definitions
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge safety governing `#jsonb-merge-columns-merge-on-update` (payload shape, validation, additive-partial vs whole-document)
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety history behind `#jsonb-merge-columns-merge-on-update` (mechanism deleted Wave 2; replacement pattern is a child table, not a merge config)
 - ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)

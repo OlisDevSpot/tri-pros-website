@@ -197,5 +197,5 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 - `../projects/DOCS.md` (when written) — projectId link semantics
 - `memory/project-gcal-sync-architecture.md` — GCal sync architecture (planned)
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — `contextJSON`/`flowStateJSON` are whole-document writers → deliberately NOT in `jsonbMergeColumns` (deep-merge would resurrect deselected keys)
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — `contextJSON`/`flowStateJSON` are whole-document writers; always plain-replaced, never merged (the `jsonbMergeColumns` opt-in mechanism these columns deliberately stayed out of was deleted entirely in Wave 2, epic #256)
 - ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)

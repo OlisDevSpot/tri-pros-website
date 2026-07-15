@@ -100,6 +100,11 @@ need — don't jump straight to a full column migration:
   column) instead of a risky hand-migration.
 - JSONB is reserved for what it's good at (sparse, heterogeneous, whole-blob), which keeps
   documents small and merge-safe.
+- The generic app-level merge mechanism (`jsonbMergeColumns`) this ADR's decision made
+  possible is itself gone as of Wave 2 (epic #256) — every registered column was either
+  decomposed to a child table or deregistered as whole-document; see the 2026-07-15
+  amendment below. Merge safety is now enforced by structure (child tables for
+  nested/dynamic-key data) rather than by opt-in config.
 - The operational rules (JSONB internal shape, runtime validation, merge safety, migration
   steps, and the pre-change checklist) live in
   `docs/codebase-conventions/jsonb-columns.md`; this ADR is the *why*.
@@ -175,9 +180,45 @@ helper + hand-written business-DAL mutation per child) live in
 `docs/codebase-conventions/jsonb-columns.md#sub-entity-decision-tree`. DAL
 mechanism: `docs/codebase-conventions/dal-conventions.md#one-to-one-child-tables`.
 
+## Amended 2026-07-15 (Wave 2, epic #256) — Verdicts executed; merge mechanism deleted
+
+Wave 2 landed the decomposition verdicts this ADR's placement rule and the Sub-Entity
+Standard (amendment above) called for, and retired the last piece of merge machinery the
+ADR referenced:
+
+- **`jsonbMergeColumns` deleted entirely.** `spec.update.jsonbMergeColumns`, the
+  `create-crud-dal.ts:buildUpdateSet` merge branch, and the scoped `jsonb_set` reference
+  impl (`mergeFunnelEnrichment`) no longer exist. The shallow-merge hazard the mechanism
+  guarded against is documented as a standing SQL fact, not app-level config — see
+  `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested`. A sanctioned
+  fallback for a future genuine key-level patch (`jsonb_recursive_merge` SQL) is documented
+  there, not built.
+- **Attribution verdict executed**: `customers.leadMetaJSON` is frozen
+  (`leadMetaJSONDeprecated`, dropped next release). Its 1:1 attribution facts moved to
+  `customer_lead_attribution` (child table, per the Sub-Entity Standard — hot
+  ads-reporting columns + an immutable `capture_json` snapshot); its dynamic-key
+  enrichment map moved to `customer_enrichment` (`UNIQUE(customer_id, step_id)`, per the
+  placement rule's child-table branch for dynamic-key maps). See
+  `src/shared/entities/customers/DOCS.md#lead-attribution-child`.
+- **Incentives verdict executed (partial — W2 slice)**: `proposals.fundingJSON.data.incentives`
+  (global rows) moved to `proposal_incentives`, a child table aggregated into the
+  `proposals.final_tcp_cents` rollup by the `recomputeProposalFinancials` choke point.
+  Section-scoped incentives remain jsonb until Wave 3 (documented residue, confined to the
+  single recompute statement). See
+  `src/shared/entities/proposals/DOCS.md#final-tcp-derived`.
+- **Closed Vocabulary Standard applied to 4 legacy enums**: `proposal_status`,
+  `proposal_kind`, `customer_pipeline`, `lead_type` converted from `pgEnum` to
+  `text({ enum })` (opportunistic conversion, per Addendum C in the decomposition program
+  spec) — prod enum count goes 23 → 19 on the next push. See
+  `docs/codebase-conventions/enum-standardization.md#legacy-pgenum-conversion`.
+
+**Reference impl**: `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md`
+§3 (Wave 2 plan), §8 Addendum A (calculation standard), §11 Addendum C (Closed Vocabulary).
+
 ## See also
 
 - `docs/codebase-conventions/jsonb-columns.md` — operational rules + dev checklist
 - `docs/codebase-conventions/database-schema.md` — column / pgEnum / timestamp conventions
-- ADR-0002 — Entity Server System (the DAL/spec that applies `jsonbMergeColumns`)
+- ADR-0002 — Entity Server System (the DAL/spec framework; no longer applies
+  `jsonbMergeColumns` — that mechanism was deleted in Wave 2, see amendment above)
 - `docs/superpowers/specs/2026-07-03-jsonb-restructure-design.md` — the full restructure
