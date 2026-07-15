@@ -1,4 +1,4 @@
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { TradeSelection } from '@/shared/entities/meetings/schemas'
 
 export interface ProfileBenefit {
@@ -12,15 +12,14 @@ export interface ProfileBenefit {
  * Returns the top 3-4 most resonant benefits for this customer.
  */
 export function getProfileBenefits(
-  customer: Customer | null,
+  customer: CustomerWithProfile | null,
   tradeSelections: TradeSelection[],
 ): ProfileBenefit[] {
   const benefits: ProfileBenefit[] = []
-  const profile = customer?.customerProfileJSON
-  const householdType = profile?.householdType
-  const triggerEvent = profile?.triggerEvent
-  const outcomePriority = profile?.outcomePriority
-  const sellPlan = profile?.sellPlan
+  const householdType = customer?.householdType
+  const triggerEvent = customer?.triggerEvent
+  const outcomePriority = customer?.outcomePriority
+  const sellPlan = customer?.sellPlan
   const painPoints = tradeSelections.flatMap(t => t.painPoints)
   const tradeNames = tradeSelections.map(t => t.tradeName.toLowerCase())
 

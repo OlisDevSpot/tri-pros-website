@@ -93,7 +93,7 @@ export async function getFullView(
           city: customers.city,
           state: customers.state,
           zip: customers.zip,
-          customerProfileJSON: customers.customerProfileJSON,
+          age: customers.age,
         },
         // Meeting's *current* projectId — distinct from frozen proposal.kind.
         meetingProjectId: meetings.projectId,
@@ -126,7 +126,7 @@ export async function getFullView(
           city: row.customer.city,
           state: row.customer.state,
           zip: row.customer.zip,
-          customerAge: row.customer.customerProfileJSON?.age ?? null,
+          customerAge: row.customer.age ?? null,
         }
       : null
 

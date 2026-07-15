@@ -1,18 +1,28 @@
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { CustomerProfileRow } from '@/shared/db/schema/customer-profiles'
 import type { Customer } from '@/shared/db/schema/customers'
+import type { ProfileKey } from '@/shared/entities/customers/schemas'
 
 import { and, eq, getTableColumns, isNotNull, isNull } from 'drizzle-orm'
 
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
+import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
 import { derivedPipelineWhere } from '@/shared/entities/customers/lib/derived-pipeline-sql'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { toNationalDigits } from '@/shared/lib/phone'
 
 export type { Customer }
 
 export type CustomerWithPhoneGate = Customer & { hasSentProposal: boolean }
+
+// Composed read type for the flattened-spread leftJoin against
+// `customer_profiles` (Addendum B, 2026-07-14). `| null` covers the ~82% of
+// customers with no discovery data collected yet (lazy upsert — no child row).
+// see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
+export type CustomerWithProfile = CustomerWithPhoneGate & { [K in ProfileKey]: CustomerProfileRow[K] | null }
 
 // Phone-gating column selection. `canSeeUngatedPhone` tells us whether the
 // caller is omni/leads-pool (sees real phone) or agent (sees gated null).
@@ -31,20 +41,23 @@ function customerSelectWithGate(ctx: ScopedContext) {
 // ── Reads ─────────────────────────────────────────────────────────────────────
 
 /**
- * Phone-gated single-customer read. Scope applied via ctx.scope (set by
+ * Phone-gated single-customer read, flattened-spread joined against
+ * `customer_profiles` (1:1 child, Addendum B) — every profile-trio field
+ * reads straight off the composed row. Scope applied via ctx.scope (set by
  * scopeMiddleware on the customers entity router, or by buildUserContext
  * for service/job callers).
  */
 export async function getCustomer(
   ctx: ScopedContext,
   input: { id: string },
-): Promise<DalReturn<CustomerWithPhoneGate | undefined>> {
+): Promise<DalReturn<CustomerWithProfile | undefined>> {
   return dalDbOperation(async () => {
     const [customer] = await db
-      .select(customerSelectWithGate(ctx))
+      .select({ ...customerSelectWithGate(ctx), ...profileCols() })
       .from(customers)
+      .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
       .where(and(eq(customers.id, input.id), ctx.scope ?? undefined))
-    return customer as CustomerWithPhoneGate | undefined
+    return customer as CustomerWithProfile | undefined
   })
 }
 

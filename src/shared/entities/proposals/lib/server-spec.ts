@@ -34,14 +34,6 @@ export const proposalServerSpec = {
     select: selectProposalSchema,
   },
   shareable: { tokenColumn: 'token' },
-  update: {
-    // see ./DOCS.md#jsonb-merge-on-update
-    jsonbMergeColumns: [
-      proposals.formMetaJSON,
-      proposals.projectJSON,
-      proposals.fundingJSON,
-    ] as const,
-  },
   hooks: {
     create: {
       // see ../DOCS.md#kind-derived-from-meeting-project

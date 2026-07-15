@@ -68,3 +68,8 @@ export const voipLinkTokenTypeEnum = pgEnum('voip_link_token_type', voipLinkToke
 // VOIP CAMPAIGNS (CloudTalk): no local status pgEnum — CloudTalk is the sole
 // source of truth for lead lifecycle (perfect separation, confirmed 2026-06-04).
 // voip_campaign_status enum deleted 2026-06-04; see constants/enums/voip.ts.
+
+// WAVE-1 DECOMPOSITION (epic #256/#259): the customer_profiles vocabularies
+// are `text(..., { enum })` columns, NOT pgEnums — per the Closed Vocabulary
+// Standard (enum-standardization.md#text-with-enum). No new pgEnum is minted
+// here without a documented DB-side consumer.

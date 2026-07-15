@@ -1,5 +1,7 @@
 # Wave 1 — Zero-Table Wins Implementation Plan
 
+> **⚠️ SUPERSEDED (schema shape) 2026-07-14** — the customers profile trio described here as "columns on customers" was reworked to the `customer_profiles` 1:1 child table per spec §10 Addendum B + `docs/superpowers/plans/2026-07-14-wave-1-child-table-rework.md`. The Global Constraints section and the agentProfile/voipConfig/proposals/docs tasks remain accurate history.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Decompose three JSONB blobs into real columns (`customers` profile trio, `user.agentProfileJSON`, `lead_sources.voipConfigJSON` split), deregister `proposals` from `jsonbMergeColumns`, and fix the stale docs — killing both unprotected write races and 6 of 7 merge registrations with zero new tables.

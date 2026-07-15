@@ -2,7 +2,6 @@
 
 import type { BrandFormValues } from '@/features/agent-settings/schemas/profile-form'
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
-import type { AgentProfile } from '@/shared/entities/users/schemas'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
@@ -28,17 +27,16 @@ interface CustomerBrandSectionProps {
 export function CustomerBrandSection({ profile }: CustomerBrandSectionProps) {
   const trpc = useTRPC()
   const { invalidateAgentSettings } = useInvalidation()
-  const agentProfile = profile.agentProfileJSON as AgentProfile | null
 
   const form = useForm<BrandFormValues>({
     resolver: zodResolver(brandFormSchema),
     defaultValues: {
-      quote: agentProfile?.quote ?? '',
-      bio: agentProfile?.bio ?? '',
-      yearsOfExperience: agentProfile?.yearsOfExperience ?? undefined,
-      tradeSpecialties: agentProfile?.tradeSpecialties ?? [],
-      languagesSpoken: agentProfile?.languagesSpoken ?? [],
-      certifications: agentProfile?.certifications ?? [],
+      quote: profile.quote ?? '',
+      bio: profile.bio ?? '',
+      yearsOfExperience: profile.yearsOfExperience ?? undefined,
+      tradeSpecialties: profile.tradeSpecialties ?? [],
+      languagesSpoken: profile.languagesSpoken ?? [],
+      certifications: profile.certifications ?? [],
     },
   })
 
@@ -55,10 +53,7 @@ export function CustomerBrandSection({ profile }: CustomerBrandSectionProps) {
   )
 
   function onSubmit(values: BrandFormValues) {
-    const existingProfile = (profile.agentProfileJSON as AgentProfile | null) ?? {}
-    updateMutation.mutate({
-      agentProfileJSON: { ...existingProfile, ...values },
-    })
+    updateMutation.mutate(values)
   }
 
   return (

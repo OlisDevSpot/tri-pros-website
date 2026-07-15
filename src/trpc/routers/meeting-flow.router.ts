@@ -10,8 +10,8 @@ import { buildPersonaProfile } from '@/features/meeting-flow/lib/build-persona-p
 import { getCachedPainPoints } from '@/features/meeting-flow/lib/get-cached-pain-points'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
-import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { customerProfileSchema, financialProfileSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import { customerProfilePatchSchema } from '@/shared/db/schema'
+import { upsertCustomerProfile } from '@/shared/entities/customers/dal/server/mutations'
 import { getByIdWithJoins } from '@/shared/entities/meetings/dal/server/queries'
 import { meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
 import { ably } from '@/shared/services/providers/upstash/realtime'
@@ -20,20 +20,26 @@ import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { agentProcedure, createTRPCRouter } from '../init'
 
 export const meetingFlowRouter = createTRPCRouter({
-  // Update customer profile from within the meeting flow (emits realtime sync event)
+  // Upsert into customer_profiles from within the meeting flow (Addendum B
+  // 1:1 child table; emits realtime sync event). Flat column patch — no
+  // read-modify-merge, the column IS the field.
   updateCustomerProfile: agentProcedure
     .input(z.object({
       meetingId: z.string().uuid(),
       customerId: z.string().uuid(),
-      customerProfileJSON: customerProfileSchema.optional(),
-      propertyProfileJSON: propertyProfileSchema.optional(),
-      financialProfileJSON: financialProfileSchema.optional(),
+      patch: customerProfilePatchSchema,
     }))
-    .mutation(async ({ input }) => {
-      const { meetingId, customerId, ...profiles } = input
-      const updated = dalToTrpc(await customerCrud.update(SYSTEM_CONTEXT, {
-        id: customerId,
-        data: profiles,
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.ability.cannot('update', 'CustomerProfile')) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You do not have permission to update the customer profile.',
+        })
+      }
+      const { meetingId, customerId, patch } = input
+      const updated = dalToTrpc(await upsertCustomerProfile(SYSTEM_CONTEXT, {
+        customerId,
+        patch,
       }))
       // Inline await — ephemeral realtime fan-out is the explicit exception
       // to background-side-effects-via-qstash-jobs (routing through QStash
@@ -42,7 +48,7 @@ export const meetingFlowRouter = createTRPCRouter({
       // profile-save mutation.
       await ably.channels
         .get(`meeting:${meetingId}`)
-        .publish('meeting.updated', { fields: Object.keys(profiles) })
+        .publish('meeting.updated', { fields: Object.keys(patch) })
         .catch(err => console.warn('[meeting-flow] ably publish failed:', err))
       return updated
     }),
@@ -59,9 +65,7 @@ export const meetingFlowRouter = createTRPCRouter({
       const customer = row.customer?.id ? row.customer : null
       const painPointsDb = await getCachedPainPoints()
       return buildPersonaProfile({
-        customerProfile: customer?.customerProfileJSON ?? null,
-        propertyProfile: customer?.propertyProfileJSON ?? null,
-        financialProfile: customer?.financialProfileJSON ?? null,
+        customer,
         meetingContext: row.contextJSON ?? null,
         flowState: row.flowStateJSON ?? null,
         painPointsDb,

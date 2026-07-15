@@ -10,10 +10,11 @@ import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 // a daily cron if drift is observed in practice.
 //
 // CT-assigned IDs are runtime data, not source-code constants — they are NOT
-// env vars. APP-side policy (enabled / autoEnroll / dailyDialVolumeCap) lives in
-// `lead_sources.voipConfigJSON.campaigns`, while CT identity lives here.
+// env vars. APP-side policy (voipCampaignsEnabled / voipAutoEnroll /
+// dailyDialVolumeCap) lives on plain `lead_sources` columns (epic #256/#259;
+// formerly `voipConfigJSON.campaigns`), while CT identity lives here.
 // source_slug binding was removed — campaign-to-lead-source join is now via
-// `lead_sources.voipConfigJSON.campaigns[].ctCampaignId` (see ADR-0002 decisions log).
+// `lead_sources.default_campaign_id` (a real FK to this table's `id`).
 //
 // see docs/plans/voip-campaigns/EPIC.md decisions log 2026-05-31
 // see docs/plans/voip-campaigns/phase-1-implementation.md#w2

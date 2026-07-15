@@ -26,6 +26,7 @@ export const painSchema = z.object({
   accessor: z.string(),
   urgencyRating: z.number().int().min(1).max(10),
 })
+export type Pain = z.infer<typeof painSchema>
 
 export const customerProfileSchema = z.object({
   triggerEvent: z.enum(triggerEvents),
@@ -62,6 +63,50 @@ export const financialProfileSchema = z.object({
 export type CustomerProfile = z.infer<typeof customerProfileSchema>
 export type PropertyProfile = z.infer<typeof propertyProfileSchema>
 export type FinancialProfile = z.infer<typeof financialProfileSchema>
+
+// ── Addendum B (2026-07-14): the 23 columns that live on the `customer_profiles`
+// 1:1 child table (PK-as-FK on customers.id) — replaced the three JSONB
+// profile blobs (epic #256 / #259). Property names are identical to the old
+// blob field names (mainPainPoint split into mainPainAccessor/mainPainUrgency).
+// `age` is NOT here — it stays a plain column on `customers` (identity-adjacent,
+// written by anonymous homeowners via the contracts share-token flow; see
+// customers.ts and the Addendum B.2 superseded-verdicts table).
+// Grouped so callers can iterate/display per-section while still having the
+// flat union for CASL + patch validation.
+// see ../DOCS.md#three-jsonb-profiles
+export const CUSTOMER_PROFILE_COLUMN_KEYS = [
+  'triggerEvent',
+  'mainPainAccessor',
+  'mainPainUrgency',
+  'additionalPainPoints',
+  'outcomePriority',
+  'timeInHome',
+  'householdType',
+  'priorContractorExperience',
+  'constructionOutlookFavorabilityRating',
+  'sellPlan',
+  'decisionTimeline',
+  'projectNecessityRating',
+  'ageGroup',
+] as const
+export const PROPERTY_PROFILE_COLUMN_KEYS = [
+  'hoa',
+  'yearBuilt',
+  'roofType',
+  'foundationType',
+  'hvacType',
+  'hvacComponents',
+  'windowsType',
+  'insulationLevel',
+] as const
+export const FINANCIAL_PROFILE_COLUMN_KEYS = ['numQuotesReceived', 'creditScore'] as const
+export const PROFILE_COLUMN_KEYS = [
+  ...CUSTOMER_PROFILE_COLUMN_KEYS,
+  ...PROPERTY_PROFILE_COLUMN_KEYS,
+  ...FINANCIAL_PROFILE_COLUMN_KEYS,
+] as const
+/** TS-side property-key union for the `customer_profiles` child table. */
+export type ProfileKey = (typeof PROFILE_COLUMN_KEYS)[number]
 
 // Generic, self-describing funnel enrichment keyed by step id. `value` is the
 // resolved option label so no server-side label mirror is needed; `order` drives
@@ -138,10 +183,12 @@ export const leadMetaSchema = z.object({
         fbp: z.string().nullable(),
         fbc: z.string().nullable(),
       }).partial().optional(),
-      // Written ONLY via mergeFunnelEnrichment, which merges into this nested
-      // object atomically (`jsonb_set` at `{source,enrichment}`) — a plain
-      // top-level `||` on leadMetaJSON would replace the whole `source` and is
-      // NOT safe here. Shape: see enrichmentRecordSchema above.
+      // Written via mergeFunnelEnrichment (scoped `jsonb_set` at {source,enrichment} —
+      // atomic, hook-free). NOTE: leadMetaJSON is ALSO registered in jsonbMergeColumns,
+      // so generic crud.update applies a TOP-LEVEL-ONLY `||` merge: sending a partial
+      // `source` object through crud.update WOULD clobber sibling keys incl. this map.
+      // No caller does that today; Wave 2 (epic #256) decomposes this blob and deletes
+      // the merge mechanism. Shape: see enrichmentRecordSchema above.
       enrichment: enrichmentRecordSchema.optional(),
       // Implied TCPA consent captured at funnel submit (submission = agreement;
       // the PII step shows the proximate disclaimer + the footer legal block).

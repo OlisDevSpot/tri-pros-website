@@ -1,6 +1,6 @@
 # Enum Standardization
 
-Every fixed-set string value in the app — meeting outcomes, user roles, proposal statuses, lead-source kinds, trade types — flows through the same three-step pipeline. The const array is the source of truth; the TypeScript type, the Zod enum, and the Postgres pgEnum all derive from it.
+Every fixed-set string value in the app — meeting outcomes, user roles, proposal statuses, lead-source kinds, trade types — flows through the same pipeline. The const array is the source of truth; the TypeScript type, the Zod enum, and the Drizzle column typing all derive from it. **Storage is a plain `text` column — pgEnum is the documented exception, not the default** (Closed Vocabulary Standard, ratified 2026-07-14; see `#text-with-enum`).
 
 ## Rules
 
@@ -37,20 +37,35 @@ export type ProposalStatus = (typeof proposalStatuses)[number]
 **Reference impl**: `src/shared/types/enums/proposals.ts`
 **Enforced by**: tsc (if you forget to add a value, downstream `switch (status)` exhaustiveness fails)
 
-### pgenum-from-const
+### text-with-enum
 
-If the value is stored in Postgres, declare the pgEnum in `src/shared/db/schema/meta.ts` from the same const array:
+If the value is stored in Postgres, the column is plain `text` with Drizzle's `enum` config from the same const array — NO pgEnum:
 
 ```ts
-import { proposalStatuses } from '@/shared/constants/enums/proposals'
-export const proposalStatusEnum = pgEnum('proposal_status', proposalStatuses)
+import { triggerEvents } from '@/shared/constants/enums/customers'
+// in the pgTable definition:
+triggerEvent: text('trigger_event', { enum: triggerEvents }),
 ```
 
-The Drizzle column then uses `proposalStatusEnum`, NOT `text()`.
+This gives the identical compile-time union type and the identical drizzle-zod `z.enum` derivation as a pgEnum column — with zero Postgres catalog objects. Runtime validation happens where every write already passes: the DAL boundary's Zod parse (raw `db` writes outside the DAL are forbidden; scripts use Zod gates).
 
-**Why**: Postgres enforces the value at the DB level, not just at the type level. Drift = runtime error not type error.
-**Reference impl**: `src/shared/db/schema/meta.ts`
-**Enforced by**: Postgres (insert/update fails with invalid value)
+**Why**: the const array is the single source of truth; a pgEnum is that vocabulary hand-maintained in a second place (the pg catalog), and it calcifies labels — every marketing-driven relabel becomes an `ALTER TYPE` migration plus data archaeology (the Wave-1 `LEGACY_ENUM_MAP` ceremony existed solely because pgEnums froze old labels; with text columns each relabel is a TS edit + one `UPDATE`). Prod was heading to 39 enum types before this rule.
+**Reference impl**: `src/shared/db/schema/customer-profiles.ts`
+**Enforced by**: convention + review (tsc enforces the value set at compile time; Zod at the DAL boundary at runtime)
+
+### pgenum-only-with-db-side-consumer
+
+Minting a pgEnum requires a documented DB-side consumer: a SQL predicate that compares enum ordering, a constraint another system relies on, or an external reader that needs catalog-level enforcement. As of 2026-07-14 there are ZERO such cases — no SQL anywhere uses `enum_range`, enum ordering, or enum casts. If you believe you have one, document it next to the pgEnum declaration in `meta.ts` and in the PR.
+
+**Why**: without a DB-side consumer, the enum type is pure ceremony with DDL friction on every vocabulary change.
+**Enforced by**: review
+
+### legacy-pgenum-conversion
+
+The 23 pre-existing pgEnums (audited 2026-07-14) convert to `text` **opportunistically**: any wave/migration that already touches a table converts that table's enum columns in the same push (`ALTER COLUMN ... TYPE text` + `DROP TYPE`). A dedicated final sweep for whatever remains is tracked as a deferred issue — do not run it as a standalone prod migration without cause.
+
+**Why**: big-bang conversion is churn with no functional gain; opportunistic conversion reaches the same end state for free.
+**Enforced by**: convention (check this rule whenever a migration touches a table with enum columns)
 
 ### barrel-from-domain-files
 

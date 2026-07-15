@@ -1,12 +1,27 @@
 import { z } from 'zod'
 
-const cropDataSchema = z.object({
+export const cropDataSchema = z.object({
   x: z.number(),
   y: z.number(),
   width: z.number(),
   height: z.number(),
 })
 
+// Still live — types the `headshotCropData` JSONB column (single-writer,
+// replaced-whole, two fixed sub-objects; not decomposed per spec §2).
+export const headshotCropDataSchema = z.object({
+  app: cropDataSchema.optional(),
+  proposal: cropDataSchema.optional(),
+})
+
+export type HeadshotCropData = z.infer<typeof headshotCropDataSchema>
+
+/**
+ * @deprecated Wave-1 frozen (epic #256/#259). Kept only to type the
+ * deprecated `agentProfileJSONDeprecated` blob column and for
+ * scripts/backfill-wave1-columns.ts parsing. New code reads/writes the flat
+ * columns directly; see users/dal/server/mutations.ts#updateUserProfile.
+ */
 export const agentProfileSchema = z.object({
   quote: z.string().optional(),
   bio: z.string().optional(),
@@ -15,10 +30,7 @@ export const agentProfileSchema = z.object({
   languagesSpoken: z.array(z.string()).optional(),
   certifications: z.array(z.string()).optional(),
   headshotUrl: z.string().optional(),
-  headshotCropData: z.object({
-    app: cropDataSchema.optional(),
-    proposal: cropDataSchema.optional(),
-  }).optional(),
+  headshotCropData: headshotCropDataSchema.optional(),
 })
 
 export type AgentProfile = z.infer<typeof agentProfileSchema>

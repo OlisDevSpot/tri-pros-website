@@ -200,10 +200,14 @@ defined field, throwing `FORBIDDEN` on the first failure.
 
 Implication: per-entity field-restricted grants in `abilities.ts` are
 enforced automatically. For example, the agent grant
-`can('update', 'Customer', ['customerProfileJSON', 'propertyProfileJSON', 'financialProfileJSON'])`
-means agents can call `crud.update({ data: { customerProfileJSON: {...} } })`
-but NOT `crud.update({ data: { phone: '...' } })` — the gate rejects
-the second call automatically without any per-entity router code.
+`can('update', 'Customer', ['age'])` (Addendum B, 2026-07-14 — the 23
+sales-discovery fields that used to be field-restricted `Customer` columns
+now live on the `customer_profiles` child table, gated by its own
+`CustomerProfile` CASL subject instead — see
+`../shared/entities/customers/DOCS.md#three-jsonb-profiles`) means agents
+can call `crud.update({ data: { age: 42 } })` but NOT
+`crud.update({ data: { phone: '...' } })` — the gate rejects the second
+call automatically without any per-entity router code.
 
 **Reference impl**: `src/trpc/lib/create-crud-router.ts` — `assertCanUpdateFields` helper.
 
@@ -257,11 +261,14 @@ When `spec.shareable` is set, `getById` and `update` accept `?token=` and bypass
 
 ### jsonb-merge-columns-merge-on-update
 
-If `spec.update?.jsonbMergeColumns` is set, the `update` handler deep-merges those JSONB columns instead of replacing them. The default `createCrudDal` honors this.
+Opt-in per column via `spec.update.jsonbMergeColumns`: the `update` handler applies a single-statement, top-level-only merge `COALESCE(col, '{}'::jsonb) || value::jsonb` (shallow merge — callers must send complete values for any nested key they touch) instead of replacing the column. The default `createCrudDal` honors this list.
 
-**Why**: forms submit partial JSONB state across multi-step flows; full replacement would wipe prior steps. Declared once in the spec rather than per-call.
-**Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts` (update implementation reads `spec.update.jsonbMergeColumns`)
-**Enforced by**: convention (handler reads spec)
+**Sole remaining registration**: `customers.leadMetaJSON` (until Wave 2 of epic #256 deletes the mechanism entirely per the decomposition program spec). `proposals` was deregistered in Wave 1 (see `#jsonb-merge-on-update` in `src/shared/entities/proposals/DOCS.md`); the customer profile trio was decomposed to plain columns in Wave 1 (see `#three-jsonb-profiles` in `src/shared/entities/customers/DOCS.md`).
+
+**Why this existed**: forms submit partial JSONB state across multi-step flows; full replacement would wipe prior steps. Declared once in the spec rather than per-call. **Deprecated in Wave 1; mechanism deleted entirely in Wave 2.**
+
+**Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts:buildUpdateSet` (merge application); `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §3 (Wave 2 deletion plan).
+**Enforced by**: convention (handler reads spec; no new registrations accepted)
 
 ### dont-import-server-only-trpc-into-client
 

@@ -1,7 +1,7 @@
 'use client'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { SOW } from '@/shared/entities/proposals/types'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
@@ -57,7 +57,7 @@ export function CreateNewProposalView() {
     }
     hasAppliedSnapshot.current = true
 
-    const defaults = buildProposalDefaults(meeting, customer as Customer | null)
+    const defaults = buildProposalDefaults(meeting, customer as CustomerWithProfile | null)
     form.reset(defaults)
   }, [meeting, customer, form])
 

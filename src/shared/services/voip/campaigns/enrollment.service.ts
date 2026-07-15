@@ -90,7 +90,6 @@ function createCampaignEnrollmentService() {
         return sourceResult
       }
       const leadSource = sourceResult.data
-      const policy = leadSource?.voipConfigJSON?.campaigns
 
       // ── Source must exist (for attribute build), but a source being
       // "disabled" does not block a manual enroll — the `enabled`/`autoEnroll`
@@ -101,7 +100,7 @@ function createCampaignEnrollmentService() {
       }
 
       // ── Gate 2: dialable target campaign ─────────────────────────────────
-      const targetCampaignId = input.campaignId ?? policy?.defaultCampaignId
+      const targetCampaignId = input.campaignId ?? leadSource.defaultCampaignId
       if (!targetCampaignId) {
         return reject('no_dialable_campaign')
       }

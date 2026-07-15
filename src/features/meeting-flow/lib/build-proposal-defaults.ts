@@ -1,4 +1,5 @@
-import type { Customer, Meeting } from '@/shared/db/schema'
+import type { Meeting } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { ProposalFormSchema } from '@/shared/entities/proposals/schemas'
 import { getProgramByAccessor } from '@/features/meeting-flow/constants/programs'
 import { computeDealFinalTcp } from '@/shared/entities/meetings/lib/compute-deal-derived'
@@ -7,7 +8,7 @@ import { proposalFormBaseDefaultValues } from '@/shared/entities/proposals/schem
 
 export function buildProposalDefaults(
   meeting: Meeting,
-  customer: Customer | null,
+  customer: CustomerWithProfile | null,
 ): ProposalFormSchema {
   const flowState = meeting.flowStateJSON
   const defaults = structuredClone(proposalFormBaseDefaultValues)

@@ -1,23 +1,23 @@
 'use client'
 
-import type { CustomerProfile } from '@/shared/entities/customers/schemas'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 
 import { Badge } from '@/shared/components/ui/badge'
 
 interface Props {
-  profile: CustomerProfile | null | undefined
+  customer: Pick<CustomerWithProfile, 'triggerEvent' | 'decisionTimeline' | 'outcomePriority' | 'householdType'> | null | undefined
 }
 
-export function CustomerProfileKeyInsights({ profile }: Props) {
-  if (!profile || Object.keys(profile).length === 0) {
+export function CustomerProfileKeyInsights({ customer }: Props) {
+  if (!customer) {
     return null
   }
 
   const insights = [
-    profile.triggerEvent != null && String(profile.triggerEvent),
-    profile.decisionTimeline != null && String(profile.decisionTimeline),
-    profile.outcomePriority != null && `Priority: ${String(profile.outcomePriority)}`,
-    profile.householdType != null && String(profile.householdType),
+    customer.triggerEvent != null && String(customer.triggerEvent),
+    customer.decisionTimeline != null && String(customer.decisionTimeline),
+    customer.outcomePriority != null && `Priority: ${String(customer.outcomePriority)}`,
+    customer.householdType != null && String(customer.householdType),
   ].filter(Boolean) as string[]
 
   if (insights.length === 0) {

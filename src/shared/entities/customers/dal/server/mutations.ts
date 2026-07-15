@@ -2,14 +2,18 @@
 // never reach for db.insert/update from a service layer.
 // see docs/codebase-conventions/dal-conventions.md
 
-import type { DalReturn } from '@/shared/dal/server/types'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
+import type { CustomerProfilePatch, CustomerProfileRow } from '@/shared/db/schema/customer-profiles'
 import type { EnrichmentRecord } from '@/shared/entities/customers/schemas'
 
 import { and, eq, sql } from 'drizzle-orm'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { upsertOneToOne } from '@/shared/dal/server/lib/upsert-one-to-one'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
+import { customerProfilePatchSchema, customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
 
 /**
@@ -73,5 +77,39 @@ export async function mergeFunnelEnrichment(
       ))
       .returning({ id: customers.id })
     return { matched: row != null }
+  })
+}
+
+/**
+ * Lazy upsert into the `customer_profiles` 1:1 child table (Addendum B,
+ * 2026-07-14). Row-exists = discovery data has been collected — first write
+ * inserts, every write after updates the same row via `upsertOneToOne`.
+ *
+ * `ctx.scope` filters against `customers`, not the child table (the child has
+ * no visibility predicate of its own), so a scoped caller (agent) is probed
+ * against the parent row before the write; SYSTEM/omni callers (`ctx.scope ===
+ * null`) skip straight to the upsert.
+ */
+export async function upsertCustomerProfile(
+  ctx: ScopedContext,
+  input: { customerId: string, patch: CustomerProfilePatch },
+): Promise<DalReturn<CustomerProfileRow>> {
+  return dalDbOperation(async () => {
+    const validated = customerProfilePatchSchema.parse(input.patch)
+
+    if (ctx.scope) {
+      const [parent] = await db
+        .select({ id: customers.id })
+        .from(customers)
+        .where(and(eq(customers.id, input.customerId), ctx.scope))
+        .limit(1)
+      if (!parent) {
+        throw new ThrowableDalError({ type: 'not-found' })
+      }
+    }
+
+    return dalVerifySuccess(
+      await upsertOneToOne(customerProfiles, customerProfiles.customerId, input.customerId, validated),
+    )
   })
 }

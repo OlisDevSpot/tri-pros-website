@@ -32,6 +32,9 @@ export const customerSchemas = {
   update: updateCustomerSchema,
 }
 
+// duplicate (default createCrudDal impl) copies only `customers` columns — it
+// does NOT copy the customer's `customer_profiles` child row. See
+// docs/codebase-conventions/dal-conventions.md#one-to-one-child-tables.
 export const customerServerSpec = {
   entityName: CUSTOMER,
   caslSubject: CUSTOMER,
@@ -42,16 +45,13 @@ export const customerServerSpec = {
     update: updateCustomerSchema,
     select: selectCustomerSchema,
   },
-  // see ../DOCS.md#three-jsonb-profiles + ../DOCS.md#lead-attribution-fields —
-  // agents fill these progressively; partial updates must deep-merge, not overwrite.
+  // see ../DOCS.md#lead-attribution-fields — leadMetaJSON is filled
+  // progressively; partial updates must deep-merge, not overwrite.
   // Wired by createCrudDal.updateImpl (since 7bc34a7).
   update: {
-    jsonbMergeColumns: [
-      customers.customerProfileJSON,
-      customers.propertyProfileJSON,
-      customers.financialProfileJSON,
-      customers.leadMetaJSON,
-    ] as const,
+    // leadMetaJSON only — profile trio decomposed to columns in Wave 1 (#259).
+    // leadMetaJSON leaves in Wave 2 (customer_enrichment + source promotion).
+    jsonbMergeColumns: [customers.leadMetaJSON] as const,
   },
   hooks: {
     update: {

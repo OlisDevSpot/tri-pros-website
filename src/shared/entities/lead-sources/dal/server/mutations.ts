@@ -2,7 +2,6 @@
 // see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn } from '@/shared/dal/server/types'
-import type { VoipCampaignsPolicy, VoipConfig } from '@/shared/entities/lead-sources/schemas'
 
 import { eq } from 'drizzle-orm'
 
@@ -18,10 +17,11 @@ interface VoipCampaignsPolicyPatch {
 }
 
 /**
- * Patch a lead source's `voip_config_json.campaigns` policy. Read-modify-write
- * merge: only the provided fields change; the rest (caps, template overrides)
- * are preserved. One write path for the source-anchored Setup tab (default
- * campaign + enabled + autoEnroll). No-op when the source is missing.
+ * Patch a lead source's campaigns policy (epic #256/#259: plain columns, not
+ * a JSONB blob). Single UPDATE over disjoint columns — no read-modify-write,
+ * so concurrent toggles can no longer race each other. Only the provided
+ * fields change; omitted fields are left untouched. No-op when the source is
+ * missing or the patch is empty.
  *
  * `updatedAt` auto-bumps via the schema-helper `$onUpdate`.
  */
@@ -30,35 +30,21 @@ export async function setVoipCampaignsPolicy(
   patch: VoipCampaignsPolicyPatch,
 ): Promise<DalReturn<{ rowsAffected: number }>> {
   return dalDbOperation(async () => {
-    const [current] = await db
-      .select({ voipConfigJSON: leadSourcesTable.voipConfigJSON })
-      .from(leadSourcesTable)
-      .where(eq(leadSourcesTable.slug, sourceSlug))
-      .limit(1)
-    if (!current) {
+    const set: Partial<typeof leadSourcesTable.$inferInsert> = {}
+    if (patch.enabled !== undefined)
+      set.voipCampaignsEnabled = patch.enabled
+    if (patch.autoEnroll !== undefined)
+      set.voipAutoEnroll = patch.autoEnroll
+    if (patch.defaultCampaignId !== undefined)
+      set.defaultCampaignId = patch.defaultCampaignId
+    if (Object.keys(set).length === 0)
       return { rowsAffected: 0 }
-    }
-
-    const existing: VoipConfig = current.voipConfigJSON ?? {}
-    const nextCampaigns: VoipCampaignsPolicy = { ...(existing.campaigns ?? { enabled: true, autoEnroll: false }) }
-    if (patch.enabled !== undefined) {
-      nextCampaigns.enabled = patch.enabled
-    }
-    if (patch.autoEnroll !== undefined) {
-      nextCampaigns.autoEnroll = patch.autoEnroll
-    }
-    if (patch.defaultCampaignId !== undefined) {
-      nextCampaigns.defaultCampaignId = patch.defaultCampaignId ?? undefined
-    }
-
-    const nextConfig: VoipConfig = { ...existing, campaigns: nextCampaigns }
 
     const result = await db
       .update(leadSourcesTable)
-      .set({ voipConfigJSON: nextConfig })
+      .set(set)
       .where(eq(leadSourcesTable.slug, sourceSlug))
       .returning({ id: leadSourcesTable.id })
-
     return { rowsAffected: result.length }
   })
 }

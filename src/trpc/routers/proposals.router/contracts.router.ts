@@ -8,8 +8,8 @@
 // auth + scope middleware.
 //
 // `applyEnvelopeContext` is the single cross-entity orchestration on this
-// router. It writes to BOTH `customer.customerProfileJSON.age` AND
-// `proposal.formMetaJSON.envelopeDocumentIds` because they're two faces of
+// router. It writes to BOTH `customer.age` (plain column, epic #256/#259)
+// AND `proposal.formMetaJSON.envelopeDocumentIds` because they're two faces of
 // the same business concept — see DOCS.md anchor below.
 // see `src/shared/entities/proposals/DOCS.md#agreement-context-as-coherent-unit`
 
@@ -160,7 +160,7 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
      * Single cross-entity mutation for "alter the agreement context."
      * Both inputs are optional, but at least one must be provided.
      *
-     *   - `age` → writes `customer.customerProfileJSON.age` AND silently
+     *   - `age` → writes `customer.age` (plain column) AND silently
      *     reconciles the saved envelope selection against the new age
      *     (adds new required, drops new forbidden).
      *   - `envelopeDocumentIds` → replaces the saved selection. Validated
@@ -219,16 +219,12 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
 
         // 1. Persist age on the customer (system context — visibility is already
         // established by getFullView above; the homeowner share-token has no
-        // customer-side scope to use here).
+        // customer-side scope to use here). `age` is a plain column (epic
+        // #256/#259) — no read-modify-merge needed.
         if (input.age !== undefined) {
-          const existing = dalToTrpc(await customerCrud.getById(SYSTEM_CONTEXT, { id: proposal.customer.id }))
-          if (!existing) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
-          }
-          const currentProfile = existing.customerProfileJSON ?? {}
           dalToTrpc(await customerCrud.update(SYSTEM_CONTEXT, {
             id: proposal.customer.id,
-            data: { customerProfileJSON: { ...currentProfile, age: input.age } },
+            data: { age: input.age },
           }))
         }
 

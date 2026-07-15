@@ -1,6 +1,7 @@
 'use client'
 
-import type { Customer, Meeting } from '@/shared/db/schema'
+import type { Meeting } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
 import { useCallback } from 'react'
 import { ContextPanelSection } from '@/features/meeting-flow/ui/components/context-panel-section'
@@ -46,11 +47,11 @@ const OUTCOME_FIELDS: ProfileFieldConfig[] = [
 ]
 
 interface ContextPanelProps {
-  customer: Customer | null
+  customer: CustomerWithProfile | null
   isOpen: boolean
   meeting: Meeting
   onContextChange: (patch: Record<string, unknown>) => void
-  onCustomerProfileChange: (jsonbKey: string, patch: Record<string, unknown>) => void
+  onCustomerProfileChange: (patch: Record<string, unknown>) => void
   onOutcomeChange: (outcome: string) => void
   onAgentNotesChange: (notes: string) => void
   onOpenChange: (open: boolean) => void
@@ -67,9 +68,7 @@ export function ContextPanel({
   onOpenChange,
 }: ContextPanelProps) {
   const ctx = (meeting.contextJSON ?? {}) as Record<string, unknown>
-  const customerProfile = (customer?.customerProfileJSON ?? {}) as Record<string, unknown>
-  const propertyProfile = (customer?.propertyProfileJSON ?? {}) as Record<string, unknown>
-  const financialProfile = (customer?.financialProfileJSON ?? {}) as Record<string, unknown>
+  const customerRow = (customer ?? {}) as unknown as Record<string, unknown>
 
   // Section 1 — Pre-Meeting (meeting.contextJSON)
   const handlePreMeetingChange = useCallback(
@@ -79,26 +78,12 @@ export function ContextPanel({
     [onContextChange],
   )
 
-  // Section 2 — Customer Profile (customer.customerProfileJSON)
+  // Sections 2-4 — Customer profile-trio columns (epic #256/#259). Each
+  // section writes only the one changed field — no read-modify-merge, the
+  // column IS the field.
   const handleCustomerProfileChange = useCallback(
     (id: string, value: unknown) => {
-      onCustomerProfileChange('customerProfileJSON', { [id]: value })
-    },
-    [onCustomerProfileChange],
-  )
-
-  // Section 3 — Property (customer.propertyProfileJSON)
-  const handlePropertyChange = useCallback(
-    (id: string, value: unknown) => {
-      onCustomerProfileChange('propertyProfileJSON', { [id]: value })
-    },
-    [onCustomerProfileChange],
-  )
-
-  // Section 4 — Financial (customer.financialProfileJSON)
-  const handleFinancialChange = useCallback(
-    (id: string, value: unknown) => {
-      onCustomerProfileChange('financialProfileJSON', { [id]: value })
+      onCustomerProfileChange({ [id]: value })
     },
     [onCustomerProfileChange],
   )
@@ -175,7 +160,7 @@ export function ContextPanel({
             defaultOpen={false}
             fields={CUSTOMER_PROFILE_FIELDS}
             title="Customer Profile"
-            values={customerProfile}
+            values={customerRow}
             onFieldChange={handleCustomerProfileChange}
           />
 
@@ -184,8 +169,8 @@ export function ContextPanel({
             defaultOpen={false}
             fields={PROPERTY_PROFILE_FIELDS}
             title="Property"
-            values={propertyProfile}
-            onFieldChange={handlePropertyChange}
+            values={customerRow}
+            onFieldChange={handleCustomerProfileChange}
           />
 
           {/* Section 4 — Financial */}
@@ -193,8 +178,8 @@ export function ContextPanel({
             defaultOpen={false}
             fields={FINANCIAL_PROFILE_FIELDS}
             title="Financial"
-            values={financialProfile}
-            onFieldChange={handleFinancialChange}
+            values={customerRow}
+            onFieldChange={handleCustomerProfileChange}
           />
 
           {/* Section 5 — Agent Observations */}
