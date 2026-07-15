@@ -167,7 +167,7 @@ newer rule:
 
 **Why**: line-item edits would silently invalidate a hand-stored TCP; the rollup is recomputed on every write. Single source of truth for the formula; the rollup column keeps server-side filter/sort fast and correct.
 **Reference impl**: `lib/compute-final-tcp.ts` (JS formula); `dal/server/queries.ts:listProposals` reads `proposals.finalTcpCents` for price filter/sort
-**Enforced by**: convention (no `final_tcp` column exists; field was removed from `fundingDataSchema` in commit `a6c431e`)
+**Enforced by**: convention — `proposals.final_tcp_cents` exists (Wave 2) but only as a rollup cache written exclusively by `recomputeProposalFinancials`; it appears in no editable schema, so it can never be hand-set (the hand-settable `finalTcp` field was removed from `fundingDataSchema` in commit `a6c431e`)
 
 ### cslb-start-date
 
