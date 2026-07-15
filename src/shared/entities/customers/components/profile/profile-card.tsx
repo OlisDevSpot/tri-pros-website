@@ -25,11 +25,6 @@ interface Props {
   editMode?: boolean
   canEditField?: (field: string) => boolean
   control?: Control<CustomerFormValues>
-  formPrefix?: string
-}
-
-function getFieldPath(formPrefix: string | undefined, key: string): string {
-  return formPrefix ? `${formPrefix}.${key}` : key
 }
 
 function renderEditField(
@@ -111,7 +106,6 @@ export function ProfileCard({
   editMode = false,
   canEditField,
   control,
-  formPrefix,
 }: Props) {
   const values = data ?? {}
 
@@ -125,13 +119,12 @@ export function ProfileCard({
           {fields.map((field) => {
             const value = (values as Record<string, unknown>)[field.id]
             const shouldEdit = editMode && canEditField?.(field.id) && control
-            const fieldPath = getFieldPath(formPrefix, field.id)
 
             return (
               <div key={field.id}>
                 <p className="text-xs text-muted-foreground">{field.label}</p>
                 {shouldEdit
-                  ? renderEditField(field, fieldPath, control)
+                  ? renderEditField(field, field.id, control)
                   : (
                       <p className="text-sm font-medium">{renderViewValue(value)}</p>
                     )}

@@ -1,11 +1,22 @@
 import { config } from 'dotenv'
 import { defineConfig } from 'drizzle-kit'
-import env from '@/shared/config/server-env'
 
+// Self-contained env loading — deliberately NO import of server-env here.
+// drizzle-kit bundles this config with its own loader, where server-env's
+// dotenv calls resolve differently than under tsx/Next and .env.local was
+// silently skipped — sending worktree `db:push:dev` runs to the SHARED dev
+// branch (defeating per-worktree Neon isolation). Load order: .env.local
+// first (dispatch worktree override wins — dotenv never overwrites), then .env.
+// `override: true` is required: drizzle-kit preloads `.env` into process.env
+// BEFORE this config file executes, and plain dotenv never overwrites set vars
+// — without override, the worktree's .env.local DATABASE_DEV_URL silently loses
+// and `db:push:dev` hits the SHARED dev branch (the 2026-05-04 drift incident
+// class). Diagnosed 2026-07-13 (#259).
+config({ path: '.env.local', override: true })
 config({ path: '.env' })
 
 // eslint-disable-next-line node/prefer-global/process
-const dbUrl = process.env.DRIZZLE_TARGET === 'dev' ? env.DATABASE_DEV_URL! : env.DATABASE_URL
+const dbUrl = process.env.DRIZZLE_TARGET === 'dev' ? process.env.DATABASE_DEV_URL! : process.env.DATABASE_URL!
 
 export default defineConfig({
   schema: './src/shared/db/schema/index.ts',

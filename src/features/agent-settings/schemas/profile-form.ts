@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-import { agentProfileSchema } from '@/shared/entities/users/schemas'
-
 export const identityFormSchema = z.object({
   phone: z.string().optional(),
   birthdate: z.string().optional(),
@@ -11,9 +9,15 @@ export const identityFormSchema = z.object({
 
 export type IdentityFormValues = z.infer<typeof identityFormSchema>
 
-export const brandFormSchema = agentProfileSchema.omit({
-  headshotUrl: true,
-  headshotCropData: true,
+// Flat subset of the users patch shape this form owns (headshotUrl /
+// headshotCropData are the headshot-upload widget's fields, not this form's).
+export const brandFormSchema = z.object({
+  quote: z.string().optional(),
+  bio: z.string().optional(),
+  yearsOfExperience: z.number().optional(),
+  tradeSpecialties: z.array(z.string()).optional(),
+  languagesSpoken: z.array(z.string()).optional(),
+  certifications: z.array(z.string()).optional(),
 })
 
 export type BrandFormValues = z.infer<typeof brandFormSchema>

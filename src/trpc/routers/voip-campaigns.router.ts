@@ -65,13 +65,13 @@ export const voipCampaignsRouter = createTRPCRouter({
       sourceSlug: source.slug,
       name: source.name,
       isActive: source.isActive,
-      autoEnroll: source.voipConfigJSON?.campaigns?.autoEnroll ?? false,
-      defaultCampaignId: source.voipConfigJSON?.campaigns?.defaultCampaignId ?? null,
-      enabled: source.voipConfigJSON?.campaigns?.enabled ?? true,
+      autoEnroll: source.voipAutoEnroll,
+      defaultCampaignId: source.defaultCampaignId,
+      enabled: source.voipCampaignsEnabled,
       dncCount: counts[source.id]?.dnc ?? 0,
       eligibleCount: counts[source.id]?.eligible ?? 0,
       enrolledCount: counts[source.id]?.enrolled ?? 0,
-      needsBinding: (counts[source.id]?.eligible ?? 0) > 0 && !source.voipConfigJSON?.campaigns?.defaultCampaignId,
+      needsBinding: (counts[source.id]?.eligible ?? 0) > 0 && !source.defaultCampaignId,
     }))
   }),
 

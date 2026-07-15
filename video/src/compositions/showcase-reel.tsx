@@ -1,4 +1,5 @@
 import type { ShowcaseReelProps } from '../lib/schema'
+import { normalizeKenBurns } from '../lib/schema'
 import {
   AbsoluteFill,
   Audio,
@@ -104,7 +105,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                     durationInFrames={clip.durationInFrames}
                     aspect={clip.aspect}
                     label={clip.label}
-                    kenBurns={clip.kenBurns}
+                    kenBurns={normalizeKenBurns(clip.kenBurns).zoom}
                     above={
                       props.checkmarkClipIndex === clip.index && props.checkmarks.length > 0
                         ? (
@@ -118,7 +119,7 @@ export function ShowcaseReel(props: ShowcaseReelProps) {
                 )
               : (
                   <AbsoluteFill>
-                    <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} kenBurns={clip.kenBurns} />
+                    <ClipMedia src={clip.src} kind={clip.kind} durationInFrames={clip.durationInFrames} kenBurns={normalizeKenBurns(clip.kenBurns).zoom} />
                   </AbsoluteFill>
                 )}
             {props.photoBurst?.clipIndex === clip.index && (

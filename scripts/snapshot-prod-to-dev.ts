@@ -102,7 +102,7 @@ const TABLES = [
   def({
     table: schema.user,
     tagColumns: ['name', 'nickname'],
-    skipColumns: ['agentProfileJSON'],
+    skipColumns: ['agentProfileJSONDeprecated'],
   }),
 
   // ── Reference data ────────────────────────────────────────────────
@@ -129,6 +129,11 @@ const TABLES = [
 
   // ── Core business entities ────────────────────────────────────────
   def({ table: schema.customers, tagColumns: ['name', 'address', 'city'] }),
+  // 1:1 child of customers (PK-as-FK `customer_id`, onDelete cascade) — must
+  // follow customers for FK-safe insertion order. Not in TRUNCATE_ROOTS: it
+  // has no columns of its own worth root-truncating, and CASCADE off the
+  // `customers` truncation already wipes it on --fresh.
+  def({ table: schema.customerProfiles }),
   def({ table: schema.projects, tagColumns: ['title', 'homeownerName', 'city'] }),
   def({ table: schema.mediaFiles, hasSequence: true }),
   def({ table: schema.x_projectScopes }),

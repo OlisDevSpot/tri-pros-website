@@ -97,11 +97,14 @@ When `status` transitions to `approved`, a Project is created automatically and 
 
 ### jsonb-merge-on-update
 
-`formMetaJSON`, `projectJSON`, `fundingJSON` deep-merge on update — never replaced. The spec declares which columns merge.
-
-**Why**: forms submit partial state across multi-step flows; replacement would wipe prior steps.
-**Reference impl**: `lib/server-spec.ts:update.jsonbMergeColumns`
-**Enforced by**: `createCrudDal.updateImpl` reads `spec.update.jsonbMergeColumns` and applies a `COALESCE(col, '{}'::jsonb) || $value::jsonb` deep-merge
+**Retired (Wave 1, epic #256).** `formMetaJSON`, `projectJSON`, `fundingJSON` are
+whole-document columns: every writer reconstructs and submits the full blob, so
+updates REPLACE the column (plain CRUD path). They were previously registered in
+`spec.update.jsonbMergeColumns`, which shallow-merged top-level keys and silently
+prevented field-clearing — deregistered because no caller ever sent a partial.
+Do not re-register: a whole-document writer + `||` merge resurrects deleted keys.
+Full decomposition of these blobs lands in Waves 2–3
+(see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §2 verdicts + §3 wave structure).
 
 ### final-tcp-derived
 
@@ -196,7 +199,7 @@ Cost helpers return `null` (not 0) when cost data is incomplete — distinguishe
 
 ### agreement-context-as-coherent-unit
 
-Customer age (`customer.customerProfileJSON.age`) and the envelope-document selection (`proposal.formMetaJSON.envelopeDocumentIds`) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
+Customer age (`customer.age` — plain column, epic #256/#259; see `../customers/DOCS.md#three-jsonb-profiles`) and the envelope-document selection (`proposal.formMetaJSON.envelopeDocumentIds`) together form *the agreement context* — the set of inputs that determine what the Zoho Sign envelope will contain. Age is the source of truth; the document registry classifies every doc as required, optional, or forbidden for a given age + proposal kind. The selection is reconciled against age automatically on every change.
 
 - **Single procedure**: `proposalsRouter.contracts.applyEnvelopeContext({ id, token?, age?, envelopeDocumentIds? })` is the only writer for these two fields. Either input is optional; at least one must be present. Server reconciles the saved selection against the (possibly just-applied) age before persisting.
 - **Reconciliation is silent**: on age change, required docs are auto-added and forbidden docs are auto-dropped from the saved selection without surfacing notifications. The reconciled result is returned to the caller so the UI can render it immediately.
@@ -237,7 +240,7 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - **Branching envelope content on a single dimension (age alone).** The retired `buildSigningRequest` picked tpr-HI base/senior purely from `customer.customerAge >= 65`, which silently shipped tpr-HI envelopes for additional-work proposals (which should ship AWD). All envelope-content decisions must flow through the registry's `applicableKinds` + `perKindRules` (multi-dimensional: kind × age × isLongSow). See ADR-0004 amendment 2026-05-28.
 - **Storing `finalTcp`.** Always derive via `computeFinalTcp` — see `#final-tcp-derived`.
 - **Setting `kind` from client input.** Server-derived; omitted from insert/update schemas.
-- **Replacing `formMetaJSON` / `projectJSON` / `fundingJSON` on update.** They deep-merge — see `#jsonb-merge-on-update`.
+- **Re-registering `formMetaJSON` / `projectJSON` / `fundingJSON` in `jsonbMergeColumns`.** Retired Wave 1 — every writer sends the whole document; merging would resurrect deliberately-cleared fields. See `#jsonb-merge-on-update`.
 - **Adding a CASL check on the share-token path.** Token IS authorization; CASL is `null`.
 - **Setting `converted_to_project` meeting outcome manually.** Derived from proposal approval.
 - **Computing project start date by adding 3 calendar days to signing.** Use `cslbEarliestStartDate(signingDate, isSenior)` — Sundays don't count.
@@ -257,5 +260,5 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - `docs/proposal/scope-presentation.md` — SOW UX
 - `docs/proposal/financing-presentation.md` — financing UX
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
-- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB payload shape, runtime validation, and deep-merge safety governing `formMetaJSON`/`projectJSON`/`fundingJSON`
+- `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics; `formMetaJSON`/`projectJSON`/`fundingJSON` are whole-document writers and are NOT registered (see `#jsonb-merge-on-update`)
 - ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind `#final-tcp-derived`)

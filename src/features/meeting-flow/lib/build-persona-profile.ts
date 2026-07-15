@@ -1,4 +1,5 @@
-import type { CustomerProfile, FinancialProfile, PropertyProfile } from '@/shared/entities/customers/schemas'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
+import type { PROFILE_COLUMN_KEYS } from '@/shared/entities/customers/schemas'
 import type {
   CustomerPersonaProfile,
   PersonaBenefit,
@@ -19,10 +20,13 @@ import {
   SEVERITY_WEIGHT,
 } from '@/features/meeting-flow/constants/persona-profile-maps'
 
+// Profile-trio columns (Addendum B `customer_profiles` child table) — the
+// composed customer+profile row projected down to just the fields the
+// persona builder reads.
+export type PersonaProfileCustomer = Pick<CustomerWithProfile, (typeof PROFILE_COLUMN_KEYS)[number]>
+
 export interface BuildPersonaProfileInput {
-  customerProfile: CustomerProfile | null | undefined
-  propertyProfile: PropertyProfile | null | undefined
-  financialProfile: FinancialProfile | null | undefined
+  customer: PersonaProfileCustomer | null | undefined
   meetingContext: MeetingContext | null | undefined
   flowState: MeetingFlowState | null | undefined
   painPointsDb: NotionPainPoint[]
@@ -31,24 +35,24 @@ export interface BuildPersonaProfileInput {
 // ---- Helpers ----------------------------------------------------------------
 
 function resolveCustomerPainPoints(
-  customerProfile: CustomerProfile | null | undefined,
+  customer: PersonaProfileCustomer | null | undefined,
   painPointsDb: NotionPainPoint[],
 ): NotionPainPoint[] {
-  if (!customerProfile) {
+  if (!customer) {
     return []
   }
 
   const accessorMap = new Map(painPointsDb.map(pp => [pp.accessor, pp]))
   const matched: NotionPainPoint[] = []
 
-  if (customerProfile.mainPainPoint?.accessor) {
-    const found = accessorMap.get(customerProfile.mainPainPoint.accessor)
+  if (customer.mainPainAccessor) {
+    const found = accessorMap.get(customer.mainPainAccessor)
     if (found) {
       matched.push(found)
     }
   }
 
-  for (const additional of customerProfile.additionalPainPoints ?? []) {
+  for (const additional of customer.additionalPainPoints ?? []) {
     if (additional.accessor) {
       const found = accessorMap.get(additional.accessor)
       if (found && !matched.some(m => m.id === found.id)) {
@@ -192,25 +196,25 @@ function buildBenefits(
 }
 
 function buildDecisionDrivers(
-  customerProfile: CustomerProfile | null | undefined,
+  customer: PersonaProfileCustomer | null | undefined,
   meetingContext: MeetingContext | null | undefined,
 ): PersonaDecisionDriver[] {
   const drivers: PersonaDecisionDriver[] = []
 
   // Timeline
-  if (customerProfile?.decisionTimeline === 'ASAP') {
+  if (customer?.decisionTimeline === 'ASAP') {
     drivers.push({ driver: 'Decision timeline is immediate', signal: 'decisionTimeline: ASAP', weight: 'strong' })
   }
-  else if (customerProfile?.decisionTimeline === '1–3 months') {
+  else if (customer?.decisionTimeline === '1–3 months') {
     drivers.push({ driver: 'Active decision window — 1-3 months', signal: 'decisionTimeline: 1–3 months', weight: 'moderate' })
   }
 
   // Project necessity
-  if (customerProfile?.projectNecessityRating && customerProfile.projectNecessityRating >= 8) {
-    drivers.push({ driver: 'Customer rates project as highly necessary', signal: `projectNecessityRating: ${customerProfile.projectNecessityRating}`, weight: 'strong' })
+  if (customer?.projectNecessityRating && customer.projectNecessityRating >= 8) {
+    drivers.push({ driver: 'Customer rates project as highly necessary', signal: `projectNecessityRating: ${customer.projectNecessityRating}`, weight: 'strong' })
   }
-  else if (customerProfile?.projectNecessityRating && customerProfile.projectNecessityRating >= 5) {
-    drivers.push({ driver: 'Customer sees moderate project necessity', signal: `projectNecessityRating: ${customerProfile.projectNecessityRating}`, weight: 'moderate' })
+  else if (customer?.projectNecessityRating && customer.projectNecessityRating >= 5) {
+    drivers.push({ driver: 'Customer sees moderate project necessity', signal: `projectNecessityRating: ${customer.projectNecessityRating}`, weight: 'moderate' })
   }
 
   // Budget comfort
@@ -229,19 +233,19 @@ function buildDecisionDrivers(
   }
 
   // Outcome priority
-  if (customerProfile?.outcomePriority === 'Quality') {
+  if (customer?.outcomePriority === 'Quality') {
     drivers.push({ driver: 'Customer prioritizes quality over price — lead with craftsmanship and warranty', signal: 'outcomePriority: Quality', weight: 'moderate' })
   }
-  else if (customerProfile?.outcomePriority === 'Speed') {
+  else if (customer?.outcomePriority === 'Speed') {
     drivers.push({ driver: 'Customer prioritizes speed — emphasize scheduling availability and timeline', signal: 'outcomePriority: Speed', weight: 'moderate' })
   }
-  else if (customerProfile?.outcomePriority === 'Price') {
+  else if (customer?.outcomePriority === 'Price') {
     drivers.push({ driver: 'Customer is price-sensitive — use payment framing and ROI justification', signal: 'outcomePriority: Price', weight: 'moderate' })
   }
 
   // Selling soon
-  if (customerProfile?.sellPlan === 'Yes' || customerProfile?.sellPlan === 'Soon') {
-    drivers.push({ driver: 'Customer is planning to sell — resale ROI framing is critical', signal: `sellPlan: ${customerProfile.sellPlan}`, weight: 'strong' })
+  if (customer?.sellPlan === 'Yes' || customer?.sellPlan === 'Soon') {
+    drivers.push({ driver: 'Customer is planning to sell — resale ROI framing is critical', signal: `sellPlan: ${customer.sellPlan}`, weight: 'strong' })
   }
 
   return drivers
@@ -273,13 +277,13 @@ function buildEmotionalLevers(
 }
 
 function buildHouseholdResonance(
-  customerProfile: CustomerProfile | null | undefined,
+  customer: PersonaProfileCustomer | null | undefined,
   tradeFilteredPainPoints: Array<{ painPoint: NotionPainPoint, matchedTradeIds: string[] }>,
 ): PersonaHouseholdResonance[] {
   const results: PersonaHouseholdResonance[] = []
 
   // Match customer household type against known amplified concerns
-  const householdType = customerProfile?.householdType
+  const householdType = customer?.householdType
   if (householdType && HOUSEHOLD_AMPLIFIED_CONCERNS[householdType]) {
     results.push({
       factor: householdType,
@@ -313,8 +317,7 @@ function buildHouseholdResonance(
 
 function buildRiskFactors(
   meetingContext: MeetingContext | null | undefined,
-  customerProfile: CustomerProfile | null | undefined,
-  financialProfile: FinancialProfile | null | undefined,
+  customer: PersonaProfileCustomer | null | undefined,
 ): PersonaRiskFactor[] {
   const risks: PersonaRiskFactor[] = []
 
@@ -338,15 +341,15 @@ function buildRiskFactors(
     risks.push(RISK_FACTOR_RULES.skepticalSpouse)
   }
 
-  if (financialProfile?.numQuotesReceived && financialProfile.numQuotesReceived >= 3) {
+  if (customer?.numQuotesReceived && customer.numQuotesReceived >= 3) {
     risks.push(RISK_FACTOR_RULES.shoppingAround)
   }
 
-  if (customerProfile?.decisionTimeline === '6+ months') {
+  if (customer?.decisionTimeline === '6+ months') {
     risks.push(RISK_FACTOR_RULES.longTimeline)
   }
 
-  if (customerProfile?.projectNecessityRating && customerProfile.projectNecessityRating <= 3) {
+  if (customer?.projectNecessityRating && customer.projectNecessityRating <= 3) {
     risks.push(RISK_FACTOR_RULES.lowNecessity)
   }
 
@@ -360,10 +363,10 @@ function buildRiskFactors(
 // ---- Main -------------------------------------------------------------------
 
 export function buildPersonaProfile(input: BuildPersonaProfileInput): CustomerPersonaProfile {
-  const { customerProfile, financialProfile, meetingContext, flowState, painPointsDb } = input
+  const { customer, meetingContext, flowState, painPointsDb } = input
 
   // 1. Resolve customer pain points from Notion DB
-  const matchedPainPoints = resolveCustomerPainPoints(customerProfile, painPointsDb)
+  const matchedPainPoints = resolveCustomerPainPoints(customer, painPointsDb)
 
   // 2. Filter by selected trades
   const selectedTradeIds = getSelectedTradeIds(flowState)
@@ -373,9 +376,9 @@ export function buildPersonaProfile(input: BuildPersonaProfileInput): CustomerPe
   return {
     fears: buildFears(tradeFiltered, flowState),
     benefits: buildBenefits(tradeFiltered, flowState),
-    decisionDrivers: buildDecisionDrivers(customerProfile, meetingContext),
+    decisionDrivers: buildDecisionDrivers(customer, meetingContext),
     emotionalLevers: buildEmotionalLevers(tradeFiltered),
-    householdResonance: buildHouseholdResonance(customerProfile, tradeFiltered),
-    riskFactors: buildRiskFactors(meetingContext, customerProfile, financialProfile),
+    householdResonance: buildHouseholdResonance(customer, tradeFiltered),
+    riskFactors: buildRiskFactors(meetingContext, customer),
   }
 }

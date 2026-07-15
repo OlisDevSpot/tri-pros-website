@@ -1,8 +1,9 @@
-import type z from 'zod'
 import type { CustomerProfile, FinancialProfile, LeadMeta, PropertyProfile } from '@/shared/entities/customers/schemas'
-import { doublePrecision, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { doublePrecision, integer, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { customerProfileSchema, financialProfileSchema, leadMetaSchema, propertyProfileSchema } from '@/shared/entities/customers/schemas'
+import z from 'zod'
+import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
+import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
@@ -22,9 +23,28 @@ export const customers = pgTable('customers', {
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
   geocodedAt: timestamp('geocoded_at', { mode: 'string', withTimezone: true }),
-  customerProfileJSON: jsonb('customer_profile_json').$type<CustomerProfile>(),
-  propertyProfileJSON: jsonb('property_profile_json').$type<PropertyProfile>(),
-  financialProfileJSON: jsonb('financial_profile_json').$type<FinancialProfile>(),
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  customerProfileJSONDeprecated: jsonb('customer_profile_json').$type<CustomerProfile>(),
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  propertyProfileJSONDeprecated: jsonb('property_profile_json').$type<PropertyProfile>(),
+  /**
+   * @deprecated Wave-1 frozen (epic #256/#259). Zero writers. Read only by
+   * scripts/backfill-wave1-columns.ts. Dropped next release.
+   */
+  financialProfileJSONDeprecated: jsonb('financial_profile_json').$type<FinancialProfile>(),
+  // `age` deliberately stays a plain column here (Addendum B.2, 2026-07-14) —
+  // identity-adjacent, written by anonymous homeowners via the contracts
+  // share-token flow, read by legal envelope rules. The other 23 former
+  // customerProfileJSON/propertyProfileJSON/financialProfileJSON fields now
+  // live on the `customer_profiles` 1:1 child table (PK-as-FK) — see
+  // ../schema/customer-profiles.ts.
+  age: integer('age'),
   leadSourceId: uuid('lead_source_id').references(() => leadSourcesTable.id, { onDelete: 'set null' }),
   leadType: leadTypeEnum('lead_type'),
   leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),
@@ -56,25 +76,30 @@ export const customers = pgTable('customers', {
   updatedAt,
 })
 
-export const selectCustomerSchema = createSelectSchema(customers, {
-  propertyProfileJSON: propertyProfileSchema.nullable(),
-  financialProfileJSON: financialProfileSchema.nullable(),
-})
+// No overrides for the three *Deprecated blobs — uniform with how
+// customerProfileJSON already worked pre-Wave-1 (drizzle-zod infers from the
+// column's `.$type<>()`). Frozen; select-side typing precision doesn't matter.
+export const selectCustomerSchema = createSelectSchema(customers)
 export type Customer = z.infer<typeof selectCustomerSchema>
 
 export const insertCustomerSchema = createInsertSchema(customers, {
-  customerProfileJSON: customerProfileSchema.optional(),
-  propertyProfileJSON: propertyProfileSchema.optional(),
-  financialProfileJSON: financialProfileSchema.optional(),
   leadMetaJSON: leadMetaSchema.optional(),
   // Canonical storage chokepoint: every write through createCrudDal parses this
   // schema, so phone is normalized to bare 10-digit national (or null) here —
   // regardless of caller (funnel E.164, agent-typed "(818)…", webhook raw).
   // see @/shared/lib/phone
   phone: optionalPhoneSchema,
+  // Explicit `null` clears the field, distinct from `undefined` (field
+  // untouched, omitted from the patch entirely) — same convention the
+  // customer_profiles child table's patch schema uses.
+  age: z.number().int().min(CUSTOMER_AGE_MIN).max(CUSTOMER_AGE_MAX).nullable().optional(),
 }).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  // Wave-1 frozen — no caller may write the deprecated blobs anymore.
+  customerProfileJSONDeprecated: true,
+  propertyProfileJSONDeprecated: true,
+  financialProfileJSONDeprecated: true,
 })
 export type InsertCustomerSchema = z.infer<typeof insertCustomerSchema>

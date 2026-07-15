@@ -1,6 +1,6 @@
 import type { CalendarEvent } from '@/shared/components/calendar/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingFlowState, TradeSelection } from '@/shared/entities/meetings/schemas'
 import type { JsonbSection } from '@/shared/types/jsonb'
 
@@ -40,7 +40,7 @@ export interface ProgramPresentation {
 
 export interface QualificationContext {
   tradeSelections: TradeSelection[]
-  customer: Customer | null
+  customer: CustomerWithProfile | null
   meetingType: MeetingType
 }
 
@@ -86,10 +86,10 @@ export interface MeetingStepConfig {
 export interface MeetingFlowContext {
   meetingId: string
   customerId: string | null
-  customer: Customer | null
+  customer: CustomerWithProfile | null
   flowState: MeetingFlowState | null
   onFlowStateChange: (patch: Partial<MeetingFlowState>) => void
-  onCustomerProfileChange: (jsonbKey: string, patch: Record<string, unknown>) => void
+  onCustomerProfileChange: (patch: Record<string, unknown>) => void
 }
 
 // ── Calendar Event ──────────────────────────────────────────────────────────

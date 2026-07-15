@@ -4,10 +4,12 @@ When to reach for JSONB, how to shape the document, how to validate it at the wr
 boundary, how to merge it safely, and how to evolve it. **The *why* (the three-way
 placement rule + promotion ladder) is ADR-0005** — this file is the operational rules.
 
-JSONB columns in this codebase carry typed domain blobs (`customerProfileJSON`,
-`contextJSON`, `flowStateJSON`, `formMetaJSON`, `projectJSON`, `fundingJSON`,
-`leadMetaJSON`, `formConfigJSON`, …). Their Zod schemas live in
-`src/shared/entities/<domain>/schemas/index.ts`.
+JSONB columns in this codebase carry typed domain blobs (`contextJSON`, `flowStateJSON`,
+`formMetaJSON`, `projectJSON`, `fundingJSON`, `leadMetaJSON`, `formConfigJSON`, …). Their
+Zod schemas live in `src/shared/entities/<domain>/schemas/index.ts`. (The customer profile
+trio — `customerProfileJSON` / `propertyProfileJSON` / `financialProfileJSON` — was
+decomposed to plain columns in Wave 1 of epic #256; see
+`src/shared/entities/customers/DOCS.md#three-jsonb-profiles`.)
 
 ## Rules
 
@@ -26,6 +28,70 @@ a collection with its own lifecycle or you aggregate across rows.
 constrain (ADR-0005 context).
 **Reference impl**: `#final-tcp-derived` in `src/shared/entities/proposals/DOCS.md`.
 **Enforced by**: the pre-change checklist below + PR review.
+
+### sub-entity-decision-tree
+
+For a **cohesive one-to-one field cluster** being pulled off a table, the three-way
+test above isn't specific enough — it only distinguishes column/JSONB/child-table
+for collections. Run this checklist (Addendum B, spec §10; ADR-0005 amended
+2026-07-14) before defaulting a 1:1 cluster to "nullable columns on the parent":
+
+1. **Is it a named domain concept?** A noun in `docs/domain/ubiquitous-language.md`
+   — not just "fields we happened to collect at the same intake step." If no →
+   columns on the parent, stop here.
+2. **Does it differ from the parent in ≥1 structural way?**
+   - **Optionality** — row-exists carries business meaning ("has this data been
+     collected")
+   - **Permission boundary** — different actors write it than write the parent
+     (wants its own CASL subject)
+   - **Lifecycle** — written by a different actor OR at a different trigger/time
+     than the parent (a differently-named setter with the same actor+trigger does
+     NOT count)
+   - **Growth trajectory** — documented pressure to collect more data per item
+   - **Future references** — other entities will plausibly FK to it
+
+   None apply → columns on parent (DDD embedded value / tiny same-actor cluster).
+   ≥1 applies → own table.
+3. **Pick the shape by cardinality**:
+   - **1:1** → child table, PK-as-FK (`parent_id uuid PRIMARY KEY REFERENCES …
+     ON DELETE CASCADE`). Reads: flattened-spread leftJoin, composed type
+     exported. Writes: lazy upsert (`upsertOneToOne`, see
+     `dal-conventions.md#one-to-one-child-tables`) when row-existence is
+     semantic, eager (parent-create transaction) when every parent must have
+     one. Own CASL subject.
+   - **1:many / summed / filtered** → child table, own PK + FK (+ `position`
+     when ordered). Reads: batch-fetch (`inArray`). NO CASL subject or router
+     unless it has its own verbs.
+   - **Dynamic-key map** → child table, `UNIQUE(parent_id, key)`.
+
+**The smell test**: if the cluster needs a TypeScript constant to re-group a
+table's own columns (a `*_COLUMN_KEYS` array driving permissions or patch
+schemas), that's domain structure being hand-maintained in a second place — it
+wanted to be a table. (Display/form section metadata, e.g. `*_PROFILE_FIELDS`,
+is fine — sections within one concept are a UI concern, not a structural
+difference.)
+
+**Sanctioned JSONB categories** (unaffected by this rule — these were never 1:1
+clusters headed for column promotion): whole-document flow state; immutable
+capture snapshots; per-feature config; identity-free value arrays replaced whole
+and never SQL-queried, each with a documented promotion trigger
+(`additionalPainPoints` — promotes the day pain points need identity, FKs, or
+per-item updates).
+
+**Why**: the customer profile trio was promoted to nullable columns on
+`customers` in the original Wave-1 verdict; review of that build surfaced that
+the `*_COLUMN_KEYS` constants needed to re-group those columns were themselves
+the smell — the trio is a named domain concept with real optionality and
+permission-boundary differences from `customers`. Reworked into
+`customer_profiles`, a 1:1 child table.
+**Reference impl**: `src/shared/db/schema/customer-profiles.ts`;
+`src/shared/entities/customers/DOCS.md#three-jsonb-profiles`.
+**Enforced by**: convention + PR review; mechanism detailed at
+`dal-conventions.md#one-to-one-child-tables`.
+
+**See also**: ADR-0005 (amended 2026-07-14) for the *why*;
+`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §10
+(Addendum B) for the full rationale and research trail.
 
 ### flat-over-nested
 
@@ -80,19 +146,30 @@ second line the DB enforces regardless of write path.
 
 ### never-shallow-merge-nested
 
-Never `||` a nested JSONB column on update — Postgres `||` is a **shallow** merge and
-silently deletes sibling keys of any nested object you touch. The house pattern is
-**app-side recursive deep-merge under a row lock + Zod re-parse of the merged whole**,
-opted-in per column via `spec.update.jsonbMergeColumns`.
+Never let a partial nested object through Postgres `||` — it is a **shallow, top-level-only**
+merge. `COALESCE(col, '{}'::jsonb) || value::jsonb` replaces any key present in `value`
+wholesale; if that key's value is itself an object, its siblings-of-siblings inside are gone,
+not merged. There is no row lock and no re-parse of the merged whole — it's a single SQL
+expression.
 
-**Additive-partial vs whole-document (load-bearing distinction):** a column joins
-`jsonbMergeColumns` **only when its writers are additive-partial** (progressive fill — e.g.
-customer profiles, funnel `source.enrichment`). **Whole-document writers must stay
-full-replace** (e.g. the meeting flow's `contextJSON`/`flowStateJSON`): for them, deep-merge
-would *resurrect keys the user deliberately removed*.
+**What `spec.update.jsonbMergeColumns` actually does**: the CRUD update path
+(`create-crud-dal.ts:buildUpdateSet`) merges **top-level keys only** for columns opted in
+via this list. That's safe **only** while every caller sends a *complete* value for any
+nested key it touches — i.e. the column's writers are additive-partial at the top level
+(new top-level keys arrive over time) but never send a partial value for an existing nested
+object. It is not a general deep-merge and must not be treated as one.
 
-**Reference impl**: `#jsonb-merge-on-update` in `src/shared/entities/proposals/DOCS.md`;
-`docs/superpowers/specs/2026-07-03-jsonb-restructure-design.md` §4.
+**Sole remaining registration**: `customers.leadMetaJSON` (until Wave 2 of epic #256 deletes
+the mechanism entirely per the decomposition program spec). `proposals` was deregistered in
+Wave 1 — see `#jsonb-merge-on-update` in `src/shared/entities/proposals/DOCS.md`.
+
+**For a genuine nested key-level patch**, don't reach for `jsonbMergeColumns` at all — write a
+scoped `jsonb_set` at the exact path, atomically, outside the generic CRUD merge. Reference
+impl: `mergeFunnelEnrichment` (`src/shared/entities/customers/dal/server/mutations.ts:57`),
+which does `jsonb_set(lead_meta_json, '{source,enrichment}', ...)`.
+
+**Reference impl**: `src/shared/dal/server/lib/create-crud-dal.ts` (`buildUpdateSet`);
+`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` §3 (Wave 2).
 **Enforced by**: `createCrudDal` merge path reading `spec.update.jsonbMergeColumns`.
 
 ### evolution-playbook

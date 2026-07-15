@@ -10,7 +10,7 @@ import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 
-/** Resolve a lead source by id. Used by enrollment to read slug + voipConfigJSON policy. */
+/** Resolve a lead source by id. Used by enrollment to read slug + campaigns-policy columns. */
 export async function getLeadSourceById(id: string): Promise<DalReturn<LeadSourceRecord | null>> {
   return dalDbOperation(async () => {
     const [row] = await db

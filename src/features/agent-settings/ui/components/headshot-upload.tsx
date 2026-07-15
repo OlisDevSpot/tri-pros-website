@@ -1,7 +1,6 @@
 'use client'
 
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
-import type { AgentProfile } from '@/shared/entities/users/schemas'
 
 import { useMutation } from '@tanstack/react-query'
 import { CameraIcon, Loader2Icon } from 'lucide-react'
@@ -24,8 +23,7 @@ export function HeadshotUpload({ profile }: HeadshotUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  const agentProfile = profile.agentProfileJSON as AgentProfile | null
-  const headshotUrl = agentProfile?.headshotUrl
+  const headshotUrl = profile.headshotUrl
 
   const initials = profile.name
     .split(' ')
@@ -57,9 +55,7 @@ export function HeadshotUpload({ profile }: HeadshotUploadProps) {
         mimeType: file.type,
       })
       await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-      await updateProfile.mutateAsync({
-        agentProfileJSON: { ...(agentProfile ?? {}), headshotUrl: publicUrl },
-      })
+      await updateProfile.mutateAsync({ headshotUrl: publicUrl })
       invalidateAgentSettings()
       toast.success('Headshot uploaded')
     }

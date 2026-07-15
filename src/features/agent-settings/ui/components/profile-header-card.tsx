@@ -1,7 +1,6 @@
 'use client'
 
 import type { AgentSettingsProfile } from '@/features/agent-settings/types'
-import type { AgentProfile } from '@/shared/entities/users/schemas'
 
 import { formatTenure } from '@/features/agent-settings/lib/format-tenure'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar'
@@ -20,7 +19,7 @@ export function ProfileHeaderCard({ profile }: ProfileHeaderCardProps) {
     .toUpperCase()
 
   const tenure = formatTenure(profile.startDate)
-  const headshotUrl = (profile.agentProfileJSON as AgentProfile | null)?.headshotUrl
+  const headshotUrl = profile.headshotUrl
 
   return (
     <Card>

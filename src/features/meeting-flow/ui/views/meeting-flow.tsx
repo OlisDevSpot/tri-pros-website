@@ -2,7 +2,7 @@
 
 import type { MeetingFlowContext } from '@/features/meeting-flow/types'
 import type { MeetingOutcome } from '@/shared/constants/enums'
-import type { Customer } from '@/shared/db/schema'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { MeetingContext, MeetingFlowState } from '@/shared/entities/meetings/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ChannelProvider } from 'ably/react'
@@ -35,6 +35,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
+import { hasCustomerProfileData } from '@/shared/entities/customers/lib/customer-predicates'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -90,15 +91,16 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     })
   }, [meeting?.flowStateJSON, meetingId, updateMeeting])
 
-  const handleCustomerProfileChange = useCallback((jsonbKey: string, patch: Record<string, unknown>) => {
+  const handleCustomerProfileChange = useCallback((patch: Record<string, unknown>) => {
     if (!customer?.id) {
       return
     }
-    const currentSection = (customer as unknown as Record<string, unknown>)[jsonbKey] ?? {}
+    // Flat column patch (epic #256/#259) — send only the changed field(s),
+    // no read-modify-merge needed since each column IS the field.
     updateCustomerProfile.mutate({
       meetingId,
       customerId: customer.id,
-      [jsonbKey]: { ...(currentSection as Record<string, unknown>), ...patch },
+      patch,
     })
   }, [customer, meetingId, updateCustomerProfile])
 
@@ -131,7 +133,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
     return {
       meetingId,
       customerId: meeting.customerId ?? null,
-      customer: customer as Customer | null,
+      customer: customer as CustomerWithProfile | null,
       flowState: meeting.flowStateJSON ?? null,
       onFlowStateChange: handleFlowStateChange,
       onCustomerProfileChange: handleCustomerProfileChange,
@@ -139,7 +141,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   }, [meeting, meetingId, customer, handleFlowStateChange, handleCustomerProfileChange])
 
   const contextFilledCount = useMemo(
-    () => (meeting ? computeContextFilledCount(meeting, customer as Customer | null) : 0),
+    () => (meeting ? computeContextFilledCount(meeting, customer as CustomerWithProfile | null) : 0),
     [meeting, customer],
   )
 
@@ -241,7 +243,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
           </div>
           <div className="pointer-events-auto">
             <PersonaProfileTrigger
-              hasData={!!customer?.customerProfileJSON}
+              hasData={hasCustomerProfileData(customer)}
               onClick={() => setPersonaOpen(true)}
             />
           </div>
@@ -278,7 +280,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
 
       {/* Overlay sheets */}
       <ContextPanel
-        customer={customer as Customer | null}
+        customer={customer as CustomerWithProfile | null}
         isOpen={contextOpen}
         meeting={meeting}
         onAgentNotesChange={handleAgentNotesChange}

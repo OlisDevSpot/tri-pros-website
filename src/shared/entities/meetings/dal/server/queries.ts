@@ -7,6 +7,7 @@ import type { MeetingParticipantRole } from '@/shared/constants/enums'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
 import type { Meeting } from '@/shared/db/schema/meetings'
+import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 
 import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import z from 'zod'
@@ -20,9 +21,11 @@ import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/qu
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
+import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
 import { canSeeUngatedPhone, gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
+import { profileCols } from '@/shared/entities/customers/lib/profile-select'
 import { getAllParticipantsForMeetings } from '@/shared/entities/meetings/dal/server/participants'
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -86,33 +89,13 @@ export type MeetingWithCustomer = Meeting & {
   hasApprovedProposal: boolean
 }
 
-/** Customer shape embedded in a single-meeting read. */
-export interface MeetingCustomer {
-  id: string
-  name: string
-  phone: string | null
-  email: string | null
-  address: string | null
-  city: string
-  state: string | null
-  zip: string
-  qbCustomerId: string | null
-  latitude: number | null
-  longitude: number | null
-  geocodedAt: string | null
-  customerProfileJSON: any
-  propertyProfileJSON: any
-  financialProfileJSON: any
-  leadSourceId: string | null
-  leadType: string | null
-  leadMetaJSON: any
-  pipeline: string
-  pipelineStage: string | null
-  syncedAt: string
-  createdAt: string
-  updatedAt: string
-  hasSentProposal: boolean
-}
+/**
+ * Customer shape embedded in a single-meeting read — every customer column
+ * (plus the three frozen `*Deprecated` blobs) flattened-spread joined
+ * against `customer_profiles` (Addendum B 1:1 child table) plus the derived
+ * `hasSentProposal` flag.
+ */
+export type MeetingCustomer = CustomerWithProfile
 
 // ── listMeetings ────────────────────────────────────────────────────────
 
@@ -292,6 +275,7 @@ export async function getByIdWithJoins(
         ...getTableColumns(meetings),
         customer: {
           ...customerCols,
+          ...profileCols(),
           phone: gatedPhoneSql(canSeeUngatedPhone(ctx.ability)),
           hasSentProposal: hasSentProposalSql(),
         },
@@ -303,6 +287,7 @@ export async function getByIdWithJoins(
       })
       .from(meetings)
       .leftJoin(customers, eq(customers.id, meetings.customerId))
+      .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
       .leftJoin(user, eq(user.id, meetings.ownerId))
       .where(and(
         eq(meetings.id, input.id),

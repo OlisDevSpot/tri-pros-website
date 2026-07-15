@@ -23,7 +23,6 @@ interface Props {
 
 export function CustomerProfileModalContent({ data, defaultTab, heroAddress, heroView, highlightMeetingId, onMutationSuccess }: Props) {
   const editForm = useCustomerEditForm(data.customer)
-  const profile = data.customer.customerProfileJSON ?? null
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
@@ -49,7 +48,7 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
           <div className="relative z-10 flex flex-1 flex-col justify-end gap-4 px-4 pb-4 pt-[calc(env(safe-area-inset-top)+4.25rem)] text-white sm:px-6 sm:pb-6 sm:pt-10">
             <CustomerHeroHeader customer={data.customer} editForm={editForm} />
 
-            {profile && <CustomerProfileKeyInsights profile={profile} />}
+            <CustomerProfileKeyInsights customer={data.customer} />
 
             <TabsList className="w-full justify-start border border-white/10 bg-black/40 backdrop-blur-md">
               <TabsTrigger value="overview">Overview</TabsTrigger>
