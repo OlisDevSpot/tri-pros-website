@@ -1,6 +1,5 @@
 import process from 'node:process'
 import { eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
 import { customerProfiles, customers, leadSourcesTable, user } from '@/shared/db/schema'
 import {
   customerProfileSchema,
@@ -9,7 +8,11 @@ import {
 } from '@/shared/entities/customers/schemas'
 import { voipConfigSchema } from '@/shared/entities/lead-sources/schemas'
 import { agentProfileSchema } from '@/shared/entities/users/schemas'
-import './lib/load-env'
+import { createScriptDb } from './lib/script-db'
+
+// Explicit-target client (default: dev/worktree; `--target=prod` for cutover).
+// Deliberately NOT the app's `@/shared/db` singleton — see script-db.ts.
+const db = createScriptDb()
 
 /**
  * Wave 1 backfill: copy JSONB blob fields into their new columns.

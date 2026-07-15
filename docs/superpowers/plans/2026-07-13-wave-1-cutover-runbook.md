@@ -117,8 +117,12 @@ already-set var). Then:
 
    - `pnpm db:push` (THE deliberate prod push) — verify the plan one more time
      against "What the prod push actually contains" above before confirming.
-   - Then `pnpm tsx scripts/backfill-wave1-columns.ts` with `NODE_ENV=production`
-     wiring per `memory/feedback-runtime-db-env`
+   - Then `pnpm tsx scripts/backfill-wave1-columns.ts --target=prod` (dry-run
+     first). Backfill scripts do NOT use `NODE_ENV=production` — that trips
+     server-env's deployment boot gates (META_TEST_EVENT_CODE) against local
+     dev env files. They select their database explicitly via
+     `scripts/lib/script-db.ts` (`--target=prod` → `DATABASE_URL`; default →
+     `DATABASE_DEV_URL` with worktree isolation) and print the target host.
    - Then deploy
 
    Order matters: push + backfill BEFORE the deploy that flips reads/writes — old
