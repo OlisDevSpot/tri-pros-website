@@ -1,8 +1,11 @@
+import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
 import { getFinanceOptions } from '@/shared/entities/finance-options/dal/server/queries'
+import { replaceProposalIncentives } from '@/shared/entities/proposals/dal/server/mutations'
 import { getFullView, listProposals, proposalListInputSchema } from '@/shared/entities/proposals/dal/server/queries'
 import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
+import { incentiveSchema } from '@/shared/entities/proposals/schemas'
 
 import { createTRPCRouter } from '../../init'
 import { createCrudRouter } from '../../lib/create-crud-router'
@@ -43,6 +46,26 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
       getFinanceOptions: entity.publicProcedure
         .query(async () => {
           return getFinanceOptions()
+        }),
+    }),
+
+    // ── Incentives (proposal_incentives child rows, Wave 2) ─────────────
+    // Replace-all upsert from the funding form. Freeze gate (signingRequestId)
+    // enforced in the DAL. see ../../../shared/entities/proposals/DOCS.md#final-tcp-derived
+    incentives: createTRPCRouter({
+      replace: entity.authedProcedure
+        .input(z.object({
+          proposalId: z.string().uuid(),
+          incentives: z.array(incentiveSchema),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.ability.cannot('update', 'Proposal')) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: 'You do not have permission to update this proposal.',
+            })
+          }
+          return dalToTrpc(await replaceProposalIncentives(ctx, input))
         }),
     }),
 

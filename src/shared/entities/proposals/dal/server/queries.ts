@@ -5,16 +5,17 @@
 import type { MeetingPipeline } from '@/shared/constants/enums'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentives'
 import type { ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { Row } from '@/shared/db/types'
 
-import { and, count, desc, eq, getTableColumns, gte, inArray, lte, max, or, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
 import { pipelines } from '@/shared/constants/enums/pipelines'
-import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
+import { dalDbOperation, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, numberRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
@@ -22,8 +23,10 @@ import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
+import { proposalIncentives } from '@/shared/db/schema/proposal-incentives'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { incentiveRowsToDomain } from '@/shared/entities/proposals/lib/incentive-rows'
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -43,6 +46,7 @@ export type ProposalWithCustomer = Proposal & {
   customer: ProposalCustomer | null
   meetingProjectId: string | null
   projectFirstContractSentAt: string | null
+  incentives: ProposalIncentiveRow[]
 }
 
 /** Enriched row returned by `listProposals` — base columns + view stats + meeting/customer context. */
@@ -130,7 +134,35 @@ export async function getFullView(
         }
       : null
 
-    return { ...row, customer } as ProposalWithCustomer
+    // W2→W3 bridge: incentive ROWS are the source of truth; re-hydrate the
+    // legacy funding shape at THE read choke point so every getFullView
+    // consumer (PDF, Zoho context, AI summary, edit form) renders correct
+    // incentives with zero per-site changes. The blob's own incentives array
+    // is dead (writers store []). Dies in W3 with fundingJSON itself.
+    const incentives = dalVerifySuccess(await listProposalIncentives(row.id))
+    const hydratedFunding = {
+      ...row.fundingJSON,
+      data: { ...row.fundingJSON.data, incentives: incentiveRowsToDomain(incentives) },
+    }
+
+    return { ...row, fundingJSON: hydratedFunding, customer, incentives } as ProposalWithCustomer
+  })
+}
+
+/**
+ * GLOBAL incentive rows (sow_item_id IS NULL) for a proposal, position-ordered.
+ * The read half of the replace-all upsert; also the W2→W3 hydration source
+ * consumed by `getFullView`. see ../../DOCS.md#final-tcp-derived
+ */
+export async function listProposalIncentives(
+  proposalId: string,
+): Promise<DalReturn<ProposalIncentiveRow[]>> {
+  return dalDbOperation(async () => {
+    return await db
+      .select()
+      .from(proposalIncentives)
+      .where(and(eq(proposalIncentives.proposalId, proposalId), isNull(proposalIncentives.sowItemId)))
+      .orderBy(asc(proposalIncentives.position))
   })
 }
 
