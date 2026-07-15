@@ -14,7 +14,6 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { computePipelineValue, computeProjectValue } from '@/shared/domains/pipelines/lib/compute-pipeline-value'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { userParticipatesInMeeting } from '@/shared/entities/meetings/dal/server/participants'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
 export async function getCustomerPipelineItems(userId: string, pipeline: Pipeline = 'fresh', isOmni = false, canSeeUngated = false): Promise<CustomerPipelineItem[]> {
   if (pipeline === 'leads') {
@@ -179,8 +178,8 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
 
   const customerIds = rows.map(r => r.customerId)
 
-  // Pipeline value is computed per-customer below from the fetched funding
-  // JSON via computeFinalTcp — no SQL-side TCP extraction.
+  // Pipeline value is read per-customer below from the stored final_tcp_cents
+  // rollup (Wave 2). This aggregate query only counts + summarizes statuses.
   const proposalRows = await db
     .select({
       customerId: customers.id,
@@ -230,8 +229,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
   )
 
   // Fetch individual proposals per customer for card display + value calculation.
-  // We fetch the full fundingJSON + projectJSON and compute finalTcp in TS via
-  // the canonical `computeFinalTcp` helper — no SQL path extracts.
+  // Value reads the stored final_tcp_cents rollup (Wave 2).
   const proposalDetailRows = await db
     .select({
       customerId: meetings.customerId,
@@ -240,8 +238,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       token: proposals.token,
       status: proposals.status,
       createdAt: proposals.createdAt,
-      fundingJSON: proposals.fundingJSON,
-      projectJSON: proposals.projectJSON,
+      finalTcpCents: proposals.finalTcpCents,
     })
     .from(proposals)
     .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
@@ -257,7 +254,9 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
     if (!r.customerId) {
       continue
     }
-    const value = computeFinalTcp({ funding: r.fundingJSON.data, sow: r.projectJSON.data.sow })
+    // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
+    // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+    const value = (r.finalTcpCents ?? 0) / 100
     const arr = proposalDetailMap.get(r.customerId) ?? []
     arr.push({ id: r.proposalId, token: r.token, value, status: r.status, createdAt: r.createdAt })
     proposalDetailMap.set(r.customerId, arr)
@@ -400,8 +399,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
 
   // Fetch proposals per meeting
   const meetingIds = meetingRows.map(m => m.meetingId)
-  // Fetch full fundingJSON + projectJSON per proposal; finalTcp is computed
-  // in TS via `computeFinalTcp` rather than extracted SQL-side.
+  // Value reads the stored final_tcp_cents rollup (Wave 2).
   const proposalRows = meetingIds.length > 0
     ? await db
         .select({
@@ -411,8 +409,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
           status: proposals.status,
           createdAt: proposals.createdAt,
           approvedAt: proposals.approvedAt,
-          fundingJSON: proposals.fundingJSON,
-          projectJSON: proposals.projectJSON,
+          finalTcpCents: proposals.finalTcpCents,
         })
         .from(proposals)
         .where(inArray(proposals.meetingId, meetingIds))
@@ -426,7 +423,9 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
     if (!p.meetingId) {
       continue
     }
-    const value = computeFinalTcp({ funding: p.fundingJSON.data, sow: p.projectJSON.data.sow })
+    // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
+    // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+    const value = (p.finalTcpCents ?? 0) / 100
     const arr = proposalsByMeeting.get(p.meetingId) ?? []
     arr.push({ id: p.proposalId, token: p.token, value, status: p.status, createdAt: p.createdAt })
     proposalsByMeeting.set(p.meetingId, arr)

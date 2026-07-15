@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { buildProposalDefaults } from '@/features/meeting-flow/lib/build-proposal-defaults'
 import { useCreateProposal } from '@/features/proposal-flow/dal/client/mutations/use-create-proposal'
+import { useReplaceIncentives } from '@/features/proposal-flow/dal/client/mutations/use-replace-incentives'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
@@ -31,6 +32,7 @@ export function CreateNewProposalView() {
   const { data: session } = useSession()
   const router = useRouter()
   const createProposal = useCreateProposal()
+  const replaceIncentives = useReplaceIncentives()
   const hasAppliedSnapshot = useRef(false)
 
   const meetingQuery = useQuery(
@@ -78,6 +80,9 @@ export function CreateNewProposalView() {
         // finalTcp is derived — never written. See `computeFinalTcp`.
         data: {
           ...data.funding.data,
+          // Rows are the source of truth (Wave 2); the blob array is dead.
+          // getFullView re-hydrates it from proposal_incentives on read.
+          incentives: [],
           cashInDeal: finalTcp,
         },
         meta: data.funding.meta,
@@ -88,8 +93,24 @@ export function CreateNewProposalView() {
   function onSubmit(data: ProposalFormSchema) {
     createProposal.mutate(buildMutationData(data), {
       onSuccess: (proposal) => {
-        toast.success('Proposal created!')
-        router.push(ROOTS.dashboard.proposals.byId(proposal.id))
+        function finish() {
+          toast.success('Proposal created!')
+          router.push(ROOTS.dashboard.proposals.byId(proposal.id))
+        }
+        // Rows are the source of truth (Wave 2). Only write child rows when
+        // the form actually carries incentives; otherwise skip straight to nav.
+        if (data.funding.data.incentives.length > 0) {
+          replaceIncentives.mutate(
+            { proposalId: proposal.id, incentives: data.funding.data.incentives },
+            {
+              onSuccess: finish,
+              onError: error => toast.error(error.message),
+            },
+          )
+        }
+        else {
+          finish()
+        }
       },
       onError: error => toast.error(error.message),
     })

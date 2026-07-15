@@ -113,18 +113,19 @@ Full decomposition of these blobs lands in Waves 2–3
     finalTcp = max(0, startingTcp − Σ global incentives where type='discount' − Σ ALL section incentives)
 
 Canonical implementation: `computeFinalTcp({ funding, sow })` in `lib/compute-final-tcp.ts` — it now
-requires BOTH the funding data and the SOW sections. The SQL mirror in `dal/server/queries.ts`
-(`finalTcpExpr`) implements the same formula for list filter/sort and is parity-checked by
-`scripts/verify-final-tcp-parity.ts`; it is temporary and will be replaced by the stored
-`final_tcp_cents` rollup in decomposition Wave 2
+requires BOTH the funding data and the SOW sections. It stays the source of truth for live
+form-state math (create/edit views, PDF, Zoho context, AI summary — all fed hydrated data).
+As of decomposition Wave 2 the value is also maintained as the stored `proposals.final_tcp_cents`
+rollup by `recomputeProposalFinancials`, and list filter/sort read that column directly
 (see `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` Addendum A).
 
-**Never persisted.** Always re-derive at read time. SQL filter/sort on price uses a Drizzle `sql<number>` expression that mirrors the helper exactly.
+**Rollup, not blob.** The homeowner-facing value is re-derived at read time via `computeFinalTcp`
+on getFullView-hydrated data; list price filter/sort read the `final_tcp_cents` rollup column.
 
 **Pricing-mode invariant**: in breakdown pricing mode, the form keeps `startingTcp = Σ sectionPrice + miscPrice` in sync client-side (`funding-fields.tsx`) — this is what makes the formula above pricing-mode-agnostic and lets the PDF Subtotal reconcile with the form's Contract Price. This sync is client-side only today; no server-side enforcement exists yet.
 
-**Why**: line-item edits would silently invalidate a stored TCP. Single source of truth; SQL mirror keeps server-side filtering correct.
-**Reference impl**: `lib/compute-final-tcp.ts` (JS); `dal/server/queries.ts:listProposals` `finalTcpExpr` (SQL mirror)
+**Why**: line-item edits would silently invalidate a hand-stored TCP; the rollup is recomputed on every write. Single source of truth for the formula; the rollup column keeps server-side filter/sort fast and correct.
+**Reference impl**: `lib/compute-final-tcp.ts` (JS formula); `dal/server/queries.ts:listProposals` reads `proposals.finalTcpCents` for price filter/sort
 **Enforced by**: convention (no `final_tcp` column exists; field was removed from `fundingDataSchema` in commit `a6c431e`)
 
 ### cslb-start-date

@@ -170,7 +170,7 @@ export async function listProposalIncentives(
  * Server-paginated proposals list. Drives Past Proposals table + dashboard
  * recent-proposals strip. Search: ilike on proposals.label OR customers.name.
  * Sort whitelist below. Default: createdAt DESC.
- * `price` is derived — SQL expression mirrors `computeFinalTcp`. see ../../DOCS.md#final-tcp-derived
+ * `price` filter/sort read the stored `final_tcp_cents` rollup (Wave 2). see ../../DOCS.md#final-tcp-derived
  */
 export async function listProposals(
   ctx: ScopedContext,
@@ -184,24 +184,6 @@ export async function listProposals(
           sql`${customers.name} ILIKE ${`%${searchTerm}%`}`,
         )
       : undefined
-
-    // SQL mirror of `computeFinalTcp` (incl. section incentives — spec Addendum A).
-    // Temporary jsonb form: W2 replaces this with the stored final_tcp_cents rollup.
-    // see ../../DOCS.md#final-tcp-derived
-    const finalTcpExpr = sql<number>`GREATEST(
-      0::numeric,
-      COALESCE((${proposals.fundingJSON}->'data'->>'startingTcp')::numeric, 0)
-      - COALESCE((
-          SELECT SUM((inc->>'amount')::numeric)
-          FROM jsonb_array_elements(${proposals.fundingJSON}->'data'->'incentives') AS inc
-          WHERE inc->>'type' = 'discount'
-        ), 0)
-      - COALESCE((
-          SELECT SUM((si->>'amount')::numeric)
-          FROM jsonb_array_elements(${proposals.projectJSON}->'data'->'sow') AS sec,
-               jsonb_array_elements(COALESCE(sec->'financials'->'incentives', '[]'::jsonb)) AS si
-        ), 0)
-    )`
 
     const filterWhere = buildFilterWhere(input.filters, {
       status: v => (v.length > 0 ? inArray(proposals.status, v) : undefined),
@@ -227,8 +209,8 @@ export async function listProposals(
         )
       },
       price: v => and(
-        typeof v.min === 'number' ? sql`${finalTcpExpr} >= ${v.min}` : undefined,
-        typeof v.max === 'number' ? sql`${finalTcpExpr} <= ${v.max}` : undefined,
+        typeof v.min === 'number' ? sql`${proposals.finalTcpCents} >= ${Math.round(v.min * 100)}` : undefined,
+        typeof v.max === 'number' ? sql`${proposals.finalTcpCents} <= ${Math.round(v.max * 100)}` : undefined,
       ),
       customerId: v => eq(customers.id, v),
       meetingId: v => eq(proposals.meetingId, v),
@@ -242,7 +224,7 @@ export async function listProposals(
       status: proposals.status,
       label: proposals.label,
       customerName: customers.name,
-      price: finalTcpExpr,
+      price: proposals.finalTcpCents,
     }, desc(proposals.createdAt))
 
     return await paginate({

@@ -18,7 +18,6 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visibility'
 import { gatedPhoneSql, hasSentProposalSql } from '@/shared/entities/customers/lib/phone-gating-sql'
 import { profileCols } from '@/shared/entities/customers/lib/profile-select'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 
 // Local viewer shape for this DAL. The customers entity used to export a
 // shared `CustomersViewer` interface; that was removed when queries.ts
@@ -92,8 +91,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       contractSentAt: proposals.contractSentAt,
       createdAt: proposals.createdAt,
       trade: sql<string | null>`${proposals.projectJSON}->'data'->'sow'->0->'trade'->>'label'`.as('trade'),
-      fundingJSON: proposals.fundingJSON,
-      projectJSON: proposals.projectJSON,
+      finalTcpCents: proposals.finalTcpCents,
       sowRaw: sql<string | null>`${proposals.projectJSON}->'data'->'sow'`.as('sow_raw'),
       viewCount: count(proposalViews.id).as('view_count'),
     })
@@ -136,7 +134,9 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       status: p.status,
       token: p.token,
       trade: p.trade,
-      value: computeFinalTcp({ funding: p.fundingJSON.data, sow: p.projectJSON.data.sow }),
+      // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
+      // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+      value: (p.finalTcpCents ?? 0) / 100,
       sentAt: p.sentAt,
       contractSentAt: p.contractSentAt,
       viewCount: p.viewCount,
