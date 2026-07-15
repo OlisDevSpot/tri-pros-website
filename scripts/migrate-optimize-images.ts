@@ -15,11 +15,14 @@
  * - Blur placeholder is always generated (~200 bytes, 20px wide)
  *
  * Usage:
- *   npx tsx scripts/migrate-optimize-images.ts              # process all pending
- *   npx tsx scripts/migrate-optimize-images.ts --dry-run     # preview only, no changes
- *   npx tsx scripts/migrate-optimize-images.ts --limit 10    # process first 10 only
+ *   pnpm tsx scripts/migrate-optimize-images.ts                     # dev DB (default)
+ *   DRIZZLE_TARGET=prod pnpm tsx scripts/migrate-optimize-images.ts # prod DB
+ *   … --dry-run     # preview only, no changes
+ *   … --limit 10    # process first 10 only
  *
- * Requires: DATABASE_URL (or DATABASE_DEV_URL) and R2 credentials in .env
+ * DB target follows the environment-axes convention (unset never means prod):
+ * see docs/codebase-conventions/environment.md#environment-axes
+ * Requires the target DB URL and R2 credentials in .env
  *
  * Safe to re-run: only processes images with optimization_status = 'pending'.
  * Images that failed will be marked 'failed' and can be retried by resetting
@@ -46,13 +49,18 @@ const limitIdx = args.indexOf('--limit')
 const LIMIT = limitIdx !== -1 ? Number.parseInt(args[limitIdx + 1], 10) : undefined
 const CONCURRENCY = 3
 
+// Unset never silently means prod: only explicit DRIZZLE_TARGET=prod reaches
+// DATABASE_URL. see docs/codebase-conventions/environment.md#environment-axes
 // eslint-disable-next-line node/prefer-global/process
-const DATABASE_URL = process.env.DATABASE_URL || process.env.DATABASE_DEV_URL
+const IS_PROD_TARGET = process.env.DRIZZLE_TARGET === 'prod'
+// eslint-disable-next-line node/prefer-global/process
+const DATABASE_URL = IS_PROD_TARGET ? process.env.DATABASE_URL : process.env.DATABASE_DEV_URL
 if (!DATABASE_URL) {
-  console.error('DATABASE_URL or DATABASE_DEV_URL is required')
+  console.error(`No database URL for target "${IS_PROD_TARGET ? 'prod' : 'dev'}" — check .env`)
   // eslint-disable-next-line node/prefer-global/process
   process.exit(1)
 }
+console.warn(`[migrate-optimize-images] target=${IS_PROD_TARGET ? 'prod' : 'dev'} host=${new URL(DATABASE_URL).host}`)
 
 const pool = new pg.Pool({ connectionString: DATABASE_URL })
 const db = drizzle(pool)

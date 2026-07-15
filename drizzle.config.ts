@@ -15,8 +15,11 @@ import { defineConfig } from 'drizzle-kit'
 config({ path: '.env.local', override: true })
 config({ path: '.env' })
 
+// Unset never silently means prod: only an explicit DRIZZLE_TARGET=prod reaches
+// DATABASE_URL; everything else (unset or 'dev') gets the dev branch.
+// see docs/codebase-conventions/environment.md#environment-axes
 // eslint-disable-next-line node/prefer-global/process
-const dbUrl = process.env.DRIZZLE_TARGET === 'dev' ? process.env.DATABASE_DEV_URL! : process.env.DATABASE_URL!
+const dbUrl = process.env.DRIZZLE_TARGET === 'prod' ? process.env.DATABASE_URL! : process.env.DATABASE_DEV_URL!
 
 export default defineConfig({
   schema: './src/shared/db/schema/index.ts',

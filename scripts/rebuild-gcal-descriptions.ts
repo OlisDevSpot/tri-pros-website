@@ -69,7 +69,7 @@ async function main() {
   const { env, host } = describeTargetDb()
 
   console.log(`--- REBUILD GCAL DESCRIPTIONS${dryRun ? ' (dry run)' : ''} ---`)
-  console.log(`NODE_ENV: ${env}`)
+  console.log(`DB target: ${env}`)
   console.log(`DB host:  ${host}`)
   console.log('')
 

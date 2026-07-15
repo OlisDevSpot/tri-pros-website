@@ -10,7 +10,7 @@
  *
  * Usage:
  *   pnpm tsx scripts/backfill-sow-financials.ts          # dev DB
- *   NODE_ENV=production pnpm tsx scripts/backfill-sow-financials.ts  # prod DB
+ *   DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-sow-financials.ts  # prod DB
  *
  * Add --dry-run to preview without writing:
  *   pnpm tsx scripts/backfill-sow-financials.ts --dry-run
@@ -35,7 +35,7 @@ async function main() {
   const { env, host } = describeTargetDb()
 
   console.log(`--- BACKFILL SOW FINANCIALS${dryRun ? ' (dry run)' : ''} ---`)
-  console.log(`NODE_ENV: ${env}`)
+  console.log(`DB target: ${env}`)
   console.log(`DB host:  ${host}`)
   console.log('')
 

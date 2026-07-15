@@ -115,14 +115,16 @@ already-set var). Then:
 
 **Step 2: Prod cutover** (only after clean rehearsal)
 
-   - `pnpm db:push` (THE deliberate prod push) — verify the plan one more time
-     against "What the prod push actually contains" above before confirming.
-   - Then `pnpm tsx scripts/backfill-wave1-columns.ts --target=prod` (dry-run
-     first). Backfill scripts do NOT use `NODE_ENV=production` — that trips
-     server-env's deployment boot gates (META_TEST_EVENT_CODE) against local
-     dev env files. They select their database explicitly via
-     `scripts/lib/script-db.ts` (`--target=prod` → `DATABASE_URL`; default →
-     `DATABASE_DEV_URL` with worktree isolation) and print the target host.
+   - `pnpm db:push:prod` (THE deliberate prod push — explicit target since the
+     env-axes refactor; bare `db:push` no longer exists) — verify the plan one
+     more time against "What the prod push actually contains" above before
+     confirming.
+   - Then `DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave1-columns.ts`
+     (dry-run first). Backfill scripts do NOT use `NODE_ENV=production` — since
+     the env-axes refactor (spec: docs/superpowers/specs/2026-07-15-env-axes-design.md)
+     the safety gates key on VERCEL_ENV and the db singleton honors
+     DRIZZLE_TARGET, so scripts import `@/shared/db` normally and select prod
+     explicitly. Default (no target) = dev/worktree DB.
    - Then deploy
 
    Order matters: push + backfill BEFORE the deploy that flips reads/writes — old

@@ -1,10 +1,14 @@
+import process from 'node:process'
+
 /**
  * Logs which DB a CLI script will hit. Call at startup so the operator
- * can abort before writes begin. See memory/feedback-runtime-db-env.md.
+ * can abort before writes begin. Mirrors the selection logic in
+ * src/shared/db/index.ts — DRIZZLE_TARGET decides; NODE_ENV is never involved.
+ * See docs/codebase-conventions/environment.md#environment-axes.
  */
 export function describeTargetDb(): { env: string, host: string } {
-  const nodeEnv = process.env.NODE_ENV ?? '(unset)'
-  const isProd = process.env.NODE_ENV === 'production'
+  const target = process.env.DRIZZLE_TARGET ?? '(unset → dev)'
+  const isProd = process.env.DRIZZLE_TARGET === 'prod'
   const raw = isProd
     ? process.env.DATABASE_URL
     : (process.env.DATABASE_DEV_URL ?? process.env.DATABASE_URL)
@@ -15,5 +19,5 @@ export function describeTargetDb(): { env: string, host: string } {
     }
     catch { /* malformed URL — surface the unknown */ }
   }
-  return { env: nodeEnv, host }
+  return { env: target, host }
 }

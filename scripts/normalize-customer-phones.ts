@@ -14,10 +14,10 @@
  *   - skips null/empty phones
  *   - leaves UNPARSEABLE values untouched and reports them (never destroys data)
  *
- * Target DB is chosen by NODE_ENV (the runtime db client reads DATABASE_URL vs
- * DATABASE_DEV_URL by NODE_ENV — see memory/feedback-runtime-db-env):
+ * Target DB is chosen by DRIZZLE_TARGET (the runtime db client reads DATABASE_URL
+ * vs DATABASE_DEV_URL — see docs/codebase-conventions/environment.md#environment-axes):
  *   dev :  pnpm backfill:phones:dev        (or: tsx scripts/normalize-customer-phones.ts)
- *   prod:  pnpm backfill:phones            (NODE_ENV=production)
+ *   prod:  pnpm backfill:phones            (DRIZZLE_TARGET=prod)
  *
  * SAFE BY DEFAULT — dry-run unless `--apply` is passed:
  *   pnpm backfill:phones:dev               # preview dev changes
@@ -35,7 +35,7 @@ import { toNationalDigits } from '@/shared/lib/phone'
 const APPLY = process.argv.includes('--apply')
 
 async function main() {
-  const target = process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'dev'
+  const target = process.env.DRIZZLE_TARGET === 'prod' ? 'PRODUCTION' : 'dev'
   console.log(`[backfill:phones] target=${target}${APPLY ? '' : ' (DRY RUN — no writes; pass --apply to write)'}`)
 
   const rows = await db

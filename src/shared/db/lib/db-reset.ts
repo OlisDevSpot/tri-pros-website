@@ -6,8 +6,10 @@ import { Pool } from 'pg'
 import env from '@/shared/config/server-env'
 import * as schema from '@/shared/db/schema'
 
+// Unset never silently means prod: only explicit DRIZZLE_TARGET=prod reaches
+// DATABASE_URL. see docs/codebase-conventions/environment.md#environment-axes
 // eslint-disable-next-line node/prefer-global/process
-const dbUrl = process.env.DRIZZLE_TARGET === 'dev' ? env.DATABASE_DEV_URL! : env.DATABASE_URL
+const dbUrl = process.env.DRIZZLE_TARGET === 'prod' ? env.DATABASE_URL : env.DATABASE_DEV_URL!
 const db = drizzle(new Pool({ connectionString: dbUrl }), { schema })
 
 async function _truncateTable(table: Table) {
