@@ -3,7 +3,7 @@
 Consulted BEFORE every generation run; appended after every QA-passed delivery.
 See SKILL.md "Cross-project variation" for the rules this file serves.
 
-Status legend: `candidate` = in Oliver's Downloads awaiting HITL pick ·
+Status legend: `candidate` = in Oliver's Downloads awaiting HITL pick · `shipped-dev` = in the project's during bucket on the DEV DB (R2 uploaded; prod pending) ·
 `approved` = picked by Oliver · `shipped` = optimized + seeded to the site.
 
 | Project | Photo (Downloads name) | Status | Base | Count | Orientation | Task family | Worker signatures |
@@ -42,9 +42,9 @@ Status legend: `candidate` = in Oliver's Downloads awaiting HITL pick ·
 | travertine | tri-pros-during-travertine-flooring-solo-back | candidate | during (LVP mid-install) | 1 | backs kneeling | flooring (tapping block + mallet) | heavyset·salt-pepper·charcoal |
 | travertine | tri-pros-during-travertine-drywall-crew2-backs | candidate | during (taped drywall) | 2 | backs | drywall (mud + pole sander) | heavyset·salt-pepper / slim·ear-muffs·charcoal |
 | travertine | tri-pros-during-travertine-windowseal-solo-back | candidate | during (new windows) | 1 | back-quarter | sealing (jamb caulk) | salt-pepper·ear-muffs·charcoal |
-| eclipse | tri-pros-during-eclipse-compacting-solo-back | candidate | during (graded dirt) | 1 | backs | compacting (hand tamper) | athletic·backward-cap·brown-carpenter |
-| eclipse | tri-pros-during-eclipse-marking-crew2-backs | candidate | before (parkway dirt) | 2 | backs | marking (stake + spray) ⚠︎plate drift | ponytail·brown-carpenter / backward-cap·sweatband |
-| eclipse | tri-pros-during-eclipse-prep-crew2-mixed | candidate | before (side walkway) | 2 | mixed | prep (taping + rosin paper) | ponytail·sweatband·lean / backward-cap·brown-carpenter |
+| eclipse | tri-pros-during-eclipse-compacting-solo-back | shipped-dev | during (graded dirt) | 1 | backs | compacting (hand tamper) | athletic·backward-cap·brown-carpenter |
+| eclipse | tri-pros-during-eclipse-marking-crew2-backs | shipped-dev | before (parkway dirt) | 2 | backs | marking (stake + spray) ⚠︎plate drift | ponytail·brown-carpenter / backward-cap·sweatband |
+| eclipse | tri-pros-during-eclipse-prep-crew2-mixed | shipped-dev | before (side walkway) | 2 | mixed | prep (taping + rosin paper) | ponytail·sweatband·lean / backward-cap·brown-carpenter |
 | sunrise | tri-pros-during-sunrise-sweeping-solo | candidate | during (OSB re-deck) | 1 | backs | cleanup (broom co-opt) | stocky·silver-buzz·khaki |
 | sunrise | tri-pros-during-sunrise-rollcarry-solo | candidate | during (old membrane) | 1 | back-¾ | staging (roll carry) | stocky·silver-buzz·tan-gloves |
 | emmie | tri-pros-during-emmie-measuring-solo | candidate | before (utility closet) | 1 | backs | measuring (closet tape) | stocky·safety-glasses-up·gloves-in-belt |
