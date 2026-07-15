@@ -172,7 +172,7 @@ bespoke `jsonb_set(lead_meta_json, '{source,enrichment}', ...)` entirely. See
 keyed object.
 
 **Sanctioned fallback for a future genuine key-level blob patch** (documented here, NOT
-built — spec §5.1): if a column is legitimately whole-document AND a future need requires
+built — spec §5 item 1): if a column is legitimately whole-document AND a future need requires
 patching one nested key atomically without a full read-modify-write, the house answer is a
 single-statement `jsonb_recursive_merge(col, patch)` SQL function — a recursive
 `jsonb_each`/`jsonb_typeof` walk that merges object keys and lets the patch win on
