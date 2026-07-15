@@ -1,5 +1,6 @@
 'use client'
 
+import type { CustomerFullView } from '@/shared/entities/customers/dal/server/queries'
 import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/dal/server/queries'
 
 import { useQuery } from '@tanstack/react-query'
@@ -32,7 +33,12 @@ export function LeadDrawerIdentity({ row }: { row: CampaignLeadRow }) {
     state: customer.state,
     zip: customer.zip,
   })
-  const trades = customer.leadMetaJSON?.interestedTradesRaw ?? []
+  // `customersRouter.crud.getById` is overridden server-side to return the full
+  // customer view (getCustomer → attribution + enrichment), but the generic CRUD
+  // client type erases those extras to the base row — so read attribution, which
+  // rides along at runtime, through a widened view. Trades now live in the
+  // immutable capture snapshot (Wave-2 flip; leadMetaJSON blob frozen).
+  const trades = (customer as Partial<CustomerFullView>).attribution?.captureJSON?.interestedTradesRaw ?? []
 
   const rows: { label: string, value: string }[] = [
     { label: 'Phone', value: customer.phone ? formatPhone(customer.phone) : '—' },

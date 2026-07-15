@@ -1,9 +1,13 @@
 import type { CustomerProfileData, CustomerProfileMeeting, CustomerProfileProject, CustomerProfileProposal, CustomerProfileProposalView } from '@/features/customer-pipelines/types'
 
+import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
+
 import { TRPCError } from '@trpc/server'
-import { and, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
+import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
+import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
@@ -30,23 +34,37 @@ interface CustomerProfileViewer {
 export async function getCustomerProfile(customerId: string, viewer: CustomerProfileViewer): Promise<CustomerProfileData> {
   const { phone: _phone, ...customerCols } = getTableColumns(customers)
 
-  const [customer] = await db
+  const [customerRow] = await db
     .select({
       ...customerCols,
       ...profileCols(),
       phone: gatedPhoneSql(viewer.canSeeUngated),
       hasSentProposal: hasSentProposalSql(),
+      attribution: getTableColumns(customerLeadAttribution),
     })
     .from(customers)
     .leftJoin(customerProfiles, eq(customerProfiles.customerId, customers.id))
+    .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
     .where(and(
       eq(customers.id, customerId),
       viewer.isSuperAdmin ? undefined : userCanSeeCustomer(viewer.userId, customers.id),
     ))
 
-  if (!customer) {
+  if (!customerRow) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Customer not found' })
   }
+
+  // Nested 1:1 attribution (leftJoin miss → null) + ordered enrichment rows —
+  // mirrors the canonical getCustomer read so `data.customer` is a CustomerFullView.
+  const attribution: CustomerLeadAttributionRow | null = customerRow.attribution?.customerId
+    ? customerRow.attribution
+    : null
+  const enrichment = await db
+    .select()
+    .from(customerEnrichment)
+    .where(eq(customerEnrichment.customerId, customerId))
+    .orderBy(asc(customerEnrichment.order))
+  const customer = { ...customerRow, attribution, enrichment }
 
   const meetingRows = await db
     .select({

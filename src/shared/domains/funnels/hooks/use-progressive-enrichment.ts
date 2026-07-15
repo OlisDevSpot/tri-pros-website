@@ -10,8 +10,8 @@ import { buildLeadEnrichment, enrichmentSignature } from '@/shared/domains/funne
  *
  * Sending the full record (not a delta) is deliberate: enrichment is best-effort
  * and fire-and-forget (errors swallowed, no retry — see use-enrich-lead), so a
- * dropped request must be self-healing. Because the server merges atomically into
- * `source.enrichment` (a single `jsonb_set` — see mergeFunnelEnrichment), every
+ * dropped request must be self-healing. Because the server upserts each answer as
+ * a `customer_enrichment` row (INSERT … ON CONFLICT — see upsertFunnelEnrichment), every
  * send is idempotent and monotonic, and the next send re-includes any key whose
  * earlier request failed. The signature dep keeps it from re-firing on no-op
  * renders.

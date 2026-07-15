@@ -5,8 +5,8 @@ import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { customers } from './customers'
 
 // Dynamic-key funnel enrichment map decomposed to rows (Addendum B: dynamic-key
-// map → child table with UNIQUE(parent_id, key)). Replaces the bespoke
-// jsonb_set in mergeFunnelEnrichment with plain INSERT … ON CONFLICT
+// map → child table with UNIQUE(parent_id, key)). Replaces the former bespoke
+// jsonb_set enrichment merge with plain INSERT … ON CONFLICT
 // (customer_id, step_id) DO UPDATE. `value` is the resolved option LABEL
 // (self-describing, no server-side label mirror); `order` drives display.
 export const customerEnrichment = pgTable('customer_enrichment', {

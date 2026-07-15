@@ -45,14 +45,6 @@ export const customerServerSpec = {
     update: updateCustomerSchema,
     select: selectCustomerSchema,
   },
-  // see ../DOCS.md#lead-attribution-fields — leadMetaJSON is filled
-  // progressively; partial updates must deep-merge, not overwrite.
-  // Wired by createCrudDal.updateImpl (since 7bc34a7).
-  update: {
-    // leadMetaJSON only — profile trio decomposed to columns in Wave 1 (#259).
-    // leadMetaJSON leaves in Wave 2 (customer_enrichment + source promotion).
-    jsonbMergeColumns: [customers.leadMetaJSON] as const,
-  },
   hooks: {
     update: {
       // see ../DOCS.md#geocoding-stored-on-customer — when any address

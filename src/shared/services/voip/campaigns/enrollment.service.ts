@@ -155,7 +155,7 @@ function createCampaignEnrollmentService() {
       }
       const { attributes, attributeHash } = buildContactAttributes({
         leadSourceSlug: leadSource.slug,
-        interestedTradesRaw: customer.leadMetaJSON?.interestedTradesRaw,
+        interestedTradesRaw: customer.attribution?.captureJSON?.interestedTradesRaw,
         name: customer.name,
         city: customer.city,
         zip: customer.zip,
@@ -193,7 +193,7 @@ function createCampaignEnrollmentService() {
       // never fail the enrollment — the lead is already enrolled. CloudTalk
       // flattens newlines on store, so we inline the multi-line note with ' · '
       // separators to keep it readable on the card.
-      const leadNote = buildLeadNote(customer.leadMetaJSON)
+      const leadNote = buildLeadNote(customer.attribution?.captureJSON)
       if (leadNote) {
         try {
           await cloudtalkClient.addContactNote({

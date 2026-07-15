@@ -1,6 +1,6 @@
 import type { Customer, Meeting, Proposal } from '@/shared/db/schema'
 import type { CustomerNote } from '@/shared/db/schema/customer-notes'
-import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
+import type { CustomerFullView, CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
 import type { ProfileKey } from '@/shared/entities/customers/schemas'
 import type { SowTradeScope } from '@/shared/entities/proposals/types'
 
@@ -53,7 +53,7 @@ export type CustomerFormValues = {
 } & Partial<Pick<Customer, 'age'>> & Partial<Pick<CustomerWithProfile, ProfileKey>>
 
 export interface CustomerProfileData {
-  customer: CustomerWithProfile
+  customer: CustomerFullView
   meetings: CustomerProfileMeeting[]
   allProposals: CustomerProfileProposal[]
   notes: CustomerNote[]

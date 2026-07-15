@@ -84,7 +84,7 @@ async function backfillCustomers(): Promise<Stats> {
   const rows = await db.select().from(customers)
   for (const row of rows) {
     try {
-      const rawMeta = row.leadMetaJSON // property renamed to leadMetaJSONDeprecated in Task 5 — update this line then
+      const rawMeta = row.leadMetaJSONDeprecated // Wave-2 frozen blob — this backfill is its last reader
       if (!rawMeta) {
         stats.skipped++
         continue

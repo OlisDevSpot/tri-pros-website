@@ -4,7 +4,6 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 import { customerPipelines, leadTypes } from '@/shared/constants/enums'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
-import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
@@ -47,7 +46,12 @@ export const customers = pgTable('customers', {
   age: integer('age'),
   leadSourceId: uuid('lead_source_id').references(() => leadSourcesTable.id, { onDelete: 'set null' }),
   leadType: text('lead_type', { enum: leadTypes }),
-  leadMetaJSON: jsonb('lead_meta_json').$type<LeadMeta>(),
+  /**
+   * @deprecated Wave-2 frozen (epic #256). Zero writers. Read only by
+   * scripts/backfill-wave2-children.ts. Replaced by customer_lead_attribution
+   * (1:1 child) + customer_enrichment rows. Dropped next release.
+   */
+  leadMetaJSONDeprecated: jsonb('lead_meta_json').$type<LeadMeta>(),
   // Coarse 3-bucket customer-level pipeline. UI uses a 5-bucket derived
   // classification that explodes `active` based on downstream records.
   // see src/shared/entities/customers/DOCS.md#derived-5-bucket-pipeline
@@ -83,7 +87,6 @@ export const selectCustomerSchema = createSelectSchema(customers)
 export type Customer = z.infer<typeof selectCustomerSchema>
 
 export const insertCustomerSchema = createInsertSchema(customers, {
-  leadMetaJSON: leadMetaSchema.optional(),
   // Canonical storage chokepoint: every write through createCrudDal parses this
   // schema, so phone is normalized to bare 10-digit national (or null) here —
   // regardless of caller (funnel E.164, agent-typed "(818)…", webhook raw).
@@ -101,5 +104,7 @@ export const insertCustomerSchema = createInsertSchema(customers, {
   customerProfileJSONDeprecated: true,
   propertyProfileJSONDeprecated: true,
   financialProfileJSONDeprecated: true,
+  // Wave-2 frozen — leadMeta now lives in customer_lead_attribution + customer_enrichment.
+  leadMetaJSONDeprecated: true,
 })
 export type InsertCustomerSchema = z.infer<typeof insertCustomerSchema>

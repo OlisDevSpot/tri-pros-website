@@ -189,12 +189,11 @@ export const leadMetaSchema = z.object({
         fbp: z.string().nullable(),
         fbc: z.string().nullable(),
       }).partial().optional(),
-      // Written via mergeFunnelEnrichment (scoped `jsonb_set` at {source,enrichment} —
-      // atomic, hook-free). NOTE: leadMetaJSON is ALSO registered in jsonbMergeColumns,
-      // so generic crud.update applies a TOP-LEVEL-ONLY `||` merge: sending a partial
-      // `source` object through crud.update WOULD clobber sibling keys incl. this map.
-      // No caller does that today; Wave 2 (epic #256) decomposes this blob and deletes
-      // the merge mechanism. Shape: see enrichmentRecordSchema above.
+      // Capture/transport shape only. At intake this map is split out of the blob
+      // and persisted as `customer_enrichment` rows via upsertFunnelEnrichment
+      // (INSERT … ON CONFLICT (customer_id, step_id) — atomic, monotonic, hook-free);
+      // the leadMetaJSON blob it once lived in is frozen (Wave-2, epic #256). Shape:
+      // see enrichmentRecordSchema above.
       enrichment: enrichmentRecordSchema.optional(),
       // Implied TCPA consent captured at funnel submit (submission = agreement;
       // the PII step shows the proximate disclaimer + the footer legal block).

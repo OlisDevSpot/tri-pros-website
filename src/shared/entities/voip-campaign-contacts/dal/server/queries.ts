@@ -10,6 +10,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { dalDbOperation } from '@/shared/dal/server/lib/helpers'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { db } from '@/shared/db'
+import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
 import { voipCampaignContacts } from '@/shared/db/schema/voip-campaign-contacts'
 import { voipCampaigns } from '@/shared/db/schema/voip-campaigns'
@@ -112,11 +113,12 @@ export async function findSmsCadenceContextByCtContactId(
         customerCity: customers.city,
         customerState: customers.state,
         customerZip: customers.zip,
-        leadMetaJSON: customers.leadMetaJSON,
+        captureJSON: customerLeadAttribution.captureJSON,
         smsCadence: voipCampaigns.smsCadence,
       })
       .from(voipCampaignContacts)
       .innerJoin(customers, eq(voipCampaignContacts.customerId, customers.id))
+      .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
       .leftJoin(voipCampaigns, eq(voipCampaignContacts.voipCampaignId, voipCampaigns.id))
       .where(eq(voipCampaignContacts.cloudtalkContactId, ctContactId))
       .limit(1)
@@ -135,7 +137,7 @@ export async function findSmsCadenceContextByCtContactId(
       customerCity: row.customerCity,
       customerState: row.customerState ?? 'CA',
       customerZip: row.customerZip,
-      interestedTradesRaw: row.leadMetaJSON?.interestedTradesRaw ?? [],
+      interestedTradesRaw: row.captureJSON?.interestedTradesRaw ?? [],
       smsCadence: row.smsCadence ?? null,
     }
   })
