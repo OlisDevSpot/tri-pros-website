@@ -6,7 +6,7 @@
 // Import from: `@/shared/dal/server/types`
 
 import type { SQL } from 'drizzle-orm'
-import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
+import type { PgTable } from 'drizzle-orm/pg-core'
 import type z from 'zod'
 
 import type { Insert, Row, Update } from '@/shared/db/types'
@@ -84,7 +84,6 @@ export interface EntityServerSpec<
   /** Defaults to 'id'. Override for serial PKs or custom column names. */
   primaryKey?: string
   shareable?: { tokenColumn: string }
-  update?: { jsonbMergeColumns: readonly PgColumn[] }
   /**
    * Entity lifecycle hooks. Executed by createCrudDal — both before and after.
    *
