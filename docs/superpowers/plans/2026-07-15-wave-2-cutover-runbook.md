@@ -97,7 +97,13 @@ changes detected"**. Do not consider the push done until that final no-op confir
 `polished-shape-00174668`, production branch `br-purple-field-afkq0ups` (via `mcp Neon
 create_branch` or the console). Export `DATABASE_URL` pointing at the rehearsal branch
 in the shell (a shell-exported `DATABASE_URL` wins over `.env`/`.env.local`
-resolution). Then:
+resolution). **Also export `DRIZZLE_TARGET=prod`** — with it unset, the env-axes
+resolution in `drizzle.config.ts` falls back to `DATABASE_DEV_URL` regardless of the
+shell-exported `DATABASE_URL`, and the rehearsal backfill would silently run against
+dev instead of the rehearsal branch. Before running anything in (a) or (b), confirm the
+`describeTargetDb` / connection-startup log line (`DB host: ...`) printed by the script
+matches the REHEARSAL branch's host — not `DATABASE_DEV_URL`'s host — and STOP if it
+doesn't. Then:
 
    a. `pnpm drizzle-kit push` against the REHEARSAL branch only. Verify the plan
       matches "What the prod push actually contains" above exactly: the 3
