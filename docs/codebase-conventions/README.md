@@ -11,6 +11,7 @@ If you can't find a rule here, check the most-recent ADR first — newer archite
 | [database-schema.md](./database-schema.md) | Schema files, pgEnum placement, UUID/timestamp conventions, barrel exports |
 | [jsonb-columns.md](./jsonb-columns.md) | When a field belongs in JSONB vs a column vs a child table; JSONB internal shape, runtime validation, merge safety, evolution playbook |
 | [enum-standardization.md](./enum-standardization.md) | Const array → TS type → pgEnum pipeline |
+| [derived-values.md](./derived-values.md) | Snapshot / cache-column / just-in-time decision rule for derivable values; cache-column four-leg discipline |
 | [trpc-procedures.md](./trpc-procedures.md) | Procedure types, router structure, app-router registration |
 | [dal-conventions.md](./dal-conventions.md) | DalReturn pattern, ScopedContext, return types, CRUD vs business |
 | [service-architecture.md](./service-architecture.md) | Four-tier service/provider split (operational rules; ADR-0003 has the why) |

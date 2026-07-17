@@ -1714,10 +1714,43 @@ git commit -m "docs(proposals): price-side-vs-cost-side model + corrected multip
 Run: `pnpm tsc && pnpm lint && pnpm tsx scripts/verify-financials-facade.ts`
 Expected: all pass, all façade checks ✅.
 
-- [ ] **Step 2: Rollup parity** — the finalTcp TS formula is unchanged, but confirm parity survived the refactor:
+- [ ] **Step 2: Rollup parity** — the finalTcp TS formula is unchanged, but confirm parity survived the refactor. ⚠️ `scripts/verify-final-tcp-parity.ts` NO LONGER EXISTS — it was deleted in Wave 2 ledger reconciliation (see `docs/plans/jsonb-decomposition-deprecation-ledger.md`, W2 deleted-during-implementation row) because its `finalTcpExpr` counterpart died. Write this TEMPORARY replacement, run it, then `git rm` it in the same step (it must not linger as dead code):
 
-Run: `pnpm tsx scripts/verify-final-tcp-parity.ts`
-Expected: parity holds for every proposal row (script pre-exists from Wave 0; if it imports the deleted `compute-final-tcp.ts` path, update its import to `@/shared/entities/proposals/lib/financials` as part of this step).
+```ts
+// scripts/verify-facade-rollup-parity.ts — TEMPORARY, delete after this step passes.
+// Confirms the façade's TS finalTcp matches the Wave-2 `final_tcp_cents` rollup per proposal.
+// Run: pnpm tsx scripts/verify-facade-rollup-parity.ts   (dev DB by default per env-axes)
+import './lib/load-env'
+import { db } from '@/shared/db'
+import { proposals } from '@/shared/db/schema'
+import { listProposalIncentives } from '@/shared/entities/proposals/dal/server/queries'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
+import { incentiveRowsToDomain } from '@/shared/entities/proposals/lib/incentive-rows'
+
+async function main() {
+  const rows = await db.select().from(proposals)
+  let mismatches = 0
+  for (const p of rows) {
+    const incentives = incentiveRowsToDomain(await listProposalIncentives(p.id))
+    const funding = { ...p.fundingJSON.data, incentives }
+    const tsCents = Math.round(computeFinalTcp({ funding, sow: p.projectJSON.data.sow }) * 100)
+    if (tsCents !== p.finalTcpCents) {
+      mismatches++
+      console.error(`❌ ${p.id}: TS ${tsCents} ≠ rollup ${String(p.finalTcpCents)}`)
+    }
+  }
+  console.log(`${rows.length} proposals checked, ${mismatches} mismatches`)
+  process.exit(mismatches > 0 ? 1 : 0)
+}
+
+void main()
+```
+
+Expected: 0 mismatches. (Adjust import specifics to the code as it exists — e.g. if `listProposalIncentives` is not exported standalone, replicate its 5-line query inline. A nonzero count on whole-dollar data is a real regression; a ±1-cent mismatch on fractional-dollar incentive amounts is the known M4 rounding-divergence backlog item — report it, don't "fix" it here.) Then:
+
+```bash
+git rm scripts/verify-facade-rollup-parity.ts
+```
 
 - [ ] **Step 3: Sweeps**
 

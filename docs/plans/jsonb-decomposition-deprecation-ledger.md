@@ -67,8 +67,9 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 |---|---|---|---|
 | [ ] | `getFullView` incentive hydration bridge (rows → `fundingJSON.data.incentives`) | `entities/proposals/dal/server/queries.ts` (confirmed: `listProposalIncentives` + `incentiveRowsToDomain` rehydrate into `fundingJSON.data.incentives` at read time) | dies with `fundingJSON` itself |
 | [ ] | Recompute jsonb residues: `startingTcp` base + section-incentives term inside `recomputeProposalFinancials` | `entities/proposals/dal/server/mutations.ts` (confirmed present, comment cites "W3") | `starting_tcp_cents` column + `proposal_incentives(sow_item_id)` rows. **W3 ordering constraint (final review, this task)**: the SQL must add `sow_item_id IS NULL` to the existing global-discount subquery THE SAME MOMENT section rows land in `proposal_incentives` — if section rows are inserted before that predicate is added, the discount SUM would double-count them alongside the still-present `projectJSON.data.sow[].financials.incentives[]` jsonb term |
-| [ ] | `incentives: []` blank-write in `buildMutationData` (edit + create views) | `features/proposal-flow/ui/views/edit-proposal-view.tsx` + `create-new-proposal-view.tsx` (confirmed both) | dies with fundingJSON decomposition |
+| [ ] | `incentives: []` blank-write in `buildMutationData` (edit + create views) + third blank-writer found by 2026-07-15 seam audit: `features/customer-pipelines/ui/components/create-proposal-popover.tsx:69-77` | `features/proposal-flow/ui/views/edit-proposal-view.tsx` + `create-new-proposal-view.tsx` (confirmed both) + the pipelines popover | dies with fundingJSON decomposition |
 | [ ] | Freeze-gate gap: only `replaceProposalIncentives` + `applyEnvelopeContext` are gated; blob-wide financial freeze | proposals DAL (confirmed: no other write path is freeze-gated yet) | W3 write refactor extends the gate (Addendum A.1.2) |
+| [ ] | **PRE-REGISTERED (not yet built — ships in post-merge tightening pass):** incentive scrub-with-tripwire in `create.before`/`update.before` hooks (forces `fundingJSON.data.incentives = []`, warns loudly on non-empty scrub) | `entities/proposals/lib/server-spec.ts` hooks (once built, update this cell with exact lines) | Sanctioned bridge per `ubiquitous-language.md` — exists ONLY because the blob incentives array survives until W3; dies in the same commit that decomposes `fundingJSON`. If found alive after W3 ships, that's a bug |
 | [ ] | `proposal-doc-definition.ts` / AI-summary / Zoho-context reading blob-shaped `funding`/`sow` | via getFullView bridge (confirmed: `pdf.service.ts` + proposal-flow query/view consumers all read through `getFullView`, none read `proposal_incentives` directly) | W3 flips them to rows |
 
 ## Superseded design docs — kill trigger: plan Task 11 (this wave)
@@ -86,3 +87,69 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 - `projectSectionSchema`/`fundingSectionSchema` as DB-blob schemas (survive only as form shapes if W3 keeps them)
 - `snapSowFromMeeting` blob-shape logic, `sowToPlaintext` blob reader, positional `->0->'trade'` SQL in customer-pipelines/agent-dashboard
 - `getFullView` hydration bridge + recompute jsonb residues (rows above)
+
+## Seam-tightening register — permissive seams / escape hatches (audit 2026-07-15)
+
+> **Standing per-wave section (Oliver's ruling 2026-07-15).** This is the program's **tightening
+> tally** per `docs/ubiquitous-language.md#migration--contract-change-vocabulary`: every
+> additive-because-of-the-transition site, recorded so the API surface gets re-tightened to the
+> NEW contract only. Audited by 4 parallel subagents over Waves 1–2 (branch
+> `feat/262-wave-2-child-tables`). Same discipline as above: `[ ]` open · `[x] tightened (commit)`
+> · `[x] KEEP` = vocabulary-pass verdict that the wide surface is REQUIRED business logic (fails
+> the tally entry test — it would exist if written fresh today), not transition debt.
+> Re-run this audit at the end of EVERY wave and append findings here.
+>
+> **Vocabulary-pass verdicts (2026-07-16):** each row below re-tested against the entry test.
+> Escape hatches and dual-shape tolerance → close. Sanctioned bridges (named kill trigger) →
+> untouched until their trigger. Wide-but-required single-function surfaces → marked KEEP so
+> future audits don't re-litigate them into dead-code-generating "tightenings."
+
+### Critical — old shape can still be WRITTEN (close before/with W3, ideally sooner)
+
+| | Seam | Where | Problem | Tightening direction |
+|---|---|---|---|---|
+| [ ] | Update/create Zod accepts + persists non-empty blob incentives | `entities/proposals/schemas/index.ts:88` (`fundingDataSchema.incentives`) → `insertProposalSchema` → `updateProposalSchema.partial()` → generic `updateImpl` whole-column `.set()` | Any authed caller (incl. share-token path) can write `fundingJSON.data.incentives` verbatim into the blob — bypassing `replaceProposalIncentives`, its freeze gate, and row creation. Ghost blob data is shadowed by the getFullView bridge today but resurfaces the instant the bridge dies (W3). The ledger's "writers store `[]`" claim is caller discipline, not a schema/DAL guarantee | **RATIFIED 2026-07-16 (Oliver): scrub-with-tripwire.** `create.before`/`update.before` hooks in the proposals server-spec force `fundingJSON.data.incentives = []` whenever `fundingJSON` is present; when the scrub removes NON-EMPTY incentives, log a loud warning (proposal id + input source) so unknown writers surface. Chosen over a persisted/form schema split (same W3 expiry, heavy type ripple, collides with façade plan Task 9) and over hard-reject (bets the writer enumeration is complete). Escalation: flip scrub→reject if the warning never fires. Ships in the post-merge tightening pass — bridge pre-registered in the W3 section below |
+| [ ] | `funding.tsx` cash-in-deal Save re-populates the blob from hydrated rows | `features/proposal-flow/ui/components/proposal/funding.tsx:135-146` | Spreads `getFullView`-hydrated (row-derived, potentially non-empty) incentives back into a `fundingJSON` blob write. Actively violates the blank-writer invariant; not freeze-gated (succeeds after an envelope exists) | **RATIFIED 2026-07-16: PERMANENT fix, not scaffolding** — narrow the Save to send only `{ cashInDeal }`; reconstructing the whole blob at the write edge is the bug, and narrow intentional writes carry straight into the row world. Ships in the post-merge tightening pass |
+
+### Important — old shape travels deeper than the capture edge / unvalidated writes
+
+| | Seam | Where | Problem | Tightening direction |
+|---|---|---|---|---|
+| [x] KEEP (vocabulary pass 2026-07-16) | `upsertLeadAttribution({ customerId, leadMeta })` accepts the whole LeadMeta blob | `entities/customers/dal/server/mutations.ts:83-109` | Fails the tally entry test: `LeadMeta` IS the sanctioned capture wire format (Explicitly ALIVE above) and this function IS the capture-persistence operation — written fresh today it would still take the wire shape and split internally. One deep function (small interface, split + two-table upsert behind it) beats hoisting the split to the service and shallowing the DAL. NOT transition debt. The real defects on this path are the two validation rows below | none — keep the interface; close the two parse gaps below |
+| [ ] | `upsertLeadAttribution` writes via `upsertOneToOne` with NO Zod parse | same, `:87-93` → `shared/dal/server/lib/upsert-one-to-one.ts:21` | `upsertOneToOne` takes `Record<string, unknown>`, no schema parse (sibling `upsertCustomerProfile` DOES parse). Violates `jsonb-columns.md#zod-parse-at-write-boundary` — unvalidated LeadMeta lands in `capture_json` | Parse through `insertCustomerLeadAttributionSchema` before the upsert (mirror `upsertCustomerProfile`), or give `upsertOneToOne` a schema param |
+| [ ] | `captureJSON` un-validated in its insert schema | `db/schema/customer-lead-attribution.ts:35` | drizzle-zod types the `$type<LeadMeta>` jsonb loosely — even a parse wouldn't check the snapshot's internal shape | Override `captureJSON: leadMetaSchema` in the insert-schema builder |
+| [ ] | `buildFunnelLeadNote` dual-shape tolerance (legacy flat branch) | `shared/domains/funnels/lib/build-funnel-lead-note.ts:24-32` | Accepts BOTH new `{label,value,order}` entries AND legacy flat `Record<string,string>`; the legacy branch is dead on the only live path. Its sibling (`FunnelIntakePanel` `toRows()`) was already deleted for exactly this (`215790be`) — this one was missed by that sweep | Delete the `typeof raw === 'string'` branch; type param against `enrichmentRecordSchema` |
+| [ ] | AI-summary write bypasses the financial chokepoint (found 2026-07-17, derived-values research) | `entities/proposals/ai/client.ts:106-114` | Direct `db.update(proposals).set({ projectJSON })` skips the entity-server `update.after` hook, so `recomputeProposalFinancials` never runs — the ONLY financial-adjacent write path outside the `final_tcp_cents` chokepoint. Latent today (AI output schema is `{summary, energyBenefits}`, non-financial) but violates Rule 19 (DAL-first) and breaks the cache-column discipline the moment that schema grows a financial field | Route through the proposals update DAL (hooks fire), or at minimum call `recomputeProposalFinancials` after the write; tightening-pass PR candidate |
+
+### Wave-1 strays — frozen shapes still reachable outside the sanctioned backfill
+
+| | Seam | Where | Problem | Tightening direction |
+|---|---|---|---|---|
+| [ ] | Raw-SQL read of frozen `customer_profile_json` | `scripts/verify-short-path.ts:39` (`AND c.customer_profile_json ? 'age'`) | Undocumented second reader of a frozen W1 blob — falsifies the "read only by backfill-wave1" invariant this ledger and the column JSDoc assert; reads stale/absent data since `age` was promoted | Change predicate to `AND c.age IS NOT NULL` |
+| [ ] | Dead `isSourceEnabled` imports frozen `VoipCampaignsPolicy` | `shared/services/voip/campaigns/lib/eligibility.ts:11,27` | Zero callers; the sole live-code importer of the frozen blob type. Will break unexpectedly when `voipConfigSchema` is deleted per the W1 rows above; a revival would re-admit the nested blob shape | Delete the function + import (enrollment already reads the flat `voipCampaignsEnabled` column) |
+| [ ] | `snapshot-prod-to-dev.ts:105` names `agentProfileJSONDeprecated` in `skipColumns` | `scripts/snapshot-prod-to-dev.ts:105` | Benign operational exclusion; dangles when the column drops | Remove the entry in the same commit that drops `agent_profile_json` |
+
+### Contract-narrowing — over-broad inputs / blob-typed params (opportunistic)
+
+| | Seam | Where | Problem | Tightening direction |
+|---|---|---|---|---|
+| [ ] | `createFromIntake` admits the full `leadMetaSchema` source union | `trpc/routers/customers.router/business.router.ts:167` | Intake form only ever sends operational fields + `requestedTrades`, but the schema admits full `bina\|generic\|funnel` source payloads the channel should never originate | Channel-specific narrowed input (`leadMetaSchema.pick({...})`) |
+| [x] KEEP (vocabulary pass 2026-07-16) | `buildLeadNote(leadMeta: LeadMeta \| null)` takes the whole blob type | `entities/customers/lib/build-lead-note.ts:22` | Fails the tally entry test: its actual input IS `attribution.captureJSON`, which is permanently `LeadMeta`-typed (the immutable snapshot). Narrowing the param would add a mapping layer at every call site for zero leverage — dead-code-shaped "tightening" | none — the snapshot's designed consumer |
+| [ ] | `replaceProposalIncentives` accepts blob-dollars `Incentive[]`, converts inside the DAL | `entities/proposals/dal/server/mutations.ts:74-102` | Correct seam (IS the row write path + freeze gate) but transports the old dollars shape one layer deeper than needed | W3 form refactor: row-cents input at the router edge; dollar hop dies |
+| [x] SKIP (vocabulary pass 2026-07-16) | Generic CRUD factory has no frozen-column backstop | `shared/dal/server/lib/create-crud-dal.ts:76,125` | Enforcement is 100% per-entity `.omit()` — audit confirmed all live frozen columns ARE omitted. A `spec.frozenColumns` deny-list would be machinery built for columns scheduled to DROP in the next release — it would be born dead code. If a future wave freezes new columns long-term, revisit | none — deliberately not built |
+
+### Doc/prose staleness found by the audit (fix as docs pass)
+
+| | Item | Where | Problem |
+|---|---|---|---|
+| [ ] | `enrichFunnelLead` comment describes the deleted `jsonb_set` merge | `shared/services/customer-intake.service.ts:150-155` | NOT on the Task-9 sanctioned-tombstone list — genuinely stale description of a mechanism deleted in `215790be`; rewrite to describe the row upsert |
+| [ ] | W1 ledger rows cite stale line numbers | this file, W1 section (`customers.ts:30/:101` → actual `:29/:104-106` etc.) | Cosmetic drift after W2 edits to `customers.ts`; refresh when the W1 rows get checked off |
+
+### Audit-confirmed CLEAN (no action — recorded so future audits don't re-litigate)
+
+- All 5 W1 frozen columns fenced on EVERY write surface: `.omit()` inherited into `.partial()` update schemas, double-parsed (tRPC edge + DAL), Zod default key-stripping, field-CASL; `agentProfileJSONDeprecated` has no write surface at all. No `.passthrough()`/`z.any` anywhere in `src/trpc/` or `src/shared/dal/`.
+- No dual-shape `?? blob` fallback reads anywhere in live `src/`. No live reader/writer of `leadMetaJSONDeprecated` (scripts only, all registered above).
+- `deep-merge-jsonb.ts` gone; no surviving generic merge utility.
+- Generic `duplicateImpl` cannot re-animate frozen blobs (insert-parse strips them); proposals duplicate override copies rows + recomputes.
+- `listProposals` price filter/sort read `final_tcp_cents` (column, not jsonb). No financial mutation path skips recompute (given the two Critical rows above get closed).
+- Agent-settings + campaigns-policy forms are flat-column round-trips; `customer_lead_attribution` has no update handler; `setFunnelLeadAddress` gates on the attribution row.
