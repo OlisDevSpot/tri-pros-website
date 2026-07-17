@@ -8,6 +8,7 @@ import {
   selectProposalSchema,
 } from '@/shared/db/schema'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
+import { recomputeProposalFinancials } from '@/shared/entities/proposals/dal/server/mutations'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { deriveProposalKind } from '@/shared/entities/proposals/lib/derive-proposal-kind'
 import { generateShareToken } from '@/shared/entities/proposals/lib/generate-share-token'
@@ -52,6 +53,20 @@ export const proposalServerSpec = {
         const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)
 
         return { ...enriched, kind, token }
+      },
+      // New proposals get their rollup immediately (rows are empty at create;
+      // startingTcp/section terms come from the blobs until W3).
+      async after(row, _ctx) {
+        dalVerifySuccess(await recomputeProposalFinancials(row.id))
+      },
+    },
+    update: {
+      // Whole-document fundingJSON/projectJSON writes must re-converge the
+      // rollup. Cheap + idempotent; skipped when neither blob was touched.
+      async after(row, _ctx, meta) {
+        if ('fundingJSON' in meta.input || 'projectJSON' in meta.input) {
+          dalVerifySuccess(await recomputeProposalFinancials(row.id))
+        }
       },
     },
   },

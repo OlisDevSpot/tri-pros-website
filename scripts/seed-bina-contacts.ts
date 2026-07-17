@@ -205,7 +205,8 @@ async function main() {
       phone: customers.phone,
       email: customers.email,
       address: customers.address,
-      leadMetaJSON: customers.leadMetaJSON,
+      // legacy one-off — do not run post-Wave-2 (leadMetaJSONDeprecated is the frozen blob).
+      leadMetaJSON: customers.leadMetaJSONDeprecated,
     })
     .from(customers)
   const byPhone = new Map<string, typeof existing>()
@@ -269,17 +270,17 @@ async function main() {
     if (matches.length === 1) {
       matched++
       const c = matches[0]
-      const patch: { address?: string, email?: string, leadMetaJSON?: LeadMeta } = {}
+      const patch: { address?: string, email?: string, leadMetaJSONDeprecated?: LeadMeta } = {}
       let tradesAddedThis = false
       const newTrades = leadMeta.interestedTradesRaw ?? []
       if (c.leadMetaJSON == null) {
-        patch.leadMetaJSON = leadMeta
+        patch.leadMetaJSONDeprecated = leadMeta
         tradesAddedThis = newTrades.length > 0
       }
       else if ((c.leadMetaJSON.interestedTradesRaw ?? []).length === 0 && newTrades.length > 0) {
         // Existing meta but no trades (kitchen/bath leads) — graft on the derived
         // trades, preserving everything else. Set-if-empty: never overwrite trades.
-        patch.leadMetaJSON = {
+        patch.leadMetaJSONDeprecated = {
           ...c.leadMetaJSON,
           interestedTradesRaw: newTrades,
           source: c.leadMetaJSON.source ?? leadMeta.source,
@@ -341,7 +342,7 @@ async function main() {
           state: 'CA',
           zip: core.zip,
           leadSourceId: bina.id,
-          leadMetaJSON: leadMeta,
+          leadMetaJSONDeprecated: leadMeta,
           pipeline: 'active',
           ...(createdAt ? { createdAt } : {}),
         })

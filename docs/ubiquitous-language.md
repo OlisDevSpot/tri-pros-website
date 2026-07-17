@@ -1,7 +1,7 @@
 # Ubiquitous Language — Tri Pros Remodeling
 
 > Living glossary of canonical terms. Every AI session, PR, and issue MUST use these terms exactly.
-> Updated: 2026-03-23
+> Updated: 2026-07-16
 
 ## Single Unit Folder Structure
 
@@ -222,6 +222,33 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 | Proposal | `projectJSON` | `projectSectionSchema` | Scopes, trades, SOWs, objectives |
 | Proposal | `fundingJSON` | `fundingSectionSchema` | TCP, cash, deposit, incentives |
 
+## Migration & Contract-Change Vocabulary
+
+Terms for communicating about codebase alterations — retiring a pattern, migrating a data shape, or changing "the way we do things." Born from the JSONB→relational decomposition (epic #256), but they apply to ANY contract change. Operational tracking for these lives in the per-wave **seam-tightening register** inside `docs/plans/jsonb-decomposition-deprecation-ledger.md`.
+
+| Term | Definition |
+|------|-----------|
+| **API surface** | The total externally-consumable contract of a unit of code: its exported functions/types, the parameter shapes it accepts (usually Zod schemas), the shapes it returns, and its side-effect contract. The surface can be **generic** (`shared/dal/server/lib/create-crud-dal.ts` — its surface is inherited by every entity that registers a spec) or **concrete** (`replaceProposalIncentives` — one function, one contract). "Tightening the surface" means narrowing what it accepts/returns to exactly the current contract and nothing else. |
+| **Blast radius** | The complete set of code affected by changing a contract: every consumer, implementer, schema, script, doc, and test that touches the changed shape. Discovered up front via project-wide sweep so the full extent is KNOWN — but not necessarily rewritten up front (see the tightening tally below). Example: retiring `fundingJSON.data.incentives` puts the blank-writers (`edit-proposal-view`, `create-new-proposal-view`, the pipelines popover), the `getFullView` hydration bridge, the PDF/AI-summary/Zoho consumers, the backfill script, and the entity DOCS.md all inside the blast radius. **Rule: the radius must be fully mapped, and every site inside it must end up either rewritten or tallied — a site that is neither is a silent gap.** |
+| **Dual-shape tolerance** | **Anti-pattern.** An API surface that accepts BOTH the old shape and the new shape so neither breaks, introduced by a defensive/additive session — and left **untallied**. The additive move itself is often fine during a transition (see the tightening tally below); what makes it tolerance is that nobody recorded it, so it never gets tightened. It hides an incomplete migration: the blast radius looks smaller than it is, and the old shape survives silently until it resurfaces as corrupt data or a dead branch. Live specimen: `shared/domains/funnels/lib/build-funnel-lead-note.ts:28-31` — the `typeof raw === 'string'` legacy-flat branch alongside the new `{label,value,order}` entries (registered for deletion in the seam-tightening register; its sibling `FunnelIntakePanel.toRows()` was already killed in `215790be`). |
+| **Sanctioned bridge** | The legitimate counterpart to dual-shape tolerance: a DELIBERATE, temporary dual-shape seam kept alive during a migration window, **registered in the deprecation ledger with a named kill trigger**. Example: `getFullView` re-hydrating `proposal_incentives` rows back into `fundingJSON.data.incentives` shape until W3 kills `fundingJSON` itself. The register entry is what makes it a bridge instead of tolerance — unregistered dual-shape is a defect by definition. |
+| **Escape hatch** | A write (or read) path that bypasses the sanctioned boundary for an operation, letting the old shape or unvalidated data around the gate. Example: `updateProposalSchema.partial()` flowing into the generic `updateImpl` whole-column `.set()` lets any authed caller write blob incentives verbatim — bypassing `replaceProposalIncentives`, its freeze gate, and row creation. Another: `upsertOneToOne` accepting `Record<string, unknown>` with no Zod parse. Escape hatches are what dual-shape tolerance leaves behind at the persistence layer: the front door was migrated, the side door still speaks the old contract. |
+| **Tightening tally** | The running list a session keeps WHILE implementing a change, recording every site where it went additive instead of rewriting — **specifically where the additive choice was made because of the transition itself, not because the new implementation needs it**. That distinction is the entry test: "would this branch/param/bridge exist if we were writing this fresh today?" No → tally it. The tally is worked through AFTER the migration is validated, one site at a time, tightening each surface to the new contract. Concrete instance: the per-wave **seam-tightening register** in `docs/plans/jsonb-decomposition-deprecation-ledger.md`. |
+
+**How they compose — the additive-first workflow:** during active implementation, thinking additively is the norm, not a failure — rewriting the whole blast radius mid-flight is often the riskier move. The discipline is: (1) map the full blast radius up front so nothing is invisible; (2) implement, going additive where the transition makes that easier; (3) every additive-because-of-the-transition site goes on the tightening tally the moment it's written; (4) once the migration is validated, sweep the tally and tighten the API surface site by site. Dual-shape tolerance and escape hatches are what an **untallied** additive site becomes — the same code, minus the accountability. The end-of-wave seam audit is the backstop that catches what sessions forgot to tally.
+
+## Derived-Value Vocabulary
+
+Terms for talking about values computable from other stored data. Canonical rule + disciplines: `docs/codebase-conventions/derived-values.md` (ratified 2026-07-17; supersedes the old blanket "never persist derived values"). Proposal-specific case: `src/shared/entities/proposals/DOCS.md#final-tcp-derived`.
+
+| Term | Definition |
+|------|-----------|
+| **Derived value** | Any value that is a pure function of other stored data (`finalTcp`, pipeline stage for Fresh, CSLB start date). Default handling: computed **just-in-time**, never stored. |
+| **Just-in-time (JIT)** | Deriving at read/render time via the single canonical pure helper in `entities/<domain>/lib/` (e.g. `computeFinalTcp`). The default for detail pages, PDFs, AI summaries, external-payload builders — anything already holding hydrated inputs. |
+| **Snapshot** | A business fact **frozen at an event** (contract total at signature, `proposals.kind` at insert, `captureJSON` at intake). Persisted, named for the event not the derivation, written by one event handler, NEVER recomputed — later input changes must not propagate. A snapshot is not "derived data that got stored"; the event reclassified it into a fact. |
+| **Cache column** | A persisted derived value kept ONLY because SQL itself needs it (sort/filter/paginate/aggregate across many rows — `final_tcp_cents` for proposal-list price sort). It is a cache, with cache obligations: the four-leg discipline (single-writer **chokepoint**, one pure function, rebuild script, `calc_version` stamp). A cache column can BECOME a snapshot via a freeze gate (`final_tcp_cents` after `signingRequestId` is set). |
+| **Chokepoint** | The single function through which every write of a cache column routes (`recomputeProposalFinancials`). A write path that skips it is an **escape hatch** (see Migration vocabulary above) — e.g. a raw `db.update` that bypasses entity-server hooks. |
+
 ## Terminology Rules
 
 - **Customer** not "client" or "user" (unless referring to the user role)
@@ -242,6 +269,13 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 - **Multiplier** is the canonical agent KPI. Format as `Nx` to 2 decimals (e.g., `2.04x`). Use `formatMultiplier` to render — never inline `.toFixed(2)`.
 - **Entity Action System** not "action menu", "more menu", or "kebab menu" — those describe the visual component; the System is the spec/registry/menu trio behind it
 - **Universal CRUD Slot** not "base action" or "default action" — names the four typed slots (`view`/`edit`/`delete`/`duplicate?`) every entity must declare
+- **Blast radius** not "affected files" or "impact area" — implies the map-fully-then-rewrite-or-tally discipline, not just a list
+- **Dual-shape tolerance** not "backwards compatibility" — backwards compat is a product decision with a contract; dual-shape tolerance is an untallied defensive branch. If it's deliberate and registered with a kill trigger, call it a **sanctioned bridge**
+- **Tightening tally** — keep one in EVERY session that implements a transition; an additive-because-of-the-transition site written without a tally entry is a defect, the additive code itself is not
+- **Escape hatch** not "edge case" or "loophole" — names a concrete bypass path around a sanctioned write/read boundary
+- **API surface** not "interface" alone when discussing migrations — "tighten the API surface" is the standing instruction to narrow accepted shapes to the new contract only
+- **Snapshot** vs **Cache column** — never interchangeable. A snapshot must NOT track input changes (recomputing it is a bug); a cache column MUST (a missed recompute is a bug). Say which one you mean before persisting any derived value; if it's neither, derive **just-in-time**
+- **Chokepoint** not "helper" or "util" when naming the single writer of a cache column — the word carries the rule that every write path routes through it
 
 ## Flagged ambiguities
 

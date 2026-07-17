@@ -8,6 +8,10 @@ export const CUSTOMER = 'Customer' as const
 // grant). see docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md §10
 export const CUSTOMER_PROFILE = 'CustomerProfile' as const
 
+// 1:1 attribution child (Addendum B: 1:1 children get their own subject).
+// SYSTEM-only writes (intake capture); agents/dispatchers read.
+export const CUSTOMER_LEAD_ATTRIBUTION = 'CustomerLeadAttribution' as const
+
 // Customer age bounds — single source of truth. The customerProfile schema
 // references these; UI inputs and tRPC inputs that accept age must too.
 // see ../schemas/index.ts and ../DOCS.md#phone-visibility-threshold

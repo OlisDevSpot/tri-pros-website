@@ -63,6 +63,7 @@ Status legend: `candidate` = in Oliver's Downloads awaiting HITL pick · `shippe
 | larry | tri-pros-during-larry-rollcarry-solo | candidate | during (plywood re-sheet) | 1 | backs | staging (roll carry) ⚠︎model added tool-belt | sun-hat·olive-drab·knee-pads |
 | paragon | tri-pros-during-paragon-tileset-solo | candidate | during (tile half-laid, person cropped) | 1 | backs kneeling | setting (floor tile) | compact·balding·gray-fringe·knee-pads |
 | solstice | tri-pros-during-solstice-cleanup-crew2 | candidate | during (gutted interior, 700px) | 2 | backs | cleanup (broom + bucket) | compact·balding·olive-drab / sun-hat·knee-pads |
+| picasso | tri-pros-during-picasso-priming-crew2-backs | candidate | during (paint-prep great room) | 2 | backs | painting (primer roll + cut-in) ⚠︎backpack logo sharpened by upscale; extra roller tray | heavyset·white-hair·dark-jeans / slim·red-cap·tan |
 
 **Blocked/dropped 2026-07-14** (no valid base or re-rolls exhausted): Atlas, Bliss, Verona, Monique (afters only) · Genesis Dr, Stepping Stones, Turf, Multiple EE (afters/people only) · ADU (real workers + customer-PII blueprint) · Manshma (occluded-strip hallucination 3/3) · HVAC (sleeve-print migration 3/3).
 

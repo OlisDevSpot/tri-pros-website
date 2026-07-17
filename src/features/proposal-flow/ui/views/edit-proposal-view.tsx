@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
+import { useReplaceIncentives } from '@/features/proposal-flow/dal/client/mutations/use-replace-incentives'
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
@@ -29,6 +30,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
 
   const proposal = useGetProposal(proposalId)
   const updateProposal = useUpdateProposal()
+  const replaceIncentives = useReplaceIncentives()
 
   const form = useForm<ProposalFormSchema>({
     resolver: zodResolver(proposalFormSchema),
@@ -88,6 +90,9 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
           ...rawData.funding,
           data: {
             ...rawData.funding.data,
+            // Rows are the source of truth (Wave 2); the blob array is dead.
+            // getFullView re-hydrates it from proposal_incentives on read.
+            incentives: [],
             cashInDeal: rawData.funding.data.cashInDeal > nextFinalTcp ? nextFinalTcp : rawData.funding.data.cashInDeal,
           },
         },
@@ -98,8 +103,16 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   function onSubmit(rawData: ProposalFormSchema) {
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => {
-        toast.success('Proposal updated')
-        router.push(ROOTS.public.proposalReview(proposalId))
+        replaceIncentives.mutate(
+          { proposalId, incentives: rawData.funding.data.incentives },
+          {
+            onSuccess: () => {
+              toast.success('Proposal updated')
+              router.push(ROOTS.public.proposalReview(proposalId))
+            },
+            onError: error => toast.error(error.message),
+          },
+        )
       },
       onError: error => toast.error(error.message),
     })
@@ -107,7 +120,15 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
 
   function onSave(rawData: ProposalFormSchema) {
     updateProposal.mutate(buildMutationData(rawData), {
-      onSuccess: () => toast.success('Proposal saved'),
+      onSuccess: () => {
+        replaceIncentives.mutate(
+          { proposalId, incentives: rawData.funding.data.incentives },
+          {
+            onSuccess: () => toast.success('Proposal saved'),
+            onError: error => toast.error(error.message),
+          },
+        )
+      },
       onError: error => toast.error(error.message),
     })
   }

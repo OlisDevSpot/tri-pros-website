@@ -1,8 +1,9 @@
 # Proposal Financials Façade — Design
 
-**Date**: 2026-07-14
-**Status**: Approved by Oliver (brainstorming session 2026-07-13/14)
+**Date**: 2026-07-14 (schema-era alignment pass 2026-07-15)
+**Status**: Approved by Oliver (brainstorming session 2026-07-13/14); realigned against the JSONB decomposition program (`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md`, ADR-0005 + Addenda) on 2026-07-15
 **Supersedes**: the multiplier/margin formulas documented in `src/shared/entities/proposals/DOCS.md#margin-multiplier-tiers` (doc updated as part of this work)
+**Coordinates with**: Epic #256 waves — Wave 0/1 merged; Wave 2 (`proposal_incentives`, `final_tcp_cents`) in flight; Wave 3 (SOW decomposition) pre-registered
 
 ## Problem
 
@@ -44,8 +45,31 @@ multiplier = finalTcp ÷ totalJobCosts      (CHANGED)
 **Unchanged**:
 - Multiplier tier thresholds: `danger < 2x`, `healthy 2–3x`, `excellent ≥ 3x`, `unknown` when null. Confirmed ruling: thresholds were always intended for the correct formula; the old numbers were simply wrong.
 - Null-safety: multiplier is `null` (not 0/Infinity) when cost is 0 or no cost lines exist; margin `null` when `sectionPrice` is null or no cost lines. `hasMissingCostData` asymmetric-incompleteness rule unchanged.
-- `finalTcp` formula and name — unchanged and untouched everywhere (SQL mirror in the DAL, Zoho context, accounting, pipelines all unaffected).
+- `finalTcp` formula and name — unchanged (Zoho context, `final_tcp_cents` rollup, `recomputeProposalFinancials` all unaffected; no `calc_version` bump).
 - Nothing persisted changes (except deleting the `showPricingBreakdown` key — see UI section). No DB migration.
+
+## Schema-era alignment (JSONB decomposition program)
+
+This façade must be written as a citizen of the decomposition program, not against the pre-waves world. The binding rules (ADR-0005 + Addenda, `docs/codebase-conventions/jsonb-columns.md`, ledger `docs/plans/jsonb-decomposition-deprecation-ledger.md`):
+
+1. **The façade is the Stage-1 (draft) computation layer** of the three-stage derived-value lifecycle (ADR-0005 Addendum A): pure TS, compute-on-read, never persisted as truth. Its input is the **hydrated domain shape** — today that's the blob-shaped Zod types (`FundingSection['data']`, sow sections), sourced from RHF form state or from `getFullView` (which already re-hydrates `fundingJSON.data.incentives` from `proposal_incentives` rows). The façade **never reads raw DB rows and never contains SQL**.
+2. **Persisted-read paths use the rollup, not TS recompute.** Consumers that read proposal rows for lists/reports/aggregation (proposals table `price` column, accounting invoice amounts, lead-source ROI, pipeline values) belong on `proposals.final_tcp_cents` — the Stage-2 rollup maintained by the single choke point `recomputeProposalFinancials`. `computeFinalTcp` stays exported **only** for draft-stage / hydrated-full-view contexts. Do not build anything against `finalTcpExpr` (dies in Wave 2 Task 7).
+3. **Storage-agnostic interface.** `ProposalFinancials`, `SectionFinancials`, and `PricingBreakdown` expose no storage detail. When Wave 3 lands (`proposal_sow_items`, `proposal_cost_lines`, section incentives → `proposal_incentives.sow_item_id`, `starting_tcp_cents`), only the façade's input-mapping layer changes — consumers and interfaces hold. The façade is the single adaptation seam for Wave 3; that is a design goal, not a side effect.
+4. **Money units**: the façade operates in whole dollars on the domain shape (unchanged UI/form convention). Integer-cents ↔ dollars conversion lives only at DAL mappers (`lib/incentive-rows.ts` precedent). No floats persisted; no cents in the façade API.
+5. **No new persisted derived values.** Margin/multiplier/tier remain Stage-1 (agent-view volatile). `final_tcp_cents`'s formula is unchanged by this work → **no `calc_version` bump**. If margin/multiplier ever need list-column sort/filter, that is a future rollup added inside `recomputeProposalFinancials`, never new financial SQL elsewhere.
+6. **Sequencing**: implement **after Wave 2 merges** (Wave 2's uncommitted work touches the same files: `dal/server/queries.ts`, `mutations.ts`, `server-spec.ts`, `proposals.router/index.ts`) and **before Wave 3** (so Wave 3 adapts one seam instead of ~14 call sites).
+7. **Freeze gate**: the façade computes and displays; it never writes — so the `signingRequestId` financial-freeze check doesn't apply to it. The modal is display-only.
+
+### Wave 3 convergence (why the façade lands between the waves)
+
+Wave 3 moves the SOW into rows (`proposal_sow_items` + `proposal_cost_lines`, section incentives → `proposal_incentives.sow_item_id`, `starting_tcp_cents`). The façade converges with it on four points:
+
+1. **One seam instead of N call sites.** Every consumer of section prices/cost lines/incentive math goes through the façade after this work. Wave 3's read-side then changes exactly one thing — the façade's input mapping (blob-shaped domain types → row-sourced domain types) — instead of touching each of the ~14 consumers.
+2. **The domain-shape decision is deferred to Wave 3, safely.** The façade's output types (`ProposalFinancials`, `SectionFinancials`, `PricingBreakdown`) are already storage-agnostic domain types. Wave 3 completes the picture on the input side (rows hydrate into the domain shape at the DAL, exactly like `incentive-rows.ts` does for global incentives today).
+3. **Rollup purification + future metric rollups.** Post-Wave-3, `recomputeProposalFinancials` loses its two JSONB residues and becomes a pure SUM over rows. Cost lines as rows is also the prerequisite for any deferred metric that needs SQL sort/filter (gross margin % as a table column would add a `total_job_costs_cents` rollup at the same choke point). The façade's TS formulas and the SQL rollup stay in parity via `verify-final-tcp-parity.ts`.
+4. **Server-side enforcement of the pricing-mode invariant.** `startingTcp = Σ sectionPrice + miscPrice` (breakdown mode) is client-side-only today. With sow rows + `starting_tcp_cents`, Wave 3 can enforce it in the recompute choke point; the façade having centralized the Σ-sectionPrice math makes that a formula reuse, not a reimplementation.
+
+✅ **Hazard resolved (verified 2026-07-15, Wave 2 commit `e54052e2`)**: the raw-row `computeFinalTcp` consumers flagged during alignment (`accounting.service.ts`, `lead-sources.router.ts`, both customer-pipelines DALs, `columns-registry`/`listProposals`) all read `proposals.finalTcpCents` now, and `finalTcpExpr` is deleted. The remaining `computeFinalTcp` callers are exactly the hydrated/draft-stage set (form views, pricing breakdown, funding, aggregates, summary route, Zoho context, PDF) — the correct Stage-1 boundary. The façade plan builds on this state.
 
 ## Architecture: one façade module
 
@@ -105,7 +129,7 @@ interface SectionFinancials {
 }
 
 // Targeted exports for callers that don't have / don't need the whole proposal:
-function computeFinalTcp(input: { funding; sow }): number   // kept — the 7 server-side consumers only need this number
+function computeFinalTcp(input: { funding; sow }): number   // kept — for draft-stage / hydrated-full-view contexts ONLY; raw-row list/report consumers read final_tcp_cents instead (see Schema-era alignment §2)
 function computeSectionFinancials(section: { title: string, financials: SowFinancials }): SectionFinancials  // SOW editor live summary; same shape computeProposalFinancials uses to build `sections`
 function getMultiplierTier(value: number | null): MultiplierTier
 function formatMultiplier(value: number | null): string
@@ -156,11 +180,11 @@ The exact field list is refined during implementation against what the three ren
 | `pricing-breakdown.tsx` | renders `PricingBreakdown` view-model |
 | `proposal-doc-definition.ts` (PDF) | renders `PricingBreakdown` view-model |
 | `summary/route.ts` | renders `PricingBreakdown` view-model |
-| `columns-registry.tsx` | import path only (`computeFinalTcp`) |
+| `columns-registry.tsx` | ✅ already on `finalTcpCents` (Wave 2) — no façade change |
 | `funding.tsx` (homeowner Funding Summary) | import path only |
 | `get-proposal-aggregates.ts` | Σ sectionPrice moves into the façade (used by the `startingTcp` sync effect) |
 | zoho-sign `proposal-context.ts` | import path only |
-| `accounting.service.ts`, `lead-sources.router.ts`, customer-pipelines DALs | import path only |
+| `accounting.service.ts`, `lead-sources.router.ts`, customer-pipelines DALs | ✅ already on `finalTcpCents` (Wave 2) — no façade change |
 | `deal-structure-fields.tsx:261` | inline deposit-% → `computeDealDepositPercent` (meetings lib, already exists) |
 
 ## UI changes
@@ -181,7 +205,7 @@ Multiplier                      2.83x    (tier-colored)
 
 ### 2. Internal Calculation moves into an agent-only modal
 
-- **Delete** the persisted `funding.meta.showPricingBreakdown` schema field and its edit-form toggle. (JSONB key: removing it from the Zod schema means existing persisted values are stripped/ignored on next parse+write — no migration.)
+- **Delete** the persisted `funding.meta.showPricingBreakdown` schema field and its edit-form toggle. (JSONB key: removing it from the Zod schema means existing persisted values are stripped/ignored on next parse+write — no migration.) Bonus: shrinks the `fundingJSON` remainder that Wave 3's detail design must disposition.
 - **Remove all inline rendering** of the internal calculation: the edit-form preview (`funding-fields.tsx:361`) and the agent-mode inline append on the main proposal page (`pricing-breakdown.tsx` `viewMode='agent'` branch).
 - **Add one agent-only button** (consistent placement + affordance in both surfaces) that opens a modal containing the agent financial view — the pricing breakdown plus the Internal Calculation block. Available:
   - in the edit-proposal form, and
@@ -204,11 +228,14 @@ The compact "Total Costs" row (`cost + incentives`) encodes the killed concept. 
 - New DOCS.md anchor `#price-side-vs-cost-side`: the semantic model, the killed `totalCosts` concept, and the Σ-section-margins ≥ total-margin asymmetry (global discounts are proposal-level).
 - `#final-tcp-derived` reference-impl pointer updated to the façade path.
 - DOCS.md note for the modal: internal financials are agent-only, reachable via the modal button; no persisted display flag.
+- ✅ Fixed 2026-07-15: the stale `#final-tcp-derived` "Enforced by" line ("no `final_tcp` column exists") now states the real enforcement — `final_tcp_cents` is a rollup cache written exclusively by `recomputeProposalFinancials` and appears in no editable schema.
 
 ## Out of scope (explicit)
 
 - **Meeting-domain** `compute-deal-derived.ts` — parallel implementation by design (different data shape, meeting incentives are all discounts). Untouched, except `deal-structure-fields.tsx` adopting its existing deposit-% helper.
-- **DAL SQL mirror** of finalTcp (`queries.ts:finalTcpExpr`) — documented intentional duplication; formula unchanged, so untouched.
+- **`finalTcpExpr` SQL mirror** — already deleted in Wave 2 (`e54052e2`); list filter/sort reads `finalTcpCents`. Nothing here for the façade.
+- **`recomputeProposalFinancials` / `final_tcp_cents` rollup** — Wave 2's Stage-2 choke point; formula unchanged by this work, untouched.
+- **Wave 3 SOW decomposition** (`proposal_sow_items`, `proposal_cost_lines`, section incentives → rows, `starting_tcp_cents`) — not this work; the façade is deliberately shaped so Wave 3 only swaps its input mapping.
 - **`src/shared/lib/loan-calculations.ts`** — already canonical, untouched.
 - **Tier threshold recalibration** — thresholds confirmed as-is.
 - **New metrics** — none this round. Research backlog recorded below.
@@ -221,6 +248,8 @@ No test runner exists in this repo yet (testing bootstrap is a separate pending 
 2. Worked example through `computeProposalFinancials`: subtotal 27,000 / incentives 10,000 / job costs 6,000 → finalTcp 17,000, margin 11,000, multiplier 2.83x, tier `healthy`.
 3. Manual sweep of all three breakdown renderers (React, PDF, plaintext summary) against one real proposal — identical numbers, identical line items.
 4. Manual check: homeowner view shows no button/modal; agent sees the button in both surfaces.
+5. Rollup parity: for a hydrated proposal, `computeProposalFinancials(...).finalTcp === final_tcp_cents / 100` (extend/reuse `scripts/verify-final-tcp-parity.ts`).
+6. Incentive-source check: façade numbers computed from a `getFullView` read reflect `proposal_incentives` rows (the hydration bridge), not the dead blob array.
 
 The façade's pure functions are the **prime candidate for the app's early unit tests** once the testing practice bootstraps — flagged here for that effort.
 

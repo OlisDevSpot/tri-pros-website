@@ -13,7 +13,6 @@ import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { proposalStatuses } from '@/shared/constants/enums'
 import { PROPOSAL_STATUS_COLORS } from '@/shared/entities/proposals/constants/proposal-status-colors'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { formatDateCell, formatStringAsDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
@@ -81,7 +80,9 @@ export const PROPOSAL_COLUMNS = {
     label: 'Price',
     sortable: true,
     format: 'currency',
-    accessorFn: row => computeFinalTcp({ funding: row.fundingJSON.data, sow: row.projectJSON.data.sow }),
+    // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
+    // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+    accessorFn: row => (row.finalTcpCents ?? 0) / 100,
   },
   status: {
     label: 'Status',

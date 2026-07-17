@@ -26,7 +26,7 @@ An **Entity Server System** with five pieces:
 
 ### 1. EntityServerSpec
 
-A typed declaration per entity at `entities/<entity>/lib/server-spec.ts`. A single interface with required `caslSubject` and `visibility` — every entity is a top-level identity. Named typed config fields for cross-entity patterns: `shareable: { tokenColumn }` (dual-credential access via share token, covers getById AND update), `update.jsonbMergeColumns` (deep-merge JSONB columns instead of replace), `primaryKey` (override default `'id'`).
+A typed declaration per entity at `entities/<entity>/lib/server-spec.ts`. A single interface with required `caslSubject` and `visibility` — every entity is a top-level identity. Named typed config fields for cross-entity patterns: `shareable: { tokenColumn }` (dual-credential access via share token, covers getById AND update), `primaryKey` (override default `'id'`). (A third field, `update.jsonbMergeColumns` — top-level-only JSONB merge instead of replace — existed here through Wave 1 of epic #256 and was deleted entirely in Wave 2; see `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested`.)
 
 **Lifecycle hooks** live on `spec.hooks`, organized by operation (`create`, `update`, `delete`), each with optional `before` and `after` callbacks. `before` runs at the DAL layer before the DB write (data enrichment, derivation) and returns the enriched input. `after` runs after the DB write (side effects — services, notifications, realtime events) and returns `void`. Both are async-capable. This follows the same before+after-at-the-same-layer pattern used by better-auth (`databaseHooks`), Payload CMS (`beforeChange`/`afterChange`), and Prisma client extensions.
 

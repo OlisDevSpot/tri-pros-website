@@ -64,6 +64,11 @@ Minting a pgEnum requires a documented DB-side consumer: a SQL predicate that co
 
 The 23 pre-existing pgEnums (audited 2026-07-14) convert to `text` **opportunistically**: any wave/migration that already touches a table converts that table's enum columns in the same push (`ALTER COLUMN ... TYPE text` + `DROP TYPE`). A dedicated final sweep for whatever remains is tracked as a deferred issue — do not run it as a standalone prod migration without cause.
 
+**Progress**: Wave 2 (epic #256) converted 4 — `proposal_status`, `proposal_kind`,
+`customer_pipeline`, `lead_type` — opportunistically, alongside the `proposal_incentives` /
+`final_tcp_cents` schema changes it was already making. Prod enum count goes **23 → 19** on
+the next push. 19 remain for future opportunistic conversion or the deferred sweep issue.
+
 **Why**: big-bang conversion is churn with no functional gain; opportunistic conversion reaches the same end state for free.
 **Enforced by**: convention (check this rule whenever a migration touches a table with enum columns)
 
@@ -90,21 +95,23 @@ type SelectProps = { options: readonly string[] }
 ## Anti-patterns
 
 - **Defining option arrays inline in a feature file or schema file.** Move to `constants/enums/<domain>.ts`.
-- **`pgEnum('x', ['a', 'b', 'c'])` with literal strings.** Reference the const array.
-- **Drizzle column as `text()` when the value set is fixed.** Use the pgEnum.
+- **`pgEnum('x', ['a', 'b', 'c'])` with literal strings.** Reference the const array — and reach for `text({ enum: constArray })` instead of `pgEnum` unless you have a documented DB-side consumer (`#pgenum-only-with-db-side-consumer`).
+- **Minting a new `pgEnum` "because the value set is fixed."** A fixed value set is exactly what `text({ enum })` already gives you at compile time — `pgEnum` is the exception now, not the default (Closed Vocabulary Standard, `#text-with-enum`).
 - **Duplicating the type as `'a' | 'b' | 'c'` instead of `(typeof arr)[number]`.** Will drift the moment the array changes.
 
 ## Reference flow
 
 ```
-constants/enums/proposals.ts           types/enums/proposals.ts          db/schema/meta.ts
+constants/enums/proposals.ts           types/enums/proposals.ts          db/schema/proposals.ts
 ─────────────────────────────         ──────────────────────────        ──────────────────────────
-const proposalStatuses = [...]  ────► type ProposalStatus =       ────► pgEnum('proposal_status',
-  as const                              (typeof proposalStatuses)         proposalStatuses)
+const proposalStatuses = [...]  ────► type ProposalStatus =       ────► text('status',
+  as const                              (typeof proposalStatuses)         { enum: proposalStatuses })
                                           [number]
 ```
 
-All three derive from the const array. Modify the array → everything follows.
+All three derive from the const array. Modify the array → everything follows. (`proposal_status`
+itself is one of the 4 enums converted from `pgEnum` to `text({ enum })` in Wave 2 of epic #256 —
+see `#legacy-pgenum-conversion`; the diagram shows the now-canonical shape.)
 
 ## See also
 

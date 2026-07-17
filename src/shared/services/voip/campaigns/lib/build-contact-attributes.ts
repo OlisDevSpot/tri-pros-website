@@ -10,7 +10,8 @@
 //   - trades_interested : alpha-sorted, deduped interested trades (human-readable)
 //   - lead_created_at   : when the lead was added to our system (PST date-time)
 //
-// Trade values come from leadMetaJSON.interestedTradesRaw — already
+// Trade values come from the attribution capture snapshot
+// (customer_lead_attribution.captureJSON.interestedTradesRaw) — already
 // human-readable for every source (Bina: raw campaign trade strings; in-app
 // form: resolved trade names). No ID→label lookup needed.
 

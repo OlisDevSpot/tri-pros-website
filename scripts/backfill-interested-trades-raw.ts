@@ -49,10 +49,11 @@ async function main() {
 
   // Pull every customer that has any leadMetaJSON; filter the rest in JS (the
   // population is small and jsonb-path SQL filtering buys little here).
+  // legacy one-off — do not run post-Wave-2 (reads the frozen leadMetaJSONDeprecated blob).
   const rows = await db
-    .select({ id: customers.id, name: customers.name, leadMetaJSON: customers.leadMetaJSON })
+    .select({ id: customers.id, name: customers.name, leadMetaJSON: customers.leadMetaJSONDeprecated })
     .from(customers)
-    .where(isNotNull(customers.leadMetaJSON))
+    .where(isNotNull(customers.leadMetaJSONDeprecated))
 
   let candidates = 0
   let updated = 0
@@ -98,7 +99,7 @@ async function main() {
 
     if (!DRY_RUN) {
       // updatedAt auto-bumps via the schema-helper $onUpdate — do not set it.
-      await db.update(customers).set({ leadMetaJSON: nextMeta }).where(eq(customers.id, row.id))
+      await db.update(customers).set({ leadMetaJSONDeprecated: nextMeta }).where(eq(customers.id, row.id))
     }
     updated++
   }

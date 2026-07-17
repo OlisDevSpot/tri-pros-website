@@ -1,38 +1,17 @@
-import type { LeadMeta } from '@/shared/entities/customers/schemas'
+import type { CustomerEnrichmentRow } from '@/shared/db/schema/customer-enrichment'
+import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { LEGACY_ENRICHMENT_LABELS } from '@/shared/entities/customers/constants/funnel-intake-fields'
 
-interface Row {
-  label: string
-  value: string
-  order: number
+interface Props {
+  attribution: CustomerLeadAttributionRow | null
+  enrichment: CustomerEnrichmentRow[]
 }
 
-function toRows(enrichment: Record<string, unknown>): Row[] {
-  const rows: Row[] = []
-  for (const [key, raw] of Object.entries(enrichment)) {
-    if (typeof raw === 'object' && raw !== null && 'label' in raw && 'value' in raw) {
-      const e = raw as { label: string, value: string, order?: number }
-      rows.push({ label: e.label, value: e.value, order: e.order ?? rows.length })
-    }
-    else if (typeof raw === 'string') {
-      rows.push({ label: LEGACY_ENRICHMENT_LABELS[key] ?? key, value: raw, order: rows.length })
-    }
-  }
-  return rows.sort((a, b) => a.order - b.order)
-}
-
-export function FunnelIntakePanel({ leadMetaJSON }: { leadMetaJSON: LeadMeta | null | undefined }) {
-  if (leadMetaJSON?.source?.kind !== 'funnel') {
-    return null
-  }
-  const enrichment = leadMetaJSON.source.enrichment as Record<string, unknown> | undefined
-  if (!enrichment) {
-    return null
-  }
-  const rows = toRows(enrichment)
-  if (rows.length === 0) {
+export function FunnelIntakePanel({ attribution, enrichment }: Props) {
+  // Enrichment rows are already `{label,value,order}`-shaped and DB-ordered
+  // (queried `ORDER BY "order" ASC`), so they render directly — no normalization.
+  if (attribution?.kind !== 'funnel' || enrichment.length === 0) {
     return null
   }
 
@@ -43,8 +22,8 @@ export function FunnelIntakePanel({ leadMetaJSON }: { leadMetaJSON: LeadMeta | n
       </CardHeader>
       <CardContent className="px-4 pb-3">
         <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-          {rows.map(row => (
-            <div key={row.label}>
+          {enrichment.map(row => (
+            <div key={row.stepId}>
               <p className="text-xs text-muted-foreground">{row.label}</p>
               <p className="text-sm font-medium">{row.value}</p>
             </div>

@@ -20,7 +20,6 @@ import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-cust
 import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { buildSegmentWhere } from '@/shared/entities/lead-sources/lib/segment-sql'
 import { leadSourceFormConfigSchema } from '@/shared/entities/lead-sources/schemas'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { generateToken } from '@/shared/lib/generate-token'
 import { slugify } from '@/shared/lib/slugify'
 
@@ -213,10 +212,9 @@ export const leadSourcesRouter = createTRPCRouter({
         db.$count(customers, rangeWhere),
         db.$count(customers, and(baseMatch, isSignedCustomerSql())),
         // Approved proposals belonging to customers from this lead source.
-        // Hydrate fundingJSON + projectJSON — no SQL-side TCP extraction. Aggregate via
-        // computeFinalTcp + computeProjectValue semantics (sum approved values).
+        // Sum the stored final_tcp_cents rollup (Wave 2) across approved proposals.
         db
-          .select({ fundingJSON: proposals.fundingJSON, projectJSON: proposals.projectJSON })
+          .select({ finalTcpCents: proposals.finalTcpCents })
           .from(proposals)
           .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
           .innerJoin(customers, eq(customers.id, meetings.customerId))
@@ -225,7 +223,7 @@ export const leadSourcesRouter = createTRPCRouter({
 
       let totalSales = 0
       for (const p of approvedProposals) {
-        totalSales += computeFinalTcp({ funding: p.fundingJSON.data, sow: p.projectJSON.data.sow })
+        totalSales += (p.finalTcpCents ?? 0) / 100
       }
       totalSales = Math.round(totalSales)
 

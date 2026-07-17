@@ -1,4 +1,3 @@
-import type { LeadMeta } from '@/shared/entities/customers/schemas'
 import { TRPCError } from '@trpc/server'
 import { desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -9,6 +8,7 @@ import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server
 import { meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
+import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
@@ -73,13 +73,14 @@ export const customerPipelinesRouter = createTRPCRouter({
       customerId: z.string().uuid(),
     }))
     .query(async ({ input }) => {
-      const [customer] = await db
-        .select({ leadMetaJSON: customers.leadMetaJSON })
+      const [row] = await db
+        .select({ captureJSON: customerLeadAttribution.captureJSON })
         .from(customers)
+        .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
         .where(eq(customers.id, input.customerId))
         .limit(1)
 
-      const meta = customer?.leadMetaJSON as LeadMeta | null
+      const meta = row?.captureJSON ?? null
       if (!meta?.mp3RecordingKey) {
         return { url: null }
       }

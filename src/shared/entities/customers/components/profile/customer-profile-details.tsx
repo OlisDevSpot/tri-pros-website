@@ -1,8 +1,7 @@
 'use client'
 
-import type { CustomerWithProfile } from '@/shared/entities/customers/dal/server/queries'
+import type { CustomerFullView } from '@/shared/entities/customers/dal/server/queries'
 import type { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
-import type { LeadMeta } from '@/shared/entities/customers/schemas'
 
 import { CUSTOMER_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-profile-fields'
 import { FINANCIAL_PROFILE_FIELDS } from '@/shared/entities/customers/constants/financial-profile-fields'
@@ -14,11 +13,10 @@ import { ProfileCard } from './profile-card'
 
 interface Props {
   editForm: ReturnType<typeof useCustomerEditForm>
-  customer: CustomerWithProfile
-  leadMetaJSON: LeadMeta | null | undefined
+  customer: CustomerFullView
 }
 
-export function CustomerProfileDetails({ editForm, customer, leadMetaJSON }: Props) {
+export function CustomerProfileDetails({ editForm, customer }: Props) {
   const { form, isEditing, canEditProfiles } = editForm
 
   return (
@@ -47,7 +45,7 @@ export function CustomerProfileDetails({ editForm, customer, leadMetaJSON }: Pro
         canEditField={() => canEditProfiles}
         control={form.control}
       />
-      <FunnelIntakePanel leadMetaJSON={leadMetaJSON} />
+      <FunnelIntakePanel attribution={customer.attribution} enrichment={customer.enrichment} />
     </div>
   )
 }

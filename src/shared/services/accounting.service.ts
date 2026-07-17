@@ -8,7 +8,6 @@ import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
 import { formatPhone } from '@/shared/lib/phone'
 import { qbRequest } from '@/shared/services/providers/quickbooks/client'
 
@@ -134,9 +133,9 @@ function createAccountingService() {
       const lineItems: QBInvoiceLine[] = proposalRows
         .filter(Boolean)
         .map((proposal) => {
-          const funding = proposal.fundingJSON?.data
-          const sow = proposal.projectJSON?.data.sow ?? []
-          const amount = funding ? computeFinalTcp({ funding, sow }) : 0
+          // Stored rollup (Wave 2) — maintained by recomputeProposalFinancials; null
+          // only pre-backfill. see entities/proposals/DOCS.md#final-tcp-derived
+          const amount = (proposal.finalTcpCents ?? 0) / 100
           return {
             Amount: amount,
             DetailType: 'SalesItemLineDetail' as const,

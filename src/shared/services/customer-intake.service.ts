@@ -6,7 +6,8 @@ import type { IntakeCore } from '@/shared/services/providers/gohighlevel/lib/nor
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { buildFunnelLeadNote } from '@/shared/domains/funnels/lib/build-funnel-lead-note'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { addCustomerNote, mergeFunnelEnrichment } from '@/shared/entities/customers/dal/server/mutations'
+import { addCustomerNote, upsertFunnelEnrichment, upsertLeadAttribution } from '@/shared/entities/customers/dal/server/mutations'
+import { getCustomerAttribution } from '@/shared/entities/customers/dal/server/queries'
 import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/queries'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { enrollLeadJob } from '@/shared/services/providers/upstash/jobs/enroll-lead'
@@ -71,12 +72,21 @@ function createCustomerIntakeService() {
         state: input.core.state ?? 'CA',
         zip: input.core.zip || '',
         leadSourceId,
-        leadMetaJSON: input.leadMeta ?? null,
       })
       if (!created.success) {
         return created
       }
       const customer = created.data
+
+      // ── 1b. Attribution capture (strict — ads reporting depends on it) ──────
+      // Customer is already committed; a failed attribution write surfaces as an
+      // error the caller can retry (same precedent as meeting_create_failed).
+      if (input.leadMeta) {
+        const attr = await upsertLeadAttribution({ customerId: customer.id, leadMeta: input.leadMeta })
+        if (!attr.success) {
+          return dalError({ type: 'precondition-failed', reason: 'attribution_write_failed' })
+        }
+      }
 
       // ── Auto-enroll (best-effort, fire-and-forget) ─────────────────────────
       // Source-anchored policy gates here; enrollLeadJob is a dumb executor.
@@ -142,12 +152,12 @@ function createCustomerIntakeService() {
     // both live in the DAL mutation (single jsonb_set statement — no race-prone
     // read-modify-write here). Best-effort from each progressive step; a zero-row
     // match means the lead isn't a funnel lead.
-    // see ../entities/customers/dal/server/mutations.ts#mergeFunnelEnrichment
+    // see ../entities/customers/dal/server/mutations.ts#upsertFunnelEnrichment
     async enrichFunnelLead(
       _ctx: ScopedContext,
       input: EnrichFunnelLeadInput,
     ): Promise<DalReturn<{ ok: true }>> {
-      const merged = await mergeFunnelEnrichment(input)
+      const merged = await upsertFunnelEnrichment(input)
       if (!merged.success) {
         return merged
       }
@@ -166,12 +176,11 @@ function createCustomerIntakeService() {
       ctx: ScopedContext,
       input: SetFunnelLeadAddressInput,
     ): Promise<DalReturn<{ ok: true }>> {
-      const existing = await customerCrud.getById(ctx, { id: input.leadId })
-      if (!existing.success) {
-        return existing
+      const attr = await getCustomerAttribution(input.leadId)
+      if (!attr.success) {
+        return attr
       }
-      const customer = existing.data
-      if (!customer || customer.leadMetaJSON?.source?.kind !== 'funnel') {
+      if (attr.data?.kind !== 'funnel') {
         return dalError({ type: 'precondition-failed', reason: 'not_a_funnel_lead' })
       }
       const updated = await customerCrud.update(ctx, {
