@@ -1,7 +1,7 @@
 # Proposal Financials Façade — Design
 
 **Date**: 2026-07-14 (schema-era alignment pass 2026-07-15)
-**Status**: Approved by Oliver (brainstorming session 2026-07-13/14); realigned against the JSONB decomposition program (`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md`, ADR-0005 + Addenda) on 2026-07-15
+**Status**: Implemented (Tasks 1–14 complete, verified 2026-07-18) — Approved by Oliver (brainstorming session 2026-07-13/14); realigned against the JSONB decomposition program (`docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md`, ADR-0005 + Addenda) on 2026-07-15
 **Supersedes**: the multiplier/margin formulas documented in `src/shared/entities/proposals/DOCS.md#margin-multiplier-tiers` (doc updated as part of this work)
 **Coordinates with**: Epic #256 waves — Wave 0/1 merged; Wave 2 (`proposal_incentives`, `final_tcp_cents`) in flight; Wave 3 (SOW decomposition) pre-registered
 
