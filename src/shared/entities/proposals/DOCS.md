@@ -118,7 +118,7 @@ Global incentives moved out of `fundingJSON` into `proposal_incentives` in Wave 
 
     finalTcp = max(0, startingTcp − Σ global incentives where type='discount' − Σ ALL section incentives)
 
-Canonical implementation: `computeFinalTcp({ funding, sow })` in `lib/compute-final-tcp.ts` — it now
+Canonical implementation: `computeFinalTcp({ funding, sow })` in `lib/financials/compute-price-side.ts` — it now
 requires BOTH the funding data and the SOW sections. It stays the source of truth for live
 form-state math (create/edit views, PDF, Zoho context, AI summary — all fed hydrated data).
 As of decomposition Wave 2 the value is also maintained as the stored `proposals.final_tcp_cents`
@@ -133,7 +133,7 @@ persist derived values" rule):
 
 | Stage | Rule | Mechanism |
 |---|---|---|
-| **Drafting** | Compute on read; derived values NEVER persisted as truth | `computeFinalTcp` in `lib/compute-final-tcp.ts` — pure TS, keystroke-latency form recalc |
+| **Drafting** | Compute on read; derived values NEVER persisted as truth | `computeFinalTcp` in `lib/financials/compute-price-side.ts` — pure TS, keystroke-latency form recalc |
 | **Lists/reports** | Store a derived ROLLUP as a cache, recomputed at one choke point | `proposals.final_tcp_cents` column; `recomputeProposalFinancials` runs after every financial mutation. Idempotent + self-healing — re-running always converges from rows, so verify = repair |
 | **Frozen (locked)** | Snapshot = the rows themselves become immutable; append-only afterward | The proposal lock ladder (`#proposal-lock-ladder`); corrections via AWD, never in-place edits |
 
@@ -161,7 +161,7 @@ newer rule:
 **Pricing-mode invariant**: in breakdown pricing mode, the form keeps `startingTcp = Σ sectionPrice + miscPrice` in sync client-side (`funding-fields.tsx`) — this is what makes the formula above pricing-mode-agnostic and lets the PDF Subtotal reconcile with the form's Contract Price. This sync is client-side only today; no server-side enforcement exists yet.
 
 **Why**: line-item edits would silently invalidate a hand-stored TCP; the rollup is recomputed on every write. Single source of truth for the formula; the rollup column keeps server-side filter/sort fast and correct.
-**Reference impl**: `lib/compute-final-tcp.ts` (JS formula); `dal/server/queries.ts:listProposals` reads `proposals.finalTcpCents` for price filter/sort
+**Reference impl**: `lib/financials/compute-price-side.ts` (JS formula); `dal/server/queries.ts:listProposals` reads `proposals.finalTcpCents` for price filter/sort
 **Enforced by**: convention — `proposals.final_tcp_cents` exists (Wave 2) but only as a rollup cache written exclusively by `recomputeProposalFinancials`; it appears in no editable schema, so it can never be hand-set (the hand-settable `finalTcp` field was removed from `fundingDataSchema` in commit `a6c431e`)
 
 ### proposal-lock-ladder
@@ -249,9 +249,42 @@ A `completed` contract event auto-promotes proposal status to `approved` and sta
 **Reference impl**: `lib/contract-events.ts:shouldAutoApproveOnContractEvent`
 **Enforced by**: contracts service consumes this flag
 
+### price-side-vs-cost-side
+
+Every derived proposal financial value follows one semantic model: **incentives and
+discounts reduce what the customer pays (price side); they are never something we
+pay (cost side).**
+
+    PRICE SIDE (customer)                      COST SIDE (us)
+    subtotal (startingTcp)                     totalJobCosts (Σ cost-line amounts)
+      − Σ section incentives
+      − Σ global 'discount' incentives
+      = finalTcp (what the customer pays)
+
+The concept "totalCosts = jobCosts + incentives" is dead — deleted 2026-07 with the
+financials façade; do not reintroduce it.
+
+Two intentional consequences:
+- Global discounts are NOT allocated to sections, so Σ section margins ≥ total margin
+  whenever global discounts exist.
+- Internal financials (margin/multiplier/job costs) are agent-only, reachable via the
+  Internal Financials modal button (edit form toolbar + proposal page heading). There is
+  no persisted display flag — `showPricingBreakdown` was removed from `fundingJSON.meta`.
+
+**Reference impl**: `lib/financials/index.ts` — the ONLY import surface for proposal money
+math. The customer-facing breakdown is a price-side-only view-model
+(`buildPricingBreakdown`) rendered by the React component, the PDF builder, and the AI
+summary route — computed once, so the three can't drift.
+**Enforced by**: convention + the `PricingBreakdownModel` type carrying no cost fields
+
 ### margin-multiplier-tiers
 
-Per-section and proposal-level margin (`price − cost − incentives`) and multiplier (`price ÷ cost`) drive a 4-tier color classification used across cost-related UI:
+Margin and multiplier follow `#price-side-vs-cost-side`:
+
+- Proposal level: margin = `finalTcp − totalJobCosts`; multiplier = `finalTcp ÷ totalJobCosts`.
+- Section level: netPrice = `sectionPrice − Σ section incentives`; margin = `netPrice − sectionCost`; multiplier = `netPrice ÷ sectionCost`.
+
+The multiplier drives a 4-tier color classification used across cost-related UI:
 
 | Tier | Threshold | Meaning |
 |---|---|---|
@@ -263,7 +296,7 @@ Per-section and proposal-level margin (`price − cost − incentives`) and mult
 Cost helpers return `null` (not 0) when cost data is incomplete — distinguishes "not tracked" from "actually zero."
 
 **Why**: the tier system is used in multiple UI surfaces; a single classification keeps colors aligned with reality.
-**Reference impl**: `lib/compute-sow-financials.ts` (`classifyMultiplierTier`), `lib/compute-proposal-cost-totals.ts`
+**Reference impl**: `lib/financials/` (`getMultiplierTier` in `tiers.ts`, `computeSectionFinancials`, `computeProposalFinancials`); tier→className map in `constants/multiplier-styles.ts`
 **Enforced by**: convention
 
 ### cost-data-asymmetric-incomplete
@@ -271,7 +304,7 @@ Cost helpers return `null` (not 0) when cost data is incomplete — distinguishe
 `hasMissingCostData` flags **asymmetric** incompleteness: true only when some sections have cost lines and some don't (agent started tracking but didn't finish). False when no sections have cost lines (haven't started) or all do (finished).
 
 **Why**: prevents alert fatigue in total-mode proposals where cost lines are optional. We only nag when the data is in a partial state.
-**Reference impl**: `lib/compute-proposal-cost-totals.ts`
+**Reference impl**: `lib/financials/compute-totals.ts` (`computeProposalFinancials`)
 **Enforced by**: convention
 
 ### agreement-context-as-coherent-unit
@@ -343,3 +376,5 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
 - `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics (mechanism deleted Wave 2); `formMetaJSON`/`projectJSON`/`fundingJSON` are whole-document writers, always plain-replaced (see `#jsonb-merge-on-update`)
 - ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind `#final-tcp-derived`)
+
+**Last updated**: 2026-07-18

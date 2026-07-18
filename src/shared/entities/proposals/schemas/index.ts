@@ -79,8 +79,8 @@ const projectDataSchema = z.object({
 })
 
 // `finalTcp` is NOT stored here — it is derived via
-// `computeFinalTcp({ funding, sow })` in `entities/proposals/lib`. Persisted
-// derived values invite drift between inputs and the cached number;
+// `computeFinalTcp({ funding, sow })` in `entities/proposals/lib/financials`.
+// Persisted derived values invite drift between inputs and the cached number;
 // always compute on demand from `startingTcp` − global discounts − section incentives.
 const fundingDataSchema = z.object({
   cashInDeal: z.number(),

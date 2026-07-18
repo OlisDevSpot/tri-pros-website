@@ -34,7 +34,7 @@ We use the **standard 14 PDF fonts** (logical name `Roboto` → Helvetica) — n
 
 Customer-facing builders are read-only consumers of homeowner-visible fields:
 
-- **Never** read `sow[].financials.costLines` or any margin data. The final price is **always** `computeFinalTcp(fundingJSON.data)` — never a stored total. Canonical: `proposals/DOCS.md#final-tcp-derived`.
+- **Never** read `sow[].financials.costLines` or any margin data. The PDF builder renders from `buildPricingBreakdown` (the price-side-only view-model in `entities/proposals/lib/financials`, which internally uses `computeFinalTcp`) — the final price is **never** a stored total. Canonical: `proposals/DOCS.md#final-tcp-derived`, `proposals/DOCS.md#price-side-vs-cost-side`.
 - Company identity (name, address, licenses, contact) comes from `src/shared/constants/company/` — never hardcoded. See [phone-numbers.md](./phone-numbers.md) for phone display (`formatPhone`).
 - Dates render with an explicit `timeZone: 'America/Los_Angeles'` — the server runs UTC, so an evening-PT `createdAt` otherwise prints as the next day.
 - Logo: fs-read from `public/company/logo/` as a base64 data URL, with a text-only fallback when the read fails (never crash the document over branding). Note the counterintuitive naming: `logo-light-right` = dark lettering *for light backgrounds* — the right choice on a white page.
