@@ -83,7 +83,7 @@ export async function replaceProposalIncentives(
       .select({
         id: proposals.id,
         status: proposals.status,
-        signingRequestId: proposals.signingRequestId,
+        contractEnvelopeId: proposals.contractEnvelopeId,
         contractSentAt: proposals.contractSentAt,
         contractSignedAt: proposals.contractSignedAt,
         contractDeclinedAt: proposals.contractDeclinedAt,

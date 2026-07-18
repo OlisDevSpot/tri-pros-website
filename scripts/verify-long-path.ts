@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /**
  * End-to-end long-path verification. Uses proposal baaf55ef (known-long
- * SOW, 6,504 chars). Clears its signingRequestId, runs createSigningRequest,
+ * SOW, 6,504 chars). Clears its contractEnvelopeId, runs createContractEnvelope,
  * verifies the resulting Zoho draft has 2 files (template doc + attached
  * SOW PDF) and that sow-1 contains the pointer string. Cleans up so the
  * proposal is left in its current "stuck" state for Task 15 to handle
@@ -23,14 +23,14 @@ async function main() {
   const c1 = new Client({ connectionString: process.env.DATABASE_URL })
   await c1.connect()
   const before = await c1.query(`SELECT signing_request_id FROM proposals WHERE id = $1`, [PROPOSAL_ID])
-  const originalSigningRequestId = before.rows[0]?.signing_request_id ?? null
+  const originalContractEnvelopeId = before.rows[0]?.signing_request_id ?? null
   await c1.query(`UPDATE proposals SET signing_request_id = NULL WHERE id = $1`, [PROPOSAL_ID])
   await c1.end()
-  console.log(`cleared signing_request_id (was: ${originalSigningRequestId ?? 'NULL'})`)
+  console.log(`cleared signing_request_id (was: ${originalContractEnvelopeId ?? 'NULL'})`)
 
   let createdRequestId: string | null = null
   try {
-    const { requestId } = await contractService.createSigningRequest(SYSTEM_CONTEXT, PROPOSAL_ID)
+    const { requestId } = await contractService.createContractEnvelope(SYSTEM_CONTEXT, PROPOSAL_ID)
     createdRequestId = requestId
     console.log(`draft created: ${requestId}`)
 
@@ -69,10 +69,10 @@ async function main() {
     await c3.connect()
     await c3.query(
       `UPDATE proposals SET signing_request_id = $1 WHERE id = $2`,
-      [originalSigningRequestId, PROPOSAL_ID],
+      [originalContractEnvelopeId, PROPOSAL_ID],
     )
     await c3.end()
-    console.log(`restored original signing_request_id (${originalSigningRequestId ?? 'NULL'})`)
+    console.log(`restored original signing_request_id (${originalContractEnvelopeId ?? 'NULL'})`)
   }
 }
 main().catch((err) => { console.error(err); process.exit(1) })

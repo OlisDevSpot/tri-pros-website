@@ -105,7 +105,7 @@ export const proposalServerSpec = {
       'contractViewedAt',
       'contractSignedAt',
       'contractDeclinedAt',
-      'signingRequestId',
+      'contractEnvelopeId',
       'qbInvoiceId',
       'qbPaymentStatus',
     ],

@@ -149,7 +149,7 @@ const TABLES = [
   def({
     table: schema.proposals,
     tagColumns: ['label'],
-    skipColumns: ['signingRequestId'],
+    skipColumns: ['contractEnvelopeId'],
   }),
   def({ table: schema.proposalViews }),
 

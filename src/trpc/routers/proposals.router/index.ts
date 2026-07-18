@@ -59,7 +59,7 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
     }),
 
     // ── Incentives (proposal_incentives child rows, Wave 2) ─────────────
-    // Replace-all upsert from the funding form. Freeze gate (signingRequestId)
+    // Replace-all upsert from the funding form. Freeze gate (contractEnvelopeId)
     // enforced in the DAL. see ../../../shared/entities/proposals/DOCS.md#final-tcp-derived
     incentives: createTRPCRouter({
       replace: entity.authedProcedure

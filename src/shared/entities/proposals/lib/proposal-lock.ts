@@ -21,7 +21,7 @@ export type ProposalLockState
 
 export interface ProposalLockSignals {
   status: ProposalStatus
-  signingRequestId: string | null
+  contractEnvelopeId: string | null
   contractSentAt: string | null
   contractSignedAt: string | null
   contractDeclinedAt: string | null
@@ -30,7 +30,7 @@ export interface ProposalLockSignals {
 /**
  * Derives the lock tier. Order matters: terminal signals shadow the earlier
  * tiers (a declined contract still has `contractSentAt` set; a signed one
- * still has `signingRequestId`).
+ * still has `contractEnvelopeId`).
  */
 export function getProposalLockState(proposal: ProposalLockSignals): ProposalLockState {
   if (proposal.status === 'approved' || proposal.contractSignedAt != null || proposal.contractDeclinedAt != null) {
@@ -39,7 +39,7 @@ export function getProposalLockState(proposal: ProposalLockSignals): ProposalLoc
   if (proposal.contractSentAt != null) {
     return 'inflight-locked'
   }
-  if (proposal.signingRequestId != null) {
+  if (proposal.contractEnvelopeId != null) {
     return 'draft-locked'
   }
   return 'unlocked'
