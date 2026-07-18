@@ -15,6 +15,7 @@ import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { recordProposalView } from '@/shared/entities/proposals/dal/server/mutations'
 import { getFullView, getProposalViews } from '@/shared/entities/proposals/dal/server/queries'
 import { emailService } from '@/shared/services/email.service'
+import { notificationService } from '@/shared/services/notification.service'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
 
 import { createTRPCRouter } from '../../init'
@@ -74,6 +75,36 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
         }
 
         return { data, proposal }
+      }),
+
+    /**
+     * Homeowner "Request Agreement" (share-token path). A pure SIGNAL: the
+     * homeowner NEVER touches the contract lifecycle — this notifies the
+     * proposal's meeting participants (email + push) that the homeowner is
+     * ready to move forward, and the agent manually drives the draft
+     * lifecycle from there (#264).
+     * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+     */
+    requestToMoveForward: entity.shareableProcedure
+      .input(z.object({ id: z.string(), token: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const proposal = dalToTrpc(await getFullView(ctx, input))
+        if (!proposal) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
+        }
+        if (proposal.contractSignedAt) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'This agreement has already been signed.' })
+        }
+
+        await notificationService.notifyHomeownerMoveForwardRequest({
+          proposalId: proposal.id,
+          proposalLabel: proposal.label ?? '',
+          meetingId: proposal.meetingId,
+          proposalOwnerId: proposal.ownerId,
+          customerName: proposal.customer?.name ?? 'A homeowner',
+        })
+
+        return { requested: true }
       }),
 
     recordView: entity.publicProcedure

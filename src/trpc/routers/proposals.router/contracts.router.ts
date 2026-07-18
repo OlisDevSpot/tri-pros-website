@@ -85,20 +85,6 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         return contractService.sendSigningRequest(ctx, input.proposalId)
       }),
 
-    /**
-     * Homeowner-side "Request Agreement" (share-token path). Unlike the
-     * agent's `submitContract` (strict: submits an existing reviewed draft
-     * only), this composes create-if-missing + submit — the homeowner can't
-     * prepare drafts, and an envelope assembled from live proposal state at
-     * request time is fresh by construction. Declined contracts refuse
-     * (terminal — a new proposal is required).
-     */
-    sendContractForSigning: entity.shareableProcedure
-      .input(z.object({ id: z.string(), token: z.string() }))
-      .mutation(async ({ ctx, input }) => {
-        return contractService.requestSigningRequest(ctx, input.id)
-      }),
-
     recallContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {

@@ -8,6 +8,7 @@ import { formatProjectType } from '@/shared/services/providers/resend/lib/format
 import {
   renderCustomerConfirmationEmail,
   renderGeneralInquiryEmail,
+  renderMoveForwardRequestEmail,
   renderProposalEmail,
   renderScheduleConsultationEmail,
 } from '@/shared/services/providers/resend/lib/render-emails'
@@ -76,6 +77,36 @@ function createEmailService() {
 
       if (error) {
         throw new Error(`Failed to send proposal email: ${JSON.stringify(error)}`)
+      }
+
+      return { data }
+    },
+
+    /**
+     * Agent-facing: the homeowner requested to move forward. A pure signal —
+     * never touches contract lifecycle. Recipients = meeting participants
+     * (fallback: proposal owner), resolved by the caller.
+     * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+     */
+    sendMoveForwardRequestEmail: async (params: {
+      recipients: string[]
+      customerName: string
+      proposalLabel: string
+      proposalId: string
+    }) => {
+      const { data, error } = await resendClient.emails.send({
+        from: RESEND_FROM.default,
+        to: params.recipients,
+        subject: `🚀 ${params.customerName} is ready to move forward`,
+        react: renderMoveForwardRequestEmail({
+          customerName: params.customerName,
+          proposalLabel: params.proposalLabel,
+          proposalId: params.proposalId,
+        }),
+      })
+
+      if (error) {
+        throw new Error(`Failed to send move-forward request email: ${JSON.stringify(error)}`)
       }
 
       return { data }

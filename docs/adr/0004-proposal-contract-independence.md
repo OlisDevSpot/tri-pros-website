@@ -109,6 +109,11 @@ signal's meaning.
   proposal, field-scoped `update.before` gate), `sendSigningRequest` submits the existing
   draft as-is — it is fresh by construction. The strict no-auto-create rule (two-tab race)
   stands for the agent path.
-- **Homeowner "Request Agreement"** (`requestSigningRequest`, share-token path) composes
-  create-if-missing + submit, since homeowners can't prepare drafts; it refuses on declined
-  (terminal — new proposal required) and signed contracts.
+- **Homeowner "Request Agreement" is a SIGNAL, not a lifecycle event**
+  (`delivery.router.ts:requestToMoveForward`, share-token path). The homeowner never
+  touches the contract lifecycle: the request notifies the proposal's meeting
+  participants (email + push via `notifyHomeownerMoveForwardRequest`, falling back to
+  the proposal owner) that the homeowner is ready to move forward, and the agent
+  manually drives the draft lifecycle from there. Declined contracts show
+  "contact your representative" with no request button (terminal — new proposal
+  required).

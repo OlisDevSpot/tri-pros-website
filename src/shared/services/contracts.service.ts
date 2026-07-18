@@ -82,45 +82,6 @@ function createContractService() {
       return { requestId }
     },
 
-    /**
-     * Homeowner-side "Request Agreement" (share-token path). Composes
-     * create-if-missing + submit: the homeowner can't prepare drafts, and an
-     * envelope assembled from live proposal state at request time is fresh by
-     * construction. If the agent already prepared a draft, that reviewed
-     * draft is submitted instead of rebuilding.
-     *
-     * Terminal rule: declined and signed contracts refuse — a declined
-     * contract is renegotiated on a NEW proposal, never re-requested
-     * (see `entities/proposals/lib/proposal-lock.ts`). Recalled/expired
-     * envelopes cleared `signingRequestId`, so they take the fresh-create
-     * path naturally.
-     */
-    requestSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
-      const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`)
-      }
-      if (proposal.contractSignedAt) {
-        throw new Error('This agreement has already been signed.')
-      }
-      if (proposal.contractDeclinedAt) {
-        throw new Error('This agreement was declined. Please contact your representative for a new proposal.')
-      }
-      if (proposal.contractSentAt) {
-        throw new Error('Your agreement has already been requested — check your email for the signing link.')
-      }
-
-      const requestId = proposal.signingRequestId ?? (await createDraft(ctx, proposalId)).requestId
-      await zohoSyncService.submitForSigning(requestId)
-
-      dalVerifySuccess(await proposalCrud.update(ctx, {
-        id: proposalId,
-        data: { contractSentAt: new Date().toISOString() },
-      }))
-
-      return { requestId }
-    },
-
     /** Recalls (cancels) an in-progress signing request. Clears signingRequestId. */
     recallSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
       const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))

@@ -2,9 +2,11 @@ import type { ContractEvent } from '@/shared/constants/enums'
 import { and, eq, ne } from 'drizzle-orm'
 import { ROOTS } from '@/shared/config/roots'
 import { db } from '@/shared/db'
+import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
 import { meetingParticipants } from '@/shared/db/schema/meeting-participants'
 import { meetings } from '@/shared/db/schema/meetings'
+import { emailService } from '@/shared/services/email.service'
 import { webPushClient } from '@/shared/services/providers/web-push/client'
 
 // @migration(meetings-entity-router)
@@ -53,6 +55,65 @@ function createNotificationService() {
       occurredAt: string
     }) => {
       console.warn(`[notificationService] notifyContractStatusChange:${params.event} (stub)`, params)
+    },
+
+    /**
+     * The homeowner clicked "Request Agreement" on their proposal review
+     * page. A pure SIGNAL to the agents — the homeowner never touches the
+     * contract lifecycle; the agent prepares/sends the signing draft
+     * manually. Recipients: the proposal's meeting participants, falling
+     * back to the proposal owner when there is no meeting.
+     * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+     *
+     * @migration(meetings-entity-router)
+     * Same deal as the meeting methods below — recipient resolution queries
+     * `db` directly until meetings migrates; then callers pass recipients.
+     */
+    notifyHomeownerMoveForwardRequest: async (params: {
+      proposalId: string
+      proposalLabel: string
+      meetingId: string | null
+      proposalOwnerId: string
+      customerName: string
+    }) => {
+      let recipients: { userId: string, email: string }[] = []
+      if (params.meetingId) {
+        recipients = await db
+          .select({ userId: meetingParticipants.userId, email: user.email })
+          .from(meetingParticipants)
+          .innerJoin(user, eq(user.id, meetingParticipants.userId))
+          .where(eq(meetingParticipants.meetingId, params.meetingId))
+      }
+      if (recipients.length === 0) {
+        recipients = await db
+          .select({ userId: user.id, email: user.email })
+          .from(user)
+          .where(eq(user.id, params.proposalOwnerId))
+      }
+      if (recipients.length === 0) {
+        console.warn(`[notificationService] notifyHomeownerMoveForwardRequest: no recipients for proposal ${params.proposalId}`)
+        return
+      }
+
+      const pushResult = await webPushClient.sendToUsers(
+        recipients.map(r => r.userId),
+        {
+          title: `Ready to Move Forward | ${params.customerName}`,
+          body: 'Homeowner requested their agreement — prepare the signing draft',
+          navigate: ROOTS.dashboard.proposals.byId(params.proposalId),
+          urgency: 'high',
+        },
+      )
+      if (pushResult.failed > 0 || pushResult.errors.length > 0) {
+        console.warn(`[notificationService] notifyHomeownerMoveForwardRequest push partial failure:`, pushResult)
+      }
+
+      await emailService.sendMoveForwardRequestEmail({
+        recipients: recipients.map(r => r.email),
+        customerName: params.customerName,
+        proposalLabel: params.proposalLabel,
+        proposalId: params.proposalId,
+      })
     },
 
     notifyProposalViewed: async (params: {

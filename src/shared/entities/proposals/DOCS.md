@@ -189,10 +189,11 @@ state isn't `unlocked` (`precondition-failed: proposal_frozen`). Lifecycle field
 sentAt/approvedAt, signing ids, contract timestamps, QB refs) stay writable — webhooks,
 auto-approve, and contract flows keep flowing on a locked proposal. Because content cannot
 change while an envelope exists, `sendSigningRequest` submits the draft as-is (fresh by
-construction — no rebuild needed). The homeowner "Request Agreement" path
-(`requestSigningRequest`) composes create-if-missing + submit, since homeowners can't prepare
-drafts. Known bypass until the tightening pass: `ai/client.ts` writes `projectJSON` via raw
-`db.update` (ledgered escape hatch).
+construction — no rebuild needed). The homeowner NEVER touches the contract lifecycle: their
+"Request Agreement" (`delivery.router.ts:requestToMoveForward`) only notifies the meeting
+participants (email + push) that the homeowner is ready to move forward — the agent drives
+the draft lifecycle manually. Known bypass until the tightening pass: `ai/client.ts` writes
+`projectJSON` via raw `db.update` (ledgered escape hatch).
 
 **Why**: a draft is cheap and agent-owned, so its lock should be cheap to undo; a sent
 contract is a customer-facing commitment, so its lock demands a deliberate recall; a signed
@@ -293,12 +294,12 @@ The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifec
 
 - **Sending the proposal email** updates only proposal-side columns. It does NOT create, refresh, or touch the Zoho Sign envelope.
 - **Creating / discarding / recalling an envelope** updates only contract-side columns. It does NOT change `proposal.status` or `sentAt`.
-- The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions. **As of #264 (2026-07-18), "Send Proposal" sends the email ONLY** — the auto-draft-preparation stage (previously client-orchestrated via `useSendProposalWithDraft`) is retired: envelope creation is a manual decision on the envelope card, because an envelope's existence is the proposal lock signal (`#proposal-lock-ladder`) and must mean the agent chose it. The homeowner-side "Request Agreement" composes create-if-missing + submit server-side (`requestSigningRequest`) since homeowners can't prepare drafts.
+- The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions. **As of #264 (2026-07-18), "Send Proposal" sends the email ONLY** — the auto-draft-preparation stage (previously client-orchestrated via `useSendProposalWithDraft`) is retired: envelope creation is a manual decision on the envelope card, because an envelope's existence is the proposal lock signal (`#proposal-lock-ladder`) and must mean the agent chose it. The homeowner-side "Request Agreement" is a pure signal (`delivery.router.ts:requestToMoveForward`) — it notifies the meeting participants and never touches envelope state.
 - Draft creation is **synchronous** — Zoho returns the `request_id` on the create call, so there is no async gap to bridge with QStash or a polling-based "in-flight" signal. The previous `syncContractDraftJob` was removed for this reason.
 
 **Why**: prior implementation dispatched a QStash job from `sendProposalEmail` to auto-create a draft. The async coupling forced the UI to infer "a draft is being created" from `proposal.status === 'sent' && contractStatus == null` — a heuristic that broke immediately after any code path legitimately cleared `signingRequestId` (discard, recall), leaving the UI stuck in an unrecoverable spinner state. The later client-orchestrated auto-draft had a subtler cost: it made every sent proposal carry an envelope nobody asked for, defeating the lock ladder.
 
-**Reference impl**: `delivery.router.ts:sendProposalEmail` (proposal-only), `hooks/use-send-proposal.ts` (email-only client hook), `contracts.router.ts:createContractDraft` / `discardDraftContract` / `recallContract` (contract-only), `contracts.service.ts:requestSigningRequest` (homeowner request), `use-contract-status.ts` (polls only for `inprogress` signing-lifecycle events).
+**Reference impl**: `delivery.router.ts:sendProposalEmail` (proposal-only), `hooks/use-send-proposal.ts` (email-only client hook), `contracts.router.ts:createContractDraft` / `discardDraftContract` / `recallContract` (contract-only), `delivery.router.ts:requestToMoveForward` + `notification.service.ts:notifyHomeownerMoveForwardRequest` (homeowner move-forward signal), `use-contract-status.ts` (polls only for `inprogress` signing-lifecycle events).
 **Enforced by**: architectural discipline — no shared service writes both column sets in one call. ADR-0004 documents the rationale.
 
 ### duplicate-resets-and-redrives
