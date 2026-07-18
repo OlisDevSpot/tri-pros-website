@@ -36,5 +36,5 @@ A cache column requires all four legs, or it doesn't ship:
 4. **Versioned** — a `calc_version`-style stamp records which formula wrote the value, enabling targeted rebuilds after formula changes.
 
 **Why**: the known failure mode of denormalized rollups is a write path that skips the recompute — the four legs make that impossible to miss (1), impossible to fork (2), cheap to repair (3), and safe to evolve (4).
-**Reference impl**: `recomputeProposalFinancials` (`src/shared/entities/proposals/dal/server/mutations.ts`) + `computeFinalTcp` + `proposals.calc_version`.
+**Reference impl**: `recomputeProposalFinancials` (`src/shared/entities/proposals/dal/server/mutations.ts`) + `computeFinalTcp` + `scripts/recompute-final-tcp.ts` (leg 3 — drift detect via `--dry-run`, repair only through the chokepoint) + `proposals.calc_version`.
 **Enforced by**: convention + review (naming smell: verb-past-tense columns like `calculatedTotal` signal a cache missing its discipline)

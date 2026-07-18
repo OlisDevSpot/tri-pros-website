@@ -5,7 +5,7 @@ import { notificationService } from '@/shared/services/notification.service'
 import { createJob } from '../lib/create-job'
 
 interface SyncZohoSignStatusPayload {
-  signingRequestId: string
+  contractEnvelopeId: string
   /** Raw operation_type from Zoho — may not match our known enum values. */
   operationType: string
   performedAt: string
@@ -13,12 +13,12 @@ interface SyncZohoSignStatusPayload {
 
 /**
  * Persists a single Zoho Sign event onto the matching proposal.
- * Lookup is by `signingRequestId`. Business logic (idempotency,
+ * Lookup is by `contractEnvelopeId`. Business logic (idempotency,
  * auto-approve) lives in contractService.applyContractEvent.
  */
 export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
   'sync-zoho-sign-status',
-  async ({ signingRequestId, operationType, performedAt }) => {
+  async ({ contractEnvelopeId, operationType, performedAt }) => {
     const event = mapZohoOperationToContractEvent(operationType)
     if (!event) {
       return
@@ -32,13 +32,13 @@ export const syncZohoSignStatusJob = createJob<SyncZohoSignStatusPayload>(
     // keeps showing live per-signer progress until everyone has signed.
     // see entities/proposals/DOCS.md#contract-events-from-zoho
     if (event === 'completed') {
-      const status = await contractService.getSigningStatus(signingRequestId)
+      const status = await contractService.getContractEnvelopeStatus(contractEnvelopeId)
       if (!isEnvelopeFullySigned(status)) {
         return
       }
     }
 
-    const updated = await contractService.applyContractEvent(SYSTEM_CONTEXT, { signingRequestId, event, performedAt })
+    const updated = await contractService.applyContractEvent(SYSTEM_CONTEXT, { contractEnvelopeId, event, performedAt })
     if (!updated) {
       return
     }

@@ -3,7 +3,7 @@ import z from 'zod'
 
 import { getFinanceOptions } from '@/shared/entities/finance-options/dal/server/queries'
 import { duplicateProposalWithIncentives } from '@/shared/entities/proposals/dal/server/duplicate'
-import { replaceProposalIncentives } from '@/shared/entities/proposals/dal/server/mutations'
+import { replaceProposalIncentives, setCashInDeal } from '@/shared/entities/proposals/dal/server/mutations'
 import { getFullView, listProposals, proposalListInputSchema } from '@/shared/entities/proposals/dal/server/queries'
 import { proposalSchemas, proposalServerSpec } from '@/shared/entities/proposals/lib/server-spec'
 import { incentiveSchema } from '@/shared/entities/proposals/schemas'
@@ -59,7 +59,7 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
     }),
 
     // ── Incentives (proposal_incentives child rows, Wave 2) ─────────────
-    // Replace-all upsert from the funding form. Freeze gate (signingRequestId)
+    // Replace-all upsert from the funding form. Freeze gate (contractEnvelopeId)
     // enforced in the DAL. see ../../../shared/entities/proposals/DOCS.md#final-tcp-derived
     incentives: createTRPCRouter({
       replace: entity.authedProcedure
@@ -75,6 +75,22 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
             })
           }
           return dalToTrpc(await replaceProposalIncentives(ctx, input))
+        }),
+    }),
+
+    // ── Funding (narrow blob-scalar writes) ─────────────────────────────
+    // Each funding scalar gets its own narrow mutation instead of a
+    // client-side whole-blob reconstruction (seam register ruling
+    // 2026-07-16). W3 turns these into plain column writes.
+    funding: createTRPCRouter({
+      setCashInDeal: entity.shareableProcedure
+        .input(z.object({
+          id: z.string().uuid(),
+          token: z.string().optional(),
+          cashInDeal: z.number().min(0),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          return dalToTrpc(await setCashInDeal(ctx, { proposalId: input.id, cashInDeal: input.cashInDeal }))
         }),
     }),
 

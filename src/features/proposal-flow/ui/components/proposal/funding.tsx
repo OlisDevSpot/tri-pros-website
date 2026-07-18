@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 import { useQueryState } from 'nuqs'
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { useSetCashInDeal } from '@/features/proposal-flow/dal/client/mutations/use-set-cash-in-deal'
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetFinanceOptions } from '@/features/proposal-flow/dal/client/queries/use-get-finance-options'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
@@ -29,6 +30,7 @@ export function Funding({ onPickFinancingOption }: Props) {
   const [token] = useQueryState('token', { defaultValue: '' })
 
   const updateProposal = useUpdateProposal()
+  const saveCashInDeal = useSetCashInDeal()
   const financeOptions = useGetFinanceOptions()
 
   useEffect(() => {
@@ -126,31 +128,25 @@ export function Funding({ onPickFinancingOption }: Props) {
                           onChange={(e) => {
                             setCashInDeal(Number(e.target.value.replace(/\D/g, '').replace(/\$/g, '')))
                           }}
-                          disabled={updateProposal.isPending}
+                          disabled={saveCashInDeal.isPending}
                         />
                         {cashInDeal !== proposalData.fundingJSON.data.cashInDeal && (
                           <Button
                             size="sm"
                             onClick={() => {
-                              updateProposal.mutate({
+                              // Narrow write — never reconstruct the fundingJSON
+                              // blob client-side (jsonb deprecation ledger).
+                              saveCashInDeal.mutate({
                                 token,
                                 id: proposalData.id,
-                                data: {
-                                  fundingJSON: {
-                                    ...proposalData.fundingJSON,
-                                    data: {
-                                      ...proposalData.fundingJSON.data,
-                                      cashInDeal: cashInDeal || 0,
-                                    },
-                                  },
-                                },
+                                cashInDeal: cashInDeal || 0,
                               }, {
                                 onSuccess: () => {
                                   toast.success('Cash in deal updated')
                                 },
                               })
                             }}
-                            disabled={updateProposal.isPending}
+                            disabled={saveCashInDeal.isPending}
                           >
                             Save
                           </Button>

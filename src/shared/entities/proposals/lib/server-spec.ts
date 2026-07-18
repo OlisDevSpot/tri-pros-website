@@ -14,6 +14,7 @@ import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { deriveProposalKind } from '@/shared/entities/proposals/lib/derive-proposal-kind'
 import { generateShareToken } from '@/shared/entities/proposals/lib/generate-share-token'
 import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/entities/proposals/lib/proposal-lock'
+import { scrubBlobIncentives } from '@/shared/entities/proposals/lib/scrub-blob-incentives'
 import { snapSowFromMeeting } from '@/shared/entities/proposals/lib/snap-sow-from-meeting'
 import { proposalVisibility } from '@/shared/entities/proposals/lib/visibility'
 
@@ -43,16 +44,17 @@ export const proposalServerSpec = {
       // see ../DOCS.md#share-token-generated-at-insert
       // see ../DOCS.md#sow-snapshot-from-meeting-on-create
       async before(input, _ctx) {
-        if (!input.meetingId) {
-          return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }
+        const scrubbed = { ...input, fundingJSON: scrubBlobIncentives(input.fundingJSON, 'create') }
+        if (!scrubbed.meetingId) {
+          return { ...scrubbed, kind: deriveProposalKind(null), token: generateShareToken() }
         }
 
         const meeting = dalVerifySuccess(
-          await meetingCrud.getById(SYSTEM_CONTEXT, { id: input.meetingId }),
+          await meetingCrud.getById(SYSTEM_CONTEXT, { id: scrubbed.meetingId }),
         )
         const kind = deriveProposalKind(meeting?.projectId ?? null)
         const token = generateShareToken()
-        const enriched = snapSowFromMeeting(input, meeting?.flowStateJSON ?? null)
+        const enriched = snapSowFromMeeting(scrubbed, meeting?.flowStateJSON ?? null)
 
         return { ...enriched, kind, token }
       },
@@ -76,6 +78,9 @@ export const proposalServerSpec = {
         const signals = dalVerifySuccess(await getProposalLockSignals(String(meta.id)))
         if (isProposalFrozen(signals)) {
           throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+        }
+        if (input.fundingJSON) {
+          return { ...input, fundingJSON: scrubBlobIncentives(input.fundingJSON, `update of proposal ${meta.id}`) }
         }
         return input
       },
@@ -105,7 +110,7 @@ export const proposalServerSpec = {
       'contractViewedAt',
       'contractSignedAt',
       'contractDeclinedAt',
-      'signingRequestId',
+      'contractEnvelopeId',
       'qbInvoiceId',
       'qbPaymentStatus',
     ],

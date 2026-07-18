@@ -44,7 +44,7 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
         }
 
-        if (!proposal.signingRequestId) {
+        if (!proposal.contractEnvelopeId) {
           return null
         }
 
@@ -58,14 +58,14 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         // Webhook is the source of truth for terminal state — skip the live
         // Zoho call once we've persisted completion or decline.
         if (proposal.contractSignedAt) {
-          return { requestId: proposal.signingRequestId, requestStatus: 'completed' as const, signerStatuses: [], ...stamps }
+          return { requestId: proposal.contractEnvelopeId, requestStatus: 'completed' as const, signerStatuses: [], ...stamps }
         }
         if (proposal.contractDeclinedAt) {
-          return { requestId: proposal.signingRequestId, requestStatus: 'declined' as const, signerStatuses: [], ...stamps }
+          return { requestId: proposal.contractEnvelopeId, requestStatus: 'declined' as const, signerStatuses: [], ...stamps }
         }
 
         try {
-          const status = await contractService.getSigningStatus(proposal.signingRequestId)
+          const status = await contractService.getContractEnvelopeStatus(proposal.contractEnvelopeId)
           return { ...status, ...stamps }
         }
         catch {
@@ -76,19 +76,19 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
     createContractDraft: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return contractService.createSigningRequest(ctx, input.proposalId)
+        return contractService.createContractEnvelope(ctx, input.proposalId)
       }),
 
     submitContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return contractService.sendSigningRequest(ctx, input.proposalId)
+        return contractService.sendContractEnvelope(ctx, input.proposalId)
       }),
 
     recallContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return contractService.recallSigningRequest(ctx, input.proposalId)
+        return contractService.recallContractEnvelope(ctx, input.proposalId)
       }),
 
     /**
@@ -100,13 +100,13 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
     discardDraftContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return contractService.discardDraftRequest(ctx, input.proposalId)
+        return contractService.discardContractEnvelopeDraft(ctx, input.proposalId)
       }),
 
     resendContract: entity.authedProcedure
       .input(z.object({ proposalId: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return contractService.resendSigningRequest(ctx, input.proposalId)
+        return contractService.resendContractEnvelope(ctx, input.proposalId)
       }),
 
     /**

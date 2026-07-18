@@ -17,6 +17,7 @@ import { proposals } from '@/shared/db/schema/proposals'
 import { listProposalIncentives } from '@/shared/entities/proposals/dal/server/queries'
 import { domainIncentivesToRows } from '@/shared/entities/proposals/lib/incentive-rows'
 import { isProposalFrozen } from '@/shared/entities/proposals/lib/proposal-lock'
+import { scrubBlobIncentives } from '@/shared/entities/proposals/lib/scrub-blob-incentives'
 
 // ── recordProposalView ─────────────────────────────────────────────────
 
@@ -83,7 +84,7 @@ export async function replaceProposalIncentives(
       .select({
         id: proposals.id,
         status: proposals.status,
-        signingRequestId: proposals.signingRequestId,
+        contractEnvelopeId: proposals.contractEnvelopeId,
         contractSentAt: proposals.contractSentAt,
         contractSignedAt: proposals.contractSignedAt,
         contractDeclinedAt: proposals.contractDeclinedAt,
@@ -108,5 +109,49 @@ export async function replaceProposalIncentives(
     })
     dalVerifySuccess(await recomputeProposalFinancials(input.proposalId))
     return dalVerifySuccess(await listProposalIncentives(input.proposalId))
+  })
+}
+
+// ── setCashInDeal ────────────────────────────────────────────────────────
+
+/**
+ * Narrow write for the funding form's cash-down field. Reads the RAW blob
+ * (never the getFullView row-hydrated shape) and rewrites only
+ * `data.cashInDeal`, replacing the old client-side whole-blob
+ * reconstruction that re-persisted hydrated incentives (seam register,
+ * jsonb deprecation ledger). W3 turns this into a plain column write.
+ * Same lock gate as every content write. see ../../DOCS.md#proposal-lock-ladder
+ */
+export async function setCashInDeal(
+  ctx: ScopedContext,
+  input: { proposalId: string, cashInDeal: number },
+): Promise<DalReturn<{ id: string, cashInDeal: number }>> {
+  return dalDbOperation(async () => {
+    const [proposal] = await db
+      .select({
+        id: proposals.id,
+        status: proposals.status,
+        contractEnvelopeId: proposals.contractEnvelopeId,
+        contractSentAt: proposals.contractSentAt,
+        contractSignedAt: proposals.contractSignedAt,
+        contractDeclinedAt: proposals.contractDeclinedAt,
+        fundingJSON: proposals.fundingJSON,
+      })
+      .from(proposals)
+      .where(and(eq(proposals.id, input.proposalId), ctx.scope ?? undefined))
+    if (!proposal) {
+      throw new ThrowableDalError({ type: 'not-found' })
+    }
+    if (isProposalFrozen(proposal)) {
+      throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+    }
+
+    const fundingJSON = scrubBlobIncentives({
+      ...proposal.fundingJSON,
+      data: { ...proposal.fundingJSON.data, cashInDeal: input.cashInDeal },
+    }, `setCashInDeal on proposal ${input.proposalId}`)
+
+    await db.update(proposals).set({ fundingJSON }).where(eq(proposals.id, input.proposalId))
+    return { id: proposal.id, cashInDeal: input.cashInDeal }
   })
 }

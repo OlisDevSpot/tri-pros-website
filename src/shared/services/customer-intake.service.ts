@@ -147,10 +147,11 @@ function createCustomerIntakeService() {
       return dalSuccess({ customer, meetingId })
     },
 
-    // Guarded enrichment patch for an already-created funnel lead. The leadId is
-    // the capability; the funnel-kind check + the atomic source.enrichment merge
-    // both live in the DAL mutation (single jsonb_set statement — no race-prone
-    // read-modify-write here). Best-effort from each progressive step; a zero-row
+    // Guarded enrichment upsert for an already-created funnel lead. The leadId
+    // is the capability; the funnel-kind check + the per-step row upsert
+    // (INSERT … ON CONFLICT (customer_id, step_id) DO UPDATE into
+    // customer_enrichment — Wave 2 replaced the old jsonb_set merge) both live
+    // in the DAL mutation. Best-effort from each progressive step; a zero-row
     // match means the lead isn't a funnel lead.
     // see ../entities/customers/dal/server/mutations.ts#upsertFunnelEnrichment
     async enrichFunnelLead(

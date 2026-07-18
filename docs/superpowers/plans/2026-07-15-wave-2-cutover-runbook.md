@@ -1,5 +1,14 @@
 # Wave 2 Cutover Runbook (human-executed, per spec §4)
 
+> **Post-execution amendment (2026-07-18) — carry into every future wave runbook:**
+> `drizzle-kit push` is **NOT transactional**. On the W2 prod run the `CREATE TABLE`s
+> committed before the enum-cast `ALTER` failed (`operator does not exist: text =
+> proposal_status`), leaving the DB mid-plan. Plan for it: (a) pre-write the fallback SQL
+> for every statement the push might choke on (enum casts need `USING …::text`), (b) wrap
+> the fallback in one `BEGIN`/`COMMIT`, (c) after recovery re-run the push expecting
+> "No changes detected" as the convergence proof. Executed successfully this way on both
+> the rehearsal branch and prod (2026-07-17).
+
 Child tables `customer_lead_attribution`, `customer_enrichment`, `proposal_incentives` +
 2 new `proposals` columns + the Closed Vocabulary conversion of the last 4 legacy
 Postgres enums to `text`. Prod still runs Wave-1's shape (child tables from that epic,

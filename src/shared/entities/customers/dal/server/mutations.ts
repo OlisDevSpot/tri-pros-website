@@ -13,7 +13,7 @@ import { upsertOneToOne } from '@/shared/dal/server/lib/upsert-one-to-one'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
-import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
+import { customerLeadAttribution, leadAttributionCaptureSchema } from '@/shared/db/schema/customer-lead-attribution'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customerProfilePatchSchema, customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
@@ -85,11 +85,14 @@ export async function upsertLeadAttribution(
 ): Promise<DalReturn<{ ok: true }>> {
   return dalDbOperation(async () => {
     const { attribution, enrichment } = splitLeadMeta(input.leadMeta)
+    // Parse at the write boundary (mirrors upsertCustomerProfile) — the
+    // capture snapshot's internal shape is pinned by leadMetaSchema.
+    const validated = leadAttributionCaptureSchema.parse(attribution)
     dalVerifySuccess(await upsertOneToOne(
       customerLeadAttribution,
       customerLeadAttribution.customerId,
       input.customerId,
-      attribution,
+      validated,
     ))
     const rows = Object.entries(enrichment).map(([stepId, e]) => ({
       customerId: input.customerId,

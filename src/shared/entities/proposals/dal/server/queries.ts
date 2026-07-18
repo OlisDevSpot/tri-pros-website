@@ -308,7 +308,7 @@ export async function getProposalLockSignals(
     const [row] = await db
       .select({
         status: proposals.status,
-        signingRequestId: proposals.signingRequestId,
+        contractEnvelopeId: proposals.contractEnvelopeId,
         contractSentAt: proposals.contractSentAt,
         contractSignedAt: proposals.contractSignedAt,
         contractDeclinedAt: proposals.contractDeclinedAt,
@@ -323,19 +323,19 @@ export async function getProposalLockSignals(
 }
 
 /**
- * Lookup by Zoho `signingRequestId` (non-PK). Used by contracts service
+ * Lookup by Zoho `contractEnvelopeId` (non-PK). Used by contracts service
  * webhook handler to find the proposal for an inbound event.
  */
-export async function getBySigningRequestId(
+export async function getByContractEnvelopeId(
   ctx: ScopedContext,
-  input: { signingRequestId: string },
+  input: { contractEnvelopeId: string },
 ): Promise<DalReturn<Row<typeof proposals> | undefined>> {
   return dalDbOperation(async () => {
     const [row] = await db
       .select()
       .from(proposals)
       .where(and(
-        eq(proposals.signingRequestId, input.signingRequestId),
+        eq(proposals.contractEnvelopeId, input.contractEnvelopeId),
         ctx.scope ?? undefined,
       ))
       .limit(1)

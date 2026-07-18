@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<Response> {
   const { requests, notifications } = result.data
 
   await syncZohoSignStatusJob.dispatch({
-    signingRequestId: requests.request_id,
+    contractEnvelopeId: requests.request_id,
     operationType: notifications.operation_type,
     performedAt: new Date(notifications.performed_at).toISOString(),
   })

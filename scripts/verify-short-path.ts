@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /**
  * End-to-end short-path verification. Picks a real proposal with a short
- * SOW from the DB, clears its signingRequestId, creates a fresh draft via
+ * SOW from the DB, clears its contractEnvelopeId, creates a fresh draft via
  * contractService, inspects the Zoho draft to confirm it has exactly 1
  * file (template only — short path doesn't attach), and cleans up.
  *
@@ -36,7 +36,7 @@ async function main() {
     WHERE p.status IN ('sent', 'approved')
       AND c.email IS NOT NULL
       AND c.email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'
-      AND c.customer_profile_json ? 'age'
+      AND c.age IS NOT NULL
       AND length(p."project_JSON"::text) < 4000
     ORDER BY length(p."project_JSON"::text) ASC
     LIMIT 5
@@ -53,14 +53,14 @@ async function main() {
   const c2 = new Client({ connectionString: process.env.DATABASE_URL })
   await c2.connect()
   const before = await c2.query(`SELECT signing_request_id FROM proposals WHERE id = $1`, [target.id])
-  const originalSigningRequestId = before.rows[0]?.signing_request_id ?? null
+  const originalContractEnvelopeId = before.rows[0]?.signing_request_id ?? null
   await c2.query(`UPDATE proposals SET signing_request_id = NULL WHERE id = $1`, [target.id])
   await c2.end()
-  console.log(`  cleared signing_request_id (was: ${originalSigningRequestId ?? 'NULL'})`)
+  console.log(`  cleared signing_request_id (was: ${originalContractEnvelopeId ?? 'NULL'})`)
 
   let createdRequestId: string | null = null
   try {
-    const { requestId } = await contractService.createSigningRequest(SYSTEM_CONTEXT, target.id)
+    const { requestId } = await contractService.createContractEnvelope(SYSTEM_CONTEXT, target.id)
     createdRequestId = requestId
     console.log(`  draft created: ${requestId}`)
 
@@ -78,7 +78,7 @@ async function main() {
     console.log('✅ short path verified')
   }
   finally {
-    // Cleanup: delete the draft we created and restore the original signingRequestId.
+    // Cleanup: delete the draft we created and restore the original contractEnvelopeId.
     if (createdRequestId) {
       const token = await getZohoAccessToken()
       await fetch(`${ZOHO_SIGN_BASE_URL}/api/v1/requests/${createdRequestId}/delete`, {
@@ -95,10 +95,10 @@ async function main() {
     await c3.connect()
     await c3.query(
       `UPDATE proposals SET signing_request_id = $1 WHERE id = $2`,
-      [originalSigningRequestId, target.id],
+      [originalContractEnvelopeId, target.id],
     )
     await c3.end()
-    console.log(`  restored original signing_request_id (${originalSigningRequestId ?? 'NULL'})`)
+    console.log(`  restored original signing_request_id (${originalContractEnvelopeId ?? 'NULL'})`)
   }
 }
 main().catch((err) => { console.error(err); process.exit(1) })
