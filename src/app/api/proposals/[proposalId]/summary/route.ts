@@ -1,6 +1,6 @@
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 function stripHtml(html: string): string {
@@ -91,43 +91,37 @@ export async function GET(
   }
 
   lines.push('## Pricing')
-  if (pricingMode === 'breakdown') {
-    for (const section of proj.sow) {
-      if ((section.financials.sectionPrice ?? 0) > 0) {
-        lines.push(`- ${section.title}: ${formatAsDollars(section.financials.sectionPrice!)}`)
-      }
+  // relies on getFullView incentive hydration (Wave 2 bridge)
+  const breakdown = buildPricingBreakdown({ funding: fund, sow: proj.sow, pricingMode })
+  if (breakdown.pricingMode === 'breakdown') {
+    for (const section of breakdown.sections) {
+      lines.push(`- ${section.title}: ${formatAsDollars(section.price)}`)
     }
-    if ((fund.miscPrice ?? 0) > 0) {
-      lines.push(`- Misc: ${formatAsDollars(fund.miscPrice!)}`)
+    if (breakdown.miscPrice != null) {
+      lines.push(`- Misc: ${formatAsDollars(breakdown.miscPrice)}`)
     }
-    lines.push(`- **Subtotal:** ${formatAsDollars(fund.startingTcp)}`)
+    lines.push(`- **Subtotal:** ${formatAsDollars(breakdown.subtotal)}`)
   }
   else {
-    lines.push(`- **Contract Price:** ${formatAsDollars(fund.startingTcp)}`)
+    lines.push(`- **Contract Price:** ${formatAsDollars(breakdown.subtotal)}`)
   }
 
-  const sectionIncentiveLines = proj.sow.flatMap(s =>
-    (s.financials.incentives ?? []).map(inc =>
-      `- Discount: -${formatAsDollars(inc.amount)}${inc.label ? ` (${inc.label})` : s.title ? ` (${s.title})` : ''}`,
-    ),
-  )
-  if (fund.incentives.length > 0 || sectionIncentiveLines.length > 0) {
+  const incentiveLines = [...breakdown.globalLines, ...breakdown.sectionIncentiveLines]
+  if (incentiveLines.length > 0) {
     lines.push('\n**Incentives:**')
-    for (const inc of fund.incentives) {
-      if (inc.type === 'discount') {
-        lines.push(`- Discount: -${formatAsDollars(inc.amount)}${inc.notes ? ` (${inc.notes})` : ''}`)
+    for (const line of incentiveLines) {
+      if (line.amount != null) {
+        lines.push(`- Discount: -${formatAsDollars(line.amount)}${line.label === 'Discount' ? '' : ` (${line.label})`}`)
       }
       else {
-        lines.push(`- Exclusive Offer: ${inc.offer}${inc.notes ? ` — ${inc.notes}` : ''}`)
+        lines.push(`- Exclusive Offer: ${line.label}${line.notes ? ` — ${line.notes}` : ''}`)
       }
     }
-    lines.push(...sectionIncentiveLines)
   }
 
-  // relies on getFullView incentive hydration (Wave 2 bridge)
-  lines.push(`\n**Final Contract Price:** ${formatAsDollars(computeFinalTcp({ funding: fund, sow: proj.sow }))}`)
-  lines.push(`**Deposit:** ${formatAsDollars(fund.depositAmount)}`)
-  lines.push(`**Cash in Deal:** ${formatAsDollars(fund.cashInDeal)}`)
+  lines.push(`\n**Final Contract Price:** ${formatAsDollars(breakdown.finalTcp)}`)
+  lines.push(`**Deposit:** ${formatAsDollars(breakdown.deposit)}`)
+  lines.push(`**Cash in Deal:** ${formatAsDollars(breakdown.cashInDeal)}`)
 
   return new Response(lines.join('\n'), {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },

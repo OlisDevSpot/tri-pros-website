@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { companyInfo, licenses } from '@/shared/constants/company'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { formatPhone } from '@/shared/lib/phone'
 import { tiptapToPdfmake } from './tiptap-to-pdfmake'
@@ -14,8 +14,9 @@ import { tiptapToPdfmake } from './tiptap-to-pdfmake'
  * Builds the full customer-facing proposal PDF: a bordered cover page
  * (company + customer identity), scope-of-work sections from page 2, and
  * the investment breakdown on its own closing page. Always homeowner-safe
- * — never reads cost lines or margin data, and the final price is derived
- * via computeFinalTcp.
+ * — never reads cost lines or margin data; pricing renders exclusively from
+ * buildPricingBreakdown, the shared view-model also used by the React
+ * PricingBreakdown component and the AI summary route.
  * see @/shared/entities/proposals/DOCS.md#final-tcp-derived
  * see docs/codebase-conventions/pdf-documents.md#layout-geometry
  */
@@ -246,49 +247,41 @@ function buildInvestment(
   funding: ProposalWithCustomer['fundingJSON']['data'],
   pricingMode: 'total' | 'breakdown',
 ): Content[] {
+  // relies on getFullView incentive hydration (Wave 2 bridge)
+  const breakdown = buildPricingBreakdown({ funding, sow, pricingMode })
+
   const rows: TableCell[][] = []
-  if (pricingMode === 'breakdown') {
-    for (const section of sow) {
-      if ((section.financials.sectionPrice ?? 0) > 0) {
-        rows.push([{ text: section.title }, { text: formatAsDollars(section.financials.sectionPrice!), alignment: 'right' }])
-      }
+  if (breakdown.pricingMode === 'breakdown') {
+    for (const section of breakdown.sections) {
+      rows.push([{ text: section.title }, { text: formatAsDollars(section.price), alignment: 'right' }])
     }
-    if ((funding.miscPrice ?? 0) > 0) {
-      rows.push([{ text: 'Additional items' }, { text: formatAsDollars(funding.miscPrice!), alignment: 'right' }])
+    if (breakdown.miscPrice != null) {
+      rows.push([{ text: 'Additional items' }, { text: formatAsDollars(breakdown.miscPrice), alignment: 'right' }])
     }
-    rows.push([{ text: 'Subtotal', bold: true }, { text: formatAsDollars(funding.startingTcp), bold: true, alignment: 'right' }])
+    rows.push([{ text: 'Subtotal', bold: true }, { text: formatAsDollars(breakdown.subtotal), bold: true, alignment: 'right' }])
   }
   else {
-    rows.push([{ text: 'Contract price' }, { text: formatAsDollars(funding.startingTcp), alignment: 'right' }])
+    rows.push([{ text: 'Contract price' }, { text: formatAsDollars(breakdown.subtotal), alignment: 'right' }])
   }
-  for (const inc of funding.incentives) {
-    if (inc.type === 'discount') {
+  for (const line of [...breakdown.globalLines, ...breakdown.sectionIncentiveLines]) {
+    if (line.amount != null) {
       rows.push([
-        { text: `Discount${inc.notes ? ` — ${inc.notes}` : ''}`, color: '#166534' },
-        { text: `-${formatAsDollars(inc.amount)}`, alignment: 'right', color: '#166534' },
+        { text: `Discount${line.label === 'Discount' ? '' : ` — ${line.label}`}`, color: '#166534' },
+        { text: `-${formatAsDollars(line.amount)}`, alignment: 'right', color: '#166534' },
       ])
     }
     else {
       rows.push([
-        { text: `Exclusive offer — ${inc.offer}${inc.notes ? ` (${inc.notes})` : ''}`, color: '#166534' },
+        { text: `Exclusive offer — ${line.label}${line.notes ? ` (${line.notes})` : ''}`, color: '#166534' },
         { text: 'Included', alignment: 'right', color: '#166534' },
-      ])
-    }
-  }
-  for (const section of sow) {
-    for (const inc of section.financials.incentives ?? []) {
-      rows.push([
-        { text: `Discount — ${inc.label || section.title || 'Section'}`, color: '#166534' },
-        { text: `-${formatAsDollars(inc.amount)}`, alignment: 'right', color: '#166534' },
       ])
     }
   }
   rows.push([
     { text: 'Final contract price', bold: true, fontSize: 12 },
-    // relies on getFullView incentive hydration (Wave 2 bridge)
-    { text: formatAsDollars(computeFinalTcp({ funding, sow })), bold: true, fontSize: 12, alignment: 'right' },
+    { text: formatAsDollars(breakdown.finalTcp), bold: true, fontSize: 12, alignment: 'right' },
   ])
-  rows.push([{ text: 'Deposit due at signing' }, { text: formatAsDollars(funding.depositAmount), alignment: 'right' }])
+  rows.push([{ text: 'Deposit due at signing' }, { text: formatAsDollars(breakdown.deposit), alignment: 'right' }])
 
   return [
     // The investment breakdown always opens its own closing page.
