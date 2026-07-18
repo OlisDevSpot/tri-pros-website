@@ -9,6 +9,7 @@ import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentive
 import type { ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { Row } from '@/shared/db/types'
+import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
 
 import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
@@ -20,6 +21,7 @@ import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, numberRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -290,6 +292,33 @@ export async function getProposalViews(
       directViews: views.filter(v => v.source === 'direct').length,
       views,
     }
+  })
+}
+
+/**
+ * Light lock probe for the whole-proposal freeze gate (`update.before` hook +
+ * `getProposalLockState`). Deliberately unscoped — it exposes nothing beyond
+ * lock signals, and the update itself re-applies `ctx.scope` in its WHERE.
+ * see ../../DOCS.md#proposal-lock-ladder
+ */
+export async function getProposalLockSignals(
+  proposalId: string,
+): Promise<DalReturn<ProposalLockSignals>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select({
+        status: proposals.status,
+        signingRequestId: proposals.signingRequestId,
+        contractSentAt: proposals.contractSentAt,
+        contractSignedAt: proposals.contractSignedAt,
+        contractDeclinedAt: proposals.contractDeclinedAt,
+      })
+      .from(proposals)
+      .where(eq(proposals.id, proposalId))
+    if (!row) {
+      throw new ThrowableDalError({ type: 'not-found' })
+    }
+    return row
   })
 }
 

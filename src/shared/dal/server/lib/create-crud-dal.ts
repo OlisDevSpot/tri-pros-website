@@ -100,7 +100,7 @@ async function updateImpl<TTable extends PgTable>(
 ): Promise<DalReturn<Row<TTable>>> {
   return dalDbOperation(async () => {
     const enrichedData = spec.hooks?.update?.before
-      ? await spec.hooks.update.before(input.data, ctx)
+      ? await spec.hooks.update.before(input.data, ctx, { id: input.id })
       : input.data
 
     // After-hooks REQUIRE previousRow context. A failed prefetch used to

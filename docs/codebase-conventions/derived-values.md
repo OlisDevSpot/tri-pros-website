@@ -24,7 +24,7 @@ A snapshot is named for the **event**, not the derivation (`approvedAmount`, `ca
 
 **Why**: a contract total must reproduce March's math after April's rate change; tracking inputs would silently rewrite an agreed number.
 **Reference impl**: `customer_lead_attribution.capture_json` (immutable intake snapshot), `proposals.kind` (frozen from the meeting at insert).
-**Enforced by**: convention (freeze gates where the snapshot transitions from a cache, e.g. `proposal_financials_frozen`)
+**Enforced by**: convention (freeze gates where the snapshot transitions from a cache, e.g. `proposal_frozen` via `isProposalFrozen`)
 
 ### cache-column-discipline
 

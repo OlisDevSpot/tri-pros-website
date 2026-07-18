@@ -63,7 +63,7 @@ This ADR's original framing was: "cross-entity coupling that exists for a specif
 
 - **Anti-pattern (retired).** The old `customersRouter.submitCustomerAge` was a hand-rolled `publicProcedure` that manually validated a *proposal* token to allow writing a *customer* field. It belonged on neither router clearly and grew a cross-entity side-effect (envelope-doc reconciliation). The retirement is: cross-entity writes that share a single tokenized auth gate live on the entity that *carries* the token, named to make the cross-entity scope obvious (e.g., `applyEnvelopeContext`, not `setCustomerAge`).
 
-**Lock invariant:** `applyEnvelopeContext` refuses to mutate while `proposal.signingRequestId != null`. The agreement-context inputs are frozen for the lifetime of any envelope (draft, in-progress, or terminal). To edit, the agent must explicitly discard / recall / recreate — the same explicit unlocking gesture as everywhere else on the contracts router.
+**Lock invariant** *(amended 2026-07-18, #264 — see below)*: `applyEnvelopeContext` refuses to mutate while the proposal is anywhere on the lock ladder (`isProposalFrozen`, `entities/proposals/lib/proposal-lock.ts`). The envelope is assembled from this context; editing one without killing the other would let them drift. To edit, the agent discards the draft or recalls the envelope — the same explicit unlocking gesture as everywhere else on the contracts router. (This holds the original `signingRequestId`-era semantics; what changed in #264 is that envelopes are no longer auto-created at proposal-send, so the lock now fires only on deliberate agent action.)
 
 ## Amendment 2026-05-28 — Retire the legacy single-template path
 
@@ -85,3 +85,35 @@ Deleted in this amendment:
 - Three orphan diagnostic scripts that exercised the legacy path
 
 **Anti-pattern (formalized):** template selection that branches on a *single* dimension (age) when the business rule depends on *multiple* dimensions (kind, age, SOW length). The registry's per-doc `applicableKinds` + `perKindRules` is the only allowed shape for envelope-content decisions.
+
+## Amendment 2026-07-18 — Retire the auto-draft stage; the proposal lock ladder (#264)
+
+Wave-2 smoke drives surfaced that the freeze gates keyed on `signingRequestId != null` were
+firing on every sent proposal — because this ADR's own "Send Proposal" orchestration
+(`useSendProposalWithDraft`) created a Zoho **draft** envelope as stage 1. The root-cause
+ruling: **the auto-draft stage itself was the mistake**, not the gate. An envelope's
+existence is the proposal's lock signal; auto-creating one on every send destroyed that
+signal's meaning.
+
+- **Stage 1 is retired.** "Send Proposal" sends the email only (`useSendProposal`). Envelope
+  creation is always a manual agent decision on the envelope card. The synchronous-draft
+  finding and the "no QStash / no inferred syncing state" rules from this ADR's original
+  decision stand unchanged.
+- **The lock is a four-tier ladder**, derived once in `entities/proposals/lib/proposal-lock.ts`
+  (`getProposalLockState`) and consumed by every gate and UI affordance — never ad-hoc:
+  `unlocked` (no envelope — the common case) → `draft-locked` (inline "discard draft & edit"
+  unlock) → `inflight-locked` (recall to edit) → `terminal-locked` (approved / signed /
+  declined — permanent, no thaw; changes go on a new proposal). Canonical rule + tier table:
+  `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`.
+- **No rebuild-at-send.** Because content cannot change while an envelope exists (whole-
+  proposal, field-scoped `update.before` gate), `sendSigningRequest` submits the existing
+  draft as-is — it is fresh by construction. The strict no-auto-create rule (two-tab race)
+  stands for the agent path.
+- **Homeowner "Request Agreement" is a SIGNAL, not a lifecycle event**
+  (`delivery.router.ts:requestToMoveForward`, share-token path). The homeowner never
+  touches the contract lifecycle: the request notifies the proposal's meeting
+  participants (email + push via `notifyHomeownerMoveForwardRequest`, falling back to
+  the proposal owner) that the homeowner is ready to move forward, and the agent
+  manually drives the draft lifecycle from there. Declined contracts show
+  "contact your representative" with no request button (terminal — new proposal
+  required).

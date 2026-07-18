@@ -2,6 +2,7 @@ import type { GeneralInquiryFormSchema, ScheduleConsultationFormSchema } from '@
 import type { CustomerConfirmationEmailProps } from '@/shared/services/providers/resend/emails/customer-confirmation-email'
 import { CustomerConfirmationEmail } from '@/shared/services/providers/resend/emails/customer-confirmation-email'
 import { GeneralInquiryEmail } from '@/shared/services/providers/resend/emails/general-inquiry-email'
+import MoveForwardRequestEmail from '@/shared/services/providers/resend/emails/move-forward-request-email'
 import { ProjectEmailTemplate } from '@/shared/services/providers/resend/emails/project-inquiry-email'
 import ProposalEmail from '@/shared/services/providers/resend/emails/proposal-email'
 import ProposalViewedEmail from '@/shared/services/providers/resend/emails/proposal-viewed-email'
@@ -30,6 +31,20 @@ export function renderGeneralInquiryEmail(data: GeneralInquiryFormSchema) {
 
 export function renderCustomerConfirmationEmail(params: CustomerConfirmationEmailProps) {
   return <CustomerConfirmationEmail {...params} />
+}
+
+export function renderMoveForwardRequestEmail(params: {
+  customerName: string
+  proposalLabel: string
+  proposalId: string
+}) {
+  return (
+    <MoveForwardRequestEmail
+      customerName={params.customerName}
+      proposalLabel={params.proposalLabel}
+      proposalId={params.proposalId}
+    />
+  )
 }
 
 export function renderProposalViewedEmail(params: {

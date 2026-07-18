@@ -24,8 +24,11 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
   const { invalidateProposal } = useInvalidation()
   const { isCoolingDown, remainingSeconds, startCooldown } = useCreditCooldown()
 
-  const sendContract = useMutation(
-    trpc.proposalsRouter.contracts.sendContractForSigning.mutationOptions({
+  // A pure signal to the agents — never touches the contract lifecycle.
+  // The agent manually prepares/sends the signing draft (#264).
+  // see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
+  const requestMoveForward = useMutation(
+    trpc.proposalsRouter.delivery.requestToMoveForward.mutationOptions({
       onSuccess: () => {
         startCooldown()
         invalidateProposal()
@@ -66,13 +69,14 @@ export function HomeownerContractView({ proposalId, token, contractStatus, custo
             requestStatus={requestStatus ?? null}
             contractorSignerStatus={contractorSigner?.status ?? null}
             isTerminal={isTerminal}
-            isPending={sendContract.isPending}
+            isPending={requestMoveForward.isPending}
+            isRequested={requestMoveForward.isSuccess}
             isCoolingDown={isCoolingDown}
             remainingSeconds={remainingSeconds}
             customerAge={customerAge}
             proposalId={proposalId}
             token={token}
-            onRequestAgreement={() => sendContract.mutate({ id: proposalId, token })}
+            onRequestAgreement={() => requestMoveForward.mutate({ id: proposalId, token })}
           />
         </div>
       </div>
@@ -85,6 +89,7 @@ function ActionArea(props: {
   contractorSignerStatus: string | null
   isTerminal: boolean
   isPending: boolean
+  isRequested: boolean
   isCoolingDown: boolean
   remainingSeconds: number
   customerAge: number | null
@@ -92,8 +97,30 @@ function ActionArea(props: {
   token: string
   onRequestAgreement: () => void
 }) {
-  // Terminal: declined / recalled / expired
+  // Request sent — the agents were notified; nothing changes on the
+  // contract itself until they act.
+  if (props.isRequested) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4"
+      >
+        <PartyPopper className="mt-0.5 size-5 shrink-0 text-primary" />
+        <div>
+          <p className="text-sm font-semibold text-foreground">Request sent!</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Your representative has been notified and will prepare your agreement. You&apos;ll receive an email when it&apos;s ready for your signature.
+          </p>
+        </div>
+      </motion.div>
+    )
+  }
+  // Terminal: declined / recalled / expired. Declined is PERMANENT — a
+  // declined contract is renegotiated on a new proposal, never re-requested
+  // (see entities/proposals/lib/proposal-lock.ts), so no request button.
   if (props.isTerminal) {
+    const isDeclined = props.requestStatus === 'declined'
     return (
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -106,17 +133,21 @@ function ActionArea(props: {
           <div>
             <p className="text-sm font-medium text-foreground">Agreement no longer active</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Please contact your representative, or request a new agreement below.
+              {isDeclined
+                ? 'Please contact your representative to discuss an updated proposal.'
+                : 'Please contact your representative, or request a new agreement below.'}
             </p>
           </div>
         </div>
-        <RequestButton
-          isPending={props.isPending}
-          isCoolingDown={props.isCoolingDown}
-          remainingSeconds={props.remainingSeconds}
-          onClick={props.onRequestAgreement}
-          label="Request New Agreement"
-        />
+        {!isDeclined && (
+          <RequestButton
+            isPending={props.isPending}
+            isCoolingDown={props.isCoolingDown}
+            remainingSeconds={props.remainingSeconds}
+            onClick={props.onRequestAgreement}
+            label="Request New Agreement"
+          />
+        )}
       </motion.div>
     )
   }
@@ -206,7 +237,7 @@ function ActionArea(props: {
       className="flex flex-col gap-3"
     >
       <p className="text-sm text-muted-foreground">
-        Ready to move forward? Request your agreement below and our office will prepare the paperwork.
+        Ready to move forward? Let your representative know below and they&apos;ll prepare the paperwork.
       </p>
       <RequestButton
         isPending={props.isPending}

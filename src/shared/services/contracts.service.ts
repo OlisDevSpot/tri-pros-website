@@ -51,6 +51,11 @@ function createContractService() {
      * NOT supported: it caused a two-tab race where Tab B silently created a
      * new envelope after Tab A discarded the draft, sending a contract the
      * agent never reviewed.
+     *
+     * The draft is submitted as-is, never rebuilt: the proposal lock ladder
+     * (see `entities/proposals/lib/proposal-lock.ts`) guarantees content
+     * cannot change while a draft exists — the sanctioned edit path discards
+     * the draft first — so an existing draft is fresh by construction.
      */
     sendSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
       const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
@@ -62,16 +67,16 @@ function createContractService() {
       if (!requestId) {
         throw new Error('No draft envelope exists for this proposal. Refresh the page and create a new draft before sending.')
       }
+      if (proposal.contractSentAt) {
+        throw new Error('Contract already sent for signing. Use resend to issue a fresh envelope.')
+      }
 
       // Submit the draft for signing
       await zohoSyncService.submitForSigning(requestId)
 
       dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
-        data: {
-          signingRequestId: requestId,
-          contractSentAt: new Date().toISOString(),
-        },
+        data: { contractSentAt: new Date().toISOString() },
       }))
 
       return { requestId }

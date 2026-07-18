@@ -7,14 +7,13 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useSendProposalWithDraft } from '@/shared/entities/proposals/hooks/use-send-proposal-with-draft'
+import { useSendProposal } from '@/shared/entities/proposals/hooks/use-send-proposal'
 import { formatDate } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 import { getProposalStatusBadge } from '../lib/get-status-badge'
 import { ActionButtonWithImpact } from './action-button-with-impact'
 import { ActionConfirmDialog } from './action-confirm-dialog'
-import { SendProposalProgress } from './send-proposal-progress'
 
 interface ProposalCardProps {
   proposalId: string
@@ -34,11 +33,9 @@ type ConfirmAction = 'resend'
  * in our app via a tokenized link — separate from the Zoho Sign envelope
  * managed in Card 2. Acting on one card never affects the other.
  *
- * Send orchestration: clicking "Send Proposal Email" runs the two-step
- * `useSendProposalWithDraft` orchestrator — stage 1 prepares the Zoho
- * draft envelope (idempotent), stage 2 sends the email + marks the
- * proposal sent. The staged `SendProposalProgress` panel reflects real
- * hook state, never a faked timer.
+ * "Send Proposal Email" sends the email only — it never touches the
+ * signing envelope. Envelope creation is a manual agent decision on
+ * Card 2 (#264; see `entities/proposals/lib/proposal-lock.ts`).
  * see `../../entities/proposals/DOCS.md#proposal-contract-independence`.
  */
 export function ProposalCard({
@@ -51,7 +48,8 @@ export function ProposalCard({
 }: ProposalCardProps) {
   const [message, setMessage] = useState('')
   const [confirmDialog, setConfirmDialog] = useState<ConfirmAction | null>(null)
-  const { stage, failedStep, errorMessage, isPending, send } = useSendProposalWithDraft()
+  const sendProposal = useSendProposal()
+  const isPending = sendProposal.isPending
 
   const customerLabel = customerName?.trim() || 'the customer'
   const isSent = proposalStatus === 'sent'
@@ -68,7 +66,7 @@ export function ProposalCard({
       return
     }
     try {
-      await send({
+      await sendProposal.mutateAsync({
         proposalId,
         customerName: customerName ?? 'Customer',
         email: customerEmail,
@@ -77,9 +75,8 @@ export function ProposalCard({
       })
       toast.success('Proposal sent!')
     }
-    catch {
-      // Error surface is already in the staged progress panel + hook state.
-      // Toast intentionally omitted to avoid double-reporting.
+    catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send proposal email')
     }
   }
 
@@ -157,13 +154,6 @@ export function ProposalCard({
           </div>
         )}
 
-        {/* Staged progress — visible while sending or after a failure */}
-        <SendProposalProgress
-          stage={stage}
-          failedStep={failedStep}
-          errorMessage={errorMessage}
-        />
-
         {/* Actions */}
         {!isSent && !isApproved && !isDeclined && (
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
@@ -200,7 +190,7 @@ export function ProposalCard({
         open={confirmDialog === 'resend'}
         onOpenChange={open => !open && setConfirmDialog(null)}
         title="Resend proposal email?"
-        description={`Send another email to ${customerLabel} with the proposal link. We'll also make sure the signing envelope is up-to-date.`}
+        description={`Send another email to ${customerLabel} with the proposal link.`}
         details={(
           <p className="text-xs text-muted-foreground">
             Use sparingly to avoid bombarding the customer.

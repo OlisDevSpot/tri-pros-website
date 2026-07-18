@@ -1,7 +1,7 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
-import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
+import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
 import {
   insertProposalSchema,
   proposals,
@@ -9,9 +9,11 @@ import {
 } from '@/shared/db/schema'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { recomputeProposalFinancials } from '@/shared/entities/proposals/dal/server/mutations'
+import { getProposalLockSignals } from '@/shared/entities/proposals/dal/server/queries'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { deriveProposalKind } from '@/shared/entities/proposals/lib/derive-proposal-kind'
 import { generateShareToken } from '@/shared/entities/proposals/lib/generate-share-token'
+import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/entities/proposals/lib/proposal-lock'
 import { snapSowFromMeeting } from '@/shared/entities/proposals/lib/snap-sow-from-meeting'
 import { proposalVisibility } from '@/shared/entities/proposals/lib/visibility'
 
@@ -61,6 +63,22 @@ export const proposalServerSpec = {
       },
     },
     update: {
+      // Whole-proposal lock ladder (#264): any envelope (draft or beyond) or
+      // terminal status makes user-authored content immutable — the sanctioned
+      // edit path kills the envelope first (discard/recall). Field-scoped so
+      // lifecycle writes (status, signing ids, contract timestamps — webhooks,
+      // auto-approve, send flows) keep flowing on a locked proposal.
+      // see ../DOCS.md#proposal-lock-ladder
+      async before(input, _ctx, meta) {
+        if (!touchesFrozenLockedFields(input)) {
+          return input
+        }
+        const signals = dalVerifySuccess(await getProposalLockSignals(String(meta.id)))
+        if (isProposalFrozen(signals)) {
+          throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+        }
+        return input
+      },
       // Whole-document fundingJSON/projectJSON writes must re-converge the
       // rollup. Cheap + idempotent; skipped when neither blob was touched.
       async after(row, _ctx, meta) {
