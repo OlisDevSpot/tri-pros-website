@@ -21,6 +21,7 @@
 - **Coding conventions** (enforced — see `memory/coding-conventions.md`): named exports only; one React component per file; no file-level constants in component files (they go in `constants/`); prefer shadcn components; entity code lives in `shared/entities/proposals/`; `shared/` never imports from `features/`.
 - **Path alias**: `@/` → `src/`. Package manager: pnpm.
 - **Commits**: one per task, message style `feat(proposals): …` / `refactor(proposals): …` / `docs(proposals): …`, ending with the Claude co-author trailer if committed by an agent.
+- **Line references are approximate** (2026-07-18 note): the post-W2 tightening pass (PR #276) touched `funding.tsx` (new `useSetCashInDeal` import + narrow Save block) after this plan was written — cited line numbers may be off by a few lines; locate by the quoted code, not the number.
 
 ## File Structure (end state)
 
@@ -1487,6 +1488,7 @@ git commit -m "feat(proposals): agent-only Internal Financials modal; kill showP
 - Modify: `src/features/proposal-flow/ui/views/edit-proposal-view.tsx:21`
 - Modify: `src/features/proposal-flow/ui/components/proposal/funding.tsx:17`
 - Modify: `src/shared/services/providers/zoho-sign/lib/documents/proposal-context.ts:4`
+- Modify: `scripts/backfill-wave2-children.ts:28` (import path flip only — same `computeFinalTcp` signature; the script is cutover-window-only and dies with the W3 drops, but must keep compiling until then)
 - Modify: `src/features/proposal-flow/ui/components/form/sow-financials-fields.tsx` (no import change needed — uses `SectionFinancialsSummary` only; verify)
 
 **Interfaces:**
@@ -1518,7 +1520,7 @@ export function getProposalAggregates(proposal: ProposalFormSchema | InsertPropo
 }
 ```
 
-- [ ] **Step 2: Flip the remaining import paths.** In each of `edit-proposal-view.tsx`, `funding.tsx`, `proposal-context.ts`, change:
+- [ ] **Step 2: Flip the remaining import paths.** In each of `edit-proposal-view.tsx`, `funding.tsx`, `proposal-context.ts`, `scripts/backfill-wave2-children.ts`, change:
 
 ```ts
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
@@ -1563,7 +1565,7 @@ git rm src/shared/entities/proposals/lib/compute-final-tcp.ts src/shared/entitie
 ```
 
 Run: `grep -rn "compute-final-tcp\|compute-sow-financials\|compute-proposal-cost-totals" src scripts`
-Expected: no matches (comments included — fix any stragglers by pointing them at `lib/financials`).
+Expected: the ONLY matches are `scripts/recompute-final-tcp.ts` filename-substring hits (that script is the final_tcp_cents rebuild tool, unrelated to these lib files — added 2026-07-18, do NOT touch it). Any other match is a straggler — fix it by pointing at `lib/financials`.
 
 - [ ] **Step 2: Verify + commit**
 
