@@ -176,7 +176,10 @@ holding the bar crossing, right hand twisting the tie wire with pliers."
 
 Slot rules: ONE construction phase's vocabulary only; task-appropriate PPE only
 (no hard hats in residential interiors — reads as stock photo); 1–3 workers
-per the Crew variation axes above.
+per the Crew variation axes above. Stage any worker whose back print must read
+within the NEAREST THIRD of the scene — mid-distance backs garble the
+REMODELING sub-line repeatedly regardless of spelling anchors (2026-07-18);
+if the task forces mid-distance, expect re-rolls or accept softness at HITL.
 
 ## QA gate (check at 100% zoom before delivering to Downloads)
 
@@ -252,3 +255,8 @@ this file is canonical over memory.
 - 2026-07-14 — v7: landmark-removal generalizes — ANY mid-size prop near the insertion zone (wheelbarrow, ladder, leaf blower) can vanish even when named in the keep-clause; each needs the per-object anchor "MUST stay exactly where it is, pixel-identical — do NOT remove" (+ REMOVE in the forbidden verbs). Material stacks drift in COUNT (4 rolls → 9) — pin exact counts; branded props duplicate — pin "only ONE".
 - 2026-07-14 — v7: pose findings — steep top-down close solos are camera-stare magnets (gaze negations fail; prefer standing/side tasks); plain-fabric pin needed for patterned caps (camo invited invented embroidery); color anchors on mid-ground appliances are weak (orange vac → tan 2/3); model may add an unrequested accessory (tool belt) — HITL call.
 - 2026-07-14 — v7: base clearance requires a 100%-ZOOM people scan of background/street bands — blurred pedestrians are invisible at preview scale (larry base shipped one roll before being caught). QA gate amended.
+- 2026-07-18 — v9 (new projects bastion/axiom/plinth/solace): projects can exist in PROD but not dev (import ran after the last dev snapshot) — verify with a live-site probe (`/portfolio/projects/<accessor>` → 200); the local `_assets/portfolio-projects/imported/<accessor>/` folder (images + phases.json) is byte-identical to the uploaded media and is a legitimate base pool for such projects. `add-during-media` on dev refuses their accessors until a dev re-snapshot or an explicit prod run — Oliver decides the env.
+- 2026-07-18 — scraper `before_*` files can ALL be finished staged listing photos (bastion 10/10, axiom 6/6) — mislabeling runs in both directions; visual verification is mandatory before trusting any phase label.
+- 2026-07-18 — BACK-print sub-line garble is SCALE-driven, not wording-driven: a mid-distance solo back garbled 3 consecutive rolls (BEMODELING / RENS3C / REMODELINO) with every spelling anchor active incl. an explicit G-crossbar clause; re-staging the SAME worker a few steps closer to camera ("clearly in front of the island, so he appears LARGE in the frame") passed first roll. Slot rule added: keep any worker whose back print must read within the nearest third of the scene.
+- 2026-07-18 — crew-3 backs first roll garbled all three sub-lines AND branded the nailer; fixed in one re-roll by "letter-perfect... on every one of the three shirts, including the farthest worker: with distance the print simply appears smaller, never distorted" + "plain gray and black with NO printed text, NO labels" on the tool. Positive unbranded-tool phrasing works where negative tool bans backfire.
+- 2026-07-18 — pinned-text survivals to reuse: CAUTION-tape fragments held pixel-identical with "exactly as printed, exactly as blurry"; EVERBILT floor-board prints and EMTEK/WOLF box branding survived when pinned AND workers staged away from the text objects. Proximity is the trigger — pin the text, then keep the crew off it.
