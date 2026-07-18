@@ -2,7 +2,7 @@ import type z from 'zod'
 import type { LeadMeta } from '@/shared/entities/customers/schemas'
 import { jsonb, pgTable, text, uuid } from 'drizzle-orm/pg-core'
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { leadSourceKinds } from '@/shared/entities/customers/schemas'
+import { leadMetaSchema, leadSourceKinds } from '@/shared/entities/customers/schemas'
 import { createdAt, updatedAt } from '../lib/schema-helpers'
 import { customers } from './customers'
 
@@ -32,6 +32,12 @@ export const customerLeadAttribution = pgTable('customer_lead_attribution', {
 export const selectCustomerLeadAttributionSchema = createSelectSchema(customerLeadAttribution)
 export type CustomerLeadAttributionRow = z.infer<typeof selectCustomerLeadAttributionSchema>
 
-export const insertCustomerLeadAttributionSchema = createInsertSchema(customerLeadAttribution)
-  .omit({ createdAt: true, updatedAt: true })
+export const insertCustomerLeadAttributionSchema = createInsertSchema(customerLeadAttribution, {
+  // drizzle-zod types $type<> jsonb loosely — pin the snapshot's internal
+  // shape to the canonical capture schema (jsonb-columns.md#zod-parse-at-write-boundary).
+  captureJSON: leadMetaSchema.nullable().optional(),
+}).omit({ createdAt: true, updatedAt: true })
 export type InsertCustomerLeadAttribution = z.infer<typeof insertCustomerLeadAttributionSchema>
+
+// Wire shape for the capture-time write (customerId supplied by the DAL).
+export const leadAttributionCaptureSchema = insertCustomerLeadAttributionSchema.omit({ customerId: true })

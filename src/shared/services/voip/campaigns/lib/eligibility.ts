@@ -8,7 +8,6 @@
 // service's gate chain. Never inline branching logic in the service.
 
 import type { VoipCampaign } from '@/shared/db/schema/voip-campaigns'
-import type { VoipCampaignsPolicy } from '@/shared/entities/lead-sources/schemas'
 
 import { toE164 } from '@/shared/lib/phone'
 
@@ -22,11 +21,6 @@ export type EnrollmentRejectReason
     | 'invalid_phone'
     | 'already_enrolled'
     | 'ct_api_failure'
-
-/** Gate 1 — per-source kill switch. Absent policy ⇒ treated as disabled (no guessing). */
-export function isSourceEnabled(policy: VoipCampaignsPolicy | undefined): boolean {
-  return policy?.enabled === true
-}
 
 /**
  * Gate — the target campaign is dialable: it is CT-active. Campaigns are pools,

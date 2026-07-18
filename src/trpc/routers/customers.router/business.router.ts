@@ -164,7 +164,15 @@ export function createCustomerBusinessRouter(entity: EntityToolkit<PgTable>) {
         notes: z.string().optional(),
         mode: z.enum(intakeModes),
         leadSourceSlug: z.string().optional(),
-        leadMetaJSON: leadMetaSchema.optional(),
+        // Channel-narrowed: the in-app intake form only ever originates
+        // operational fields + requestedTrades — never a bina/generic/funnel
+        // source payload (those enter via their own ingest channels).
+        leadMetaJSON: leadMetaSchema.pick({
+          mp3RecordingKey: true,
+          closedBy: true,
+          scheduledFor: true,
+          requestedTrades: true,
+        }).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const { notes, mode, leadSourceSlug, ...customerData } = input

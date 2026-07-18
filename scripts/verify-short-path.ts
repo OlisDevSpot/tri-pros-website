@@ -36,7 +36,7 @@ async function main() {
     WHERE p.status IN ('sent', 'approved')
       AND c.email IS NOT NULL
       AND c.email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'
-      AND c.customer_profile_json ? 'age'
+      AND c.age IS NOT NULL
       AND length(p."project_JSON"::text) < 4000
     ORDER BY length(p."project_JSON"::text) ASC
     LIMIT 5
