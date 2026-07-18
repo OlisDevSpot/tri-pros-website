@@ -7,7 +7,6 @@ import { useSetCashInDeal } from '@/features/proposal-flow/dal/client/mutations/
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetFinanceOptions } from '@/features/proposal-flow/dal/client/queries/use-get-finance-options'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
 import { PricingBreakdown } from '@/features/proposal-flow/ui/components/pricing-breakdown'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Button } from '@/shared/components/ui/button'
@@ -25,7 +24,6 @@ interface Props {
 
 export function Funding({ onPickFinancingOption }: Props) {
   const proposal = useCurrentProposal()
-  const viewMode = useViewMode()
   const [cashInDeal, setCashInDeal] = useState<number | null>(null)
   const [token] = useQueryState('token', { defaultValue: '' })
 
@@ -97,7 +95,7 @@ export function Funding({ onPickFinancingOption }: Props) {
           <CardDescription>Home improvement, at your own terms</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          <PricingBreakdown proposalData={proposalData} viewMode={viewMode} />
+          <PricingBreakdown proposalData={proposalData} />
           <Tabs defaultValue="cash" className="space-y-8">
             <TabsList className="mx-auto md:mx-0">
               <TabsTrigger value="cash">Cash / cash + finance</TabsTrigger>
