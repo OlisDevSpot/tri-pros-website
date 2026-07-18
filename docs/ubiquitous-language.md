@@ -96,6 +96,7 @@ Trade (discipline)
 | **TCP** (Total Contract Price) | Total proposal price. `startingTcp` = initial quote, `finalTcp` = after incentives. A specific kind of Price. |
 | **Incentive** | Discount, tax-credit, cash-back, or exclusive-offer. Reduces TCP. Types: `discount \| tax-credit \| cash-back \| exclusive-offer \| other`. |
 | **Showcase (offer)** | The acquisition offer behind all live marketing funnels + Meta ads: a per-trade "casting call" — limited homes selected for a discounted AAA-grade remodel in exchange for photo/video rights + portfolio feature. Homeowner *applies to be chosen*, never "requests a quote." Canonical: `docs/marketing/showcase-offer.md`. `FunnelSpec.offer = 'showcase'`. |
+| **Contract Envelope** | The legal snapshot of the agreement between the homeowner and the contractor, based on the current proposal — held in Zoho Sign. Canonical name ratified 2026-07-18 (`contractEnvelopeId`, `createContractEnvelope`, …). Once created it is immutable evidence of what will be signed; to change the proposal, kill the envelope first (see the proposal lock ladder). "Signing request" is Zoho's API term and survives ONLY inside the Zoho provider layer (`providers/zoho-sign/`, `zoho-sync.service`). DB column `signing_request_id` renames at the Wave-3 push. |
 | **Finance Option** | A loan product (term, APR, provider). Customer selects one per proposal. |
 | **Finance Provider** | Lending company (Tesla, Sunrun, Mosaic, banks). Has many finance options. |
 
@@ -246,7 +247,7 @@ Terms for talking about values computable from other stored data. Canonical rule
 | **Derived value** | Any value that is a pure function of other stored data (`finalTcp`, pipeline stage for Fresh, CSLB start date). Default handling: computed **just-in-time**, never stored. |
 | **Just-in-time (JIT)** | Deriving at read/render time via the single canonical pure helper in `entities/<domain>/lib/` (e.g. `computeFinalTcp`). The default for detail pages, PDFs, AI summaries, external-payload builders — anything already holding hydrated inputs. |
 | **Snapshot** | A business fact **frozen at an event** (contract total at signature, `proposals.kind` at insert, `captureJSON` at intake). Persisted, named for the event not the derivation, written by one event handler, NEVER recomputed — later input changes must not propagate. A snapshot is not "derived data that got stored"; the event reclassified it into a fact. |
-| **Cache column** | A persisted derived value kept ONLY because SQL itself needs it (sort/filter/paginate/aggregate across many rows — `final_tcp_cents` for proposal-list price sort). It is a cache, with cache obligations: the four-leg discipline (single-writer **chokepoint**, one pure function, rebuild script, `calc_version` stamp). A cache column can BECOME a snapshot via a freeze gate (`final_tcp_cents` after `signingRequestId` is set). |
+| **Cache column** | A persisted derived value kept ONLY because SQL itself needs it (sort/filter/paginate/aggregate across many rows — `final_tcp_cents` for proposal-list price sort). It is a cache, with cache obligations: the four-leg discipline (single-writer **chokepoint**, one pure function, rebuild script, `calc_version` stamp). A cache column can BECOME a snapshot via a freeze gate (`final_tcp_cents` after `contractEnvelopeId` is set). |
 | **Chokepoint** | The single function through which every write of a cache column routes (`recomputeProposalFinancials`). A write path that skips it is an **escape hatch** (see Migration vocabulary above) — e.g. a raw `db.update` that bypasses entity-server hooks. |
 
 ## Terminology Rules
@@ -276,6 +277,7 @@ Terms for talking about values computable from other stored data. Canonical rule
 - **API surface** not "interface" alone when discussing migrations — "tighten the API surface" is the standing instruction to narrow accepted shapes to the new contract only
 - **Snapshot** vs **Cache column** — never interchangeable. A snapshot must NOT track input changes (recomputing it is a bug); a cache column MUST (a missed recompute is a bug). Say which one you mean before persisting any derived value; if it's neither, derive **just-in-time**
 - **Chokepoint** not "helper" or "util" when naming the single writer of a cache column — the word carries the rule that every write path routes through it
+- **Contract Envelope** not "signing request" — Zoho's "signing request" vocabulary lives only at the provider boundary; every domain-layer name (columns, services, routers, UI, docs) says contract envelope
 
 ## Flagged ambiguities
 

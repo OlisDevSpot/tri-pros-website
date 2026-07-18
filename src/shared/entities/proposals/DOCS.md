@@ -178,7 +178,7 @@ a draft (the retired auto-draft stage is why the old gate misfired; see ADR-0004
 | Tier | Signals | Meaning | Unlock path |
 |---|---|---|---|
 | `unlocked` | no envelope, non-terminal status | Freely editable — the common case | — |
-| `draft-locked` | `signingRequestId` set, `contractSentAt` null | Agent prepared a signing draft | Easy + inline: "Discard draft & edit" confirm in the edit view (discards the Zoho draft, 0 credits) |
+| `draft-locked` | `contractEnvelopeId` set, `contractSentAt` null | Agent prepared a signing draft | Easy + inline: "Discard draft & edit" confirm in the edit view (discards the Zoho draft, 0 credits) |
 | `inflight-locked` | `contractSentAt` set, not terminal | Contract out for signature | Deliberate: recall the envelope from the review page |
 | `terminal-locked` | `status = 'approved'` OR `contractSignedAt` OR `contractDeclinedAt` | Approved (project minted), signed, or declined | **None.** Changes happen on a duplicated/new proposal. Declined is permanent by decision — no re-request, no thaw |
 
@@ -188,7 +188,7 @@ three JSON blobs, financeOptionId, meetingId — including the share-token path)
 state isn't `unlocked` (`precondition-failed: proposal_frozen`). Lifecycle fields (status,
 sentAt/approvedAt, signing ids, contract timestamps, QB refs) stay writable — webhooks,
 auto-approve, and contract flows keep flowing on a locked proposal. Because content cannot
-change while an envelope exists, `sendSigningRequest` submits the draft as-is (fresh by
+change while an envelope exists, `sendContractEnvelope` submits the draft as-is (fresh by
 construction — no rebuild needed). The homeowner NEVER touches the contract lifecycle: their
 "Request Agreement" (`delivery.router.ts:requestToMoveForward`) only notifies the meeting
 participants (email + push) that the homeowner is ready to move forward — the agent drives
@@ -290,7 +290,7 @@ Customer age (`customer.age` — plain column, epic #256/#259; see `../customers
 
 ### proposal-contract-independence
 
-The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifecycle (`signingRequestId`, `contractSentAt`, `contractViewedAt`, `contractSignedAt`, `contractDeclinedAt`) are independent. They share a database row for storage convenience, not for coupling. Mutations on one set never derive state for the other.
+The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifecycle (`contractEnvelopeId`, `contractSentAt`, `contractViewedAt`, `contractSignedAt`, `contractDeclinedAt`) are independent. They share a database row for storage convenience, not for coupling. Mutations on one set never derive state for the other.
 
 - **Sending the proposal email** updates only proposal-side columns. It does NOT create, refresh, or touch the Zoho Sign envelope.
 - **Creating / discarding / recalling an envelope** updates only contract-side columns. It does NOT change `proposal.status` or `sentAt`.

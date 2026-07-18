@@ -106,9 +106,15 @@ signal's meaning.
   declined — permanent, no thaw; changes go on a new proposal). Canonical rule + tier table:
   `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`.
 - **No rebuild-at-send.** Because content cannot change while an envelope exists (whole-
-  proposal, field-scoped `update.before` gate), `sendSigningRequest` submits the existing
+  proposal, field-scoped `update.before` gate), `sendContractEnvelope` submits the existing
   draft as-is — it is fresh by construction. The strict no-auto-create rule (two-tab race)
   stands for the agent path.
+- **Naming ratified (2026-07-18, post-#264 tightening pass): `contractEnvelope`** is the
+  canonical domain term — "the legal snapshot of the agreement between the homeowner and
+  the contractor, based on the current proposal." Zoho's "signing request" vocabulary
+  survives only inside the provider layer (`providers/zoho-sign/`, `zoho-sync.service`).
+  Code-side rename shipped in the tightening pass; the `signing_request_id` column
+  renames at the Wave-3 prod push. See `docs/ubiquitous-language.md`.
 - **Homeowner "Request Agreement" is a SIGNAL, not a lifecycle event**
   (`delivery.router.ts:requestToMoveForward`, share-token path). The homeowner never
   touches the contract lifecycle: the request notifies the proposal's meeting
