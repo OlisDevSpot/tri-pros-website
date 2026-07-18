@@ -69,7 +69,7 @@ yet due — kill trigger is the release after prod cutover, which hasn't happene
 | | Item | Where | Notes |
 |---|---|---|---|
 | [ ] | `leadMetaJSONDeprecated` property + `lead_meta_json` column | `customers.ts:50` | Frozen at Task 5; one-release rollback window, then drop column + property + `.omit()` entry |
-| [ ] | `scripts/backfill-wave2-children.ts` | `scripts/` | ⚠️ **Cutover-window-only tool.** Its proposals section reads blob incentives — once writers flip, a full re-run would overwrite live rows with stale blob data (post-deploy verify uses `--skip-proposals`). Delete in the same commit that drops `lead_meta_json` |
+| [ ] | `scripts/backfill-wave2-children.ts` | `scripts/` | ⚠️ **Cutover-window-only tool.** Its proposals section reads blob incentives — once writers flip, a full re-run would overwrite live rows with stale blob data (post-deploy verify uses `--skip-proposals`). Delete in the same commit that drops `lead_meta_json`. Note (2026-07-18, façade final review): its `showPricingBreakdown` normalization shim (~lines 166-176) is now inert — the field died with the façade work (Zod strips it); harmless, dies with the script |
 | [ ] | `LEGACY_ENRICHMENT_LABELS` (`entities/customers/constants/funnel-intake-fields.ts`) | last consumer = backfill-wave2 script | dies with the script (verify no other importer first) |
 | [ ] | Legacy one-off scripts still referencing the frozen blob: `scripts/seed-bina-contacts.ts`, `scripts/backfill-interested-trades-raw.ts` | `scripts/` | Superseded by attribution child; delete with the column drop (they only compile against the deprecated property) |
 
