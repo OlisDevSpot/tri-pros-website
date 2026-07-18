@@ -1,7 +1,7 @@
 import type { ProposalFormSchema } from '../schemas/form-schema'
 import type { InsertProposalSchema } from '@/shared/db/schema'
 
-import { computeFinalTcp, computeTotalDiscounts } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { computeFinalTcp, computeTotalDiscounts, computeTotalSectionPrices } from '@/shared/entities/proposals/lib/financials'
 
 export function getProposalAggregates(proposal: ProposalFormSchema | InsertProposalSchema) {
   const { pricingMode } = 'meta' in proposal ? proposal.meta : proposal.formMetaJSON
@@ -9,7 +9,7 @@ export function getProposalAggregates(proposal: ProposalFormSchema | InsertPropo
   const projectJSON = 'meta' in proposal ? proposal.project : proposal.projectJSON
 
   const totalSOWPriceBreakdown = pricingMode === 'breakdown'
-    ? projectJSON.data.sow.reduce((sum, s) => sum + (s.financials.sectionPrice ?? 0), 0)
+    ? computeTotalSectionPrices(projectJSON.data.sow)
     : undefined
 
   return {

@@ -25,7 +25,7 @@ import { db } from '@/shared/db'
 import { customerEnrichment, customerLeadAttribution, customers, proposalIncentives, proposals } from '@/shared/db/schema'
 import { LEGACY_ENRICHMENT_LABELS } from '@/shared/entities/customers/constants/funnel-intake-fields'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
 import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { describeTargetDb } from './lib/describe-target-db'
 

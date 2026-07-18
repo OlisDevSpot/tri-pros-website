@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
-import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
 import { getLoanValues } from '@/shared/lib/loan-calculations'
 import { cn } from '@/shared/lib/utils'
 
