@@ -5,7 +5,7 @@ export interface BreakdownSectionLine {
   title: string
   /** Original (pre-incentive) section price. Only sections with price > 0 appear. */
   price: number
-  incentives: { id: string; label: string; amount: number }[]
+  incentives: { id: string, label: string, amount: number }[]
   /** price − Σ incentives */
   netPrice: number
 }
@@ -53,13 +53,13 @@ export function buildPricingBreakdown({
   sow,
   pricingMode,
 }: PricingBreakdownInput): PricingBreakdownModel {
-  const sections: BreakdownSectionLine[] =
-    pricingMode === 'breakdown'
+  const sections: BreakdownSectionLine[]
+    = pricingMode === 'breakdown'
       ? sow
           .map((section, i) => ({ section, title: section.title || `Section ${i + 1}` }))
           .filter(({ section }) => (section.financials.sectionPrice ?? 0) > 0)
           .map(({ section, title }) => {
-            const incentives = (section.financials.incentives ?? []).map((inc) => ({
+            const incentives = (section.financials.incentives ?? []).map(inc => ({
               id: inc.id,
               label: inc.label || 'Discount',
               amount: inc.amount,
@@ -91,7 +91,7 @@ export function buildPricingBreakdown({
   )
 
   const sectionIncentiveLines: BreakdownGlobalLine[] = sow.flatMap((section, i) =>
-    (section.financials.incentives ?? []).map((inc) => ({
+    (section.financials.incentives ?? []).map(inc => ({
       key: inc.id,
       kind: 'section-discount' as const,
       label: inc.label || `${section.title || `Section ${i + 1}`} discount`,
