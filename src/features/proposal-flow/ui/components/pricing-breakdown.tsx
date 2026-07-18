@@ -36,14 +36,14 @@ export function PricingBreakdown({ proposalData }: Props) {
                 {breakdown.sections.map(section => (
                   section.incentives.length === 0
                     ? (
-                        <div key={section.title} className="flex items-center justify-between">
+                        <div key={section.key} className="flex items-center justify-between">
                           <span className="text-muted-foreground">{section.title}</span>
                           <span>{formatAsDollars(section.price)}</span>
                         </div>
                       )
                     : (
                         <ExpandableLineItems
-                          key={section.title}
+                          key={section.key}
                           label={<span className="text-muted-foreground">{section.title}</span>}
                           value={(
                             <span className="flex items-center gap-2">

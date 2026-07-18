@@ -2,6 +2,8 @@ import type { FundingSection, ProjectSection } from '@/shared/entities/proposals
 import { computeFinalTcp, computeTotalSectionIncentives } from './compute-price-side'
 
 export interface BreakdownSectionLine {
+  /** Stable render key — unique even when two sections share a title. */
+  key: string
   title: string
   /** Original (pre-incentive) section price. Only sections with price > 0 appear. */
   price: number
@@ -56,9 +58,9 @@ export function buildPricingBreakdown({
   const sections: BreakdownSectionLine[]
     = pricingMode === 'breakdown'
       ? sow
-          .map((section, i) => ({ section, title: section.title || `Section ${i + 1}` }))
+          .map((section, i) => ({ section, title: section.title || `Section ${i + 1}`, key: `${i}-${section.title || 'section'}` }))
           .filter(({ section }) => (section.financials.sectionPrice ?? 0) > 0)
-          .map(({ section, title }) => {
+          .map(({ section, title, key }) => {
             const incentives = (section.financials.incentives ?? []).map(inc => ({
               id: inc.id,
               label: inc.label || 'Discount',
@@ -66,7 +68,7 @@ export function buildPricingBreakdown({
             }))
             const price = section.financials.sectionPrice!
             const incentiveTotal = incentives.reduce((sum, inc) => sum + inc.amount, 0)
-            return { title, price, incentives, netPrice: price - incentiveTotal }
+            return { key, title, price, incentives, netPrice: price - incentiveTotal }
           })
       : []
 
