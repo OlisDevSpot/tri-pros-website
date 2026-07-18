@@ -25,7 +25,7 @@ import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
-import { isProposalFrozen } from '@/shared/entities/proposals/lib/is-proposal-frozen'
+import { isProposalFrozen } from '@/shared/entities/proposals/lib/proposal-lock'
 import { contractService } from '@/shared/services/contracts.service'
 import { EnvelopeSelectionError, evaluateDocuments, projectAgreementDocs, reconcileEnvelopeSelection, validateEnvelopeSelection } from '@/shared/services/providers/zoho-sign/lib/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
@@ -85,10 +85,18 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         return contractService.sendSigningRequest(ctx, input.proposalId)
       }),
 
+    /**
+     * Homeowner-side "Request Agreement" (share-token path). Unlike the
+     * agent's `submitContract` (strict: submits an existing reviewed draft
+     * only), this composes create-if-missing + submit — the homeowner can't
+     * prepare drafts, and an envelope assembled from live proposal state at
+     * request time is fresh by construction. Declined contracts refuse
+     * (terminal — a new proposal is required).
+     */
     sendContractForSigning: entity.shareableProcedure
       .input(z.object({ id: z.string(), token: z.string() }))
       .mutation(async ({ ctx, input }) => {
-        return contractService.sendSigningRequest(ctx, input.id)
+        return contractService.requestSigningRequest(ctx, input.id)
       }),
 
     recallContract: entity.authedProcedure
@@ -174,12 +182,12 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
      * legitimate UI surface for that field, and allowing it would let
      * a homeowner strip optional documents the agent chose to include.
      *
-     * **Lock**: refuses to apply once the contract has been SENT
-     * (`isProposalFrozen` — `contractSentAt != null`). The
-     * draft-envelope window stays editable: `sendSigningRequest` rebuilds
-     * the envelope from live proposal state at send time, so a draft can
-     * never go stale against context edits (fix #264). To edit after
-     * sending, the agent must recall the envelope.
+     * **Lock**: refuses to apply while the proposal is anywhere on the
+     * lock ladder (`isProposalFrozen` — draft envelope exists, contract
+     * in flight, or terminal). The envelope was assembled from this
+     * context; editing one without killing the other would let them
+     * drift. To edit, discard the draft / recall the envelope (#264).
+     * see `src/shared/entities/proposals/DOCS.md#proposal-lock-ladder`
      *
      * **Atomicity**: customer + proposal writes happen sequentially without
      * a shared transaction — matches the existing cross-entity pattern in
@@ -217,7 +225,7 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
         if (isProposalFrozen(proposal)) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
-            message: 'Cannot edit agreement context after the contract has been sent. Recall the envelope first.',
+            message: 'Cannot edit agreement context while an envelope exists. Discard or recall the envelope first.',
           })
         }
 

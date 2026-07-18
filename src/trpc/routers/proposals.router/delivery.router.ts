@@ -40,8 +40,9 @@ export function createDeliveryRouter(entity: EntityToolkit<typeof proposalServer
   return createTRPCRouter({
     /**
      * Sends the proposal email and marks the proposal as sent. Does NOT
-     * touch envelope state — see ADR-0004. The client orchestrator
-     * (`useSendProposalWithDraft`) sequences this with `createContractDraft`.
+     * touch envelope state — see ADR-0004 (amendment 2026-07-18: envelope
+     * creation is a manual agent decision on the envelope card; nothing
+     * auto-creates a draft anymore).
      * see `src/shared/entities/proposals/DOCS.md#proposal-contract-independence`
      */
     sendProposalEmail: entity.authedProcedure

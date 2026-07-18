@@ -92,8 +92,11 @@ function ActionArea(props: {
   token: string
   onRequestAgreement: () => void
 }) {
-  // Terminal: declined / recalled / expired
+  // Terminal: declined / recalled / expired. Declined is PERMANENT — a
+  // declined contract is renegotiated on a new proposal, never re-requested
+  // (see entities/proposals/lib/proposal-lock.ts), so no request button.
   if (props.isTerminal) {
+    const isDeclined = props.requestStatus === 'declined'
     return (
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -106,17 +109,21 @@ function ActionArea(props: {
           <div>
             <p className="text-sm font-medium text-foreground">Agreement no longer active</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Please contact your representative, or request a new agreement below.
+              {isDeclined
+                ? 'Please contact your representative to discuss an updated proposal.'
+                : 'Please contact your representative, or request a new agreement below.'}
             </p>
           </div>
         </div>
-        <RequestButton
-          isPending={props.isPending}
-          isCoolingDown={props.isCoolingDown}
-          remainingSeconds={props.remainingSeconds}
-          onClick={props.onRequestAgreement}
-          label="Request New Agreement"
-        />
+        {!isDeclined && (
+          <RequestButton
+            isPending={props.isPending}
+            isCoolingDown={props.isCoolingDown}
+            remainingSeconds={props.remainingSeconds}
+            onClick={props.onRequestAgreement}
+            label="Request New Agreement"
+          />
+        )}
       </motion.div>
     )
   }

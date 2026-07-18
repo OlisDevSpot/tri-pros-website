@@ -9,6 +9,7 @@ import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentive
 import type { ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { Row } from '@/shared/db/types'
+import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
 
 import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
@@ -296,22 +297,28 @@ export async function getProposalViews(
 
 /**
  * Light lock probe for the whole-proposal freeze gate (`update.before` hook +
- * `isProposalFrozen`). Deliberately unscoped — it exposes no data beyond the
- * lock timestamp, and the update itself re-applies `ctx.scope` in its WHERE.
- * see ../../DOCS.md#final-tcp-derived
+ * `getProposalLockState`). Deliberately unscoped — it exposes nothing beyond
+ * lock signals, and the update itself re-applies `ctx.scope` in its WHERE.
+ * see ../../DOCS.md#proposal-lock-ladder
  */
-export async function getProposalContractSentAt(
+export async function getProposalLockSignals(
   proposalId: string,
-): Promise<DalReturn<string | null>> {
+): Promise<DalReturn<ProposalLockSignals>> {
   return dalDbOperation(async () => {
     const [row] = await db
-      .select({ contractSentAt: proposals.contractSentAt })
+      .select({
+        status: proposals.status,
+        signingRequestId: proposals.signingRequestId,
+        contractSentAt: proposals.contractSentAt,
+        contractSignedAt: proposals.contractSignedAt,
+        contractDeclinedAt: proposals.contractDeclinedAt,
+      })
       .from(proposals)
       .where(eq(proposals.id, proposalId))
     if (!row) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
-    return row.contractSentAt
+    return row
   })
 }
 

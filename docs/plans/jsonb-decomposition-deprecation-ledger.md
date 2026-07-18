@@ -104,13 +104,15 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 > untouched until their trigger. Wide-but-required single-function surfaces → marked KEEP so
 > future audits don't re-litigate them into dead-code-generating "tightenings."
 >
-> **Freeze-gate predicate corrected (2026-07-18, #264):** every gate reference in this register
-> now means `isProposalFrozen` (`contractSentAt != null` — contract SENT), not the
-> original `signingRequestId != null` (any envelope incl. draft), which W2 smoke drives proved
-> fired at the wrong lifecycle stage ("Send Proposal" pre-creates a draft envelope). Staleness
-> protection moved to the send boundary: `sendSigningRequest` rebuilds the envelope from live
-> state before submitting. Canonical: `proposals/DOCS.md#final-tcp-derived` + ADR-0004
-> amendment 2026-07-18. The W3 blob-wide freeze rows below inherit the corrected predicate.
+> **Freeze gate reworked into the lock ladder (2026-07-18, #264):** every gate reference in
+> this register now means `isProposalFrozen` / `getProposalLockState` from the canonical
+> `entities/proposals/lib/proposal-lock.ts` (four tiers: unlocked → draft-locked →
+> inflight-locked → terminal-locked). The W2 smoke-drive misfire's root cause was the
+> auto-draft stage in "Send Proposal" (retired in #264) — envelopes are now always manual, so
+> envelope-exists is a meaningful lock signal again. Whole-proposal field-scoped `update.before`
+> gate covers content writes incl. the share-token path. Canonical:
+> `proposals/DOCS.md#proposal-lock-ladder` + ADR-0004 amendment 2026-07-18. The W3 blob-wide
+> freeze rows below inherit the ladder predicate.
 
 ### Critical — old shape can still be WRITTEN (close before/with W3, ideally sooner)
 

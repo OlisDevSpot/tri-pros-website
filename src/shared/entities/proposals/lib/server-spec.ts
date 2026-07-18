@@ -9,11 +9,11 @@ import {
 } from '@/shared/db/schema'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { recomputeProposalFinancials } from '@/shared/entities/proposals/dal/server/mutations'
-import { getProposalContractSentAt } from '@/shared/entities/proposals/dal/server/queries'
+import { getProposalLockSignals } from '@/shared/entities/proposals/dal/server/queries'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { deriveProposalKind } from '@/shared/entities/proposals/lib/derive-proposal-kind'
 import { generateShareToken } from '@/shared/entities/proposals/lib/generate-share-token'
-import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/entities/proposals/lib/is-proposal-frozen'
+import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/entities/proposals/lib/proposal-lock'
 import { snapSowFromMeeting } from '@/shared/entities/proposals/lib/snap-sow-from-meeting'
 import { proposalVisibility } from '@/shared/entities/proposals/lib/visibility'
 
@@ -63,17 +63,18 @@ export const proposalServerSpec = {
       },
     },
     update: {
-      // Whole-proposal freeze gate (#264): once the contract is in flight or
-      // completed (`contractSentAt` set), user-authored content is immutable.
-      // Field-scoped so lifecycle writes (status, signing ids, contract
-      // timestamps — webhooks, auto-approve, send flows) keep flowing on a
-      // frozen proposal. see ../DOCS.md#final-tcp-derived
+      // Whole-proposal lock ladder (#264): any envelope (draft or beyond) or
+      // terminal status makes user-authored content immutable — the sanctioned
+      // edit path kills the envelope first (discard/recall). Field-scoped so
+      // lifecycle writes (status, signing ids, contract timestamps — webhooks,
+      // auto-approve, send flows) keep flowing on a locked proposal.
+      // see ../DOCS.md#proposal-lock-ladder
       async before(input, _ctx, meta) {
         if (!touchesFrozenLockedFields(input)) {
           return input
         }
-        const contractSentAt = dalVerifySuccess(await getProposalContractSentAt(String(meta.id)))
-        if (isProposalFrozen({ contractSentAt })) {
+        const signals = dalVerifySuccess(await getProposalLockSignals(String(meta.id)))
+        if (isProposalFrozen(signals)) {
           throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
         }
         return input

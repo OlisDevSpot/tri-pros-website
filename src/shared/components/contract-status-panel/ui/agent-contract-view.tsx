@@ -31,9 +31,8 @@ interface AgentContractViewProps {
  * whole point of the split: keep the agent in tight control over what
  * the customer receives, and when.
  *
- * The send-proposal flow client-orchestrates the (independent) signing
- * draft preparation as a first step — owned inside ProposalCard via
- * `useSendProposalWithDraft`. See
+ * Sending the proposal email never touches the envelope; preparing a
+ * signing draft is a manual decision on the envelope card (#264). See
  * `src/shared/entities/proposals/DOCS.md#proposal-contract-independence`.
  *
  * Layout: cards stack on mobile, sit side-by-side on desktop (lg+).

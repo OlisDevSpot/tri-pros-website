@@ -135,7 +135,7 @@ persist derived values" rule):
 |---|---|---|
 | **Drafting** | Compute on read; derived values NEVER persisted as truth | `computeFinalTcp` in `lib/compute-final-tcp.ts` — pure TS, keystroke-latency form recalc |
 | **Lists/reports** | Store a derived ROLLUP as a cache, recomputed at one choke point | `proposals.final_tcp_cents` column; `recomputeProposalFinancials` runs after every financial mutation. Idempotent + self-healing — re-running always converges from rows, so verify = repair |
-| **Frozen (contract sent)** | Snapshot = the rows themselves become immutable; append-only afterward | Freeze gate on `contractSentAt` via `isProposalFrozen` (see below); corrections via AWD, never in-place edits |
+| **Frozen (locked)** | Snapshot = the rows themselves become immutable; append-only afterward | The proposal lock ladder (`#proposal-lock-ladder`); corrections via AWD, never in-place edits |
 
 `recomputeProposalFinancials` is THE financial-rollup choke point — a single idempotent SQL
 statement (`GREATEST(0, starting_tcp_cents − SUM over proposal_incentives − …)`). As of Wave 2
@@ -146,27 +146,9 @@ section incentives migrate into `proposal_incentives(sow_item_id)` and the recom
 pure `SUM` over rows. Global incentives already live in `proposal_incentives` (`sow_item_id IS
 NULL`) as of Wave 2.
 
-**Freeze gate**: `replaceProposalIncentives` (the write path for global incentive rows) refuses
-once the contract has been SENT for signing — `isProposalFrozen` in
-`lib/is-proposal-frozen.ts`, the single predicate shared by the DAL gate, the
-agreement-context lock, and UI disabling (`precondition-failed: proposal_frozen`).
-`contractSentAt != null` is the persisted proxy for "envelope exists AND beyond Zoho draft":
-stamped only by `sendSigningRequest`/`resendSigningRequest`, cleared on recall/discard.
-**Corrected 2026-07-18 (#264)** — the gate previously keyed on `signingRequestId != null`,
-which froze at draft-envelope creation; since "Send Proposal" pre-creates a draft envelope,
-every sent proposal was wrongly frozen. The draft-envelope window is now amendable; staleness
-is prevented by `sendSigningRequest` rebuilding the envelope from live proposal state at send
-time (delete stale draft → fresh assemble → submit). Declined contracts keep `contractSentAt`
-and stay frozen — renegotiation happens on a new proposal, never by editing the sent shape.
-The lock is **whole-proposal**, not financials-only: the `update.before` hook in
-`lib/server-spec.ts` rejects any update touching user-authored content
-(`frozenProposalLockedFields` — label, the three JSON blobs, financeOptionId, meetingId,
-including the share-token path) while frozen. Lifecycle fields (status, sentAt/approvedAt,
-signing ids, contract timestamps, QB refs) stay writable — webhooks, auto-approve, and the
-contract flows keep flowing on a frozen proposal. Known bypass until the tightening pass:
-`ai/client.ts` writes `projectJSON` via raw `db.update` (ledgered escape hatch).
-**Reference impl**: `lib/is-proposal-frozen.ts`, `dal/server/mutations.ts:replaceProposalIncentives`,
-`dal/server/mutations.ts:recomputeProposalFinancials`, `services/contracts.service.ts:sendSigningRequest`.
+**Freeze gate**: writes to the incentive rows (and all user-authored proposal content) are
+gated by the proposal lock ladder — see `#proposal-lock-ladder` for the canonical rule,
+tiers, and enforcement points (`precondition-failed: proposal_frozen`).
 
 **`calc_version`** (`proposals.calc_version`, integer, default `1`) bumps whenever the formula
 or rounding policy changes, so historical rows can be told apart from rows computed under a
@@ -181,6 +163,45 @@ newer rule:
 **Why**: line-item edits would silently invalidate a hand-stored TCP; the rollup is recomputed on every write. Single source of truth for the formula; the rollup column keeps server-side filter/sort fast and correct.
 **Reference impl**: `lib/compute-final-tcp.ts` (JS formula); `dal/server/queries.ts:listProposals` reads `proposals.finalTcpCents` for price filter/sort
 **Enforced by**: convention — `proposals.final_tcp_cents` exists (Wave 2) but only as a rollup cache written exclusively by `recomputeProposalFinancials`; it appears in no editable schema, so it can never be hand-set (the hand-settable `finalTcp` field was removed from `fundingDataSchema` in commit `a6c431e`)
+
+### proposal-lock-ladder
+
+The proposal lock is a four-tier ladder, derived ONCE by `getProposalLockState` in
+`lib/proposal-lock.ts` — every call site (DAL gates, tRPC locks, UI disabling and unlock
+affordances) consumes that module; ad-hoc field checks are forbidden. Ratified 2026-07-18
+(#264). Core invariant: **an envelope, once created, is immutable evidence of what will be
+signed; to change the proposal, the envelope must be killed first.** Envelope creation is
+always a manual agent decision — "Send Proposal" sends the email only and never auto-creates
+a draft (the retired auto-draft stage is why the old gate misfired; see ADR-0004 amendment
+2026-07-18).
+
+| Tier | Signals | Meaning | Unlock path |
+|---|---|---|---|
+| `unlocked` | no envelope, non-terminal status | Freely editable — the common case | — |
+| `draft-locked` | `signingRequestId` set, `contractSentAt` null | Agent prepared a signing draft | Easy + inline: "Discard draft & edit" confirm in the edit view (discards the Zoho draft, 0 credits) |
+| `inflight-locked` | `contractSentAt` set, not terminal | Contract out for signature | Deliberate: recall the envelope from the review page |
+| `terminal-locked` | `status = 'approved'` OR `contractSignedAt` OR `contractDeclinedAt` | Approved (project minted), signed, or declined | **None.** Changes happen on a duplicated/new proposal. Declined is permanent by decision — no re-request, no thaw |
+
+The lock is **whole-proposal**, field-scoped: the `update.before` hook in `lib/server-spec.ts`
+rejects updates touching user-authored content (`frozenProposalLockedFields` — label, the
+three JSON blobs, financeOptionId, meetingId — including the share-token path) whenever the
+state isn't `unlocked` (`precondition-failed: proposal_frozen`). Lifecycle fields (status,
+sentAt/approvedAt, signing ids, contract timestamps, QB refs) stay writable — webhooks,
+auto-approve, and contract flows keep flowing on a locked proposal. Because content cannot
+change while an envelope exists, `sendSigningRequest` submits the draft as-is (fresh by
+construction — no rebuild needed). The homeowner "Request Agreement" path
+(`requestSigningRequest`) composes create-if-missing + submit, since homeowners can't prepare
+drafts. Known bypass until the tightening pass: `ai/client.ts` writes `projectJSON` via raw
+`db.update` (ledgered escape hatch).
+
+**Why**: a draft is cheap and agent-owned, so its lock should be cheap to undo; a sent
+contract is a customer-facing commitment, so its lock demands a deliberate recall; a signed
+or approved contract is a business fact, so its lock is permanent.
+**Reference impl**: `lib/proposal-lock.ts` (canonical), enforced at `lib/server-spec.ts:hooks.update.before`,
+`dal/server/mutations.ts:replaceProposalIncentives`, `contracts.router.ts:applyEnvelopeContext`,
+surfaced in `features/proposal-flow/ui/views/edit-proposal-view.tsx`.
+**Enforced by**: Zod-free structural predicate + DAL probe (`getProposalLockSignals`); UI is
+affordance-only — the server gates are authoritative.
 
 ### cslb-start-date
 
@@ -258,7 +279,7 @@ Customer age (`customer.age` — plain column, epic #256/#259; see `../customers
 
 - **Single procedure**: `proposalsRouter.contracts.applyEnvelopeContext({ id, token?, age?, envelopeDocumentIds? })` is the only writer for these two fields. Either input is optional; at least one must be present. Server reconciles the saved selection against the (possibly just-applied) age before persisting.
 - **Reconciliation is silent**: on age change, required docs are auto-added and forbidden docs are auto-dropped from the saved selection without surfacing notifications. The reconciled result is returned to the caller so the UI can render it immediately.
-- **Lock**: refuses to apply once the contract has been sent (`isProposalFrozen` — `contractSentAt != null`, corrected 2026-07-18 #264). The draft-envelope window stays editable; `sendSigningRequest` rebuilds the envelope from live state at send time so drafts can't go stale. To edit after sending, the agent must recall.
+- **Lock**: refuses to apply while the proposal is anywhere on the lock ladder (`isProposalFrozen` — see `#proposal-lock-ladder`, #264). The envelope was assembled from this context; to edit, discard the draft or recall the envelope.
 - **Auth**: shareable procedure — agent (session) and homeowner (proposal token) drive the same writes. The customers entity does not carry its own token; the proposal's token gates writes to the customer-age field through this procedure.
 
 **Why this lives on the proposals router and not the customers router**: the share-token belongs to the proposal. A homeowner can only authenticate against the proposal entity. Routing the customer-age write through the proposal's shareable procedure (with `customerCrud.update` doing the actual single-row write inside) keeps each entity's CRUD pure while exposing a single coherent tokenized surface for the cross-entity update. The retired `customersRouter.submitCustomerAge` violated this by manually re-implementing token validation on the customers router and growing into a cross-entity orchestrator.
@@ -272,12 +293,12 @@ The proposal lifecycle (`status`, `sentAt`, `approvedAt`) and the contract lifec
 
 - **Sending the proposal email** updates only proposal-side columns. It does NOT create, refresh, or touch the Zoho Sign envelope.
 - **Creating / discarding / recalling an envelope** updates only contract-side columns. It does NOT change `proposal.status` or `sentAt`.
-- The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions; the "Send Proposal" action client-orchestrates a one-shot draft preparation before sending the email, but the orchestration lives on the client (see `features/proposal-flow/dal/client/mutations/use-send-proposal-with-draft.ts`), not as a server-side side-effect.
+- The agent UI exposes this as two cards (`ProposalCard`, `EnvelopeCard`) with their own actions. **As of #264 (2026-07-18), "Send Proposal" sends the email ONLY** — the auto-draft-preparation stage (previously client-orchestrated via `useSendProposalWithDraft`) is retired: envelope creation is a manual decision on the envelope card, because an envelope's existence is the proposal lock signal (`#proposal-lock-ladder`) and must mean the agent chose it. The homeowner-side "Request Agreement" composes create-if-missing + submit server-side (`requestSigningRequest`) since homeowners can't prepare drafts.
 - Draft creation is **synchronous** — Zoho returns the `request_id` on the create call, so there is no async gap to bridge with QStash or a polling-based "in-flight" signal. The previous `syncContractDraftJob` was removed for this reason.
 
-**Why**: prior implementation dispatched a QStash job from `sendProposalEmail` to auto-create a draft. The async coupling forced the UI to infer "a draft is being created" from `proposal.status === 'sent' && contractStatus == null` — a heuristic that broke immediately after any code path legitimately cleared `signingRequestId` (discard, recall), leaving the UI stuck in an unrecoverable spinner state.
+**Why**: prior implementation dispatched a QStash job from `sendProposalEmail` to auto-create a draft. The async coupling forced the UI to infer "a draft is being created" from `proposal.status === 'sent' && contractStatus == null` — a heuristic that broke immediately after any code path legitimately cleared `signingRequestId` (discard, recall), leaving the UI stuck in an unrecoverable spinner state. The later client-orchestrated auto-draft had a subtler cost: it made every sent proposal carry an envelope nobody asked for, defeating the lock ladder.
 
-**Reference impl**: `delivery.router.ts:sendProposalEmail` (proposal-only), `contracts.router.ts:createContractDraft` / `discardDraftContract` / `recallContract` (contract-only), `use-send-proposal-with-draft.ts` (client orchestrator), `use-contract-status.ts` (polls only for `inprogress` signing-lifecycle events).
+**Reference impl**: `delivery.router.ts:sendProposalEmail` (proposal-only), `hooks/use-send-proposal.ts` (email-only client hook), `contracts.router.ts:createContractDraft` / `discardDraftContract` / `recallContract` (contract-only), `contracts.service.ts:requestSigningRequest` (homeowner request), `use-contract-status.ts` (polls only for `inprogress` signing-lifecycle events).
 **Enforced by**: architectural discipline — no shared service writes both column sets in one call. ADR-0004 documents the rationale.
 
 ### duplicate-resets-and-redrives

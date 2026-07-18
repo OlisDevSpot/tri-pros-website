@@ -16,7 +16,7 @@ import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { listProposalIncentives } from '@/shared/entities/proposals/dal/server/queries'
 import { domainIncentivesToRows } from '@/shared/entities/proposals/lib/incentive-rows'
-import { isProposalFrozen } from '@/shared/entities/proposals/lib/is-proposal-frozen'
+import { isProposalFrozen } from '@/shared/entities/proposals/lib/proposal-lock'
 
 // ── recordProposalView ─────────────────────────────────────────────────
 
@@ -68,11 +68,11 @@ export async function recomputeProposalFinancials(
 
 /**
  * Replace-all upsert of GLOBAL incentives (funding-form save path — the W2
- * slice of the W3 form refactor, spec §3 W2.3). Freeze gate: refuses once the
- * contract has been SENT for signing (`isProposalFrozen`) — the
- * draft-envelope window stays amendable; `sendSigningRequest` rebuilds the
- * envelope from live state so drafts can never go stale (fix #264). The
- * blob-wide freeze gate lands with the W3 write refactor.
+ * slice of the W3 form refactor, spec §3 W2.3). Lock gate: refuses while the
+ * proposal is anywhere on the lock ladder (`isProposalFrozen` — draft
+ * envelope exists, contract in flight, or terminal). The sanctioned edit
+ * path discards/recalls the envelope first (#264).
+ * see ../../DOCS.md#proposal-lock-ladder
  */
 export async function replaceProposalIncentives(
   ctx: ScopedContext,
@@ -80,7 +80,14 @@ export async function replaceProposalIncentives(
 ): Promise<DalReturn<ProposalIncentiveRow[]>> {
   return dalDbOperation(async () => {
     const [proposal] = await db
-      .select({ id: proposals.id, contractSentAt: proposals.contractSentAt })
+      .select({
+        id: proposals.id,
+        status: proposals.status,
+        signingRequestId: proposals.signingRequestId,
+        contractSentAt: proposals.contractSentAt,
+        contractSignedAt: proposals.contractSignedAt,
+        contractDeclinedAt: proposals.contractDeclinedAt,
+      })
       .from(proposals)
       .where(and(eq(proposals.id, input.proposalId), ctx.scope ?? undefined))
     if (!proposal) {
