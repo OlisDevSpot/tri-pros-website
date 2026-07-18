@@ -15,6 +15,7 @@ import {
 } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Separator } from '@/shared/components/ui/separator'
+import { computeDealDepositPercent } from '@/shared/entities/meetings/lib/compute-deal-derived'
 import { cn } from '@/shared/lib/utils'
 
 interface ProgramIncentiveDisplay {
@@ -44,6 +45,7 @@ export function DealStructureFields({
   const mode = useWatch({ control: form.control, name: 'mode' })
   const financeTermMonths = useWatch({ control: form.control, name: 'financeTermMonths' })
   const apr = useWatch({ control: form.control, name: 'apr' })
+  const depositAmount = useWatch({ control: form.control, name: 'depositAmount' })
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -257,9 +259,10 @@ export function DealStructureFields({
                 <p className="text-xs text-muted-foreground">of final contract price</p>
               </div>
               <span className="text-xl font-bold tabular-nums">
-                {calculatedFinalTcp > 0
-                  ? `${Math.round(((form.getValues('depositAmount') ?? 0) / calculatedFinalTcp) * 100)}%`
-                  : '—'}
+                {(() => {
+                  const depositPercent = computeDealDepositPercent({ ...form.getValues(), depositAmount })
+                  return depositPercent > 0 ? `${depositPercent}%` : '—'
+                })()}
               </span>
             </CardContent>
           </Card>
