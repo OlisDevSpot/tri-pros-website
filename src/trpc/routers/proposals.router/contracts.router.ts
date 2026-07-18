@@ -25,6 +25,7 @@ import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
+import { isProposalFrozen } from '@/shared/entities/proposals/lib/is-proposal-frozen'
 import { contractService } from '@/shared/services/contracts.service'
 import { EnvelopeSelectionError, evaluateDocuments, projectAgreementDocs, reconcileEnvelopeSelection, validateEnvelopeSelection } from '@/shared/services/providers/zoho-sign/lib/documents/evaluate'
 import { buildProposalContext } from '@/shared/services/providers/zoho-sign/lib/documents/proposal-context'
@@ -173,9 +174,12 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
      * legitimate UI surface for that field, and allowing it would let
      * a homeowner strip optional documents the agent chose to include.
      *
-     * **Lock**: refuses to apply while `proposal.signingRequestId != null`.
-     * Once an envelope of any status exists, the agreement context is
-     * frozen — the agent must discard/recall to unlock editing.
+     * **Lock**: refuses to apply once the contract has been SENT
+     * (`isProposalFrozen` — `contractSentAt != null`). The
+     * draft-envelope window stays editable: `sendSigningRequest` rebuilds
+     * the envelope from live proposal state at send time, so a draft can
+     * never go stale against context edits (fix #264). To edit after
+     * sending, the agent must recall the envelope.
      *
      * **Atomicity**: customer + proposal writes happen sequentially without
      * a shared transaction — matches the existing cross-entity pattern in
@@ -210,10 +214,10 @@ export function createContractsRouter(entity: EntityToolkit<typeof proposalServe
           throw new TRPCError({ code: 'NOT_FOUND', message: 'No customer linked to this proposal' })
         }
 
-        if (proposal.signingRequestId != null) {
+        if (isProposalFrozen(proposal)) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
-            message: 'Cannot edit agreement context while an envelope exists. Discard or recall the envelope first.',
+            message: 'Cannot edit agreement context after the contract has been sent. Recall the envelope first.',
           })
         }
 

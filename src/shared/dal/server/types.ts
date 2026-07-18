@@ -106,7 +106,7 @@ export interface EntityServerSpec<
     }
     update?: {
       // eslint-disable-next-line ts/method-signature-style
-      before?(data: Update<TTable>, ctx: ScopedContext): Promise<Update<TTable>> | Update<TTable>
+      before?(data: Update<TTable>, ctx: ScopedContext, meta: { id: string | number }): Promise<Update<TTable>> | Update<TTable>
       // eslint-disable-next-line ts/method-signature-style
       after?(row: Row<TTable>, ctx: ScopedContext, meta: {
         previousRow: Row<TTable>

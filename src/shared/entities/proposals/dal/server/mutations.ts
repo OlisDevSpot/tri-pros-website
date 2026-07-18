@@ -16,6 +16,7 @@ import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
 import { listProposalIncentives } from '@/shared/entities/proposals/dal/server/queries'
 import { domainIncentivesToRows } from '@/shared/entities/proposals/lib/incentive-rows'
+import { isProposalFrozen } from '@/shared/entities/proposals/lib/is-proposal-frozen'
 
 // ── recordProposalView ─────────────────────────────────────────────────
 
@@ -67,9 +68,11 @@ export async function recomputeProposalFinancials(
 
 /**
  * Replace-all upsert of GLOBAL incentives (funding-form save path — the W2
- * slice of the W3 form refactor, spec §3 W2.3). Freeze gate: refuses while an
- * envelope exists (Addendum A.1.2 — child financial rows freeze with the
- * proposal; the blob-wide freeze gate lands with the W3 write refactor).
+ * slice of the W3 form refactor, spec §3 W2.3). Freeze gate: refuses once the
+ * contract has been SENT for signing (`isProposalFrozen`) — the
+ * draft-envelope window stays amendable; `sendSigningRequest` rebuilds the
+ * envelope from live state so drafts can never go stale (fix #264). The
+ * blob-wide freeze gate lands with the W3 write refactor.
  */
 export async function replaceProposalIncentives(
   ctx: ScopedContext,
@@ -77,14 +80,14 @@ export async function replaceProposalIncentives(
 ): Promise<DalReturn<ProposalIncentiveRow[]>> {
   return dalDbOperation(async () => {
     const [proposal] = await db
-      .select({ id: proposals.id, signingRequestId: proposals.signingRequestId })
+      .select({ id: proposals.id, contractSentAt: proposals.contractSentAt })
       .from(proposals)
       .where(and(eq(proposals.id, input.proposalId), ctx.scope ?? undefined))
     if (!proposal) {
       throw new ThrowableDalError({ type: 'not-found' })
     }
-    if (proposal.signingRequestId != null) {
-      throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_financials_frozen' })
+    if (isProposalFrozen(proposal)) {
+      throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
     }
     const rows = domainIncentivesToRows(input.proposalId, input.incentives)
     await db.transaction(async (tx) => {

@@ -16,9 +16,11 @@ import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/
 import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
 import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/compute-final-tcp'
+import { isProposalFrozen } from '@/shared/entities/proposals/lib/is-proposal-frozen'
 import { CustomerInfoHeader } from '../components/customer-info-header'
 
 interface EditProposalViewProps {
@@ -32,10 +34,14 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   const updateProposal = useUpdateProposal()
   const replaceIncentives = useReplaceIncentives()
 
+  // see src/shared/entities/proposals/DOCS.md#final-tcp-derived — frozen once
+  // the contract is SENT; the draft-envelope window stays editable (#264).
+  const proposalFrozen = proposal.data != null && isProposalFrozen(proposal.data)
+
   const form = useForm<ProposalFormSchema>({
     resolver: zodResolver(proposalFormSchema),
     mode: 'onSubmit',
-    disabled: proposal.isLoading || updateProposal.isPending,
+    disabled: proposal.isLoading || updateProposal.isPending || proposalFrozen,
     defaultValues: baseDefaultValues,
   })
 
@@ -101,6 +107,10 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   }
 
   function onSubmit(rawData: ProposalFormSchema) {
+    if (proposalFrozen) {
+      toast.error('Contract sent for signing — proposal is locked. Recall the envelope to edit.')
+      return
+    }
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => {
         replaceIncentives.mutate(
@@ -119,6 +129,10 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
   }
 
   function onSave(rawData: ProposalFormSchema) {
+    if (proposalFrozen) {
+      toast.error('Contract sent for signing — proposal is locked. Recall the envelope to edit.')
+      return
+    }
     updateProposal.mutate(buildMutationData(rawData), {
       onSuccess: () => {
         replaceIncentives.mutate(
@@ -147,6 +161,15 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
         <div className="shrink-0">
           <CustomerInfoHeader customer={customer} />
         </div>
+      )}
+      {proposalFrozen && (
+        <Alert variant="destructive" className="shrink-0">
+          <AlertTitle>Contract out for signature</AlertTitle>
+          <AlertDescription>
+            This proposal&apos;s contract has been sent for signing, so the proposal is locked.
+            Recall the envelope from the proposal review page to make changes.
+          </AlertDescription>
+        </Alert>
       )}
       <div className="h-full w-full overflow-auto md:pr-4">
         <Form {...form}>

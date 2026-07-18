@@ -20,6 +20,7 @@ import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { paginate } from '@/shared/dal/server/lib/query/output'
 import { dateRangeSchema, numberRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
+import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -290,6 +291,27 @@ export async function getProposalViews(
       directViews: views.filter(v => v.source === 'direct').length,
       views,
     }
+  })
+}
+
+/**
+ * Light lock probe for the whole-proposal freeze gate (`update.before` hook +
+ * `isProposalFrozen`). Deliberately unscoped — it exposes no data beyond the
+ * lock timestamp, and the update itself re-applies `ctx.scope` in its WHERE.
+ * see ../../DOCS.md#final-tcp-derived
+ */
+export async function getProposalContractSentAt(
+  proposalId: string,
+): Promise<DalReturn<string | null>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select({ contractSentAt: proposals.contractSentAt })
+      .from(proposals)
+      .where(eq(proposals.id, proposalId))
+    if (!row) {
+      throw new ThrowableDalError({ type: 'not-found' })
+    }
+    return row.contractSentAt
   })
 }
 

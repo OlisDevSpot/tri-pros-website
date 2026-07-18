@@ -103,13 +103,21 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 > Escape hatches and dual-shape tolerance → close. Sanctioned bridges (named kill trigger) →
 > untouched until their trigger. Wide-but-required single-function surfaces → marked KEEP so
 > future audits don't re-litigate them into dead-code-generating "tightenings."
+>
+> **Freeze-gate predicate corrected (2026-07-18, #264):** every gate reference in this register
+> now means `isProposalFrozen` (`contractSentAt != null` — contract SENT), not the
+> original `signingRequestId != null` (any envelope incl. draft), which W2 smoke drives proved
+> fired at the wrong lifecycle stage ("Send Proposal" pre-creates a draft envelope). Staleness
+> protection moved to the send boundary: `sendSigningRequest` rebuilds the envelope from live
+> state before submitting. Canonical: `proposals/DOCS.md#final-tcp-derived` + ADR-0004
+> amendment 2026-07-18. The W3 blob-wide freeze rows below inherit the corrected predicate.
 
 ### Critical — old shape can still be WRITTEN (close before/with W3, ideally sooner)
 
 | | Seam | Where | Problem | Tightening direction |
 |---|---|---|---|---|
 | [ ] | Update/create Zod accepts + persists non-empty blob incentives | `entities/proposals/schemas/index.ts:88` (`fundingDataSchema.incentives`) → `insertProposalSchema` → `updateProposalSchema.partial()` → generic `updateImpl` whole-column `.set()` | Any authed caller (incl. share-token path) can write `fundingJSON.data.incentives` verbatim into the blob — bypassing `replaceProposalIncentives`, its freeze gate, and row creation. Ghost blob data is shadowed by the getFullView bridge today but resurfaces the instant the bridge dies (W3). The ledger's "writers store `[]`" claim is caller discipline, not a schema/DAL guarantee | **RATIFIED 2026-07-16 (Oliver): scrub-with-tripwire.** `create.before`/`update.before` hooks in the proposals server-spec force `fundingJSON.data.incentives = []` whenever `fundingJSON` is present; when the scrub removes NON-EMPTY incentives, log a loud warning (proposal id + input source) so unknown writers surface. Chosen over a persisted/form schema split (same W3 expiry, heavy type ripple, collides with façade plan Task 9) and over hard-reject (bets the writer enumeration is complete). Escalation: flip scrub→reject if the warning never fires. Ships in the post-merge tightening pass — bridge pre-registered in the W3 section below |
-| [ ] | `funding.tsx` cash-in-deal Save re-populates the blob from hydrated rows | `features/proposal-flow/ui/components/proposal/funding.tsx:135-146` | Spreads `getFullView`-hydrated (row-derived, potentially non-empty) incentives back into a `fundingJSON` blob write. Actively violates the blank-writer invariant; not freeze-gated (succeeds after an envelope exists) | **RATIFIED 2026-07-16: PERMANENT fix, not scaffolding** — narrow the Save to send only `{ cashInDeal }`; reconstructing the whole blob at the write edge is the bug, and narrow intentional writes carry straight into the row world. Ships in the post-merge tightening pass |
+| [ ] | `funding.tsx` cash-in-deal Save re-populates the blob from hydrated rows | `features/proposal-flow/ui/components/proposal/funding.tsx:135-146` | Spreads `getFullView`-hydrated (row-derived, potentially non-empty) incentives back into a `fundingJSON` blob write. Actively violates the blank-writer invariant. (Since #264, the whole-proposal `update.before` gate blocks this write once the contract is SENT — but the pre-send window still writes hydrated incentives into the blob) | **RATIFIED 2026-07-16: PERMANENT fix, not scaffolding** — narrow the Save to send only `{ cashInDeal }`; reconstructing the whole blob at the write edge is the bug, and narrow intentional writes carry straight into the row world. Ships in the post-merge tightening pass |
 
 ### Important — old shape travels deeper than the capture edge / unvalidated writes
 

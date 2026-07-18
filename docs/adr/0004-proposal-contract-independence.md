@@ -63,7 +63,7 @@ This ADR's original framing was: "cross-entity coupling that exists for a specif
 
 - **Anti-pattern (retired).** The old `customersRouter.submitCustomerAge` was a hand-rolled `publicProcedure` that manually validated a *proposal* token to allow writing a *customer* field. It belonged on neither router clearly and grew a cross-entity side-effect (envelope-doc reconciliation). The retirement is: cross-entity writes that share a single tokenized auth gate live on the entity that *carries* the token, named to make the cross-entity scope obvious (e.g., `applyEnvelopeContext`, not `setCustomerAge`).
 
-**Lock invariant:** `applyEnvelopeContext` refuses to mutate while `proposal.signingRequestId != null`. The agreement-context inputs are frozen for the lifetime of any envelope (draft, in-progress, or terminal). To edit, the agent must explicitly discard / recall / recreate — the same explicit unlocking gesture as everywhere else on the contracts router.
+**Lock invariant** *(amended 2026-07-18, #264 — see below)*: `applyEnvelopeContext` refuses to mutate once the contract has been sent (`isProposalFrozen` — `contractSentAt != null`). Originally the lock keyed on `signingRequestId != null` (any envelope, including draft); that froze every sent proposal, because "Send Proposal" pre-creates a draft envelope as its first step. The draft window is now editable, with staleness prevented at the send boundary instead: `sendSigningRequest` deletes the stale draft and reassembles the envelope from live proposal state before submitting. To edit after sending, the agent must explicitly recall — the same explicit unlocking gesture as everywhere else on the contracts router.
 
 ## Amendment 2026-05-28 — Retire the legacy single-template path
 
@@ -85,3 +85,27 @@ Deleted in this amendment:
 - Three orphan diagnostic scripts that exercised the legacy path
 
 **Anti-pattern (formalized):** template selection that branches on a *single* dimension (age) when the business rule depends on *multiple* dimensions (kind, age, SOW length). The registry's per-doc `applicableKinds` + `perKindRules` is the only allowed shape for envelope-content decisions.
+
+## Amendment 2026-07-18 — Freeze at contract-send, rebuild at send (#264)
+
+Wave-2 smoke drives surfaced that both freeze gates (`replaceProposalIncentives`'s
+`proposal_frozen` and `applyEnvelopeContext`'s lock) keyed on
+`signingRequestId != null` — but the "Send Proposal" orchestration (this ADR's own
+`useSendProposalWithDraft` pattern) creates a Zoho **draft** envelope as stage 1, so every
+sent proposal was frozen before any contract went out. The ratified business rule:
+financials and agreement context freeze **iff the contract has been sent** — envelope
+exists AND beyond Zoho draft status.
+
+- **Canonical predicate**: `isProposalFrozen` (`entities/proposals/lib/is-proposal-frozen.ts`)
+  — `contractSentAt != null`, the persisted proxy for "beyond draft" (stamped only by
+  `sendSigningRequest`/`resendSigningRequest`, cleared on recall/discard). Zoho envelope
+  status is deliberately NOT persisted; a live status check inside a DAL gate would add an
+  external call and violate the ACL boundary.
+- **Staleness inversion**: the old draft-stage lock existed to keep the pre-assembled
+  envelope's documents from drifting against edits. That protection moved to the send
+  boundary: `sendSigningRequest` deletes the stale draft, reassembles from live proposal
+  state (`createDraft` self-heals), and submits — the sent contract always matches current
+  data, and the draft window is freely editable. Zoho drafts cost 0 credits.
+- **Decline semantics** (ratified): declined contracts keep `contractSentAt` and stay
+  frozen. There is deliberately no thaw path for a declined contract — renegotiation
+  happens on a new proposal.

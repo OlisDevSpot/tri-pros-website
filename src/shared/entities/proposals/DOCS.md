@@ -135,7 +135,7 @@ persist derived values" rule):
 |---|---|---|
 | **Drafting** | Compute on read; derived values NEVER persisted as truth | `computeFinalTcp` in `lib/compute-final-tcp.ts` — pure TS, keystroke-latency form recalc |
 | **Lists/reports** | Store a derived ROLLUP as a cache, recomputed at one choke point | `proposals.final_tcp_cents` column; `recomputeProposalFinancials` runs after every financial mutation. Idempotent + self-healing — re-running always converges from rows, so verify = repair |
-| **Frozen (envelope created)** | Snapshot = the rows themselves become immutable; append-only afterward | Freeze gate on `signingRequestId` (see below); corrections via AWD, never in-place edits |
+| **Frozen (contract sent)** | Snapshot = the rows themselves become immutable; append-only afterward | Freeze gate on `contractSentAt` via `isProposalFrozen` (see below); corrections via AWD, never in-place edits |
 
 `recomputeProposalFinancials` is THE financial-rollup choke point — a single idempotent SQL
 statement (`GREATEST(0, starting_tcp_cents − SUM over proposal_incentives − …)`). As of Wave 2
@@ -147,13 +147,26 @@ pure `SUM` over rows. Global incentives already live in `proposal_incentives` (`
 NULL`) as of Wave 2.
 
 **Freeze gate**: `replaceProposalIncentives` (the write path for global incentive rows) refuses
-while `proposal.signingRequestId != null` (`precondition-failed: proposal_financials_frozen`).
-This covers the W2 slice — child financial rows freeze with the proposal once an envelope
-exists. The blob-wide financial freeze (covering `fundingJSON`/`projectJSON` financial fields
-too, including the share-token update path) lands with the Wave 3 write refactor; until then,
-those blob fields are not yet gated by `signingRequestId`.
-**Reference impl**: `dal/server/mutations.ts:replaceProposalIncentives`,
-`dal/server/mutations.ts:recomputeProposalFinancials`.
+once the contract has been SENT for signing — `isProposalFrozen` in
+`lib/is-proposal-frozen.ts`, the single predicate shared by the DAL gate, the
+agreement-context lock, and UI disabling (`precondition-failed: proposal_frozen`).
+`contractSentAt != null` is the persisted proxy for "envelope exists AND beyond Zoho draft":
+stamped only by `sendSigningRequest`/`resendSigningRequest`, cleared on recall/discard.
+**Corrected 2026-07-18 (#264)** — the gate previously keyed on `signingRequestId != null`,
+which froze at draft-envelope creation; since "Send Proposal" pre-creates a draft envelope,
+every sent proposal was wrongly frozen. The draft-envelope window is now amendable; staleness
+is prevented by `sendSigningRequest` rebuilding the envelope from live proposal state at send
+time (delete stale draft → fresh assemble → submit). Declined contracts keep `contractSentAt`
+and stay frozen — renegotiation happens on a new proposal, never by editing the sent shape.
+The lock is **whole-proposal**, not financials-only: the `update.before` hook in
+`lib/server-spec.ts` rejects any update touching user-authored content
+(`frozenProposalLockedFields` — label, the three JSON blobs, financeOptionId, meetingId,
+including the share-token path) while frozen. Lifecycle fields (status, sentAt/approvedAt,
+signing ids, contract timestamps, QB refs) stay writable — webhooks, auto-approve, and the
+contract flows keep flowing on a frozen proposal. Known bypass until the tightening pass:
+`ai/client.ts` writes `projectJSON` via raw `db.update` (ledgered escape hatch).
+**Reference impl**: `lib/is-proposal-frozen.ts`, `dal/server/mutations.ts:replaceProposalIncentives`,
+`dal/server/mutations.ts:recomputeProposalFinancials`, `services/contracts.service.ts:sendSigningRequest`.
 
 **`calc_version`** (`proposals.calc_version`, integer, default `1`) bumps whenever the formula
 or rounding policy changes, so historical rows can be told apart from rows computed under a
@@ -245,7 +258,7 @@ Customer age (`customer.age` — plain column, epic #256/#259; see `../customers
 
 - **Single procedure**: `proposalsRouter.contracts.applyEnvelopeContext({ id, token?, age?, envelopeDocumentIds? })` is the only writer for these two fields. Either input is optional; at least one must be present. Server reconciles the saved selection against the (possibly just-applied) age before persisting.
 - **Reconciliation is silent**: on age change, required docs are auto-added and forbidden docs are auto-dropped from the saved selection without surfacing notifications. The reconciled result is returned to the caller so the UI can render it immediately.
-- **Lock**: refuses to apply while `proposal.signingRequestId != null`. Any envelope (draft, in-progress, terminal) freezes the agreement context. To edit, the agent must discard/recall/recreate.
+- **Lock**: refuses to apply once the contract has been sent (`isProposalFrozen` — `contractSentAt != null`, corrected 2026-07-18 #264). The draft-envelope window stays editable; `sendSigningRequest` rebuilds the envelope from live state at send time so drafts can't go stale. To edit after sending, the agent must recall.
 - **Auth**: shareable procedure — agent (session) and homeowner (proposal token) drive the same writes. The customers entity does not carry its own token; the proposal's token gates writes to the customer-age field through this procedure.
 
 **Why this lives on the proposals router and not the customers router**: the share-token belongs to the proposal. A homeowner can only authenticate against the proposal entity. Routing the customer-age write through the proposal's shareable procedure (with `customerCrud.update` doing the actual single-row write inside) keeps each entity's CRUD pure while exposing a single coherent tokenized surface for the cross-entity update. The retired `customersRouter.submitCustomerAge` violated this by manually re-implementing token validation on the customers router and growing into a cross-entity orchestrator.

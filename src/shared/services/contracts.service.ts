@@ -46,11 +46,18 @@ function createContractService() {
     },
 
     /**
-     * Submits an EXISTING draft for signing. Strict — throws if the proposal
-     * has no `signingRequestId`. Auto-create on missing draft is deliberately
-     * NOT supported: it caused a two-tab race where Tab B silently created a
+     * Submits a draft for signing. Strict — throws if the proposal has no
+     * `signingRequestId`. Auto-create on missing draft is deliberately NOT
+     * supported: it caused a two-tab race where Tab B silently created a
      * new envelope after Tab A discarded the draft, sending a contract the
      * agent never reviewed.
+     *
+     * REBUILDS the envelope before submitting (fix #264): financials and
+     * agreement context are editable during the draft window (freeze starts
+     * at contract-send, not draft-creation), so the pre-assembled draft's
+     * documents may predate edits. Deleting the stale draft and reassembling
+     * from live proposal state guarantees the sent contract always matches
+     * what the agent sees. Zoho drafts cost 0 credits, so the rebuild is free.
      */
     sendSigningRequest: async (ctx: ScopedContext, proposalId: string) => {
       const proposal = dalVerifySuccess(await getFullView(ctx, { id: proposalId }))
@@ -58,20 +65,30 @@ function createContractService() {
         throw new Error(`Proposal ${proposalId} not found`)
       }
 
-      const requestId = proposal.signingRequestId
-      if (!requestId) {
+      const staleRequestId = proposal.signingRequestId
+      if (!staleRequestId) {
         throw new Error('No draft envelope exists for this proposal. Refresh the page and create a new draft before sending.')
       }
+      if (proposal.contractSentAt) {
+        throw new Error('Contract already sent for signing. Use resend to issue a fresh envelope.')
+      }
 
-      // Submit the draft for signing
+      // Drafts can't be recalled in Zoho — delete, then rebuild from live state.
+      const ok = await zohoSyncService.deleteRequest(staleRequestId)
+      if (!ok) {
+        throw new Error(`Zoho Sign delete failed for request ${staleRequestId}`)
+      }
+      // Clear immediately so a mid-sequence failure leaves a clean "no draft"
+      // state (recoverable via the strict error above), never a dangling id
+      // pointing at a deleted Zoho request.
+      dalVerifySuccess(await proposalCrud.update(ctx, { id: proposalId, data: { signingRequestId: null } }))
+
+      const { requestId } = await createDraft(ctx, proposalId)
       await zohoSyncService.submitForSigning(requestId)
 
       dalVerifySuccess(await proposalCrud.update(ctx, {
         id: proposalId,
-        data: {
-          signingRequestId: requestId,
-          contractSentAt: new Date().toISOString(),
-        },
+        data: { contractSentAt: new Date().toISOString() },
       }))
 
       return { requestId }
