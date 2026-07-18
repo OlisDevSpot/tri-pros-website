@@ -6,20 +6,10 @@ import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
 import { Separator } from '@/shared/components/ui/separator'
 import { SectionFinancialsSummary } from '@/shared/entities/proposals/components/section-financials-summary'
-import { computeProposalCostTotals } from '@/shared/entities/proposals/lib/compute-proposal-cost-totals'
-import {
-  formatMultiplier,
-  getMultiplierTier,
-} from '@/shared/entities/proposals/lib/compute-sow-financials'
+import { MULTIPLIER_STYLES } from '@/shared/entities/proposals/constants/multiplier-styles'
+import { computeProposalFinancials, formatMultiplier } from '@/shared/entities/proposals/lib/financials'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
-
-const MULTIPLIER_STYLES: Record<ReturnType<typeof getMultiplierTier>, string> = {
-  danger: 'text-red-600 dark:text-red-400',
-  healthy: 'text-emerald-600 dark:text-emerald-400',
-  excellent: 'text-emerald-600 dark:text-emerald-300 [text-shadow:0_0_12px_oklch(0.7_0.18_155),0_0_4px_oklch(0.7_0.18_155_/_0.4)]',
-  unknown: 'text-muted-foreground',
-}
 
 interface Props {
   proposalData: InsertProposalSchema
@@ -29,8 +19,11 @@ export function InternalCalculationBlock({ proposalData }: Props) {
   const [expanded, setExpanded] = useState(false)
   const { pricingMode } = proposalData.formMetaJSON
   const sow = proposalData.projectJSON.data.sow
-  const totals = computeProposalCostTotals(proposalData)
-  const totalTier = getMultiplierTier(totals.totalMultiplier)
+  const financials = computeProposalFinancials({
+    funding: proposalData.fundingJSON.data,
+    sow,
+    pricingMode,
+  })
 
   return (
     <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 overflow-hidden text-sm">
@@ -71,51 +64,56 @@ export function InternalCalculationBlock({ proposalData }: Props) {
         ))}
       </div>
 
-      {/* Aggregate totals */}
+      {/* Aggregate totals — price side, then cost side */}
       <div className="border-t border-destructive/20 px-5 py-4 space-y-2">
         <SummaryRow
           label="Subtotal"
-          value={formatAsDollars(totals.subtotal)}
+          value={formatAsDollars(financials.subtotal)}
           className="text-emerald-600 dark:text-emerald-400"
+          bold
+        />
+        {financials.totalSectionIncentives > 0 && (
+          <SummaryRow
+            label="Section Incentives"
+            value={`-${formatAsDollars(financials.totalSectionIncentives)}`}
+            className="text-emerald-700 dark:text-emerald-400"
+          />
+        )}
+        {financials.totalGlobalDiscounts > 0 && (
+          <SummaryRow
+            label="Global Discounts"
+            value={`-${formatAsDollars(financials.totalGlobalDiscounts)}`}
+            className="text-emerald-700 dark:text-emerald-400"
+          />
+        )}
+        <SummaryRow
+          label="Final Contract Price"
+          value={formatAsDollars(financials.finalTcp)}
           bold
         />
         <SummaryRow
           label="Total Job Costs"
-          value={`-${formatAsDollars(totals.totalJobCosts)}`}
+          value={`-${formatAsDollars(financials.totalJobCosts)}`}
           className="text-red-600/90 dark:text-red-400/90"
         />
-        {totals.totalSectionIncentives > 0 && (
-          <SummaryRow
-            label="Section Incentives"
-            value={`-${formatAsDollars(totals.totalSectionIncentives)}`}
-            className="text-red-600/90 dark:text-red-400/90"
-          />
-        )}
-        {totals.totalGlobalIncentives > 0 && (
-          <SummaryRow
-            label="Global Discounts"
-            value={`-${formatAsDollars(totals.totalGlobalIncentives)}`}
-            className="text-red-600/90 dark:text-red-400/90"
-          />
-        )}
 
         <Separator />
 
         <SummaryRow
           label="Total Margin"
-          value={formatAsDollars(totals.totalMargin)}
+          value={formatAsDollars(financials.margin)}
           className="text-emerald-600 dark:text-emerald-400"
           bold
         />
         <div className="flex items-center justify-between">
           <span className="text-muted-foreground font-medium">Multiplier</span>
-          <span className={cn('font-bold tabular-nums', MULTIPLIER_STYLES[totalTier])}>
-            {formatMultiplier(totals.totalMultiplier)}
+          <span className={cn('font-bold tabular-nums', MULTIPLIER_STYLES[financials.tier])}>
+            {formatMultiplier(financials.multiplier)}
           </span>
         </div>
       </div>
 
-      {totals.hasMissingCostData && (
+      {financials.hasMissingCostData && (
         <div className="border-t border-destructive/20 px-5 py-3 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs">
           One or more sections are missing cost data — multiplier and margin reflect partial cost.
         </div>
