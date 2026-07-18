@@ -4,7 +4,6 @@ import { PlusIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
-import { formValuesToProposal } from '@/features/proposal-flow/lib/converters'
 import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
@@ -15,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/shared/components/ui/textarea'
 import { incentiveTypes } from '@/shared/constants/enums'
 import { useConfirm } from '@/shared/hooks/use-confirm'
-import { PricingBreakdown } from '../pricing-breakdown'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
 const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
@@ -42,7 +40,6 @@ export function FundingFields({ pricingMode }: Props) {
   const incentives = useWatch({ control: form.control, name: 'funding.data.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
   const miscPrice = useWatch({ control: form.control, name: 'funding.data.miscPrice' })
-  const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
 
   function toggleIncentive(index: number) {
     setOpenIncentives((prev) => {
@@ -356,13 +353,6 @@ export function FundingFields({ pricingMode }: Props) {
                 </div>
               )}
         </div>
-
-        {/* Pricing breakdown helper */}
-        {showPricingBreakdown && (
-          <div className="w-full">
-            <PricingBreakdown proposalData={formValuesToProposal(form.getValues())} />
-          </div>
-        )}
       </div>
     </>
   )

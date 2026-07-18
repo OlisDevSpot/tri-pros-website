@@ -73,7 +73,7 @@ export function CreateProposalPopover({ meetings }: Props) {
           startingTcp: 0,
           incentives: [],
         },
-        meta: { enabled: true, showPricingBreakdown: false },
+        meta: { enabled: true },
       },
     })
   }

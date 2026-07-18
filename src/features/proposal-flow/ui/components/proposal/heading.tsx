@@ -1,8 +1,9 @@
-import { CalendarIcon, PencilIcon, UserIcon } from 'lucide-react'
+import { CalculatorIcon, CalendarIcon, PencilIcon, UserIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
+import { InternalFinancialsModal } from '@/features/proposal-flow/ui/components/internal-financials-modal'
 import { Logo } from '@/shared/components/logo'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
@@ -34,6 +35,18 @@ export function Heading() {
       accessor: 'CustomerProfile',
       Component: CustomerProfileModal,
       props: { customerId },
+    })
+    openModal()
+  }
+
+  function handleInternalFinancials() {
+    if (!proposal.data) {
+      return
+    }
+    setModal({
+      accessor: 'InternalFinancials',
+      Component: InternalFinancialsModal,
+      props: { proposalData: proposal.data },
     })
     openModal()
   }
@@ -112,6 +125,18 @@ export function Heading() {
                 <PencilIcon className="size-4" />
                 Edit Proposal
               </a>
+            </Button>
+          </div>
+        )}
+        {viewMode === 'agent' && ability.can('update', 'Proposal') && (
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleInternalFinancials}
+            >
+              <CalculatorIcon className="size-4" />
+              Internal Financials
             </Button>
           </div>
         )}

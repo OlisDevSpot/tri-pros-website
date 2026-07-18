@@ -94,10 +94,6 @@ const sectionMetaSchema = z.object({
   enabled: z.boolean(),
 })
 
-const fundingMetaSchema = sectionMetaSchema.extend({
-  showPricingBreakdown: z.boolean(),
-})
-
 // MAIN SCHEMAS
 export const formMetaSectionSchema = z.object({
   pricingMode: z.enum(['total', 'breakdown']),
@@ -118,7 +114,7 @@ export const projectSectionSchema = z.object({
 
 export const fundingSectionSchema = z.object({
   data: fundingDataSchema,
-  meta: fundingMetaSchema,
+  meta: sectionMetaSchema,
 })
 
 // --- Proposal Form Schema (composite) ---
@@ -205,7 +201,6 @@ export const proposalFormBaseDefaultValues: ProposalFormSchema = {
     },
     meta: {
       enabled: true,
-      showPricingBreakdown: false,
     },
   },
 }

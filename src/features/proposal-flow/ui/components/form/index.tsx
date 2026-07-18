@@ -2,20 +2,22 @@
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { OverrideProposalValues } from '@/features/proposal-flow/types'
-import { ChevronDownIcon, EyeIcon, SaveIcon, SettingsIcon } from 'lucide-react'
+import { CalculatorIcon, ChevronDownIcon, EyeIcon, SaveIcon, SettingsIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
+import { formValuesToProposal } from '@/features/proposal-flow/lib/converters'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
+import { InternalFinancialsModal } from '@/features/proposal-flow/ui/components/internal-financials-modal'
 import { Button } from '@/shared/components/ui/button'
 import { Card } from '@/shared/components/ui/card'
 import { Label } from '@/shared/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover'
-import { Separator } from '@/shared/components/ui/separator'
 import { Switch } from '@/shared/components/ui/switch'
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { cn } from '@/shared/lib/utils'
 import { FundingFields } from './funding-fields'
 import { GeneralFields } from './general-fields'
@@ -68,7 +70,16 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
   const [saveOpenDesktop, setSaveOpenDesktop] = useState(false)
   const saveOpen = saveOpenMobile || saveOpenDesktop
   const pricingMode = useWatch({ control: form.control, name: 'meta.pricingMode' })
-  const showPricingBreakdown = useWatch({ control: form.control, name: 'funding.meta.showPricingBreakdown' })
+  const { open: openModal, setModal } = useModalStore()
+
+  function handleInternalFinancials() {
+    setModal({
+      accessor: 'InternalFinancials',
+      Component: InternalFinancialsModal,
+      props: { proposalData: formValuesToProposal(form.getValues()) },
+    })
+    openModal()
+  }
 
   useEffect(() => {
     setActiveTab(nuqsTab)
@@ -138,6 +149,16 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
         {isEditMode
           ? (
               <div className="inline-flex h-9 items-center gap-0.5 rounded-lg bg-muted p-0.75">
+                {/* Internal financials */}
+                <button
+                  type="button"
+                  onClick={handleInternalFinancials}
+                  className={cn(TOOLBAR_BUTTON_BASE, 'aspect-square', TOOLBAR_BUTTON_INACTIVE)}
+                  aria-label="Internal financials"
+                >
+                  <CalculatorIcon className="size-3.5" />
+                </button>
+
                 {/* Settings */}
                 <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
                   <PopoverTrigger asChild>
@@ -165,21 +186,6 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                             checked={pricingMode === 'breakdown'}
                             onCheckedChange={checked =>
                               form.setValue('meta.pricingMode', checked ? 'breakdown' : 'total')}
-                          />
-                        </div>
-                      </div>
-                      <Separator />
-                      <div className="space-y-3">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Funding</p>
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="show-pricing-breakdown" className="text-sm font-normal">
-                            Show Pricing Breakdown
-                          </Label>
-                          <Switch
-                            id="show-pricing-breakdown"
-                            checked={showPricingBreakdown}
-                            onCheckedChange={checked =>
-                              form.setValue('funding.meta.showPricingBreakdown', checked)}
                           />
                         </div>
                       </div>
