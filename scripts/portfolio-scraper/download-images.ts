@@ -1,6 +1,7 @@
 import type { ScrapedImage } from './types'
 import fs from 'node:fs'
 import path from 'node:path'
+import sharp from 'sharp'
 import { DOWNLOAD_CONCURRENCY } from './constants'
 
 export interface DownloadOptions {
@@ -20,6 +21,14 @@ function detectImageType(buffer: Buffer): string | null {
     return 'png'
   if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46)
     return 'webp'
+  // ISOBMFF container: [4-byte size]'ftyp' + brand 'avif'/'avis'
+  if (
+    buffer.length >= 12
+    && buffer.toString('ascii', 4, 8) === 'ftyp'
+    && ['avif', 'avis'].includes(buffer.toString('ascii', 8, 12))
+  ) {
+    return 'avif'
+  }
 
   return null
 }
@@ -55,10 +64,10 @@ async function downloadSingle(
     }
 
     const arrayBuffer = await response.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    let buffer = Buffer.from(arrayBuffer)
 
     // Validate it's actually an image
-    const detectedType = detectImageType(buffer)
+    let detectedType = detectImageType(buffer)
     if (!detectedType) {
       console.warn(`  [SKIP] Not a valid image: ${image.url}`)
       return null
@@ -68,6 +77,12 @@ async function downloadSingle(
     if (buffer.length < 5000) {
       console.warn(`  [SKIP] Too small (${buffer.length} bytes): ${image.url}`)
       return null
+    }
+
+    // avif isn't supported by GPT-4o vision or the import pipeline — convert to webp
+    if (detectedType === 'avif') {
+      buffer = Buffer.from(await sharp(buffer).webp({ quality: 88 }).toBuffer())
+      detectedType = 'webp'
     }
 
     const paddedIndex = String(index).padStart(3, '0')

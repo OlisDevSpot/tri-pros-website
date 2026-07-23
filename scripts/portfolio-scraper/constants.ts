@@ -4,7 +4,9 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-export const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
+// avif is accepted at scrape time but converted to webp at download time
+// (GPT-4o vision and the import pipeline don't take avif)
+export const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'avif']
 
 // Only skip URLs that are VERY clearly not project photos.
 // Use specific patterns to avoid false positives (e.g., "icon" matching "silicon").

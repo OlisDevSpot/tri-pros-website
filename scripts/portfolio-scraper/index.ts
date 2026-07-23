@@ -56,6 +56,7 @@ function parseArgs(): CliFlags {
     multiProject: null,
     source: null,
     limit: 0,
+    yes: false,
   }
 
   const positional: string[] = []
@@ -70,6 +71,9 @@ function parseArgs(): CliFlags {
     }
     else if (arg === '--verbose' || arg === '-v') {
       flags.verbose = true
+    }
+    else if (arg === '--yes' || arg === '-y') {
+      flags.yes = true
     }
     else if (arg === '--help' || arg === '-h') {
       printUsage()
@@ -157,6 +161,9 @@ Flags:
   --classify                Classify images by phase (before/during/after) using GPT-4o vision
   --headful                 Run browser in visible mode (for debugging)
   -v, --verbose             Log every URL found and every filter decision
+  -y, --yes                 Non-interactive: accept all prompt defaults (keep all
+                            matched scopes, proceed on low image count, classify
+                            per --classify). Required when running without a TTY.
   -h, --help                Show this help message
 
   --source <name>           Use a site-specific scraper (e.g. --source homeadvisor).
@@ -384,6 +391,8 @@ async function processSingleProject(opts: {
   metadata: import('./types').PageMetadata
   matchedScopes: import('./types').MatchedScope[]
   classifyFlag: boolean
+  /** Non-interactive mode — accept all prompt defaults */
+  yes: boolean
   headful: boolean
   label?: string
   /** Browser session cookies for authenticated downloads */
@@ -417,6 +426,7 @@ async function processSingleProject(opts: {
     pageTitle: opts.metadata.title,
     matchedScopes,
     classifyFlag: opts.classifyFlag,
+    yes: opts.yes,
   })
 
   if (!answers) {
@@ -590,6 +600,7 @@ async function main(): Promise<void> {
           metadata: { ...metadata, title: group.heading },
           matchedScopes: [],
           classifyFlag: flags.classify,
+          yes: flags.yes,
           headful: flags.headful,
           label,
           sourceUrl: flags.url,
@@ -626,6 +637,7 @@ async function main(): Promise<void> {
         metadata: singleResult.metadata,
         matchedScopes,
         classifyFlag: flags.classify,
+        yes: flags.yes,
         headful: flags.headful,
         cookies: singleResult.cookies,
         sourceUrl: flags.url,
@@ -672,6 +684,7 @@ async function main(): Promise<void> {
         metadata: { ...multiResult.metadata, title: group.heading },
         matchedScopes: [],
         classifyFlag: flags.classify,
+        yes: flags.yes,
         headful: flags.headful,
         label,
         cookies: multiResult.cookies,
@@ -704,6 +717,7 @@ async function main(): Promise<void> {
       metadata: paginatedResult.metadata,
       matchedScopes,
       classifyFlag: flags.classify,
+      yes: flags.yes,
       headful: flags.headful,
       sourceUrl: flags.url,
     })
@@ -722,6 +736,7 @@ async function main(): Promise<void> {
     metadata: scrapeResult.metadata,
     matchedScopes,
     classifyFlag: flags.classify,
+    yes: flags.yes,
     headful: flags.headful,
     cookies: scrapeResult.cookies,
     sourceUrl: flags.url,

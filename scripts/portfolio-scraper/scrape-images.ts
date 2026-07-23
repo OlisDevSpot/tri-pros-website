@@ -124,7 +124,7 @@ const EXTRACT_IMAGES_SCRIPT = /* js */ `
   for (var i = 0; i < anchors.length; i++) {
     var anchor = anchors[i];
     var href = anchor.getAttribute('href') || '';
-    if (/\\.(jpg|jpeg|png|webp)(\\?|#|$)/i.test(href)) {
+    if (/\\.(jpg|jpeg|png|webp|avif)(\\?|#|$)/i.test(href)) {
       urls.push({ url: href, source: 'a-href' });
     }
     // Elementor / lightbox galleries: full-res URL in data attributes
@@ -132,7 +132,7 @@ const EXTRACT_IMAGES_SCRIPT = /* js */ `
       'data-original', 'data-hi-res'];
     for (var j = 0; j < lightboxAttrs.length; j++) {
       var lbVal = anchor.getAttribute(lightboxAttrs[j]);
-      if (lbVal && /\\.(jpg|jpeg|png|webp)(\\?|#|$)/i.test(lbVal)) {
+      if (lbVal && /\\.(jpg|jpeg|png|webp|avif)(\\?|#|$)/i.test(lbVal)) {
         urls.push({ url: lbVal, source: 'a-' + lightboxAttrs[j] });
       }
     }
@@ -468,7 +468,7 @@ function buildExtractGroupsScript(selector: string): string {
         var anchors = Array.from(container.el.querySelectorAll('a[href]'));
         for (var j = 0; j < anchors.length; j++) {
           var href = anchors[j].getAttribute('href') || '';
-          if (/\\.(jpg|jpeg|png|webp)(\\?|$)/i.test(href)) {
+          if (/\\.(jpg|jpeg|png|webp|avif)(\\?|$)/i.test(href)) {
             urls.push({ url: href, alt: '' });
           }
         }

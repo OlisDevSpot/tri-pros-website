@@ -16,11 +16,13 @@ export async function runPrompts(opts: {
   pageTitle?: string
   matchedScopes: MatchedScope[]
   classifyFlag: boolean
+  /** Non-interactive mode — accept all defaults without prompting */
+  yes?: boolean
 }): Promise<ProjectPromptAnswers | null> {
   // Image count check
   if (opts.imageCount < 7) {
     console.log(`\n  WARNING: Only ${opts.imageCount} images found (minimum recommended: 7)`)
-    const proceed = await confirm({
+    const proceed = opts.yes || await confirm({
       message: `Continue with only ${opts.imageCount} images?`,
       default: false,
     })
@@ -49,7 +51,15 @@ export async function runPrompts(opts: {
 
   // Scope selection — only interactive prompt remaining
   let selectedScopes: MatchedScope[] = opts.matchedScopes
-  if (opts.matchedScopes.length > 0) {
+  if (opts.yes) {
+    if (opts.matchedScopes.length > 0) {
+      console.log(`  --yes: keeping all ${opts.matchedScopes.length} matched scopes`)
+    }
+    else {
+      console.log('  No scopes matched from Notion — scopeIds will be empty.')
+    }
+  }
+  else if (opts.matchedScopes.length > 0) {
     const scopeChoices = opts.matchedScopes.map(s => ({
       name: `${s.name} (${s.entryType})`,
       value: s.id,
@@ -70,7 +80,7 @@ export async function runPrompts(opts: {
   // Classification (only if --classify flag was passed)
   let classifyImages = false
   if (opts.classifyFlag) {
-    classifyImages = await confirm({
+    classifyImages = opts.yes || await confirm({
       message: 'Classify images by phase (before/during/after) with AI vision?',
       default: true,
     })

@@ -89,4 +89,6 @@ export interface CliFlags {
   source: string | null
   /** Max items to scrape from site-specific scrapers (0 = no limit) */
   limit: number
+  /** Non-interactive mode — accept all prompt defaults (all scopes, proceed, classify per flag) */
+  yes: boolean
 }
