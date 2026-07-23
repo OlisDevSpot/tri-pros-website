@@ -138,8 +138,9 @@ export function isPlausibleUsPhone(input: string | null | undefined): boolean {
  *
  * Absent-key contract: an absent key (`undefined`) passes through as `undefined`
  * so partial updates never fabricate a `phone` write — `'phone' in parsed` stays
- * false and buildUpdateSet omits it, preserving the existing value. Any *provided*
- * value is normalized; an explicit `null`/`''` still clears the column.
+ * false and the update omits it (Drizzle skips `undefined` in `.set()`),
+ * preserving the existing value. Any *provided* value is normalized; an explicit
+ * `null`/`''` still clears the column.
  */
 export const optionalPhoneSchema = z
   .string()
