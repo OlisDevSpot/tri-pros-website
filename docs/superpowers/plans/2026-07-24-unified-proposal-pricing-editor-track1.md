@@ -1,5 +1,7 @@
 # Unified Proposal Pricing Editor — Track 1 Implementation Plan
 
+> ⏸️ **ON HOLD — DO NOT EXECUTE (Oliver's ruling, 2026-07-24).** This work is sequenced POST-WAVES in epic #256, after the post-W3 frozen-column-drop / dead-code tally sweep. The plan was written against the pre-W3 blob shape; when the work is re-examined post-waves, most of its bridge/prefill machinery (Tasks 2, 5, and the sync bridge) will be unnecessary and the plan must be re-derived. The business rulings live in the spec (`docs/superpowers/specs/2026-07-24-unified-proposal-pricing-editor-design.md`) — those are canonical; this plan is a shelved artifact.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make SOW section prices the sole price source in the proposal editor (read-only derived TCP, misc input removed, display-mode toggle demoted to a homeowner display preference), and unify create + edit into one draft-first experience — with zero schema/SQL/server-recompute changes.

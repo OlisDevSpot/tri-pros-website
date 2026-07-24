@@ -1,8 +1,8 @@
 # Unified Proposal Pricing Editor — Design
 
 **Date:** 2026-07-24
-**Status:** Approved rulings from Oliver (2026-07-23/24 session); Track 1 spec ready for plan.
-**Epic context:** JSONB decomposition program (#256). Track 1 is a pre-Wave-3 precursor; Track 2 items are named design inputs for the Wave 3 spec.
+**Status:** ⏸️ **DEFERRED — POST-WAVES (Oliver's ruling, 2026-07-24).** The business rulings below remain approved and canonical, but BOTH tracks are parked until the wave program completes (Wave 3 + the post-W3 frozen-column-drop / dead-code tally sweep). Do **NOT** fold this into the Wave 3 design and do **NOT** execute the shelved Track 1 plan (`docs/superpowers/plans/2026-07-24-unified-proposal-pricing-editor-track1.md`). After the waves, re-examine the rulings and re-derive the implementation against the post-decomposition codebase (sow rows, not blobs) — the bridge/prefill machinery in Track 1 exists only for a pre-W3 world and most of it becomes unnecessary. Where a ruling overlaps what W3's decomposition inherently decides (fundingJSON field fates, recompute source), the W3 design may *reference* the rulings, but the editor/UX work stays post-waves.
+**Epic context:** JSONB decomposition program (#256), sequenced as the epic's final step, after the post-W3 drop/tally sweep. (Original framing — Track 1 as a pre-Wave-3 precursor — is superseded by this ruling.)
 
 ## Business rulings (canonical)
 
