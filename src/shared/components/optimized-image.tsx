@@ -44,6 +44,16 @@ export function OptimizedImage({
   const [loaded, setLoaded] = useState(false)
   const [timedOut, setTimedOut] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  // SSR'd images can finish loading before hydration attaches onLoad — the
+  // event never replays, so catch up from img.complete on mount. Without this
+  // the blur placeholder sticks over an already-downloaded image.
+  useEffect(() => {
+    if (imgRef.current?.complete) {
+      setLoaded(true)
+    }
+  }, [])
 
   const src = getOptimizedSrc(file)
   const srcSet = getOptimizedSrcSet(file)
@@ -94,6 +104,7 @@ export function OptimizedImage({
 
       {/* Real image — ALWAYS shown, z-10 to sit above blur */}
       <img
+        ref={imgRef}
         src={src}
         srcSet={srcSet}
         sizes={srcSet ? sizes : undefined}
