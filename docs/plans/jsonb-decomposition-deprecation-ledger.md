@@ -98,20 +98,45 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 | [x] deleted (this task's commit) | `docs/superpowers/plans/2026-07-03-ws2-jsonb-deep-merge.md` | same ("WS-2" deep-merge workstream, superseded by the decomposition program) — same inbound-ref sweep result |
 | [x] memory truth-pass complete (Task 9 + Task 11) | Memory: `memory/project-funnel-capture-and-jsonb-merge.md` (jsonb-merge rule reframed HISTORICAL, points at this ledger), `memory/project-jsonb-strategy-research.md` (already current as of Task 9 — Wave 2 IMPLEMENTED status, verified not stale), `memory/feedback-runtime-db-env.md` (flagged as possibly-stale by the T11 controller re: pre-env-axes-refactor NODE_ENV/script-db.ts pattern; verified against current code — a parallel session already rewrote it to the current DRIZZLE_TARGET truth alongside landing `0803126a` on main, so no change was needed here), `memory/MEMORY.md` hook lines for all three verified current | Recalled memories asserting the merge mechanism exists would mislead future sessions |
 
-## Wave 3 (pre-registered, expand when W3 is planned)
+## Waves 3 & 4 (pre-registered; renumbered 2026-07-24 — Oliver split the original W3 in two)
 
-- **Column rename `signing_request_id` → `contract_envelope_id`** rides the W3 prod push
-  (naming ratified 2026-07-18: `contractEnvelope` is canonical; code-side rename shipped in the
-  tightening pass — drizzle property already `contractEnvelopeId` mapping the old column name)
+> **Renumbering note (2026-07-24):** "Wave 3" below = the funding/meta **scalar decomposition +
+> drop ceremony** wave; "Wave 4" = **SOW normalization** (the original W3's big half). Every
+> "Wave-3 prod push" kill trigger in the W1/W2 sections above still reads correctly — the
+> batched drops ride the (new) Wave 3 push. Epic #256 body carries the same structure.
+
+### Rides the Wave 3 (scalar) prod push
+
+- **Column rename `signing_request_id` → `contract_envelope_id`** (naming ratified 2026-07-18:
+  `contractEnvelope` is canonical; drizzle property already `contractEnvelopeId` mapping the old
+  column name). ⚠️ Runbook facts (2026-07-24 audit): `scripts/verify-long-path.ts` +
+  `scripts/verify-short-path.ts` issue raw SQL against the literal `signing_request_id` — update
+  them with the rename; drizzle-kit push may render the rename as DROP+ADD, so the runbook uses
+  a manual `ALTER TABLE proposals RENAME COLUMN ...` step instead.
 - **The batched drop manifest** (per the WAIT ruling + drop protocol above): 5 W1 frozen blob
   columns, `customers.lead_meta_json`, their backfill scripts + orphaned blob Zod schemas +
-  legacy one-off scripts (all registered in the W1/W2 sections above)
-- `proposals.projectJSON` + `proposals.fundingJSON` columns (frozen at W3 cutover, dropped the
-  release AFTER — the one-release rollback window applies to W3's own blobs, not to the
-  already-frozen W1/W2 columns above)
-- `projectSectionSchema`/`fundingSectionSchema` as DB-blob schemas (survive only as form shapes if W3 keeps them)
-- `snapSowFromMeeting` blob-shape logic, `sowToPlaintext` blob reader, positional `->0->'trade'` SQL in customer-pipelines/agent-dashboard
-- `getFullView` hydration bridge + recompute jsonb residues (rows above)
+  legacy one-off scripts (all registered in the W1/W2 sections above). ⚠️ Also delete the 4
+  `package.json` entries pointing at dying scripts: `backfill:trades`, `backfill:trades:dev`,
+  `seed:bina-contacts`, `seed:bina-contacts:dev` (2026-07-24 audit — not previously registered).
+- `proposals.fundingJSON` + `proposals.formMetaJSON` columns frozen at the W3 cutover
+  (scalars → columns; the blob incentives array has been row-backed since W2). Frozen blobs
+  dropped on the **Wave 4** push (≥ one-release window). Dying with `fundingJSON`:
+  `scrubBlobIncentives` + its server-spec hooks, the `getFullView` incentive-hydration bridge,
+  the `incentives: []` blank-writers, `fundingSectionSchema` as a DB-blob schema.
+- Recompute jsonb residue #1 (`startingTcp` base from `fundingJSON`) dies → `starting_tcp_cents`
+  column; `scripts/recompute-final-tcp.ts` SQL updated in the same commit (keep-in-sync contract).
+
+### Rides the Wave 4 (SOW) prod push
+
+- `proposals.projectJSON` frozen at the W4 cutover, dropped the release AFTER (post-waves
+  cleanup). W3's frozen `fundingJSON`/`formMetaJSON` drop on this push.
+- `projectSectionSchema` as a DB-blob schema (survives only as a form shape if W4 keeps it)
+- `snapSowFromMeeting` blob-shape logic, `sowToPlaintext` blob reader, positional `->0->'trade'`
+  SQL in customer-pipelines/agent-dashboard, `projects.router` `business.router.ts:82` untyped
+  sow-scopes walk, Zoho `registry.ts`/`assemble-envelope.ts` raw `ctx.proposal.*JSON` reads
+- Recompute jsonb residue #2 (section incentives from `projectJSON`) dies; the
+  `sow_item_id IS NULL` predicate on the global-discount subquery lands in the SAME deploy the
+  section rows appear (double-count guard, see W2-bridges row above); `calc_version` → 2
 
 ## Seam-tightening register — permissive seams / escape hatches (audit 2026-07-15)
 
