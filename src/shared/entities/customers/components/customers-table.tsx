@@ -15,16 +15,13 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
+import { CUSTOMERS_TABLE_QUERY_CONFIG, CUSTOMERS_TABLE_SHOW_COLUMNS } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
-
-const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
 export function CustomersTable() {
   const trpc = useTRPC()
@@ -34,12 +31,7 @@ export function CustomersTable() {
   const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
     trpc.customersRouter.business.list.queryOptions,
     {},
-    {
-      paramPrefix: 'pc',
-      pageSize: 20,
-      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
-      filters: CUSTOMER_FILTER_CONFIG,
-    },
+    CUSTOMERS_TABLE_QUERY_CONFIG,
   )
 
   const updateCreatedAt = useMutation(
@@ -66,7 +58,7 @@ export function CustomersTable() {
     onView: entity => handleViewProfile(entity.id),
   })
 
-  const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: SHOW_COLUMNS })
+  const columns = useEntityColumns(CUSTOMER_COLUMNS, { show: CUSTOMERS_TABLE_SHOW_COLUMNS })
   const visibility = useColumnVisibility('customers', columns)
 
   // Lead-source edit is wired by the cell itself (CASL-gated, default
