@@ -186,10 +186,13 @@ rules (no pricing, homeowners only, AAA-grade/Showcase-price value line):
   `["AAA-grade materials", "Beautiful AND functional", "Built to be photographed"]`
   **`checkmarks-v2`** (reel kitchens-03):
   `["AAA-grade finishes", "Camera-ready results", "Homeowners only"]`
-- **End-card sets** (`endCard: { headline, sub, cta }`). Current pattern —
+  **`checkmarks-v3`** (reel bathrooms-02):
+  `["AAA-grade finishes", "That spa feeling, daily", "Homeowners only"]`
+- **End-card sets** (`endCard: { headline, sub, cta }`). **`endcard-v1`** —
   trade-templated headline `"Could Your {Trade} Be One of the 5?"`, sub
   `"AAA-grade work, at a Showcase price. Homeowners only."`, cta `"See If
-  Your Home Qualifies"`.
+  Your Home Qualifies"`. **`endcard-v2`** (reel bathrooms-02) — headline
+  `"5 {Trade} Will Be Chosen. Yours?"`, same sub + cta.
 
 When a genuinely new copy variant is written (new checkmark phrasing, new
 end-card headline shape), name it (`checkmarks-v2`, `endcard-v2`, …), add it
