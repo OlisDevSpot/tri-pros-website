@@ -18,10 +18,13 @@ src/trpc/
     create-crud-router.ts    CRUD sub-router factory (5 single-row ops)
     entity-registry.ts       module-load registry: EntityName → spec
     dal-to-trpc.ts           DalReturn → TRPCError bridge
-    create-http-context.ts   builds BaseTRPCContext from HTTP request
+    create-http-context.ts   builds HTTPTRPCContext from HTTP request (+ RSC variant)
+    prefetch.ts              server-side prefetch into the per-request query client
     middleware/
       scope-middleware.ts    resolves ctx.scope from spec.visibility
       shareable-middleware.ts token-or-session dual-credential resolution
+
+  components/                HydrateClient + hydration error boundary (server↔client seam)
 
   routers/                   all tRPC routers (registered in app.ts)
     proposals.router/        MIGRATED to entity server system (canonical)
@@ -279,6 +282,13 @@ Client components use `useTRPC()` + `useQuery(trpc.x.y.queryOptions())` from `@/
 **Reference impl**: `src/trpc/server.ts:1` (`'server-only'`)
 **Enforced by**: `server-only` package (build fails on cross-boundary import)
 
+### rsc-prefetch-uses-rsc-context
+
+`src/trpc/server.ts`'s options proxy resolves its context via `createRSCTRPCContext` (`src/trpc/lib/create-http-context.ts`) — the SAME session resolution as the HTTP adapter (headers from `next/headers`), React-`cache()`'d per request. Never hand-roll a ctx for the proxy; a ctx without request headers yields `session: null` and every `agentProcedure` prefetch throws UNAUTHORIZED. Note `req` is `undefined` in RSC context: shareable-token procedures must never be server-prefetched.
+
+**Reference impl**: `src/trpc/lib/create-http-context.ts`, `src/trpc/server.ts`
+**Enforced by**: convention
+
 ### sub-router-when-2-plus
 
 A flat `*.router.ts` is fine for one router. When a router has 2+ sub-routers, promote to a directory matching `notion.router/` / `proposals.router/`:
@@ -327,4 +337,5 @@ The compliance sweep (companion todo to this docs migration) will produce GitHub
 - `src/shared/entities/<entity>/lib/server-spec.ts` — entity specs
 - `src/shared/dal/server/types.ts` — canonical type definitions
 - `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety history behind `#jsonb-merge-columns-merge-on-update` (mechanism deleted Wave 2; replacement pattern is a child table, not a merge config)
+- `docs/codebase-conventions/frontend-stack.md#server-prefetch-two-tiers` — pages that server-prefetch via `trpc.server.ts` + `<HydrateClient>`
 - ADR-0005 — JSONB vs column vs child table (storage-shape decision rule)

@@ -6,7 +6,7 @@ Tailwind v4, shadcn/ui (Radix), lucide-react, motion/react. Next.js 15 App Route
 
 ### use-client-pushed-to-leaves
 
-`'use client'` lives as deep in the tree as possible — on the leaf components that need hooks or interactivity. Pages are server components. Views that fetch via tRPC are client components.
+`'use client'` lives as deep in the tree as possible — on the leaf components that need hooks or interactivity. Pages are server components. Views that fetch via tRPC are client components; their *data* may already be server-prefetched and hydrated (see `server-prefetch-two-tiers`).
 
 **Why**: server components keep the bundle smaller and let RSC stream. Lifting `'use client'` to a page boundary unnecessarily ships hooks to clients that don't need them.
 **Reference impl**: any page in `src/app/(frontend)/`
@@ -14,11 +14,27 @@ Tailwind v4, shadcn/ui (Radix), lucide-react, motion/react. Next.js 15 App Route
 
 ### views-own-data-fetching
 
-Views (`ui/views/<x>-view.tsx`) own data fetching (`useQuery(trpc.x.y.queryOptions(...))`) and layout. Components (`ui/components/`) are props-driven and reusable — never call tRPC.
+Views (`ui/views/<x>-view.tsx`) own data fetching and layout. Components (`ui/components/`) are props-driven and reusable — never call tRPC. Two fetching tiers (see `server-prefetch-two-tiers`):
 
-**Why**: components stay testable + reusable. Views are the integration point.
-**Reference impl**: any `*-view.tsx` in `src/features/*/ui/views/`
+- **Tier 1 (suspense views)**: static-input queries → `useSuspenseQuery` / `useSuspenseQueries` (plural for 2+ queries — sequential singular calls waterfall); no isLoading branches; loading/error UI lives at the page seam.
+- **Tier 2 (paginated tables)**: nuqs-driven keys via `usePaginatedQuery` → stays `useQuery` + `keepPreviousData` (suspense is incompatible with placeholderData).
+
+**Why**: server components keep the bundle smaller and let RSC stream. Views stay the integration point; the page decides prefetch strategy.
+**Reference impl**: `src/features/campaigns-admin/ui/views/campaigns-overview-view.tsx` (Tier 1), `src/shared/entities/customers/components/customers-table.tsx` (Tier 2)
 **Enforced by**: convention
+
+### server-prefetch-two-tiers
+
+Dashboard pages prefetch their view's queries server-side and wrap children in `<HydrateClient>` (`src/trpc/components/hydrate-client.tsx`). The tier decides await semantics:
+
+- **Tier 1** (view uses `useSuspenseQuery`): `void prefetch(trpc.x.y.queryOptions(...))` — pending query dehydrates and streams. Put a layout-matched `<Suspense fallback>` close to the view; `HydrateClient`'s built-in boundary is the safety net.
+- **Tier 2** (view uses `useQuery`, e.g. any `usePaginatedQuery` table): `await prefetch(...)` — `void` + `useQuery` flashes a skeleton (streamed query still pending at hydration). Build the input with `loadPaginatedQueryInput(searchParams, CONFIG)` using the table's shared config object (see query-toolkit.md#shared-table-config).
+
+Never import `@/trpc/server` (or `prefetch`/`HydrateClient`) into a client component.
+
+**Why**: pages already block on `protectDashboardPage()`'s session read; prefetching piggybacks on a round-trip the server is already making, removing the client's mount→fetch waterfall.
+**Reference impl**: `src/app/(frontend)/dashboard/customers/page.tsx` (Tier 2), `src/app/(frontend)/dashboard/campaigns/page.tsx` (Tier 1 + tab-conditional prefetch)
+**Enforced by**: `server-only` package (bundle boundary) + convention
 
 ### error-and-loading-states
 
@@ -124,6 +140,6 @@ Run `pnpm lint` before marking any task complete. The non-obvious rules:
 
 ## See also
 
-- `docs/codebase-conventions/query-toolkit.md` — paginated UI
+- `docs/codebase-conventions/query-toolkit.md` — paginated UI; `#shared-table-config` for the Tier 2 server/client config contract
 - `docs/codebase-conventions/database-schema.md` — schema below
 - `docs/ui-design-playbook.md` — visual design system + tokens

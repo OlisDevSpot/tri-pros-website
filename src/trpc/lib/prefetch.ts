@@ -11,6 +11,8 @@ import { getQueryClient } from '@/trpc/server'
  * Tier 2 (paginated `useQuery` tables): `await prefetch(...)` — blocks the RSC
  * render so hydration lands with data (void + useQuery flashes a skeleton).
  */
+// `any` mirrors use-paginated-query.ts: TRPCQueryOptions's generic can't be
+// expressed without it; the concrete `T` still narrows the return type below.
 export function prefetch<T extends ReturnType<TRPCQueryOptions<any>>>(queryOptions: T): Promise<void> {
   const queryClient = getQueryClient()
   if (queryOptions.queryKey[1]?.type === 'infinite') {

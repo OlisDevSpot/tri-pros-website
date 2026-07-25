@@ -1,17 +1,21 @@
 # Query Toolkit (Pagination, Sort, Search, Filters)
 
-A four-layer toolkit at `src/shared/dal/{server,client}/lib/query/` and `src/shared/components/query-toolbar/`. It bundles pagination + page-size + debounced search + sort + filters into one URL-persisted state machine on the client, and Zod-validated input + parallel page+count queries on the server. **Always use the toolkit** — never hand-roll page state, debounced search, sort wiring, or `placeholderData: keepPreviousData`.
+A five-layer toolkit spanning `src/shared/dal/{server,client}/lib/query/`, `src/shared/dal/lib/query/` (isomorphic), `src/shared/dal/client/hooks/`, and `src/shared/components/{query-toolbar,data-table}/` (exact paths in the table below). It bundles pagination + page-size + debounced search + sort + filters into one URL-persisted state machine on the client, and Zod-validated input + parallel page+count queries on the server. **Always use the toolkit** — never hand-roll page state, debounced search, sort wiring, or `placeholderData: keepPreviousData`.
 
-## The four layers
+## The five layers
 
 ```
 Server primitives        →  paginatedQueryInput, paginate, buildSearchWhere,
 (src/shared/dal/server/      buildOrderBy, buildFilterWhere
   lib/query/)
 
+Server loader             →  loadPaginatedQueryInput (RSC prefetch input mirror
+(src/shared/dal/server/       of usePaginatedQuery's first-mount input)
+  lib/query/)
+
 Client hook              →  usePaginatedQuery(factory, extra, options)
 (src/shared/dal/client/
-  lib/query/)
+  hooks/)
 
 UI primitive             →  <QueryToolbar pagination={p}> compound component
 (src/shared/components/      with Search/Filters/PageSize/ClearAll/Sort slots
@@ -22,7 +26,9 @@ Container adapters       →  toDataTablePagination(p), toDataTableSorting(p)
   data-table/lib/)
 ```
 
-Each layer is replaceable. New containers (kanban, calendar) get their own adapter — never bypass `usePaginatedQuery`.
+Underpinning both the server loader and the client hook is the isomorphic input builder — `derivePaginatedQueryState()` + `makePaginatedParsers()` at `src/shared/dal/lib/query/derive-paginated-query-state.ts` (with `url-state.ts` and `filter-parser-registry.ts` alongside it) — the single source of truth for turning parsed URL state into the tRPC query input. See `shared-table-config` below.
+
+Each layer is replaceable. New containers (kanban, calendar) get their own adapter — never bypass `usePaginatedQuery`. Server-side page loaders never bypass `loadPaginatedQueryInput`.
 
 ## Rules
 
@@ -70,27 +76,38 @@ return paginate({
 
 ### filter-types-via-registry
 
-Filter parser registry at `src/shared/dal/client/lib/query/filter-parser-registry.ts` defines four filter types:
+Filter parser registry at `src/shared/dal/lib/query/filter-parser-registry.ts` defines five filter types:
 
 | Type | UI | URL serialization |
 |---|---|---|
 | `select` | single-value dropdown | `?key=value` |
 | `multi-select` | multi-checkbox chip | `?key=a,b,c` |
-| `date-range` | from/to picker | `?key=2026-01-01_2026-03-01` |
+| `date-range` | from/to picker | `?key={"from":"2026-01-01","to":"2026-03-01"}` (JSON via `parseAsJson`) |
+| `number-range` | min/max inputs | `?key={"min":10,"max":100}` (JSON via `parseAsJson`) |
 | `boolean` | switch / chip | `?key=true` |
 
 Adding a new filter type means adding it to the registry — keeps URL/UI/server parsing aligned.
 
 **Why**: filter parsing is the most error-prone part of URL state; a single registry locks the contract.
-**Reference impl**: `src/shared/dal/client/lib/query/filter-parser-registry.ts`
+**Reference impl**: `src/shared/dal/lib/query/filter-parser-registry.ts:23-46`
 **Enforced by**: tsc (registry is the type source)
+
+### shared-table-config
+
+Every paginated table exports ONE `PaginatedQueryConfig` object from `constants/` (entity or feature level), consumed by BOTH the table component (`usePaginatedQuery(factory, extra, CONFIG)`) and its page (`loadPaginatedQueryInput(searchParams, CONFIG)`). Never inline paramPrefix/pageSize/filters at either call site — a config drift between server and client is a silent hydration cache-miss.
+
+The input assembly itself lives in `derivePaginatedQueryState()` (`src/shared/dal/lib/query/derive-paginated-query-state.ts`) — the isomorphic single source of truth for page floor, pageSize allowlist, sortDir suppression, search trim, and filter-active normalization. Never re-implement these coercions.
+
+**Why**: the server-prefetched query key must hash identically to the client's first-mount key; one config + one builder makes divergence structurally impossible.
+**Reference impl**: `src/shared/entities/customers/constants/customers-table-query-config.ts`
+**Enforced by**: convention
 
 ### reserved-url-key-suffixes
 
 URL keys `p`, `q`, `sort`, `dir`, `ps` are reserved for pagination, search, sort, sort-direction, page-size. Filter ids cannot use these names.
 
 **Why**: collision = silently broken state.
-**Reference impl**: `src/shared/dal/client/lib/query/use-paginated-query.ts`
+**Reference impl**: `src/shared/dal/client/hooks/use-paginated-query.ts`
 **Enforced by**: convention
 
 ### param-prefix-when-multiple-tables
@@ -144,3 +161,4 @@ Records pages (Meetings, Proposals, Projects) and Customer Pipelines have alread
 - `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx` — reference full-stack impl
 - `src/shared/components/data-table/lib/` — container adapters
 - `docs/codebase-conventions/dal-conventions.md` — DAL conventions (paginate lives in shared DAL)
+- `docs/codebase-conventions/frontend-stack.md#server-prefetch-two-tiers` — server-side prefetch + `<HydrateClient>` for paginated tables (Tier 2)
