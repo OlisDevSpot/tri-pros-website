@@ -127,7 +127,8 @@ push by construction.
 
 ## Axis 5 — Music bed → `musicSrc` + manifest rotation
 
-Source of truth: `video/public/audio/music-manifest.json` (committed; the
+Source of truth: `video/public/audio/music-manifest.json` (local file — all of
+`video/` is gitignored by design; the
 `.m4a` files themselves are gitignored/regenerable from the `brief`). Pick a
 bed whose `file` ≠ the previous reel's `musicSrc`, per the ledger.
 

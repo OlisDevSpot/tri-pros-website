@@ -56,11 +56,13 @@ Verify with side-by-side stills of the boundary frames before assembling.
 
 ## Assets & locations
 
+⚠️ **The entire `video/` package is gitignored (local-only since 2026-07-15, by design — sole operator, media too heavy for the repo).** Nothing under `video/` is ever committed: props JSON and the variation ledger are durable LOCAL files. "Save" for anything in `video/` means writing the file, nothing more; git-commit language in this skill applies only to paths in the main repo (`public/funnels/`, `scripts/meta/`, `docs/`).
+
 | What | Where |
 |---|---|
-| Brand logos (committed) | `video/public/brand/` — `logo-dark-right.svg` (end card), `logo-dark.svg` (icon watermark), `logo-dark-bottom.svg` (shirt prints). ⚠️ NAMING TRAP: the `logo-dark-*` files are the LIGHT-COLORED art (white letters + blue mark) FOR dark grounds. On navy shirts / dark backgrounds Oliver's rule is: letters must be WHITE and visible ⇒ ALWAYS `logo-dark-*` files. The `logo-light-*` files (black letters, for light grounds) are wrong on navy and live in `public/company/logo/` |
+| Brand logos (local, `video/` is gitignored) | `video/public/brand/` — `logo-dark-right.svg` (end card), `logo-dark.svg` (icon watermark), `logo-dark-bottom.svg` (shirt prints). ⚠️ NAMING TRAP: the `logo-dark-*` files are the LIGHT-COLORED art (white letters + blue mark) FOR dark grounds. On navy shirts / dark backgrounds Oliver's rule is: letters must be WHITE and visible ⇒ ALWAYS `logo-dark-*` files. The `logo-light-*` files (black letters, for light grounds) are wrong on navy and live in `public/company/logo/` |
 | Generated clips/stills/audio (gitignored) | `video/public/{clips,stills,audio}/` — regenerable; the props JSON is the durable recipe |
-| Props JSON (committed = the creative's source of truth) | `video/props/<trade>-<concept>-NN.json` |
+| Props JSON (the creative's source of truth — local file, see gitignore note above) | `video/props/<trade>-<concept>-NN.json` |
 | Renders | `video/out/` (gitignored); deliver drafts to `/mnt/c/Users/porat/Downloads/` |
 | Portfolio sources | Neon DB `before_after_pairs_json` + public R2; downloaded candidates may exist in the session scratchpad |
 | Meta ad assets | `public/funnels/<slug>/ads/` (images, committed) + `ads/videos/` (gitignored) |
@@ -170,8 +172,9 @@ axis 1–5, each differing from the previous reel, plus a one-line rationale
 per pick) BEFORE any asset generation, and present it AT THE SAME STOP as the
 base-pair gallery — one combined HITL gate (pair pick + creative direction
 approval), never a separate round-trip. After Oliver's approval, the props
-file realizes the direction. Append the ledger row in the SAME COMMIT as the
-props file.
+file realizes the direction. Append the ledger row IN THE SAME WORK SESSION
+as writing the props file — never write one without the other (both are
+local files; `video/` is gitignored, see Assets & locations).
 
 ```bash
 cd video && pnpm tsc
@@ -300,8 +303,9 @@ Map the note to the SMALLEST change, then re-render the same props file:
 music vibe → regenerate bed, swap `musicSrc`; too loud → `musicVolume`;
 voice → new TTS take, swap `voiceoverSrc` (+ retime captions if length moved);
 one weak clip → re-roll just that generation, same filename; copy/timing →
-props JSON only; layout/brand → composition components. Commit the props
-change; renders are never committed.
+props JSON only; layout/brand → composition components. The updated props
+file IS the saved recipe (`video/` is gitignored — nothing there is committed);
+renders are disposable.
 
 ## Publish (after explicit approval — hold stands)
 
