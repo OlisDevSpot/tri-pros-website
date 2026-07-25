@@ -3,8 +3,10 @@
 import type { CampaignTab } from '@/features/campaigns-admin/constants/query-parsers'
 
 import { useQueryState } from 'nuqs'
+import { Suspense } from 'react'
 
 import { campaignTabParser } from '@/features/campaigns-admin/constants/query-parsers'
+import { CampaignsOverviewSkeleton } from '@/features/campaigns-admin/ui/components/overview/campaigns-overview-skeleton'
 import { CampaignsLeadsView } from '@/features/campaigns-admin/ui/views/campaigns-leads-view'
 import { CampaignsOverviewView } from '@/features/campaigns-admin/ui/views/campaigns-overview-view'
 import { CampaignsSetupView } from '@/features/campaigns-admin/ui/views/campaigns-setup-view'
@@ -29,7 +31,11 @@ export function CampaignsView() {
           <TabsTrigger value="setup">Setup</TabsTrigger>
         </TabsList>
 
-        <TabsContent className="flex min-h-0 flex-1 flex-col" value="overview"><CampaignsOverviewView /></TabsContent>
+        <TabsContent className="flex min-h-0 flex-1 flex-col" value="overview">
+          <Suspense fallback={<CampaignsOverviewSkeleton />}>
+            <CampaignsOverviewView />
+          </Suspense>
+        </TabsContent>
         <TabsContent className="flex min-h-0 flex-1 flex-col" value="leads"><CampaignsLeadsView /></TabsContent>
         <TabsContent className="flex min-h-0 flex-1 flex-col" value="setup"><CampaignsSetupView /></TabsContent>
       </Tabs>
