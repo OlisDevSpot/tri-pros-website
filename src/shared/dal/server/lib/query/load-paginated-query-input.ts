@@ -5,6 +5,7 @@ import type { PaginatedQueryConfig, PaginatedQueryInput } from '@/shared/dal/lib
 import { createLoader } from 'nuqs/server'
 
 import { derivePaginatedQueryState, makePaginatedParsers } from '@/shared/dal/lib/query/derive-paginated-query-state'
+import 'server-only'
 
 /**
  * Server-side mirror of `usePaginatedQuery`'s first-mount input. Parses the

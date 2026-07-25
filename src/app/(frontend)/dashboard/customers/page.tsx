@@ -16,12 +16,16 @@ interface Props {
 }
 
 export default async function CustomersPage({ searchParams }: Props) {
-  await protectDashboardPage()
+  const authState = await protectDashboardPage()
 
-  // Tier 2 (useQuery table): AWAIT the prefetch — void + useQuery flashes a
-  // skeleton because the streamed query is still pending at hydration.
-  const input = await loadPaginatedQueryInput(searchParams, CUSTOMERS_TABLE_QUERY_CONFIG)
-  await prefetch(trpc.customersRouter.business.list.queryOptions(input))
+  // Unauthenticated visitors get the layout's sign-in screen; skip the
+  // prefetch work.
+  if (authState.status === 'authenticated') {
+    // Tier 2 (useQuery table): AWAIT the prefetch — void + useQuery flashes a
+    // skeleton because the streamed query is still pending at hydration.
+    const input = await loadPaginatedQueryInput(searchParams, CUSTOMERS_TABLE_QUERY_CONFIG)
+    await prefetch(trpc.customersRouter.business.list.queryOptions(input))
+  }
 
   return (
     <HydrateClient>

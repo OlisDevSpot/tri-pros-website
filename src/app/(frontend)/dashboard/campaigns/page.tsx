@@ -24,13 +24,17 @@ export default async function CampaignsPage({ searchParams }: Props) {
     redirect(ROOTS.dashboard.root)
   }
 
-  // Tier 1 (suspense view): void prefetch — pending queries are dehydrated
-  // and streamed; the view's useSuspenseQueries resolves them without a
-  // client round-trip. Only the active tab's queries are prefetched.
-  const { tab } = await loadCampaignsSearchParams(searchParams)
-  if (tab === 'overview') {
-    void prefetch(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
-    void prefetch(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
+  // Unauthenticated visitors get the layout's sign-in screen; skip the
+  // prefetch work.
+  if (authState.status === 'authenticated') {
+    // Tier 1 (suspense view): void prefetch — pending queries are dehydrated
+    // and streamed; the view's useSuspenseQueries resolves them without a
+    // client round-trip. Only the active tab's queries are prefetched.
+    const { tab } = await loadCampaignsSearchParams(searchParams)
+    if (tab === 'overview') {
+      void prefetch(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
+      void prefetch(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
+    }
   }
 
   return (
