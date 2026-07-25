@@ -1,7 +1,6 @@
 import { createTRPCOptionsProxy } from '@trpc/tanstack-react-query'
 import { cache } from 'react'
-import env from '@/shared/config/server-env'
-import { auth } from '@/shared/domains/auth/server'
+import { createRSCTRPCContext } from '@/trpc/lib/create-http-context'
 import { makeQueryClient } from './query-client'
 import { appRouter } from './routers/app'
 import 'server-only' // <-- ensure this file cannot be imported from the client
@@ -9,12 +8,7 @@ import 'server-only' // <-- ensure this file cannot be imported from the client
 //            will return the same client during the same request.
 export const getQueryClient = cache(makeQueryClient)
 export const trpc = createTRPCOptionsProxy({
-  ctx: async () => {
-    const session = await auth.api.getSession()
-    const req = new Request(env.NEXT_PUBLIC_BASE_URL)
-
-    return { session, ability: null, scope: null, req, setCookie: () => {}, resHeaders: new Headers() }
-  },
+  ctx: createRSCTRPCContext,
   router: appRouter,
   queryClient: getQueryClient,
 })

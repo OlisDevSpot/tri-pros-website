@@ -24,3 +24,12 @@ export const createHTTPTRPCContext = cache(async (ctx: { req?: Request, resHeade
     resHeaders: ctx.resHeaders,
   }
 })
+
+// ─── createRSCTRPCContext ────────────────────────────────────────────────────
+// Context for server-component prefetching via the options proxy in
+// `src/trpc/server.ts`. Same session resolution as the HTTP adapter (headers
+// from next/headers), but with no adapter Request: `req` stays undefined, so
+// shareable-token procedures (which read `?token=` off `req`) must never be
+// server-prefetched. React cache() dedupes per request.
+export const createRSCTRPCContext = cache(async (): Promise<HTTPTRPCContext> =>
+  createHTTPTRPCContext({ resHeaders: new Headers() }))
