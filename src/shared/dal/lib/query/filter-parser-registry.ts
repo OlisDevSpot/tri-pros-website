@@ -1,7 +1,7 @@
 import type { FilterValue } from '@/shared/dal/client/lib/types'
 import type { DateRange, NumberRange } from '@/shared/dal/server/lib/query/schemas'
 
-import { parseAsArrayOf, parseAsBoolean, parseAsJson, parseAsString } from 'nuqs'
+import { parseAsArrayOf, parseAsBoolean, parseAsJson, parseAsString } from 'nuqs/server'
 
 import { dateRangeSchema, numberRangeSchema } from '@/shared/dal/server/lib/query/schemas'
 

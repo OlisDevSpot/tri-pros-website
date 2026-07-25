@@ -1,14 +1,17 @@
 'use client'
 
-import type { FilterDefinition, FilterState, FilterValue, PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { FilterValue, PaginatedQueryResult } from '@/shared/dal/client/lib/types'
+import type { PaginatedQueryConfig, PaginatedQueryInput } from '@/shared/dal/lib/query/derive-paginated-query-state'
 import type { PaginatedResult } from '@/shared/dal/server/lib/query/output'
 
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
-import { parseAsInteger, parseAsString, parseAsStringEnum, useQueryStates } from 'nuqs'
+import { useQueryStates } from 'nuqs'
 import { useCallback, useEffect, useMemo } from 'react'
 
-import { filterParserRegistry } from '@/shared/dal/client/lib/filter-parser-registry'
-import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/client/lib/url-state'
+import { DEFAULT_DEBOUNCE_MS } from '@/shared/dal/client/lib/constants'
+import { DEFAULT_PAGE_SIZE } from '@/shared/dal/lib/query/constants'
+import { derivePaginatedQueryState, makePaginatedParsers } from '@/shared/dal/lib/query/derive-paginated-query-state'
+import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/lib/query/url-state'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 
 /**
@@ -26,37 +29,16 @@ import { useDebounce } from '@/shared/hooks/use-debounce'
 // `_TRow` is a phantom type that flows through to PaginatedQueryResult<TRow>.
 type PaginatedQueryFactory<TInput, _TRow> = (input: TInput, ...rest: any[]) => any
 
-/**
- * The shape sent to the server. Matches `paginatedQueryInput()` output.
- */
-interface PaginatedQueryInput {
-  pagination: { limit: number, offset: number }
-  sort?: { sortBy: string, sortDir: 'asc' | 'desc' }
-  search?: string
-  filters?: Record<string, FilterValue>
-}
+export type { PaginatedQueryInput }
 
-interface UsePaginatedQueryOptions {
-  /** Distinct URL key prefix when multiple paginated views share a route. */
-  paramPrefix?: string
-  /** Default page size; used when no URL value is present. */
-  pageSize?: number
-  /** Allowed page sizes. When omitted, `setPageSize` is a no-op (no UI). */
-  pageSizeOptions?: readonly number[]
+interface UsePaginatedQueryOptions extends PaginatedQueryConfig {
   /** Search debounce in ms. */
   searchDebounceMs?: number
   /** Disable the query without losing URL state. */
   enabled?: boolean
   /** Prefetch the next page when the current page resolves. */
   prefetchNextPage?: boolean
-  /** Initial sort applied when no URL state is present. */
-  defaultSort?: { sortBy: string, sortDir: 'asc' | 'desc' }
-  /** Filter definitions — each becomes a URL key + filter UI slot. */
-  filters?: readonly FilterDefinition[]
 }
-
-const DEFAULT_PAGE_SIZE = 20
-const DEFAULT_DEBOUNCE_MS = 250
 
 /**
  * Generic discrete (offset/limit) paginated query primitive — the source of
@@ -99,22 +81,20 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
     assertNoReservedFilterIds(filterDefinitions.map(f => f.id))
   }, [filterDefinitions])
 
-  // -- Build parsers map dynamically ----------------------------------------
-  // Parsers cover: page, search, sortBy, sortDir, pageSize, plus one per
-  // filter definition.
-  const parsers = useMemo(() => {
-    const base: Record<string, unknown> = {
-      [keys.pageKey]: parseAsInteger.withDefault(1),
-      [keys.searchKey]: parseAsString.withDefault(''),
-      [keys.sortByKey]: parseAsString.withDefault(defaultSort?.sortBy ?? ''),
-      [keys.sortDirKey]: parseAsStringEnum(['asc', 'desc']).withDefault(defaultSort?.sortDir ?? 'asc'),
-      [keys.pageSizeKey]: parseAsInteger.withDefault(initialPageSize),
-    }
-    for (const def of filterDefinitions) {
-      base[keys.filterKey(def.id)] = filterParserRegistry[def.type].parser
-    }
-    return base
-  }, [keys, defaultSort?.sortBy, defaultSort?.sortDir, initialPageSize, filterDefinitions])
+  // Deep-key array/object options so consumers passing inline literals don't
+  // churn config identity every render (queryInput stability feeds the
+  // next-page prefetch effect — same robustness the old primitive deps had).
+  const pageSizeOptionsKey = JSON.stringify(pageSizeOptions ?? null)
+  const config = useMemo<PaginatedQueryConfig>(() => ({
+    paramPrefix,
+    pageSize: initialPageSize,
+    pageSizeOptions,
+    defaultSort,
+    filters: filterDefinitions,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- pageSizeOptions deep-keyed via pageSizeOptionsKey; defaultSort by its two fields
+  }), [paramPrefix, initialPageSize, pageSizeOptionsKey, defaultSort?.sortBy, defaultSort?.sortDir, filterDefinitions])
+
+  const parsers = useMemo(() => makePaginatedParsers(config), [config])
 
   // Cast required: useQueryStates infers a precise generic from the parsers
   // map but our dynamic shape can't express that statically. We narrow at
@@ -122,61 +102,33 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
   const [urlState, setUrlState] = useQueryStates(parsers as never, { clearOnDefault: true })
   const stateAny = urlState as Record<string, unknown>
 
-  // -- Read state values ----------------------------------------------------
-  const page = Math.max((stateAny[keys.pageKey] as number) ?? 1, 1)
   const searchInput = (stateAny[keys.searchKey] as string) ?? ''
-  const sortByRaw = (stateAny[keys.sortByKey] as string) ?? ''
-  const sortDirRaw = (stateAny[keys.sortDirKey] as 'asc' | 'desc') ?? 'asc'
-
-  const sortBy = sortByRaw || undefined
-  const sortDir = sortBy ? sortDirRaw : undefined
-
-  const pageSizeRaw = (stateAny[keys.pageSizeKey] as number) ?? initialPageSize
-  const effectivePageSize = pageSizeOptions
-    ? (pageSizeOptions.includes(pageSizeRaw) ? pageSizeRaw : initialPageSize)
-    : initialPageSize
-
   const searchDebounced = useDebounce(searchInput.trim(), searchDebounceMs)
-  const offset = (page - 1) * effectivePageSize
 
-  // -- Read filter values + normalize --------------------------------------
-  const filterValues: FilterState = useMemo(() => {
-    const result: FilterState = {}
-    for (const def of filterDefinitions) {
-      const raw = stateAny[keys.filterKey(def.id)]
-      const spec = filterParserRegistry[def.type] as { normalize: (v: unknown) => FilterValue }
-      result[def.id] = spec.normalize(raw)
-    }
-    return result
-  }, [filterDefinitions, keys, stateAny])
+  const derived = useMemo(
+    () => derivePaginatedQueryState(
+      { ...stateAny, [keys.searchKey]: searchDebounced },
+      config,
+    ),
+    [stateAny, keys.searchKey, searchDebounced, config],
+  )
+  const { page, pageSize: effectivePageSize, sortBy, sortDir, filters: filterValues } = derived
+  const offset = derived.input.pagination.offset
 
   const activeFilterCount = useMemo(
     () => Object.values(filterValues).filter(v => v !== undefined).length,
     [filterValues],
   )
 
-  // -- Build server input ---------------------------------------------------
   // Stable-stringify `extra` so a fresh-ref-each-render `extra` doesn't
   // re-trigger the prefetch effect or invalidate downstream memos.
   const extraKey = JSON.stringify(extra)
 
-  const queryInput = useMemo<PaginatedQueryInput & TExtra>(() => {
-    const activeFilters: Record<string, FilterValue> = {}
-    for (const id of Object.keys(filterValues)) {
-      const v = filterValues[id]
-      if (v !== undefined) {
-        activeFilters[id] = v
-      }
-    }
-    return {
-      pagination: { limit: effectivePageSize, offset },
-      sort: sortBy ? { sortBy, sortDir: sortDir ?? 'asc' } : undefined,
-      search: searchDebounced || undefined,
-      filters: Object.keys(activeFilters).length > 0 ? activeFilters : undefined,
-      ...extra,
-    } as PaginatedQueryInput & TExtra
+  const queryInput = useMemo<PaginatedQueryInput & TExtra>(
+    () => ({ ...derived.input, ...extra } as PaginatedQueryInput & TExtra),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- extra deep-keyed via extraKey
-  }, [effectivePageSize, offset, searchDebounced, sortBy, sortDir, filterValues, extraKey])
+    [derived, extraKey],
+  )
 
   const baseOptions = queryOptionsFactory(queryInput)
 
