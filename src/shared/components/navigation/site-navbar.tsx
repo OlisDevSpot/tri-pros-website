@@ -273,9 +273,9 @@ export function SiteNavbar() {
                           }
                           onClick={!session?.user
                             ? openLoginModal
-                            : async () => {
-                              await signOut()
-                            }}
+                            : () => {
+                                void signOut({ fetchOptions: { onSuccess: () => window.location.assign('/') } })
+                              }}
                         >
                           {session?.user ? <LogOutIcon /> : <LogInIcon />}
                         </MotionButton>

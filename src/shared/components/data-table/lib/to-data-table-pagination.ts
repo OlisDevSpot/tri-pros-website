@@ -19,5 +19,6 @@ export function toDataTablePagination<T>(p: PaginatedQueryResult<T>): DataTableS
     onPageSizeChange: p.setPageSize,
     pageSizeOptions: p.pageSizeOptions,
     isFetching: p.isFetching || p.isPlaceholderData,
+    isError: p.isError,
   }
 }

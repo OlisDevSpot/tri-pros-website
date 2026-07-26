@@ -1,7 +1,6 @@
 'use client'
 
 import { LogOutIcon } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { signOut } from '@/shared/domains/auth/client'
 import { Button } from '../ui/button'
 
@@ -10,11 +9,8 @@ interface Props {
 }
 
 export function LogoutButton({ asMenuItem = false }: Props) {
-  const router = useRouter()
-
-  async function handleLogout() {
-    await signOut()
-    router.push('/')
+  function handleLogout() {
+    void signOut({ fetchOptions: { onSuccess: () => window.location.assign('/') } })
   }
 
   return (

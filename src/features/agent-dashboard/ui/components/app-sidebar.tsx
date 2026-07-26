@@ -291,7 +291,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
             onSettingsClick={() => router.push(ROOTS.dashboard.settings())}
             onLogoutClick={() => signOut({
               fetchOptions: {
-                onSuccess: () => router.refresh(),
+                onSuccess: () => window.location.assign('/'),
               },
             })}
           />

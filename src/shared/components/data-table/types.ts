@@ -74,6 +74,8 @@ export interface DataTableServerPagination {
   pageSizeOptions?: readonly number[]
   /** When true, render a muted "Loading…" hint in the pagination bar. */
   isFetching?: boolean
+  /** When true, the empty-state slot renders an error message instead of "no rows". */
+  isError?: boolean
 }
 
 // -- Server-side sort control --

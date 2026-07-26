@@ -18,6 +18,7 @@ import { SKELETON_CELL_WIDTHS, SKELETON_ROW_HEIGHT_CLASS } from '@/shared/compon
 import { createDateRangeFilterFn } from '@/shared/components/data-table/lib/filter-fns'
 import { DataTableFilterBar } from '@/shared/components/data-table/ui/data-table-filter-bar'
 import { DataTablePagination } from '@/shared/components/data-table/ui/data-table-pagination'
+import { ErrorState } from '@/shared/components/states/error-state'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/ui/table'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
@@ -528,6 +529,15 @@ export function DataTable<TData extends { id: string }, TMeta = unknown>({
                       ))}
                     </TableRow>
                   ))
+                }
+                if (serverPagination?.isError) {
+                  return (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 p-0">
+                        <ErrorState title={`Couldn't load ${entityName}s`} description="Please try again." className="border-0" />
+                      </TableCell>
+                    </TableRow>
+                  )
                 }
                 return (
                   <TableRow>
