@@ -77,13 +77,20 @@ convention, CTA `APPLY_NOW` (softest 1–2 ads may use `LEARN_MORE`):
 Each ad carries up to 5 primary texts + 3–5 headlines spanning the variation
 axes (scarcity / transformation / social-proof / question / mechanics).
 
-Assets: statics exist in `public/funnels/{kitchens,bathrooms}/ads/`. Reels
-selected from `video/out/` inventory (Claude proposes 2 per trade; Oliver
-vetoes/swaps before sync), copied into `public/funnels/<slug>/ads/videos/`
-(gitignored). Each video ad gets a generated `thumbnailFile`. Carousel cards
-composited from portfolio R2 media (1:1). Reel overlay text audited against
-current Reels safe zones (top ~14%, bottom ~20%, sides 6%). Any AI-modified
-creative flagged for the AI-disclosure toggle.
+Assets — **layered Remotion stills, not raw photos or AI-baked text** (decision
+2026-07-26): every static card (hero, before/after, all carousel cards) is
+rendered from still compositions in the `video/` ad package — real portfolio
+photo as the background layer, gradient/shape layers, and real text blocks in
+brand fonts. Rationale: perfect type, prop-driven tweaks (copy changes =
+re-render, no art regeneration), reel↔static visual consistency, and the
+templates become evergreen building blocks for future offers. Higgsfield may
+generate **non-proof** layers only (e.g. CTA-card texture) — proof imagery
+stays genuine portfolio work per the truthfulness guardrail. Reels: 2 per
+trade proposed from `video/out/` (Oliver vetoes/swaps), copied into
+`public/funnels/<slug>/ads/videos/` (gitignored), each with an extracted
+`thumbnailFile`. All overlay text audited against current Meta safe zones
+(top ~14%, bottom ~20%, sides 6%). Any AI-modified creative flagged for the
+AI-disclosure toggle.
 
 Refresh cadence (post-launch operating rule): monthly, kill bottom 1–2 ads by
 cost-per-qualified-lead, add 2–3 net-new concepts per product; never nuke the

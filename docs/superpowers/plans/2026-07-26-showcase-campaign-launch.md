@@ -347,7 +347,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: Task 1's `defineCampaign` shape.
-- Produces: `showcaseCampaign` spec; asset filenames that Task 3 must place on disk: kitchens `reel-07.mp4`, `reel-08.mp4`, `reel-07-thumb.jpg`, `reel-08-thumb.jpg`, `carousel-01.jpg`…`carousel-04.jpg`; same names under bathrooms with `reel-11`/`reel-12`.
+- Produces: `showcaseCampaign` spec; asset filenames that Task 3 must place on disk (per trade, under `public/funnels/<slug>/ads/`): `reel-NN.mp4` ×2 (videos/ subdir), `reel-NN-thumb.jpg` ×2, `before-after-card-01.jpg`, `hero-card-01.jpg`, `carousel-01.jpg`…`carousel-04.jpg`. Kitchens NN = 07/08, bathrooms NN = 11/12. All statics are Remotion-rendered layered cards (Task 3), not raw photos.
 
 - [ ] **Step 1: Write the spec.** Campaign `showcase` / "TPR — Showcase — Leads". Two ad sets ($58/day each — total $116/day, under ceiling). Copy below is complete and Showcase-compliant (checkmark + narrative + question variants per ad; scarcity first-person about the program; no viewer attributes; no pricing numbers). Reel/thumbnail/carousel filenames are the Task 3 contract; reel picks are Oliver-approved in Task 3 and, if he swaps files, only Task 3's copy step changes (filenames here stay).
 
@@ -453,7 +453,7 @@ export const showcaseCampaign = defineCampaign({
             + 'featured in our portfolio. See if your home qualifies.',
           ],
           descriptions: ['AAA-grade, at a Showcase price.'],
-          imageFile: 'before-after-01.jpg',
+          imageFile: 'before-after-card-01.jpg',
           ctaType: 'APPLY_NOW',
         },
         {
@@ -493,7 +493,7 @@ export const showcaseCampaign = defineCampaign({
             + 'Homeowners only. See if your home qualifies.',
           ],
           descriptions: ['See if your home qualifies.'],
-          imageFile: 'dream-kitchen-01.jpg',
+          imageFile: 'hero-card-01.jpg',
           ctaType: 'LEARN_MORE',
         },
       ],
@@ -587,7 +587,7 @@ export const showcaseCampaign = defineCampaign({
             + 'We’re selecting 5 bathrooms in your area this month. See if your home qualifies.',
           ],
           descriptions: ['AAA-grade, at a Showcase price.'],
-          imageFile: 'before-after-01.jpg',
+          imageFile: 'before-after-card-01.jpg',
           ctaType: 'APPLY_NOW',
         },
         {
@@ -627,7 +627,7 @@ export const showcaseCampaign = defineCampaign({
             + 'Homeowners only. See if your home qualifies.',
           ],
           descriptions: ['See if your home qualifies.'],
-          imageFile: 'spa-bathroom-01.jpg',
+          imageFile: 'hero-card-01.jpg',
           ctaType: 'LEARN_MORE',
         },
       ],
@@ -645,7 +645,7 @@ import { showcaseCampaign } from './showcase.campaign.js'
 export const CAMPAIGN_SPECS: CampaignSpec[] = [showcaseCampaign]
 ```
 
-- [ ] **Step 3: Verify** — `pnpm tsc && pnpm lint` pass. Then `pnpm meta sync` (dry run): expect `+ create campaign showcase`, 2 `+ create ad set`, `+ create ad` for the two statics per ad set whose images exist, `⚠ skip ad (asset missing)` for reels/carousels (assets land in Task 3), and orphan lines for `kitchens-leads` / `bathrooms-leads` ("spec removed; lock-managed") plus the account's unmanaged campaigns. **No update/delete ops against the old campaigns.**
+- [ ] **Step 3: Verify** — `pnpm tsc && pnpm lint` pass. Then `pnpm meta sync` (dry run): expect `+ create campaign showcase`, 2 `+ create ad set`, `⚠ skip ad (asset missing)` for **all 10 ads** (every asset is produced in Task 3 — the spec's static filenames are Remotion-rendered cards that don't exist yet), and orphan lines for `kitchens-leads` / `bathrooms-leads` ("spec removed; lock-managed") plus the account's unmanaged campaigns. **No update/delete ops against the old campaigns.**
 
 - [ ] **Step 4: Commit**
 
@@ -658,17 +658,21 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 3: Creative staging (reels, thumbnails, carousel cards)
+### Task 3: Creative staging — reels + Remotion still cards (layered, real text)
+
+**Decision (2026-07-26, Oliver):** all static creatives are **Remotion still compositions** in the existing `video/` ad package — background image layer (real portfolio photo; Higgsfield only for non-proof layers) + shape/scrim layers + REAL text blocks in brand fonts. No text baked into AI images, no third-party canvas tool. Templates are evergreen building blocks: next offer = same components, new props.
 
 **Files:**
+- Create (in `video/` package — local-only, never committed to main repo): `video/src/stills/carousel-card.tsx`, `video/src/stills/before-after-card.tsx`, `video/src/stills/hero-card.tsx`; register compositions in `video/src/root.tsx`; props JSONs in `video/props/stills/`
 - Create (gitignored): `public/funnels/kitchens/ads/videos/reel-07.mp4`, `reel-08.mp4`; `public/funnels/bathrooms/ads/videos/reel-11.mp4`, `reel-12.mp4`
-- Create (committed): `public/funnels/kitchens/ads/reel-07-thumb.jpg`, `reel-08-thumb.jpg`, `carousel-01.jpg`…`carousel-04.jpg`; same 6 files under `public/funnels/bathrooms/ads/`
+- Create (committed): per trade under `public/funnels/<slug>/ads/`: `reel-NN-thumb.jpg` ×2, `before-after-card-01.jpg`, `hero-card-01.jpg`, `carousel-01.jpg`…`carousel-04.jpg`
+- Modify: `.claude/skills/showcase-ads/SKILL.md` (document the stills pipeline)
 
 **Interfaces:**
-- Consumes: Task 2's filename contract.
-- Produces: all assets on disk so Task 7's sync creates all 10 ads.
+- Consumes: Task 2's filename contract; `video/` package conventions (Remotion 4, `@remotion/google-fonts`, brand assets under `video/public/brand/`).
+- Produces: all 16 committed statics + 4 gitignored videos so Task 7's sync creates all 10 ads.
 
-- [ ] **Step 1: Present reel picks to Oliver (blocking gate).** Default proposal = the two most recent per trade: kitchens `video/out/kitchens-showcase-reel-07.mp4` + `kitchens-showcase-reel-08.mp4`; bathrooms `bathrooms-showcase-reel-11.mp4` + `bathrooms-showcase-reel-12.mp4`. Read `.claude/skills/showcase-ads/SKILL.md` + `docs/marketing/editing/variation-axes.md` first and summarize each candidate's variant axes (hook style, edit style) so he chooses two *different-hook* reels per trade, matching the casting-vs-story slot split. If he swaps picks, use his files in Step 2 (spec filenames stay `reel-NN.mp4`; NN = the chosen reel numbers — if numbers change, update `videoFile`/`thumbnailFile` in `showcase.campaign.ts` accordingly and re-run `pnpm tsc`).
+- [ ] **Step 1: Present reel picks to Oliver (blocking gate).** Default proposal = the two most recent per trade: kitchens `video/out/kitchens-showcase-reel-07.mp4` + `kitchens-showcase-reel-08.mp4`; bathrooms `bathrooms-showcase-reel-11.mp4` + `bathrooms-showcase-reel-12.mp4`. Read `.claude/skills/showcase-ads/SKILL.md` + `docs/marketing/editing/variation-axes.md` first and summarize each candidate's variant axes (hook style, edit style) so he chooses two *different-hook* reels per trade, matching the casting-vs-story slot split. If picks change reel numbers, update `videoFile`/`thumbnailFile` in `showcase.campaign.ts` and re-run `pnpm tsc`.
 
 - [ ] **Step 2: Copy approved reels into engine paths:**
 
@@ -682,7 +686,7 @@ cp video/out/bathrooms-showcase-reel-12.mp4 public/funnels/bathrooms/ads/videos/
 
 Confirm `git status` shows NO new files under `videos/` (gitignored). If it does, STOP — do not commit videos.
 
-- [ ] **Step 3: Generate thumbnails** — strongest early "after" frame; grab t=1s and eyeball, adjust `-ss` per reel if the frame is mid-transition:
+- [ ] **Step 3: Generate reel thumbnails** — strongest early "after" frame; grab t=1s and eyeball, adjust `-ss` per reel if mid-transition:
 
 ```bash
 for f in kitchens/ads/videos/reel-07 kitchens/ads/videos/reel-08 bathrooms/ads/videos/reel-11 bathrooms/ads/videos/reel-12; do
@@ -691,27 +695,65 @@ for f in kitchens/ads/videos/reel-07 kitchens/ads/videos/reel-08 bathrooms/ads/v
 done
 ```
 
-Read each thumbnail with the Read tool to verify it's a clean, non-blurry frame.
+Read each with the Read tool to verify a clean, non-blurry frame.
 
-- [ ] **Step 4: Build carousel cards (4 per trade, 1080×1080).** Source: portfolio media already in R2 (same source as the existing ad statics). Find candidates by reading the portfolio data the showroom uses — `grep -rn "r2" src/shared/entities/*/constants src/features/portfolio* --include="*.ts" -l` and/or query the `media_files` table on the dev DB (`pnpm tsx` script using the repo's drizzle client; read `src/shared/db/schema/` first for exact table/column names). Pick 4 strong finished/before-after shots per trade (different projects; the existing `before-after-01.jpg` composites' source projects are good anchors). Download and center-crop square:
+- [ ] **Step 4: Source background photos (real work only).** Proof imagery must be genuine Tri Pros portfolio photos (`docs/marketing/showcase-offer.md#hard-guardrails` — truthfulness). Sources: the existing high-res photos in `public/funnels/*/ads/` (`dream-kitchen-01.jpg`, `spa-bathroom-01.jpg`, the `before-after-01.jpg` composites' source projects) + portfolio media in R2 — discover via `src/shared/db/schema/` (read for the media table's exact name/columns) then a `pnpm tsx` drizzle query on the dev DB listing kitchen/bathroom portfolio images with URLs. Need per trade: 1 hero shot, 1 before + 1 after of the same project (for the split card; if true before/after originals can't be found, fall back to the existing composite as a single background layer), 3 distinct finished shots (carousel cards 1–3). Download to the scratchpad. Card 4 (CTA card) needs no photo — brand-color background; a Higgsfield-generated *texture* is allowed there (non-proof) but then the ad gets the AI-disclosure toggle in Task 7's checklist.
 
-```bash
-# per source image:
-ffmpeg -y -i /tmp/claude-1000/-home-olis-solutions-olis-v3-nextjs-tri-pros-website/c6e312f5-49ea-4e49-92f9-2d1f28067c5c/scratchpad/src-k1.jpg \
-  -vf "crop='min(iw,ih)':'min(iw,ih)',scale=1080:1080" -q:v 2 public/funnels/kitchens/ads/carousel-01.jpg
+- [ ] **Step 5: Build the still components in `video/`.** First read `video/src/root.tsx`, one existing composition, and `video/src/lib/` to adopt the package's exact font loading (`@remotion/google-fonts`), brand tokens, and zod-props (`@remotion/zod-types`) conventions — the stills must reuse them, not invent parallel ones. Three components, all `durationInFrames: 1`, layered as AbsoluteFill stacks (bottom→top: photo layer → gradient scrim → text blocks / frosted badge — the frosted-glass treatment matching the funnel design aesthetic). Shape (props/zod omitted here; follow package conventions):
+
+```tsx
+// video/src/stills/hero-card.tsx — 1080×1350 (4:5)
+// Layers: <Img src={staticFile(bg)}> full-bleed →
+//   bottom gradient scrim (rgba(0,0,0,0) → rgba(0,0,0,0.72)) →
+//   frosted badge top-left: uppercase tracking-wide "SHOWCASE — 5 SPOTS" →
+//   headline block (bottom third, brand display font, ~72px, white):
+//     e.g. "We’re selecting 5 kitchens in your area" →
+//   sub line (~40px, white/85%): "See if your home qualifies"
+// Props: { bg: string, badge: string, headline: string, sub: string }
+
+// video/src/stills/before-after-card.tsx — 1080×1350 (4:5)
+// Layers: top half <Img before> / bottom half <Img after> (vertical stack —
+//   survives 9:16 auto-crops better than side-by-side) →
+//   thin divider strip with two frosted labels: "BEFORE" / "AFTER" →
+//   bottom scrim + one short line (~56px): "Same kitchen." (trade-appropriate)
+// Props: { before: string, after: string, caption: string }
+
+// video/src/stills/carousel-card.tsx — 1080×1080 (1:1)
+// Variant "photo" (cards 1–3): full-bleed photo, small frosted corner badge
+//   "SHOWCASE STANDARD" — NO other text (the card headline lives in Meta's
+//   card field below the image; photo does the talking).
+// Variant "cta" (card 4): brand-color background layer (or approved texture),
+//   centered display text "See if your home qualifies" + sub "5 kitchens. Your area."
+// Props: { variant: 'photo' | 'cta', bg?: string, badge?: string, headline?: string, sub?: string }
 ```
 
-Read every card with the Read tool; present the 8 cards to Oliver alongside a one-line description each (project, shot type). Swap any he rejects.
+Register nine composition IDs? No — three compositions, props-driven. Register in `root.tsx`: `still-hero` (1080×1350), `still-before-after` (1080×1350), `still-carousel` (1080×1080). All on-image text must sit inside Meta safe zones (≥6% side margins; nothing in top 14% / bottom 20% for the 4:5s since they may serve cropped to 9:16).
 
-- [ ] **Step 5: Verify + commit statics** (videos stay untracked):
+- [ ] **Step 6: Write props JSONs + render.** One props file per output under `video/props/stills/` (e.g. `kitchens-hero.json` = `{ "bg": "stills-src/kitchens-hero.jpg", "badge": "SHOWCASE — 5 SPOTS", "headline": "We’re selecting 5 kitchens in your area", "sub": "See if your home qualifies" }`; bathroom twins say "bathrooms"; source photos copied into `video/public/stills-src/`). Render all 12 stills from `video/`:
+
+```bash
+cd video
+pnpm exec remotion still still-hero          ../public/funnels/kitchens/ads/hero-card-01.jpg          --props=props/stills/kitchens-hero.json          --image-format=jpeg --jpeg-quality=92
+pnpm exec remotion still still-before-after  ../public/funnels/kitchens/ads/before-after-card-01.jpg  --props=props/stills/kitchens-before-after.json  --image-format=jpeg --jpeg-quality=92
+pnpm exec remotion still still-carousel      ../public/funnels/kitchens/ads/carousel-01.jpg           --props=props/stills/kitchens-carousel-01.json   --image-format=jpeg --jpeg-quality=92
+# … carousel-02..04, then the four bathrooms twins
+```
+
+- [ ] **Step 7: Review gate.** Read every rendered card with the Read tool (composition, text legibility, safe zones, no clipped descenders), fix and re-render as needed, then present all 12 to Oliver with a one-liner each (background project + text). Iterate props until he approves. This is the main hook surface — do not rush it; tweaks are just prop edits + re-render.
+
+- [ ] **Step 8: Document the stills pipeline** — append a short section to `.claude/skills/showcase-ads/SKILL.md`: still compositions live in `video/src/stills/`, props in `video/props/stills/`, render via `remotion still`, outputs commit to `public/funnels/<slug>/ads/`, real-text-layers rule (never bake text into generated images), truthfulness rule for proof imagery.
+
+- [ ] **Step 9: Verify + commit statics** (videos and `video/` package stay untracked):
 
 ```bash
 pnpm meta sync   # dry run — expect ZERO skip-ad-missing-asset lines now
-git add public/funnels/kitchens/ads/*.jpg public/funnels/bathrooms/ads/*.jpg
-git commit -m "feat(ads): showcase creative statics — reel thumbnails + portfolio carousel cards
+git add public/funnels/kitchens/ads/*.jpg public/funnels/bathrooms/ads/*.jpg .claude/skills/showcase-ads/SKILL.md
+git commit -m "feat(ads): showcase statics — Remotion layered cards (hero, before/after, carousel) + reel thumbnails
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
+
+⚠️ `.claude/skills/showcase-ads/SKILL.md` already has uncommitted local edits (pre-session) — review its diff before staging; keep Oliver's edits, add ours below them.
 
 ---
 
