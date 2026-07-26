@@ -1,8 +1,8 @@
 import type { FilterDefinition, FilterState, FilterValue } from '@/shared/dal/client/lib/types'
 
-import { parseAsInteger, parseAsString, parseAsStringEnum } from 'nuqs/server'
+import { parseAsArrayOf, parseAsInteger, parseAsString, parseAsStringEnum, parseAsStringLiteral } from 'nuqs/server'
 
-import { DEFAULT_PAGE_SIZE } from '@/shared/dal/lib/query/constants'
+import { DEFAULT_PAGE_SIZE, MAX_PAGE } from '@/shared/dal/lib/query/constants'
 import { filterParserRegistry } from '@/shared/dal/lib/query/filter-parser-registry'
 import { makeQueryParsers } from '@/shared/dal/lib/query/url-state'
 
@@ -54,6 +54,16 @@ export function makePaginatedParsers(config: PaginatedQueryConfig): Record<strin
     [keys.pageSizeKey]: parseAsInteger.withDefault(config.pageSize ?? DEFAULT_PAGE_SIZE),
   }
   for (const def of config.filters ?? []) {
+    // Validate option-bearing filters against their own options at parse time —
+    // isomorphic, so an invalid URL member drops identically on server and
+    // client instead of reaching the procedure's Zod as a BAD_REQUEST.
+    if ((def.type === 'multi-select' || def.type === 'select') && def.options.length > 0) {
+      const values = def.options.map(o => o.value)
+      parsers[keys.filterKey(def.id)] = def.type === 'multi-select'
+        ? parseAsArrayOf(parseAsStringLiteral(values)).withDefault([] as string[])
+        : parseAsStringLiteral(values).withDefault('')
+      continue
+    }
     parsers[keys.filterKey(def.id)] = filterParserRegistry[def.type].parser
   }
   return parsers
@@ -75,8 +85,8 @@ export function derivePaginatedQueryState(
   const keys = makeQueryParsers(config.paramPrefix)
   const initialPageSize = config.pageSize ?? DEFAULT_PAGE_SIZE
 
-  const page = Math.max((urlState[keys.pageKey] as number) ?? 1, 1)
-  const searchTrimmed = ((urlState[keys.searchKey] as string) ?? '').trim()
+  const page = Math.min(Math.max((urlState[keys.pageKey] as number) ?? 1, 1), MAX_PAGE)
+  const searchTrimmed = ((urlState[keys.searchKey] as string) ?? '').replace(/\0/g, '').trim()
   const sortByRaw = (urlState[keys.sortByKey] as string) ?? ''
   const sortDirRaw = (urlState[keys.sortDirKey] as 'asc' | 'desc') ?? 'asc'
   const sortBy = sortByRaw || undefined

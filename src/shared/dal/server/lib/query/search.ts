@@ -23,6 +23,7 @@ export function buildSearchWhere(
   if (!term || columns.length === 0) {
     return undefined
   }
-  const pattern = `%${term}%`
+  // Escape LIKE metacharacters so ?q=% can't match every row and _ isn't any-char.
+  const pattern = `%${term.replace(/[\\%_]/g, m => `\\${m}`)}%`
   return or(...columns.map(c => ilike(c, pattern)))
 }

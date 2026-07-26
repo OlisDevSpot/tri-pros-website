@@ -27,13 +27,22 @@ export const sortFieldsSchema = z.object({
 
 export type SortFields = z.infer<typeof sortFieldsSchema>
 
+// zod's .datetime() accepts year 0000, which Postgres rejects (verified 500).
+// Bound to instants both PG and our domain accept; an out-of-range value fails
+// validation → the filter collapses to inactive identically on the parser path
+// (parseAsJson catches the throw) and the procedure path.
+const pgSafeDatetime = z.string().datetime().refine((s) => {
+  const t = Date.parse(s)
+  return Number.isFinite(t) && t >= Date.UTC(1970, 0, 1) && t <= Date.UTC(2200, 0, 1)
+}, 'Date out of supported range')
+
 /**
  * ISO datetime range, inclusive on both ends. Used by the toolkit's
  * `date-range` filter type and by any procedure that needs a time window.
  */
 export const dateRangeSchema = z.object({
-  from: z.string().datetime().optional(),
-  to: z.string().datetime().optional(),
+  from: pgSafeDatetime.optional(),
+  to: pgSafeDatetime.optional(),
 })
 
 export type DateRange = z.infer<typeof dateRangeSchema>
