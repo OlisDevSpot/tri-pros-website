@@ -7,7 +7,7 @@ import { CampaignsView } from '@/features/campaigns-admin/ui/views/campaigns-vie
 import { ROOTS } from '@/shared/config/roots'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
-import { prefetch } from '@/trpc/lib/prefetch'
+import { prefetchStreaming } from '@/trpc/lib/prefetch'
 import { trpc } from '@/trpc/server'
 
 export const dynamic = 'force-dynamic'
@@ -27,13 +27,11 @@ export default async function CampaignsPage({ searchParams }: Props) {
   // Unauthenticated visitors get the layout's sign-in screen; skip the
   // prefetch work.
   if (authState.status === 'authenticated') {
-    // Tier 1 (suspense view): void prefetch — pending queries are dehydrated
-    // and streamed; the view's useSuspenseQueries resolves them without a
-    // client round-trip. Only the active tab's queries are prefetched.
+    // Only the active tab's queries are prefetched.
     const { tab } = await loadCampaignsSearchParams(searchParams)
     if (tab === 'overview') {
-      void prefetch(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
-      void prefetch(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
+      prefetchStreaming(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
+      prefetchStreaming(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
     }
   }
 
