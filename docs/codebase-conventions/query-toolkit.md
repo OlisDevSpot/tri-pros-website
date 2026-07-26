@@ -37,7 +37,7 @@ Each layer is replaceable. New containers (kanban, calendar) get their own adapt
 Any tRPC procedure with pagination is consumed via `usePaginatedQuery(factory, extra, options)`. Never hand-roll page state with `useState`, never wire your own search debounce, never set `placeholderData` manually for paginated views.
 
 **Why**: hand-rolled state diverges. Filter URL syntax, page-size reset rules, prefetch logic, `keepPreviousData` semantics — the toolkit gets these right consistently. Hand-rolled gets them wrong differently each time.
-**Reference impl**: `src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx`
+**Reference impl**: `src/shared/entities/customers/components/customers-table.tsx`
 **Enforced by**: convention
 
 ### paginated-input-via-composer
@@ -101,6 +101,8 @@ The input assembly itself lives in `derivePaginatedQueryState()` (`src/shared/da
 **Why**: the server-prefetched query key must hash identically to the client's first-mount key; one config + one builder makes divergence structurally impossible.
 **Reference impl**: `src/shared/entities/customers/constants/customers-table-query-config.ts`
 **Enforced by**: convention
+
+Dynamic `FilterDefinition.options` are key-IRRELEVANT — `derivePaginatedQueryState` normalizes filters by `def.type` only, so filter ids + types are the key-relevant surface, not the option list they render. When a table's options are computed at runtime (e.g. campaigns-leads builds them from queries), split the config: a static shared constant carrying ids/types (used by BOTH the page's `loadPaginatedQueryInput` call and the view's `usePaginatedQuery` call), with the view merging the dynamic `options` in before rendering the toolbar. Never inline the ids/types side — that's still the key-relevant surface the shared-config rule protects.
 
 ### reserved-url-key-suffixes
 

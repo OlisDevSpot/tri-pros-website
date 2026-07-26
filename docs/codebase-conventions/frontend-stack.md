@@ -25,12 +25,16 @@ Views (`ui/views/<x>-view.tsx`) own data fetching and layout. Components (`ui/co
 
 ### server-prefetch-two-tiers
 
-Dashboard pages prefetch their view's queries server-side and wrap children in `<HydrateClient>` (`src/trpc/components/hydrate-client.tsx`). The tier decides await semantics:
+Dashboard pages prefetch their view's queries server-side and wrap children in `<HydrateClient>` (`src/trpc/components/hydrate-client.tsx`). The tier decides which export to call:
 
-- **Tier 1** (view uses `useSuspenseQuery`): `void prefetch(trpc.x.y.queryOptions(...))` — pending query dehydrates and streams. Put a layout-matched `<Suspense fallback>` close to the view; `HydrateClient`'s built-in boundary is the safety net.
-- **Tier 2** (view uses `useQuery`, e.g. any `usePaginatedQuery` table): `await prefetch(...)` — `void` + `useQuery` flashes a skeleton (streamed query still pending at hydration). Build the input with `loadPaginatedQueryInput(searchParams, CONFIG)` using the table's shared config object (see query-toolkit.md#shared-table-config).
+- **Tier 1** (view uses `useSuspenseQuery`): `prefetchStreaming(trpc.x.y.queryOptions(...))` — pending query dehydrates and streams; the export returns `void` so awaiting it is impossible by type. Put a layout-matched `<Suspense fallback>` close to the view; `HydrateClient`'s built-in boundary is the safety net.
+- **Tier 2** (view uses `useQuery`, e.g. any `usePaginatedQuery` table): `await prefetchBlocking(...)` — fire-and-forget + `useQuery` flashes a skeleton (streamed query still pending at hydration). Build the input with `loadPaginatedQueryInput(searchParams, CONFIG)` using the table's shared config object (see query-toolkit.md#shared-table-config). Each Tier-2 route also ships a `loading.tsx` (instant soft-nav commit point so the awaited prefetch doesn't freeze the page with no feedback) — reference impl `src/app/(frontend)/dashboard/customers/loading.tsx`.
 
-Never import `@/trpc/server` (or `prefetch`/`HydrateClient`) into a client component.
+Never import `@/trpc/server` (or `prefetchBlocking`/`prefetchStreaming`/`HydrateClient`) into a client component.
+
+All prefetch calls happen in the page function body, BEFORE returning JSX — a prefetch inside a server component nested under `HydrateClient` renders after the dehydrate snapshot and is silently wasted. An input is prefetchable iff every field derives from searchParams/route params + shared constants — `Date.now()`, localStorage, and session-derived defaults disqualify (or must be quantized server-readably).
+
+In dev, a config/extra drift between the server prefetch and the client's first-mount input surfaces as a `[prefetch drift]` console error (see `src/shared/lib/hydration-drift.ts`) instead of silently wasting the prefetch.
 
 **Why**: pages already block on `protectDashboardPage()`'s session read; prefetching piggybacks on a round-trip the server is already making, removing the client's mount→fetch waterfall.
 **Reference impl**: `src/app/(frontend)/dashboard/customers/page.tsx` (Tier 2), `src/app/(frontend)/dashboard/campaigns/page.tsx` (Tier 1 + tab-conditional prefetch)
