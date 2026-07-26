@@ -13,6 +13,7 @@ import { DEFAULT_PAGE_SIZE } from '@/shared/dal/lib/query/constants'
 import { derivePaginatedQueryState, makePaginatedParsers } from '@/shared/dal/lib/query/derive-paginated-query-state'
 import { assertNoReservedFilterIds, makeQueryParsers } from '@/shared/dal/lib/query/url-state'
 import { useDebounce } from '@/shared/hooks/use-debounce'
+import { checkHydrationParity } from '@/shared/lib/hydration-drift'
 
 /**
  * Factory signature matching tRPC's overloaded `queryOptions(input, opts?)`.
@@ -131,6 +132,13 @@ export function usePaginatedQuery<TExtra extends object, TRow>(
   )
 
   const baseOptions = queryOptionsFactory(queryInput)
+
+  // Dev-only: detect server-prefetch key drift (wasted hydration).
+  const baseQueryKey = baseOptions.queryKey as readonly unknown[]
+  useEffect(() => {
+    checkHydrationParity(baseQueryKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- first mount only; later key changes are client-driven refetches, not hydration targets
+  }, [])
 
   const result = useQuery({
     ...baseOptions,

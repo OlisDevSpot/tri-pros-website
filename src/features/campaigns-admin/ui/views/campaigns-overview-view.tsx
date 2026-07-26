@@ -6,18 +6,23 @@ import { partitionSourceSummaries } from '@/features/campaigns-admin/lib/partiti
 import { IdleSourcesList } from '@/features/campaigns-admin/ui/components/overview/idle-sources-list'
 import { OverviewSummaryBar } from '@/features/campaigns-admin/ui/components/overview/overview-summary-bar'
 import { SourceRollupCard } from '@/features/campaigns-admin/ui/components/overview/source-rollup-card'
+import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { useTRPC } from '@/trpc/helpers'
 
 export function CampaignsOverviewView() {
   const trpc = useTRPC()
+  const sourceCampaignSummariesOptions = trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions()
+  const listCampaignsOptions = trpc.voipCampaignsRouter.listCampaigns.queryOptions()
+
+  // Dev-only: detect server-prefetch key drift for each query (see hydration-drift.ts).
+  useHydrationParityCheck(sourceCampaignSummariesOptions.queryKey)
+  useHydrationParityCheck(listCampaignsOptions.queryKey)
+
   // useSuspenseQueries (plural), NOT two useSuspenseQuery calls — sequential
   // suspense hooks in one component waterfall; the plural API fires both in
   // parallel and matches the page's two parallel prefetches.
   const [{ data: summaries }, { data: campaigns }] = useSuspenseQueries({
-    queries: [
-      trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions(),
-      trpc.voipCampaignsRouter.listCampaigns.queryOptions(),
-    ],
+    queries: [sourceCampaignSummariesOptions, listCampaignsOptions],
   })
 
   const totals = summaries.reduce(
