@@ -11,7 +11,7 @@ import 'server-only'
  * Server-side mirror of `usePaginatedQuery`'s first-mount input. Parses the
  * page's `searchParams` with the SAME parser map and assembles the input with
  * the SAME `derivePaginatedQueryState` the client hook uses, so
- * `prefetchBlocking(factory.queryOptions(await loadPaginatedQueryInput(...)))`
+ * `prefetch(factory.queryOptions(await loadPaginatedQueryInput(...)))`
  * in a page.tsx produces a hydration cache-hit on the client's first render.
  *
  * `config` MUST be the same exported per-table config object the table

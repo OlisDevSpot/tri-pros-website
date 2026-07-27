@@ -6,7 +6,7 @@ import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-d
 import { CustomersTable } from '@/shared/entities/customers/components/customers-table'
 import { CUSTOMERS_TABLE_QUERY_CONFIG } from '@/shared/entities/customers/constants/customers-table-query-config'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
-import { prefetchBlocking } from '@/trpc/lib/prefetch'
+import { prefetch } from '@/trpc/lib/prefetch'
 import { trpc } from '@/trpc/server'
 
 export const dynamic = 'force-dynamic'
@@ -22,7 +22,7 @@ export default async function CustomersPage({ searchParams }: Props) {
   // prefetch work.
   if (authState.status === 'authenticated') {
     const input = await loadPaginatedQueryInput(searchParams, CUSTOMERS_TABLE_QUERY_CONFIG)
-    await prefetchBlocking(trpc.customersRouter.business.list.queryOptions(input))
+    prefetch(trpc.customersRouter.business.list.queryOptions(input))
   }
 
   return (

@@ -7,7 +7,7 @@ import { CampaignsView } from '@/features/campaigns-admin/ui/views/campaigns-vie
 import { ROOTS } from '@/shared/config/roots'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
 import { HydrateClient } from '@/trpc/components/hydrate-client'
-import { prefetchStreaming } from '@/trpc/lib/prefetch'
+import { prefetch } from '@/trpc/lib/prefetch'
 import { trpc } from '@/trpc/server'
 
 export const dynamic = 'force-dynamic'
@@ -30,8 +30,8 @@ export default async function CampaignsPage({ searchParams }: Props) {
     // Only the active tab's queries are prefetched.
     const { tab } = await loadCampaignsSearchParams(searchParams)
     if (tab === 'overview') {
-      prefetchStreaming(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
-      prefetchStreaming(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
+      prefetch(trpc.voipCampaignsRouter.getSourceCampaignSummaries.queryOptions())
+      prefetch(trpc.voipCampaignsRouter.listCampaigns.queryOptions())
     }
   }
 

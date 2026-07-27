@@ -25,20 +25,15 @@ function executePrefetch(queryOptions: AnyQueryOptions): Promise<void> {
 }
 
 /**
- * Tier 2 (plain-useQuery views, e.g. any paginated table): AWAIT this — it
- * blocks the RSC render so hydration lands with data. Fire-and-forget +
- * useQuery flashes a skeleton because the streamed query is still pending
- * at hydration.
+ * Fire-and-forget server-side prefetch (the canonical tRPC v11 form — never
+ * await this; it returns void so awaiting is impossible by type). The pending
+ * query is dehydrated and streamed: suspense views resolve it via
+ * useSuspenseQuery; paginated tables' useQuery adopts the streamed promise
+ * with no client roundtrip. Awaiting a prefetch in a page body re-blocks the
+ * route on EVERY soft navigation (Next re-runs dynamic pages each nav) — that
+ * regression is why the blocking variant was removed; see
+ * docs/superpowers/plans/2026-07-26-prefetch-hydration-fault-audit.md (addendum).
  */
-export function prefetchBlocking<T extends AnyQueryOptions>(queryOptions: T): Promise<void> {
-  return executePrefetch(queryOptions)
-}
-
-/**
- * Tier 1 (suspense views): fire-and-forget — the pending query is dehydrated
- * and streamed; the view's useSuspenseQuery resolves it without a client
- * round-trip. Returns void so awaiting it is impossible by design.
- */
-export function prefetchStreaming<T extends AnyQueryOptions>(queryOptions: T): void {
+export function prefetch<T extends AnyQueryOptions>(queryOptions: T): void {
   void executePrefetch(queryOptions)
 }
