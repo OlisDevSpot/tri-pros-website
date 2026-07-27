@@ -4,7 +4,7 @@
 
 **Goal:** Decompose `proposals.fundingJSON`/`formMetaJSON` into six plain columns, freeze both blobs, and batch the W1/W2 frozen-column drops + `signing_request_id` → `contract_envelope_id` rename into this wave's prod ceremony.
 
-**Architecture:** Additive columns land first; a parity-checked backfill fills them; `getFullView` grows a `funding` view-model assembled from columns + incentive rows; display readers migrate group-by-group (tsc-green at every commit); then ONE atomic write-seam commit rewrites the form layer first-principles (flat `funding`, top-level `priceDisplayMode`, no `meta` section) and flips writers + recompute + lock fields together; then the "contract" commit freezes the blob names and deletes the scrub bridge. The old blob-envelope schemas survive only as `@deprecated` legacy-parse schemas (Drizzle `$type` + backfill), dying W4 — every survivor carries a `@deprecated` marker and a ledger row. The drop ceremony is code-deletion + a human-executed runbook. Spec: `docs/superpowers/specs/2026-07-26-wave-3-scalar-decomposition-design.md` (amended 2026-07-26: first-principles form-shape audit).
+**Architecture:** Additive columns land first; a parity-checked backfill fills them. **The row IS the API (Option 3 ruling, Oliver 2026-07-27): `ProposalWithCustomer` carries cents columns + incentive rows only — NO materialized `funding` object.** `FundingData` (flat dollars) exists solely as the financials façade's input, derived just-in-time via `toFundingInputs(row)` at the money-math call sites (and matched natively by RHF form state); display-only consumers read columns directly. Display readers migrate group-by-group (tsc-green at every commit); then ONE atomic write-seam commit rewrites the form layer first-principles (flat `funding`, top-level `priceDisplayMode`, no `meta` section) and flips writers + recompute + lock fields together; then the "contract" commit freezes the blob names and deletes the scrub bridge. The old blob-envelope schemas survive only as `@deprecated` legacy-parse schemas (Drizzle `$type` + backfill), dying W4 — every survivor carries a `@deprecated` marker and a ledger row. The drop ceremony is code-deletion + a human-executed runbook. Spec: `docs/superpowers/specs/2026-07-26-wave-3-scalar-decomposition-design.md` (amended 2026-07-26 first-principles form-shape audit; 2026-07-27 Option-3 JIT read shape).
 
 **Tech Stack:** Next.js 15, Drizzle (Neon Postgres, push-based), tRPC Entity Server System, Zod, RHF. No test framework — verification is `pnpm tsc` + `pnpm lint` + verify scripts + the backfill's built-in parity check.
 
@@ -101,7 +101,7 @@ git commit -m "feat(proposals): add W3 scalar columns (funding cents + price_dis
 
 **Interfaces:**
 - Consumes: Task 1 column properties.
-- Produces: `fundingDataSchema` (now exported) + `type FundingData = z.infer<typeof fundingDataSchema>` (exported from `schemas/index.ts`); `fundingColumnsToDomain(row, incentives): FundingData` and `fundingDomainToColumns(data): { startingTcpCents, depositAmountCents, cashInDealCents, miscPriceCents }` (exported from `lib/funding-columns.ts`). Tasks 3–9 use these exact names.
+- Produces: `fundingDataSchema` (now exported) + `type FundingData = z.infer<typeof fundingDataSchema>` (exported from `schemas/index.ts`); `toFundingInputs(row): FundingData` and `fundingDomainToColumns(data): { startingTcpCents, depositAmountCents, cashInDealCents, miscPriceCents }` (exported from `lib/funding-columns.ts`). Tasks 4–9 use these exact names.
 
 > **Type-direction rule (first-principles audit, 2026-07-26):** the domain type
 > derives from `fundingDataSchema` — the flat shape that already exists at
@@ -140,24 +140,27 @@ import type { FundingData } from '@/shared/entities/proposals/schemas'
 
 import { incentiveRowsToDomain } from '@/shared/entities/proposals/lib/incentive-rows'
 
-interface FundingColumns {
+interface FundingSourceRow {
   startingTcpCents: number | null
   depositAmountCents: number | null
   cashInDealCents: number | null
   miscPriceCents: number | null
+  incentives: ProposalIncentiveRow[]
 }
 
-/** Columns + incentive rows → the dollars view-model the façade/UI/PDF speak. */
-export function fundingColumnsToDomain(
-  row: FundingColumns,
-  incentives: ProposalIncentiveRow[],
-): FundingData {
+/** THE only sanctioned way to build façade inputs from a server row
+ *  (cents columns + incentive rows → flat dollars `FundingData`, derived
+ *  JIT at the call site — Option 3 ruling 2026-07-27; NEVER materialized on
+ *  the row). Takes the whole row-shape on purpose: hand-rolling this and
+ *  forgetting `incentives` silently inflates finalTcp. Live RHF form state
+ *  is the only other legitimate `FundingData` source. */
+export function toFundingInputs(row: FundingSourceRow): FundingData {
   return {
     startingTcp: (row.startingTcpCents ?? 0) / 100,
     depositAmount: (row.depositAmountCents ?? 0) / 100,
     cashInDeal: (row.cashInDealCents ?? 0) / 100,
     ...(row.miscPriceCents == null ? {} : { miscPrice: row.miscPriceCents / 100 }),
-    incentives: incentiveRowsToDomain(incentives),
+    incentives: incentiveRowsToDomain(row.incentives),
   }
 }
 
@@ -301,76 +304,99 @@ git commit -m "feat(scripts): wave-3 scalar backfill with per-row zod + parity g
 
 ---
 
-### Task 4: `getFullView` grows the `funding` view-model (expand — blob shape still served)
+### Task 4: Dual-source pricing components take `{ funding, sow, priceDisplayMode }` props
+
+> **Option 3 ruling (Oliver, 2026-07-27):** `ProposalWithCustomer` NEVER gains a
+> `funding` property — the row stays cents columns + incentive rows (one
+> representation per fact). `getFullView` is NOT touched in this task; its
+> W2 hydration bridge survives untouched until Task 7 deletes it. This task
+> instead makes the two dual-source pricing components source-agnostic: they
+> take the façade's input shape directly, and EACH caller derives it from
+> whatever it holds (server row → `toFundingInputs`; live form values → its
+> own funding state).
 
 **Files:**
-- Modify: `src/shared/entities/proposals/dal/server/queries.ts:47-52,139-151`
+- Modify: `src/features/proposal-flow/ui/components/pricing-breakdown.tsx`, `pricing-breakdown/internal-calculation-block.tsx`
+- Modify: `src/features/proposal-flow/ui/components/proposal/funding.tsx` (server-side caller — the `PricingBreakdown` call site only)
+- Modify: `src/features/proposal-flow/ui/components/form/index.tsx:75-82` (form-side caller — the internal-financials modal)
+- Modify: `src/features/proposal-flow/lib/converters.ts` (delete `formValuesToProposal`)
 
 **Interfaces:**
-- Consumes: `fundingColumnsToDomain` (Task 2).
-- Produces: `ProposalWithCustomer` gains `funding: FundingData`. `fundingJSON` hydration REMAINS until Task 7 (both shapes served while display readers migrate in Tasks 5–6; the write-seam commit removes the bridge).
+- Consumes: `toFundingInputs` + `FundingData` (Task 2), Task 1 columns (backfilled in Task 3).
+- Produces: `PricingBreakdown` / `InternalCalculationBlock` props are `{ funding: FundingData; sow: SOW[]; priceDisplayMode: PriceDisplayMode }` — no proposal-shaped prop, no fake `InsertProposalSchema`. `formValuesToProposal` is DELETED.
 
-- [ ] **Step 1: Extend the type and assembly**
+- [ ] **Step 1: Reshape the component props**
 
-In `queries.ts`, add to `ProposalWithCustomer` (line 47):
+Both components stop taking `proposalData` and stop reading `formMetaJSON`/`fundingJSON` internally; they take the façade input directly and pass it through:
 
 ```ts
-export type ProposalWithCustomer = Proposal & {
-  customer: ProposalCustomer | null
-  meetingProjectId: string | null
-  projectFirstContractSentAt: string | null
-  incentives: ProposalIncentiveRow[]
-  /** W3 view-model: dollars, assembled from cents columns + incentive rows. */
+interface Props {
   funding: FundingData
+  sow: SOW[]
+  priceDisplayMode: PriceDisplayMode
 }
+// inside: buildPricingBreakdown({ funding, sow, priceDisplayMode }) /
+// computeProposalFinancials({ funding, sow, priceDisplayMode })
 ```
 
-and in `getFullView`, after the `incentives` fetch (line 144), add the assembly and include it in the return:
+(Until Task 6 renames the façade field, adapt locally: `pricingMode: priceDisplayMode` at the façade call.)
+
+- [ ] **Step 2: Server-side caller derives JIT**
+
+In `funding.tsx`, at the `PricingBreakdown` call site:
 
 ```ts
-    const funding = fundingColumnsToDomain(row, incentives)
-    // ...existing hydratedFunding block stays until every display consumer migrates (deleted in Task 7)...
-    return { ...row, fundingJSON: hydratedFunding, funding, customer, incentives } as ProposalWithCustomer
+const funding = useMemo(() => toFundingInputs(proposal.data), [proposal.data])
+// <PricingBreakdown funding={funding} sow={proposal.data.projectJSON.data.sow}
+//   priceDisplayMode={proposal.data.priceDisplayMode} />
 ```
 
-Import `fundingColumnsToDomain` from `@/shared/entities/proposals/lib/funding-columns` and `FundingData` from the types module.
+- [ ] **Step 3: Form-side caller passes its own state; `formValuesToProposal` dies**
 
-- [ ] **Step 2: Verify + commit**
+`formValuesToProposal` (converters.ts) exists ONLY to fake an `InsertProposalSchema` from live form values for the internal-financials modal (`form/index.tsx:79`) — a mistyped seam. Replace the modal wiring with direct props from `form.getValues()` (current form shape this task; Task 7 simplifies the paths):
+
+```ts
+const v = form.getValues()
+// funding={v.funding.data} sow={v.project.data.sow} priceDisplayMode={v.meta.pricingMode}
+```
+
+Then DELETE `formValuesToProposal`.
+
+- [ ] **Step 4: Verify + commit**
 
 Run: `pnpm tsc && pnpm lint`
-Expected: PASS (additive — no consumer breaks).
+Expected: PASS. `grep -rn "formValuesToProposal" src/` → zero hits.
 
 ```bash
-git add src/shared/entities/proposals/dal/server/queries.ts
-git commit -m "feat(proposals): getFullView assembles funding view-model from columns (expand phase)"
+git add -u src/features/proposal-flow
+git commit -m "refactor(proposal-flow): pricing components take facade-input props; formValuesToProposal seam deleted"
 ```
 
 ---
 
-### Task 5: Display consumers read `proposal.funding` + columns (proposal-flow UI)
+### Task 5: Display consumers read columns + JIT façade inputs (proposal-flow UI)
 
 **Files:**
-- Modify: `features/proposal-flow/ui/components/proposal/funding.tsx`, `pricing-breakdown.tsx`, `pricing-breakdown/internal-calculation-block.tsx`, `proposal/project-overview.tsx`, `proposal/scope-of-work.tsx`, `proposal/index.tsx` (`envelopeDocumentIds` read at line 105)
+- Modify: `features/proposal-flow/ui/components/proposal/funding.tsx` (its own money math — the `PricingBreakdown` call site was Task 4), `proposal/project-overview.tsx`, `proposal/scope-of-work.tsx`, `proposal/index.tsx` (`envelopeDocumentIds` read at line 105)
 
 **Interfaces:**
-- Consumes: `proposal.funding` (Task 4), `proposal.priceDisplayMode` / `proposal.envelopeDocumentIds` (Task 1 columns — already on the row).
+- Consumes: `toFundingInputs` (Task 2), `proposal.priceDisplayMode` / `proposal.envelopeDocumentIds` (Task 1 columns — already on the row, backfilled in Task 3).
 - Produces: zero `fundingJSON` / `formMetaJSON` reads left in proposal-flow DISPLAY code. (Form state, converters, aggregates, and the two views keep the old shape until Task 7 — the write seam flips atomically there.)
 
 - [ ] **Step 1: Mechanical path swap, file by file**
 
 | Old read | New read |
 |---|---|
-| `proposal.data.fundingJSON.data.X` | `proposal.data.funding.X` |
+| money math (façade calls): `proposal.data.fundingJSON.data` | `toFundingInputs(proposal.data)` — memoize per row |
+| display-only scalar: `proposal.data.fundingJSON.data.X` | `(proposal.data.XCents ?? 0) / 100` — or read off the memoized `toFundingInputs` result where incentives are needed anyway (`project-overview.tsx`) |
 | `proposal.data.formMetaJSON.pricingMode` | `proposal.data.priceDisplayMode` |
 | `proposal.data.formMetaJSON?.envelopeDocumentIds` | `proposal.data.envelopeDocumentIds` |
 
-Façade call sites pass `funding` directly, e.g. in `funding.tsx`:
+e.g. in `funding.tsx`:
 
 ```ts
-const finalTcp = computeFinalTcp({
-  funding: proposal.data.funding,
-  sow: proposal.data.projectJSON.data.sow,
-})
+const funding = useMemo(() => toFundingInputs(proposal.data), [proposal.data])
+const finalTcp = computeFinalTcp({ funding, sow: proposal.data.projectJSON.data.sow })
 ```
 
 The façade's own input field is still named `pricingMode` in this task — pass `pricingMode: proposalData.priceDisplayMode` for now; Task 6 renames the façade field and updates ALL its callers in one commit.
@@ -395,16 +421,16 @@ git commit -m "refactor(proposal-flow): display reads flip to funding view-model
 - Modify: `src/shared/entities/proposals/lib/financials/compute-breakdown.ts`, `compute-totals.ts:13`, `src/shared/entities/proposals/components/section-financials-summary.tsx` + every façade/prop caller (tsc-driven: `pricing-breakdown.tsx`, `internal-calculation-block.tsx`, `sow-collapsible-header.tsx`, `sow-field.tsx`, `project-fields.tsx`)
 
 **Interfaces:**
-- Consumes: `proposal.funding`, `proposal.priceDisplayMode`, `proposal.envelopeDocumentIds`, `PriceDisplayMode` type (Task 1).
+- Consumes: `toFundingInputs` (Task 2), `proposal.priceDisplayMode`, `proposal.envelopeDocumentIds`, `PriceDisplayMode` type (Task 1).
 - Produces: zero blob reads in PDF/summary/Zoho for funding/formMeta (projectJSON reads stay — W4); the façade input field and every prop threading it are named `priceDisplayMode`, typed `PriceDisplayMode` (no more inline `'total' | 'breakdown'` unions).
 
 - [ ] **Step 1: Swap the reads**
 
 Same mapping table as Task 5. Specifics:
-- `proposal-doc-definition.ts:25-26`: `const funding = proposal.funding` / `const priceDisplayMode = proposal.priceDisplayMode`; `buildPricingBreakdown({ funding, sow, priceDisplayMode })`. Delete the "relies on getFullView incentive hydration (Wave 2 bridge)" comment — the view-model IS the assembly now.
-- `summary/route.ts`: `fundingJSON.data` → `proposal.funding`; `formMetaJSON.pricingMode` → `proposal.priceDisplayMode`.
-- `proposal-context.ts:33`: `computeFinalTcp({ funding: proposal.funding, sow: proposal.projectJSON.data.sow })`.
-- `registry.ts:31`: `depositSrc: ctx => ctx.proposal.funding.depositAmount`.
+- `proposal-doc-definition.ts:25-26`: `const funding = toFundingInputs(proposal)` / `const priceDisplayMode = proposal.priceDisplayMode`; `buildPricingBreakdown({ funding, sow, priceDisplayMode })`. Delete the "relies on getFullView incentive hydration (Wave 2 bridge)" comment — the helper does the assembly explicitly at the call site now.
+- `summary/route.ts`: `fundingJSON.data` → `toFundingInputs(proposal)`; `formMetaJSON.pricingMode` → `proposal.priceDisplayMode`.
+- `proposal-context.ts:33`: `computeFinalTcp({ funding: toFundingInputs(proposal), sow: proposal.projectJSON.data.sow })`.
+- `registry.ts:31`: `depositSrc: ctx => (ctx.proposal.depositAmountCents ?? 0) / 100` — single scalar, no helper needed.
 - `assemble-envelope.ts:39`: `proposal.envelopeDocumentIds` instead of `formMetaJSON.envelopeDocumentIds`.
 
 - [ ] **Step 2: Rename the façade's input field everywhere, one commit**
@@ -451,7 +477,7 @@ git commit -m "refactor(pdf,summary,zoho): blob reads flip to view-model + colum
 - Modify: `src/features/customer-pipelines/ui/components/create-proposal-popover.tsx:51-78`
 
 **Interfaces:**
-- Consumes: `fundingDataSchema`/`FundingData` + `fundingDomainToColumns` (Task 2), `proposal.funding` view-model (Task 4), `priceDisplayModes` (Task 1).
+- Consumes: `fundingDataSchema`/`FundingData` + `toFundingInputs` + `fundingDomainToColumns` (Task 2), `priceDisplayModes` (Task 1).
 - Produces: `ProposalFormSchema` = `{ priceDisplayMode, project, funding: FundingData }` — no `meta` section, no funding envelope; no code path writes `fundingJSON`/`formMetaJSON` for pricing any more. **The blobs go stale/NULL from this commit on — the backfill is cutover-window-only from HERE.** (Two non-pricing blob writers remain one more task: `setCashInDeal` and `applyEnvelopeContext` — flipped in Task 8; dev-only display staleness for those two fields in the window, and `setCashInDeal` on a post-flip NULL-blob row will error until Task 8 lands.)
 
 - [ ] **Step 1: Rewrite the form schema (first-principles)**
@@ -513,7 +539,7 @@ Run: `pnpm db:push:dev` — diff must be exactly two `ALTER COLUMN ... DROP NOT 
 
 - [ ] **Step 3: Form components sweep (tsc-driven)**
 
-- `form/index.tsx`: `useWatch name: 'meta.pricingMode'` → `'priceDisplayMode'`; `form.setValue('meta.pricingMode', …)` → `'priceDisplayMode'`; the override-merge helper (line 54) reshapes to the new flat keys.
+- `form/index.tsx`: `useWatch name: 'meta.pricingMode'` → `'priceDisplayMode'`; `form.setValue('meta.pricingMode', …)` → `'priceDisplayMode'`; the override-merge helper (line 54) reshapes to the new flat keys; the internal-financials modal props (Task 4) simplify: `v.funding.data` → `v.funding`, `v.meta.pricingMode` → `v.priceDisplayMode`.
 - `form/funding-fields.tsx`: every `funding.data.X` field name → `funding.X` (12 sites incl. `useFieldArray` + `useWatch`).
 
 - [ ] **Step 4: Converters, aggregates, defaults**
@@ -525,12 +551,12 @@ export function proposalToFormValues(proposal: ProposalWithCustomer): ProposalFo
   return {
     priceDisplayMode: proposal.priceDisplayMode,
     project: proposal.projectJSON,
-    funding: proposal.funding,
+    funding: toFundingInputs(proposal),
   }
 }
 ```
 
-`formValuesToProposal` writes blobs and hardcodes `ownerId: ''` — run `grep -rn "formValuesToProposal" src/`; if the only hit is its own definition, DELETE it (dead old-shape helper).
+(`formValuesToProposal` already died in Task 4 — the modal takes façade-input props now.)
 
 `get-proposal-aggregates.ts` — kill the dual-shape branch (`'meta' in proposal ? … : proposal.formMetaJSON`). It is textbook UNTALLIED dual-shape tolerance: both callers (`funding-fields.tsx:82`, `create-new-proposal-view.tsx:68`) pass form values; the `InsertProposalSchema` branch is dead.
 
@@ -558,7 +584,7 @@ export function getProposalAggregates(proposal: ProposalFormSchema) {
 const initialValues: OverrideProposalValues = {
   priceDisplayMode: proposal.data.priceDisplayMode,
   project: proposal.data.projectJSON,
-  funding: proposal.data.funding,
+  funding: toFundingInputs(proposal.data),
 }
 ```
 
@@ -610,7 +636,7 @@ function buildMutationData(data: ProposalFormSchema) {
 
 - [ ] **Step 6: Delete the hydration bridge**
 
-In `queries.ts` `getFullView`: delete the `hydratedFunding` block (every consumer flipped in Tasks 5–6; new rows now have NULL blobs and would crash it) and drop `fundingJSON` from the explicit return — `return { ...row, funding, customer, incentives } as ProposalWithCustomer`.
+In `queries.ts` `getFullView`: delete the `hydratedFunding` block (every consumer flipped in Tasks 4–6; new rows now have NULL blobs and would crash it) and drop `fundingJSON` from the explicit return — `return { ...row, customer, incentives } as ProposalWithCustomer`. **`ProposalWithCustomer` never gains a `funding` property** (Option 3 ruling): the row stays cents columns + incentive rows; this step is pure deletion.
 
 - [ ] **Step 7: Recompute trigger + lock fields (same commit — no window)**
 
@@ -872,7 +898,7 @@ git commit -m "docs(runbook): wave-3 cutover + drop-ceremony runbook"
 
 - [ ] **Step 2: Ledger update**
 
-Check off (with commit hashes): the 8 W1 rows, the 4 W2 frozen/scaffolding rows, the getFullView-hydration-bridge row + scrub-with-tripwire row (W2-bridges section — absorbed/deleted this wave), the recompute residue row (HALF: startingTcp done, section term remains — annotate), `snapshot-prod-to-dev` seam row. New rows: `backfill-wave3-scalars.ts` (cutover-window-only, dies with the frozen blobs on the W4 push), `fundingJSONDeprecated`/`formMetaJSONDeprecated` columns (kill trigger: W4 push), **legacy envelope-parse schemas** `fundingSectionSchema`/`formMetaSectionSchema` (`@deprecated`, importers = Drizzle `$type` + backfill only; kill trigger: W4 push), **project form envelope tally** — `projectSectionSchema`'s `{data, meta}` wrapper + `sectionMetaSchema` + the written-never-read `meta.enabled` survive ONLY because `projectJSON` is blob-backed; kill trigger: W4 form-shape flattening, `FundingData` view-model revisit marker (tally: re-examine the assembled-view-model seam post-waves — Oliver 2026-07-26), `sow_item_id IS NULL` guard pre-landed (W4 double-count constraint now structurally defused — update the W4 handoff's question 3 accordingly). Also record as swept-in-wave: the `get-proposal-aggregates.ts` dual-shape branch (untallied tolerance, deleted Task 7) and `formValuesToProposal` (dead old-shape helper, deleted Task 7 if caller-free).
+Check off (with commit hashes): the 8 W1 rows, the 4 W2 frozen/scaffolding rows, the getFullView-hydration-bridge row + scrub-with-tripwire row (W2-bridges section — absorbed/deleted this wave), the recompute residue row (HALF: startingTcp done, section term remains — annotate), `snapshot-prod-to-dev` seam row. New rows: `backfill-wave3-scalars.ts` (cutover-window-only, dies with the frozen blobs on the W4 push), `fundingJSONDeprecated`/`formMetaJSONDeprecated` columns (kill trigger: W4 push), **legacy envelope-parse schemas** `fundingSectionSchema`/`formMetaSectionSchema` (`@deprecated`, importers = Drizzle `$type` + backfill only; kill trigger: W4 push), **project form envelope tally** — `projectSectionSchema`'s `{data, meta}` wrapper + `sectionMetaSchema` + the written-never-read `meta.enabled` survive ONLY because `projectJSON` is blob-backed; kill trigger: W4 form-shape flattening, **cents-native façade tally** — the façade keeps its dollars `{funding, sow}` input this wave ONLY because (a) RHF form state round-trips dollars on every keystroke and (b) sow amounts stay dollars inside `projectJSON` until W4; kill trigger: W4 SOW normalization enables a cents-native façade (existing ledger direction "row-cents at the edge"). The 2026-07-26 "assembled view-model revisit" marker is SUPERSEDED — under the Option 3 ruling (Oliver, 2026-07-27) no materialized view-model seam exists to revisit, `sow_item_id IS NULL` guard pre-landed (W4 double-count constraint now structurally defused — update the W4 handoff's question 3 accordingly). Also record as swept-in-wave: the `get-proposal-aggregates.ts` dual-shape branch (untallied tolerance, deleted Task 7) and `formValuesToProposal` (dead old-shape helper, deleted Task 7 if caller-free).
 
 - [ ] **Step 3: Wave-4 handoff sync**
 
@@ -892,6 +918,6 @@ git commit -m "docs: W3 truth pass — DOCS.md, ledger check-offs, wave-4 handof
 ## Self-Review Notes (already applied)
 
 - **Spec coverage**: §1→T1/T9, §2→T7/T8, §3→T2/T4/T5/T6 (+calc_version note T13), §4→T3/T12, §5→T11/T12, §6→T10/T13, §8 smoke→T12.4. The `sow_item_id IS NULL` guard (T7.8) is an addition beyond the spec — safe now, defuses the W4 hazard; recorded in ledger (T13).
-- **First-principles amendments (2026-07-26 audit, ratified by Oliver)**: (A) `FundingData` derives from `fundingDataSchema`, never from the blob envelope — the dependency arrow points old→new; (B) the form is REWRITTEN flat (no meta section, no funding envelope, `envelopeDocumentIds` out of form state) instead of renamed in place; (C) the backfill parses with FROZEN legacy schemas whose keys never change (`pricingMode`) — renaming them would have broken parsing of every historical row; (D) every old-shape survivor carries `@deprecated` + a ledger row with a named kill trigger.
-- **Type consistency**: `FundingData` (T2) consumed by T4/T5/T6/T7; `fundingDomainToColumns` consumed by T7; the façade/prop field renames to `priceDisplayMode` once (T6) before form state adopts it (T7).
+- **First-principles amendments (2026-07-26 audit, ratified by Oliver)**: (A) `FundingData` derives from `fundingDataSchema`, never from the blob envelope — the dependency arrow points old→new; (B) the form is REWRITTEN flat (no meta section, no funding envelope, `envelopeDocumentIds` out of form state) instead of renamed in place; (C) the backfill parses with FROZEN legacy schemas whose keys never change (`pricingMode`) — renaming them would have broken parsing of every historical row; (D) every old-shape survivor carries `@deprecated` + a ledger row with a named kill trigger; (E, 2026-07-27, two-agent research + Oliver's Option-3 ruling) NO materialized `funding` view-model — the row is cents columns + incentive rows (one representation per fact, per the Wave-1 flattened-spread precedent and the derived-values JIT rule); `toFundingInputs` derives the façade input JIT at money-math sites; the dual-source pricing components take façade-input props (which also retired the mistyped `formValuesToProposal` seam the 2026-07-26 plan had missed as a live caller).
+- **Type consistency**: `FundingData` (T2) consumed via `toFundingInputs` in T4/T5/T6/T7; `fundingDomainToColumns` consumed by T7; the façade/prop field renames to `priceDisplayMode` once (T6) before form state adopts it (T7).
 - **Ordering**: backfill (T3) runs on dev before the write seam flips (T7) — from T7 on, backfill is cutover-window-only (header warns; its `isNotNull` guard skips post-flip rows). Display reads flip (T5/T6) BEFORE writes (T7) so the hydration bridge dies consumer-free. T7 is deliberately atomic (form shape + payloads + insert contract + nullability + recompute trigger/SQL + lock fields): splitting it leaves NOT-NULL-violation, stale-finalTcp, or lock-bypass windows. Blob freeze (T9) is naming-only; tsc there proves sweep completeness.

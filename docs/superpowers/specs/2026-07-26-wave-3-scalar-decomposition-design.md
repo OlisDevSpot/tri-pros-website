@@ -8,6 +8,14 @@
 > as `@deprecated` frozen legacy-parse schemas (Drizzle `$type` + backfill — their stored keys, e.g.
 > `pricingMode`, are NEVER renamed), dying W4. Every old-shape survivor carries `@deprecated` + a
 > ledger row. Sections below marked ⟨amended⟩ where the original wording is superseded.
+> **Amendment 2 (2026-07-27, Option-3 read-shape ruling — Oliver, after two-agent research)**: NO
+> materialized `funding` view-model. `ProposalWithCustomer` carries cents columns + incentive rows
+> only (one representation per fact — Wave-1 flattened-spread precedent, derived-values JIT rule).
+> `FundingData` exists solely as the façade's input, derived just-in-time via `toFundingInputs(row)`
+> at money-math call sites; live RHF form state is the only other `FundingData` source. Dual-source
+> pricing components (`PricingBreakdown`/`InternalCalculationBlock`) take `{funding, sow,
+> priceDisplayMode}` props. The façade stays dollars-native THIS wave (form round-trip + dollars sow
+> force it); cents-native façade is a W4 tally with a real kill trigger. Marked ⟨amended-2⟩ below.
 > **Program**: epic [#256](https://github.com/OlisDevSpot/tri-pros-website/issues/256) — JSONB decomposition. Program spec:
 > `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` (§4 migration protocol, Addenda A–C).
 > **Wave split (Oliver, 2026-07-24/26)**: the original Wave 3 was split in two. THIS wave =
@@ -22,8 +30,9 @@
 `fundingJSON`'s four scalars and `formMetaJSON`'s two fields become plain columns on `proposals`;
 both blobs freeze at cutover (their only other content — the incentives array — has been row-backed
 since W2, and the `meta.enabled` wrapper is written-always-true / read-never dead weight). The
-financial recompute drops its `startingTcp` jsonb residue. `getFullView` returns an assembled
-`funding` view-model so the façade and all renderers keep one shape. Riding this wave's prod push:
+financial recompute drops its `startingTcp` jsonb residue. ⟨amended-2⟩ The row is the API: cents
+columns + incentive rows; the façade's `FundingData` input is derived JIT at call sites — no
+assembled view-model on the row. Riding this wave's prod push:
 all six frozen W1/W2 blob-column drops, the `signing_request_id` → `contract_envelope_id` rename,
 and the deletion of the dead backfill/legacy scripts. No new tables. No SOW changes.
 
@@ -87,7 +96,7 @@ Mechanics:
   ("`applyEnvelopeContext` is the only writer"). Post-W3 the column has exactly one writer, as
   documented. Deliberate tightening, not an accidental behavior change.
 - **Dollars→cents mapper pair** in `entities/proposals/lib/` (the `incentive-rows.ts` pattern):
-  `fundingDomainToColumns` / `fundingColumnsToDomain`. ⟨amended⟩ The RHF form is rewritten
+  `fundingDomainToColumns` / `toFundingInputs`. ⟨amended⟩ The RHF form is rewritten
   first-principles: `{ priceDisplayMode, project, funding: fundingDataSchema }` — flat dollars, no
   `meta` section, no funding envelope, dead `meta.enabled` not fabricated anywhere;
   `buildMutationData` converts at the payload edge. The `project` envelope survives only because
@@ -107,17 +116,22 @@ Mechanics:
 
 ## 3. Read paths
 
-- **`getFullView` returns `funding: FundingData`** — a flat dollars view-model assembled from the
-  four cents columns + `proposal_incentives` rows (`incentiveRowsToDomain`). This ABSORBS the W2
-  incentive-hydration bridge (its ledger row is satisfied by this wave, not W4 — the bridge's home
-  blob dies here). `priceDisplayMode` / `envelopeDocumentIds` need no wrapper: they are plain row
-  columns on the returned proposal. `fundingJSON` / `formMetaJSON` disappear from
+- ⟨amended-2⟩ **`getFullView` returns NO `funding` object** — the row carries the cents columns +
+  `incentives: ProposalIncentiveRow[]` and nothing else. The W2 incentive-hydration bridge is
+  DELETED with its consumers (its ledger row is satisfied by this wave, not W4 — the bridge's home
+  blob dies here). Money-math consumers derive the façade input JIT: `toFundingInputs(row)`
+  (cents columns + rows → flat dollars `FundingData`, the only sanctioned row-side assembly);
+  display-only consumers read columns directly (`/100` at render). `priceDisplayMode` /
+  `envelopeDocumentIds` are plain row columns. `fundingJSON` / `formMetaJSON` disappear from
   `ProposalWithCustomer`; **tsc drives the consumer sweep** (~15 files: funding UI, pricing
   breakdown + internal calc block, project overview, heading, PDF doc-definition, summary route,
   Zoho `proposal-context`/`registry`/`assemble-envelope`, `converters.ts`, edit-view hydration).
-- **Façade untouched**: `buildPricingBreakdown` / `computeFinalTcp` / `computeProposalFinancials`
-  keep their nested-dollars inputs — fed `proposal.funding` server-side and live RHF state
-  client-side. One shape, no second input path.
+- **Façade untouched** (input field renamed `priceDisplayMode` only): `buildPricingBreakdown` /
+  `computeFinalTcp` / `computeProposalFinancials` keep their flat-dollars inputs — ⟨amended-2⟩ fed
+  `toFundingInputs(row)` JIT server-side and live RHF state client-side. One shape, no second
+  input path. The dollars contract is EARNED, not inherited: the façade's output round-trips into
+  dollar form fields on every keystroke, and sow amounts stay dollars inside `projectJSON` until
+  W4 — a cents-native façade is structurally blocked this wave (W4 tally, §3 rider below).
 - **Recompute SQL** (`recomputeProposalFinancials`): the `startingTcp` jsonb term becomes
   `COALESCE(${proposals.startingTcpCents}, 0)`. The section-incentives jsonb term **stays** —
   documented residue #2, dies in W4 (so this wave has zero double-count exposure; section rows
@@ -131,12 +145,13 @@ Mechanics:
   the input-source change as non-versioning.
 - **`listProposals`** untouched (reads `final_tcp_cents`).
 
-**Tightening-tally registration (Oliver's rider, 2026-07-26)**: the assembled `funding` view-model
-(flat `FundingData`, dollars) gets a seam-register row in the ledger — re-examine post-waves
-(pricing-editor re-derivation) whether the assembled view-model remains the right shape or should
-go row-native. This is a deliberate "revisit" marker, not a bridge with a scheduled death.
-⟨amended⟩ `FundingData` is canonical (`z.infer<typeof fundingDataSchema>`); it is NOT derived from
-the blob envelope — the envelope derives from it.
+**Tightening-tally registration** ⟨amended-2, supersedes the 2026-07-26 "revisit the assembled
+view-model" marker — there is no materialized view-model left to revisit⟩: the registered tally is
+now the **cents-native façade**. The façade's dollars `{funding, sow}` input survives W3 only
+because (a) RHF form state round-trips dollars and (b) sow stays dollars in `projectJSON`; kill
+trigger: W4 SOW normalization (aligns with the ledger's existing "row-cents input at the edge"
+direction). `FundingData` is canonical (`z.infer<typeof fundingDataSchema>`); it is NOT derived
+from the blob envelope — the envelope derives from it.
 
 ## 4. Backfill + cutover (spec §4 protocol instantiated)
 
