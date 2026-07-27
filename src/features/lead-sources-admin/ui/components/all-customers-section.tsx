@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 
 import { toast } from 'sonner'
+import { ALL_CUSTOMERS_TABLE_QUERY_CONFIG } from '@/features/lead-sources-admin/constants/lead-sources-table-query-configs'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
@@ -19,7 +20,6 @@ import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
-import { ALL_CUSTOMERS_TABLE_QUERY_CONFIG } from '@/features/lead-sources-admin/constants/lead-sources-table-query-configs'
 
 const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
