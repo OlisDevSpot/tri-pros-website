@@ -18,13 +18,13 @@
   "ads": {
     "showcase/kitchens-casting-reel-01": {
       "id": "120249461619120713",
-      "creativeId": "2063310387603745",
-      "fp": "4a2b6df1cf5e6f92cb160f1dde1dd9083db60ecbed57c4e42be1fe1055e82737"
+      "creativeId": "2021046962631184",
+      "fp": "edc96f807d4cc6783c8187715772c609c2c94f1fd7cadd45f4d8a23377c18c34"
     },
     "showcase/kitchens-story-reel-01": {
       "id": "120249461628640713",
-      "creativeId": "1019820877696221",
-      "fp": "d94dad4e479fbe60d8fe610d4c17ff442d96da64f2d2b31cf1d407e729f05d24"
+      "creativeId": "2040605216558562",
+      "fp": "e6810fd5e267d330edb9faf4daba5d5cc298c2e0ff89932bb26d5f9d893baf69"
     },
     "showcase/kitchens-before-after-01": {
       "id": "120249461629250713",
@@ -43,13 +43,13 @@
     },
     "showcase/bathrooms-casting-reel-01": {
       "id": "120249461637960713",
-      "creativeId": "1232899935584647",
-      "fp": "453199ea5c601fb10bc0593669a0b736584017b5a6576ea21c16001eea1c350d"
+      "creativeId": "2032830123997947",
+      "fp": "cbbd74c50eb49a09e4e5f0c55e2161299716485b20374512f5be87ec3c741d8c"
     },
     "showcase/bathrooms-story-reel-01": {
       "id": "120249461648210713",
-      "creativeId": "2575815356173510",
-      "fp": "c3ddc485fba7499d7ae17bd275ed01bc1f758abe9d1fc50c2c9792cb0cfbb3de"
+      "creativeId": "915437174250742",
+      "fp": "5bac0945117bc37fc5ec7f35192734d432b3d63366d5deb364d57a3fc08f4bea"
     },
     "showcase/bathrooms-before-after-01": {
       "id": "120249461648940713",
@@ -129,6 +129,10 @@
     "9806069805684f01fcad3d2099a1adda0dcade7cfafbfb32a3364e82bab5eb00": "1572771327577198",
     "3a9f3639a113ac6977914715812a4e6133d8d19512be9031a01d2c38dfb67361": "1033843379291895",
     "8b9d013a0a7e08296f01e7ee23037094fd3dca0bf6c96b2a03f05143c10d132a": "1681692196469474",
-    "d3b2f35d47deb6317a7d9e612acb7112d1c4cc0bb224537e4c160bf12815d2a8": "818718281232133"
+    "d3b2f35d47deb6317a7d9e612acb7112d1c4cc0bb224537e4c160bf12815d2a8": "818718281232133",
+    "e7ba5a803512a7a629baeacbeb9cc1de839ca2adb5e9494390de736636d583a6": "27669294759388229",
+    "6dc5a82d88587a13107bba18c9df00b63a6bb89bb79ca03998100c05fdd3aaf9": "1348380484073762",
+    "c27f227b4be0d1646d8dad91e4eced48536c5b077dbe12b4466e54c0e8ec1385": "1558039582400578",
+    "81a741ef7419a20d6dcfe4fd0f59bf193f2464e12edc862a10bf1fbfb96014cb": "779225011939001"
   }
 }
