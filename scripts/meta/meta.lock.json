@@ -18,13 +18,13 @@
   "ads": {
     "showcase/kitchens-casting-reel-01": {
       "id": "120249461619120713",
-      "creativeId": "2768009703573383",
-      "fp": "5d753238a80eab39e02c60cafe4b15b8940dd0e37a1fbe7a773f384a375cdab5"
+      "creativeId": "2063310387603745",
+      "fp": "4a2b6df1cf5e6f92cb160f1dde1dd9083db60ecbed57c4e42be1fe1055e82737"
     },
     "showcase/kitchens-story-reel-01": {
       "id": "120249461628640713",
-      "creativeId": "977806328623361",
-      "fp": "3db45faf5a49a98a898aca9290b5bbbea3e879235dec74dd690797c9c7031663"
+      "creativeId": "1019820877696221",
+      "fp": "d94dad4e479fbe60d8fe610d4c17ff442d96da64f2d2b31cf1d407e729f05d24"
     },
     "showcase/kitchens-before-after-01": {
       "id": "120249461629250713",
@@ -43,13 +43,13 @@
     },
     "showcase/bathrooms-casting-reel-01": {
       "id": "120249461637960713",
-      "creativeId": "1341187344663917",
-      "fp": "89f2911ea74155daa128df053f3f8f33fc0f0d69d2dbe8cd15c537d304e524ad"
+      "creativeId": "1232899935584647",
+      "fp": "453199ea5c601fb10bc0593669a0b736584017b5a6576ea21c16001eea1c350d"
     },
     "showcase/bathrooms-story-reel-01": {
       "id": "120249461648210713",
-      "creativeId": "1714094619860558",
-      "fp": "50ede1ba0e16ee7a89261ca3561e3396c7da875a8d1186baf14fa954b3d301bc"
+      "creativeId": "2575815356173510",
+      "fp": "c3ddc485fba7499d7ae17bd275ed01bc1f758abe9d1fc50c2c9792cb0cfbb3de"
     },
     "showcase/bathrooms-before-after-01": {
       "id": "120249461648940713",
@@ -115,7 +115,11 @@
     "f4c6424ca5e424cd50640acc2d830a5faf053a0e4cdd5f6d8edc68d41cd910a1": "42e3ea039077aa1d72567bc73656a5b3",
     "bb9b63ca81e54b5e220bb92fc3a70243f38b0b5e02c3a9ce9c7b8b1b33408dad": "101a105c078f9e7535f652201fc390ca",
     "a0d41797cb5d3a770d320deab97ece75019f2232f6001a2dcb7d221e28d60bed": "2055f40bf485f8d671d2d21407709cc7",
-    "da3d3241c9c7833cb70ad717b8082385f28d48ab5bededf497afbfdcc368cfa6": "ffde5fa11a872a1a096443b3ac524d8f"
+    "da3d3241c9c7833cb70ad717b8082385f28d48ab5bededf497afbfdcc368cfa6": "ffde5fa11a872a1a096443b3ac524d8f",
+    "4cd39ec40dc9c3b4e7f0f53e93fb81ff888867a934f5388c489c55ebe8bdd124": "9d754167b5d04e0e3cbcbbd5c64da9f3",
+    "fb2c9291f9e63320ac02070b3ff5f3c42842c249a6b5f289ba3c515e509bf391": "85d872817b86b6c370a07293417ccd74",
+    "9583bcd1ec7438a2f85aaf7912aeaf236a0ff17489f1ddfc088ac97ad47b2118": "17440ab1a53bf7237b5317c64f3e93da",
+    "1862e161ce74008f314a35110d970abd4ec786d5f4b85da769a0239d8125b53e": "8aa77b256b6835bbd1d048b19ef02d69"
   },
   "videos": {
     "3128d269e7735e1ef96fe64036b75026001f9e4cdcc66b454c80a27e9064d875": "1358337315740473",
