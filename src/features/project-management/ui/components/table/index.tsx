@@ -5,7 +5,7 @@ import { PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { useCallback, useMemo, useState } from 'react'
-import { PROJECT_FILTER_CONFIG } from '@/features/project-management/constants/project-table-filter-config'
+import { PROJECTS_TABLE_QUERY_CONFIG } from '@/features/project-management/constants/projects-table-query-config'
 import { ProjectDetailSheet } from '@/features/project-management/ui/components/project-detail-sheet'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
@@ -18,7 +18,6 @@ import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
 import { useProjectActionConfigs } from '@/shared/entities/projects/hooks/use-project-action-configs'
 import { useProjectActions } from '@/shared/entities/projects/hooks/use-project-actions'
 
@@ -42,12 +41,7 @@ export function PortfolioProjectsTable() {
   const pagination = usePaginatedQuery<Record<string, never>, ProjectRow>(
     trpc.projectsRouter.crud.list.queryOptions,
     {},
-    {
-      paramPrefix: 'pj',
-      pageSize: 20,
-      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
-      filters: PROJECT_FILTER_CONFIG,
-    },
+    PROJECTS_TABLE_QUERY_CONFIG,
   )
 
   const handleRowClick = useCallback((project: ProjectRow) => {
