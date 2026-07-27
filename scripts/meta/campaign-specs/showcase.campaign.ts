@@ -27,12 +27,12 @@ export const showcaseCampaign = defineCampaign({
           videoFile: 'reel-07.mp4',
           thumbnailFile: 'reel-07-thumb.jpg',
           headlines: [
-            'We\'re Selecting 5 Kitchens in Your Area',
+            'We’re Selecting 5 Kitchens in Your Area',
             '5 Kitchen Showcase Spots — See If You Qualify',
             'Is Your Kitchen One of the 5?',
           ],
           primaryTexts: [
-            '🏠 We\'re selecting 5 kitchens in your area to feature in our showcase.\n\n'
+            '🏠 We’re selecting 5 kitchens in your area to feature in our showcase.\n\n'
             + 'If your home qualifies, you get:\n'
             + '✅ A AAA-grade kitchen remodel\n'
             + '✅ At a Showcase price\n'
@@ -64,14 +64,14 @@ export const showcaseCampaign = defineCampaign({
             + '✅ AAA-grade materials\n'
             + '✅ Beautiful AND functional\n'
             + '✅ Built to be photographed\n\n'
-            + 'We\'re selecting 5 kitchens in your area for our showcase. '
+            + 'We’re selecting 5 kitchens in your area for our showcase. '
             + 'Homeowners only. See if your home qualifies.',
             'Watch what a Showcase kitchen looks like from start to finish. '
             + 'Every home we select gets our best-of-the-best work at a Showcase price — '
             + 'because the result is featured in our showcase. '
             + '5 kitchens in your area. See if yours qualifies.',
             'Think your kitchen could carry a showcase? 👀\n\n'
-            + 'We\'re selecting 5 kitchens in your area — AAA-grade remodels at a Showcase price, '
+            + 'We’re selecting 5 kitchens in your area — AAA-grade remodels at a Showcase price, '
             + 'featured in our portfolio.\n\nHomeowners only. See if your home qualifies.',
           ],
           descriptions: ['Showcase-grade work, guaranteed.'],
@@ -88,14 +88,14 @@ export const showcaseCampaign = defineCampaign({
             + '✅ AAA-grade materials\n'
             + '✅ Beautiful AND functional\n'
             + '✅ Built to be photographed\n\n'
-            + 'We\'re selecting 5 kitchens in your area this month for a Showcase-priced remodel, '
+            + 'We’re selecting 5 kitchens in your area this month for a Showcase-priced remodel, '
             + 'featured in our portfolio. See if your home qualifies.',
             'From dated to designed-to-be-photographed. 📸\n\n'
             + 'Every kitchen we select for the Showcase gets our best-of-the-best work — at a Showcase price. '
             + '5 spots in your area this month.\n\n'
             + 'See if your home qualifies.',
             'This is the standard every Showcase kitchen is held to — AAA-grade, built to be photographed. '
-            + 'We\'re selecting 5 kitchens in your area this month for a Showcase-priced remodel, '
+            + 'We’re selecting 5 kitchens in your area this month for a Showcase-priced remodel, '
             + 'featured in our portfolio. See if your home qualifies.',
           ],
           descriptions: ['AAA-grade, at a Showcase price.'],
@@ -107,7 +107,7 @@ export const showcaseCampaign = defineCampaign({
           format: 'carousel',
           primaryTexts: [
             'Real Tri Pros kitchens. Real homes in your area. 👀\n\n'
-            + 'We\'re selecting 5 kitchens for our next Showcase round — AAA-grade remodels at a '
+            + 'We’re selecting 5 kitchens for our next Showcase round — AAA-grade remodels at a '
             + 'Showcase price, featured in our portfolio.\n\n'
             + 'Homeowners only. Swipe through, then see if your home qualifies.',
           ],
@@ -123,11 +123,11 @@ export const showcaseCampaign = defineCampaign({
           key: 'kitchens-hero-01',
           headlines: [
             'Would Your Home Make the Cut?',
-            'We\'re Selecting 5 Kitchens in Your Area',
+            'We’re Selecting 5 Kitchens in Your Area',
           ],
           primaryTexts: [
             'Would your home make the cut? 👀\n\n'
-            + 'We\'re selecting 5 kitchens in your area to remodel at a Showcase price and feature '
+            + 'We’re selecting 5 kitchens in your area to remodel at a Showcase price and feature '
             + 'in our portfolio.\n\nHomeowners only. See if your home qualifies.',
             'Some kitchens are built to be photographed. Yours could be one of them.\n\n'
             + 'Tri Pros Remodeling is selecting 5 kitchens in your area for AAA-grade, '
@@ -161,23 +161,23 @@ export const showcaseCampaign = defineCampaign({
           videoFile: 'reel-11.mp4',
           thumbnailFile: 'reel-11-thumb.jpg',
           headlines: [
-            'We\'re Selecting 5 Bathrooms in Your Area',
+            'We’re Selecting 5 Bathrooms in Your Area',
             '5 Bathroom Showcase Spots — See If You Qualify',
             'Is Your Bathroom One of the 5?',
           ],
           primaryTexts: [
-            '🛁 We\'re selecting 5 bathrooms in your area for our next Showcase.\n\n'
+            '🛁 We’re selecting 5 bathrooms in your area for our next Showcase.\n\n'
             + 'If your home qualifies, you get:\n'
             + '✅ A AAA-grade bathroom remodel\n'
             + '✅ At a Showcase price\n'
             + '✅ Featured in our portfolio\n\n'
             + 'Homeowners only. See if you qualify.',
-            'A bathroom you\'ll actually love — at a Showcase price. '
+            'A bathroom you’ll actually love — at a Showcase price. '
             + 'Tri Pros Remodeling is selecting 5 bathrooms in your area to be featured in our showcase. '
             + 'If selected, you get our best-of-the-best work at a Showcase price. '
             + 'Homeowners only. See if your home qualifies.',
             'Could your bathroom be one of the 5? 👀\n\n'
-            + 'We\'re choosing 5 homes in your area to feature in our bathroom showcase — '
+            + 'We’re choosing 5 homes in your area to feature in our bathroom showcase — '
             + 'best-of-the-best work, built to photograph beautifully, at a Showcase price.\n\n'
             + 'Homeowners only. See if your home qualifies.',
           ],
@@ -198,14 +198,14 @@ export const showcaseCampaign = defineCampaign({
             + '✅ AAA-grade materials\n'
             + '✅ Spa feel, everyday function\n'
             + '✅ Built to be photographed\n\n'
-            + 'We\'re selecting 5 bathrooms in your area for our showcase. '
+            + 'We’re selecting 5 bathrooms in your area for our showcase. '
             + 'Homeowners only. See if your home qualifies.',
             'Watch what a Showcase bathroom looks like from start to finish. '
             + 'Every home we select gets our best-of-the-best work at a Showcase price — '
             + 'because the result is featured in our showcase. '
             + '5 bathrooms in your area. See if yours qualifies.',
             'Think your bathroom could carry a showcase? 👀\n\n'
-            + 'We\'re selecting 5 bathrooms in your area — AAA-grade remodels at a Showcase price, '
+            + 'We’re selecting 5 bathrooms in your area — AAA-grade remodels at a Showcase price, '
             + 'featured in our portfolio.\n\nHomeowners only. See if your home qualifies.',
           ],
           descriptions: ['Showcase-grade work, guaranteed.'],
@@ -222,7 +222,7 @@ export const showcaseCampaign = defineCampaign({
             + '✅ AAA-grade materials\n'
             + '✅ Spa feel, everyday function\n'
             + '✅ Built to be photographed\n\n'
-            + 'We\'re selecting 5 bathrooms in your area this month for a Showcase-priced remodel, '
+            + 'We’re selecting 5 bathrooms in your area this month for a Showcase-priced remodel, '
             + 'featured in our portfolio. See if your home qualifies.',
             'From dated to Showcase-grade. 📸\n\n'
             + 'Every bathroom we select gets AAA-quality work — because it has to photograph beautifully. '
@@ -230,7 +230,7 @@ export const showcaseCampaign = defineCampaign({
             + 'See if your home qualifies.',
             'From dated to Showcase-grade. Every bathroom we select gets AAA-quality work — '
             + 'because it has to photograph beautifully. '
-            + 'We\'re selecting 5 bathrooms in your area this month. See if your home qualifies.',
+            + 'We’re selecting 5 bathrooms in your area this month. See if your home qualifies.',
           ],
           descriptions: ['AAA-grade, at a Showcase price.'],
           imageFile: 'before-after-card-01.jpg',
@@ -241,7 +241,7 @@ export const showcaseCampaign = defineCampaign({
           format: 'carousel',
           primaryTexts: [
             'Real Tri Pros bathrooms. Real homes in your area. 👀\n\n'
-            + 'We\'re selecting 5 bathrooms for our next Showcase round — AAA-grade remodels at a '
+            + 'We’re selecting 5 bathrooms for our next Showcase round — AAA-grade remodels at a '
             + 'Showcase price, featured in our portfolio.\n\n'
             + 'Homeowners only. Swipe through, then see if your home qualifies.',
           ],
@@ -257,11 +257,11 @@ export const showcaseCampaign = defineCampaign({
           key: 'bathrooms-hero-01',
           headlines: [
             'Would Your Home Make the Cut?',
-            'We\'re Selecting 5 Bathrooms in Your Area',
+            'We’re Selecting 5 Bathrooms in Your Area',
           ],
           primaryTexts: [
             'Would your home make the cut? 👀\n\n'
-            + 'We\'re selecting 5 bathrooms in your area to remodel at a Showcase price and feature '
+            + 'We’re selecting 5 bathrooms in your area to remodel at a Showcase price and feature '
             + 'in our portfolio.\n\nHomeowners only. See if your home qualifies.',
             'Some bathrooms are built to be photographed. Yours could be one of them.\n\n'
             + 'Tri Pros Remodeling is selecting 5 bathrooms in your area for AAA-grade, '
