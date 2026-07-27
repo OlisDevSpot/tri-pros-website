@@ -13,14 +13,13 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
-import { CUSTOMER_FILTER_CONFIG } from '@/shared/entities/customers/constants/customer-filter-config'
 import { useCustomerActionConfigs } from '@/shared/entities/customers/hooks/use-customer-action-configs'
 
 import { CUSTOMER_COLUMNS } from '@/shared/entities/customers/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
+import { ALL_CUSTOMERS_TABLE_QUERY_CONFIG } from '@/features/lead-sources-admin/constants/lead-sources-table-query-configs'
 
 const SHOW_COLUMNS = ['name', 'leadSourceName', 'pipeline', 'createdAt'] as const
 
@@ -32,12 +31,7 @@ export function AllCustomersSection() {
   const pagination = usePaginatedQuery<Record<string, never>, CustomerTableRow>(
     trpc.customersRouter.business.list.queryOptions,
     {},
-    {
-      paramPrefix: 'all',
-      pageSize: 20,
-      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
-      filters: CUSTOMER_FILTER_CONFIG,
-    },
+    ALL_CUSTOMERS_TABLE_QUERY_CONFIG,
   )
 
   const updateCreatedAt = useMutation(
