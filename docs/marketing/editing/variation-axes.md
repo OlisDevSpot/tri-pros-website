@@ -34,11 +34,15 @@ either side changes, reconcile both in the same change.
 - **Snap moment treatment:** always hard cut + white flash + shutter SFX — it
   is narrative, not decoration, and exempt from the transition-family axis
   (`transitionIn: 'none'` reserved for this beat).
-- **Brand system:** logo intro + dock, watermark, end-card layout, brand
-  block content, safe rects x 65–1015 / y 420–1248 with logo docked top-LEFT
-  (x≈80, y≈440) — 2026-07-27 research superseded the old 14/35/6 rule (feed
-  crops 9:16 to 4:5/1:1, erasing the top 285–420 px; see
-  `.claude/skills/showcase-ads/SKILL.md` safe-rects rule).
+- **Brand system:** the ratified `ReelLogo` badge (stacked lockup in a
+  cyan-accent panel — same language as the stills; `src/components/reel-logo.tsx`
+  owns intro glide + settled badge), watermark on/off, end-card layout, brand
+  block content, safe rects x 65–1015 / y 420–1248 with the logo badge docked
+  top-LEFT (x 80, y 440), compact so it never reaches the centered chapter
+  label. 2026-07-27 research superseded the old 14/35/6 rule (feed crops 9:16 to
+  4:5/1:1, erasing the top 285–420 px); logo treatment codified in
+  `.claude/skills/showcase-ads/SKILL.md` (logo-treatment + safe-rects rules) and
+  `docs/marketing/stills/still-ad-standard.md#logo-treatment`.
 - **Caption style:** the build-as-spoken `RevealCaptions` system — words
   fade/rise at whisper timing; emphasis via `*word*` markup. Emphasis serif
   FROZEN 2026-07-14 (Oliver's pick from three rendered samples): Playfair

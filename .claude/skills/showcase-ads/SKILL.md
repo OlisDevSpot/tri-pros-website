@@ -49,16 +49,23 @@ Verify with side-by-side stills of the boundary frames before assembling.
   in Ads Manager (menu-level, fine). Photoreal AI HUMANS with visible faces ⇒
   prominent overlay — avoid; branded crew shots pose workers FROM BEHIND.
 - ⛔ Activation is human-only. Everything lands PAUSED. Never touch ACTIVE.
-- Logo intro is MANDATORY: `logoIntro` prop — lockup springs in centered over
-  the cold open, docks into the watermark slot at `dockFrame` (+15f glide),
-  where the persistent watermark (same art file, `watermarkWidth` **440** — the
-  house standard for the lockup and the schema default, Oliver 2026-07-25 after
-  two rendered size tests: 150 "way too small" → 300 → 440 final pick) takes
-  over seamlessly. **Dock position = TOP-LEFT at (x≈80, y≈440)** — changed
-  2026-07-27 from the old symmetric 64px top-right corner, which Meta's
-  cross-placement crops erased (see safe-rects rule below; position hardcoded
-  in `showcase-reel.tsx` + `logo-intro.tsx`, which must stay in lockstep).
-  Use `brand/logo-dark-right.svg` for both.
+- **Logo = the ratified treatment (`ReelLogo`, 2026-07-27), NOT a bare lockup.**
+  The persistent watermark is the **STACKED lockup (`brand/logo-dark-bottom.svg`)
+  in a solid dark rounded panel with a thin brand-cyan top accent** — the same
+  logo language as the stills (`still-ad-standard.md#logo-treatment`). It lives
+  in ONE component, `src/components/reel-logo.tsx`, which owns BOTH the intro
+  glide and the settled badge (no separate watermark ↔ logo-intro handoff, no
+  pop). Hardcoded position **TOP-LEFT at (x 80, y 440)**, compact panel
+  (~148 px wide). `logoIntro` prop still gates the opening glide (stacked logo
+  springs in centered, glides to the corner, panel forms around it on landing);
+  `null` = badge simply present from frame 0. `watermarkSrc` is now only an
+  on/off gate; `watermarkWidth` and `logoIntro.src` are ignored (art is always
+  the stacked lockup). **Why stacked + compact + no trust stack:** the old wide
+  horizontal lockup (`watermarkWidth 440`) ran straight through the centered
+  chapter label ("OUR CREW — MID-BUILD") — amateurish. Compact-left guarantees
+  the logo never reaches the centered label. Do NOT put the trust stack on the
+  reel watermark (it would re-collide with the centered label). The old
+  `logo-intro.tsx` is retired.
 - **Safe rects are CRO-critical (researched 2026-07-27, supersedes "14/35/6"):**
   on the 9:16 master every persistent element (watermark, hook text, captions,
   checkmark cards, end-card CTA) must live inside **x 65–1015, y 420–1248**
@@ -150,10 +157,11 @@ Composition `ShowcaseReel` (1080×1920@30) is fully props-driven — see
 `video/src/lib/schema.ts` for the schema. Per-clip: `kind` video|image (image
 gets Ken Burns), `layout` full|framed (framed = native-aspect card on dark
 ground; label chip or checkmark rows above via `checkmarkClipIndex`), hook
-word-stagger on clip 1, captions mirror the VO (muted viewers), `watermarkSrc`
-icon docked top-LEFT at (x≈80, y≈440) — see safe-rects rule above (2026-07-27;
-was top-right, cropped out of feed/1:1 placements) — logo end card with CTA
-pill (end-card CTA inside y 420–1248 too).
+word-stagger on clip 1, captions mirror the VO (muted viewers), the `ReelLogo`
+badge docked top-LEFT at (x 80, y 440) — see the logo-treatment + safe-rects
+rules above (`watermarkSrc` non-null just enables it; the art is always the
+stacked-panel badge) — logo end card with CTA pill (end-card CTA inside
+y 420–1248 too).
 
 **The fixed narrative skeleton** (sequence only — presentation comes from the
 variation menus, see below): cold open on an AFTER beauty frame with the logo
