@@ -1,5 +1,5 @@
 import type { AccountState } from '../lib/marketing-api.js'
-import type { AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
+import type { AdSetSpec, AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
 import type { AdAssetShas } from './fingerprint.js'
 import type { MetaLock } from './lock.js'
 import { existsSync, readFileSync } from 'node:fs'
@@ -10,32 +10,32 @@ import { adFp, adSetFp, campaignFp, sha256Hex } from './fingerprint.js'
 export type PlanOp =
   | { op: 'create-campaign', campaignKey: string }
   | { op: 'update-campaign', campaignKey: string, id: string }
-  | { op: 'create-adset', campaignKey: string }
-  | { op: 'update-adset', campaignKey: string, id: string }
-  | { op: 'create-ad', campaignKey: string, adKey: string, assetShas: AdAssetShas }
-  | { op: 'refresh-creative', campaignKey: string, adKey: string, adId: string, assetShas: AdAssetShas }
-  | { op: 'skip-ad-missing-asset', campaignKey: string, adKey: string, assetPath: string }
+  | { op: 'create-adset', campaignKey: string, adSetKey: string }
+  | { op: 'update-adset', campaignKey: string, adSetKey: string, id: string }
+  | { op: 'create-ad', campaignKey: string, adSetKey: string, adKey: string, assetShas: AdAssetShas }
+  | { op: 'refresh-creative', campaignKey: string, adSetKey: string, adKey: string, adId: string, assetShas: AdAssetShas }
+  | { op: 'skip-ad-missing-asset', campaignKey: string, adSetKey: string, adKey: string, assetPath: string }
   | { op: 'orphan', kind: 'campaign' | 'adset' | 'ad', id: string, name: string }
 
-export function adImagePath(spec: CampaignSpec, imageFile: string): string {
-  return join(process.cwd(), 'public/funnels', spec.funnelSlug, 'ads', imageFile)
+export function adImagePath(funnelSlug: string, imageFile: string): string {
+  return join(process.cwd(), 'public/funnels', funnelSlug, 'ads', imageFile)
 }
 
-export function adVideoPath(spec: CampaignSpec, videoFile: string): string {
-  return join(process.cwd(), 'public/funnels', spec.funnelSlug, 'ads/videos', videoFile)
+export function adVideoPath(funnelSlug: string, videoFile: string): string {
+  return join(process.cwd(), 'public/funnels', funnelSlug, 'ads/videos', videoFile)
 }
 
 /** Every on-disk asset an ad references, keyed by the spec filename. */
-export function adAssetPaths(spec: CampaignSpec, ad: AdSpec): Record<string, string> {
+export function adAssetPaths(adSet: AdSetSpec, ad: AdSpec): Record<string, string> {
   if (ad.format === 'carousel')
-    return Object.fromEntries(ad.cards.map(c => [c.imageFile, adImagePath(spec, c.imageFile)]))
+    return Object.fromEntries(ad.cards.map(c => [c.imageFile, adImagePath(adSet.funnelSlug, c.imageFile)]))
   if (ad.format === 'video') {
     return {
-      [ad.videoFile]: adVideoPath(spec, ad.videoFile),
-      [ad.thumbnailFile]: adImagePath(spec, ad.thumbnailFile),
+      [ad.videoFile]: adVideoPath(adSet.funnelSlug, ad.videoFile),
+      [ad.thumbnailFile]: adImagePath(adSet.funnelSlug, ad.thumbnailFile),
     }
   }
-  return { [ad.imageFile]: adImagePath(spec, ad.imageFile) }
+  return { [ad.imageFile]: adImagePath(adSet.funnelSlug, ad.imageFile) }
 }
 
 export function computePlan(specs: CampaignSpec[], lock: MetaLock, state: AccountState): PlanOp[] {
@@ -73,45 +73,46 @@ export function computePlan(specs: CampaignSpec[], lock: MetaLock, state: Accoun
       ops.push({ op: 'update-campaign', campaignKey: spec.key, id: cLock.id })
     }
 
-    // ── ad set (v1: exactly one per campaign) ──
-    const asKey = `${spec.key}/${spec.adSet.key}`
-    specBackedAdSetKeys.add(asKey)
-    const asLock = lock.adSets[asKey]
-    if (!asLock || !remoteIds.has(asLock.id)) {
-      const adoptId = remoteAdSetByName.get(spec.adSet.name)
-      if (adoptId)
-        ops.push({ op: 'update-adset', campaignKey: spec.key, id: adoptId })
-      else
-        ops.push({ op: 'create-adset', campaignKey: spec.key })
-    }
-    else if (asLock.fp !== adSetFp(spec)) {
-      ops.push({ op: 'update-adset', campaignKey: spec.key, id: asLock.id })
-    }
-
-    // ── ads ──
-    for (const ad of spec.ads) {
-      const adLockKey = `${spec.key}/${ad.key}`
-      specBackedAdKeys.add(adLockKey)
-      const assetPaths = adAssetPaths(spec, ad)
-      const missingPath = Object.values(assetPaths).find(path => !existsSync(path))
-      if (missingPath) {
-        ops.push({ op: 'skip-ad-missing-asset', campaignKey: spec.key, adKey: ad.key, assetPath: missingPath })
-        continue
-      }
-      const assetShas: AdAssetShas = Object.fromEntries(
-        Object.entries(assetPaths).map(([file, path]) => [file, sha256Hex(readFileSync(path))]),
-      )
-      const aLock = lock.ads[adLockKey]
-      if (!aLock || !remoteIds.has(aLock.id)) {
-        const adoptName = `${spec.key} — ${ad.key}`
-        const adoptId = remoteAdByName.get(adoptName)
+    // ── ad sets (campaign = offer; one ad set per product) ──
+    for (const adSet of spec.adSets) {
+      const asKey = `${spec.key}/${adSet.key}`
+      specBackedAdSetKeys.add(asKey)
+      const asLock = lock.adSets[asKey]
+      if (!asLock || !remoteIds.has(asLock.id)) {
+        const adoptId = remoteAdSetByName.get(adSet.name)
         if (adoptId)
-          ops.push({ op: 'refresh-creative', campaignKey: spec.key, adKey: ad.key, adId: adoptId, assetShas })
+          ops.push({ op: 'update-adset', campaignKey: spec.key, adSetKey: adSet.key, id: adoptId })
         else
-          ops.push({ op: 'create-ad', campaignKey: spec.key, adKey: ad.key, assetShas })
+          ops.push({ op: 'create-adset', campaignKey: spec.key, adSetKey: adSet.key })
       }
-      else if (aLock.fp !== adFp(spec, ad, assetShas)) {
-        ops.push({ op: 'refresh-creative', campaignKey: spec.key, adKey: ad.key, adId: aLock.id, assetShas })
+      else if (asLock.fp !== adSetFp(adSet)) {
+        ops.push({ op: 'update-adset', campaignKey: spec.key, adSetKey: adSet.key, id: asLock.id })
+      }
+
+      for (const ad of adSet.ads) {
+        const adLockKey = `${spec.key}/${ad.key}`
+        specBackedAdKeys.add(adLockKey)
+        const assetPaths = adAssetPaths(adSet, ad)
+        const missingPath = Object.values(assetPaths).find(path => !existsSync(path))
+        if (missingPath) {
+          ops.push({ op: 'skip-ad-missing-asset', campaignKey: spec.key, adSetKey: adSet.key, adKey: ad.key, assetPath: missingPath })
+          continue
+        }
+        const assetShas: AdAssetShas = Object.fromEntries(
+          Object.entries(assetPaths).map(([file, path]) => [file, sha256Hex(readFileSync(path))]),
+        )
+        const aLock = lock.ads[adLockKey]
+        if (!aLock || !remoteIds.has(aLock.id)) {
+          const adoptName = `${spec.key} — ${ad.key}`
+          const adoptId = remoteAdByName.get(adoptName)
+          if (adoptId)
+            ops.push({ op: 'refresh-creative', campaignKey: spec.key, adSetKey: adSet.key, adKey: ad.key, adId: adoptId, assetShas })
+          else
+            ops.push({ op: 'create-ad', campaignKey: spec.key, adSetKey: adSet.key, adKey: ad.key, assetShas })
+        }
+        else if (aLock.fp !== adFp(spec.key, adSet, ad, assetShas)) {
+          ops.push({ op: 'refresh-creative', campaignKey: spec.key, adSetKey: adSet.key, adKey: ad.key, adId: aLock.id, assetShas })
+        }
       }
     }
   }

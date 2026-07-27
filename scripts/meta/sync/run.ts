@@ -40,10 +40,12 @@ async function main() {
   console.log('\nPlan:')
   for (const op of plan) {
     const detail = 'adKey' in op
-      ? `${op.campaignKey}/${op.adKey}`
-      : 'campaignKey' in op
-        ? op.campaignKey
-        : `${op.kind} ${op.name} (${op.id})`
+      ? `${op.campaignKey}/${op.adSetKey}/${op.adKey}`
+      : 'adSetKey' in op
+        ? `${op.campaignKey}/${op.adSetKey}`
+        : 'campaignKey' in op
+          ? op.campaignKey
+          : `${op.kind} ${op.name} (${op.id})`
     console.log(`  ${OP_LABEL[op.op]}  ${detail}${'assetPath' in op ? `\n      missing: ${op.assetPath}` : ''}`)
   }
 

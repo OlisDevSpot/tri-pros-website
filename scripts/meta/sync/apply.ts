@@ -1,5 +1,5 @@
 // scripts/meta/sync/apply.ts
-import type { AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
+import type { AdSetSpec, AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
 import type { AdAssetShas } from './fingerprint.js'
 import type { MetaLock } from './lock.js'
 import type { PlanOp } from './diff.js'
@@ -40,6 +40,13 @@ function specByKey(specs: CampaignSpec[], key: string): CampaignSpec {
   return spec
 }
 
+function adSetByKey(spec: CampaignSpec, adSetKey: string): AdSetSpec {
+  const adSet = spec.adSets.find(a => a.key === adSetKey)
+  if (!adSet)
+    throw new Error(`No ad set ${adSetKey} in campaign ${spec.key}`)
+  return adSet
+}
+
 /** Upload image if its sha isn't in the lock yet; returns Meta image_hash. */
 async function ensureImage(lock: MetaLock, path: string, imageSha: string): Promise<string> {
   const existing = lock.images[imageSha]
@@ -63,17 +70,17 @@ async function ensureVideo(lock: MetaLock, path: string, videoSha: string): Prom
 }
 
 /** Format dispatch: upload the ad's assets (lock-deduped) and create its creative. */
-async function createCreativeForAd(lock: MetaLock, spec: CampaignSpec, ad: AdSpec, assetShas: AdAssetShas): Promise<string> {
+async function createCreativeForAd(lock: MetaLock, campaignKey: string, adSet: AdSetSpec, ad: AdSpec, assetShas: AdAssetShas): Promise<string> {
   const base = {
-    name: `${spec.key}/${ad.key}`,
-    baseUrl: spec.landingBaseUrl,
-    urlTags: buildUrlTags(spec, ad),
+    name: `${campaignKey}/${ad.key}`,
+    baseUrl: adSet.landingBaseUrl,
+    urlTags: buildUrlTags(campaignKey, ad.key),
   }
 
   if (ad.format === 'carousel') {
     const cards = []
     for (const card of ad.cards) {
-      const imageHash = await ensureImage(lock, adImagePath(spec, card.imageFile), assetShas[card.imageFile])
+      const imageHash = await ensureImage(lock, adImagePath(adSet.funnelSlug, card.imageFile), assetShas[card.imageFile])
       cards.push({ imageHash, headline: card.headline, description: card.description })
     }
     return createCarouselAdCreative({
@@ -86,8 +93,8 @@ async function createCreativeForAd(lock: MetaLock, spec: CampaignSpec, ad: AdSpe
   }
 
   if (ad.format === 'video') {
-    const videoId = await ensureVideo(lock, adVideoPath(spec, ad.videoFile), assetShas[ad.videoFile])
-    const thumbnailHash = await ensureImage(lock, adImagePath(spec, ad.thumbnailFile), assetShas[ad.thumbnailFile])
+    const videoId = await ensureVideo(lock, adVideoPath(adSet.funnelSlug, ad.videoFile), assetShas[ad.videoFile])
+    const thumbnailHash = await ensureImage(lock, adImagePath(adSet.funnelSlug, ad.thumbnailFile), assetShas[ad.thumbnailFile])
     return createVideoAdCreative({
       ...base,
       headlines: ad.headlines,
@@ -99,7 +106,7 @@ async function createCreativeForAd(lock: MetaLock, spec: CampaignSpec, ad: AdSpe
     })
   }
 
-  const imageHash = await ensureImage(lock, adImagePath(spec, ad.imageFile), assetShas[ad.imageFile])
+  const imageHash = await ensureImage(lock, adImagePath(adSet.funnelSlug, ad.imageFile), assetShas[ad.imageFile])
   return createLinkAdCreative({
     ...base,
     headlines: ad.headlines,
@@ -148,39 +155,41 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
       continue
     }
 
+    // remaining op kinds (create-adset | update-adset | create-ad | refresh-creative) all carry adSetKey.
+    const adSet = adSetByKey(spec, op.adSetKey)
     const adSetInput = {
-      name: spec.adSet.name,
+      name: adSet.name,
       campaignId: lock.campaigns[spec.key]?.id ?? '',
-      dailyBudgetCents: spec.adSet.dailyBudgetCents,
-      ageMin: spec.adSet.ageMin,
-      ageMax: spec.adSet.ageMax,
-      optimizationEvent: spec.adSet.optimizationEvent,
-      metaZips: toMetaZips(spec.adSet.geoZips),
+      dailyBudgetCents: adSet.dailyBudgetCents,
+      ageMin: adSet.ageMin,
+      ageMax: adSet.ageMax,
+      optimizationEvent: adSet.optimizationEvent,
+      metaZips: toMetaZips(adSet.geoZips),
     }
-    const asKey = `${spec.key}/${spec.adSet.key}`
+    const asKey = `${spec.key}/${adSet.key}`
 
     if (op.op === 'create-adset') {
       if (!adSetInput.campaignId)
-        throw new Error(`Cannot create ad set for ${spec.key}: campaign id missing from lock`)
+        throw new Error(`Cannot create ad set for ${asKey}: campaign id missing from lock`)
       const id = await createAdSet(adSetInput)
-      lock.adSets[asKey] = { id, fp: adSetFp(spec) }
+      lock.adSets[asKey] = { id, fp: adSetFp(adSet) }
       writeLock(lock)
-      printSuccess(`ad set created (PAUSED): ${spec.adSet.name} → ${id}`)
+      printSuccess(`ad set created (PAUSED): ${adSet.name} → ${id}`)
       audit({ op: op.op, key: asKey, id })
       continue
     }
 
     if (op.op === 'update-adset') {
       await updateAdSet(op.id, adSetInput)
-      lock.adSets[asKey] = { id: op.id, fp: adSetFp(spec) }
+      lock.adSets[asKey] = { id: op.id, fp: adSetFp(adSet) }
       writeLock(lock)
-      printSuccess(`ad set updated: ${spec.adSet.name}`)
+      printSuccess(`ad set updated: ${adSet.name}`)
       audit({ op: op.op, key: asKey, id: op.id })
       continue
     }
 
     // create-ad | refresh-creative
-    const ad = spec.ads.find(a => a.key === op.adKey)
+    const ad = adSet.ads.find(a => a.key === op.adKey)
     if (!ad)
       throw new Error(`No ad spec ${op.adKey} in campaign ${spec.key}`)
     const adLockKey = `${spec.key}/${ad.key}`
@@ -194,19 +203,19 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
         throw new Error(`Cannot create ad ${adLockKey}: ad set id missing from lock`)
     }
 
-    const creativeId = await createCreativeForAd(lock, spec, ad, op.assetShas)
+    const creativeId = await createCreativeForAd(lock, spec.key, adSet, ad, op.assetShas)
 
     if (op.op === 'create-ad') {
       const adSetId = lock.adSets[asKey]!.id // already validated above
       const id = await createAd({ name: `${spec.key} — ${ad.key}`, adSetId, creativeId })
-      lock.ads[adLockKey] = { id, creativeId, fp: adFp(spec, ad, op.assetShas) }
+      lock.ads[adLockKey] = { id, creativeId, fp: adFp(spec.key, adSet, ad, op.assetShas) }
       writeLock(lock)
       printSuccess(`ad created (PAUSED): ${adLockKey} → ${id}`)
       audit({ op: op.op, key: adLockKey, id, creativeId })
     }
     else {
       await setAdCreative(op.adId, creativeId)
-      lock.ads[adLockKey] = { id: op.adId, creativeId, fp: adFp(spec, ad, op.assetShas) }
+      lock.ads[adLockKey] = { id: op.adId, creativeId, fp: adFp(spec.key, adSet, ad, op.assetShas) }
       writeLock(lock)
       printSuccess(`creative refreshed: ${adLockKey}`)
       audit({ op: op.op, key: adLockKey, id: op.adId, creativeId })

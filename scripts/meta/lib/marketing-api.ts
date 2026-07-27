@@ -67,15 +67,18 @@ function adSetBody(input: AdSetCreateInput) {
     optimization_goal: 'OFFSITE_CONVERSIONS', // optimize on pixel/CAPI conversions, not form fills
     bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
     promoted_object: { pixel_id: metaEnv.pixelId, custom_event_type: input.optimizationEvent },
+    // 7-day click only — no view-through: cleans lead-gen reporting AND changes
+    // what delivery optimizes toward (Meta optimizes for conversions countable
+    // under this setting). Design: 2026-07-26 spec §1.
+    attribution_spec: [{ event_type: 'CLICK_THROUGH', window_days: 7 }],
     targeting: {
       geo_locations: { zips: input.metaZips },
       age_min: input.ageMin,
-      age_max: input.ageMax,
-      // Strict demographic controls: the spec pins 35–70 as a HARD range.
-      // (advantage_audience: 1 would demote age to a suggestion Meta can expand past.)
-      // If the API rejects with "advantage_audience required" (Meta has been forcing
-      // it on some new accounts), surface the error verbatim and decide then.
-      targeting_automation: { advantage_audience: 0 },
+      age_max: input.ageMax, // 65 = "65+"; under Advantage+ audience the max is a suggestion anyway
+      // Advantage+ audience ON: geo + age_min act as hard controls, everything
+      // else is a starting suggestion Meta may expand past. Deliberate flip from
+      // v1 (advantage_audience: 0) — 2026 delivery favors broad + creative-led.
+      targeting_automation: { advantage_audience: 1 },
     },
   }
 }

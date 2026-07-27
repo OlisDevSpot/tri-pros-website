@@ -67,25 +67,36 @@ export const adSpecSchema = z.union([singleImageAdSpecSchema, carouselAdSpecSche
 export const adSetSpecSchema = z.object({
   key: specKey,
   name: z.string().min(1),
+  /** Which funnel's assets + landing page this ad set sells. Assets under public/funnels/<funnelSlug>/ads/. */
+  funnelSlug: z.enum(['kitchens', 'bathrooms']),
+  /** Funnel origin with trailing slash, e.g. https://kitchens.triprosremodeling.com/ */
+  landingBaseUrl: z.string().url(),
   dailyBudgetCents: z.number().int().positive(),
   ageMin: z.number().int().min(18).max(65),
   /** Meta rejects age_max > 65; 65 means "65+" (unbounded upper bucket). */
   ageMax: z.number().int().min(18).max(65),
-  /** Maps to promoted_object.custom_event_type — flip LEAD→SCHEDULE to graduate optimization. */
+  /** Maps to promoted_object.custom_event_type. */
   optimizationEvent: z.enum(['LEAD', 'SCHEDULE']),
   geoZips: z.array(z.string().regex(/^\d{5}$/)).min(1),
+  ads: z.array(adSpecSchema).min(1),
 })
 
 export const campaignSpecSchema = z.object({
   key: specKey,
   name: z.string().min(1),
   objective: z.literal('OUTCOME_LEADS'),
-  funnelSlug: z.enum(['kitchens', 'bathrooms']),
-  /** Funnel origin with trailing slash, e.g. https://kitchens.triprosremodeling.com/ */
-  landingBaseUrl: z.string().url(),
-  adSet: adSetSpecSchema, // v1: exactly one ad set per campaign
-  ads: z.array(adSpecSchema).min(1),
-}).refine(s => s.adSet.ageMin <= s.adSet.ageMax, { message: 'ageMin must be ≤ ageMax' })
+  /** campaign = offer; one ad set per product. */
+  adSets: z.array(adSetSpecSchema).min(1),
+})
+  .refine(s => s.adSets.every(a => a.ageMin <= a.ageMax), { message: 'ageMin must be ≤ ageMax' })
+  .refine((s) => {
+    const keys = s.adSets.flatMap(a => a.ads.map(ad => ad.key))
+    return new Set(keys).size === keys.length
+  }, { message: 'ad keys must be unique across the whole campaign (they key the lock as <campaignKey>/<adKey>)' })
+  .refine((s) => {
+    const keys = s.adSets.map(a => a.key)
+    return new Set(keys).size === keys.length
+  }, { message: 'ad set keys must be unique within the campaign' })
 
 export type AdSpec = z.infer<typeof adSpecSchema>
 export type SingleImageAdSpec = z.infer<typeof singleImageAdSpecSchema>

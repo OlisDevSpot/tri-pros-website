@@ -1,5 +1,5 @@
 import type { Buffer } from 'node:buffer'
-import type { AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
+import type { AdSetSpec, AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
 import { createHash } from 'node:crypto'
 import { buildUrlTags } from './ad-link.js'
 
@@ -14,19 +14,18 @@ export function campaignFp(spec: CampaignSpec): string {
   return sha256Hex(JSON.stringify({ name: spec.name, objective: spec.objective }))
 }
 
-export function adSetFp(spec: CampaignSpec): string {
-  const a = spec.adSet
+export function adSetFp(adSet: AdSetSpec): string {
   return sha256Hex(JSON.stringify({
-    name: a.name,
-    dailyBudgetCents: a.dailyBudgetCents,
-    ageMin: a.ageMin,
-    ageMax: a.ageMax,
-    optimizationEvent: a.optimizationEvent,
-    zips: [...a.geoZips].sort(),
+    name: adSet.name,
+    dailyBudgetCents: adSet.dailyBudgetCents,
+    ageMin: adSet.ageMin,
+    ageMax: adSet.ageMax,
+    optimizationEvent: adSet.optimizationEvent,
+    zips: [...adSet.geoZips].sort(),
   }))
 }
 
-export function adFp(spec: CampaignSpec, ad: AdSpec, assetShas: AdAssetShas): string {
+export function adFp(campaignKey: string, adSet: AdSetSpec, ad: AdSpec, assetShas: AdAssetShas): string {
   if (ad.format === 'carousel') {
     return sha256Hex(JSON.stringify({
       primaryTexts: ad.primaryTexts,
@@ -36,8 +35,8 @@ export function adFp(spec: CampaignSpec, ad: AdSpec, assetShas: AdAssetShas): st
         headline: c.headline,
         description: c.description ?? null,
       })),
-      link: spec.landingBaseUrl,
-      urlTags: buildUrlTags(spec, ad),
+      link: adSet.landingBaseUrl,
+      urlTags: buildUrlTags(campaignKey, ad.key),
       multiShareOptimized: ad.multiShareOptimized,
     }))
   }
@@ -49,19 +48,17 @@ export function adFp(spec: CampaignSpec, ad: AdSpec, assetShas: AdAssetShas): st
       ctaType: ad.ctaType,
       videoSha: assetShas[ad.videoFile],
       thumbnailSha: assetShas[ad.thumbnailFile],
-      link: spec.landingBaseUrl,
-      urlTags: buildUrlTags(spec, ad),
+      link: adSet.landingBaseUrl,
+      urlTags: buildUrlTags(campaignKey, ad.key),
     }))
   }
-  // single-image: the hash input must stay BYTE-IDENTICAL to the pre-format
-  // engine so live ads keep their lock fingerprints (zero-op dry run).
   return sha256Hex(JSON.stringify({
     headlines: ad.headlines,
     primaryTexts: ad.primaryTexts,
     descriptions: ad.descriptions ?? null,
     ctaType: ad.ctaType,
     imageSha: assetShas[ad.imageFile],
-    link: spec.landingBaseUrl,
-    urlTags: buildUrlTags(spec, ad),
+    link: adSet.landingBaseUrl,
+    urlTags: buildUrlTags(campaignKey, ad.key),
   }))
 }
