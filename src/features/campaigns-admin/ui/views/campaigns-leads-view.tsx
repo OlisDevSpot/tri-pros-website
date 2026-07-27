@@ -6,6 +6,7 @@ import type { CampaignLeadRow } from '@/shared/entities/voip-campaign-contacts/d
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 
+import { CAMPAIGN_LEADS_TABLE_QUERY_CONFIG } from '@/features/campaigns-admin/constants/campaign-leads-table-query-config'
 import { useCampaignMutations } from '@/features/campaigns-admin/hooks/use-campaign-mutations'
 import { buildLeadsFilterConfig } from '@/features/campaigns-admin/lib/build-leads-filter-config'
 import { LeadDrawer } from '@/features/campaigns-admin/ui/components/leads/lead-drawer'
@@ -15,7 +16,6 @@ import { buildLeadsColumns } from '@/features/campaigns-admin/ui/lib/leads-colum
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
@@ -55,14 +55,26 @@ export function CampaignsLeadsView() {
   // `usePaginatedQuery` always supplies `Record<string, FilterValue>` — the
   // shapes are structurally compatible at runtime. Cast via `never` so
   // TypeScript accepts the factory signature without a bare `any` annotation.
+  //
+  // Hook input is the STATIC config only — `sourceSlug`/`campaignId` carry
+  // `options: []` there, so their URL parsing stays free-string-stable
+  // across the whole session regardless of `summariesQuery`/`campaignsQuery`
+  // load state (see the config file's doc comment). The runtime-merged
+  // `filterConfig` (populated options) is spread onto a toolbar-only view of
+  // `pagination` below — never fed back into the hook.
   const pagination = usePaginatedQuery<Record<string, never>, CampaignLeadRow>(
     trpc.voipCampaignsRouter.listLeads.queryOptions as never,
     {},
-    {
-      filters: filterConfig,
-      pageSize: 25,
-      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
-    },
+    CAMPAIGN_LEADS_TABLE_QUERY_CONFIG,
+  )
+
+  // Toolbar-only view: same pagination state/setters, but `filterDefinitions`
+  // swapped for the runtime-merged (populated-options) config so the
+  // filter UI can render real campaign/source choices. `usePaginatedQuery`
+  // itself never sees this — only `<LeadsFilterBar>` does.
+  const toolbarPagination = useMemo(
+    () => ({ ...pagination, filterDefinitions: filterConfig }),
+    [pagination, filterConfig],
   )
 
   const tableRows = useMemo(() => pagination.rows.map(toTableRow), [pagination.rows])
@@ -125,7 +137,7 @@ export function CampaignsLeadsView() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-      <LeadsFilterBar pagination={pagination} />
+      <LeadsFilterBar pagination={toolbarPagination} />
 
       <div className="min-h-0 flex-1">
         <DataTable
