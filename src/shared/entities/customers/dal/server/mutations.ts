@@ -111,6 +111,11 @@ export async function upsertLeadAttribution(
   })
 }
 
+/** Track-1 decoupling seam: point the customer at its originating draft lead. */
+export async function linkCustomerToLead(customerId: string, leadId: string): Promise<void> {
+  await db.update(customers).set({ leadId }).where(eq(customers.id, customerId))
+}
+
 /**
  * Progressive funnel enrichment → rows. Replaces the former bespoke jsonb_set
  * merge with plain INSERT … ON CONFLICT (customer_id, step_id)
