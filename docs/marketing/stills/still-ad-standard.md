@@ -50,6 +50,30 @@ dominant (a card "about everything" triggers nothing):
 
 Secondary trigger allowed only in the support line.
 
+## style-directions
+
+Orthogonal to pattern: every card also declares a **style** (props field
+`style`) — the art direction it renders in. Styles are first-class A/B units:
+we deliberately mix styles across an ad set's slots, read per-ad
+cost-per-qualified-lead, then scale the winning style into more slots and
+kill losers on the monthly refresh. Ratified 2026-07-27 from a three-way
+taste test (owner-picked: mix per slot).
+
+| Style | Energy | Signature devices | Sanctioned extra typeface |
+|---|---|---|---|
+| `editorial-poster` | Loud, premium poster | Oversized condensed type as design element, giant numeral, cropped-off-edge words, watermark type, cinematic grade | One condensed display face (headlines only) |
+| `luxury-minimal` | Quiet, expensive | Full-bleed re-graded photo, small wide-tracked caps, hairline rules, text-link CTA instead of chip | none (brand fonts only) |
+| `dr-maximal` | Classic FB converter | Sticker chips ("ONLY 5 SPOTS"), marker circles/arrows, tilted before-polaroid, checkmark benefit chips, urgency subline (truthful only) | One marker/hand face (annotations only, never headlines) |
+
+Rules:
+- The five-layers, single-trigger, and QC requirements apply to every style.
+- Default slot mapping (change deliberately, not by drift): heroes +
+  before/afters → `dr-maximal`; numeral/CTA carousel cards →
+  `editorial-poster`; proof/authority cards → `luxury-minimal`.
+- The typeface budget is "brand fonts + the style's sanctioned face" — never
+  more, never borrowed across styles.
+- New styles enter this table only via an owner-ratified taste test.
+
 ## named-patterns
 
 Every card declares its pattern (props field `pattern`). No pattern = no ship.
@@ -70,8 +94,20 @@ Run on every render before the human gate:
 
 - [ ] Hook legible at 120 px thumbnail width (feed reality check)
 - [ ] Text contrast ≥ 4.5:1 against its actual local background
-- [ ] Safe zones: sides ≥ 6%; on 4:5/9:16, no text/logo in top 14% or bottom 20%
-- [ ] Logo identifiable at feed size; not clipped, not over texture
+- [ ] **Universal safe rects (researched 2026-07-27 — cross-placement crop +
+      Reels-UI intersection; supersedes the old 14%/20%/6% rule):**
+      · **4:5 (1080×1350):** ALL text/logo/CTA inside x 75–1005, y 135–950.
+        Logo top-right allowed: inset ≥162 px from top, ≥86 px from right.
+        Nothing in the bottom 30% (y > 945 — Reels-backfill caption band;
+        1:1 surfaces crop 135 px off top AND bottom).
+      · **1:1 (1080×1080):** everything inside 86 px margins; right margin
+        108 px (Reels rail insurance); logo top-left preferred.
+      · **9:16 (1080×1920, video/thumbnail masters):** everything inside
+        x 65–1015, y 420–1248 (feed crops to 4:5 = top+bottom 285 px gone;
+        1:1 surfaces = 420 px gone each end; Reels UI owns top 270 px +
+        bottom 672 px; right rail ≈130 px wide mid-frame). Logo top-LEFT at
+        (x≈80, y≈440), height ≤130 px. NEVER top-right on 9:16.
+      · Assume geometric CENTER crop — never rely on smart-crop.
 - [ ] One scan path: badge → hook → support → CTA (no competing focal points)
 - [ ] No text over high-frequency texture without a depth layer under it
 - [ ] Typographic punctuation (’ — ·), brand fonts only, ≤ 2 typefaces

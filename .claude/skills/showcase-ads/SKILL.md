@@ -54,9 +54,20 @@ Verify with side-by-side stills of the boundary frames before assembling.
   where the persistent watermark (same art file, `watermarkWidth` **440** — the
   house standard for the lockup and the schema default, Oliver 2026-07-25 after
   two rendered size tests: 150 "way too small" → 300 → 440 final pick) takes
-  over seamlessly, docked at **equal 64px top/right margins** (symmetric corner
-  placement — hardcoded in `showcase-reel.tsx` + `logo-intro.tsx`, which must
-  stay in lockstep). Use `brand/logo-dark-right.svg` for both.
+  over seamlessly. **Dock position = TOP-LEFT at (x≈80, y≈440)** — changed
+  2026-07-27 from the old symmetric 64px top-right corner, which Meta's
+  cross-placement crops erased (see safe-rects rule below; position hardcoded
+  in `showcase-reel.tsx` + `logo-intro.tsx`, which must stay in lockstep).
+  Use `brand/logo-dark-right.svg` for both.
+- **Safe rects are CRO-critical (researched 2026-07-27, supersedes "14/35/6"):**
+  on the 9:16 master every persistent element (watermark, hook text, captions,
+  checkmark cards, end-card CTA) must live inside **x 65–1015, y 420–1248**
+  (right edge 950 where the engagement rail runs, mid-frame). Reason: feed
+  serves 9:16 center-cropped to 4:5 (285 px gone top AND bottom), 1:1 surfaces
+  take 420 px each end, Reels UI owns top 270 + bottom 672 px. NEVER top-right
+  for the logo on 9:16. Transient full-canvas moments (logo-intro spring,
+  clip transitions) may use the full frame — persistent elements may not.
+  Stills spec (4:5 / 1:1 rects): `docs/marketing/stills/still-ad-standard.md#legibility-qc`.
 
 ## Assets & locations
 
@@ -140,7 +151,9 @@ Composition `ShowcaseReel` (1080×1920@30) is fully props-driven — see
 gets Ken Burns), `layout` full|framed (framed = native-aspect card on dark
 ground; label chip or checkmark rows above via `checkmarkClipIndex`), hook
 word-stagger on clip 1, captions mirror the VO (muted viewers), `watermarkSrc`
-icon top-right, logo end card with CTA pill.
+icon docked top-LEFT at (x≈80, y≈440) — see safe-rects rule above (2026-07-27;
+was top-right, cropped out of feed/1:1 placements) — logo end card with CTA
+pill (end-card CTA inside y 420–1248 too).
 
 **The fixed narrative skeleton** (sequence only — presentation comes from the
 variation menus, see below): cold open on an AFTER beauty frame with the logo
@@ -269,7 +282,8 @@ levels). READ both before designing any new variant. Composition rules:
   whoosh=motion, riser peaks ON the reveal frame starting 30–60f before,
   boom=landing; riser→cut→boom), `captionVertical` (~0.55–0.62), `*word*`
   caption emphasis (`RevealCaptions`, one per line), per-clip `layout`/`kind`,
-  `checkmarkClipIndex`, safe zone 14/35/6, `zoomOutReveals` (deprecated, see
+  `checkmarkClipIndex`, safe rects x 65–1015 / y 420–1248 (2026-07-27; the old
+  14/35/6 rule is superseded — it ignored cross-placement crops), `zoomOutReveals` (deprecated, see
   above), `hookStartFrame`/`hookDurationInFrames` (hook window — caption
   pages stay suppressed until the sum elapses), `hookStyle` (`wordStagger` ·
   `punch` · `freeze` · `typewriter` — axis 1), per-clip `kenBurns: { zoom:
