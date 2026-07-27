@@ -1,6 +1,13 @@
 # Wave 3 — Funding/Meta Scalar Decomposition + the Drop Ceremony — Design Spec
 
-> **Status**: Approved design, 2026-07-26. Implementation plan to follow (writing-plans).
+> **Status**: Approved design, 2026-07-26. Implementation plan: `docs/superpowers/plans/2026-07-26-wave-3-scalar-decomposition.md`.
+> **Amendment (2026-07-26, first-principles audit — Oliver's ruling)**: the form layer is REWRITTEN,
+> not renamed in place. New form shape: `{ priceDisplayMode, project, funding: FundingData }` — no
+> `meta` section, no funding `{data, meta}` envelope, `envelopeDocumentIds` out of form state.
+> `FundingData` derives from `fundingDataSchema` (canonical); the blob envelope schemas survive only
+> as `@deprecated` frozen legacy-parse schemas (Drizzle `$type` + backfill — their stored keys, e.g.
+> `pricingMode`, are NEVER renamed), dying W4. Every old-shape survivor carries `@deprecated` + a
+> ledger row. Sections below marked ⟨amended⟩ where the original wording is superseded.
 > **Program**: epic [#256](https://github.com/OlisDevSpot/tri-pros-website/issues/256) — JSONB decomposition. Program spec:
 > `docs/superpowers/specs/2026-07-09-jsonb-decomposition-program-design.md` (§4 migration protocol, Addenda A–C).
 > **Wave split (Oliver, 2026-07-24/26)**: the original Wave 3 was split in two. THIS wave =
@@ -44,8 +51,10 @@ Decisions inside the table:
   zero effect on computation (`computeFinalTcp` is mode-agnostic), but until the pricing editor
   lands it still gates authoring behavior — the breakdown-mode positive-`sectionPrice` validation
   and the client-side `startingTcp = Σ sectionPrice + miscPrice` sync. The name describes the
-  ratified end-state; the residual authoring coupling dies with the editor (post-waves). The TS
-  property and RHF form field rename to `priceDisplayMode` in the same tsc-driven sweep.
+  ratified end-state; the residual authoring coupling dies with the editor (post-waves). ⟨amended⟩
+  The RHF form gets a NEW top-level `priceDisplayMode` field (the `meta` section dies); the frozen
+  legacy `formMetaSectionSchema` keeps its stored `pricingMode` key so the backfill can parse
+  historical blobs.
 - **`misc_price_cents` is carried, not killed**: the pricing-editor ruling declares miscPrice dead
   post-waves; W3 only relocates live data. (Referenced ruling, not folded in.)
 - **`envelope_document_ids` is `text[]`**, Zod-validated against the envelope-doc id enum at the
@@ -78,16 +87,21 @@ Mechanics:
   ("`applyEnvelopeContext` is the only writer"). Post-W3 the column has exactly one writer, as
   documented. Deliberate tightening, not an accidental behavior change.
 - **Dollars→cents mapper pair** in `entities/proposals/lib/` (the `incentive-rows.ts` pattern):
-  `fundingDomainToColumns` / `fundingColumnsToDomain`. The RHF form keeps its nested dollar shape
-  (drafting UX, untouched); `buildMutationData` converts at the payload edge.
+  `fundingDomainToColumns` / `fundingColumnsToDomain`. ⟨amended⟩ The RHF form is rewritten
+  first-principles: `{ priceDisplayMode, project, funding: fundingDataSchema }` — flat dollars, no
+  `meta` section, no funding envelope, dead `meta.enabled` not fabricated anywhere;
+  `buildMutationData` converts at the payload edge. The `project` envelope survives only because
+  `projectJSON` is blob-backed (tallied, dies W4). The untallied dual-shape branch in
+  `get-proposal-aggregates.ts` and the dead `formValuesToProposal` helper die in the same commit.
 - **Recompute trigger set** (`server-spec.ts` `update.after`): `'fundingJSON' in input` becomes
   `'startingTcpCents' in input`; `'projectJSON' in input` keeps triggering (section incentives
   still live there until W4).
 - **`frozenProposalLockedFields`** (`lib/proposal-lock.ts`): `'formMetaJSON'`/`'fundingJSON'`
   replaced by the six new column names. Ladder mechanics, lifecycle-field carve-outs, and the
   share-token gating are untouched.
-- **Meeting flow untouched**: `buildProposalDefaults` builds form defaults and the form shape
-  doesn't change. `snapSowFromMeeting` touches only `projectJSON` (W4).
+- **Meeting flow** ⟨amended⟩: the form shape now changes, so `buildProposalDefaults` gets a
+  minimal mechanical reshape to the new form shape — nothing more (flow is broken/unused by
+  ruling; stub, don't repair). `snapSowFromMeeting` touches only `projectJSON` (W4).
 - **AI client untouched**: it raw-writes `projectJSON`, which still exists this wave. (Paused
   feature; ledgered escape hatch — do not touch per standing ruling.)
 
@@ -118,10 +132,11 @@ Mechanics:
 - **`listProposals`** untouched (reads `final_tcp_cents`).
 
 **Tightening-tally registration (Oliver's rider, 2026-07-26)**: the assembled `funding` view-model
-and the surviving nested `FundingData`/form shapes get a seam-register row in the ledger —
-re-examine post-waves (pricing-editor re-derivation) whether the nested view-model remains the
-right shape or should go flat/row-native. This is a deliberate "revisit" marker, not a bridge with
-a scheduled death.
+(flat `FundingData`, dollars) gets a seam-register row in the ledger — re-examine post-waves
+(pricing-editor re-derivation) whether the assembled view-model remains the right shape or should
+go row-native. This is a deliberate "revisit" marker, not a bridge with a scheduled death.
+⟨amended⟩ `FundingData` is canonical (`z.infer<typeof fundingDataSchema>`); it is NOT derived from
+the blob envelope — the envelope derives from it.
 
 ## 4. Backfill + cutover (spec §4 protocol instantiated)
 
@@ -183,9 +198,10 @@ data-parity spot-check, Neon rehearsal of the exact DDL, PITR window noted in th
 ## 6. Docs & convention riders (in the wave's PRs)
 
 1. **`incentiveTypes` consolidation** (audit finding 2026-07-24): canonical = the 2-value array in
-   `entities/proposals/schemas/index.ts` (drives the DB column + Zod). The 5-value copy in
-   `src/shared/constants/enums/proposals.ts` shrinks to re-export/alias the canonical (its only
-   consumer, `funding-fields.tsx`, already filters to the 2 real values).
+   `entities/proposals/schemas/index.ts` (drives the DB column + Zod). ⟨amended⟩ The 5-value copy
+   in `src/shared/constants/enums/proposals.ts` is DELETED, not aliased (its only consumer,
+   `funding-fields.tsx`, imports the canonical and drops its filter — the canonical array IS the
+   2 real values).
 2. Stale-comment fix: `entities/proposals/schemas/index.ts:81-84` still states the superseded
    blanket "never persist derived values" doctrine — rewrite against the three-stage standard.
 3. Path fix: `jsonb-columns.md` cites `docs/domain/ubiquitous-language.md`; actual is
@@ -194,8 +210,10 @@ data-parity spot-check, Neon rehearsal of the exact DDL, PITR window noted in th
    `#jsonb-merge-on-update` + `#agreement-context-as-coherent-unit` updated for the column moves
    (`formMetaJSON.envelopeDocumentIds` → column); calc_version v1 note (§3).
 5. Ledger bookkeeping: new rows for the W3 backfill script, the frozen `fundingJSON`/
-   `formMetaJSON` columns + `fundingSectionSchema`/`formMetaSectionSchema` as DB-blob schemas
-   (survive as form shapes only), and the funding view-model revisit marker (§3).
+   `formMetaJSON` columns + `fundingSectionSchema`/`formMetaSectionSchema` ⟨amended⟩ as
+   `@deprecated` frozen legacy-parse schemas (importers: Drizzle `$type` + backfill ONLY — they do
+   NOT survive as form shapes; kill trigger W4), the project-envelope/`sectionMetaSchema`/
+   `meta.enabled` form-shape tally (dies W4), and the funding view-model revisit marker (§3).
 6. Memory: `project-jsonb-strategy-research.md` status line; MEMORY.md hooks.
 
 ## 7. Explicitly out of scope
