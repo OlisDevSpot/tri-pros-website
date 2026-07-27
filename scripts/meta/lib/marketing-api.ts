@@ -58,6 +58,12 @@ export interface AdSetCreateInput {
   metaZips: { key: string }[]
 }
 
+/** Delivery settings applied to every managed ad set. Included in adSetFp — editing these triggers update-adset for all managed ad sets on next sync. */
+export const AD_SET_DELIVERY_SETTINGS = {
+  attributionSpec: [{ event_type: 'CLICK_THROUGH', window_days: 7 }],
+  advantageAudience: 1,
+} as const
+
 function adSetBody(input: AdSetCreateInput) {
   return {
     name: input.name,
@@ -70,7 +76,7 @@ function adSetBody(input: AdSetCreateInput) {
     // 7-day click only — no view-through: cleans lead-gen reporting AND changes
     // what delivery optimizes toward (Meta optimizes for conversions countable
     // under this setting). Design: 2026-07-26 spec §1.
-    attribution_spec: [{ event_type: 'CLICK_THROUGH', window_days: 7 }],
+    attribution_spec: AD_SET_DELIVERY_SETTINGS.attributionSpec,
     targeting: {
       geo_locations: { zips: input.metaZips },
       age_min: input.ageMin,
@@ -78,7 +84,7 @@ function adSetBody(input: AdSetCreateInput) {
       // Advantage+ audience ON: geo + age_min act as hard controls, everything
       // else is a starting suggestion Meta may expand past. Deliberate flip from
       // v1 (advantage_audience: 0) — 2026 delivery favors broad + creative-led.
-      targeting_automation: { advantage_audience: 1 },
+      targeting_automation: { advantage_audience: AD_SET_DELIVERY_SETTINGS.advantageAudience },
     },
   }
 }

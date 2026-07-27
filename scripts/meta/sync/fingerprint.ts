@@ -1,6 +1,7 @@
 import type { Buffer } from 'node:buffer'
 import type { AdSetSpec, AdSpec, CampaignSpec } from '../campaign-specs/lib/types.js'
 import { createHash } from 'node:crypto'
+import { AD_SET_DELIVERY_SETTINGS } from '../lib/marketing-api.js'
 import { buildUrlTags } from './ad-link.js'
 
 export function sha256Hex(input: Buffer | string): string {
@@ -22,6 +23,10 @@ export function adSetFp(adSet: AdSetSpec): string {
     ageMax: adSet.ageMax,
     optimizationEvent: adSet.optimizationEvent,
     zips: [...adSet.geoZips].sort(),
+    // Engine-level delivery invariants (attribution window, Advantage+ audience):
+    // hashing them means editing the constant triggers update-adset for every
+    // managed ad set on next sync — no silent drift.
+    deliverySettings: AD_SET_DELIVERY_SETTINGS,
   }))
 }
 
