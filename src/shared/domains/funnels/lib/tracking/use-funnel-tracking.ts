@@ -6,6 +6,7 @@ import type { FunnelSpec } from '@/shared/domains/funnels/types'
 import { useEffect, useRef } from 'react'
 import { STEP_KIND_BROWSER_EVENT } from '@/shared/domains/funnels/lib/tracking/convention-map'
 import { firePixel, mintEventId } from '@/shared/domains/funnels/lib/tracking/fire-pixel'
+import { firesLeadOptimization } from '@/shared/domains/funnels/lib/tracking/lead-qualification'
 
 /**
  * Browser-only convention emitter. Auto-fires the lifecycle events the engine
@@ -29,13 +30,16 @@ export function useFunnelTracking(spec: FunnelSpec, engine: FunnelEngineApi): vo
     }
   }, [hasAnyAnswer, contentCategory, contentName])
 
-  // CompleteRegistration (and any future browser-only kind) — on step kind.
+  // CompleteRegistration (and any future kind-bound conversion event) — on step
+  // kind. Renter rule: renters fire traffic events (PageView/ViewContent),
+  // never conversion events. see ../../DOCS.md and lead-qualification.ts.
   const stepKind = engine.step.kind
+  const answers = engine.answers
   useEffect(() => {
     const event = STEP_KIND_BROWSER_EVENT[stepKind]
-    if (event && !fired.current.has(event)) {
+    if (event && !fired.current.has(event) && firesLeadOptimization(answers)) {
       fired.current.add(event)
       firePixel(event, { eventId: mintEventId(), contentCategory, contentName })
     }
-  }, [stepKind, contentCategory, contentName])
+  }, [stepKind, answers, contentCategory, contentName])
 }
