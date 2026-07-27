@@ -19,7 +19,7 @@ src/trpc/
     entity-registry.ts       module-load registry: EntityName → spec
     dal-to-trpc.ts           DalReturn → TRPCError bridge
     create-http-context.ts   builds HTTPTRPCContext from HTTP request (+ RSC variant)
-    prefetch.ts              prefetchBlocking (Tier 2)/prefetchStreaming (Tier 1) into the per-request query client
+    prefetch.ts              prefetch (fire-and-forget, both tiers) into the per-request query client
     middleware/
       scope-middleware.ts    resolves ctx.scope from spec.visibility
       shareable-middleware.ts token-or-session dual-credential resolution
@@ -284,9 +284,9 @@ Client components use `useTRPC()` + `useQuery(trpc.x.y.queryOptions())` from `@/
 
 ### rsc-prefetch-uses-rsc-context
 
-`src/trpc/server.ts`'s options proxy resolves its context via `createRSCTRPCContext` (`src/trpc/lib/create-http-context.ts`) — the SAME session resolution as the HTTP adapter (headers from `next/headers`), React-`cache()`'d per request. Never hand-roll a ctx for the proxy; a ctx without request headers yields `session: null` and every `agentProcedure` call through `prefetchBlocking`/`prefetchStreaming` throws UNAUTHORIZED. Note `req` is `undefined` in RSC context: shareable-token procedures must never be server-prefetched.
+`src/trpc/server.ts`'s options proxy resolves its context via `createRSCTRPCContext` (`src/trpc/lib/create-http-context.ts`) — the SAME session resolution as the HTTP adapter (headers from `next/headers`), React-`cache()`'d per request. Never hand-roll a ctx for the proxy; a ctx without request headers yields `session: null` and every `agentProcedure` call through `prefetch` throws UNAUTHORIZED. Note `req` is `undefined` in RSC context: shareable-token procedures must never be server-prefetched.
 
-Both prefetch exports share one internal `executePrefetch` that asserts the query key's expected shape in dev (`queryKey[0]` must be an array) before dispatching — a dev-only guard pinning the assumption that tRPC's `keyPrefix` flag is never enabled (enabling it moves a meta object to `queryKey[1]` and would silently break the infinite-query discriminator). See `src/trpc/lib/prefetch.ts`.
+`prefetch` wraps one internal `executePrefetch` that asserts the query key's expected shape in dev (`queryKey[0]` must be an array) before dispatching — a dev-only guard pinning the assumption that tRPC's `keyPrefix` flag is never enabled (enabling it moves a meta object to `queryKey[1]` and would silently break the infinite-query discriminator). See `src/trpc/lib/prefetch.ts`.
 
 **Reference impl**: `src/trpc/lib/create-http-context.ts`, `src/trpc/server.ts`, `src/trpc/lib/prefetch.ts`
 **Enforced by**: convention

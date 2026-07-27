@@ -1,5 +1,15 @@
 # Prefetch + Hydration Fault Audit — Rollout Gate
 
+## Addendum 2026-07-26 — C1 verdict superseded: canonical void prefetch restored
+
+C1's "keep `await` + add `loading.tsx`" verdict and guardrail 3's blocking/streaming export split are SUPERSEDED. The awaited tier + loading.tsx caused the soft-nav regression: Next 15 re-runs dynamic pages every soft nav (`staleTimes.dynamic=0`), so every revisit blocked on the DB behind the spinner despite a warm client cache.
+
+Superseding design (code commit `c6ba5670`; docs truth-pass is the commit carrying this addendum): single fire-and-forget `prefetch()`; no route-level `loading.tsx` on prefetch routes (old page holds until payload commit; cached rows paint instantly; streamed prefetch revalidates in background via pending-query dehydration/promise adoption). Verified canonical against Code with Antonio's tRPC v11 repos (29 void prefetch sites, 0 awaits, 0 loading.tsx) + tRPC server-components docs + TanStack Advanced SSR/Paginated Queries guides.
+
+Known accepted trade-offs: cold hard-loads show the in-chrome table skeleton for the DB-query duration (rows no longer in first HTML paint for useQuery tables); stale (>30s) revisits fire one redundant background client refetch (TanStack #9610 race discards the streamed copy) — cosmetic, server cost unchanged.
+
+Wave-3 conversion recipes: the "each Tier-2 route gets a loading.tsx" step is REVERSED — conversions must NOT add loading.tsx, and any `await prefetchBlocking` in a recipe now reads `prefetch(...)`. Smoke-checklist items that assumed loading.tsx (items 1 and 4) need re-scoping: item 1 becomes "old page holds during soft-nav, no spinner flash, cached rows at commit"; item 4's cold-start freeze note now applies to click→commit with no feedback (mitigation candidate: `useLinkStatus` sidebar indicator, optional).
+
 > Adversarial audit (2026-07-26) of the server-prefetch + hydration system (shipped 2026-07-24,
 > plan: `2026-07-24-trpc-prefetch-hydration.md`) before codebase-wide rollout. Four parallel
 > adversarial reviews: Auth/Identity, Hostile URLs, Navigation/Streaming, Rollout Misuse.
