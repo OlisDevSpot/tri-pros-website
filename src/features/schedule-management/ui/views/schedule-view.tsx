@@ -3,18 +3,18 @@
 import type { ScheduleCalendarEvent, ScheduleMeetingEvent } from '@/features/schedule-management/types'
 import type { CalendarViewType } from '@/shared/components/calendar/types'
 
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQueries } from '@tanstack/react-query'
 import { motion } from 'motion/react'
 import { useCallback, useMemo, useState } from 'react'
 
+import { SCHEDULE_ACTIVITIES_LIST_INPUT, SCHEDULE_MEETINGS_LIST_INPUT } from '@/features/schedule-management/constants/schedule-query-inputs'
 import { useScheduleHighlight } from '@/features/schedule-management/hooks/use-schedule-highlight'
 import { activityToCalendarEvent } from '@/features/schedule-management/lib/to-calendar-event'
 import { ActivityForm } from '@/features/schedule-management/ui/components/activity-form'
 import { ScheduleCalendar } from '@/features/schedule-management/ui/components/schedule-calendar'
 import { ScheduleControlsBar } from '@/features/schedule-management/ui/components/schedule-controls-bar'
 import { EmptyState } from '@/shared/components/states/empty-state'
-import { ErrorState } from '@/shared/components/states/error-state'
-import { LoadingState } from '@/shared/components/states/loading-state'
+import { useHydrationParityCheck } from '@/shared/dal/client/hooks/use-hydration-parity-check'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
@@ -43,19 +43,26 @@ export function ScheduleView() {
 
   const trpc = useTRPC()
   const { open: openModal, setModal } = useModalStore()
-  const meetings = useQuery(trpc.meetingsRouter.reads.list.queryOptions({
-    pagination: { limit: 500, offset: 0 },
-  }))
-  const meetingRows = meetings.data?.rows
-  const activitiesQuery = useQuery(trpc.scheduleRouter.activities.list.queryOptions({
-    pagination: { limit: 500, offset: 0 },
-  }))
-  const activitiesData = activitiesQuery.data?.rows
+  const meetingsOptions = trpc.meetingsRouter.reads.list.queryOptions(SCHEDULE_MEETINGS_LIST_INPUT)
+  const activitiesOptions = trpc.scheduleRouter.activities.list.queryOptions(SCHEDULE_ACTIVITIES_LIST_INPUT)
+
+  // Dev-only: detect server-prefetch key drift for each query (see hydration-drift.ts).
+  useHydrationParityCheck(meetingsOptions.queryKey)
+  useHydrationParityCheck(activitiesOptions.queryKey)
+
+  // useSuspenseQueries (plural), NOT two useSuspenseQuery calls — sequential
+  // suspense hooks in one component waterfall; the plural API fires both in
+  // parallel and matches the page's two parallel prefetches.
+  const [{ data: meetings }, { data: activities }] = useSuspenseQueries({
+    queries: [meetingsOptions, activitiesOptions],
+  })
+  const meetingRows = meetings.rows
+  const activitiesData = activities.rows
   const { updateScheduledFor } = useMeetingActions()
 
   // Map activities to calendar events for the calendar view
   const activityEvents = useMemo(
-    () => (activitiesData ?? []).map(activityToCalendarEvent),
+    () => activitiesData.map(activityToCalendarEvent),
     [activitiesData],
   )
 
@@ -97,29 +104,7 @@ export function ScheduleView() {
     updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } })
   }, [updateScheduledFor])
 
-  const isLoading = meetings.isLoading || activitiesQuery.isLoading
-
-  if (isLoading) {
-    return (
-      <LoadingState
-        title="Loading Schedule"
-        description="This might take a few seconds"
-        className="bg-card"
-      />
-    )
-  }
-
-  if (!meetingRows) {
-    return (
-      <ErrorState
-        title="Error: Could not load schedule"
-        description="Please try again"
-        className="bg-card"
-      />
-    )
-  }
-
-  const hasNoData = meetingRows.length === 0 && (activitiesData ?? []).length === 0
+  const hasNoData = meetingRows.length === 0 && activitiesData.length === 0
 
   if (hasNoData) {
     return (

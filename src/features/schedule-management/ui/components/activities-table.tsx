@@ -4,7 +4,7 @@ import type { ActivityRow } from '@/features/schedule-management/constants/activ
 
 import { useMemo } from 'react'
 
-import { ACTIVITY_FILTER_CONFIG, ACTIVITY_PAGE_SIZE_OPTIONS } from '@/features/schedule-management/constants/activity-filter-config'
+import { ACTIVITIES_TABLE_QUERY_CONFIG } from '@/features/schedule-management/constants/activities-table-query-config'
 import { getActivityColumns } from '@/features/schedule-management/constants/activity-table-columns'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
@@ -22,12 +22,7 @@ export function ActivitiesTable() {
   const pagination = usePaginatedQuery<Record<string, never>, ActivityRow>(
     trpc.scheduleRouter.activities.list.queryOptions,
     {},
-    {
-      paramPrefix: 'act',
-      pageSize: 20,
-      pageSizeOptions: ACTIVITY_PAGE_SIZE_OPTIONS,
-      filters: ACTIVITY_FILTER_CONFIG,
-    },
+    ACTIVITIES_TABLE_QUERY_CONFIG,
   )
 
   return (
