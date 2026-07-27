@@ -7,6 +7,7 @@ import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
+import { notificationService } from '@/shared/services/notification.service'
 import { deriveFbc } from '@/shared/services/providers/meta/lib/derive-fbc'
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
@@ -143,6 +144,11 @@ export const funnelsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not save your details. Please try again.' })
       }
       const customerId = result.data.customer.id
+
+      // New-lead alert (push + email). Fire-and-forget: never blocks the lead submit.
+      void notificationService
+        .notifyNewLead({ customerId, source: `${input.leadSourceSlug} funnel` })
+        .catch(err => console.warn('[funnels.ingestLead] notifyNewLead failed:', err))
 
       // Server CAPI twin of the browser `Lead` pixel — same event_id → Meta
       // dedupes. Cosmetic criticality: a dropped enqueue only weakens optimization.

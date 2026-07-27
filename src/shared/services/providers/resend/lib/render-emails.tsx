@@ -3,6 +3,7 @@ import type { CustomerConfirmationEmailProps } from '@/shared/services/providers
 import { CustomerConfirmationEmail } from '@/shared/services/providers/resend/emails/customer-confirmation-email'
 import { GeneralInquiryEmail } from '@/shared/services/providers/resend/emails/general-inquiry-email'
 import MoveForwardRequestEmail from '@/shared/services/providers/resend/emails/move-forward-request-email'
+import { NewLeadEmail } from '@/shared/services/providers/resend/emails/new-lead-email'
 import { ProjectEmailTemplate } from '@/shared/services/providers/resend/emails/project-inquiry-email'
 import ProposalEmail from '@/shared/services/providers/resend/emails/proposal-email'
 import ProposalViewedEmail from '@/shared/services/providers/resend/emails/proposal-viewed-email'
@@ -61,6 +62,26 @@ export function renderProposalViewedEmail(params: {
       viewedAt={params.viewedAt}
       sourceLabel={params.sourceLabel}
       proposalId={params.proposalId}
+    />
+  )
+}
+
+export function renderNewLeadEmail(params: {
+  name: string
+  phone: string | null
+  city: string | null
+  zip: string | null
+  source: string
+  dashboardUrl: string
+}) {
+  return (
+    <NewLeadEmail
+      name={params.name}
+      phone={params.phone}
+      city={params.city}
+      zip={params.zip}
+      source={params.source}
+      dashboardUrl={params.dashboardUrl}
     />
   )
 }

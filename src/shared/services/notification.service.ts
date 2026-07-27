@@ -1,6 +1,7 @@
 import type { ContractEvent } from '@/shared/constants/enums'
-import { and, eq, ne } from 'drizzle-orm'
+import { and, eq, inArray, ne } from 'drizzle-orm'
 import { ROOTS } from '@/shared/config/roots'
+import { NEW_LEAD_NOTIFICATION_EMAILS } from '@/shared/constants/company/new-lead-notifications'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -55,6 +56,54 @@ function createNotificationService() {
       occurredAt: string
     }) => {
       console.warn(`[notificationService] notifyContractStatusChange:${params.event} (stub)`, params)
+    },
+
+    /**
+     * Generic new-lead alert (push + email) — source-agnostic: funnels today,
+     * webhooks/manual intake tomorrow. Recipients: NEW_LEAD_NOTIFICATION_EMAILS.
+     */
+    notifyNewLead: async (params: { customerId: string, source: string }) => {
+      const [customer] = await db
+        .select({ id: customers.id, name: customers.name, phone: customers.phone, city: customers.city, zip: customers.zip })
+        .from(customers)
+        .where(eq(customers.id, params.customerId))
+        .limit(1)
+      if (!customer) {
+        console.warn(`[notificationService] notifyNewLead: customer ${params.customerId} not found`)
+        return
+      }
+
+      const emails = [...NEW_LEAD_NOTIFICATION_EMAILS]
+      const recipients = await db
+        .select({ userId: user.id })
+        .from(user)
+        .where(inArray(user.email, emails))
+
+      const name = customer.name ?? 'Unknown'
+      const locationLabel = [customer.city, customer.zip].filter(Boolean).join(' ')
+      const body = locationLabel ? `${params.source} · ${locationLabel}` : params.source
+
+      const pushResult = await webPushClient.sendToUsers(
+        recipients.map(r => r.userId),
+        {
+          title: `New Lead | ${name}`,
+          body,
+          navigate: ROOTS.dashboard.customers.root(),
+          urgency: 'high',
+        },
+      )
+      if (pushResult.failed > 0 || pushResult.errors.length > 0) {
+        console.warn(`[notificationService] notifyNewLead push partial failure:`, pushResult)
+      }
+
+      await emailService.sendNewLeadNotificationEmail({
+        to: emails,
+        name,
+        phone: customer.phone,
+        city: customer.city,
+        zip: customer.zip,
+        source: params.source,
+      })
     },
 
     /**

@@ -9,6 +9,7 @@ import {
   renderCustomerConfirmationEmail,
   renderGeneralInquiryEmail,
   renderMoveForwardRequestEmail,
+  renderNewLeadEmail,
   renderProposalEmail,
   renderScheduleConsultationEmail,
 } from '@/shared/services/providers/resend/lib/render-emails'
@@ -174,6 +175,40 @@ function createEmailService() {
 
       if (error) {
         throw new Error(`Failed to send confirmation email: ${JSON.stringify(error)}`)
+      }
+
+      return { data }
+    },
+
+    /**
+     * Internal notification: a new lead was just ingested (funnel today,
+     * webhooks/manual intake tomorrow). Recipients resolved by the caller —
+     * see NEW_LEAD_NOTIFICATION_EMAILS.
+     */
+    sendNewLeadNotificationEmail: async (params: {
+      to: string[]
+      name: string
+      phone: string | null
+      city: string | null
+      zip: string | null
+      source: string
+    }) => {
+      const { data, error } = await resendClient.emails.send({
+        from: RESEND_FROM.default,
+        to: params.to,
+        subject: `New lead: ${params.name} — ${params.source}`,
+        react: renderNewLeadEmail({
+          name: params.name,
+          phone: params.phone,
+          city: params.city,
+          zip: params.zip,
+          source: params.source,
+          dashboardUrl: publicUrl(ROOTS.dashboard.customers.root()),
+        }),
+      })
+
+      if (error) {
+        throw new Error(`Failed to send new-lead notification email: ${JSON.stringify(error)}`)
       }
 
       return { data }
