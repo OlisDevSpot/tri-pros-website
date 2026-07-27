@@ -48,7 +48,7 @@ function createMeasurementService() {
       const source = row.captureJSON?.source
       const funnel = source?.kind === 'funnel' ? source : undefined
       const nowMs = Date.now()
-      await metaSyncService.trackSchedule({
+      const sent = await metaSyncService.trackSchedule({
         eventId: `appt-set-${row.id}`,
         eventTime: Math.floor(Date.parse(args.occurredAtIso) / 1000),
         phone: toE164(row.phone),
@@ -66,9 +66,12 @@ function createMeasurementService() {
         clientIp: lead?.clientIp ?? null,
         clientUserAgent: lead?.clientUserAgent ?? null,
         eventSourceUrl: row.funnelSlug ? ROOTS.subdomainUrl(row.funnelSlug) : null,
+        contentCategory: lead?.trade ?? null,
         contentName: row.funnelSlug,
       })
-      await markMetaScheduleSent(args.customerId, new Date().toISOString())
+      if (sent) {
+        await markMetaScheduleSent(args.customerId, new Date().toISOString())
+      }
     },
   }
 }

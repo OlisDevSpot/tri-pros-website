@@ -21,6 +21,7 @@ export function useDraftLead(spec: FunnelSpec, engine: FunnelEngineApi): void {
   const utm = useFunnelUtm(spec.slug)
   const storageKey = `draft-lead:${spec.slug}`
   const lastTrackedStep = useRef<string | null>(null)
+  const creatingRef = useRef(false)
 
   const hasAnyAnswer = Object.values(engine.answers).some(v => v != null)
   const stepId = engine.step.id
@@ -31,8 +32,17 @@ export function useDraftLead(spec: FunnelSpec, engine: FunnelEngineApi): void {
     if (!hasAnyAnswer || lastTrackedStep.current === stepId) {
       return
     }
-    lastTrackedStep.current = stepId
     const draftId = sessionStorage.getItem(storageKey)
+    if (!draftId && creatingRef.current) {
+      // A create is already in flight for this draft — drop this early
+      // timeline entry rather than risk minting a second draft row.
+      return
+    }
+    lastTrackedStep.current = stepId
+    const isCreate = !draftId
+    if (isCreate) {
+      creatingRef.current = true
+    }
     const { fbp } = readFbCookies()
     track.mutate(
       {
@@ -45,7 +55,19 @@ export function useDraftLead(spec: FunnelSpec, engine: FunnelEngineApi): void {
         utm,
         fbp,
       },
-      { onSuccess: data => sessionStorage.setItem(storageKey, data.draftId) },
+      {
+        onSuccess: (data) => {
+          sessionStorage.setItem(storageKey, data.draftId)
+          if (isCreate) {
+            creatingRef.current = false
+          }
+        },
+        onError: () => {
+          if (isCreate) {
+            creatingRef.current = false
+          }
+        },
+      },
     )
     // Intentionally NOT depending on `track`/`utm` identity — fire per step change.
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -39,6 +39,7 @@ export interface ScheduleEventArgs {
   clientIp?: string | null
   clientUserAgent?: string | null
   eventSourceUrl?: string | null
+  contentCategory?: string | null
   contentName?: string | null
   testEventCode?: string | null
 }
@@ -118,16 +119,28 @@ function createMetaSyncService() {
     /**
      * CRM appointment-set → standard `Schedule`. Server-only (no browser twin —
      * the documented exception to dual-fire; explicit event_id gives retry
-     * idempotence and future-proofs a dual-fire upgrade). Renter gate +
-     * once-per-lead guard live in measurement.service, NOT here — this tier
-     * only translates domain → wire. see providers/meta/DOCS.md
+     * idempotence and future-proofs a dual-fire upgrade). Renter gate lives in
+     * measurement.service, NOT here — this tier only translates domain → wire.
+     * see providers/meta/DOCS.md
+     *
+     * Returns whether the event was actually sent. The caller uses this to
+     * decide whether to stamp the once-ever `metaScheduleSentAt` marker — a
+     * silent no-op here (unconfigured Meta, stale event) must NEVER stamp it,
+     * or that customer's Schedule can never fire again. If `sendConversions`
+     * throws (network/API failure), this still throws — caller retries via
+     * QStash and the deterministic event_id dedupes any resend within 48h.
      */
-    async trackSchedule(args: ScheduleEventArgs): Promise<void> {
+    async trackSchedule(args: ScheduleEventArgs): Promise<boolean> {
       if (!isMetaConfigured()) {
         if (env.NODE_ENV === 'production') {
           console.error('[meta-sync] CAPI Schedule dropped — Meta is not configured in production.')
         }
-        return
+        return false
+      }
+      const ageSeconds = Math.floor(Date.now() / 1000) - args.eventTime
+      if (ageSeconds > 7 * 24 * 60 * 60) {
+        console.warn(`[meta-sync] CAPI Schedule dropped — event_time is >7 days old (${ageSeconds}s), Meta will reject it.`)
+        return false
       }
       const { testEventCode: envTestEventCode } = getMetaConfig()
       const event: MetaServerEvent = {
@@ -138,12 +151,14 @@ function createMetaSyncService() {
         event_source_url: args.eventSourceUrl ?? undefined,
         user_data: buildUserData(args),
         custom_data: {
+          content_category: args.contentCategory ?? undefined,
           content_name: args.contentName ?? undefined,
         },
       }
       await metaClient.sendConversions([event], {
         testEventCode: args.testEventCode ?? envTestEventCode ?? undefined,
       })
+      return true
     },
   }
 }
