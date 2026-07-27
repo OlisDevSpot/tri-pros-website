@@ -51,8 +51,12 @@ Verify with side-by-side stills of the boundary frames before assembling.
 - ⛔ Activation is human-only. Everything lands PAUSED. Never touch ACTIVE.
 - Logo intro is MANDATORY: `logoIntro` prop — lockup springs in centered over
   the cold open, docks into the watermark slot at `dockFrame` (+15f glide),
-  where the persistent watermark (same art file, `watermarkWidth` 150 for the lockup; schema default is 110 for the icon) takes
-  over seamlessly. Use `brand/logo-dark-right.svg` for both.
+  where the persistent watermark (same art file, `watermarkWidth` **440** — the
+  house standard for the lockup and the schema default, Oliver 2026-07-25 after
+  two rendered size tests: 150 "way too small" → 300 → 440 final pick) takes
+  over seamlessly, docked at **equal 64px top/right margins** (symmetric corner
+  placement — hardcoded in `showcase-reel.tsx` + `logo-intro.tsx`, which must
+  stay in lockstep). Use `brand/logo-dark-right.svg` for both.
 
 ## Assets & locations
 
@@ -146,8 +150,13 @@ space (see the walkthrough recipe above — mandatory) → framed crew/during
 card ("OUR CREW, ON SITE") → morph #2 (a DIFFERENT
 project) with a photo-burst hero over its after moment → framed
 proof/checkmarks card → end card. The inverted-reveal hook (after-first)
-is the DEFAULT hook pattern for transform-capable trades. VO = Gia
-(house voice), retimed per reel so key words land on their beats. The script
+is the DEFAULT hook pattern for transform-capable trades. VO voice ROTATES
+per reel from the curated pool in `references/variation-axes.md` (Sterling /
+Mabel / Brooks / Quinn / Tallulah; bench Harper, Gia — Oliver 2026-07-25,
+supersedes Gia-always), retimed per reel so key words land on their beats.
+The LEAD morph also rotates: pick a different portfolio project's transform
+as the opening money shot than the previous reel used (each morph needs its
+own cold-open after-still and its own chain-of-custody walkthrough). The script
 MUST name "Tri Pros Remodeling" (Oliver's branding rule; house placement:
 "And at Tri Pros Remodeling? We do it again..." — the brand line lands over
 the crew card) and carry a repeat-word run for the photo burst.
@@ -317,3 +326,28 @@ renders are disposable.
 3. `pnpm meta sync` (dry-run) → review plan → `pnpm meta sync --apply` →
    verify PAUSED, commit `meta.lock.json` + spec + thumb.
 4. Remind Oliver: tick "AI Info" self-declaration on the ad in Ads Manager.
+
+## still-ads-pipeline
+
+Static ads (single-image, carousel cards, video thumbnails) are rendered as
+layered Remotion still compositions — never raw photos, never text baked into
+generated images.
+
+- Compositions: `video/src/stills/` — `still-hero`, `still-before-after`,
+  `still-carousel`, `still-thumb`; shared brand elements (`LogoChip`,
+  `CtaChip`, `AccentRule`) in `video/src/stills/shared.tsx`. Registered in
+  `video/src/root.tsx`.
+- Props: `video/props/stills/*.json` — one per output card; each declares its
+  `pattern` (named patterns + trigger system:
+  `docs/marketing/stills/still-ad-standard.md`, the ratified contract every
+  card must fully pass before shipping).
+- Render (from `video/`): `pnpm exec remotion still <comp> <out.jpg>
+  --props=props/stills/<card>.json --image-format=jpeg --jpeg-quality=92`
+- Outputs commit to `public/funnels/<slug>/ads/` in the main repo (videos
+  stay gitignored; rendered .jpg cards are committed).
+- Proof imagery is REAL portfolio photography only — before/after pairs must
+  be genuinely the same project (owner-verified). AI generation is allowed
+  only for non-proof layers (e.g. CTA-card textures) and triggers Meta's
+  AI-disclosure toggle on that ad.
+- System ffmpeg may be absent in this environment; Remotion's bundled
+  compositor ffmpeg handles frame extraction fine.
