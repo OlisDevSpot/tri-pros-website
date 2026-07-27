@@ -14,7 +14,12 @@ either side changes, reconcile both in the same change.
 
 ## House constants (never vary)
 
-- **Gia VO** (ElevenLabs voice `530df032-c311-483b-a750-cb3c9e1bcdfd`).
+- **VO voice — ROTATES as of 2026-07-25 (Oliver's call; supersedes the
+  Gia-always constant).** Curated ElevenLabs preset pool: Sterling `dc382508…`,
+  Mabel `fa64fba4…`, Brooks `c2acff45…`, Quinn `80914268…`, Tallulah
+  `f32c8f51…`; bench: Harper `47fb207f…`, Gia `530df032…`. One voice per reel,
+  recorded in the ledger's Text set column. The SCRIPT skeleton below stays
+  constant regardless of voice.
 - **Script skeleton:** selection line → AAA-grade/built-to-be-photographed →
   Showcase price → brand line ("And at Tri Pros Remodeling? We do it again…")
   → again-run → homeowners only → "see if your home qualifies".
