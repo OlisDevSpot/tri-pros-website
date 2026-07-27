@@ -1,7 +1,7 @@
 import type { FunnelUtm } from '@/shared/domains/funnels/types'
-import type z from 'zod'
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import { index, jsonb, pgTable, text } from 'drizzle-orm/pg-core'
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
+import z from 'zod'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 
 /** One step-advance observation on a draft lead. Append-only. */
@@ -10,6 +10,14 @@ export interface LeadStepTimelineEntry {
   stepIndex: number
   enteredAt: string // ISO — written by JS, never SQL NOW()
 }
+
+/** Versioned blob shapes — every persistent domain blob carries `_v` (see
+ * docs/codebase-conventions/jsonb-columns.md#mandatory-schema-version).
+ * `_v` is a reserved key inside answers/utm (step ids and UTM keys never
+ * collide with it); the timeline wraps its array. */
+export interface LeadAnswersBlob { _v: number, [stepId: string]: unknown }
+export interface LeadStepTimelineBlob { _v: number, entries: LeadStepTimelineEntry[] }
+export type LeadUtmBlob = FunnelUtm & { _v: number }
 
 // The lead phase of a funnel visitor, decoupled from customers (design spec
 // 2026-07-26 §3). Created anonymously on FIRST ANSWER (not page load — filters
@@ -25,14 +33,14 @@ export const leads = pgTable('leads', {
   trade: text('trade'),
   // Answers-so-far keyed by step id. Full-value writes only — never a shallow
   // jsonb merge. see docs/codebase-conventions/jsonb-columns.md
-  answersJSON: jsonb('answers_json').$type<Record<string, unknown>>().notNull(),
-  stepTimelineJSON: jsonb('step_timeline_json').$type<LeadStepTimelineEntry[]>().notNull(),
+  answersJSON: jsonb('answers_json').$type<LeadAnswersBlob>().notNull(),
+  stepTimelineJSON: jsonb('step_timeline_json').$type<LeadStepTimelineBlob>().notNull(),
   // Promoted attribution hot-fields (mirrors customer_lead_attribution's
   // promoted-columns pattern); utmJSON is the provider-plural raw capture
   // (source/medium/campaign/content/term + fbclid + gclid).
   fbclid: text('fbclid'),
   fbp: text('fbp'),
-  utmJSON: jsonb('utm_json').$type<FunnelUtm>(),
+  utmJSON: jsonb('utm_json').$type<LeadUtmBlob>(),
   // Captured server-side at draft creation so the delayed CRM Schedule event
   // can carry the session's real IP/UA match keys (not persisted anywhere else).
   clientIp: text('client_ip'),
@@ -49,9 +57,24 @@ export const leads = pgTable('leads', {
 export const selectLeadSchema = createSelectSchema(leads)
 export type Lead = z.infer<typeof selectLeadSchema>
 
-export const insertLeadSchema = createInsertSchema(leads).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
+const leadStepTimelineEntrySchema = z.object({
+  stepId: z.string(),
+  stepIndex: z.number().int(),
+  enteredAt: z.string(),
 })
+
+export const insertLeadSchema = createInsertSchema(leads, {
+  answersJSON: z.object({ _v: z.number().int() }).catchall(z.unknown()),
+  stepTimelineJSON: z.object({ _v: z.number().int(), entries: z.array(leadStepTimelineEntrySchema) }),
+  utmJSON: z.object({
+    _v: z.number().int(),
+    source: z.string().nullable(),
+    medium: z.string().nullable(),
+    campaign: z.string().nullable(),
+    content: z.string().nullable(),
+    term: z.string().nullable(),
+    fbclid: z.string().nullable(),
+    gclid: z.string().nullable(),
+  }).nullable().optional(),
+}).omit({ id: true, createdAt: true, updatedAt: true })
 export type InsertLead = z.infer<typeof insertLeadSchema>
