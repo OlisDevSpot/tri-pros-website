@@ -19,6 +19,9 @@ they declare `pixel.contentCategory` in their FunnelSpec and the engine fires
   funnel layout) fires it once on load.
 - `ViewContent` / `CompleteRegistration` — the convention emitter
   (`lib/tracking/use-funnel-tracking.ts`) fires them by step KIND, not step id.
+  `ViewContent` is a traffic event and fires ungated; `CompleteRegistration` is
+  a conversion event and is renter-gated at the emitter (see renter suppression
+  below).
 - `Lead` — dual-fire: the PII step fires the browser pixel with a fresh
   `event_id` and threads the SAME id into `submitLead`, whose server CAPI twin
   (the `meta-capi-event` QStash job) dedupes against it. The CAPI twin's
@@ -26,10 +29,13 @@ they declare `pixel.contentCategory` in their FunnelSpec and the engine fires
   also sends Advanced Matching (name/phone/city/state/zip) to Meta in plaintext,
   which `fbq` normalizes + hashes client-side before transmission — so PII does
   leave the browser (to Meta's own script), it is not "no PII".
-  - **Renter suppression:** a lead answering `ownership` = `rent` is still
-    ingested into the CRM but fires NO `Lead` (browser or CAPI) — renters are a
-    junk optimization signal for homeowner-only showcase programs. Funnels
-    without an `ownership` step always fire. see `lib/tracking/lead-qualification.ts`.
+  - **Renter suppression:** renters fire traffic events (`PageView`,
+    `ViewContent`), never conversion events (`Lead`, `CompleteRegistration`, and
+    the server-side `Schedule`). A lead answering `ownership` = `rent` is still
+    ingested into the CRM but fires NO conversion event (browser or CAPI) —
+    renters are a junk optimization signal for homeowner-only showcase programs.
+    Funnels without an `ownership` step always fire. see
+    `lib/tracking/lead-qualification.ts`.
 - `Schedule` — dormant until a `datetime` step exists (the `trackFunnelEvent`
   router seam is the future entry point).
 
