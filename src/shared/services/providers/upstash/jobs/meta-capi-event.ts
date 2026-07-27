@@ -1,4 +1,4 @@
-import type { FunnelLeadArgs } from '@/shared/services/measurement.service'
+import type { AppointmentSetArgs, FunnelLeadArgs } from '@/shared/services/measurement.service'
 import { measurementService } from '@/shared/services/measurement.service'
 
 import { createJob } from '../lib/create-job'
@@ -9,16 +9,21 @@ import { createJob } from '../lib/create-job'
  * use `void metaCapiEventJob.dispatch(...)`. QStash still gives durable enqueue
  * + retries; Meta dedupes on event_id so a retry double-send is harmless.
  *
- * Phase 1 handles only 'Lead'. Phase 2 extends the discriminated payload with
- * Contact / MeetingComplete / ProposalSent / Purchase variants.
+ * Phase 1 handles 'Lead'; Schedule shipped 2026-07 (appointment-set).
+ * Contact / MeetingComplete / ProposalSent / Purchase remain phase-2.
  */
-export interface MetaCapiEventPayload { event: 'Lead', args: FunnelLeadArgs }
+export type MetaCapiEventPayload
+  = | { event: 'Lead', args: FunnelLeadArgs }
+    | { event: 'Schedule', args: AppointmentSetArgs }
 
 export const metaCapiEventJob = createJob(
   'meta-capi-event',
   async (payload: MetaCapiEventPayload) => {
     if (payload.event === 'Lead') {
       await measurementService.trackFunnelLead(payload.args)
+    }
+    else if (payload.event === 'Schedule') {
+      await measurementService.trackAppointmentSet(payload.args)
     }
   },
 )

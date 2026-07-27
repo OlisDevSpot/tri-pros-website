@@ -25,7 +25,30 @@ export interface LeadEventArgs {
   testEventCode?: string | null
 }
 
-function buildUserData(args: LeadEventArgs): MetaUserData {
+export interface ScheduleEventArgs {
+  eventId: string
+  eventTime: number
+  phone?: string | null
+  email?: string | null
+  city?: string | null
+  state?: string | null
+  zip?: string | null
+  externalId: string
+  fbp?: string | null
+  fbc?: string | null
+  clientIp?: string | null
+  clientUserAgent?: string | null
+  eventSourceUrl?: string | null
+  contentName?: string | null
+  testEventCode?: string | null
+}
+
+function buildUserData(
+  args: Pick<
+    LeadEventArgs,
+    'phone' | 'email' | 'city' | 'state' | 'zip' | 'externalId' | 'fbp' | 'fbc' | 'clientIp' | 'clientUserAgent'
+  > & { firstName?: string | null, lastName?: string | null },
+): MetaUserData {
   const hashed = metaClient.hashUserData({
     phone: args.phone,
     email: args.email,
@@ -85,6 +108,36 @@ function createMetaSyncService() {
         user_data: buildUserData(args),
         custom_data: {
           content_category: args.contentCategory ?? undefined,
+          content_name: args.contentName ?? undefined,
+        },
+      }
+      await metaClient.sendConversions([event], {
+        testEventCode: args.testEventCode ?? envTestEventCode ?? undefined,
+      })
+    },
+    /**
+     * CRM appointment-set → standard `Schedule`. Server-only (no browser twin —
+     * the documented exception to dual-fire; explicit event_id gives retry
+     * idempotence and future-proofs a dual-fire upgrade). Renter gate +
+     * once-per-lead guard live in measurement.service, NOT here — this tier
+     * only translates domain → wire. see providers/meta/DOCS.md
+     */
+    async trackSchedule(args: ScheduleEventArgs): Promise<void> {
+      if (!isMetaConfigured()) {
+        if (env.NODE_ENV === 'production') {
+          console.error('[meta-sync] CAPI Schedule dropped — Meta is not configured in production.')
+        }
+        return
+      }
+      const { testEventCode: envTestEventCode } = getMetaConfig()
+      const event: MetaServerEvent = {
+        event_name: META_EVENT.Schedule,
+        event_time: args.eventTime,
+        event_id: args.eventId,
+        action_source: META_ACTION_SOURCE.website,
+        event_source_url: args.eventSourceUrl ?? undefined,
+        user_data: buildUserData(args),
+        custom_data: {
           content_name: args.contentName ?? undefined,
         },
       }

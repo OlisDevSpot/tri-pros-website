@@ -17,6 +17,7 @@ import { meetingVisibility } from '@/shared/entities/meetings/lib/visibility'
 import { getSystemOwnerId } from '@/shared/entities/users/dal/server/system'
 import { deleteMeetingEventJob } from '@/shared/services/providers/upstash/jobs/delete-meeting-event'
 import { graduateFromCampaignJob } from '@/shared/services/providers/upstash/jobs/graduate-from-campaign'
+import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
 import { syncMeetingToGcalJob } from '@/shared/services/providers/upstash/jobs/sync-meeting-to-gcal'
 import { ably } from '@/shared/services/providers/upstash/realtime'
@@ -83,6 +84,15 @@ export const meetingServerSpec = {
         // enrolled. dispatchOrThrow: stopping a live dial is not cosmetic.
         if (row.customerId) {
           await graduateFromCampaignJob.dispatchOrThrow({ customerId: row.customerId })
+
+          // Meta measurement: appointment-set = meeting created (design spec
+          // 2026-07-26 §2). Cosmetic criticality → best-effort dispatch, like
+          // the funnel Lead twin. All guards (funnel-origin, renter gate,
+          // once-per-lead) live in measurement.trackAppointmentSet.
+          void metaCapiEventJob.dispatch({
+            event: 'Schedule',
+            args: { customerId: row.customerId, occurredAtIso: new Date().toISOString() },
+          })
         }
       },
     },
