@@ -37,6 +37,8 @@ All prefetch calls happen in the page function body, BEFORE returning JSX — a 
 
 In dev, a config/extra drift between the server prefetch and the client's first-mount input surfaces as a `[prefetch drift]` console error (see `src/shared/lib/hydration-drift.ts`) instead of silently wasting the prefetch.
 
+**When to prefetch**: Prefetch a query iff ALL three hold: (1) it renders as **primary content of a route-mounted view** (not a sheet/modal/dropdown/interaction-gated panel); (2) its input derives entirely from **searchParams/route params + shared constants** (no client state, no un-quantized `Date.now()`); (3) the screen benefits from cold-load speed or SSR (interactive views keep their client hooks — RSC seeds the cache, React Query stays the client source of truth). Everything else uses plain client fetching — TanStack's Advanced SSR guide explicitly sanctions mixing ("both patterns are fine to mix"). Do NOT lift a query into suspense or invent a URL param just to make it prefetchable.
+
 **Why**: pages already block on `protectDashboardPage()`'s session read; prefetching piggybacks on a round-trip the server is already making, removing the client's mount→fetch waterfall.
 **Reference impl**: `src/app/(frontend)/dashboard/customers/page.tsx` (Tier 2), `src/app/(frontend)/dashboard/campaigns/page.tsx` (Tier 1 + tab-conditional prefetch)
 **Enforced by**: `server-only` package (bundle boundary) + convention

@@ -57,10 +57,11 @@ export default antfu({
     ],
   },
 }).append({
-  // Seven pre-existing tables still inline paginated-table config today
-  // (2026-07-26 prefetch-hydration-fault audit, guardrail 2). Severity is
-  // 'warn' so the rule doesn't block work-in-progress; flip to 'error' once
-  // the Wave 3 conversions land (audit doc's "Patch waves" section).
+  // Seven pre-existing tables inlined paginated-table config as of the
+  // 2026-07-26 prefetch-hydration-fault audit (guardrail 2). Severity was
+  // 'warn' while the Wave 3 conversions landed; now 'error' — all seven
+  // callers were extracted to shared configs (Task 8, audit doc's "Patch
+  // waves" section) and the rule reports ZERO diagnostics.
   //
   // Aliased to a custom rule id (rather than a second `no-restricted-syntax`
   // block) because ESLint flat config resolves rules per-name across the
@@ -79,7 +80,7 @@ export default antfu({
   },
   rules: {
     'project/no-inline-table-config': [
-      'warn',
+      'error',
       {
         selector: 'CallExpression[callee.name=/^(usePaginatedQuery|loadPaginatedQueryInput)$/] > ObjectExpression.arguments > Property[key.name=/^(paramPrefix|pageSize|pageSizeOptions|defaultSort|filters)$/]',
         message: 'Key-relevant table config must come from a shared PaginatedQueryConfig constant (query-toolkit.md#shared-table-config) — inline values silently break server-prefetch hydration cache-hits.',
