@@ -13,7 +13,6 @@ import { useFunnelEngine } from '@/shared/domains/funnels/hooks/use-funnel-engin
 import { useFunnelUtm } from '@/shared/domains/funnels/hooks/use-funnel-utm'
 import { useProgressiveEnrichment } from '@/shared/domains/funnels/hooks/use-progressive-enrichment'
 import { getFunnel } from '@/shared/domains/funnels/lib/registry'
-import { useDraftLead } from '@/shared/domains/funnels/lib/tracking/use-draft-lead'
 import { useFunnelTracking } from '@/shared/domains/funnels/lib/tracking/use-funnel-tracking'
 import { FunnelFooter } from '@/shared/domains/funnels/ui/footer/funnel-footer'
 import { FunnelHeroEntry } from '@/shared/domains/funnels/ui/funnel-hero-entry'
@@ -36,7 +35,6 @@ export function FunnelEngine({ slug, variant }: { slug: FunnelSlug, variant?: st
   const engine = useFunnelEngine(spec)
   const utm = useFunnelUtm(slug)
   useFunnelTracking(spec, engine)
-  useDraftLead(spec, engine)
   useProgressiveEnrichment(spec, engine.answers)
   const reduceMotion = useReducedMotion()
 

@@ -8,7 +8,6 @@ import { optionalPhoneSchema } from '@/shared/lib/phone'
 import { createdAt, id, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
 import { leadSourcesTable } from './lead-sources'
-import { leads } from './leads'
 
 export const customers = pgTable('customers', {
   id,
@@ -60,15 +59,9 @@ export const customers = pgTable('customers', {
   // Lead-funnel stage for customers in the `leads` derived pipeline (no meetings yet).
   // see src/shared/entities/customers/DOCS.md#pipeline-stage-only-for-leads
   pipelineStage: text('pipeline_stage'),
-  // Lead-phase decoupling (design spec 2026-07-26 §3). Points at the funnel
-  // draft-lead this customer converted from; end-state direction (customer →
-  // lead) so Track 2 never flips it. Null for non-funnel customers and all
-  // customers predating the leads table.
-  leadId: uuid('lead_id').references(() => leads.id, { onDelete: 'set null' }),
-  // Once-ever marker for the CRM Schedule CAPI event (appointment-set). Lives
-  // on customers in Track 1 because pre-existing funnel customers have no
-  // leads row until Track 2's backfill — tightening tally: moves to leads in
-  // Track 2. see design spec §2.
+  // Once-ever marker for the CRM Schedule CAPI event (appointment-set) — Meta
+  // dedup is only 48h, so this is the durable guard against a re-fire.
+  // see src/shared/services/measurement.service.ts (trackAppointmentSet).
   metaScheduleSentAt: timestamp('meta_schedule_sent_at', { mode: 'string', withTimezone: true }),
   // DNC (Do-Not-Call) — shared canonical registry decorating the customer row.
   // Both voip-in-house (Twilio) and voip-campaigns (CloudTalk) INSERT into it
