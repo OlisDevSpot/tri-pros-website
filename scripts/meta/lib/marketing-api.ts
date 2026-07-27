@@ -79,11 +79,16 @@ function adSetBody(input: AdSetCreateInput) {
     attribution_spec: AD_SET_DELIVERY_SETTINGS.attributionSpec,
     targeting: {
       geo_locations: { zips: input.metaZips },
-      age_min: input.ageMin,
-      age_max: input.ageMax, // 65 = "65+"; under Advantage+ audience the max is a suggestion anyway
-      // Advantage+ audience ON: geo + age_min act as hard controls, everything
-      // else is a starting suggestion Meta may expand past. Deliberate flip from
-      // v1 (advantage_audience: 0) — 2026 delivery favors broad + creative-led.
+      // A+ audience allows a hard age_min only up to 25 (Meta rejects higher
+      // hard minimums with "add a higher minimum age as a suggestion instead").
+      // 35+ targeting therefore rides as an age_range SUGGESTION — Meta may
+      // deliver outside it; lead quality is enforced by the funnel's
+      // server-side gates, not by ad-set age controls.
+      age_range: [input.ageMin, input.ageMax], // 65 = "65+"; suggestion under Advantage+ audience
+      // Advantage+ audience ON: geo is the hard control, everything else
+      // (including the age suggestion) is a starting point Meta may expand
+      // past. Deliberate flip from v1 (advantage_audience: 0) — 2026 delivery
+      // favors broad + creative-led.
       targeting_automation: { advantage_audience: AD_SET_DELIVERY_SETTINGS.advantageAudience },
     },
   }

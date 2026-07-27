@@ -33,8 +33,9 @@ Structure doctrine (research-validated 2026-07-26, spec:
   hero static), copy variation INSIDE each ad via multiple text options (≤5
   primary texts). Near-duplicate ads collapse under Meta's ranking — vary
   concepts across ads, text within them.
-- **Settings:** Advantage+ audience ON (geo + age_min are the hard controls),
-  attribution 7-day click only, highest-volume bidding, 24/7.
+- **Settings:** Advantage+ audience ON (geo is the hard control; age 35–65+
+  rides as an Advantage+ suggestion — hard age_min caps at 25 under A+
+  audience), attribution 7-day click only, highest-volume bidding, 24/7.
 - **Learning reality:** at ~$58/day/ad set, "Learning Limited" is permanent and
   fine. Judge on 2–4-week windows. Budget changes ≤20% per move; never duplicate
   ad sets to test.
