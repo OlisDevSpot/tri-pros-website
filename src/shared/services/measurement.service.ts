@@ -4,7 +4,6 @@ import type { LeadEventArgs } from '@/shared/services/meta-sync.service'
 import { ROOTS } from '@/shared/config/roots'
 import { firesLeadOptimization } from '@/shared/domains/funnels/lib/tracking/lead-qualification'
 import { getCustomerForMeasurement, markMetaScheduleSent } from '@/shared/entities/customers/dal/server/measurement'
-import { getLeadById } from '@/shared/entities/leads/dal/server/queries'
 import { toE164 } from '@/shared/lib/phone'
 import { metaSyncService } from '@/shared/services/meta-sync.service'
 import { deriveFbc } from '@/shared/services/providers/meta/lib/derive-fbc'
@@ -41,8 +40,7 @@ function createMeasurementService() {
       if (!row || row.attributionKind !== 'funnel' || row.metaScheduleSentAt) {
         return
       }
-      const lead = row.leadId ? await getLeadById(row.leadId) : null
-      if (lead && !firesLeadOptimization(lead.answersJSON as unknown as FunnelAnswers)) {
+      if (!firesLeadOptimization({ ownership: row.ownership ?? undefined } as unknown as FunnelAnswers)) {
         return // renter — traffic events only, never conversion events
       }
       const source = row.captureJSON?.source
@@ -57,16 +55,16 @@ function createMeasurementService() {
         state: row.state,
         zip: row.zip,
         externalId: row.id,
-        fbp: funnel?.meta?.fbp ?? lead?.fbp ?? null,
+        fbp: funnel?.meta?.fbp ?? null,
         fbc: deriveFbc({
           fbc: funnel?.meta?.fbc,
-          fbclid: funnel?.utm.fbclid ?? lead?.fbclid ?? undefined,
+          fbclid: funnel?.utm.fbclid ?? undefined,
           nowMs,
         }),
-        clientIp: lead?.clientIp ?? null,
-        clientUserAgent: lead?.clientUserAgent ?? null,
+        clientIp: row.clientIp ?? null,
+        clientUserAgent: row.clientUserAgent ?? null,
         eventSourceUrl: row.funnelSlug ? ROOTS.subdomainUrl(row.funnelSlug) : null,
-        contentCategory: lead?.trade ?? null,
+        contentCategory: row.contentCategory ?? null,
         contentName: row.funnelSlug,
       })
       if (sent) {

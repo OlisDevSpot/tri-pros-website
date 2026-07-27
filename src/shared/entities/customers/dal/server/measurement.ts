@@ -17,11 +17,14 @@ export async function getCustomerForMeasurement(customerId: string) {
       city: customers.city,
       state: customers.state,
       zip: customers.zip,
-      leadId: customers.leadId,
       metaScheduleSentAt: customers.metaScheduleSentAt,
       attributionKind: customerLeadAttribution.kind,
       funnelSlug: customerLeadAttribution.funnelSlug,
       captureJSON: customerLeadAttribution.captureJSON,
+      ownership: customerLeadAttribution.ownership,
+      contentCategory: customerLeadAttribution.contentCategory,
+      clientIp: customerLeadAttribution.clientIp,
+      clientUserAgent: customerLeadAttribution.clientUserAgent,
     })
     .from(customers)
     .leftJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))

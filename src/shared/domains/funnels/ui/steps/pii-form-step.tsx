@@ -92,7 +92,9 @@ export function PiiFormStepView({ content, answers, ctx, setValue, advance }: St
       leadSourceSlug: lead.leadSourceSlug,
       leadMetaJSON: lead.leadMetaJSON,
       eventId,
-      draftId: sessionStorage.getItem(`draft-lead:${ctx.slug}`) ?? undefined,
+      // The hero-entry ownership answer ('own' | 'rent'), when this funnel has
+      // one — captured server-side for the delayed CRM Schedule renter gate.
+      ownership: typeof answers.ownership === 'string' ? answers.ownership : undefined,
       // Public browser URL (subdomain + attribution query) — the server threads
       // this to the CAPI twin as event_source_url for match quality + dedup.
       eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,

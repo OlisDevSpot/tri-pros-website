@@ -24,6 +24,16 @@ export const customerLeadAttribution = pgTable('customer_lead_attribution', {
   utmCampaign: text('utm_campaign'),
   utmContent: text('utm_content'),
   utmTerm: text('utm_term'),
+  // Renter-gate + delayed-CAPI match keys, captured at submit so the CRM
+  // `Schedule` event (fired at meeting-creation, long after the web session)
+  // can renter-gate and match without a live browser. `ownership` is the
+  // hero-entry funnel answer ('own' | 'rent'); `contentCategory` is the funnel's
+  // pixel trade (e.g. 'kitchen'); IP/UA are the request identifiers at submit.
+  // see src/shared/services/measurement.service.ts (trackAppointmentSet).
+  ownership: text('ownership'),
+  contentCategory: text('content_category'),
+  clientIp: text('client_ip'),
+  clientUserAgent: text('client_user_agent'),
   captureJSON: jsonb('capture_json').$type<LeadMeta>(),
   createdAt,
   updatedAt,

@@ -6,10 +6,9 @@ import type { IntakeCore } from '@/shared/services/providers/gohighlevel/lib/nor
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { buildFunnelLeadNote } from '@/shared/domains/funnels/lib/build-funnel-lead-note'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { addCustomerNote, linkCustomerToLead, upsertFunnelEnrichment, upsertLeadAttribution } from '@/shared/entities/customers/dal/server/mutations'
+import { addCustomerNote, upsertFunnelEnrichment, upsertLeadAttribution } from '@/shared/entities/customers/dal/server/mutations'
 import { getCustomerAttribution } from '@/shared/entities/customers/dal/server/queries'
 import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/queries'
-import { setMetaLeadEventId } from '@/shared/entities/leads/dal/server/mutations'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 import { enrollLeadJob } from '@/shared/services/providers/upstash/jobs/enroll-lead'
 
@@ -32,6 +31,15 @@ interface IngestLeadInput {
   // When present, create a Meeting owned by `ownerId` using
   // leadMeta.scheduledFor. Caller resolves the owner (session / fallback).
   meeting?: { ownerId: string } | null
+  // Renter-gate + delayed-CAPI match keys, captured at submit time (see
+  // customer-lead-attribution.ts) — merged onto the attribution row alongside
+  // leadMeta.
+  attributionExtra?: {
+    ownership?: string | null
+    contentCategory?: string | null
+    clientIp?: string | null
+    clientUserAgent?: string | null
+  }
 }
 
 interface EnrichFunnelLeadInput {
@@ -83,7 +91,7 @@ function createCustomerIntakeService() {
       // Customer is already committed; a failed attribution write surfaces as an
       // error the caller can retry (same precedent as meeting_create_failed).
       if (input.leadMeta) {
-        const attr = await upsertLeadAttribution({ customerId: customer.id, leadMeta: input.leadMeta })
+        const attr = await upsertLeadAttribution({ customerId: customer.id, leadMeta: input.leadMeta, extra: input.attributionExtra })
         if (!attr.success) {
           return dalError({ type: 'precondition-failed', reason: 'attribution_write_failed' })
         }
@@ -198,26 +206,6 @@ function createCustomerIntakeService() {
         return updated
       }
       return dalSuccess({ ok: true })
-    },
-
-    /**
-     * Best-effort post-ingest link: draft lead ↔ customer + Meta Lead event_id
-     * stamp. Failure must never fail the lead submit — analytics-grade linkage.
-     */
-    async linkDraftLead(_ctx: ScopedContext, args: {
-      customerId: string
-      draftLeadId: string
-      metaLeadEventId?: string | null
-    }): Promise<void> {
-      try {
-        await linkCustomerToLead(args.customerId, args.draftLeadId)
-        if (args.metaLeadEventId) {
-          await setMetaLeadEventId(args.draftLeadId, args.metaLeadEventId)
-        }
-      }
-      catch (error) {
-        console.warn('[customer-intake.linkDraftLead] failed:', error)
-      }
     },
   }
 }

@@ -81,13 +81,20 @@ export async function upsertCustomerProfile(
  * re-ingest of an existing lead refreshes the snapshot idempotently.
  */
 export async function upsertLeadAttribution(
-  input: { customerId: string, leadMeta: LeadMeta },
+  input: { customerId: string, leadMeta: LeadMeta, extra?: { ownership?: string | null, contentCategory?: string | null, clientIp?: string | null, clientUserAgent?: string | null } },
 ): Promise<DalReturn<{ ok: true }>> {
   return dalDbOperation(async () => {
     const { attribution, enrichment } = splitLeadMeta(input.leadMeta)
     // Parse at the write boundary (mirrors upsertCustomerProfile) — the
     // capture snapshot's internal shape is pinned by leadMetaSchema.
-    const validated = leadAttributionCaptureSchema.parse(attribution)
+    const attributionWithExtra = {
+      ...attribution,
+      ownership: input.extra?.ownership ?? null,
+      contentCategory: input.extra?.contentCategory ?? null,
+      clientIp: input.extra?.clientIp ?? null,
+      clientUserAgent: input.extra?.clientUserAgent ?? null,
+    }
+    const validated = leadAttributionCaptureSchema.parse(attributionWithExtra)
     dalVerifySuccess(await upsertOneToOne(
       customerLeadAttribution,
       customerLeadAttribution.customerId,
@@ -109,11 +116,6 @@ export async function upsertLeadAttribution(
     }
     return { ok: true as const }
   })
-}
-
-/** Track-1 decoupling seam: point the customer at its originating draft lead. */
-export async function linkCustomerToLead(customerId: string, leadId: string): Promise<void> {
-  await db.update(customers).set({ leadId }).where(eq(customers.id, customerId))
 }
 
 /**
