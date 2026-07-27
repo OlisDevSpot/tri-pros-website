@@ -36,8 +36,10 @@ they declare `pixel.contentCategory` in their FunnelSpec and the engine fires
     renters are a junk optimization signal for homeowner-only showcase programs.
     Funnels without an `ownership` step always fire. see
     `lib/tracking/lead-qualification.ts`.
-- `Schedule` — dormant until a `datetime` step exists (the `trackFunnelEvent`
-  router seam is the future entry point).
+- `Schedule` — dormant until a `datetime` step exists. The dormant
+  `trackFunnelEvent` wiring seam was retired 2026-07-26 (Track-1 draft-lead
+  work, no funnel ever emitted it); the future entry point is a fresh
+  router procedure alongside the first datetime-bearing funnel.
 
 Design: `docs/superpowers/specs/2026-06-23-meta-pixel-capi-measurement-design.md`.
 Provider: `src/shared/services/providers/meta/`.

@@ -7,6 +7,7 @@ import env from '@/shared/config/server-env'
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { leadMetaSchema } from '@/shared/entities/customers/schemas'
 import { customerIntakeService } from '@/shared/services/customer-intake.service'
+import { leadsService } from '@/shared/services/leads.service'
 import { notificationService } from '@/shared/services/notification.service'
 import { deriveFbc } from '@/shared/services/providers/meta/lib/derive-fbc'
 import { validatePhoneLine } from '@/shared/services/providers/twilio/lib/validate-phone-line'
@@ -52,10 +53,11 @@ const addressRatelimit = new Ratelimit({
   prefix: 'funnel:address',
 })
 
-const trackRatelimit = new Ratelimit({
+const draftRatelimit = new Ratelimit({
+  // A session can advance ~15 steps; 60/h leaves comfortable headroom.
   redis,
-  limiter: Ratelimit.slidingWindow(20, '1 h'),
-  prefix: 'funnel:track',
+  limiter: Ratelimit.slidingWindow(60, '1 h'),
+  prefix: 'funnel:draft',
 })
 
 const e164 = z.string().regex(/^\+1\d{10}$/, 'Expected a US E.164 number')
@@ -90,6 +92,9 @@ export const funnelsRouter = createTRPCRouter({
       leadSourceSlug: z.string().min(1).max(100),
       leadMetaJSON: leadMetaSchema,
       eventId: z.string().optional(),
+      // Track-1 decoupling: the pre-PII draft-lead id, threaded from
+      // sessionStorage by the PII step so this submit can link it post-hoc.
+      draftId: z.string().uuid().optional(),
       // The PUBLIC browser URL (subdomain + query) at submit time — NOT the
       // internal /funnels/... rewrite path. Improves CAPI match quality + dedup.
       // `.catch(undefined)` is load-bearing: this is a cosmetic CAPI field, so a
@@ -144,6 +149,16 @@ export const funnelsRouter = createTRPCRouter({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not save your details. Please try again.' })
       }
       const customerId = result.data.customer.id
+
+      // Track-1 decoupling: link the pre-PII draft to the new customer and
+      // stamp the Meta Lead event_id (the Meta↔first-party join key).
+      if (input.draftId) {
+        await customerIntakeService.linkDraftLead(SYSTEM_CONTEXT, {
+          customerId,
+          draftLeadId: input.draftId,
+          metaLeadEventId: input.eventId ?? null,
+        })
+      }
 
       // New-lead alert (push + email). Fire-and-forget: never blocks the lead submit.
       void notificationService
@@ -244,26 +259,47 @@ export const funnelsRouter = createTRPCRouter({
       return { ok: true as const }
     }),
 
-  // Generic post-lead server-twin seam for dual-fire browser events that fire
-  // AFTER the lead exists (e.g. Schedule). Guarded by the leadId UUID; the
-  // browser passes the same eventId it used for its pixel so Meta dedupes.
-  // Dormant in phase 1 — no funnel emits 'Schedule' yet (no datetime step).
-  trackFunnelEvent: baseProcedure
+  // Anonymous draft-lead capture (design spec 2026-07-26 §3). Fire-and-forget
+  // from the funnel client on each step advance; creates the draft on first
+  // answer. NO PII accepted here — PII enters only via submitLead. The pii
+  // step's answers key is defensively stripped server-side.
+  trackDraftStep: baseProcedure
     .input(z.object({
-      leadId: z.string().uuid(),
-      event: z.enum(['Schedule']),
-      eventId: z.string(),
-      pixel: z.object({ contentCategory: z.string(), contentName: z.string() }).optional(),
+      draftId: z.string().uuid().nullable(),
+      funnelSlug: z.string().min(1).max(100),
+      trade: z.string().max(100).nullable(),
+      stepId: z.string().min(1).max(100),
+      stepIndex: z.number().int().min(0).max(100),
+      answers: z.record(z.string(), z.unknown()),
+      utm: z.object({
+        source: z.string().nullable(),
+        medium: z.string().nullable(),
+        campaign: z.string().nullable(),
+        content: z.string().nullable(),
+        term: z.string().nullable(),
+        fbclid: z.string().nullable(),
+        gclid: z.string().nullable(),
+      }).nullable(),
+      fbp: z.string().max(200).nullable(),
     }))
-    .mutation(async ({ ctx }) => {
+    .mutation(async ({ input, ctx }) => {
       const ip = clientIp((ctx as { req?: Request }).req)
-      const { success } = await trackRatelimit.limit(ip)
+      const { success } = await draftRatelimit.limit(ip)
       if (!success) {
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many submissions. Please try again later.' })
       }
-      // Phase 1: the meta-capi-event job only handles 'Lead'. This endpoint is
-      // the wiring seam; the 'Schedule' job variant + measurement.service method
-      // land alongside the first datetime-bearing funnel. Acknowledge for now.
-      return { ok: true as const }
+      const { pii: _pii, ...answers } = input.answers
+      const ua = (ctx as { req?: Request }).req?.headers.get('user-agent') ?? null
+      return leadsService.captureDraftStep({
+        draftId: input.draftId,
+        funnelSlug: input.funnelSlug,
+        trade: input.trade,
+        answers,
+        entry: { stepId: input.stepId, stepIndex: input.stepIndex, enteredAt: new Date().toISOString() },
+        utm: input.utm,
+        fbp: input.fbp,
+        clientIp: ip === 'anonymous' ? null : ip,
+        clientUserAgent: ua,
+      })
     }),
 })
