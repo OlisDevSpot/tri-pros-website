@@ -18,6 +18,29 @@ Server-only Graph API client for the Conversions API (CAPI). The browser Pixel
   normalize identically or the hashes won't match across browser/server.
 - **No domain types** cross this client's signatures — translation lives in
   `meta-sync.service.ts`.
+- **`Schedule` = CRM appointment-set, server-only.** Fired from the meetings
+  `create.after` hook via the `meta-capi-event` QStash job
+  (`metaCapiEventJob.dispatch({ event: 'Schedule', ... })`, best-effort —
+  `void`, not `dispatchOrThrow`) when a meeting is created for a
+  funnel-originated customer (`customer_lead_attribution.kind === 'funnel'`).
+  This is the documented exception to dual-fire: there is no browser session
+  at appointment-set time, so it only ever fires server-side.
+  `action_source` is still `'website'`, not `'system_generated'` — that's
+  deliberate, not a copy-paste leftover from `trackLead`:
+  `'system_generated'` means automatic conversions (e.g. subscription
+  renewals) and would sever the web-journey join. It carries an explicit
+  `event_id` (`appt-set-<customerId>`) — QStash-retry idempotence within
+  Meta's 48h dedup window + future dual-fire proofing — and a once-ever guard
+  (`customers.metaScheduleSentAt`, plain read-then-write, no lock) because
+  48h is not "once per lead". Renter gate applies via `firesLeadOptimization`
+  on the draft lead's `answersJSON` (renters fire traffic events, never
+  conversion events) — but only when the customer has an attached `leadId`;
+  a funnel-originated customer with no lead row is not gated and fires by
+  default. All three guards (funnel-origin, once-ever, renter) fail silently
+  — a bare `return`, no log — so today there's no audit trail for an
+  unexpected non-fire. `event_time` = meeting-creation moment
+  (`occurredAtIso`), never backdated; events older than 7 days must never be
+  sent (CAPI rejects the batch).
 
 ## Entry point
 `metaClient.sendConversions(events, { testEventCode? })` · `metaClient.hashUserData(...)` ·

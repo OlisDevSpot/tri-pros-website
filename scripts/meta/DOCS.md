@@ -121,14 +121,38 @@ The ladder now:
 
 1. **Quality lives in the Lead event.** Every server-side disqualifier (renter
    gate today; future: bad phone, out-of-area) sharpens what Meta trains on.
-2. **`Schedule` via CAPI is for measurement, not optimization** — cost-per-
-   Schedule (custom conversion in Ads Manager) is the creative/ad-set
-   scoreboard, replacing CPL.
+2. **`Schedule` via CAPI is for measurement, not optimization.** Shipped
+   2026-07-27 (funnel event-model Track 1): fired server-only from the
+   meetings `create.after` hook, renter-gated, once per lead — full invariant
+   in `src/shared/services/providers/meta/DOCS.md`. Cost-per-Schedule (custom
+   conversion in Ads Manager) is the creative/ad-set scoreboard, replacing
+   CPL. Campaign specs keep `optimizationEvent: 'LEAD'` — `Schedule` is not a
+   spec field, it's a reporting/audience event only.
 3. Consider testing `SCHEDULE` optimization (parallel ad set, expect permanent
-   Learning Limited) only at ~15–25 Schedule events/week account-wide. Below
-   ~10/week, don't bother.
+   Learning Limited — Meta's ~50-conversions/week/ad-set learning-phase
+   threshold is far above realistic Schedule volume) only at ~15–25 Schedule
+   events/week account-wide. Below ~10/week, don't bother.
 
-Funnel event semantics are being redesigned separately —
-`docs/plans/2026-07-26-funnel-event-model-redesign-handoff.md`. If that work
-changes the optimization event's name or firing point, update the campaign
-spec + this section in the same PR.
+Funnel event-model redesign shipped 2026-07-27 — design spec:
+`docs/superpowers/specs/2026-07-26-funnel-event-model-redesign-design.md`. If
+a future change alters the optimization event's name or firing point, update
+the campaign spec + this section in the same PR.
+
+## campaign-duplication-runbook
+
+Launching a new offer/campaign on the proven ladder (Lead-optimized, Schedule
+for reporting) is five steps:
+
+1. **Declare `contentCategory`** (trade) on the new campaign spec.
+2. **The ladder self-wires.** `content_category`/`content_name` params on
+   every Pixel/CAPI event follow from the spec — no per-event wiring needed.
+3. **Set `optimizationEvent: 'LEAD'`** on every ad set in the spec, then
+   `pnpm meta sync` (dry-run) → `pnpm meta sync --apply`.
+4. **Apply the saved "Funnel Ladder" Ads Manager column preset** (Spend → LPV
+   cost → ViewContent cost → Cost/Lead → Cost/Schedule) to the new
+   campaign's view.
+5. **One Events Manager validation pass**: Test Events "Open Website" +
+   Pixel Helper — confirm `Lead` shows Browser+Server merged (one
+   `event_id`), EMQ ≥7, no diagnostics warnings. Then **baseline rung
+   thresholds after ~2 weeks** of real spend — write down target ranges per
+   ladder rung rather than judging by vibes.

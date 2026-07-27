@@ -207,23 +207,35 @@ activates** — adding events mid-campaign is the invisible-drift scenario.
   `Purchase` reserved for contract-signed with real value/currency.
 
 ### Phase 2 — Implementation (pre-launch; `pnpm lint && pnpm tsc`; stage by path)
-- **R2.1** Browser: `ZipQualified` custom event, browser-only, convention-bound.
-- **R2.2** Browser/server: persist the Lead `event_id` on the lead record.
-- **R2.3** Server: CRM `Schedule` CAPI slice — entity hook → QStash job →
-  meta-sync → CAPI. Payload per §2: `action_source: 'website'`,
-  `event_source_url` = funnel URL, `event_time` = actual booking moment
-  (never backdated), `event_id` = `appt-set-<crmAppointmentId>`, full
-  persisted match-key bundle (target EMQ ≥7). Retry horizon <48h; any
-  batch/replay hard-capped at now−7d.
-- **R2.4** Renter gate applied to `Schedule` (per R1.3).
-- **R2.5** Retire or repoint the dormant `trackFunnelEvent` browser-`Schedule`
-  seam in `funnels.router.ts` (the name now belongs to the CRM event).
-- **R2.6** Docs in the same PR: `providers/meta/DOCS.md` (Schedule invariant:
-  server-only exception to dual-fire, dedup rationale), `scripts/meta/DOCS.md`
-  (optimization ladder + the campaign-duplication checklist as a runbook),
-  ubiquitous-language entries (R1.6).
-- **R2.7** Test-isolation invariants untouched: host-gated browser pixel,
-  `test_event_code` CAPI channel, never verify headless.
+- **R2.1** ✅ done 2026-07-27 — shipped as **no new event**. The design
+  session dropped the standalone `ZipQualified` custom event: `ViewContent`
+  (fires on first answer, already ungated/traffic) already covers the
+  engagement rung, so no browser-only ZIP event was added. No code change,
+  no commit.
+- **R2.2** ✅ done 2026-07-27 (`6a373880` — leads DAL adds
+  `setMetaLeadEventId`; `6281c46b` — `submitLead`/`linkDraftLead` wire it at
+  PII submit). Lead `event_id` persists on the `leads` row
+  (`metaLeadEventId`).
+- **R2.3** ✅ done 2026-07-27 (`d88fcc4a` — CRM `Schedule` CAPI slice:
+  meetings `create.after` hook → `meta-capi-event` QStash job →
+  `measurement.service.trackAppointmentSet` → `meta-sync.service.trackSchedule`
+  → CAPI). `action_source: 'website'`, `event_id` = `appt-set-<customerId>`
+  (customerId, not a separate CRM appointment id — meetings don't have one),
+  `event_time` = meeting-creation moment, never backdated.
+- **R2.4** ✅ done 2026-07-27 (`d88fcc4a`, same commit as R2.3) — renter gate
+  (`firesLeadOptimization` on the linked draft lead's answers) applied inside
+  `trackAppointmentSet`, alongside the funnel-origin and once-per-lead guards.
+- **R2.5** ✅ done 2026-07-27 (`6281c46b`) — the dormant `trackFunnelEvent`
+  tRPC procedure deleted outright (not repointed) from `funnels.router.ts`;
+  no browser-`Schedule` call site ever existed to repoint.
+- **R2.6** ✅ done 2026-07-27 (Task 7, this commit) — `providers/meta/DOCS.md`
+  Schedule invariant, `scripts/meta/DOCS.md` optimization-ladder update +
+  `campaign-duplication-runbook` section, ubiquitous-language entries
+  (Schedule, Purchase, Draft lead).
+- **R2.7** ✅ verified 2026-07-27 — test-isolation invariants untouched across
+  Tasks 1–6: host-gated browser pixel and CAPI `test_event_code` channel in
+  `providers/meta/client.ts`/`is-production-host.ts` received no changes; no
+  headless verification was used for any task in this track.
 
 ### Phase 3 — Launch-day ops (Meta UI, manual, day of deploy)
 - **R3.1** Create custom conversions THE DAY the code deploys (not

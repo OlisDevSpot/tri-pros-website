@@ -126,6 +126,9 @@ Trade (discipline)
 | **Lead Source** | Acquisition channel: `telemarketing_philippines`, `noy`, `quoteme`, `other`. |
 | **Lead Type** | Qualification state: `appointment_set`, `needs_confirmation`, `manual`. |
 | **Proposal View** | A tracked event when customer opens their proposal link. Source: email, direct, unknown. |
+| **Draft lead** | An anonymous pre-PII funnel session, persisted in `leads` on first answer (not page load — filters bots/bounces). No PII lives here. Becomes a converted lead when a `customers` row references it via `customers.leadId` (set by `linkCustomerToLead` at PII submit, in `customer-intake.service.ts`). Distinct from the CloudTalk-owned **Lead lifecycle** above (`Lead → Engaged → Transferred → ...`) — that tracks an already-converted customer's pre-meeting dialer state; a Draft lead has no `customers` row yet. |
+| **Schedule** | Meta standard event meaning *an appointment was set*: a meeting row was created for a funnel-originated customer. Fired server-only via CAPI from the meetings `create.after` hook — the documented exception to dual-fire (no browser session at appointment-set time). Renter-gated, once per lead. Canonical: `src/shared/services/providers/meta/DOCS.md`. |
+| **Purchase** | Meta standard event RESERVED for contract-signed with a real `value`/`currency`. Never repurposed for appointment-set — `Schedule` owns that moment. Not implemented as of 2026-07-27. |
 
 ## User Roles
 
