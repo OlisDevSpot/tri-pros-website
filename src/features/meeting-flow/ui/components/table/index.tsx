@@ -7,7 +7,7 @@ import type { MeetingRow, MeetingTableMeta } from '@/shared/entities/meetings/li
 import { useCallback, useMemo, useState } from 'react'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { AssignProjectDialog } from '@/features/customer-pipelines/ui/components/assign-project-dialog'
-import { MEETING_FILTER_CONFIG } from '@/features/meeting-flow/constants/meeting-table-filter-config'
+import { MEETINGS_TABLE_QUERY_CONFIG } from '@/features/meeting-flow/constants/meetings-table-query-config'
 import { getMeetingRowClassName } from '@/features/meeting-flow/lib/meeting-row-class'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
@@ -18,7 +18,6 @@ import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
 import { useMeetingActionConfigs } from '@/shared/entities/meetings/hooks/use-meeting-action-configs'
@@ -42,12 +41,7 @@ export function PastMeetingsTable() {
   const pagination = usePaginatedQuery<Record<string, never>, MeetingRow>(
     trpc.meetingsRouter.reads.list.queryOptions,
     {},
-    {
-      paramPrefix: 'pm',
-      pageSize: 20,
-      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
-      filters: MEETING_FILTER_CONFIG,
-    },
+    MEETINGS_TABLE_QUERY_CONFIG,
   )
 
   const handleView = useCallback((entity: MeetingRow) => {
