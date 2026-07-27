@@ -35,7 +35,10 @@ either side changes, reconcile both in the same change.
   is narrative, not decoration, and exempt from the transition-family axis
   (`transitionIn: 'none'` reserved for this beat).
 - **Brand system:** logo intro + dock, watermark, end-card layout, brand
-  block content, safe zones (14/35/6).
+  block content, safe rects x 65–1015 / y 420–1248 with logo docked top-LEFT
+  (x≈80, y≈440) — 2026-07-27 research superseded the old 14/35/6 rule (feed
+  crops 9:16 to 4:5/1:1, erasing the top 285–420 px; see
+  `.claude/skills/showcase-ads/SKILL.md` safe-rects rule).
 - **Caption style:** the build-as-spoken `RevealCaptions` system — words
   fade/rise at whisper timing; emphasis via `*word*` markup. Emphasis serif
   FROZEN 2026-07-14 (Oliver's pick from three rendered samples): Playfair
