@@ -1,5 +1,19 @@
 # Handoff: Meta CAPI Phase 2 — down-funnel conversion feedback
 
+> ⚠️ **PARTIALLY SUPERSEDED (2026-07-26).** The **Schedule / appointment-set
+> slice** (and Slice 0's rebuild-user_data-from-leadId machinery) is absorbed
+> into the funnel event-model redesign — see
+> `docs/plans/2026-07-26-funnel-event-model-redesign-handoff.md` and the
+> research + ratified decisions in
+> `docs/plans/2026-07-26-funnel-event-model-research-findings.md`
+> (`Schedule` = CRM appointment-set, server-only CAPI, `action_source:
+> 'website'`; do NOT re-derive it from this doc). The remaining down-funnel
+> tail (Contact / MeetingComplete / ProposalSent / Purchase-at-contract-signed
+> with real value) is still future work and this doc remains its brief. Note
+> the 2026 research also invalidates this doc's "optimize on MeetingComplete
+> first" plan at current volume — re-validate against the research findings
+> before executing the tail.
+
 > Paste this whole file as the opening prompt for a fresh session. It is the
 > brief + reasoning + guardrails. Do **not** start coding from it — first run the
 > `writing-plans` skill to produce a step plan, get it approved, then execute.

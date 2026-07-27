@@ -5,6 +5,19 @@
 > is a design spec + implementation plan, then implementation.
 > Origin: Showcase campaign launch session 2026-07-26 (spec:
 > `docs/superpowers/specs/2026-07-26-showcase-campaign-launch-design.md` §6).
+>
+> ✅ **RESEARCH DONE + DECISIONS RATIFIED (2026-07-26, same day, later
+> session).** Three-agent research pass + Oliver's sign-off resolved all six
+> decision points — READ
+> `docs/plans/2026-07-26-funnel-event-model-research-findings.md` FIRST (incl.
+> its "Requirements — ratified next steps" section). Headlines: NO
+> Lead↔CompleteRegistration swap (`Lead` stays at PII, renter-gated, THE
+> optimization event); NO `Purchase`-as-appointment (`Purchase` reserved for
+> contract-signed w/ real value); CRM appointment-set = standard `Schedule`,
+> server-only CAPI, `action_source: 'website'`; new `ZipQualified` custom
+> event browser-only; no `FunnelEngaged` (ViewContent already covers it).
+> The brainstorm's remaining job is the design spec + plan for the ratified
+> requirements, not re-opening the decisions.
 
 ## Mission
 
@@ -37,7 +50,7 @@ ad program on. Then implement it.
 | ZIP submitted | — nothing — | |
 | PII form submitted | `Lead` (dual-fire browser+CAPI, renter-gated) | PII step submit site |
 | Confirmation step reached | `CompleteRegistration` (browser-only) | `convention-map.ts` kind→event |
-| Datetime step submitted | `Schedule` (dual-fire) | datetime step submit site — verify how live/used this is |
+| Datetime step submitted | — no such step exists — (verified 2026-07-26: no funnel has a datetime step; `trackFunnelEvent` seam in `funnels.router.ts` is dormant, no `firePixel('Schedule')` call site → the `Schedule` name is unclaimed) | |
 | Appointment set in CRM (post-funnel) | — nothing — (CAPI Schedule slice was planned, never built: `docs/plans/meta-capi-phase2-handoff.md`) | |
 
 Convention emitter binds events to step *kinds* (not funnel ids) so N funnels
@@ -88,9 +101,12 @@ need zero per-funnel wiring — preserve that property.
    appointment, and step-localized funnel diagnostics ("pinpoint which step —
    creative → funnel step → appointment → sale — is leaking"). Decide per
    metric whether it comes from Meta (events + custom conversions + Ads
-   Manager columns) or first-party (funnel answers are already persisted
-   server-side — internal step-timing/drop-off analytics may be far richer
-   than pixel data). Design the event parameter set (funnel slug, trade,
+   Manager columns) or first-party (⚠️ scope corrected 2026-07-26: funnel
+   answers are persisted server-side **only from PII submit onward** —
+   `submitLead`/`enrichFunnelLead`/`setFunnelLeadAddress` are the only capture
+   points; pre-PII visitors leave no first-party trace, so pre-PII drop-off
+   analytics require building an anonymous step-event capture first). Design
+   the event parameter set (funnel slug, trade,
    step id/index, event_id) so both sides can join.
 6. **CAPI Phase-2 overlap.** `docs/plans/meta-capi-phase2-handoff.md` covered
    the server-side Schedule slice — fold it into this redesign or supersede it
