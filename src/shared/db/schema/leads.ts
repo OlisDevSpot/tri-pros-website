@@ -11,10 +11,12 @@ export interface LeadStepTimelineEntry {
   enteredAt: string // ISO — written by JS, never SQL NOW()
 }
 
-/** Versioned blob shapes — every persistent domain blob carries `_v` (see
+/**
+ * Versioned blob shapes — every persistent domain blob carries `_v` (see
  * docs/codebase-conventions/jsonb-columns.md#mandatory-schema-version).
  * `_v` is a reserved key inside answers/utm (step ids and UTM keys never
- * collide with it); the timeline wraps its array. */
+ * collide with it); the timeline wraps its array.
+ */
 export interface LeadAnswersBlob { _v: number, [stepId: string]: unknown }
 export interface LeadStepTimelineBlob { _v: number, entries: LeadStepTimelineEntry[] }
 export type LeadUtmBlob = FunnelUtm & { _v: number }
