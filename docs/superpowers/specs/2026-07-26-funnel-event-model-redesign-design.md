@@ -122,7 +122,8 @@ migrates here in Track 2.)
   **`customers.leadId`** (new nullable FK column — the single additive change
   to customers; already points in the end-state direction).
 - **Status is derived, never stored**: no referencing customer = draft.
-- **Retention:** unconverted drafts pruned after 90 days (scheduled job).
+- **Retention:** drafts retained indefinitely — the 90-day prune job was cut
+  from scope (Oliver, 2026-07-27); revisit if the table ever gets heavy.
   Converted leads permanent.
 - **Indexes:** `(funnelSlug, createdAt)`; `fbclid`.
 - Renters get draft rows (first-party analytics wants everyone).

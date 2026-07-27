@@ -118,9 +118,10 @@ export interface LeadStepTimelineEntry {
 // 2026-07-26 §3). Created anonymously on FIRST ANSWER (not page load — filters
 // bots/bounces); a referencing customers.leadId row means "converted", no row
 // means "draft" — status is DERIVED, never stored. NO PII lives here: PII
-// enters only through submitLead → customers. Unconverted drafts are pruned
-// after 90 days (prune-draft-leads job). Track 2 (customers→leads port) grows
-// this table into the full lead entity — see the design spec §6.
+// enters only through submitLead → customers. Drafts are retained
+// indefinitely (prune job deliberately omitted — Oliver, 2026-07-27; revisit
+// if the table ever gets heavy). Track 2 (customers→leads port) grows this
+// table into the full lead entity — see the design spec §6.
 export const leads = pgTable('leads', {
   id,
   funnelSlug: text('funnel_slug').notNull(),
@@ -220,7 +221,6 @@ git commit -m "feat(schema): leads draft table + customers.leadId/metaScheduleSe
   - `createDraftLead(input: InsertLead): Promise<{ id: string }>`
   - `appendDraftStep(id: string, input: { answersJSON: Record<string, unknown>, entry: LeadStepTimelineEntry }): Promise<boolean>` — false if draft not found
   - `setMetaLeadEventId(id: string, metaLeadEventId: string): Promise<void>`
-  - `deleteStaleDrafts(cutoffIso: string): Promise<number>`
   - `getLeadById(id: string): Promise<Lead | null>`
 - Produces (customers DAL): `linkCustomerToLead(customerId: string, leadId: string): Promise<void>`
 - Produces (intake service): `customerIntakeService.linkDraftLead(ctx, { customerId, draftLeadId, metaLeadEventId }): Promise<void>` — best-effort, logs on failure.
@@ -229,9 +229,9 @@ git commit -m "feat(schema): leads draft table + customers.leadId/metaScheduleSe
 
 ```ts
 import type { InsertLead, LeadStepTimelineEntry } from '@/shared/db/schema'
-import { and, eq, isNull, lt, notInArray, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
-import { customers, insertLeadSchema, leads } from '@/shared/db/schema'
+import { insertLeadSchema, leads } from '@/shared/db/schema'
 
 export async function createDraftLead(input: InsertLead): Promise<{ id: string }> {
   const parsed = insertLeadSchema.parse(input)
@@ -270,22 +270,9 @@ export async function appendDraftStep(
 export async function setMetaLeadEventId(id: string, metaLeadEventId: string): Promise<void> {
   await db.update(leads).set({ metaLeadEventId }).where(eq(leads.id, id))
 }
-
-/** Unconverted drafts older than the cutoff. Converted leads are permanent. */
-export async function deleteStaleDrafts(cutoffIso: string): Promise<number> {
-  const converted = db
-    .select({ leadId: customers.leadId })
-    .from(customers)
-    .where(sql`${customers.leadId} is not null`)
-  const deleted = await db
-    .delete(leads)
-    .where(and(lt(leads.createdAt, cutoffIso), notInArray(leads.id, converted)))
-    .returning({ id: leads.id })
-  return deleted.length
-}
 ```
 
-Note: if `notInArray` with a subquery trips the installed drizzle version's types, use `sql`${leads.id} not in (select ${customers.leadId} from ${customers} where ${customers.leadId} is not null)`` inside the `and(...)` instead — same semantics. Do NOT use `isNull` import if unused after resolution; keep imports clean.
+(Adjust the drizzle imports to exactly what's used: `eq` only. No retention sweep — drafts are retained indefinitely per Oliver 2026-07-27.)
 
 - [ ] **Step 2: Create `src/shared/entities/leads/dal/server/queries.ts`**
 
@@ -774,55 +761,12 @@ git commit -m "feat(meta): CRM Schedule CAPI slice — appointment-set on meetin
 
 ---
 
-### Task 6: Draft-prune job
+### Task 6 — REMOVED (Oliver, 2026-07-27)
 
-**Files:**
-- Create: `src/shared/services/providers/upstash/jobs/prune-draft-leads.ts`
-- Modify: `src/app/api/qstash-jobs/route.ts` (register)
-
-**Interfaces:**
-- Consumes: `deleteStaleDrafts(cutoffIso)` (Task 3).
-- Produces: `pruneDraftLeadsJob` registered under key `prune-draft-leads`. Triggered by a QStash Schedule (created manually at launch — Task 8 checklist).
-
-- [ ] **Step 1: Create the job**
-
-```ts
-import { deleteStaleDrafts } from '@/shared/entities/leads/dal/server/mutations'
-import { createJob } from '../lib/create-job'
-
-const DRAFT_RETENTION_DAYS = 90
-
-/**
- * Retention sweep for unconverted draft leads (design spec 2026-07-26 §3):
- * drafts are analytics exhaust, not records — pruned after 90 days. Converted
- * leads (referenced by customers.leadId) are permanent and never touched.
- * Triggered by a daily QStash Schedule targeting
- * /api/qstash-jobs?job=prune-draft-leads (created in the Upstash console —
- * see the launch runbook).
- */
-export const pruneDraftLeadsJob = createJob('prune-draft-leads', async () => {
-  const cutoffIso = new Date(Date.now() - DRAFT_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString()
-  const deleted = await deleteStaleDrafts(cutoffIso)
-  // eslint-disable-next-line no-console
-  console.log(`[prune-draft-leads] deleted ${deleted} stale drafts (cutoff ${cutoffIso})`)
-})
-```
-
-- [ ] **Step 2: Register it**
-
-In `src/app/api/qstash-jobs/route.ts`: add the import (alphabetical with siblings) and `pruneDraftLeadsJob` to the `jobs: Job[]` array.
-
-- [ ] **Step 3: Verify**
-
-Run: `pnpm tsc && pnpm lint`
-Expected: both exit 0.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add src/shared/services/providers/upstash/jobs/prune-draft-leads.ts src/app/api/qstash-jobs/route.ts
-git commit -m "feat(leads): 90-day draft-lead retention sweep job"
-```
+The 90-day draft-prune job was cut from scope: drafts are retained
+indefinitely. No `deleteStaleDrafts` DAL fn, no job, no QStash schedule.
+Revisit only if the `leads` table ever gets heavy. (Task numbering below is
+unchanged to keep cross-references stable.)
 
 ---
 
@@ -892,9 +836,8 @@ Expected: both exit 0 across the whole repo.
 1. Deploy to prod.
 2. Real-browser validation (NEVER headless): Events Manager → Test Events → "Open Website" + Pixel Helper — Lead dedups (Browser+Server, one event_id), EMQ ≥7, diagnostics clean.
 3. Build + save the **"Funnel Ladder"** Ads Manager column preset: Spend → CPM → Link CTR → Cost/Landing Page View → ViewContents+cost → Leads+Cost/Lead → CompleteRegistrations → Schedules+Cost/Schedule.
-4. Create the QStash Schedule: daily cron → `POST <prod-url>/api/qstash-jobs?job=prune-draft-leads`.
-5. Write down target ranges per ladder rung (pre-committed thresholds).
-6. Activate Showcase optimizing on `LEAD`, 7-day-click/1-day-view; hands off ad sets ≥7 days.
-7. (~4 weeks) Optional `Schedule` probe ad set; expect learning-limited; kill if it loses to Lead-optimized sets.
+4. Write down target ranges per ladder rung (pre-committed thresholds).
+5. Activate Showcase optimizing on `LEAD`, 7-day-click/1-day-view; hands off ad sets ≥7 days.
+6. (~4 weeks) Optional `Schedule` probe ad set; expect learning-limited; kill if it loses to Lead-optimized sets.
 
 - [ ] **Step 4: Commit anything the smoke test forced you to fix, by explicit path, with a `fix(...)` message.**
