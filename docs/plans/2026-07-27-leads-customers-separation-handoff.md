@@ -1,5 +1,15 @@
 # Handoff: Lead ↔ Customer separation — make "lead" a first-class, visible thing
 
+> ⚠️ **DIRECTION CHANGED (2026-07-27).** The spine-inversion approach explored
+> below (and its blast-radius doc) was REJECTED — moving PII/identity to a new
+> `leads` table is overkill and the wrong home for PII. The `leads` table was
+> reverted. New direction (to be planned): keep `customers` (rename → `contacts`
+> later) as the canonical person + PII home; disperse lead metadata across the
+> existing `customer_*` satellites; make **lead** a thin lifecycle concept
+> (draft → pii_submitted → converted) where "customer" = the converted state
+> (reached at first meeting). Read this doc for the surface inventory + the
+> visibility/wayfinding problems (still valid); ignore the entity-split framing.
+
 > **How to use:** open a fresh session and point it at this doc. Start with
 > `superpowers:brainstorming` — this is a modeling + UX problem, NOT a
 > "add a nav link" task. The deliverable is a design spec (resolving the

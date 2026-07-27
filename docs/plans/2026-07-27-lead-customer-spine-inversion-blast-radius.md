@@ -1,5 +1,15 @@
 # Lead ↔ Customer spine inversion — blast-radius + requirements (Wave 5)
 
+> ⛔ **REJECTED DIRECTION (Oliver, 2026-07-27).** The spine inversion described
+> here — moving PII/identity onto a new `leads` table — was judged overkill and
+> the wrong home for PII. Superseded by a lighter model: `leads` is a thin
+> **lifecycle entity** (draft → pii_submitted → converted); PII/identity stays in
+> the canonical person table (`customers`, to be renamed `contacts` later);
+> lead metadata is dispersed across the existing `customer_*`/`contact_*`
+> satellites (their correct home), NOT duplicated onto `leads`. This doc is
+> retained only as the blast-radius map of the path NOT taken (still accurate as
+> a coupling census). See the new direction being brainstormed 2026-07-27.
+
 > Synthesis of a 4-agent blast-radius exploration (identity/ACL, data layer, UI,
 > migration), 2026-07-27. Feeds a future brainstorm → design spec. **Supersedes
 > Track-2 §6** of `docs/superpowers/specs/2026-07-26-funnel-event-model-redesign-design.md`

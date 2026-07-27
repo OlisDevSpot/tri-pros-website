@@ -33,10 +33,14 @@ Server-only Graph API client for the Conversions API (CAPI). The browser Pixel
   Meta's 48h dedup window + future dual-fire proofing — and a once-ever guard
   (`customers.metaScheduleSentAt`, plain read-then-write, no lock) because
   48h is not "once per lead". Renter gate applies via `firesLeadOptimization`
-  on the draft lead's `answersJSON` (renters fire traffic events, never
-  conversion events) — but only when the customer has an attached `leadId`;
-  a funnel-originated customer with no lead row is not gated and fires by
-  default. All three guards (funnel-origin, once-ever, renter) fail silently
+  on `customer_lead_attribution.ownership` (renters fire traffic events, never
+  conversion events); a missing/unknown ownership fires by default. All match
+  keys for this delayed event are sourced from `customer_lead_attribution`
+  (captured at submit): `fbp`/`fbc`/`fbclid` from `captureJSON`, plus the
+  promoted `ownership` / `contentCategory` / `clientIp` / `clientUserAgent`
+  columns — there is no `leads` table (the Track-1 draft-lead table was
+  reverted 2026-07-27; its data lives on the attribution row now).
+  All three guards (funnel-origin, once-ever, renter) fail silently
   — a bare `return`, no log — so today there's no audit trail for an
   unexpected non-fire. `event_time` = meeting-creation moment
   (`occurredAtIso`), never backdated; events older than 7 days must never be

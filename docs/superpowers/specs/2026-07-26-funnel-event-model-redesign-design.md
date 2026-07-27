@@ -1,6 +1,17 @@
 # Design: Funnel event-model redesign (Meta Pixel + CAPI) + draft-leads decoupling
 
-**Date:** 2026-07-26 · **Status:** approved by Oliver (brainstorm session, same day)
+> ⚠️ **PARTIALLY REVERTED (2026-07-27).** §3 (the draft `leads` table) and §6
+> (Track-2 customers→leads migration) are REVERTED/ABANDONED — the `leads` table
+> was a wrong turn (moving PII/identity off `customers` was rejected). The
+> Schedule CAPI slice (§2) STAYS but no longer reads a `leads` table: its match
+> keys were re-homed onto `customer_lead_attribution` (`ownership`/
+> `contentCategory`/`clientIp`/`clientUserAgent` columns + `captureJSON`). The
+> renter gate on `CompleteRegistration` (§1) STAYS. The lead/customer separation
+> is being re-approached as a lighter model (lead = lifecycle status; PII stays
+> in `customers`, to be renamed `contacts` later) — future work, not yet specced.
+> Historical record only for §3/§6.
+
+**Date:** 2026-07-26 · **Status:** §1–§2 shipped (Schedule re-homed 2026-07-27); §3/§6 reverted
 **Supersedes:** the Schedule slice of `docs/plans/meta-capi-phase2-handoff.md` (banner applied)
 **Read first:** `docs/plans/2026-07-26-funnel-event-model-research-findings.md`
 (three-agent research + ratified requirements R0–R4; decisions there are CLOSED)

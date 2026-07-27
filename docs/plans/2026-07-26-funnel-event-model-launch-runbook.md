@@ -1,5 +1,15 @@
 # Funnel Event-Model Launch Runbook
 
+> ⚠️ **UPDATED (2026-07-27) — the `leads` table was reverted.** Ignore every
+> step that references the `leads` table / draft-capture smoke / `customers.leadId`.
+> The deployable surface is now: the renter gate on `CompleteRegistration` +
+> the CRM `Schedule` CAPI event (re-homed onto `customer_lead_attribution`).
+> **Prod schema change = the 4 new `customer_lead_attribution` columns**
+> (`ownership`/`content_category`/`client_ip`/`client_user_agent`) via
+> `pnpm db:push:prod` — NOT a `leads` table. Everything else (real-browser
+> Events Manager validation, Schedule/renter live checks, Funnel Ladder column
+> preset, activate on LEAD 7d-click/1d-view) still applies.
+
 Oliver-facing checklist for taking Track 1 (leads table + server-side
 Lead/CompleteRegistration/Schedule events) live. Follow in order. Steps
 marked **[real browser]** must use a real, visible browser session per
