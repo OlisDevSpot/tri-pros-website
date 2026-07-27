@@ -8,7 +8,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { CustomerProfileModal } from '@/features/customer-pipelines/ui/components'
 import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
-import { PROPOSAL_FILTER_CONFIG } from '@/features/proposal-flow/constants/proposal-table-filter-config'
+import { PROPOSALS_TABLE_QUERY_CONFIG } from '@/features/proposal-flow/constants/proposals-table-query-config'
 import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
 import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
 import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
@@ -19,7 +19,6 @@ import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
-import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
 
 import { useProposalActionConfigs } from '@/shared/entities/proposals/hooks/use-proposal-action-configs'
 import { useProposalActions } from '@/shared/entities/proposals/hooks/use-proposal-actions'
@@ -45,12 +44,7 @@ export function PastProposalsTable() {
   const pagination = usePaginatedQuery<Record<string, never>, ProposalRow>(
     trpc.proposalsRouter.business.list.queryOptions,
     {},
-    {
-      paramPrefix: 'pp',
-      pageSize: 20,
-      pageSizeOptions: DEFAULT_RECORDS_PAGE_SIZE_OPTIONS,
-      filters: PROPOSAL_FILTER_CONFIG,
-    },
+    PROPOSALS_TABLE_QUERY_CONFIG,
   )
 
   const handleView = useCallback((entity: ProposalRow) => {
