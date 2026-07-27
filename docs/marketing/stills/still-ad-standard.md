@@ -9,9 +9,10 @@
 > `docs/marketing/showcase-offer.md` (vocabulary, CTA rules, truthfulness).
 >
 > **Read order:** ground-truths (never break) → five-layers (how a card is
-> built) → eligibility-widget (our lead device) → style-directions (the three
-> A/B skins) → named-patterns → QC. The ground-truths bind every style; the
-> style only changes the skin, never the bones.
+> built) → eligibility-widget (our lead device) → logo-treatment (the codified
+> hybrid rule) → style-directions (the three A/B skins) → named-patterns → QC.
+> The ground-truths bind every style; the style only changes the skin, never
+> the bones.
 
 ## ground-truths
 
@@ -34,7 +35,7 @@ prevent.
 2. **One left rail.** Eyebrow, hook, support, and CTA all align to a single
    vertical axis. Measure it; don't eyeball it. (Prevents: the loose,
    each-line-starts-somewhere-different look.)
-3. **Logo: one fixed corner (TOP-LEFT), one size cap (≤14% of canvas width),
+3. **Logo: one fixed corner (TOP-LEFT), one size cap (≤18% of canvas width),
    always in a clean zone.** Identical position and size on every card of every
    format and both funnels. Never top-right. Never over busy texture. (Prevents:
    the oversized floating sticker, and the corner-hopping across our set that
@@ -72,6 +73,20 @@ prevent.
     are crisp: clean diagonal, torn-paper edge, or hairline rule. Never a fat
     glowing full-bleed bar (reads as a broken render / signal glitch — our
     before/after cyan divider was exactly this failure).
+12. **Mirror & gap symmetry — every gap that should match, matches to the pixel.**
+    Elements paired across a symmetry axis (BEFORE/AFTER pills straddling a seam,
+    twin columns, mirrored corners) sit at an EQUAL offset from that axis. Any two
+    gaps the eye expects to be equal (label-above-line vs. label-below-line, the
+    inset on the left vs. the right of a centered block) must be numerically
+    equal, not eyeballed. (Prevents: the audited before/after where BEFORE sat
+    ~60 px above the seam and AFTER ~20 px below — the lopsidedness reads as
+    "off" even when nothing else is wrong.)
+13. **Clear-gap from every structural line.** No chip, text, or CTA touches or
+    crosses a divider, frame edge, panel edge, or the safe-box boundary. Maintain
+    a consistent minimum clear-gap (≥ ~20 px at 1080 scale) on both sides of any
+    line. The only exception is an element *deliberately centered on* the line
+    (a badge sitting astride a seam by design). (Prevents: the AFTER pill kissing
+    the seam.)
 
 ## the-five-layers
 
@@ -100,9 +115,10 @@ ground-truths; where they overlap, the ground-truth wins.
      eligibility widget (see below) — every card except pure-photo carousel
      proof cards carries one
 5. **Brand layer** — non-negotiable, per ground-truth 3:
-   - **Logo TOP-LEFT on every card**, ≤ 14% of canvas width, on a frosted chip
-     or clean-contrast zone (never over busy texture). Identical corner and
-     size across the whole ad set and both funnels.
+   - **Logo TOP-LEFT on every card**, ≤ 18% of canvas width, presented per the
+     codified logo-treatment rule below (never a floating pill, never over busy
+     texture without a halo). Identical corner and size across the whole ad set
+     and both funnels.
    - Brand accent (funnel cyan) used at least once as a functional element
      (underline, chip, divider, CTA fill) — never as decoration spam, never as
      a fat glowing bar.
@@ -125,6 +141,48 @@ with no price shown, on-brand with our ZIP-gated qualification funnel.
   "5 spots this round" support line is the house combination.
 - **Truthfulness:** the widget must reflect a real gate (ZIP/homeowner). Never
   fake a step the funnel doesn't have.
+
+## logo-treatment
+
+How the brand mark presents. Requirements (owner-directed 2026-07-27; the
+specific container is chosen from a rendered variant test, not by first instinct):
+
+1. **Full wordmark, always.** "TRI PROS REMODELING" must be legible on every
+   card. NEVER icon-only — the mark alone does not carry the brand here.
+2. **Contained, not floating.** The logo sits in/on a defined, tasteful shape
+   (panel / plate / fitted container). NEVER a soft halo, never bare over photo.
+3. **Container fits the art's aspect.** The horizontal `-right` lockup is 3.66:1
+   (why a round pill felt off); the stacked `-bottom` lockup is ~square (1.04:1)
+   and fills a balanced container cleanly. Match container aspect to the chosen
+   lockup.
+4. **Optically even internal padding** — equal breathing room on all four sides
+   of the mark inside its container (the specific failure of the old pill).
+5. **Top-left, fixed, consistent** across every card and both funnels, at a
+   consistent margin off the safe box.
+6. **Present, not dominant** — sized for recognition, never competing with the
+   hook.
+7. **Legible over the worst case** (bright white photo) via its own container —
+   without a photo-killing scrim.
+
+**Ratified treatment (owner pick 2026-07-27, from the `logo-lab` +
+`logo-trust-lab` variant tests):** the **stacked lockup**
+(`brand/logo-dark-bottom.svg`, ~square 1.04:1) + a hairline divider + a **trust
+stack**, all encapsulated in ONE **solid dark rounded panel with a thin
+brand-cyan top accent** — implemented as `LogoMark` (`video/src/stills/
+shared.tsx`), identical on every card and both funnels, TOP-LEFT. The square art
+fills its side with even padding (requirement 4); the divider separates it from
+the trust column (the "unified" layout, chosen over "rail"/"bar"). The
+horizontal `-right` lockup and the icon-only mark are NOT used on stills.
+
+**Trust indicators — VERIFIED ONLY (never invent a claim; Meta requires
+substantiation).** Current trio, checked against `src/shared/constants/company/`
+on 2026-07-27: **A+ BBB Rating** (`stats.ts`), **Licensed & Insured** — CA GC
+license #1076760 (`licenses.ts`), **500+ Projects** (`company-info.ts`
+`numProjects` 520). Approved alternates (all verified): 40+ Yrs Combined
+Experience, 98% Client Satisfaction, $9M+ Delivered. A **Google rating** slot is
+reserved but MUST NOT be populated until a real rating + review count is
+confirmed from the Google Business Profile. Keep to 2–3 indicators. The
+`logo-lab`/`logo-trust-lab` compositions stay for future re-tests.
 
 ## psychological-triggers
 
@@ -196,7 +254,7 @@ Run on every render before the human gate. These gates are written to catch
 the exact failures from the 2026-07-27 audit.
 
 - [ ] **Ground-truth sweep:** protected text zone present (no text on raw
-      photo)? one left rail? logo top-left ≤14% in a clean zone? ≤5 elements,
+      photo)? one left rail? logo top-left ≤18% in a clean zone? ≤5 elements,
       one scan path? corners balanced? divider intentional (not a glowing bar)?
       after bright/hero-lit? — any NO = no ship.
 - [ ] Hook legible at 120 px thumbnail width (feed reality check)
