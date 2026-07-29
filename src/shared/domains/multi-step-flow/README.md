@@ -23,6 +23,11 @@ any particular consumer's domain.
 - **Slotted shell** (`StepShell`): renders landing / steps / terminal views
   with progress, back/next nav, and named slots (`header`, `footer`,
   `background`, `landing`, `terminal`, `renderStep`) that a consumer fills in.
+  Its Next button is gated on `engine.value != null`, so a content-only step
+  (one that collects no answer) must be the landing step or a terminal-kind
+  step — placed mid-flow it would leave Next permanently disabled and strand
+  the user. This is by design: mid-flow steps are expected to collect an
+  answer.
 
 Nothing in the package refers to funnels, trades, or any other product
 concept — it is domain-neutral by construction.
@@ -112,6 +117,12 @@ return (
 )
 ```
 
+Pass a stable `options` object (memoize it, or at least the `onNavigate`
+callback) — `advance`/`back` identities depend on it, so a fresh inline
+`{ onNavigate }` literal each render makes them change every render. The
+snippet above does this harmlessly, but real consumers with memo-sensitive
+children should keep it stable.
+
 `StepShell` picks the landing / steps / terminal view for you based on
 `config.landingStepId` and `config.terminalKinds`, and renders whichever of
 `landing` / `terminal` / `header` / `footer` / `background` slots the
@@ -184,6 +195,8 @@ are `StepProps<{ title: string }, unknown, RefCtx>`.
 `example/reference-flow.tsx` and `example/reference-adapter.ts` are a manual
 smoke-test artifact: a minimal, runnable consumer used to sanity-check the
 package end-to-end (including the in-memory adapter, which explicitly persists
-nothing beyond the current session). They are not wired into any route or
-production surface, and nothing under `src/app` or a real consumer should
-import from `example/`. Treat it as living documentation, not a dependency.
+nothing beyond the current session). The only sanctioned importer is the
+dev-only route `src/app/(frontend)/dev/multi-step-flow/` — a developer smoke
+harness, not linked from production navigation. No other production surface
+should import from `example/`. Treat it as living documentation, not a
+dependency.

@@ -35,8 +35,8 @@ export function text(
 
 /**
  * Build render-ordered CardOptions. Image `src` is supplied by the consumer's
- * resolver (e.g. funnels pass `(id) => `/funnels/${scope}/${dimension}/${id}.webp``);
- * the framework holds no asset-path convention of its own.
+ * resolver (e.g. `(id) => `/assets/${scope}/${id}.webp``); the framework
+ * holds no asset-path convention of its own.
  */
 export function cardOptions(
   entries: OptionEntry[],
