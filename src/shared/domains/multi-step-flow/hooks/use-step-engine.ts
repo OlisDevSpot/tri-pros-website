@@ -45,6 +45,7 @@ export function useStepEngine<Step extends BaseStep<string>, Ctx>(
     setMounted(true)
   }, [])
   const hydrated = mounted && externalHydrated
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     if (!hydrated) {
@@ -54,17 +55,20 @@ export function useStepEngine<Step extends BaseStep<string>, Ctx>(
     if (loaded) {
       setState(loaded)
     }
-    // Adopt persisted state once, when the gate opens.
+    // Adopt persisted state once, when the gate opens. `ready` flips true
+    // only on the NEXT render, so the persist effect below never fires with
+    // the pre-load `initial` state — it always sees the adopted state first.
+    setReady(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated])
 
   useEffect(() => {
-    if (!hydrated) {
+    if (!ready) {
       return
     }
     adapter.persist(state)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, hydrated])
+  }, [state, ready])
 
   const effective = hydrated ? state : initial
 
