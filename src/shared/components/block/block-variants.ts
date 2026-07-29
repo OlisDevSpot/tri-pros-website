@@ -3,7 +3,7 @@ import type { VariantProps } from 'class-variance-authority'
 import { cva } from 'class-variance-authority'
 
 /**
- * Layout DNA for the funnel `<Block>` shell. Enum variants only (no boolean
+ * Layout DNA for the `<Block>` shell. Enum variants only (no boolean
  * soup). Padding/rhythm come from --block-* tokens so one change moves every
  * block. Alignment classes live HERE on the Root and reach the content column
  * via a descendant selector; Block.Trust opts out (always left).

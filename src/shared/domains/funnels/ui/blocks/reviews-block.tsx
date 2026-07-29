@@ -1,7 +1,7 @@
 import type { FunnelContext, ReviewsBlockContent } from '@/shared/domains/funnels/types'
+import { Block } from '@/shared/components/block/block'
 import { ReviewCard } from '@/shared/components/reviews/review-card'
 import { testimonials } from '@/shared/constants/company'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
 
 export function ReviewsBlock({ content }: { content: ReviewsBlockContent, ctx: FunnelContext }) {
   return (

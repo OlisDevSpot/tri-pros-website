@@ -2,8 +2,8 @@ import type { FunnelContext, LicensingBlockContent } from '@/shared/domains/funn
 
 import { BadgeCheck, ShieldCheck } from 'lucide-react'
 
+import { Block } from '@/shared/components/block/block'
 import { licenses } from '@/shared/constants/company/licenses'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
 
 export function LicensingBlock({ content }: { content: LicensingBlockContent, ctx: FunnelContext }) {
   const primary = licenses[0]

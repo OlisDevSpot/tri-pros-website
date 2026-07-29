@@ -1,7 +1,7 @@
 import type { FunnelContext, ProblemBlockContent } from '@/shared/domains/funnels/types'
 import { ShieldCheck, TriangleAlert } from 'lucide-react'
 import Image from 'next/image'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
+import { Block } from '@/shared/components/block/block'
 
 type PosterPoint = ProblemBlockContent['points'][number] & { image: string }
 

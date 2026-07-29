@@ -1,6 +1,6 @@
 import type { FunnelContext, ValueBlockContent } from '@/shared/domains/funnels/types'
 import { ArrowRight } from 'lucide-react'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
+import { Block } from '@/shared/components/block/block'
 import { BeforeAfterShowcase } from '@/shared/domains/funnels/ui/blocks/before-after-showcase'
 
 export function ValueBlock({ content }: { content: ValueBlockContent, ctx: FunnelContext }) {

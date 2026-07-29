@@ -2,8 +2,8 @@
 
 import type { CtaBlockContent, FunnelContext } from '@/shared/domains/funnels/types'
 import { ArrowUp } from 'lucide-react'
+import { Block } from '@/shared/components/block/block'
 import { QUESTION_ANCHOR } from '@/shared/domains/funnels/constants/anchors'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
 import { FunnelCta } from '@/shared/domains/funnels/ui/funnel-cta'
 
 export function CtaBlock({ content }: { content: CtaBlockContent, ctx: FunnelContext }) {

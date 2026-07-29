@@ -1,16 +1,16 @@
 import type { ComponentPropsWithoutRef } from 'react'
 
-import type { BlockVariants } from '@/shared/domains/funnels/ui/block/block-variants'
+import type { BlockVariants } from '@/shared/components/block/block-variants'
 
 import { Slot } from '@radix-ui/react-slot'
 
-import { blockVariants } from '@/shared/domains/funnels/ui/block/block-variants'
+import { blockVariants } from '@/shared/components/block/block-variants'
 import { cn } from '@/shared/lib/utils'
 
 type BlockRootProps = ComponentPropsWithoutRef<'section'> & BlockVariants & { asChild?: boolean }
 
 /**
- * The funnel marketing block shell. RSC-safe + presentational: no 'use client',
+ * The marketing/content block shell. RSC-safe + presentational: no 'use client',
  * no hooks, no client imports. Owns width (always w-full; the rail caps width),
  * surface, padding/rhythm tokens, alignment, and z-isolation (isolate). It is a
  * pure FRAME — it owns the shadow but never overflow, so card/child shadows

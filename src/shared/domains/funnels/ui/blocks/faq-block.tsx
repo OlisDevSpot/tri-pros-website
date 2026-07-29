@@ -4,9 +4,9 @@ import type { FaqBlockContent, FunnelContext } from '@/shared/domains/funnels/ty
 import { ChevronDown } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
+import { Block } from '@/shared/components/block/block'
 import { Decor } from '@/shared/components/decor/decor'
 import { FUNNEL_TRANSITION } from '@/shared/domains/funnels/constants/funnel-motion'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
 import { cn } from '@/shared/lib/utils'
 
 /**

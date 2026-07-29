@@ -2,8 +2,8 @@ import type { CSSProperties } from 'react'
 import type { CalloutBlockContent, FunnelContext } from '@/shared/domains/funnels/types'
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
+import { Block } from '@/shared/components/block/block'
 import { CredentialStrip } from '@/shared/components/trust/credential-strip'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
 
 const POINT_DOT_STYLE: CSSProperties = { background: 'var(--primary)' }
 const POINT_TEXT_STYLE: CSSProperties = { color: 'var(--body-text)' }

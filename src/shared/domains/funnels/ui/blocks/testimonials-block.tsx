@@ -2,8 +2,8 @@ import type { FunnelContext, TestimonialItem, TestimonialsBlockContent } from '@
 
 import { Star } from 'lucide-react'
 
+import { Block } from '@/shared/components/block/block'
 import { testimonials } from '@/shared/constants/company/testimonials'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
 
 const DEFAULT_ITEMS: TestimonialItem[] = testimonials.map(t => ({
   image: t.image,

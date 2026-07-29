@@ -1,6 +1,6 @@
 import type { FunnelContext, GuaranteeBlockContent } from '@/shared/domains/funnels/types'
 import { ShieldCheck } from 'lucide-react'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
+import { Block } from '@/shared/components/block/block'
 
 export function GuaranteeBlock({ content }: { content: GuaranteeBlockContent, ctx: FunnelContext }) {
   return (

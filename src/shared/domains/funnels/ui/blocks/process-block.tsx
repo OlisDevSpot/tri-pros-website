@@ -1,6 +1,6 @@
 import type { FunnelContext, ProcessBlockContent } from '@/shared/domains/funnels/types'
 import Image from 'next/image'
-import { Block } from '@/shared/domains/funnels/ui/block/block'
+import { Block } from '@/shared/components/block/block'
 
 export function ProcessBlock({ content }: { content: ProcessBlockContent, ctx: FunnelContext }) {
   return (
