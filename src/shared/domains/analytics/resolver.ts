@@ -22,19 +22,20 @@ export interface MetricResult {
 }
 
 export async function resolve(bucketDef: Bucket, ctx: SourceContext): Promise<MetricResult[]> {
-  const metrics = bucketDef.sections.flatMap((section) => section.metrics)
+  const metrics = bucketDef.sections.flatMap(section => section.metrics)
 
   // 1. Unique sources across available metrics (dedup by object identity).
   const uniqueSources = new Set<AnySource>()
   for (const m of metrics) {
-    if (m.available === false) continue
+    if (m.available === false)
+      continue
     for (const src of Object.values(m.from) as AnySource[]) uniqueSources.add(src)
   }
 
   // 2. Load each source exactly once → per-source Map<keyValue, Row>.
   const loaded = new Map<AnySource, Map<unknown, SourceRow>>()
   await Promise.all(
-    [...uniqueSources].map(async src => {
+    [...uniqueSources].map(async (src) => {
       const rows = await src.load(ctx)
       const byKey = new Map<unknown, SourceRow>()
       for (const row of rows)
@@ -73,7 +74,7 @@ function computeMetric(m: AnyMetric, loaded: Map<AnySource, Map<unknown, SourceR
     }
   }
 
-  const mergedRows = joinKeys.map(key => {
+  const mergedRows = joinKeys.map((key) => {
     const merged: Record<string, SourceRow> = {}
     for (const { name, byKey } of namedSources)
       merged[name] = byKey.get(key) as SourceRow
