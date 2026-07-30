@@ -60,11 +60,20 @@ export const selectApplicationSchema = createSelectSchema(applications, {
 })
 export type Application = z.infer<typeof selectApplicationSchema>
 
+// status and submittedAt are server-derived, not client-writable: status
+// defaults to 'draft' at the column, and submittedAt is set only by
+// submitApplication (dal/server/mutations.ts, via raw db.update — it bypasses
+// this schema entirely). Omitting them here means the generic crud.create /
+// crud.update procedures (whose update schema is this schema's `.partial()`)
+// can never write status/submittedAt — status movement stays exclusively
+// with the four lifecycle verbs (create/saveDraft/submit/withdraw).
 export const insertApplicationSchema = createInsertSchema(applications, {
   draftAnswersJSON: applicationDraftSchema.nullish(),
 }).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  status: true,
+  submittedAt: true,
 })
 export type InsertApplicationSchema = z.infer<typeof insertApplicationSchema>
