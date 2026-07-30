@@ -101,25 +101,36 @@ function createMetaClient() {
         throw new Error('[meta] insights not configured (META_ACCESS_TOKEN / META_AD_ACCOUNT_ID)')
       }
 
-      const first = new URL(`${META_GRAPH_BASE_URL}/${adAccountId}/insights`)
-      first.searchParams.set('access_token', marketingToken)
-      first.searchParams.set('level', 'ad')
-      first.searchParams.set('time_range', JSON.stringify({ since: input.since, until: input.until }))
-      if (input.timeIncrement)
-        first.searchParams.set('time_increment', String(input.timeIncrement))
-      first.searchParams.set('fields', input.fields)
-      first.searchParams.set('limit', '200')
+      const buildUrl = (after?: string): string => {
+        const u = new URL(`${META_GRAPH_BASE_URL}/${adAccountId}/insights`)
+        u.searchParams.set('level', 'ad')
+        u.searchParams.set('time_range', JSON.stringify({ since: input.since, until: input.until }))
+        if (input.timeIncrement)
+          u.searchParams.set('time_increment', String(input.timeIncrement))
+        u.searchParams.set('fields', input.fields)
+        u.searchParams.set('limit', '200')
+        if (after)
+          u.searchParams.set('after', after)
+        return u.toString() // NOTE: no access_token in the URL — auth is the Bearer header below
+      }
 
       const rows: MetaAdInsightRaw[] = []
-      let url: string | null = first.toString()
-      while (url) {
-        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) })
+      let after: string | undefined
+      for (;;) {
+        const res = await fetch(buildUrl(after), {
+          headers: { Authorization: `Bearer ${marketingToken}` },
+          signal: AbortSignal.timeout(30_000),
+        })
         if (!res.ok) {
           throw new Error(`[meta] insights fetch failed ${res.status}: ${await res.text().catch(() => '')}`)
         }
         const parsed = metaAdInsightsResponseSchema.parse(await res.json())
         rows.push(...parsed.data)
-        url = parsed.paging?.next ?? null
+        if (!parsed.paging?.next)
+          break // no more pages
+        after = parsed.paging.cursors?.after
+        if (!after)
+          break // safety: next present but no cursor → stop, don't loop forever
       }
       return rows
     },
