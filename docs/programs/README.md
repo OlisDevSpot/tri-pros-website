@@ -80,12 +80,12 @@ Each step has:
 
 Program content lives in:
 ```
-src/features/meetings/constants/programs.ts
+src/features/meeting-flow/constants/programs.ts
 ```
 
 Buy trigger helper utilities live in:
 ```
-src/features/meetings/constants/buy-triggers.ts
+src/features/meeting-flow/lib/buy-triggers.ts
 ```
 
 To add a new program: add a new `MeetingProgram` object to the `MEETING_PROGRAMS` array in `programs.ts`, then create a corresponding markdown doc in this directory.
