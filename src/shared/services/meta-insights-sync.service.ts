@@ -1,7 +1,7 @@
 // ACL facade over metaClient.fetchAdInsights: numeric ad_id → adKey (via the
 // campaign-as-code lock), string metrics → numbers. Returns adKey-keyed domain
 // rows. NEVER imports @/shared/db. Mirrors meta-sync.service.ts.
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 import { metaClient } from '@/shared/services/providers/meta/client'
@@ -35,9 +35,11 @@ const INSIGHTS_FIELDS
   = 'ad_id,ad_name,spend,impressions,reach,frequency,cpm,ctr,cpc,inline_link_clicks,actions,cost_per_action_type'
 
 function loadAdKeyById(): Map<string, string> {
-  const lock = JSON.parse(
-    readFileSync(join(process.cwd(), 'scripts/meta/meta.lock.json'), 'utf8'),
-  ) as MetaLockShape
+  const lockPath = join(process.cwd(), 'scripts/meta/meta.lock.json')
+  if (!existsSync(lockPath)) {
+    return new Map()
+  }
+  const lock = JSON.parse(readFileSync(lockPath, 'utf8')) as MetaLockShape
   const byId = new Map<string, string>()
   for (const [adKey, entry] of Object.entries(lock.ads)) byId.set(entry.id, adKey)
   return byId
