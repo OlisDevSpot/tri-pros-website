@@ -22,8 +22,10 @@ export const appointmentsPerAdKey = source({
       .where(and(
         brandedMetaPaidScope,
         sql`${customerLeadAttribution.utmContent} IS NOT NULL`,
-        gte(meetings.createdAt, range.start.toISOString()),
-        lte(meetings.createdAt, range.end.toISOString()),
+        // cohort by lead-creation date (customers.createdAt) — matches leads/signed sources so
+        // appointments ÷ leads is a valid same-population conversion rate
+        gte(customers.createdAt, range.start.toISOString()),
+        lte(customers.createdAt, range.end.toISOString()),
       ))
       .groupBy(customerLeadAttribution.utmContent)
 
