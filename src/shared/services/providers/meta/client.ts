@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 
 import { toDigits } from '@/shared/lib/phone'
 import { META_GRAPH_BASE_URL } from '@/shared/services/providers/meta/constants'
-import { getMetaConfig } from '@/shared/services/providers/meta/lib/config'
+import { getMetaConfig, getMetaInsightsConfig } from '@/shared/services/providers/meta/lib/config'
 import { metaAdInsightsResponseSchema } from './schemas/insights'
 
 function sha256(value: string): string {
@@ -96,10 +96,7 @@ function createMetaClient() {
       fields: string
       timeIncrement?: number
     }): Promise<MetaAdInsightRaw[]> {
-      const { marketingToken, adAccountId } = getMetaConfig()
-      if (!marketingToken || !adAccountId) {
-        throw new Error('[meta] insights not configured (META_ACCESS_TOKEN / META_AD_ACCOUNT_ID)')
-      }
+      const { marketingToken, adAccountId } = getMetaInsightsConfig()
 
       const buildUrl = (after?: string): string => {
         const u = new URL(`${META_GRAPH_BASE_URL}/${adAccountId}/insights`)

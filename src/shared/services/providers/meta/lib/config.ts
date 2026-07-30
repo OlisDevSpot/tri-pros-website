@@ -1,5 +1,3 @@
-import process from 'node:process'
-
 import { z } from 'zod'
 
 import { createProviderConfig } from '@/shared/config/create-provider-config'
@@ -39,8 +37,6 @@ export interface MetaRuntimeConfig {
   capiToken: string
   /** Present only in staging/QA — routes CAPI events to Test Events. */
   testEventCode?: string
-  marketingToken?: string
-  adAccountId?: string
 }
 
 const helpers = createProviderConfig({
@@ -52,8 +48,6 @@ const helpers = createProviderConfig({
     datasetId: parsed.META_DATASET_ID!,
     capiToken: parsed.META_CAPI_TOKEN!,
     testEventCode: parsed.META_TEST_EVENT_CODE,
-    marketingToken: parsed.META_ACCESS_TOKEN,
-    adAccountId: parsed.META_AD_ACCOUNT_ID,
   }),
 })
 
@@ -62,6 +56,23 @@ export const getMetaConfig = helpers.get
 export const isMetaConfigured = helpers.isConfigured
 export const metaConfigMeta = helpers.configMeta
 
-export function isMetaInsightsConfigured(): boolean {
-  return Boolean(process.env.META_ACCESS_TOKEN && process.env.META_AD_ACCOUNT_ID)
+export interface MetaInsightsConfig {
+  marketingToken: string
+  adAccountId: string
 }
+
+// Separate config surface: Marketing-API insights creds are independent of the
+// CAPI trio, so reading them must NOT require CAPI to be configured. Own factory
+// instance → own required-keys gate (never throws on the CAPI keys).
+const insightsHelpers = createProviderConfig({
+  provider: 'meta-insights',
+  fragment: metaEnvFragment,
+  requiredKeys: ['META_ACCESS_TOKEN', 'META_AD_ACCOUNT_ID'],
+  toConfig: (parsed): MetaInsightsConfig => ({
+    marketingToken: parsed.META_ACCESS_TOKEN!,
+    adAccountId: parsed.META_AD_ACCOUNT_ID!,
+  }),
+})
+
+export const getMetaInsightsConfig = insightsHelpers.get
+export const isMetaInsightsConfigured = insightsHelpers.isConfigured
