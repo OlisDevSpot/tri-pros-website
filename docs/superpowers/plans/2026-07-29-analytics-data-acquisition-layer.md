@@ -10,6 +10,7 @@
 
 ## Global Constraints
 
+- **Branded-Meta-PAID scope (load-bearing).** Every metric counts ONLY leads/appointments/signed that originated from a **paid Meta ad click** — `customer_lead_attribution.utm_source = 'meta' AND utm_medium = 'paid'` (the only writer is `scripts/meta/sync/ad-link.ts`). This is deliberately NARROWER than `customers.leadSourceId = 'branded-meta-ads'`, which also includes organic funnel visitors (typed URL / SEO, no ad attribution) and would deflate CPL/CPA/ROAS with free leads. A single shared predicate (`brandedMetaPaidScope`, Task 6) is applied to every source and will be reused by all future Sales/Marketing metrics.
 - **No schema changes to existing tables.** This plan adds no columns and no tables (a read-only acquisition layer).
 - **`db` boundary:** the analytics **domain** (`src/shared/domains/analytics/**`) MAY import `@/shared/db` (it's a read-model/aggregation surface, like `lead-sources.router.ts`; precedent: `domains/permissions`, `domains/auth` import db). **Services MUST NOT** import db — `meta-insights-sync.service.ts` imports only the client/config/lock-loader, never `@/shared/db`.
 - **Provider signatures return provider-native types**, never domain types (ADR-0003). The sync service translates native → domain (`adKey`-keyed rows).
@@ -380,28 +381,47 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 6: Local SQL sources — leads / appointments / signed per adKey
+### Task 6: Local SQL sources — leads / appointments / signed per adKey (branded-Meta-paid scoped)
 
 **Files:**
+- Create: `src/shared/domains/analytics/sources/local/branded-meta-scope.ts`
 - Create: `src/shared/domains/analytics/sources/local/leads-per-adkey.ts`
 - Create: `src/shared/domains/analytics/sources/local/appointments-per-adkey.ts`
 - Create: `src/shared/domains/analytics/sources/local/signed-per-adkey.ts`
 
 **Interfaces:**
 - Consumes: `source` from `../../types`; `db` from `@/shared/db`; drizzle `and/eq/gte/lte/sql`; schema tables `customers`, `customerLeadAttribution`, `meetings`; `isSignedCustomerSql` from `@/shared/entities/customers/lib/signed-customer-sql`.
-- Produces: `export const leadsPerAdKey`, `export const appointmentsPerAdKey`, `export const signedPerAdKey` — module-level singleton `Source`s keyed by `adKey`, each reading `ctx.range`.
+- Produces: `export const brandedMetaPaidScope` (a reusable Drizzle predicate); `export const leadsPerAdKey`, `export const appointmentsPerAdKey`, `export const signedPerAdKey` — module-level singleton `Source`s keyed by `adKey`, each reading `ctx.range` and applying `brandedMetaPaidScope`.
 
-**Context:** Raw `db` aggregation is allowed here (domain, not service — see Global Constraints). `createdAt` columns are `mode:'string'` timestamps → compare against `.toISOString()`. `utmContent` is nullable → filter `IS NOT NULL`. Copy the exact column refs verified in grounding.
+**Context:** Raw `db` aggregation is allowed here (domain, not service — see Global Constraints). Every query is scoped to **paid Meta ad clicks** via `brandedMetaPaidScope` (`utm_source='meta' AND utm_medium='paid'`) — NOT the broader `leadSourceId='branded-meta-ads'`, which includes organic funnel visitors and would deflate the ratios. `createdAt` columns are `mode:'string'` timestamps → compare against `.toISOString()`. `utmContent` (=adKey) is the ad-level breakdown dimension, kept `IS NOT NULL` since we group by it.
 
-- [ ] **Step 1: Create `leads-per-adkey.ts`**
+- [ ] **Step 1: Create the shared scope predicate `branded-meta-scope.ts`**
 
 ```ts
-// Local source: first-party lead count per adKey (attribution rows in range).
+// Branded Meta PAID-ads scope. utm_source=meta AND utm_medium=paid is emitted
+// SOLELY by scripts/meta/sync/ad-link.ts (buildUrlTags) — the one signal of a
+// paid ad click. Deliberately narrower than customers.leadSourceId='branded-meta-ads'
+// (which also includes organic funnel visitors with no attribution). Reused by
+// every analytics source + all future Sales/Marketing metrics.
+import { and, eq } from 'drizzle-orm'
+import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
+
+export const brandedMetaPaidScope = and(
+  eq(customerLeadAttribution.utmSource, 'meta'),
+  eq(customerLeadAttribution.utmMedium, 'paid'),
+)
+```
+
+- [ ] **Step 2: Create `leads-per-adkey.ts`**
+
+```ts
+// Local source: first-party lead count per adKey (paid Meta attribution rows in range).
 // Module-level singleton for resolver dedup. Raw db aggregation (domain, not service).
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
+import { brandedMetaPaidScope } from './branded-meta-scope'
 import { source } from '../../types'
 
 export const leadsPerAdKey = source({
@@ -415,6 +435,7 @@ export const leadsPerAdKey = source({
       .from(customerLeadAttribution)
       .innerJoin(customers, eq(customers.id, customerLeadAttribution.customerId))
       .where(and(
+        brandedMetaPaidScope,
         sql`${customerLeadAttribution.utmContent} IS NOT NULL`,
         gte(customers.createdAt, range.start.toISOString()),
         lte(customers.createdAt, range.end.toISOString()),
@@ -426,15 +447,17 @@ export const leadsPerAdKey = source({
 })
 ```
 
-- [ ] **Step 2: Create `appointments-per-adkey.ts`**
+- [ ] **Step 3: Create `appointments-per-adkey.ts`**
 
 ```ts
-// Local source: appointments (meetings) per adKey in range.
+// Local source: appointments (distinct customers with ≥1 meeting) per adKey in range,
+// scoped to paid Meta ad clicks.
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
+import { brandedMetaPaidScope } from './branded-meta-scope'
 import { source } from '../../types'
 
 export const appointmentsPerAdKey = source({
@@ -449,6 +472,7 @@ export const appointmentsPerAdKey = source({
       .innerJoin(customers, eq(customers.id, meetings.customerId))
       .innerJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
       .where(and(
+        brandedMetaPaidScope,
         sql`${customerLeadAttribution.utmContent} IS NOT NULL`,
         gte(meetings.createdAt, range.start.toISOString()),
         lte(meetings.createdAt, range.end.toISOString()),
@@ -460,15 +484,16 @@ export const appointmentsPerAdKey = source({
 })
 ```
 
-- [ ] **Step 3: Create `signed-per-adkey.ts`** (note: `isSignedCustomerSql()` hard-codes `"customers"."id"`, so `customers` must be in the query scope — it is)
+- [ ] **Step 4: Create `signed-per-adkey.ts`** (note: `isSignedCustomerSql()` hard-codes `"customers"."id"`, so `customers` must be in the query scope — it is)
 
 ```ts
-// Local source: signed customers (≥1 project) per adKey in range.
+// Local source: signed customers (≥1 project) per adKey in range, scoped to paid Meta.
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customers } from '@/shared/db/schema/customers'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
+import { brandedMetaPaidScope } from './branded-meta-scope'
 import { source } from '../../types'
 
 export const signedPerAdKey = source({
@@ -482,6 +507,7 @@ export const signedPerAdKey = source({
       .from(customers)
       .innerJoin(customerLeadAttribution, eq(customerLeadAttribution.customerId, customers.id))
       .where(and(
+        brandedMetaPaidScope,
         isSignedCustomerSql(),
         sql`${customerLeadAttribution.utmContent} IS NOT NULL`,
         gte(customers.createdAt, range.start.toISOString()),
@@ -494,13 +520,13 @@ export const signedPerAdKey = source({
 })
 ```
 
-- [ ] **Step 4:** `pnpm tsc` → 0 errors. (Verifies the Drizzle query builders type-check against the real schema columns — the primary safety net here.)
-- [ ] **Step 5:** `npx eslint src/shared/domains/analytics/sources/local/` → 0 problems.
-- [ ] **Step 6: Commit** (all three in one commit — they are one cohesive deliverable)
+- [ ] **Step 5:** `pnpm tsc` → 0 errors. (Verifies the Drizzle query builders type-check against the real schema columns — the primary safety net here.)
+- [ ] **Step 6:** `npx eslint src/shared/domains/analytics/sources/local/` → 0 problems.
+- [ ] **Step 7: Commit** (all four in one commit — one cohesive deliverable)
 
 ```bash
-git add src/shared/domains/analytics/sources/local/leads-per-adkey.ts src/shared/domains/analytics/sources/local/appointments-per-adkey.ts src/shared/domains/analytics/sources/local/signed-per-adkey.ts
-git commit -m "feat(analytics): local SQL sources — leads/appointments/signed per adKey
+git add src/shared/domains/analytics/sources/local/branded-meta-scope.ts src/shared/domains/analytics/sources/local/leads-per-adkey.ts src/shared/domains/analytics/sources/local/appointments-per-adkey.ts src/shared/domains/analytics/sources/local/signed-per-adkey.ts
+git commit -m "feat(analytics): local SQL sources (branded-Meta-paid scoped) — leads/appointments/signed per adKey
 
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```

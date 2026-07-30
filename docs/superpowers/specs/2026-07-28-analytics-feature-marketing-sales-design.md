@@ -156,6 +156,8 @@ src/app/(frontend)/dashboard/analytics/page.tsx     # replace stub: protectDashb
 
 ## 6. Business logic — metric catalog
 
+> **Population scope (load-bearing, ratified 2026-07-30):** every metric counts ONLY customers/leads/meetings/proposals that originated from a **paid Meta ad click** — `customer_lead_attribution.utm_source='meta' AND utm_medium='paid'` (written solely by `scripts/meta/sync/ad-link.ts`). This is deliberately NARROWER than `customers.leadSourceId='branded-meta-ads'`, which also includes organic funnel visitors (typed URL/SEO, no ad attribution) and would deflate CPL/CPA/ROAS with free leads. Implemented as a shared `brandedMetaPaidScope` predicate reused by every source and metric. `utmContent`(=adKey) is the ad-level breakdown dimension, not the scope gate.
+
 ### Marketing (key: `adKey`, rolled up to ad set / account; date for trends)
 
 | Metric | Sources | Compute | Notes |
