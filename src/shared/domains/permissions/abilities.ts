@@ -27,6 +27,7 @@ import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 // one line in ENTITY_NAMES.
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
+import { APPLICATION } from '@/shared/entities/applications/lib/constants'
 import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
@@ -55,6 +56,7 @@ export const ENTITY_NAMES = [
   VOIP_CAMPAIGN,
   VOIP_CONTACT_ATTRIBUTE,
   VOIP_CAMPAIGN_CONTACT,
+  APPLICATION,
 ] as const
 export type EntityName = (typeof ENTITY_NAMES)[number]
 
@@ -114,6 +116,11 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       can('read', 'Proposal')
       can('create', 'Proposal')
       can('update', 'Proposal')
+
+      // Agents run applications. No delete; decisions come in #3.
+      can('read', 'Application')
+      can('create', 'Application')
+      can('update', 'Application')
 
       can('read', 'Project')
       can('create', 'Project')

@@ -1,4 +1,5 @@
 export * from './activities'
+export * from './applications'
 export * from './customer-pipelines'
 export * from './customers'
 export * from './leads'
