@@ -2,7 +2,7 @@
 
 An **Application** is an agent-run, in-home promotion application (`type`: `tpr_assistance`; `showcase` is stubbed for a future phase) that persists to the DB and links to a meeting. Meeting (1) → Applications (many). This entity is the **persistence substrate** only: the multi-step form engine and UI are sub-project #2, and the review/approval + decision email are sub-project #3.
 
-This directory holds: the draft-state schema (`schemas/index.ts`), enum re-exports and reserved keys (`lib/constants.ts`), the visibility predicate + server spec (`lib/`), CRUD + business DAL (`dal/server/`). Backend module layout mirrors `proposals/`. The server spec at `lib/server-spec.ts` is consumed by `src/trpc/routers/applications.router/` (when written).
+This directory holds: the draft-state schema (`schemas/index.ts`), enum re-exports and reserved keys (`lib/constants.ts`), the visibility predicate + server spec (`lib/`), CRUD + business DAL (`dal/server/`). Backend module layout mirrors `proposals/`. The server spec at `lib/server-spec.ts` is consumed by `createEntityRouter` in `src/trpc/routers/applications.router/index.ts`, which is already wired (CRUD + business reads + draft lifecycle).
 
 ## Lifecycle
 
