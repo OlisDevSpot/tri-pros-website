@@ -20,9 +20,9 @@ The feature is **read-only aggregation**. It owns no business entity; it derives
 ## 3. Ground-truths (verified against code, 2026-07-28)
 
 **Architecture / infra**
-- **G1.** `src/trpc/routers/lead-sources.router.ts` is the sanctioned read-only aggregation pattern: raw `db` in a `*.router.ts`, `superAdminProcedure`, free-form aggregate shapes, Recharts UI. It already joins `customer_lead_attribution → customers → meetings`. This is the template.
+- **G1.** `src/trpc/routers/lead-sources.router.ts` shows the read-only aggregation **join shape** we need (`customer_lead_attribution → customers → meetings`, `superAdminProcedure`, free-form aggregate shapes, Recharts UI) and is a useful reference. **Caveat (ratified by the 2026-07-30 convention audit):** it runs raw `db` *inside* a `*.router.ts`, which violates the hard DAL rule (`docs/adr/0002-entity-server-system.md:157` + `dal-conventions.md#only-dal-imports-db` — only `dal/` and `entities/*/dal/` may import `db`). It is a known layering debt, **not a template to copy**. We reuse its join logic but relocate the SQL into the **customers DAL** (`entities/customers/dal/server/`); the analytics domain and router never import `db`. (Same violation class also lives at `customer-pipelines.router.ts:77` — out of scope, do not replicate.)
 - **G2.** Super-admin gate = `ability.can('manage','all')` via `superAdminProcedure` (`src/trpc/init.ts`) + `protectDashboardPage()` redirect (route) + the `adminItems` nav ternary (`src/features/agent-dashboard/lib/get-sidebar-nav.ts:101`). Role enum includes `super-admin` (`src/shared/constants/enums/user.ts:1`).
-- **G3.** The Analytics **route + nav item already exist as disabled stubs** (`src/app/(frontend)/dashboard/analytics/page.tsx`, nav `get-sidebar-nav.ts:106` `enabled:false`). An **unrelated** `src/shared/services/analytics.service.ts` stub exists (all `throw 'not implemented'`) — do NOT overload it; new read logic goes in `analytics.router.ts` + the analytics domain.
+- **G3.** The Analytics **route + nav item already exist as disabled stubs** (`src/app/(frontend)/dashboard/analytics/page.tsx`, nav `get-sidebar-nav.ts:106` `enabled:false`). An **unrelated** `src/shared/services/analytics.service.ts` stub exists (all `throw 'not implemented'`) — do NOT overload it; new read logic splits as: SQL aggregation in the **customers DAL**, orchestration in the **analytics domain** (pure resolver + config), exposure in `analytics.router.ts` (`superAdminProcedure` → `resolve`).
 - **G4.** Meta **insights are not app-consumable today** — only in `scripts/meta/lib/{marketing-api,client}.ts`. Must add a read method to `src/shared/services/providers/meta/client.ts` (+ `schemas/insights.ts`) and an ACL sync service, per ADR-0003. The provider config fragment (`providers/meta/lib/config.ts`) is CAPI-only today; it needs a Marketing-API token + ad-account id added as optional config (no module-scope env reads; use `createProviderConfig`).
 
 **Data / join spine**
@@ -50,7 +50,7 @@ The feature is **read-only aggregation**. It owns no business entity; it derives
 - **R9.** Metrics whose data doesn't exist yet are **declared but flagged "instrumentation needed"** in the UI — never faked.
 
 **Non-functional**
-- **N1.** Layered architecture: provider → sync service (ACL facade, no DB) → analytics router/domain (aggregation) → feature UI. `superAdminProcedure` on every procedure.
+- **N1.** Layered architecture (hard DAL rule — ADR-0002:157 / ADR-0003): provider → sync service (ACL facade, no DB) → **DAL (the only layer that imports `db`; all first-party SQL aggregation lives here, in the customers DAL)** → analytics domain (pure resolver + config buckets, never imports `db`) → analytics router (`superAdminProcedure`, calls `resolve`) → feature UI. `superAdminProcedure` on every procedure.
 - **N2.** Remote (Meta) fetch centralized + cached, never per-metric.
 - **N3.** Metric `value`/`total` fns are pure and unit-testable, independent of data acquisition.
 - **N4.** Extensible: new KPI = one `metric({...})`; new data = one `source({...})`; new bucket = one `bucket({...})`. Fully type-inferred, rename-safe (reference-based deps).
@@ -80,15 +80,16 @@ const adStats = source({
 })
 const leads = source({
   key: 'adKey',
-  load: ({ range }) => leadsPerAdKey(range),        // local SQL → { adKey, leads }
-})
+  load: ({ range }) => leadsByAdKey(range),          // thin adapter → customers-DAL aggregation → { adKey, leads }
+})                                                    // the SQL lives in entities/customers/dal/server/, NOT here
 
 // METRIC: `from` deps by reference; framework joins them on the shared key and hands `value` one typed merged row.
 const cpl = metric({
   name: 'Cost per Lead',
   from: { adStats, leads },
   value: (r) => r.adStats.spend / r.leads.leads,                              // per-adKey series
-  total: (rows) => sum(rows, 'adStats.spend') / sum(rows, 'leads.leads'),     // honest overall (not mean-of-means)
+  total: (rows) => rows.reduce((a, r) => a + r.adStats.spend, 0)
+               / rows.reduce((a, r) => a + r.leads.leads, 0),                 // honest overall (not mean-of-means)
   format: money,
   interpret: 'Rising CPL with flat CTR ⇒ funnel/landing leak, not creative.',
   trend: true,                                                                 // snapshot-eligible
@@ -123,19 +124,27 @@ Live-refresh and the snapshot cron both call `resolve`. Remote sources are inter
 ### 5.4 Snapshots
 
 - Table `analytics_snapshots` (`src/shared/db/schema/analytics-snapshots.ts`): `bucket`, `metricId`, `dimensionKey` (nullable for scalars/`total`), `periodStart` (date), `granularity` (`day`), `value` (numeric), `capturedAt`, `provisional` (bool). Unique on `(metricId, dimensionKey, periodStart, granularity)`.
+  - **`value` is Postgres `numeric`** (exact decimal, **not** float/`real`) — chosen because the column is format-polymorphic: the same column holds a currency (CPL), a ratio (0.037 CTR), a duration, and a count. Currency metrics store **dollars as exact `numeric`**; there is no integer-cents column precisely because one column must also hold non-money formats. (Resolves the money-storage open item raised by the 2026-07-30 audit — `numeric` ≠ float, so the "no floats for money" rule is satisfied.)
+  - `bucket` / `granularity` / `metricId` enum-like columns use `text('col', { enum: constArray })`, not `pgEnum` (per `enum-standardization.md`, ratified 2026-07-14); the const array is the single source of truth. Timestamps via shared helpers; the daily upsert must **not** hand-set `updatedAt` (`$onUpdate` owns it).
 - **Daily** QStash job runs `resolve` for `trend: true` metrics and **upserts**. Each run **re-snapshots a trailing 28-day window** so Meta's restatements self-correct; periods inside Meta's attribution window are written `provisional: true`.
 - Trend charts read snapshots; current-state reads live (or latest snapshot). Sales metrics are first-party/exact → never provisional.
 
 ### 5.5 File layout
 
 ```
-src/shared/domains/analytics/            # engine (server-only)
+src/shared/domains/analytics/            # PURE engine (server-only, NEVER imports db)
   types.ts                               # Source / Metric / Bucket contracts + builders (source/metric/bucket)
   resolver.ts                            # resolve(bucket, {range, filters})
-  sources/local/*.ts                     # SQL aggregations (leadsPerAdKey, proposalFunnel, ...)
+  sources/local/*.ts                     # THIN adapters: call customers-DAL aggregation fns (NO db import)
   sources/remote/meta-insights.ts        # wraps meta-insights-sync.service
   metrics/*.ts                           # metric descriptors (marketing/*, sales/*)
   buckets/marketing.ts, buckets/sales.ts # config objects
+
+# SQL aggregation lives in the DAL — the ONLY layer allowed to import db (ADR-0002:157):
+src/shared/entities/customers/dal/server/ad-performance.ts
+  # one parameterized helper countPaidMetaByAdKey(range, { from, countExpr, extraWhere? })
+  # + leadsByAdKey / appointmentsByAdKey / signedByAdKey wrappers (sibling of measurement.ts).
+  # sources/local/* import THESE; they never touch db.
 
 src/trpc/routers/analytics.router.ts     # superAdminProcedure → resolve; mounted in src/trpc/routers/app.ts
 src/shared/services/providers/meta/
@@ -209,6 +218,8 @@ Surfaced during grounding; code is correct, docs drifted. Fix as part of this wo
 - **Type-safety:** typed `source`/`metric`/`bucket` builders with internal generics (inference without author-written generics).
 - **Snapshots:** daily grain, upsert with trailing 28-day re-snapshot, `provisional` flag inside Meta's attribution window.
 - **Framework abstraction:** config-driven (Sources → Metrics → Resolver), reference-based deps, auto-join on shared `key`.
+- **DAL layering (ratified by 2026-07-30 convention audit):** all first-party SQL aggregation lives in the **customers DAL** (`entities/customers/dal/server/ad-performance.ts`), the only layer permitted to import `db` (ADR-0002:157). `domains/analytics/` is a pure engine — its `sources/local/*` are thin adapters that call DAL fns and never import `db`. This corrects the original draft (G1/N1/§5.5), which placed raw `db.select` in `sources/local/*` — a hard-rule violation. The three per-adKey queries collapse into one parameterized `countPaidMetaByAdKey` helper (DRY).
+- **Insights-config gate:** `isMetaInsightsConfigured()` derives from the provider-config factory, not a raw `process.env` read; and the marketing-token path must not throw when only the CAPI trio is unset (decouple the two config surfaces).
 
 ## 10. Out of scope
 
