@@ -25,6 +25,8 @@ export const metaEnvFragment = z.object({
   META_DATASET_ID: z.string().optional(),
   META_CAPI_TOKEN: z.string().optional(),
   META_TEST_EVENT_CODE: z.string().optional(),
+  META_ACCESS_TOKEN: z.string().optional(),
+  META_AD_ACCOUNT_ID: z.string().optional(),
 })
 
 export type ParsedMetaEnv = z.infer<typeof metaEnvFragment>
@@ -35,6 +37,8 @@ export interface MetaRuntimeConfig {
   capiToken: string
   /** Present only in staging/QA — routes CAPI events to Test Events. */
   testEventCode?: string
+  marketingToken?: string
+  adAccountId?: string
 }
 
 const helpers = createProviderConfig({
@@ -46,6 +50,8 @@ const helpers = createProviderConfig({
     datasetId: parsed.META_DATASET_ID!,
     capiToken: parsed.META_CAPI_TOKEN!,
     testEventCode: parsed.META_TEST_EVENT_CODE,
+    marketingToken: parsed.META_ACCESS_TOKEN,
+    adAccountId: parsed.META_AD_ACCOUNT_ID,
   }),
 })
 
@@ -53,3 +59,8 @@ export const buildMetaConfig = helpers.build
 export const getMetaConfig = helpers.get
 export const isMetaConfigured = helpers.isConfigured
 export const metaConfigMeta = helpers.configMeta
+
+export function isMetaInsightsConfigured(): boolean {
+  const config = getMetaConfig()
+  return Boolean(config.marketingToken && config.adAccountId)
+}
