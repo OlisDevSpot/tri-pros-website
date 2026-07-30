@@ -18,19 +18,19 @@ export interface SourceContext {
 
 export type MetricFormat = 'currency' | 'percent' | 'ratio' | 'number' | 'duration'
 
-export type SourceRow = Record<string, any>
+export type SourceRow = Record<string, unknown>
 
 /**
  * A Source acquires data as rows keyed by one business dimension (`key`).
  * Local (SQL) and remote (provider) sources both satisfy this shape, so the
  * resolver treats them identically.
  */
-export interface Source<Row extends SourceRow, K extends keyof Row> {
+export interface Source<Row extends Record<PropertyKey, any>, K extends keyof Row> {
   key: K
   load: (ctx: SourceContext) => Promise<Row[]>
 }
 
-export function source<Row extends SourceRow, K extends keyof Row>(
+export function source<Row extends Record<PropertyKey, any>, K extends keyof Row>(
   def: Source<Row, K>,
 ): Source<Row, K> {
   return def
