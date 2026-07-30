@@ -1,3 +1,4 @@
+import type { MetaAdInsightRaw } from './schemas/insights'
 import type { MetaServerEvent, MetaUserData } from '@/shared/services/providers/meta/schemas/server-event'
 
 import { createHash } from 'node:crypto'
@@ -5,6 +6,7 @@ import { createHash } from 'node:crypto'
 import { toDigits } from '@/shared/lib/phone'
 import { META_GRAPH_BASE_URL } from '@/shared/services/providers/meta/constants'
 import { getMetaConfig } from '@/shared/services/providers/meta/lib/config'
+import { metaAdInsightsResponseSchema } from './schemas/insights'
 
 function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex')
@@ -86,6 +88,40 @@ function createMetaClient() {
         const detail = await res.text().catch(() => '')
         throw new Error(`[meta] CAPI send failed ${res.status}: ${detail}`)
       }
+    },
+
+    async fetchAdInsights(input: {
+      since: string
+      until: string
+      fields: string
+      timeIncrement?: number
+    }): Promise<MetaAdInsightRaw[]> {
+      const { marketingToken, adAccountId } = getMetaConfig()
+      if (!marketingToken || !adAccountId) {
+        throw new Error('[meta] insights not configured (META_ACCESS_TOKEN / META_AD_ACCOUNT_ID)')
+      }
+
+      const first = new URL(`${META_GRAPH_BASE_URL}/${adAccountId}/insights`)
+      first.searchParams.set('access_token', marketingToken)
+      first.searchParams.set('level', 'ad')
+      first.searchParams.set('time_range', JSON.stringify({ since: input.since, until: input.until }))
+      if (input.timeIncrement)
+        first.searchParams.set('time_increment', String(input.timeIncrement))
+      first.searchParams.set('fields', input.fields)
+      first.searchParams.set('limit', '200')
+
+      const rows: MetaAdInsightRaw[] = []
+      let url: string | null = first.toString()
+      while (url) {
+        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) })
+        if (!res.ok) {
+          throw new Error(`[meta] insights fetch failed ${res.status}: ${await res.text().catch(() => '')}`)
+        }
+        const parsed = metaAdInsightsResponseSchema.parse(await res.json())
+        rows.push(...parsed.data)
+        url = parsed.paging?.next ?? null
+      }
+      return rows
     },
   }
 }
