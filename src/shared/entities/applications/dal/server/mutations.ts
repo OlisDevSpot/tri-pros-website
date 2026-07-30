@@ -85,12 +85,22 @@ export async function submitApplication(
     const { answers } = applicationDraftSchema.parse(application.draftAnswersJSON)
 
     // Split answers: reserved trades key → junction; everything else → answer rows.
+    // Trades are Notion-managed: the reserved key holds { tradeId (Notion page
+    // UUID), tradeName } objects — NOT Postgres trade ids. see ../../DOCS.md#trades-question-key-seam
     const answerRows: { applicationId: string, questionKey: string, value: string, position: number }[] = []
-    let tradeIds: number[] = []
+    let tradeSelections: { tradeId: string, tradeName: string }[] = []
     let position = 0
     for (const [questionKey, raw] of Object.entries(answers)) {
       if (questionKey === TRADES_QUESTION_KEY) {
-        tradeIds = Array.isArray(raw) ? raw.map(Number).filter(n => Number.isInteger(n)) : []
+        tradeSelections = Array.isArray(raw)
+          ? raw.filter(
+              (t): t is { tradeId: string, tradeName: string } =>
+                t != null
+                && typeof t === 'object'
+                && typeof (t as { tradeId?: unknown }).tradeId === 'string'
+                && typeof (t as { tradeName?: unknown }).tradeName === 'string',
+            )
+          : []
         continue
       }
       answerRows.push({
@@ -115,9 +125,13 @@ export async function submitApplication(
             },
           })
       }
-      if (tradeIds.length > 0) {
+      if (tradeSelections.length > 0) {
         await tx.insert(x_applicationTrades)
-          .values(tradeIds.map(tradeId => ({ applicationId: input.applicationId, tradeId })))
+          .values(tradeSelections.map(t => ({
+            applicationId: input.applicationId,
+            tradeId: t.tradeId,
+            tradeName: t.tradeName,
+          })))
           .onConflictDoNothing()
       }
       return tx.update(applications)

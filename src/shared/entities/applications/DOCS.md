@@ -41,8 +41,9 @@ On **submit** (`submitApplication`), one transaction:
    trades key becomes an `application_answers` row
    (`INSERT … ON CONFLICT (application_id, question_key) DO UPDATE`,
    idempotent — safe to re-run); the reserved key
-   (`TRADES_QUESTION_KEY`) is coerced to `tradeId[]` and inserted into
-   `x_application_trades` (`onConflictDoNothing`).
+   (`TRADES_QUESTION_KEY`) holds `{ tradeId, tradeName }[]` (Notion page id +
+   name snapshot) and is inserted into `x_application_trades`
+   (`onConflictDoNothing`).
 3. Flips `status = 'submitted'` and stamps `submitted_at` with a JS
    `new Date().toISOString()` (never raw SQL `NOW()`).
 
@@ -74,14 +75,23 @@ upsert-and-flip).
 
 `TRADES_QUESTION_KEY` (`lib/constants.ts`, value `'trades'`) is the ONE answer
 key `submitApplication` special-cases. When exploding `draftAnswersJSON.answers`,
-any entry under this exact key is treated as a `tradeId[]` (coerced with
-`Array.isArray(raw) ? raw.map(Number).filter(Number.isInteger) : []`) and
-routed to `x_application_trades` instead of becoming an `application_answers`
-row. Every other key is a free-text/scalar answer.
+the entry under this exact key is treated as an array of
+`{ tradeId: string, tradeName: string }` and routed to `x_application_trades`
+instead of becoming `application_answers` rows. Every other key is a
+free-text/scalar answer.
 
-Sub-project #2's multi-select-trades step **must** write its selection into
+**Trades are Notion-managed.** Notion is the runtime source of truth for the
+trade catalog; trade ids are **Notion page UUIDs (strings)**, not the
+static-seed Postgres `trades.id`. So `x_application_trades.tradeId` is a `text`
+Notion id with **no FK** to the Postgres `trades` table (mirroring
+`x_project_scopes.scopeId`), and `tradeName` snapshots the label at submit
+because marketing renames trades in Notion freely. Sub-project #2's
+multi-select-trades step reads the Notion-backed picker
+(`notionRouter.trades.getAll` → `constructionDataService.getTrades()`) and
+**must** write `{ tradeId, tradeName }` objects under
 `draftAnswersJSON.answers['trades']` — any other key name silently falls
 through to the generic answer path and never reaches the trades junction.
+See memory `reference-trades-notion-vs-postgres`.
 
 **Why**: keeps trades joinable/aggregatable and out of the free-text answer
 table (see [`#draft-commit-split`](#draft-commit-split)'s ADR-0005 rationale).
@@ -130,6 +140,10 @@ or mutates a child row.
 - ❌ Writing a multi-select-trades step under any key other than the literal
   `TRADES_QUESTION_KEY` constant — it silently becomes a dead answer row
   instead of a trade selection.
+- ❌ FK-ing `x_application_trades.tradeId` to the Postgres `trades.id` — trades
+  are Notion-managed (Notion page UUIDs); the Postgres `trades` table is a
+  static seed nothing reads at runtime. Store the Notion id as `text` (+ a name
+  snapshot). See memory `reference-trades-notion-vs-postgres`.
 - ❌ Reading or writing `application_answers` / `x_application_trades` without
   first probing the parent `applications` row under `ctx.scope`.
 - ❌ Calling `saveDraft` or re-deriving committed answers after

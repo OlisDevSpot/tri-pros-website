@@ -42,10 +42,11 @@ export async function listApplications(
 
 export interface ApplicationWithAnswers extends Application {
   answers: ApplicationAnswer[]
-  tradeIds: number[]
+  /** Selected trades: Notion page id + name snapshot (NOT Postgres trade ids). */
+  trades: { tradeId: string, tradeName: string }[]
 }
 
-/** Parent + committed answers + selected trade ids, for the review panel (#3). */
+/** Parent + committed answers + selected trades, for the review panel (#3). */
 export async function getApplicationWithAnswers(
   ctx: ScopedContext,
   input: { applicationId: string },
@@ -61,9 +62,12 @@ export async function getApplicationWithAnswers(
       .from(applicationAnswers)
       .where(eq(applicationAnswers.applicationId, input.applicationId))
       .orderBy(asc(applicationAnswers.position))
-    const tradeRows = await db.select({ tradeId: x_applicationTrades.tradeId })
+    const trades = await db.select({
+      tradeId: x_applicationTrades.tradeId,
+      tradeName: x_applicationTrades.tradeName,
+    })
       .from(x_applicationTrades)
       .where(eq(x_applicationTrades.applicationId, input.applicationId))
-    return { ...application, answers, tradeIds: tradeRows.map(r => r.tradeId) }
+    return { ...application, answers, trades }
   })
 }
