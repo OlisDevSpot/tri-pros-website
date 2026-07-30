@@ -18,7 +18,7 @@ export interface SourceContext {
 
 export type MetricFormat = 'currency' | 'percent' | 'ratio' | 'number' | 'duration'
 
-export type SourceRow = Record<string, unknown>
+export type SourceRow = Record<string, any>
 
 /**
  * A Source acquires data as rows keyed by one business dimension (`key`).
