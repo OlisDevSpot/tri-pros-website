@@ -1,3 +1,5 @@
+import process from 'node:process'
+
 import { z } from 'zod'
 
 import { createProviderConfig } from '@/shared/config/create-provider-config'
@@ -61,6 +63,5 @@ export const isMetaConfigured = helpers.isConfigured
 export const metaConfigMeta = helpers.configMeta
 
 export function isMetaInsightsConfigured(): boolean {
-  const config = getMetaConfig()
-  return Boolean(config.marketingToken && config.adAccountId)
+  return Boolean(process.env.META_ACCESS_TOKEN && process.env.META_AD_ACCOUNT_ID)
 }
