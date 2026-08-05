@@ -70,7 +70,7 @@ DEV_LOGIN_SECRET=
 Add to `.env.local` (gitignored) a real value, e.g.:
 
 ```bash
-DEV_LOGIN_SECRET=pw-local-dev-8f2a7c9e
+DEV_LOGIN_SECRET=<YOUR_DEV_LOGIN_SECRET>
 ```
 
 - [ ] **Step 4: Type-check**
@@ -230,7 +230,7 @@ curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:3000/api/dev/playwrig
 # wrong secret -> 404
 curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:3000/api/dev/playwright-session?secret=nope"
 # invalid role -> 400
-curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:3000/api/dev/playwright-session?secret=pw-local-dev-8f2a7c9e&role=wizard"
+curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:3000/api/dev/playwright-session?secret=<YOUR_DEV_LOGIN_SECRET>&role=wizard"
 ```
 
 Expected: `404`, `404`, `400`.
@@ -238,14 +238,14 @@ Expected: `404`, `404`, `400`.
 - [ ] **Step 5: Verify the happy path mints a session cookie**
 
 ```bash
-curl -s -o /dev/null -D - "http://localhost:3000/api/dev/playwright-session?secret=pw-local-dev-8f2a7c9e" | grep -i "^set-cookie\|^location"
+curl -s -o /dev/null -D - "http://localhost:3000/api/dev/playwright-session?secret=<YOUR_DEV_LOGIN_SECRET>" | grep -i "^set-cookie\|^location"
 ```
 
 Expected: a `set-cookie:` header named `better-auth.session_token` (or `__Secure-…` variant) **and** `location: /dashboard`.
 
 - [ ] **Step 6: Verify authenticated page via Playwright MCP**
 
-Using the Playwright MCP browser: navigate to `http://localhost:3000/api/dev/playwright-session?secret=pw-local-dev-8f2a7c9e`, then to `http://localhost:3000/dashboard`. Take a snapshot.
+Using the Playwright MCP browser: navigate to `http://localhost:3000/api/dev/playwright-session?secret=<YOUR_DEV_LOGIN_SECRET>`, then to `http://localhost:3000/dashboard`. Take a snapshot.
 Expected: the dashboard renders **authenticated** (no redirect to a sign-in screen). This is the real correctness gate for the cookie format.
 
 - [ ] **Step 7: Verify role impersonation**
