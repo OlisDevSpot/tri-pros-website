@@ -32,6 +32,7 @@ function DialogClose({
 
 function DialogOverlay({
   className,
+  onClick,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
   return (
@@ -42,6 +43,14 @@ function DialogOverlay({
         className,
       )}
       {...props}
+      // Contain backdrop clicks for the same reason as DialogContent below: the
+      // overlay is a portal sibling of the content, so a click on it would also
+      // bubble (fiber tree) to a clickable ancestor. Dismiss is native-handled,
+      // so stopping the synthetic bubble only prevents the ancestor leak.
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick?.(e)
+      }}
     />
   )
 }
@@ -50,6 +59,7 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  onClick,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
@@ -64,6 +74,19 @@ function DialogContent({
           className,
         )}
         {...props}
+        // A modal is an interaction boundary. Radix portals this content to
+        // <body>, but React synthetic events still bubble along the FIBER tree,
+        // not the DOM tree — so a click inside a dialog rendered by a clickable
+        // ancestor (e.g. a pipeline kanban card that opens the customer profile
+        // on click) would propagate to that ancestor's onClick and fire it.
+        // Stopping click propagation here contains every modal's clicks at its
+        // own boundary, for every consumer, without each card having to guard.
+        // (Consumer onClick, if any, still runs.) This does NOT affect Radix's
+        // focus/dismiss handling, which uses native document-level listeners.
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick?.(e)
+        }}
       >
         {children}
         {showCloseButton && (

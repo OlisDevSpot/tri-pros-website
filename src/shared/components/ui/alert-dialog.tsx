@@ -30,6 +30,7 @@ function AlertDialogPortal({
 
 function AlertDialogOverlay({
   className,
+  onClick,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
   return (
@@ -40,12 +41,20 @@ function AlertDialogOverlay({
         className,
       )}
       {...props}
+      // Contain synthetic click bubbling — see the matching note in dialog.tsx.
+      // A modal (or its backdrop) rendered by a clickable ancestor must not leak
+      // clicks up the fiber tree to that ancestor's onClick.
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick?.(e)
+      }}
     />
   )
 }
 
 function AlertDialogContent({
   className,
+  onClick,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
@@ -58,6 +67,12 @@ function AlertDialogContent({
           className,
         )}
         {...props}
+        // See the matching note in dialog.tsx — contain modal clicks at the
+        // boundary so they never reach a clickable ancestor's onClick.
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick?.(e)
+        }}
       />
     </AlertDialogPortal>
   )
