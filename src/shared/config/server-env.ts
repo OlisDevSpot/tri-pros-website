@@ -35,6 +35,11 @@ const envSchema = z.object({
   // accident. NODE_ENV answers only "optimized build or dev build?".
   // see docs/codebase-conventions/environment.md#environment-axes
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
+  // Dev-only: gates /api/dev/playwright-session (OAuth-bypass login for the
+  // Playwright MCP browser). Optional so production builds never require it;
+  // the route refuses unless this is set AND matches. see
+  // docs/codebase-conventions/dev-auth-route.md
+  DEV_LOGIN_SECRET: z.string().min(1).optional(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   PORT: z.coerce.number().default(3000),
   NEXT_PUBLIC_BASE_URL: z.string(),
