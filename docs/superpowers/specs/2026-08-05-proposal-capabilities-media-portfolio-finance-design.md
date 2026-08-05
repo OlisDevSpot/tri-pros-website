@@ -71,15 +71,19 @@ Shared (ONE implementation):
 - **Optimization:** the shared `optimizeFile` core (image / pdf / **video**) + **one**
   `optimizeMediaJob({ ownerKind, mediaId })` + generic optimization-status setters that take the target
   table. Implement a new file type (video transcode, PDF raster) ONCE → both owners get it.
-- **Router:** a `createMediaRouter(config)` factory (procedure builder + optional authorize hook, table,
-  bucket, owner column/param, path builder, url strategy: public vs presigned, ownerKind). The existing
-  project media router is **refactored onto it**; proposal media instantiates it. Owner-specific
-  procedures (project: phase/hero/movePhase/bulkDelete/Google-Drive; proposal: setVisibility) are added
-  on top.
-- **UI:** shared primitives — `MediaDropzone` (configurable `accept`), `MediaCard`, the dnd-kit reorder
-  grid, the bulk-select bar — composed by a `ProjectMediaManager` and a `ProposalMediaManager`. (No
-  single fragile mega-component; reuse via primitives + config.)
-- **Upload hook:** a generic `useMediaUpload(config)` both managers use.
+- **Service:** file management is a **shared service** (`src/shared/services/media/`), NOT a
+  projects-only concern. `mediaService` exposes owner-parameterized operations (upload target, create +
+  optimize dispatch, delete + R2 cleanup, reorder, rename, list) driven by a `MediaStore` config
+  (`projectMediaStore`, `proposalMediaStore`, extensible to future owners). Every router — `projects`,
+  `proposals`, any future call-site — is a **thin caller**; no file logic lives inside a router.
+- **UI:** a generalized, dependency-injected `<MediaManager>` + primitives (`MediaCard`,
+  `MediaReorderGrid`, `MediaUploadButton`, `PhotoDetailDialog`) in **`src/shared/components/media/`**.
+  The legacy `src/shared/components/portfolio/*` media components are **removed** (relocated + generalized).
+  Owner call-sites in `features/` configure it (project: phase/hero/Drive; proposal: visibility).
+- **Upload hook:** a generic `useMediaUpload(config)` both call-sites use.
+- **Import direction (hard rule):** the shared media service + UI NEVER import from `src/features/**`.
+  `<MediaManager>` receives data + actions as props (DI), importing no router and no feature; feature
+  call-sites and trpc routers import *into* shared.
 
 Different (config/slots, with correct flexibility):
 
@@ -325,8 +329,9 @@ Living check-off list. Grouped by feature + cross-cutting.
 - [ ] Image strategy = current behavior, byte-for-byte unchanged
 - [ ] PDF strategy records pageCount (pdf-lib); video/other → skipped in v1 (transcode/raster = Plan 1b)
 - [ ] ONE `optimizeMediaJob({ ownerKind, mediaId })` + generic optimization setters (table-parameterized)
-- [ ] `createMediaRouter(config)` factory; existing project media router refactored onto it (regression-checked)
-- [ ] Shared UI primitives (`MediaDropzone`, `MediaCard`, dnd reorder grid, bulk bar) + generic `useMediaUpload(config)`
+- [ ] `mediaService` (owner-parameterized via `MediaStore`) owns file ops; project + proposal routers are thin callers (regression-checked)
+- [ ] Generalized `src/shared/components/media/` (`<MediaManager>` DI + `MediaCard`/`MediaReorderGrid`/`MediaUploadButton`) + generic `useMediaUpload(config)`; `portfolio/*` removed
+- [ ] Shared media service + UI import NOTHING from `src/features/**` (verified by grep)
 - [ ] Drag-reorder works for BOTH project and proposal media via the shared grid
 - [ ] Project-media path fully regression-verified after refactor (upload/optimize/reorder/hero/phase/delete)
 
