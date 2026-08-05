@@ -56,6 +56,48 @@ generalization [foundational], (2) portfolio-by-trade [small, independent], (3) 
 
 ## Feature 1 — Proposal media attachments
 
+### 1.0 Architecture: one media engine, two owners
+
+Proposal media is ~80% identical to the existing project `media_files` infrastructure. Rather than
+copy it, **generalize the media infrastructure so a single engine serves both owners** (project +
+proposal), with the genuine differences expressed as configuration/slots — not duplicated code. This
+is a refactor of the *existing* project-media path onto the shared layer, plus proposal media as a
+second consumer.
+
+Shared (ONE implementation):
+- **Schema:** a `baseMediaColumns` object both tables spread (identical column defs); each table keeps
+  its own owner FK + taxonomy. `media_files` columns are unchanged (no DB diff) — the extraction is a
+  no-op refactor verified by `db:push:dev --dry-run` reporting "no changes".
+- **Optimization:** the shared `optimizeFile` core (image / pdf / **video**) + **one**
+  `optimizeMediaJob({ ownerKind, mediaId })` + generic optimization-status setters that take the target
+  table. Implement a new file type (video transcode, PDF raster) ONCE → both owners get it.
+- **Router:** a `createMediaRouter(config)` factory (procedure builder + optional authorize hook, table,
+  bucket, owner column/param, path builder, url strategy: public vs presigned, ownerKind). The existing
+  project media router is **refactored onto it**; proposal media instantiates it. Owner-specific
+  procedures (project: phase/hero/movePhase/bulkDelete/Google-Drive; proposal: setVisibility) are added
+  on top.
+- **UI:** shared primitives — `MediaDropzone` (configurable `accept`), `MediaCard`, the dnd-kit reorder
+  grid, the bulk-select bar — composed by a `ProjectMediaManager` and a `ProposalMediaManager`. (No
+  single fragile mega-component; reuse via primitives + config.)
+- **Upload hook:** a generic `useMediaUpload(config)` both managers use.
+
+Different (config/slots, with correct flexibility):
+
+| | project media | proposal media |
+|---|---|---|
+| Owner FK | `projectId` | `proposalId` |
+| Bucket / access | portfolio bucket, **public CDN url** | homeowner-files bucket, **presigned only** |
+| Taxonomy | `phase` + `isHeroImage` | `visibility (internal/homeowner)` |
+| Auth | bare `agentProcedure` | entity-scoped + CASL, lock-exempt, scope-checked |
+| Extras | Google Drive import, hero | — |
+
+**Drag-reorder** ships in the shared UI for both owners in Plan 1 (the `reorder` procedure already
+exists on the project side). **PDF first-page raster + server-side video transcode** are implemented
+once in the shared optimizer in **Plan 1b** (`docs/superpowers/plans/…-media-optimization-completeness.md`),
+which runs right after the generalized core lands and includes the video-infra decision
+(Cloudflare Stream vs self-hosted ffmpeg vs external — chosen during 1b research). These are **committed
+follow-ups, not dropped scope.**
+
 ### 1.1 Data model — new table `proposal_media_files`
 
 A dedicated proposal-owned table (NOT an overload of `media_files`, which is deeply portfolio-coupled:
@@ -277,14 +319,21 @@ Living check-off list. Grouped by feature + cross-cutting.
 - [ ] `ProposalMediaGallery` renders above the first SOW section (photos/videos inline, public PDFs as downloads)
 - [ ] Gallery renders nothing when no homeowner-visible files
 
-### Cross-cutting — generalized file optimization
-- [ ] `optimizeFile` API with normalized `FileOptimizationResult` + strategy registry
+### Cross-cutting — generalized media engine (one engine, two owners)
+- [ ] `baseMediaColumns` shared column set; `media_files` refactored to spread it with NO DB diff (`db:push:dev --dry-run` clean)
+- [ ] `optimizeFile` core with normalized `FileOptimizationResult` + kind classifier (image/pdf/video/other)
 - [ ] Image strategy = current behavior, byte-for-byte unchanged
-- [ ] Video strategy records duration + client-captured poster thumbnail (no transcode)
-- [ ] PDF strategy records pageCount + size + thumbnail-where-possible (else typed placeholder)
-- [ ] `other` strategy passthrough → `status: skipped`
-- [ ] Shared processing core; thin job wrappers persist to `media_files` and `proposal_media_files`
-- [ ] Follow-ups (video transcode, PDF first-page raster) clearly marked in code + docs
+- [ ] PDF strategy records pageCount (pdf-lib); video/other → skipped in v1 (transcode/raster = Plan 1b)
+- [ ] ONE `optimizeMediaJob({ ownerKind, mediaId })` + generic optimization setters (table-parameterized)
+- [ ] `createMediaRouter(config)` factory; existing project media router refactored onto it (regression-checked)
+- [ ] Shared UI primitives (`MediaDropzone`, `MediaCard`, dnd reorder grid, bulk bar) + generic `useMediaUpload(config)`
+- [ ] Drag-reorder works for BOTH project and proposal media via the shared grid
+- [ ] Project-media path fully regression-verified after refactor (upload/optimize/reorder/hero/phase/delete)
+
+### Committed follow-up — Plan 1b (media optimization completeness)
+- [ ] Video-infra decision documented (Stream vs ffmpeg vs external)
+- [ ] Server-side video transcode + poster, implemented once in the shared optimizer
+- [ ] PDF first-page rasterization thumbnail, implemented once in the shared optimizer
 
 ### Feature 1 — copy photos from proposal to project gallery (manual)
 - [ ] `r2Client.copyObject` cross-bucket server-side copy primitive added
@@ -317,10 +366,19 @@ Living check-off list. Grouped by feature + cross-cutting.
 
 ---
 
-## Out of scope (v1)
+## Committed follow-up — Plan 1b (media optimization completeness)
 
-- Video transcoding and PDF first-page rasterization (metadata + thumbnail hooks only for now)
-- Full viewed/signed webhook lifecycle for the finance application (sent-only in v1)
+Implemented ONCE in the shared optimizer (both owners benefit), right after the generalized core lands:
+- **Server-side video transcode** → web-optimized playback + poster/thumbnail. Requires an infra
+  decision (Cloudflare Stream vs self-hosted ffmpeg vs external API) made during Plan 1b research.
+- **PDF first-page rasterization** → real document thumbnail (needs a rasterizer, e.g. pdfjs+canvas;
+  validated on serverless).
+
+These are NOT dropped — they are a tracked, committed plan.
+
+## Out of scope (this epic)
+
+- Full viewed/signed webhook lifecycle for the finance application (sent-only tracking)
 - Importing videos/PDFs (not just photos) into the project portfolio gallery
 - Homeowner-side uploads (agent-only throughout)
 
