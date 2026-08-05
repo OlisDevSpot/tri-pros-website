@@ -44,6 +44,25 @@ First Playwright action each session:
 
 Then work authenticated. Add `&as=` or `&role=` to check a specific user type.
 
+## Switching identity mid-session
+
+Navigating to the route again with a different `as`/`role` switches user
+**immediately**, even in the same tab. The route expires better-auth's
+`session_data` cache cookie on every login — without that, better-auth's
+`cookieCache` (`auth/server.ts`, `session.cookieCache`, 5-min TTL, written by the
+client's `get-session` call) would keep serving the *previous* user for up to 5
+minutes after the `session_token` was replaced. The expiry cookie must carry
+`Domain=<host>` to match the real cache cookie (the app enables
+`crossSubDomainCookies`), so it's set from the request host, not the static
+`auth.$context` attributes.
+
+> Known limit: better-auth chunks `session_data` into `.0`/`.1`/… only if the
+> payload exceeds ~4093 bytes; the expiry clears the base name only. Current
+> session payloads don't chunk, so this isn't exercised.
+>
+> Cosmetic: an in-tab switch can log one self-healing React hydration warning
+> (the avatar initials briefly mismatch old vs new user). Gone on fresh load.
+
 ## Config
 
 `DEV_LOGIN_SECRET` in `.env.local` (see `.env.example`). Optional in the
