@@ -97,10 +97,10 @@ Different (config/slots, with correct flexibility):
 
 **Drag-reorder** ships in the shared UI for both owners in Plan 1 (the `reorder` procedure already
 exists on the project side). **PDF first-page raster + server-side video transcode** are implemented
-once in the shared optimizer in **Plan 1b** (`docs/superpowers/plans/…-media-optimization-completeness.md`),
-which runs right after the generalized core lands and includes the video-infra decision
-(Cloudflare Stream vs self-hosted ffmpeg vs external — chosen during 1b research). These are **committed
-follow-ups, not dropped scope.**
+once in the shared optimizer in **Plan 1b** — design: `docs/superpowers/specs/2026-08-05-media-video-pdf-optimization-design.md`;
+plan (pending): `docs/superpowers/plans/2026-08-05-media-video-pdf-optimization.md`. The 1b video-infra decision is
+**settled: Cloudflare Stream** (only path that fixes phone HEVC/.mov cross-browser playback; PDF raster via
+pdfjs + @napi-rs/canvas). These are **committed follow-ups, not dropped scope.**
 
 ### 1.1 Data model — new table `proposal_media_files`
 
