@@ -1,17 +1,15 @@
-import { extname } from 'node:path'
 import { TRPCError } from '@trpc/server'
-import { eq, inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
 import { insertMediaFilesSchema, mediaFiles } from '@/shared/db/schema'
 import { resetOptimizationStatus } from '@/shared/entities/media-files/dal/server/queries'
-import { r2Client } from '@/shared/services/providers/r2/client'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
-import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
+import { mediaService } from '@/shared/services/media/media.service'
+import { projectMediaStore } from '@/shared/services/media/stores'
+import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
+import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { agentProcedure, createTRPCRouter } from '../../init'
-
-const PORTFOLIO_BUCKET = R2_BUCKETS.portfolioProjects
 
 export const mediaRouter = createTRPCRouter({
   getUploadUrl: agentProcedure
@@ -22,17 +20,13 @@ export const mediaRouter = createTRPCRouter({
       mimeType: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const ext = extname(input.filename).toLowerCase()
-      const fileId = crypto.randomUUID()
-      const pathKey = `projects/${input.projectId}/${input.phase}/${fileId}${ext}`
-      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET] ?? ''}/${pathKey}`
-
-      const uploadUrl = await r2Client.getPresignedUploadUrl({
-        bucket: PORTFOLIO_BUCKET,
-        pathKey,
+      const { uploadUrl, pathKey, bucket } = await mediaService.buildUploadTarget(projectMediaStore, {
+        ownerId: input.projectId,
+        filename: input.filename,
         mimeType: input.mimeType,
+        extra: { phase: input.phase },
       })
-
+      const publicUrl = `${R2_PUBLIC_DOMAINS[bucket] ?? ''}/${pathKey}`
       return { uploadUrl, pathKey, publicUrl }
     }),
 
@@ -40,59 +34,30 @@ export const mediaRouter = createTRPCRouter({
     .input(insertMediaFilesSchema.omit({ bucket: true }).extend({
       bucket: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const [created] = await db
-        .insert(mediaFiles)
-        .values({ ...input, bucket: input.bucket ?? PORTFOLIO_BUCKET })
-        .returning()
-
-      if (created.mimeType.startsWith('image/')) {
-        void optimizeImageJob.dispatch({ mediaFileId: created.id })
-      }
-
-      return created
-    }),
+    .mutation(async ({ input }) =>
+      mediaService.createRecord(projectMediaStore, { ...input, bucket: input.bucket ?? projectMediaStore.bucket }),
+    ),
 
   retryOptimization: agentProcedure
     .input(z.object({ mediaFileId: z.number() }))
     .mutation(async ({ input }) => {
       await resetOptimizationStatus(input.mediaFileId)
-      void optimizeImageJob.dispatch({ mediaFileId: input.mediaFileId })
+      void optimizeMediaJob.dispatch({ ownerKind: 'project', mediaId: input.mediaFileId })
       return { success: true }
     }),
 
   delete: agentProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      const [file] = await db
-        .select({ pathKey: mediaFiles.pathKey, bucket: mediaFiles.bucket })
-        .from(mediaFiles)
-        .where(eq(mediaFiles.id, input.id))
-
-      if (!file) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
-      }
-
-      await r2Client.deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
-      await db.delete(mediaFiles).where(eq(mediaFiles.id, input.id))
+      await mediaService.removeRecord(projectMediaStore, input.id)
     }),
 
   reorder: agentProcedure
     .input(z.object({
-      updates: z.array(z.object({
-        id: z.number(),
-        sortOrder: z.number().int(),
-      })),
+      updates: z.array(z.object({ id: z.number(), sortOrder: z.number().int() })),
     }))
     .mutation(async ({ input }) => {
-      await db.transaction(async (tx) => {
-        for (const { id, sortOrder } of input.updates) {
-          await tx
-            .update(mediaFiles)
-            .set({ sortOrder })
-            .where(eq(mediaFiles.id, id))
-        }
-      })
+      await mediaService.reorder(projectMediaStore, input.updates)
     }),
 
   movePhase: agentProcedure
@@ -114,16 +79,8 @@ export const mediaRouter = createTRPCRouter({
   bulkDelete: agentProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
     .mutation(async ({ input }) => {
-      const files = await db
-        .select({ id: mediaFiles.id, pathKey: mediaFiles.pathKey, bucket: mediaFiles.bucket })
-        .from(mediaFiles)
-        .where(inArray(mediaFiles.id, input.ids))
-
-      for (const file of files) {
-        await r2Client.deleteMediaWithVariants(file.bucket as typeof PORTFOLIO_BUCKET, file.pathKey)
-      }
-
-      await db.delete(mediaFiles).where(inArray(mediaFiles.id, input.ids))
+      for (const id of input.ids)
+        await mediaService.removeRecord(projectMediaStore, id)
     }),
 
   rename: agentProcedure
@@ -132,10 +89,7 @@ export const mediaRouter = createTRPCRouter({
       name: z.string().min(1).max(80),
     }))
     .mutation(async ({ input }) => {
-      await db
-        .update(mediaFiles)
-        .set({ name: input.name })
-        .where(eq(mediaFiles.id, input.id))
+      await mediaService.rename(projectMediaStore, input.id, input.name)
     }),
 
   toggleHero: agentProcedure
@@ -154,7 +108,6 @@ export const mediaRouter = createTRPCRouter({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Media file not found' })
         }
 
-        // Clear hero from all other images in the same project
         await db
           .update(mediaFiles)
           .set({ isHeroImage: false })

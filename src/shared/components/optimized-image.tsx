@@ -10,8 +10,8 @@ interface OptimizedImageProps {
   file: {
     id?: number
     url: string
-    pathKey: string
-    bucket: string
+    pathKey: string | null
+    bucket: string | null
     optimizationStatus: string
     optimizationVariants?: string[] | null
     blurDataUrl?: string | null

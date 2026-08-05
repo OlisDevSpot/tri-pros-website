@@ -64,7 +64,9 @@ export async function deleteProject(projectId: string): Promise<void> {
     .where(eq(mediaFiles.projectId, projectId))
 
   await Promise.all(
-    files.map(f => r2Client.deleteMediaWithVariants(f.bucket as R2BucketName, f.pathKey)),
+    files
+      .filter((f): f is { pathKey: string, bucket: string } => f.pathKey !== null && f.bucket !== null)
+      .map(f => r2Client.deleteMediaWithVariants(f.bucket as R2BucketName, f.pathKey)),
   )
 
   await db.delete(projects).where(eq(projects.id, projectId))

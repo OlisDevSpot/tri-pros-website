@@ -8,7 +8,7 @@ import { account, mediaFiles } from '@/shared/db/schema'
 import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
-import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
+import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
 const PORTFOLIO_BUCKET = R2_BUCKETS.portfolioProjects
@@ -122,7 +122,7 @@ export const googleDriveRouter = createTRPCRouter({
         .returning()
 
       if (input.mimeType.startsWith('image/')) {
-        void optimizeImageJob.dispatch({ mediaFileId: created.id })
+        void optimizeMediaJob.dispatch({ ownerKind: 'project', mediaId: created.id })
       }
 
       return created

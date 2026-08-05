@@ -4,8 +4,8 @@ const DEFAULT_R2_DOMAIN = R2_PUBLIC_DOMAINS['tpr-portfolio-projects'] ?? ''
 
 interface MediaFileInput {
   url: string
-  pathKey: string
-  bucket: string
+  pathKey: string | null
+  bucket: string | null
   optimizationStatus: string
   optimizationVariants?: string[] | null
 }
@@ -39,6 +39,11 @@ export function getOptimizedSrc(file: MediaFileInput): string {
     return file.url
   }
 
+  // No R2 coordinates (e.g. a 'stream'-provider row) — nothing to build a variant URL from.
+  if (file.pathKey === null || file.bucket === null) {
+    return file.url
+  }
+
   const variants = resolveVariants(file)
 
   // Only use a variant as src if lg exists — otherwise original is sharper
@@ -60,6 +65,11 @@ export function getOptimizedSrc(file: MediaFileInput): string {
  */
 export function getOptimizedSrcSet(file: MediaFileInput): string | undefined {
   if (file.optimizationStatus !== 'optimized') {
+    return undefined
+  }
+
+  // No R2 coordinates (e.g. a 'stream'-provider row) — nothing to build variant URLs from.
+  if (file.pathKey === null || file.bucket === null) {
     return undefined
   }
 

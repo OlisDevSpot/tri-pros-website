@@ -45,7 +45,7 @@ export function PhotoDetailDialog({ file, open, onOpenChange }: Props) {
           <dd className="text-foreground">{file.isHeroImage ? 'Yes' : 'No'}</dd>
 
           <dt className="text-muted-foreground">Path Key</dt>
-          <dd className="truncate text-foreground text-xs" title={file.pathKey}>{file.pathKey}</dd>
+          <dd className="truncate text-foreground text-xs" title={file.pathKey ?? undefined}>{file.pathKey ?? '—'}</dd>
 
           <dt className="text-muted-foreground">Created</dt>
           <dd className="text-foreground">

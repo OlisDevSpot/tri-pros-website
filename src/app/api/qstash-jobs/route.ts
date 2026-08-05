@@ -13,7 +13,6 @@ import { initialCalendarSyncJob } from '@/shared/services/providers/upstash/jobs
 import { metaCapiEventJob } from '@/shared/services/providers/upstash/jobs/meta-capi-event'
 import { notifyLastInteractingAgentJob } from '@/shared/services/providers/upstash/jobs/notify-last-interacting-agent'
 import { notifyMeetingTimeChangedJob } from '@/shared/services/providers/upstash/jobs/notify-meeting-time-changed'
-import { optimizeImageJob } from '@/shared/services/providers/upstash/jobs/optimize-image'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { propagateCustomerChangeJob } from '@/shared/services/providers/upstash/jobs/propagate-customer-change'
 import { sendViewNotificationJob } from '@/shared/services/providers/upstash/jobs/send-view-notification'
@@ -32,7 +31,6 @@ export const maxDuration = 60
  */
 const jobs: Job[] = [
   generateAISummaryJob,
-  optimizeImageJob,
   optimizeMediaJob,
   createQbRecordsJob,
   syncQbPaymentJob,
