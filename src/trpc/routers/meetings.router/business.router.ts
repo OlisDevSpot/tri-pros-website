@@ -40,9 +40,9 @@ export function createMeetingBusinessRouter(entity: EntityToolkit<PgTable>) {
           })
         }
 
-        // Look up the meeting's customer for the note (may be null).
+        // Look up the meeting's customer + date for the note (customer may be null).
         const [row] = await db
-          .select({ customerId: meetings.customerId })
+          .select({ customerId: meetings.customerId, scheduledFor: meetings.scheduledFor })
           .from(meetings)
           .where(eq(meetings.id, input.meetingId))
           .limit(1)
@@ -59,9 +59,15 @@ export function createMeetingBusinessRouter(entity: EntityToolkit<PgTable>) {
         // 2. Append the reason as a customer note (skip if the meeting has no customer).
         if (row.customerId) {
           const label = MEETING_OUTCOME_LABELS[input.outcome]
+          // Meeting date in the business timezone, e.g. "07/08".
+          const meetingDate = new Date(row.scheduledFor).toLocaleDateString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            timeZone: 'America/Los_Angeles',
+          })
           const note = await addCustomerNote({
             customerId: row.customerId,
-            content: `Meeting outcome set to "${label}". ${input.reason}`,
+            content: `${meetingDate} meeting results:\nOutcome set to ${label}\n${input.reason}`,
             authorId: ctx.session.user.id,
           })
           if (!note.success) {

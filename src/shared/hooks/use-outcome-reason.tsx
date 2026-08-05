@@ -63,10 +63,14 @@ function OutcomeReasonDialogView({
           <Label className="sr-only" htmlFor="outcome-reason">Reason</Label>
           <Textarea
             autoFocus
-            className="min-h-[96px] resize-none text-sm"
+            // field-sizing-fixed overrides the base Textarea's field-sizing-content,
+            // so the min-height holds instead of the box collapsing to one line as
+            // you type; resize-none keeps it stable and it scrolls when content grows.
+            className="field-sizing-fixed min-h-24 resize-none text-sm"
             id="outcome-reason"
             onChange={e => onReasonChange(e.target.value)}
             placeholder="e.g. Homeowner postponed until spring; no rep available for the slot…"
+            rows={4}
             value={reason}
           />
         </div>

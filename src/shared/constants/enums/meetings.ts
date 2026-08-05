@@ -31,15 +31,17 @@ export const meetingPainTypes = [
 ] as const
 export type MeetingPainType = (typeof meetingPainTypes)[number]
 
+// Order drives the dropdown: unset first, then the neutral follow-up, then the
+// negatives as one contiguous block (so no neutral sits among the reds).
 export const selectableMeetingOutcomes = [
   'not_set',
+  'follow_up_needed',
   'not_good',
   'pns',
   'npns',
   'ftd',
   'no_show',
   'lost_to_competitor',
-  'follow_up_needed',
   'cancelled',
   'nra',
 ] as const

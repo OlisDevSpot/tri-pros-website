@@ -36,7 +36,7 @@ export function StatusDropdownCell<TStatus extends string>({
           </Badge>
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto min-w-40 p-1" onClick={e => e.stopPropagation()}>
+      <PopoverContent align="start" className="max-h-72 w-auto min-w-40 overflow-y-auto p-1" onClick={e => e.stopPropagation()}>
         {statuses.map((status) => {
           const isDisabled = status !== currentStatus && isStatusDisabled?.(status)
 
