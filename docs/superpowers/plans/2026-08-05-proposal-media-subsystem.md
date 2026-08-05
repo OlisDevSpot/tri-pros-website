@@ -6,7 +6,7 @@
 
 **Architecture — "media is a service, two owners today":**
 - **Service layer** (`src/shared/services/media/`): owner-parameterized file operations (upload target, create+optimize dispatch, delete+R2 cleanup, reorder, rename, list, copy) driven by a `MediaStore` config. The optimizer core + job + owner registry live here. Routers are **thin callers**; nothing about file management is projects-only.
-- **Two tables** (`media_files`, `proposal_media_files`) share `baseMediaColumns`; each keeps its owner FK + taxonomy.
+- **Two tables** (`media_files`, `proposal_media_files`) share `baseMediaColumns`; each keeps its owner FK + taxonomy. `baseMediaColumns` is **provider-aware** (`provider` `'r2'|'stream'` + nullable `pathKey`/`bucket` + `externalId`) so a row can be an R2 object *or* a Cloudflare Stream video. Plan 1 writes only `'r2'`; **Plan 1b** implements the `'stream'` provider (video), the strategy registry (pdf raster + video readiness), and the shared XHR-progress upload transport.
 - **UI layer** (`src/shared/components/media/`): a generalized, dependency-injected `<MediaManager>` + primitives (`MediaCard`, `MediaReorderGrid`, `MediaUploadButton`, `PhotoDetailDialog`). Owner call-sites in `features/` configure it (project: phase/hero/Drive; proposal: visibility). The `src/shared/components/portfolio/*` media components are **removed**.
 - **Import direction (hard rule):** `src/shared/**` (service + UI) NEVER imports from `src/features/**`. Call-sites in `features/` and routers in `src/trpc/` import *into* shared. The generalized `<MediaManager>` receives all data + actions as props (DI) — it imports no router and no feature.
 
@@ -72,17 +72,29 @@
 
 **Files:** Create `src/shared/db/schema/lib/media-columns.ts`, `src/shared/db/schema/proposal-media-files.ts`; Modify `src/shared/db/schema/index.ts`
 
-- [ ] **Step 1:** `baseMediaColumns` (the columns both media tables share, identical to today's `media_files` so extraction is a no-op diff):
+- [ ] **Step 1:** `baseMediaColumns` (the columns both media tables share). **Provider-aware from day one** (folded in from Plan 1b): a media row is no longer assumed to be an R2 object — it may live in Cloudflare Stream. Plan 1 only ever writes `provider = 'r2'`; Plan 1b implements the `'stream'` path. Because `media_files` is live and R2-only today, applying this base in Task B1 is a **small, safe migration** (adds `provider`/`external_id`, relaxes `path_key`/`bucket` to nullable) — not the no-op it would otherwise be. See Task B1 for the exact expected diff.
 
 ```ts
 // src/shared/db/schema/lib/media-columns.ts
 import { integer, jsonb, text, varchar } from 'drizzle-orm/pg-core'
 import { createdAt, updatedAt } from './schema-helpers'
 
+/** Where a media file's canonical asset lives. */
+export const mediaProviders = ['r2', 'stream'] as const
+export type MediaProvider = (typeof mediaProviders)[number]
+
 export const baseMediaColumns = {
   name: varchar('name', { length: 80 }).notNull(),
-  pathKey: text('path_key').notNull().unique(),
-  bucket: text('bucket').notNull(),
+  // Storage provider. 'r2' = object in an R2 bucket (pathKey + bucket populated).
+  // 'stream' = Cloudflare Stream asset (externalId populated; pathKey/bucket null).
+  // Plan 1 produces ONLY 'r2'; Plan 1b adds the 'stream' path for video.
+  provider: text('provider', { enum: mediaProviders }).notNull().default('r2'),
+  // R2 coordinates — nullable because a 'stream' row has no R2 object.
+  // (unique() on a nullable column is fine — Postgres permits multiple NULLs.)
+  pathKey: text('path_key').unique(),
+  bucket: text('bucket'),
+  // Provider asset id for non-R2 providers (Cloudflare Stream UID). Null for 'r2'.
+  externalId: text('external_id'),
   mimeType: text('mime_type').notNull(),
   fileExtension: text('file_extension').notNull(),
   sortOrder: integer('sort_order').notNull().default(0),
@@ -129,7 +141,7 @@ export type ProposalMediaFile = z.infer<typeof selectProposalMediaFileSchema>
 
 export const insertProposalMediaFileSchema = selectProposalMediaFileSchema
   .omit({ id: true, createdAt: true, updatedAt: true })
-  .partial({ visibility: true, sortOrder: true, duration: true, pageCount: true, thumbnailPathKey: true, optimizationStatus: true, optimizationVariants: true, blurDataUrl: true })
+  .partial({ visibility: true, sortOrder: true, duration: true, pageCount: true, thumbnailPathKey: true, optimizationStatus: true, optimizationVariants: true, blurDataUrl: true, provider: true, externalId: true })
 export type InsertProposalMediaFile = z.infer<typeof insertProposalMediaFileSchema>
 ```
 
@@ -261,6 +273,8 @@ export const mediaService = {
 ```
 
 > Implementer note: the `any`/generic-table casts are contained to this one service (the same pragmatic pattern as the optimization setters). Callers pass the correct owner-specific `values` shape; per-owner authorization happens in the caller BEFORE invoking (see C2). This keeps `mediaService` a pure, feature-free, reusable file service.
+>
+> Provider scope (Plan 1): `buildUploadTarget`, `createRecord`, and `removeRecord` handle the **`'r2'` provider only** — presigned PUT, insert-with-`provider:'r2'` (the column default), and R2 `deleteMediaWithVariants`. **Plan 1b extends these to branch on file kind / `store`** for the `'stream'` provider (Cloudflare Stream direct-upload target, Stream-UID record, Stream asset delete). Do not build the Stream branch here; just don't foreclose it — keep the provider off the column default so `'r2'` inserts need no change.
 
 - [ ] **Step 2:** `pnpm tsc && pnpm lint`; commit (`feat(media): mediaService — owner-parameterized file operations`).
 - [ ] **Step 3:** Verify import direction: `grep -rn "from '@/features" src/shared/services/media` → empty.
@@ -269,8 +283,13 @@ export const mediaService = {
 
 # PHASE B — Migrate the project path onto the service (regression-gated)
 
-## Task B1: `media_files` spreads `baseMediaColumns` (no DB diff)
-Rewrite `media_files` to `{ id: unsafeId, ...baseMediaColumns, url, tags, isHeroImage, phase, thumbnailUrl, projectId }` keeping schemas/relations unchanged. `pnpm db:push:dev --dry-run` → **"No changes"**. `pnpm tsc && pnpm lint`; commit.
+## Task B1: `media_files` spreads `baseMediaColumns` (small provider migration)
+Rewrite `media_files` to `{ id: unsafeId, ...baseMediaColumns, url, tags, isHeroImage, phase, thumbnailUrl, projectId }` keeping app-facing schemas/relations unchanged. Because `baseMediaColumns` is now provider-aware, this is a **small, safe migration** — NOT a no-op:
+
+- **Adds** `provider` (`notNull default 'r2'` — existing rows backfill to `'r2'`) and `external_id` (nullable, stays NULL for all existing rows).
+- **Relaxes** `path_key` and `bucket` from `NOT NULL` → nullable (existing rows keep their values; no data touched).
+
+`pnpm db:push:dev --dry-run` → verify the diff shows **exactly** those three changes (add `provider`, add `external_id`, drop-not-null on `path_key`/`bucket`) and **no drops/renames/data loss**. If the diff shows anything else, the base-column extraction diverged from the live shape — stop and reconcile. Then `pnpm db:push:dev`. `pnpm tsc && pnpm lint`; commit.
 
 ## Task B2: project `media.router` becomes a thin `mediaService` caller
 
