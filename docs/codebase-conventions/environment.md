@@ -91,6 +91,12 @@ CASL abilities live in `src/shared/domains/permissions/abilities.ts`. Every enti
 **Reference impl**: `src/shared/domains/permissions/abilities.ts`; ADR-0002
 **Enforced by**: middleware
 
+## Dev tooling
+
+- **`DEV_LOGIN_SECRET`** — gates `/api/dev/playwright-session`, the dev-only
+  OAuth-bypass login for the Playwright MCP browser. See
+  [dev-auth-route.md](./dev-auth-route.md).
+
 ## Key integrations
 
 - **DocuSign** — legacy contract signing (zoho-sign is the active path)

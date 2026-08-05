@@ -4,6 +4,9 @@ How inbound HTTP from external systems is shaped in this codebase. Establishes t
 
 > Companion docs: [service-architecture.md](./service-architecture.md) — the four-tier service/provider/DAL pattern; [environment.md](./environment.md) — where webhook env vars live; ADR-0003 — service/provider boundary rationale.
 
+> Related non-page API route: [dev-auth-route.md](./dev-auth-route.md) — the
+> dev-only Playwright login route (not a webhook, but a sibling `app/api` route).
+
 ---
 
 ## The async-vs-sync split
