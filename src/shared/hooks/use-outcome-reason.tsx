@@ -47,10 +47,24 @@ function OutcomeReasonDialogView({
   outcome,
   reason,
 }: OutcomeReasonDialogViewProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
   return (
     <Dialog open={open} onOpenChange={next => !next && onCancel()}>
       {/* aria-describedby=undefined: no description by design (Radix would warn otherwise) */}
-      <DialogContent aria-describedby={undefined}>
+      <DialogContent
+        aria-describedby={undefined}
+        // Focus the textarea deterministically on open. Plain `autoFocus` is
+        // unreliable here because this modal is usually opened from a Radix
+        // DropdownMenu (the entity-action menu), which restores focus to its
+        // trigger as it closes — racing with, and often beating, the textarea's
+        // autofocus. onOpenAutoFocus fires after the dialog mounts, so taking
+        // over focus here wins that race.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          textareaRef.current?.focus()
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             {outcome ? `Outcome: ${MEETING_OUTCOME_LABELS[outcome]}` : ''}
@@ -59,7 +73,7 @@ function OutcomeReasonDialogView({
         <div className="space-y-2">
           <Label className="sr-only" htmlFor="outcome-reason">Reason</Label>
           <Textarea
-            autoFocus
+            ref={textareaRef}
             // field-sizing-fixed overrides the base Textarea's field-sizing-content,
             // so the min-height holds instead of the box collapsing to one line as
             // you type; resize-none keeps it stable and it scrolls when content grows.

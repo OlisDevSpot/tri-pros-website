@@ -60,6 +60,7 @@ function DialogContent({
   children,
   showCloseButton = true,
   onClick,
+  onKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
@@ -86,6 +87,16 @@ function DialogContent({
         onClick={(e) => {
           e.stopPropagation()
           onClick?.(e)
+        }}
+        // Same reasoning for keyboard: without this, a keystroke inside the
+        // modal (e.g. Space in a textarea) bubbles the fiber tree to an ancestor
+        // that spreads dnd-kit listeners (the draggable pipeline card), whose
+        // KeyboardSensor treats Space/arrows/Enter as drag-activation keys —
+        // so typing a space would start dragging the card. Radix's own Escape/
+        // Tab handling is unaffected (native document listeners, not this).
+        onKeyDown={(e) => {
+          e.stopPropagation()
+          onKeyDown?.(e)
         }}
       >
         {children}

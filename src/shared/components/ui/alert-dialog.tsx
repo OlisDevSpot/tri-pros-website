@@ -55,6 +55,7 @@ function AlertDialogOverlay({
 function AlertDialogContent({
   className,
   onClick,
+  onKeyDown,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
@@ -67,11 +68,16 @@ function AlertDialogContent({
           className,
         )}
         {...props}
-        // See the matching note in dialog.tsx — contain modal clicks at the
-        // boundary so they never reach a clickable ancestor's onClick.
+        // See the matching note in dialog.tsx — contain modal click AND keyboard
+        // events at the boundary so they never reach a clickable/draggable
+        // ancestor's handlers (e.g. a dnd-kit card's KeyboardSensor on Space).
         onClick={(e) => {
           e.stopPropagation()
           onClick?.(e)
+        }}
+        onKeyDown={(e) => {
+          e.stopPropagation()
+          onKeyDown?.(e)
         }}
       />
     </AlertDialogPortal>
