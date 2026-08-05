@@ -4,6 +4,8 @@ import type { AppRouter } from '@/trpc/routers/app'
 
 import { CalendarDaysIcon, CheckCircleIcon, PlayCircleIcon, SparklesIcon, XCircleIcon } from 'lucide-react'
 
+import { isNegativeOutcome } from '@/shared/constants/enums/meetings'
+
 type MeetingRow = inferRouterOutputs<AppRouter>['meetingsRouter']['reads']['list']['rows'][number]
 
 export const meetingsStatConfig: StatBarItemConfig<MeetingRow>[] = [
@@ -39,8 +41,6 @@ export const meetingsStatConfig: StatBarItemConfig<MeetingRow>[] = [
     label: 'Not Interested',
     icon: XCircleIcon,
     color: 'text-red-500',
-    getValue: data => data.filter(m =>
-      ['not_good', 'pns', 'npns', 'ftd', 'no_show', 'lost_to_competitor'].includes(m.meetingOutcome),
-    ).length,
+    getValue: data => data.filter(m => isNegativeOutcome(m.meetingOutcome)).length,
   },
 ]

@@ -6,10 +6,13 @@ export const OUTCOME_PIPELINE_MAP: Record<string, MeetingPipeline | null> = {
   proposal_sent: null,
   follow_up_needed: null,
   converted_to_project: null,
+  additional_work: null,
   not_good: 'rehash',
   pns: 'rehash',
   npns: 'rehash',
   ftd: 'rehash',
   no_show: 'rehash',
+  cancelled: 'rehash',
+  nra: 'rehash',
   lost_to_competitor: 'dead',
 }

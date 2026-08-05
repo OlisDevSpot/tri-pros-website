@@ -5,6 +5,7 @@ import type { Pipeline } from '@/shared/constants/enums/pipelines'
 import { and, count, desc, eq, inArray, isNotNull, isNull, max, sql } from 'drizzle-orm'
 
 import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
+import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -158,7 +159,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       meetingCount: count(meetings.id).as('meeting_count'),
       hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
       hasActiveMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() AND ${meetings.scheduledFor} > now() - interval '2 hours')`.as('has_active'),
-      hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.meetingOutcome} IN ('proposal_created', 'converted_to_project', 'follow_up_needed', 'not_good', 'pns', 'npns', 'ftd', 'no_show', 'lost_to_competitor')))`.as('has_past'),
+      hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.meetingOutcome} IN (${sql.join(DECIDED_OUTCOMES.map(o => sql`${o}`), sql`, `)})))`.as('has_past'),
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
       nextMeetingAt: sql<string | null>`min(CASE WHEN ${meetings.scheduledFor} > now() - interval '2 hours' THEN ${meetings.scheduledFor} END)`.as('next_meeting_at'),
     })

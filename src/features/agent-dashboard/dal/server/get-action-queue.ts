@@ -1,5 +1,6 @@
 import { and, count, desc, eq, inArray, max, sql } from 'drizzle-orm'
 
+import { ATTENTION_OUTCOMES } from '@/shared/constants/enums/meetings'
 import { db } from '@/shared/db'
 import { customers } from '@/shared/db/schema/customers'
 import { meetings } from '@/shared/db/schema/meetings'
@@ -151,7 +152,7 @@ export async function getActionQueue(userId: string, isOmni = false, canSeeUngat
     .leftJoin(customers, eq(customers.id, meetings.customerId))
     .where(and(
       isOmni ? undefined : userParticipatesInMeeting(userId, meetings.id),
-      inArray(meetings.meetingOutcome, ['follow_up_needed', 'not_good', 'pns', 'npns', 'ftd', 'no_show', 'lost_to_competitor']),
+      inArray(meetings.meetingOutcome, ATTENTION_OUTCOMES),
     ))
     .orderBy(desc(meetings.createdAt))
 
