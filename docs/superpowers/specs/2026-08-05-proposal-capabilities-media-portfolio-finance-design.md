@@ -160,18 +160,28 @@ render a new `ProposalMediaGallery` — only when the proposal has homeowner-vis
 - **Public PDFs** as a compact "Documents" list with download links (presigned urls).
 - Renders nothing when there are no homeowner-visible files (no empty section).
 
-### 1.6 Approval → seed the project gallery
+### 1.6 Copy photos from a proposal into a project gallery (manual, agent-driven)
 
-On the existing conversion-trigger (proposal `status → approved` mints a Project), dispatch a QStash job
-`seedProjectMediaFromProposal({ proposalId, projectId })`:
+**Revised after verifying the code:** the proposals `DOCS.md#conversion-trigger` claims a Project is
+"created automatically" when a proposal is approved, but **no such automatic trigger exists** — project
+creation is a separate agent-driven action (`projects.router/business.router.ts` `create`), and the
+approval path (`contracts.service.ts:applyContractEvent`) inserts no project. So there is no automatic
+approval→project hook to seed from. (Plan 1 also **corrects that stale doc**, see Cross-cutting docs.)
 
-- For each `homeowner`-visibility proposal photo, **R2 server-side copy** the object from the private
-  `tpr-homeowner-files` bucket into the public portfolio bucket, and insert a `media_files` row on the
-  new project (phase `uncategorized`; the agent re-organizes later).
-- **Async** (never blocks approval) and **idempotent** by source pathKey (re-running converges, so
-  retries don't duplicate).
-- Scope note: seeds photos (the portfolio-relevant type). Videos/PDFs are not seeded into the portfolio
-  gallery in v1 (documented; can extend later).
+Instead, seeding is a **manual action inside the project image gallery UI** (the project media manager):
+
+- An **"Import photos from proposal"** action lets the agent pick a source proposal linked to the
+  project's meeting, view that proposal's image files, and **explicitly select which photos to copy**
+  — with an easy **"Select all"** affordance. It does NOT assume homeowner-visible-only or all photos;
+  the agent chooses.
+- Selected files are copied via **R2 server-side copy** (`r2Client.copyObject`, new) from the private
+  `tpr-homeowner-files` bucket into the public portfolio bucket, and a `media_files` row is inserted on
+  the project (phase `uncategorized`; the agent re-organizes later). Image optimization is dispatched for
+  each copied image exactly as a normal project upload.
+- Scope note: the import picker offers **image files only** (project galleries are photo portfolios).
+  Videos/PDFs are not importable into the portfolio gallery in v1.
+- Implemented as a synchronous tRPC mutation (agent-initiated, immediate gallery refresh); copies a
+  handful of agent-selected files, well within the serverless time budget.
 
 ---
 
@@ -236,7 +246,12 @@ Lean but proper docs so future sessions understand the *why*:
 
 - Extend `src/shared/entities/proposals/DOCS.md` with rules for: the proposal-media visibility model, the
   private-bucket + presigned-URL serving contract, the lock-ladder exception for media, the
-  approval→project media seeding, and the finance quick-send independence.
+  manual copy-photos-to-project action, and the finance quick-send independence.
+- **Fix the stale `#conversion-trigger` doc**: `proposals/DOCS.md:92` claims a Project is created
+  "automatically" on approval and cites a non-existent `proposals.router/business.router.ts`. Correct it
+  to describe reality — project creation is the agent-driven `projects.router/business.router.ts` `create`
+  mutation; approval itself inserts no project. Update the cross-references in `meetings/DOCS.md` and
+  `projects/DOCS.md` that point at the old claim.
 - A short DOCS section for the generalized file-optimizer API (the `FileOptimizationResult` contract +
   strategy registry).
 - Table/column comments on `proposal_media_files` and the new `proposals` finance columns.
@@ -271,10 +286,12 @@ Living check-off list. Grouped by feature + cross-cutting.
 - [ ] Shared processing core; thin job wrappers persist to `media_files` and `proposal_media_files`
 - [ ] Follow-ups (video transcode, PDF first-page raster) clearly marked in code + docs
 
-### Feature 1 — approval seeding
-- [ ] `seedProjectMediaFromProposal` QStash job dispatched on approval/conversion
-- [ ] Homeowner-visible photos R2 server-side copied into portfolio bucket + `media_files` rows inserted
-- [ ] Job is async and idempotent by source pathKey
+### Feature 1 — copy photos from proposal to project gallery (manual)
+- [ ] `r2Client.copyObject` cross-bucket server-side copy primitive added
+- [ ] `importProposalPhotos` tRPC mutation: copies agent-selected proposal images into a project + inserts `media_files` rows + dispatches optimization
+- [ ] "Import photos from proposal" action in the project media manager UI
+- [ ] Source-proposal picker (proposals linked to the project's meeting) + per-photo multi-select + "Select all"
+- [ ] Import picker restricted to image files
 
 ### Feature 2 — Portfolio-by-trade
 - [ ] `RelatedProjects` rewritten to use `showroomDisplay.getAll` + Notion catalogs + scope-id intersection
@@ -293,7 +310,8 @@ Living check-off list. Grouped by feature + cross-cutting.
 - [ ] `docs/zoho-sign/template-inventory.md` updated with the finance template entry
 
 ### Cross-cutting — documentation
-- [ ] `proposals/DOCS.md` extended (media visibility, presigned serving, lock exception, seeding, finance independence)
+- [ ] `proposals/DOCS.md` extended (media visibility, presigned serving, lock exception, copy-to-project, finance independence)
+- [ ] Stale `#conversion-trigger` doc corrected (no automatic approval→project; it's agent-driven `projects.business.create`) + cross-refs in meetings/projects DOCS
 - [ ] File-optimizer API documented
 - [ ] Table/column + function purpose comments added
 
@@ -303,7 +321,7 @@ Living check-off list. Grouped by feature + cross-cutting.
 
 - Video transcoding and PDF first-page rasterization (metadata + thumbnail hooks only for now)
 - Full viewed/signed webhook lifecycle for the finance application (sent-only in v1)
-- Seeding videos/PDFs (not just photos) into the project portfolio on approval
+- Importing videos/PDFs (not just photos) into the project portfolio gallery
 - Homeowner-side uploads (agent-only throughout)
 
 ## Open questions / decisions deferred to implementation
