@@ -40,6 +40,8 @@ export const selectableMeetingOutcomes = [
   'no_show',
   'lost_to_competitor',
   'follow_up_needed',
+  'cancelled',
+  'nra',
 ] as const
 export type SelectableMeetingOutcome = (typeof selectableMeetingOutcomes)[number]
 
@@ -48,6 +50,7 @@ export const derivedMeetingOutcomes = [
   'proposal_created',
   'proposal_sent',
   'converted_to_project',
+  'additional_work',
 ] as const
 export type DerivedMeetingOutcome = (typeof derivedMeetingOutcomes)[number]
 
@@ -58,6 +61,56 @@ export const meetingOutcomes = [
   ...derivedMeetingOutcomes,
 ] as const
 export type MeetingOutcome = (typeof meetingOutcomes)[number]
+
+export type MeetingOutcomeSentiment = 'positive' | 'neutral' | 'negative' | 'unset'
+
+/**
+ * THE canonical classifier for a meeting outcome's sentiment. Every color map,
+ * stat bucket, and negative/positive branch in the app derives from this — do
+ * not re-encode outcome sentiment anywhere else.
+ *
+ * - unset:    no decision recorded yet (not_set). Never colored like a neutral
+ *             result; never requires a reason.
+ * - neutral:  a real, in-progress / non-terminal result (follow-up, proposal
+ *             created/sent). Each keeps its own distinct hue.
+ * - positive: revenue outcome (new project or additional work).
+ * - negative: lost / failed meeting.
+ */
+export const MEETING_OUTCOME_SENTIMENT: Record<MeetingOutcome, MeetingOutcomeSentiment> = {
+  not_set: 'unset',
+  follow_up_needed: 'neutral',
+  proposal_created: 'neutral',
+  proposal_sent: 'neutral',
+  converted_to_project: 'positive',
+  additional_work: 'positive',
+  not_good: 'negative',
+  pns: 'negative',
+  npns: 'negative',
+  ftd: 'negative',
+  no_show: 'negative',
+  lost_to_competitor: 'negative',
+  cancelled: 'negative',
+  nra: 'negative',
+}
+
+export function isNegativeOutcome(outcome: MeetingOutcome): boolean {
+  return MEETING_OUTCOME_SENTIMENT[outcome] === 'negative'
+}
+
+/**
+ * An agent must document a reason (stored as a customer note) whenever they set
+ * a non-positive, decided outcome. That is every negative outcome plus
+ * follow_up_needed. not_set (unset) and the positive outcomes never require one.
+ */
+export function outcomeRequiresReason(outcome: MeetingOutcome): boolean {
+  return isNegativeOutcome(outcome) || outcome === 'follow_up_needed'
+}
+
+/** Outcomes that flag a meeting as needing agent attention (action queue). */
+export const ATTENTION_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(outcomeRequiresReason)
+
+/** Outcomes that represent a decided/terminal state (anything but not_set). */
+export const DECIDED_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(o => o !== 'not_set')
 
 // Energy-efficient trade classification (for program qualification)
 export const energyEfficientTradeAccessors = ['insulation', 'hvac', 'windows', 'solar'] as const
