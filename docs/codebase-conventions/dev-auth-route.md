@@ -47,4 +47,14 @@ Then work authenticated. Add `&as=` or `&role=` to check a specific user type.
 ## Config
 
 `DEV_LOGIN_SECRET` in `.env.local` (see `.env.example`). Optional in the
-server-env schema so production builds never require it.
+server-env schema so production builds never require it. Use a **high-entropy**
+value (e.g. `openssl rand -hex 24`) — the secret is the route's only barrier once
+the host/VERCEL_ENV guards allow the environment.
+
+> ⚠️ **Vercel Preview reachability.** The guards block production
+> (`VERCEL_ENV==='production'`) and production hosts, but NOT Vercel Preview
+> (`VERCEL_ENV==='preview'`, `*.vercel.app`). If `DEV_LOGIN_SECRET` is set in the
+> Vercel **Preview** environment, this route becomes a live "log in as any user
+> (incl. super-admin)" endpoint on a publicly-reachable preview URL, gated only
+> by the secret. **Do NOT set `DEV_LOGIN_SECRET` in Vercel Preview** unless you
+> deliberately want that. It belongs in local `.env.local` only.
