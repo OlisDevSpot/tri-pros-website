@@ -128,7 +128,7 @@ When a proposal is sent on a meeting, the meeting's outcome **conditionally** fl
 
 ### outcome-change-single-controller
 
-All meeting-outcome changes go through `useOutcomeChange` (`hooks/use-outcome-change.tsx`) — the ONE controller that applies the reason gate (`outcomeRequiresReason` → reason modal → `setOutcomeWithReason`; else `updateOutcome`). `updateOutcome`/`setOutcomeWithReason` are never called for an outcome change outside that controller. Config-driven surfaces get it via `useMeetingActionConfigs`, which owns one instance and returns `changeOutcome` + `OutcomeReasonDialog`; consumers render the dialog like they render `DeleteConfirmDialog`. Adding a direct `updateOutcome.mutate` at a call site is the bypass this rule exists to prevent.
+User-initiated meeting-outcome changes go through `useOutcomeChange` (`hooks/use-outcome-change.tsx`) — the ONE controller that applies the reason gate (`outcomeRequiresReason` → reason modal → `setOutcomeWithReason`; else `updateOutcome`). Server-side derivations (see `#outcome-flips-on-proposal-sent`) bypass this controller by design. `updateOutcome`/`setOutcomeWithReason` are never called for user-initiated outcome changes outside that controller. Config-driven surfaces get it via `useMeetingActionConfigs`, which owns one instance and returns `changeOutcome` + `OutcomeReasonDialog`; consumers render the dialog like they render `DeleteConfirmDialog`. Adding a direct `updateOutcome.mutate` at a call site is the bypass this rule exists to prevent.
 
 ### trade-selections-snapshot-source
 
