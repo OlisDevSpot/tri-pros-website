@@ -17,7 +17,6 @@ import { DataTable } from '@/shared/components/data-table/ui/data-table'
 import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
-import { outcomeRequiresReason } from '@/shared/constants/enums/meetings'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { useAbility } from '@/shared/domains/permissions/hooks'
 import { ManageParticipantsModal } from '@/shared/entities/meetings/components/manage-participants-modal'
@@ -26,7 +25,6 @@ import { useMeetingActions } from '@/shared/entities/meetings/hooks/use-meeting-
 
 import { MEETING_COLUMNS } from '@/shared/entities/meetings/lib/columns-registry'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
-import { useOutcomeReason } from '@/shared/hooks/use-outcome-reason'
 import { useTRPC } from '@/trpc/helpers'
 
 const SHOW_COLUMNS = ['customerName', 'meetingOutcome', 'ownerName', 'scheduledFor'] as const
@@ -34,8 +32,7 @@ const SHOW_COLUMNS = ['customerName', 'meetingOutcome', 'ownerName', 'scheduledF
 export function PastMeetingsTable() {
   const trpc = useTRPC()
   const ability = useAbility()
-  const { updateOutcome, updateScheduledFor, setOutcomeWithReason } = useMeetingActions()
-  const [OutcomeReasonDialog, requestReason] = useOutcomeReason()
+  const { updateScheduledFor } = useMeetingActions()
   const { open: openModal, setModal } = useModalStore()
 
   const [assignRepDialog, setAssignRepDialog] = useState<{ meetingId: string } | null>(null)
@@ -66,19 +63,7 @@ export function PastMeetingsTable() {
     setAssignProjectMeetingId(entity.id)
   }, [])
 
-  const handleTableOutcome = useCallback(async (meetingId: string, outcome: MeetingOutcome) => {
-    if (outcomeRequiresReason(outcome)) {
-      const { confirmed, reason } = await requestReason(outcome)
-      if (!confirmed) {
-        return
-      }
-      setOutcomeWithReason.mutate({ meetingId, outcome, reason })
-      return
-    }
-    updateOutcome.mutate({ id: meetingId, data: { meetingOutcome: outcome } })
-  }, [requestReason, setOutcomeWithReason, updateOutcome])
-
-  const { actions: sharedActions, DeleteConfirmDialog } = useMeetingActionConfigs<MeetingRow>({
+  const { actions: sharedActions, DeleteConfirmDialog, OutcomeReasonDialog, changeOutcome } = useMeetingActionConfigs<MeetingRow>({
     onView: handleView,
     onAssignOwner: handleAssignOwner,
     onAssignProject: handleAssignProject,
@@ -90,7 +75,7 @@ export function PastMeetingsTable() {
   const meta = useMemo<MeetingTableMeta>(() => ({
     meetingActions: () => sharedActions,
     onUpdateOutcome: (meetingId: string, outcome: MeetingOutcome) => {
-      void handleTableOutcome(meetingId, outcome)
+      void changeOutcome(meetingId, outcome)
     },
     onUpdateScheduledFor: (meetingId: string, date: Date) =>
       updateScheduledFor.mutate({ id: meetingId, data: { scheduledFor: date.toISOString() } }),
@@ -98,7 +83,7 @@ export function PastMeetingsTable() {
       setAssignRepDialog({ meetingId })
     },
     canAssignMeeting: ability.can('assign', 'Meeting'),
-  }), [sharedActions, handleTableOutcome, updateScheduledFor, ability])
+  }), [sharedActions, changeOutcome, updateScheduledFor, ability])
 
   return (
     <>

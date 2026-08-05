@@ -14,6 +14,7 @@ import { MEETING_OUTCOME_OPTIONS } from '@/shared/entities/meetings/constants/ou
 import { useConfirm } from '@/shared/hooks/use-confirm'
 
 import { useMeetingActions } from './use-meeting-actions'
+import { useOutcomeChange } from './use-outcome-change'
 
 // ── Stable top-level component — never causes unmount/remount ──────────────
 
@@ -56,6 +57,8 @@ interface MeetingActionConfigsResult<T extends MeetingEntity> {
   actions: EntityActionConfig<T>[]
   DeleteConfirmDialog: () => JSX.Element
   AssignOwnerDialog: () => JSX.Element
+  OutcomeReasonDialog: () => JSX.Element
+  changeOutcome: (meetingId: string, outcome: MeetingOutcome) => Promise<void>
 }
 
 function defaultNavigate(entity: { id: string }) {
@@ -73,7 +76,8 @@ function defaultCreateProposal(entity: { id: string }) {
 export function useMeetingActionConfigs<T extends MeetingEntity>(
   overrides: MeetingActionOverrides<T> = {},
 ): MeetingActionConfigsResult<T> {
-  const { deleteMeeting, duplicateMeeting, updateOutcome } = useMeetingActions()
+  const { deleteMeeting, duplicateMeeting } = useMeetingActions()
+  const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete meeting',
     message: 'This will permanently delete this meeting and its data. This cannot be undone.',
@@ -121,9 +125,8 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
         options: MEETING_OUTCOME_OPTIONS,
         getCurrentValue: (entity: T) => entity.meetingOutcome ?? 'not_set',
         onSelect: (entity: T, value: string) => {
-          updateOutcome.mutate({ id: entity.id, data: { meetingOutcome: value as MeetingOutcome } })
+          void changeOutcome(entity.id, value as MeetingOutcome)
         },
-        isLoading: updateOutcome.isPending,
       },
       {
         action: MEETING_ACTIONS.createProposal,
@@ -158,7 +161,7 @@ export function useMeetingActionConfigs<T extends MeetingEntity>(
     })
 
     return configs
-  }, [overrides, duplicateMeeting, updateOutcome, deleteMeeting, confirmDelete, defaultAssignOwner])
+  }, [overrides, duplicateMeeting, changeOutcome, deleteMeeting, confirmDelete, defaultAssignOwner])
 
-  return { actions, DeleteConfirmDialog, AssignOwnerDialog }
+  return { actions, DeleteConfirmDialog, AssignOwnerDialog, OutcomeReasonDialog, changeOutcome }
 }
