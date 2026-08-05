@@ -7,6 +7,10 @@
  * - proposal_sent: meeting has at least 1 proposal with status 'sent'
  * - converted_to_project: meeting has at least 1 proposal with status 'approved'
  *
+ * - additional_work: purely derived — always disabled. Unlike the outcomes above,
+ *   it has no proposal-state condition that would ever enable it; it is set
+ *   automatically when an additional-work proposal is approved, never hand-selected.
+ *
  * Note: SQL subquery values may arrive as strings ("0", "true", "false") — coerce before comparing.
  */
 export function getOutcomeDisabledChecker(proposalState: {
@@ -26,6 +30,8 @@ export function getOutcomeDisabledChecker(proposalState: {
         return !hasSent
       case 'converted_to_project':
         return !hasApproved
+      case 'additional_work':
+        return true
       default:
         return false
     }
