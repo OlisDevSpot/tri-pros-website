@@ -20,7 +20,7 @@ import { timingSafeEqual } from 'node:crypto'
  * Ritual: the Playwright browser navigates here FIRST each session, then works
  * authenticated. see docs/codebase-conventions/dev-auth-route.md
  */
-import { serializeSignedCookie } from 'better-call'
+import { serializeCookie, serializeSignedCookie } from 'better-call'
 import { NextResponse } from 'next/server'
 import { isProductionHost } from '@/shared/config/is-production-host'
 import env from '@/shared/config/server-env'
@@ -128,5 +128,25 @@ export async function GET(request: NextRequest) {
   const redirectPath = sanitizeRedirect(url.searchParams.get('redirect'), url.origin)
   const response = NextResponse.redirect(new URL(redirectPath, url.origin))
   response.headers.append('set-cookie', setCookie)
+
+  // Expire better-auth's session-data cache cookie so an identity SWITCH takes
+  // effect immediately. better-auth's cookieCache (auth/server.ts, session.cookieCache,
+  // 5-min TTL) writes this signed cookie on the client's get-session call; it would
+  // otherwise shadow the freshly-minted session_token until it expires.
+  //
+  // `ctx` here is the STATIC `auth.$context` (no request bound), so
+  // `ctx.authCookies.sessionData.attributes` lacks `domain` — better-auth only
+  // fills that in per-request (crossSubDomainCookies + dynamic baseURL are
+  // resolved against the incoming host inside its own request pipeline, which
+  // this route doesn't go through). The real cache cookie IS set with
+  // `Domain=<host>` (see auth/server.ts crossSubDomainCookies config), so an
+  // expiry cookie without a matching `domain` is a different cookie identity
+  // and silently fails to clear it. Set it explicitly from this request's host.
+  const dataCookie = ctx.authCookies.sessionData
+  response.headers.append(
+    'set-cookie',
+    serializeCookie(dataCookie.name, '', { ...dataCookie.attributes, domain: url.hostname, maxAge: 0 }),
+  )
+
   return response
 }
