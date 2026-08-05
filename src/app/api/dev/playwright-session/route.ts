@@ -1,5 +1,7 @@
 import type { NextRequest } from 'next/server'
 import type { UserRole } from '@/shared/constants/enums/user'
+import { Buffer } from 'node:buffer'
+import { timingSafeEqual } from 'node:crypto'
 /**
  * ⚠️ DEV-ONLY OAuth-bypass login for the Playwright MCP browser. ⚠️
  *
@@ -27,10 +29,34 @@ import { auth } from '@/shared/domains/auth/server'
 
 const notFound = () => new NextResponse('Not found', { status: 404 })
 
-function sanitizeRedirect(raw: string | null): string {
-  // relative paths only — reject absolute/protocol-relative to prevent open redirect
-  if (raw && raw.startsWith('/') && !raw.startsWith('//')) {
-    return raw
+// Timing-safe string compare — crypto.timingSafeEqual throws on length
+// mismatch, so guard that first (differing length is itself just a mismatch,
+// not an error). Never used unless env.DEV_LOGIN_SECRET is already confirmed
+// set (see call site) — we don't want to leak timing signal about whether the
+// secret is configured, only about whether a provided value matches it.
+function timingSafeEqualStrings(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'utf8')
+  const bufB = Buffer.from(b, 'utf8')
+  if (bufA.length !== bufB.length)
+    return false
+  return timingSafeEqual(bufA, bufB)
+}
+
+function sanitizeRedirect(raw: string | null, origin: string): string {
+  // Resolve against origin, then verify same-origin — rejects protocol-relative
+  // (//evil.com), backslash (/\evil.com — browsers treat \ as / in URLs, which
+  // WHATWG URL parsing also normalizes, so a naive startsWith('/') check can be
+  // bypassed), and any other authority-changing redirect target.
+  if (raw) {
+    try {
+      const resolved = new URL(raw, origin)
+      if (resolved.origin === origin) {
+        return resolved.pathname + resolved.search + resolved.hash
+      }
+    }
+    catch {
+      // fall through to default
+    }
   }
   return '/dashboard'
 }
@@ -45,7 +71,7 @@ export async function GET(request: NextRequest) {
   if (isProductionHost(host))
     return notFound()
   const secret = url.searchParams.get('secret')
-  if (!env.DEV_LOGIN_SECRET || secret !== env.DEV_LOGIN_SECRET)
+  if (!env.DEV_LOGIN_SECRET || !secret || !timingSafeEqualStrings(secret, env.DEV_LOGIN_SECRET))
     return notFound()
 
   const ctx = await auth.$context
@@ -99,7 +125,7 @@ export async function GET(request: NextRequest) {
     { ...cookie.attributes, maxAge: ctx.sessionConfig.expiresIn },
   )
 
-  const redirectPath = sanitizeRedirect(url.searchParams.get('redirect'))
+  const redirectPath = sanitizeRedirect(url.searchParams.get('redirect'), url.origin)
   const response = NextResponse.redirect(new URL(redirectPath, url.origin))
   response.headers.append('set-cookie', setCookie)
   return response
