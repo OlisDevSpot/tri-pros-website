@@ -58,7 +58,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const [contextOpen, setContextOpen] = useState(false)
   const [personaOpen, setPersonaOpen] = useState(false)
   const { status: syncStatus } = useMeetingSync(meetingId)
-  const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange(meetingId)
+  const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange()
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions({ id: meetingId }),
@@ -115,8 +115,8 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   }, [meeting?.contextJSON, meetingId, updateMeeting])
 
   const handleOutcomeChange = useCallback((outcome: string) => {
-    void changeOutcome(outcome as MeetingOutcome)
-  }, [changeOutcome])
+    void changeOutcome(meetingId, outcome as MeetingOutcome)
+  }, [changeOutcome, meetingId])
 
   const handleAgentNotesChange = useCallback((notes: string) => {
     updateMeeting.mutate({
