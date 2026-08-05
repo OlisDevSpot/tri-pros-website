@@ -9,7 +9,6 @@ import { Button } from '@/shared/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -50,14 +49,12 @@ function OutcomeReasonDialogView({
 }: OutcomeReasonDialogViewProps) {
   return (
     <Dialog open={open} onOpenChange={next => !next && onCancel()}>
-      <DialogContent>
+      {/* aria-describedby=undefined: no description by design (Radix would warn otherwise) */}
+      <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>
-            {outcome ? `Why "${MEETING_OUTCOME_LABELS[outcome]}"?` : ''}
+            {outcome ? `Outcome: ${MEETING_OUTCOME_LABELS[outcome]}` : ''}
           </DialogTitle>
-          <DialogDescription>
-            Add a short note explaining this outcome. It will be saved to the customer's timeline.
-          </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <Label className="sr-only" htmlFor="outcome-reason">Reason</Label>
