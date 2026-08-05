@@ -3,6 +3,7 @@ import type { ScopedContext } from '@/shared/dal/server/types'
 import type { InsertProposalSchema } from '@/shared/db/schema/proposals'
 import type { ZohoContractStatus } from '@/shared/services/providers/zoho-sign/types'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
+import { deriveOutcomeOnAdditionalWorkApproved } from '@/shared/entities/meetings/dal/server/mutations'
 import { proposalCrud } from '@/shared/entities/proposals/dal/server/crud'
 import { getByContractEnvelopeId, getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { contractEventColumn, contractEventIdempotencyPolicy, shouldAutoApproveOnContractEvent } from '@/shared/entities/proposals/lib/contract-events'
@@ -202,7 +203,14 @@ function createContractService() {
       }
 
       // 4. Update via generic CRUD
-      return dalVerifySuccess(await proposalCrud.update(ctx, { id: proposal.id, data: setFields }))
+      const updatedProposal = dalVerifySuccess(await proposalCrud.update(ctx, { id: proposal.id, data: setFields }))
+
+      // 5. Additional-work (upsell) proposals derive the meeting's outcome on approval.
+      if (setFields.status === 'approved' && proposal.kind === 'additional-work' && proposal.meetingId) {
+        dalVerifySuccess(await deriveOutcomeOnAdditionalWorkApproved(ctx, { meetingId: proposal.meetingId }))
+      }
+
+      return updatedProposal
     },
   }
 }

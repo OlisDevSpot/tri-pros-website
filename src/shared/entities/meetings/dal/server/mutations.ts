@@ -45,3 +45,33 @@ export async function deriveOutcomeOnProposalSent(
     }))
   })
 }
+
+const ADDITIONAL_WORK_OVERWRITABLE = ['not_set', 'proposal_created', 'proposal_sent'] as const
+
+/**
+ * Flips a meeting's outcome to `additional_work` when an additional-work
+ * (upsell) proposal on it is approved/signed. Conditional on the current
+ * outcome being in ADDITIONAL_WORK_OVERWRITABLE so it never clobbers a
+ * terminal outcome. Routes through meetingCrud.update so entity hooks fire.
+ */
+export async function deriveOutcomeOnAdditionalWorkApproved(
+  ctx: ScopedContext,
+  input: { meetingId: string },
+): Promise<DalReturn<void>> {
+  return dalDbOperation(async () => {
+    const [row] = await db
+      .select({ outcome: meetings.meetingOutcome })
+      .from(meetings)
+      .where(eq(meetings.id, input.meetingId))
+      .limit(1)
+
+    if (!row || !(ADDITIONAL_WORK_OVERWRITABLE as readonly string[]).includes(row.outcome)) {
+      return
+    }
+
+    dalVerifySuccess(await meetingCrud.update(ctx, {
+      id: input.meetingId,
+      data: { meetingOutcome: 'additional_work' },
+    }))
+  })
+}
