@@ -126,6 +126,10 @@ When a proposal is sent on a meeting, the meeting's outcome **conditionally** fl
 **Reference impl**: `dal/server/mutations.ts:deriveOutcomeOnProposalSent`
 **Enforced by**: SQL WHERE clause (`inArray(meetings.meetingOutcome, OVERWRITABLE_OUTCOMES)`)
 
+### outcome-change-single-controller
+
+All meeting-outcome changes go through `useOutcomeChange` (`hooks/use-outcome-change.tsx`) — the ONE controller that applies the reason gate (`outcomeRequiresReason` → reason modal → `setOutcomeWithReason`; else `updateOutcome`). `updateOutcome`/`setOutcomeWithReason` are never called for an outcome change outside that controller. Config-driven surfaces get it via `useMeetingActionConfigs`, which owns one instance and returns `changeOutcome` + `OutcomeReasonDialog`; consumers render the dialog like they render `DeleteConfirmDialog`. Adding a direct `updateOutcome.mutate` at a call site is the bypass this rule exists to prevent.
+
 ### trade-selections-snapshot-source
 
 `meetings.flowStateJSON.tradeSelections` is the meeting-time scope picker output. On proposal creation, the create handler snapshots these into the proposal's SOW (`projectJSON.data.sow`). After snapshot, the proposal SOW is independent.
