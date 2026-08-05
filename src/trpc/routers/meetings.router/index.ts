@@ -5,6 +5,7 @@ import { meetingSchemas, meetingServerSpec } from '@/shared/entities/meetings/li
 import { createTRPCRouter } from '../../init'
 import { createCrudRouter } from '../../lib/create-crud-router'
 import { createEntityRouter } from '../../lib/create-entity-router'
+import { createMeetingBusinessRouter } from './business.router'
 import { createParticipantsRouter } from './participants.router'
 import { createMeetingReadsRouter } from './reads.router'
 
@@ -18,5 +19,6 @@ export const meetingsRouter = createEntityRouter(meetingServerSpec, (entity) => 
     }),
     reads: createMeetingReadsRouter(entity),
     participants: createParticipantsRouter(entity),
+    business: createMeetingBusinessRouter(entity),
   })
 })
