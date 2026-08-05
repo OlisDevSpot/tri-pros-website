@@ -4,6 +4,8 @@ interface StageInput {
   hasPastMeeting: boolean
   hasActiveMeeting: boolean
   hasScheduledFutureMeeting: boolean
+  /** A meeting on this customer was dispositioned `follow_up_needed`. */
+  hasFollowUpNeeded: boolean
   proposalStatuses: string[]
   hasSentContract: boolean
 }
@@ -25,6 +27,12 @@ export function computeFreshStage(data: StageInput): FreshPipelineStage {
 
   if (proposalStatuses.length > 0 && proposalStatuses.every(s => s === 'declined')) {
     return 'declined'
+  }
+
+  // Explicit `follow_up_needed` outcome → Follow-up column, even before any
+  // follow-up meeting is booked. (A booked follow-up also lands here below.)
+  if (data.hasFollowUpNeeded) {
+    return 'follow_up_scheduled'
   }
 
   // Past meeting + future meeting = follow-up scheduled

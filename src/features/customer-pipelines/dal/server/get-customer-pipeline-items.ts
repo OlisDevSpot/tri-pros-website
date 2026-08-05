@@ -160,6 +160,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       hasScheduledFutureMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} > now())`.as('has_future_scheduled'),
       hasActiveMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() AND ${meetings.scheduledFor} > now() - interval '2 hours')`.as('has_active'),
       hasPastMeeting: sql<boolean>`bool_or(${meetings.scheduledFor} <= now() - interval '2 hours' OR (${meetings.scheduledFor} IS NULL AND ${meetings.meetingOutcome} IN (${sql.join(DECIDED_OUTCOMES.map(o => sql`${o}`), sql`, `)})))`.as('has_past'),
+      hasFollowUpNeeded: sql<boolean>`bool_or(${meetings.meetingOutcome} = ${'follow_up_needed'})`.as('has_follow_up_needed'),
       latestMeetingAt: max(meetings.createdAt).as('latest_meeting_at'),
       nextMeetingAt: sql<string | null>`min(CASE WHEN ${meetings.scheduledFor} > now() - interval '2 hours' THEN ${meetings.scheduledFor} END)`.as('next_meeting_at'),
     })
@@ -289,6 +290,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       hasPastMeeting: row.hasPastMeeting ?? false,
       hasActiveMeeting: row.hasActiveMeeting ?? false,
       hasScheduledFutureMeeting: row.hasScheduledFutureMeeting ?? false,
+      hasFollowUpNeeded: row.hasFollowUpNeeded ?? false,
       proposalStatuses,
       hasSentContract: pData?.hasSentContract ?? false,
       latestActivityAt: pData?.latestProposalAt ?? row.latestMeetingAt ?? null,
@@ -298,6 +300,7 @@ async function getFreshPipelineItems(userId: string, isOmni: boolean, canSeeUnga
       hasPastMeeting: rawData.hasPastMeeting,
       hasActiveMeeting: rawData.hasActiveMeeting,
       hasScheduledFutureMeeting: rawData.hasScheduledFutureMeeting,
+      hasFollowUpNeeded: rawData.hasFollowUpNeeded,
       proposalStatuses: rawData.proposalStatuses,
       hasSentContract: rawData.hasSentContract,
     })
