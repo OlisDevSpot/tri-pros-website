@@ -36,6 +36,7 @@ import { Separator } from '@/shared/components/ui/separator'
 import { ROOTS } from '@/shared/config/roots'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { hasCustomerProfileData } from '@/shared/entities/customers/lib/customer-predicates'
+import { useOutcomeChange } from '@/shared/entities/meetings/hooks/use-outcome-change'
 import { useTRPC } from '@/trpc/helpers'
 
 interface MeetingFlowViewProps {
@@ -57,6 +58,7 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   const [contextOpen, setContextOpen] = useState(false)
   const [personaOpen, setPersonaOpen] = useState(false)
   const { status: syncStatus } = useMeetingSync(meetingId)
+  const { changeOutcome, OutcomeReasonDialog } = useOutcomeChange(meetingId)
 
   const meetingQuery = useQuery(
     trpc.meetingsRouter.reads.getByIdWithJoins.queryOptions({ id: meetingId }),
@@ -113,11 +115,8 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
   }, [meeting?.contextJSON, meetingId, updateMeeting])
 
   const handleOutcomeChange = useCallback((outcome: string) => {
-    updateMeeting.mutate({
-      id: meetingId,
-      data: { meetingOutcome: outcome as MeetingOutcome },
-    })
-  }, [meetingId, updateMeeting])
+    void changeOutcome(outcome as MeetingOutcome)
+  }, [changeOutcome])
 
   const handleAgentNotesChange = useCallback((notes: string) => {
     updateMeeting.mutate({
@@ -295,6 +294,8 @@ function MeetingFlowViewInner({ meetingId }: MeetingFlowViewProps) {
         meetingId={meetingId}
         onOpenChange={setPersonaOpen}
       />
+
+      <OutcomeReasonDialog />
     </div>
   )
 }

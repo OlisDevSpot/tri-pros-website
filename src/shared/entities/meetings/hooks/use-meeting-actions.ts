@@ -50,5 +50,15 @@ export function useMeetingActions() {
     }),
   )
 
-  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor }
+  const setOutcomeWithReason = useMutation(
+    trpc.meetingsRouter.business.setOutcomeWithReason.mutationOptions({
+      onSuccess: () => {
+        invalidateMeeting()
+        toast.success('Outcome updated')
+      },
+      onError: () => toast.error('Failed to update outcome'),
+    }),
+  )
+
+  return { deleteMeeting, duplicateMeeting, updateOutcome, updateScheduledFor, setOutcomeWithReason }
 }
