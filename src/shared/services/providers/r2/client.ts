@@ -2,7 +2,7 @@ import type { R2BucketName } from './types'
 
 import { Buffer } from 'node:buffer'
 
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import { lazyProxy } from '@/shared/config/lazy-proxy'
@@ -99,6 +99,25 @@ export const r2Client = {
         r2Client.deleteObject(bucket, `${basePath}-${suffix}.webp`).catch(() => {}),
       ),
     ])
+  },
+
+  /**
+   * Copy an object from one bucket/key to another (supports cross-bucket).
+   * Used to promote a private homeowner file into the public portfolio bucket.
+   */
+  copyObject: async ({ sourceBucket, sourceKey, destBucket, destKey }: {
+    sourceBucket: R2BucketName
+    sourceKey: string
+    destBucket: R2BucketName
+    destKey: string
+  }): Promise<void> => {
+    await s3.send(new CopyObjectCommand({
+      Bucket: destBucket,
+      Key: destKey,
+      // CopySource is `${bucket}/${key}`; the key segment must be URL-encoded
+      // so paths containing spaces/slashes/unicode resolve correctly.
+      CopySource: `${sourceBucket}/${sourceKey.split('/').map(encodeURIComponent).join('/')}`,
+    }))
   },
 
   /** Presigned PUT URL for a direct browser upload. Default TTL 15 min. */
