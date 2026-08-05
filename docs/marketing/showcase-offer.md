@@ -22,10 +22,15 @@ feature as portfolio showpieces.
   featured on our website and ads.
 - Business rationale: future customers see real Tri Pros work without us having
   "hired" testimonials — it manufactures social proof.
-- **The exchange is deliberately soft-pedaled in customer-facing copy.** Live
-  funnels say only "featured in our showcase"; they never spell out the rights
-  transfer. Ads must match that restraint. The explicit terms surface in the
-  in-home meeting and the contract.
+- **The exchange is stated openly, but kept light and casual (Oliver 2026-07-28,
+  supersedes the prior soft-pedal stance).** Frame the filming/photos as a *fun*
+  part of being a featured Showcase home — "we film the before-and-after for our
+  portfolio" — never as a legalistic rights grab or the price of admission. Ads
+  and funnels MAY mention it in that spirit; do NOT dwell on it or itemize what's
+  transferred. The full legal terms (the actual rights transfer) still surface
+  only in the in-home meeting and the contract. Reference realization: the
+  approved kitchens reel ("we get to film the before and after for our
+  portfolio", one casual beat mid-script).
 - The discount is real but **never quantified anywhere public** ("at a Showcase
   price" is the entire public statement of it).
 
@@ -68,6 +73,7 @@ the click lands mid-sentence:
 | Phrase | Where it lives |
 |---|---|
 | "AAA-grade … at a Showcase price" | funnel heroes (`kitchens.ts` / `bathrooms.ts` / `complete-interior.ts`), OG metadata |
+| "No-commission Showcase pricing" / "we skip the commission" | ad creatives (reel VO + end cards), ad post copy — the no-commission angle (Oliver: literally true, we skip it); still no dollar figures |
 | "See if your home qualifies…" / "See if you qualify" | hero subhead + CTA labels, PII step CTA |
 | "We're selecting 5 [kitchens/bathrooms] in your area" | hero scarcity line, guarantee block |
 | "Showcase projects are available to homeowners." | ownership step subtitle |
@@ -132,5 +138,7 @@ funnel implementation, memory + git history, Notion):
   (owner decision 2026-07-07: anything outside the codebase is not relevant to
   the Showcase offer). Old third-party ad copy ("[GM]" campaigns) echoed the
   framing but is NOT a source.
-- The live funnels implement the offer faithfully but soft-pedal the rights
-  exchange — that restraint is intentional and part of the definition above.
+- The live funnels implement the offer faithfully. Originally they soft-pedaled
+  the rights exchange entirely; as of 2026-07-28 the stance is explicit-but-light
+  (see [the-deal](#the-deal)) — the exchange may be named in a fun, casual way,
+  never itemized as a rights transfer. Funnel copy realizes this incrementally.

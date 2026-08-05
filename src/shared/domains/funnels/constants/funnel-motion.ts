@@ -87,24 +87,30 @@ export const HERO_SCROLL_OFFSET = ['start start', 'end start'] as const
 /** Content fades FULLY by ~0.4 (leads the photo; never lingers as a ghost). */
 export const HERO_CONTENT_OPACITY_IN = [0, 0.4]
 export const HERO_CONTENT_OPACITY_OUT = [1, 0]
-/** The lift: content rises faster than the scroll (px, negative = up) with a
+/**
+ * The lift: content rises faster than the scroll (px, negative = up) with a
  *  whisper of scale-down for depth. Range runs a bit past the fade for momentum.
- *  Gated by reduced motion. */
+ *  Gated by reduced motion.
+ */
 export const HERO_CONTENT_FLOAT_IN = [0, 0.55]
 export const HERO_CONTENT_LIFT_PX = -180
 export const HERO_CONTENT_SCALE_TARGET = 0.96
 
-/** Radial legibility scrim fades just after the content (holds legibility while
- *  the copy is visible, then clears so the photo reads clean as it trails out). */
+/**
+ * Radial legibility scrim fades just after the content (holds legibility while
+ *  the copy is visible, then clears so the photo reads clean as it trails out).
+ */
 export const HERO_SCRIM_OPACITY_IN = [0, 0.5]
 export const HERO_SCRIM_OPACITY_OUT = [1, 0]
 
 // ── Background (lags DOWN) ─────────────────────────────────────────────────
-/** Parallax lag: the photo drifts DOWN as you scroll (positive = down) — moving
+/**
+ * Parallax lag: the photo drifts DOWN as you scroll (positive = down) — moving
  *  slower than the page so it sinks and reveals MORE of the image (the bathroom /
  *  kitchen) instead of lifting away with the copy. The oversized photo layer (see
  *  funnel-hero, `-inset-y-32`) is sized to fully cover this downward drift — keep
- *  the two in sync (drift must stay ≤ the vertical oversize). */
+ *  the two in sync (drift must stay ≤ the vertical oversize).
+ */
 export const HERO_PHOTO_Y_PX = 110
 /** Subtle push-in zoom for depth (also pads edge coverage during the drift). */
 export const HERO_PHOTO_SCALE_TARGET = 1.06

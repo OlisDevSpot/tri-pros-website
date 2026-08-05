@@ -112,7 +112,7 @@ export const bathroomsFunnel: FunnelSpec = {
         kind: 'guarantee',
         content: {
           headline: 'Showcase-grade work, guaranteed',
-          body: 'Every Showcase project is backed by our workmanship guarantee — including the waterproofing behind the walls.',
+          body: 'Every Showcase project is backed by our workmanship guarantee — including the waterproofing behind the walls. Selected homes are featured in our showcase — we film the before and after.',
           scarcityLine: 'We\'re selecting 5 bathrooms in your area this month.',
         },
       },

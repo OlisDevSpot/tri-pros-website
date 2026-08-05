@@ -272,7 +272,16 @@ the exact failures from the 2026-07-27 audit.
         x 65–1015, y 420–1248 (feed crops to 4:5 = top+bottom 285 px gone;
         1:1 surfaces = 420 px gone each end; Reels UI owns top 270 px +
         bottom 672 px; right rail ≈130 px wide mid-frame). Logo top-LEFT at
-        (x≈80, y≈440), height ≤130 px. NEVER top-right on 9:16.
+        **(x≈80, y≈310)**, height ≤130 px. NEVER top-right on 9:16.
+        **Logo-Y rationale (updated 2026-07-30, supersedes y≈440):** the logo
+        targets the intersection of the two placements a *video* actually gets
+        — the feed 4:5 crop (clear y>285) and the Reels/Stories top chrome
+        (clear y>270) — so y≈310 clears both by 25–40 px and reads as a true
+        top-left corner in Reels/Stories, the video's real home. The old y≈440
+        was set to also survive a 1:1 crop (420 px off each end), a placement
+        video effectively never gets; that conservatism made the badge float
+        low in-Reels. Other persistent elements keep the y 420 floor for
+        1:1-still survival; the logo alone takes the higher corner.
       · Assume geometric CENTER crop — never rely on smart-crop.
 - [ ] One scan path: badge → hook → support → CTA (no competing focal points)
 - [ ] No text over high-frequency texture without a protected zone under it

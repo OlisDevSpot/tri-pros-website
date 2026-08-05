@@ -96,7 +96,7 @@ export const kitchensFunnel: FunnelSpec = {
         kind: 'guarantee',
         content: {
           headline: 'Showcase-grade work, guaranteed',
-          body: 'Every Showcase project is backed by our workmanship guarantee.',
+          body: 'Every Showcase project is backed by our workmanship guarantee. Selected homes are featured in our showcase — we film the before and after.',
           scarcityLine: 'We\'re selecting 5 kitchens in your area this month.',
         },
       },

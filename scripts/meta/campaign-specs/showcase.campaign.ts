@@ -27,24 +27,24 @@ export const showcaseCampaign = defineCampaign({
           videoFile: 'reel-07.mp4',
           thumbnailFile: 'reel-07-thumb.jpg',
           headlines: [
-            'We’re Selecting 5 Kitchens in Your Area',
+            'We’re Remodeling 5 Kitchens — No Commission',
             '5 Kitchen Showcase Spots — See If You Qualify',
             'Is Your Kitchen One of the 5?',
           ],
           primaryTexts: [
-            '🏠 We’re selecting 5 kitchens in your area to feature in our showcase.\n\n'
+            '🏠 This round, we’re remodeling 5 kitchens in your area — and skipping the commission.\n\n'
             + 'If your home qualifies, you get:\n'
-            + '✅ A AAA-grade kitchen remodel\n'
-            + '✅ At a Showcase price\n'
-            + '✅ Featured in our portfolio\n\n'
+            + '✅ A full kitchen remodel, built to last\n'
+            + '✅ No-commission Showcase pricing\n'
+            + '✅ Your before-and-after featured in our portfolio\n\n'
             + 'Homeowners only. See if your home qualifies.',
-            'Get a AAA-grade kitchen remodel — at a Showcase price. '
-            + 'Tri Pros Remodeling is selecting 5 kitchens in your area to be featured in our showcase. '
-            + 'If selected, your kitchen gets our best-of-the-best work — quality that has to photograph beautifully. '
+            'Not every kitchen makes the cut — but yours might. '
+            + 'Tri Pros Remodeling is choosing 5 kitchens in your area for a full remodel at no-commission Showcase pricing. '
+            + 'The trade is simple: you get a kitchen you’ll actually love, and we film the before-and-after for our portfolio. '
             + 'Homeowners only. See if your home qualifies.',
             'Could your kitchen be one of the 5? 👀\n\n'
-            + 'Tri Pros Remodeling is choosing 5 homes in your area for AAA-grade kitchen remodels at a '
-            + 'Showcase price — quality built to be photographed, featured in our showcase.\n\n'
+            + 'We’re choosing 5 homes in your area for a full kitchen remodel — no commission, Showcase pricing — '
+            + 'and featuring the before-and-after in our portfolio.\n\n'
             + 'Homeowners only. See if your home qualifies.',
           ],
           descriptions: ['See if your home qualifies.'],
@@ -56,25 +56,25 @@ export const showcaseCampaign = defineCampaign({
           videoFile: 'reel-08.mp4',
           thumbnailFile: 'reel-08-thumb.jpg',
           headlines: [
-            'What Every Showcase Kitchen Includes',
-            'Showcase-Grade Work, Guaranteed',
+            'Only 5 Kitchens This Round — No Commission',
+            'A Full Kitchen Remodel, No Commission',
           ],
           primaryTexts: [
-            'What every Showcase kitchen gets:\n'
-            + '✅ AAA-grade materials\n'
-            + '✅ Beautiful AND functional\n'
-            + '✅ Built to be photographed\n\n'
-            + 'We’re selecting 5 kitchens in your area for our showcase. '
+            'Here’s a rare one for homeowners. 👀\n\n'
+            + 'We’re choosing 5 kitchens in your area for a full remodel at no-commission Showcase pricing:\n'
+            + '✅ A kitchen you’ll actually love\n'
+            + '✅ No commission — we skip it\n'
+            + '✅ Before-and-after featured in our portfolio\n\n'
+            + 'Only 5 spots. Homeowners only. See if your home qualifies.',
+            'Watch how a Showcase kitchen comes together. '
+            + 'Every home we select gets a full remodel at no-commission Showcase pricing — '
+            + 'because the before-and-after is featured in our portfolio. '
+            + 'Only 5 kitchens in your area this round. See if yours qualifies.',
+            'Think your kitchen could carry a Showcase? 👀\n\n'
+            + '5 kitchens in your area — full remodel, no commission, featured in our portfolio.\n\n'
             + 'Homeowners only. See if your home qualifies.',
-            'Watch what a Showcase kitchen looks like from start to finish. '
-            + 'Every home we select gets our best-of-the-best work at a Showcase price — '
-            + 'because the result is featured in our showcase. '
-            + '5 kitchens in your area. See if yours qualifies.',
-            'Think your kitchen could carry a showcase? 👀\n\n'
-            + 'We’re selecting 5 kitchens in your area — AAA-grade remodels at a Showcase price, '
-            + 'featured in our portfolio.\n\nHomeowners only. See if your home qualifies.',
           ],
-          descriptions: ['Showcase-grade work, guaranteed.'],
+          descriptions: ['No-commission Showcase pricing.'],
           ctaType: 'APPLY_NOW',
         },
         {
@@ -161,24 +161,24 @@ export const showcaseCampaign = defineCampaign({
           videoFile: 'reel-11.mp4',
           thumbnailFile: 'reel-11-thumb.jpg',
           headlines: [
-            'We’re Selecting 5 Bathrooms in Your Area',
+            'We’re Remodeling 5 Bathrooms — No Commission',
             '5 Bathroom Showcase Spots — See If You Qualify',
             'Is Your Bathroom One of the 5?',
           ],
           primaryTexts: [
-            '🛁 We’re selecting 5 bathrooms in your area for our next Showcase.\n\n'
+            '🛁 This round, we’re remodeling 5 bathrooms in your area — and skipping the commission.\n\n'
             + 'If your home qualifies, you get:\n'
-            + '✅ A AAA-grade bathroom remodel\n'
-            + '✅ At a Showcase price\n'
-            + '✅ Featured in our portfolio\n\n'
+            + '✅ A spa-grade bathroom you’ll actually love\n'
+            + '✅ No-commission Showcase pricing\n'
+            + '✅ Your before-and-after featured in our portfolio\n\n'
             + 'Homeowners only. See if you qualify.',
-            'A bathroom you’ll actually love — at a Showcase price. '
-            + 'Tri Pros Remodeling is selecting 5 bathrooms in your area to be featured in our showcase. '
-            + 'If selected, you get our best-of-the-best work at a Showcase price. '
+            'Thinking about redoing your bathroom? Wait. '
+            + 'Tri Pros Remodeling is choosing 5 bathrooms in your area for a full remodel at no-commission Showcase pricing. '
+            + 'The trade is simple: you get a spa-grade bathroom you’ll actually love, and we film the before-and-after for our portfolio. '
             + 'Homeowners only. See if your home qualifies.',
             'Could your bathroom be one of the 5? 👀\n\n'
-            + 'We’re choosing 5 homes in your area to feature in our bathroom showcase — '
-            + 'best-of-the-best work, built to photograph beautifully, at a Showcase price.\n\n'
+            + 'We’re choosing 5 homes in your area for a full bathroom remodel — no commission, Showcase pricing — '
+            + 'and featuring the before-and-after in our portfolio.\n\n'
             + 'Homeowners only. See if your home qualifies.',
           ],
           descriptions: ['See if your home qualifies.'],
@@ -190,25 +190,25 @@ export const showcaseCampaign = defineCampaign({
           videoFile: 'reel-12.mp4',
           thumbnailFile: 'reel-12-thumb.jpg',
           headlines: [
-            'What Every Showcase Bathroom Includes',
-            'Showcase-Grade Work, Guaranteed',
+            'Five Bathrooms. No Commission. That’s The List.',
+            'A Spa-Grade Bathroom, No Commission',
           ],
           primaryTexts: [
-            'What every Showcase bathroom gets:\n'
-            + '✅ AAA-grade materials\n'
-            + '✅ Spa feel, everyday function\n'
-            + '✅ Built to be photographed\n\n'
-            + 'We’re selecting 5 bathrooms in your area for our showcase. '
+            'Five bathrooms — that’s the whole list this round. 👀\n\n'
+            + 'We’re choosing 5 homes in your area for a full bathroom remodel at no-commission Showcase pricing:\n'
+            + '✅ A bathroom that feels like a spa\n'
+            + '✅ No commission — we skip it\n'
+            + '✅ Before-and-after featured in our portfolio\n\n'
             + 'Homeowners only. See if your home qualifies.',
-            'Watch what a Showcase bathroom looks like from start to finish. '
-            + 'Every home we select gets our best-of-the-best work at a Showcase price — '
-            + 'because the result is featured in our showcase. '
-            + '5 bathrooms in your area. See if yours qualifies.',
-            'Think your bathroom could carry a showcase? 👀\n\n'
-            + 'We’re selecting 5 bathrooms in your area — AAA-grade remodels at a Showcase price, '
-            + 'featured in our portfolio.\n\nHomeowners only. See if your home qualifies.',
+            'Watch how a Showcase bathroom comes together. '
+            + 'Every home we select gets a full remodel at no-commission Showcase pricing — '
+            + 'because the before-and-after is featured in our portfolio. '
+            + 'Only 5 bathrooms in your area this round. See if yours qualifies.',
+            'Think your bathroom could carry a Showcase? 👀\n\n'
+            + '5 bathrooms in your area — full remodel, no commission, featured in our portfolio.\n\n'
+            + 'Homeowners only. See if your home qualifies.',
           ],
-          descriptions: ['Showcase-grade work, guaranteed.'],
+          descriptions: ['No-commission Showcase pricing.'],
           ctaType: 'APPLY_NOW',
         },
         {

@@ -55,7 +55,10 @@ Verify with side-by-side stills of the boundary frames before assembling.
   logo language as the stills (`still-ad-standard.md#logo-treatment`). It lives
   in ONE component, `src/components/reel-logo.tsx`, which owns BOTH the intro
   glide and the settled badge (no separate watermark ↔ logo-intro handoff, no
-  pop). Hardcoded position **TOP-LEFT at (x 80, y 440)**, compact panel
+  pop). Hardcoded position **TOP-LEFT at (x 80, y 310)** (raised from y 440 on
+  2026-07-30 to a true top-left corner — clears the feed 4:5 crop by 25 px and
+  the Reels top chrome by 40 px; see `still-ad-standard.md#legibility-qc`
+  Logo-Y rationale), compact panel
   (~148 px wide). `logoIntro` prop still gates the opening glide (stacked logo
   springs in centered, glides to the corner, panel forms around it on landing);
   `null` = badge simply present from frame 0. `watermarkSrc` is now only an
@@ -158,7 +161,7 @@ Composition `ShowcaseReel` (1080×1920@30) is fully props-driven — see
 gets Ken Burns), `layout` full|framed (framed = native-aspect card on dark
 ground; label chip or checkmark rows above via `checkmarkClipIndex`), hook
 word-stagger on clip 1, captions mirror the VO (muted viewers), the `ReelLogo`
-badge docked top-LEFT at (x 80, y 440) — see the logo-treatment + safe-rects
+badge docked top-LEFT at (x 80, y 310) — see the logo-treatment + safe-rects
 rules above (`watermarkSrc` non-null just enables it; the art is always the
 stacked-panel badge) — logo end card with CTA pill (end-card CTA inside
 y 420–1248 too).
@@ -186,6 +189,37 @@ the crew card) and carry a repeat-word run for the photo burst.
 (`references/variation-axes.md`)** — `kitchens-showcase-reel-02.json` is ONE
 point in variation space; copying its presentation values into a new reel is
 a defect, not a shortcut.
+
+**Proven baseline cut — "Scout / Straight Talk" (Oliver-approved 2026-07-28).**
+Reference builder: `video/scripts/build-scout.mjs`; props
+`video/props/kitchens-scout-matilda.json`. This is the quality FLOOR every new
+reel must clear — study it before building. Two things it locked in:
+
+- **Copy spine — one flowing logical thread, no non-sequiturs.** The VO must
+  read as a single argument in this order: WHO it's for (disqualifying hook —
+  "Homeowners, here's a rare one") → WHAT we're doing (the scarcity offer, with
+  the number stated as a word — "choosing *five* kitchens… for a full remodel")
+  → THE DEAL (the catch/trade, stated light + casual — "at no-commission
+  pricing… we get to film the before and after") → THE CATCH (scarcity close —
+  "Only *five* spots — once they're gone, this round's closed") → HOW TO QUALIFY
+  (the plain checklist — own your home / kitchen *five* years or older / ready to
+  start soon) → APPLY (CTA — "Tap below to see if you qualify"). Pictures carry
+  the transformation; every SPOKEN word carries the OFFER — never narrate what
+  the visual already shows. Coherence killers to avoid (all were real defects):
+  non-sequitur beat transitions, using "five" for two different things (age vs
+  count) in a way that collides, scattering the scarcity across multiple lines,
+  and process/"us" talk crowding out the homeowner. Name the product in every
+  qualifier ("kitchen five years or older", NOT "it's 5+ years old").
+- **Media count backs the scarcity number.** The claim is "five kitchens", so
+  the cut SHOWS five distinct real kitchens (Axiom transform + four walkthroughs:
+  gray / marble / black / Bastion). Matching the on-screen count to the spoken
+  number makes the scarcity feel true, not sloganeered. When the offer names a
+  number, show that many real spaces. More finished-kitchen media beats
+  repeating the same one — place each in a LOGICAL spot that advances the
+  argument (love-the-result beats show the pretty walkthroughs; scarcity beats
+  show more of them), never as filler. Real walkthroughs come from the
+  upload-real-photos → luxury-optimize (`nano_banana_pro`) → seedance-glide
+  pipeline (Media chain-of-custody + walkthrough recipe above).
 
 ## Variation axes + ledger (MANDATORY for create mode)
 
@@ -241,16 +275,34 @@ words ("AAA-grade", "Showcase price", trade-specific hero phrases like "spa
 feeling"). `transcribe.mjs` strips the markers for word-matching and carries
 the flag onto the matched `wordCaptions` entry as `emphasis: true`.
 
+⚠️ **Emphasis-adjacency rule (learned 2026-07-28, "five kitchens" defect):**
+a genuine two-word offer phrase MAY carry emphasis on both words (`*five*
+*kitchens*`, `*five* *spots*` — verified clean + premium after the fontSize
+fix below). But NEVER emphasize a run of 3+ consecutive words or a whole
+sentence — a wall of italic serif stops reading as emphasis and gets heavy.
+Cap emphasis at a 1–2-word unit per caption page. If two adjacent emphasized
+words ever look jammed, the cause is the scale-vs-fontSize regression below,
+NOT the marking — fix the component, don't strip the emphasis.
+
 Rendering: `RevealCaptions` (`src/components/reveal-captions.tsx`) — build-
 as-spoken: each word fades/rises in over ~3f exactly at its own whisper-timed
 start, so the line visibly assembles under the narrator's voice and holds
 until the sentence completes. Emphasis words (marked `*word*` above) render
 in the house emphasis serif (`EMPHASIS_FONT` in `video/src/lib/fonts.ts` —
 FROZEN: Playfair Display italic, Oliver's pick 2026-07-14), brand blue, ~1.15×
-scale; base words stay white heavy stroke-under-fill for legibility over
-bright footage. Gotcha solved in
-the component: a thick WebkitTextStroke visually swallows word spaces —
-`wordSpacing` compensates; never remove it.
+larger. Base words: **Montserrat ExtraBold (800), 64px, letter-spacing 2, thin
+5px outline + soft drop-shadow** — the HOUSE caption font (Oliver 2026-07-29,
+picked over Cinzel/Marcellus/nunito from in-video comparison renders; replaced
+the old Nunito-800 + 10px cartoon stroke that read as a CapCut meme). Selectable
+per reel via `captionFontKey` (schema; `montserrat` default, also
+`nunito|cinzel|marcellus` in `CAPTION_FONTS`), but Montserrat-bold is the
+standard — only change it with a new Oliver ruling. Two component gotchas, both
+SOLVED — never regress them: (1) the outline still slightly swallows word spaces
+→ `wordSpacing` compensates; never remove it. (2) emphasis size MUST come from `fontSize:
+'1.15em'` (layout-aware, reserves box width), NEVER `transform: scale()` —
+scale enlarges glyphs without widening the box, so adjacent emphasized words
+overlap ("five kitchens" collided pre-fix). `transform` in the span is
+reserved for the reveal translateY ONLY.
 
 Pagination is ours, not the library's (`src/lib/paginate-captions.ts`,
 unit-tested): max 3 words / 16 chars per page (single line, can never
