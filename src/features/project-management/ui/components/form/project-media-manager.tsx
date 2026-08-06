@@ -29,6 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { cn } from '@/shared/lib/utils'
 import { useGooglePicker } from '@/shared/services/providers/google-drive/hooks/use-google-picker'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -509,7 +510,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                               sizes="500px"
                             />
                           )}
-                          renderControls={(mediaItem) => {
+                          renderControls={(mediaItem, { menuOpen }) => {
                             const f = fileById.get(mediaItem.id)!
                             return (
                               <>
@@ -525,7 +526,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                                   className={
                                     f.isHeroImage
                                       ? 'h-6 w-6 bg-yellow-500 hover:bg-yellow-600 text-yellow-950'
-                                      : 'h-6 w-6 bg-primary hover:bg-primary/80 text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100'
+                                      : cn('h-6 w-6 bg-primary hover:bg-primary/80 text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100', menuOpen && 'opacity-100')
                                   }
                                   onClick={() => handleToggleHero(f.id, f.isHeroImage)}
                                   disabled={toggleHeroMutation.isPending}
@@ -562,11 +563,17 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
                             const f = fileById.get(mediaItem.id)!
                             return (
                               <>
+                                <dt className="text-muted-foreground">MIME Type</dt>
+                                <dd className="text-foreground">{f.mimeType}</dd>
+
                                 <dt className="text-muted-foreground">Extension</dt>
                                 <dd className="text-foreground">{f.fileExtension}</dd>
 
                                 <dt className="text-muted-foreground">Phase</dt>
                                 <dd className="capitalize text-foreground">{f.phase}</dd>
+
+                                <dt className="text-muted-foreground">Sort Order</dt>
+                                <dd className="text-foreground">{f.sortOrder}</dd>
 
                                 <dt className="text-muted-foreground">Hero Image</dt>
                                 <dd className="text-foreground">{f.isHeroImage ? 'Yes' : 'No'}</dd>

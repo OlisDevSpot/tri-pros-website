@@ -30,8 +30,8 @@ export interface MediaManagerProps {
   onRename: (id: number, name: string) => void
   /** Render an item's thumbnail/preview (project: derives public-bucket image variants + retry UI; proposal: presigned img/video/pdf). */
   renderThumbnail: (item: MediaItem) => ReactNode
-  /** Owner-specific per-item controls overlaid on the card (proposal: a visibility Switch). */
-  renderControls?: (item: MediaItem) => ReactNode
+  /** Owner-specific per-item controls overlaid on the card (proposal: a visibility Switch). Receives the card's internal `menuOpen` so a control can stay visible while the more-menu is open. */
+  renderControls?: (item: MediaItem, state: { menuOpen: boolean }) => ReactNode
   /** Owner-specific large preview for the detail dialog (project: public-bucket image variant with retry UI; proposal: presigned img/video/pdf). Defaults to a plain <img>. */
   renderPreview?: (item: MediaItem) => ReactNode
   /** Owner-specific extra rows in the detail dialog. */

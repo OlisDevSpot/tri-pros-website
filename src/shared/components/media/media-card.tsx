@@ -14,8 +14,8 @@ interface MediaCardProps {
   item: MediaItem
   /** Required — no owner-specific image-optimization or entity types imported here. Owner injects the actual thumbnail. */
   renderThumbnail: (item: MediaItem) => ReactNode
-  /** Overlaid top-right controls, owner-specific (project: hero star + phase menu; proposal: visibility switch). */
-  renderControls?: (item: MediaItem) => ReactNode
+  /** Overlaid top-right controls, owner-specific (project: hero star + phase menu; proposal: visibility switch). Receives the card's internal `menuOpen` so a control can stay visible while the more-menu is open. */
+  renderControls?: (item: MediaItem, state: { menuOpen: boolean }) => ReactNode
   /** Large preview for the detail dialog, owner-specific (project: public-bucket image variant with retry UI; proposal: presigned img/video/pdf). Defaults to a plain <img>. */
   renderPreview?: (item: MediaItem) => ReactNode
   /** Extra rows in the detail dialog. */
@@ -131,7 +131,7 @@ export function MediaCard({
 
           {/* Top-right: owner controls + more menu */}
           <div className="absolute right-1 top-1 flex items-center gap-1">
-            {renderControls?.(item)}
+            {renderControls?.(item, { menuOpen })}
 
             <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <DropdownMenuTrigger asChild>

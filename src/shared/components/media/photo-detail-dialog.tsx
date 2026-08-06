@@ -10,7 +10,8 @@ interface PhotoDetailDialogProps {
   onOpenChange: (open: boolean) => void
   /** Owner-specific preview (project: public-bucket image variant with retry UI; proposal: presigned img/video/pdf). Defaults to a plain <img>. */
   renderPreview?: (item: MediaItem) => ReactNode
-  /** Owner-specific extra <dt>/<dd> rows appended after the generic fields. */
+  /** Owner-specific `<dt>`/`<dd>` metadata rows. Fully DI: the owner supplies EVERY row in its
+   *  preferred order (project reproduces the exact source row order). Omit to show only title + preview. */
   renderDetails?: (item: MediaItem) => ReactNode
 }
 
@@ -31,19 +32,11 @@ export function PhotoDetailDialog({ item, open, onOpenChange, renderPreview, ren
               )}
         </div>
 
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-          <dt className="text-muted-foreground">MIME Type</dt>
-          <dd className="text-foreground">{item.mimeType}</dd>
-
-          {item.sortOrder !== undefined && (
-            <>
-              <dt className="text-muted-foreground">Sort Order</dt>
-              <dd className="text-foreground">{item.sortOrder}</dd>
-            </>
-          )}
-
-          {renderDetails?.(item)}
-        </dl>
+        {renderDetails && (
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            {renderDetails(item)}
+          </dl>
+        )}
       </DialogContent>
     </Dialog>
   )
