@@ -5,6 +5,7 @@
 
 :root,
 .funnel-light {
+  color-scheme: light;
   --background: oklch(0.9846 0.0017 247.8389);
   --foreground: oklch(0.2781 0.0296 256.848);
   --card: oklch(1 0 0);
@@ -312,6 +313,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.2433 0.0247 263.9506);
   --foreground: oklch(0.9683 0.0069 247.8956);
   --card: oklch(24.159% 0.01537 256.841);
