@@ -11,7 +11,7 @@ import { userCanSeeCustomer } from '@/shared/entities/customers/dal/server/visib
  * filters directly on the `customers` table (`customers.pipeline`,
  * `customers.id`), which isn't joined into a `customer_notes` query — it
  * wouldn't correlate. Dispatchers don't edit notes anyway, so the branch is
- * dropped rather than joined in. see ./DOCS.md#note-authorship
+ * dropped rather than joined in. see ../../customers/DOCS.md#note-authorship
  */
 export function customerNoteVisibility({ userId }: VisibilityScope): SQL {
   return userCanSeeCustomer(userId, customerNotes.customerId)
