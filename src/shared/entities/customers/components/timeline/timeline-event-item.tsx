@@ -59,6 +59,10 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
   const note = noteFromTimelineEvent(event, customerId)
   const canManageNote = note !== null && canManage(note)
   const isEditingNote = note !== null && editingNoteId === note.id
+  // The note's text IS the row header: a snippet when collapsed, the full body
+  // when expanded (so it reads once, never duplicated below). While editing we
+  // keep the header a snippet and let the textarea own the full content.
+  const showFullTitle = isExpanded && !isEditingNote
 
   const meetingIdRaw = metadata.meetingId
   const meetingId = typeof meetingIdRaw === 'string' || typeof meetingIdRaw === 'number'
@@ -79,9 +83,11 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
   }
 
   return (
-    <div className="group/row relative py-1.5 pl-7">
+    <div
+      className={`group/row relative -ml-3 rounded-lg py-1.5 pl-10 pr-1.5 transition-colors ${isExpanded ? 'bg-muted/50' : 'hover:bg-muted/40'}`}
+    >
       <span
-        className={`absolute left-0 top-1 grid size-5.5 place-items-center rounded-full border bg-background ${config.color}`}
+        className={`absolute left-3 top-1 grid size-5.5 place-items-center rounded-full border border-muted-foreground/25 bg-background ${config.color}`}
       >
         <Icon className="size-3.5" />
         <span className="sr-only">{config.label}</span>
@@ -89,76 +95,84 @@ export function TimelineEventItem({ event, customerId, isExpanded, onToggle, onO
 
       <button
         aria-expanded={isExpanded}
-        className="flex w-full items-center gap-2 text-left"
+        className="flex w-full items-start gap-2 text-left"
         onClick={() => onToggle(event.id)}
         type="button"
       >
-        <span className={`min-w-0 flex-1 text-sm text-foreground ${isExpanded ? '' : 'truncate'}`}>
+        <span className={`min-w-0 flex-1 text-sm text-foreground ${showFullTitle ? (note ? 'whitespace-pre-wrap' : '') : 'truncate'}`}>
           {title}
         </span>
-        {isNavigable && (
-          <ArrowRightIcon className="size-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100" />
-        )}
-        <span className="shrink-0 text-xs text-muted-foreground" title={absoluteDate}>
-          {relativeTime}
+        {/* Meta rides in a first-line-height box (h-5 = the text-sm line box),
+            top-aligned with the title. Because the box height is fixed and the
+            button is always items-start, the date + chevron stay on the title's
+            first line in every state — collapsed, expanded, single- or
+            multi-line — instead of shifting when the row grows. */}
+        <span className="flex h-5 shrink-0 items-center gap-2">
+          {isNavigable && (
+            <ArrowRightIcon className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100" />
+          )}
+          <span className="text-xs text-muted-foreground" title={absoluteDate}>
+            {relativeTime}
+          </span>
+          <ChevronDownIcon
+            className={`size-3.5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          />
         </span>
-        <ChevronDownIcon
-          className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-        />
       </button>
 
       {isExpanded && (
-        <div className="mt-1.5 space-y-2 text-sm">
+        <div className="mt-2 space-y-2 border-t border-border/60 pt-2 text-sm">
           {note
             ? (
                 <>
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Avatar className="size-5">
-                        <AvatarImage src={note.authorImage ?? undefined} />
-                        <AvatarFallback className="text-[10px]">
-                          {(note.authorName ?? 'System').slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="truncate text-xs font-medium text-foreground">
-                        {note.authorName ?? 'System'}
-                      </span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{absoluteDate}</span>
-                    </div>
+                  {isEditingNote && (
+                    <form className="space-y-2" onSubmit={form.handleSubmit(handleEditSubmit)}>
+                      <Textarea
+                        className="min-h-16 resize-none text-sm"
+                        rows={3}
+                        {...form.register('content')}
+                      />
+                      {form.formState.errors.content && (
+                        <p className="text-xs text-destructive">{form.formState.errors.content.message}</p>
+                      )}
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          onClick={() => setEditingNoteId(null)}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          Cancel
+                        </Button>
+                        <Button disabled={updateNote.isPending} size="sm" type="submit">
+                          {updateNote.isPending ? 'Saving...' : 'Save'}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Author byline sits at the bottom; the note body is the row
+                      header above, so the content is never rendered twice. The
+                      action menu trails the author + date as one coherent group
+                      (rather than stranded at the far edge), which reads cleanly
+                      on the narrow mobile column. */}
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Avatar className="size-5 shrink-0">
+                      <AvatarImage src={note.authorImage ?? undefined} />
+                      <AvatarFallback className="text-[10px]">
+                        {(note.authorName ?? 'System').slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate text-xs font-medium text-foreground">
+                      {note.authorName ?? 'System'}
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">{absoluteDate}</span>
                     {canManageNote && (
-                      <EntityActionMenu actions={noteActions} entity={note} mode="compact" />
+                      <div className="shrink-0">
+                        <EntityActionMenu actions={noteActions} entity={note} mode="compact" />
+                      </div>
                     )}
                   </div>
-
-                  {isEditingNote
-                    ? (
-                        <form className="space-y-2" onSubmit={form.handleSubmit(handleEditSubmit)}>
-                          <Textarea
-                            className="min-h-16 resize-none text-sm"
-                            rows={3}
-                            {...form.register('content')}
-                          />
-                          {form.formState.errors.content && (
-                            <p className="text-xs text-destructive">{form.formState.errors.content.message}</p>
-                          )}
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              onClick={() => setEditingNoteId(null)}
-                              size="sm"
-                              type="button"
-                              variant="ghost"
-                            >
-                              Cancel
-                            </Button>
-                            <Button disabled={updateNote.isPending} size="sm" type="submit">
-                              {updateNote.isPending ? 'Saving...' : 'Save'}
-                            </Button>
-                          </div>
-                        </form>
-                      )
-                    : (
-                        <p className="whitespace-pre-wrap text-sm text-foreground">{note.content}</p>
-                      )}
 
                   {canManageNote && <DeleteConfirmDialog />}
                 </>

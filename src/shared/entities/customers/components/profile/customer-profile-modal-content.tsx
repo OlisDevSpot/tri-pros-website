@@ -82,7 +82,6 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
           <CustomerProfileOverview
             data={data}
             editForm={editForm}
-            onMutationSuccess={onMutationSuccess}
             onOpenMeeting={handleOpenMeeting}
           />
         </TabsContent>

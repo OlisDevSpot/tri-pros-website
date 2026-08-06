@@ -10,11 +10,10 @@ import { CustomerRecordingPlayer } from './customer-recording-player'
 interface Props {
   data: CustomerProfileData
   editForm: ReturnType<typeof useCustomerEditForm>
-  onMutationSuccess: () => void
   onOpenMeeting: (meetingId: string) => void
 }
 
-export function CustomerProfileOverview({ data, editForm, onMutationSuccess, onOpenMeeting }: Props) {
+export function CustomerProfileOverview({ data, editForm, onOpenMeeting }: Props) {
   // The recording is the richest artifact for an agent picking up a live lead,
   // so it anchors the top full-width. Below it, the workspace splits: activity
   // (where the agent logs the call) leads, qualification detail supports.
@@ -22,10 +21,10 @@ export function CustomerProfileOverview({ data, editForm, onMutationSuccess, onO
     <div className="flex flex-col gap-4 md:min-h-0 md:flex-1">
       <CustomerRecordingPlayer customerId={data.customer.id} />
       <div className="flex flex-col gap-4 md:min-h-0 md:flex-1 md:flex-row">
-        <div className="md:min-h-0 md:w-3/5 md:overflow-y-auto md:pr-1">
-          <CustomerTimeline data={data} onMutationSuccess={onMutationSuccess} onOpenMeeting={onOpenMeeting} />
+        <div className="md:min-h-0 md:w-3/5 md:overflow-y-auto md:pr-1 md:[scrollbar-gutter:stable]">
+          <CustomerTimeline data={data} onOpenMeeting={onOpenMeeting} />
         </div>
-        <div className="space-y-4 md:min-h-0 md:w-2/5 md:overflow-y-auto md:pr-1">
+        <div className="space-y-4 md:min-h-0 md:w-2/5 md:overflow-y-auto md:pr-1 md:[scrollbar-gutter:stable]">
           <CustomerProfileDetails
             customer={data.customer}
             editForm={editForm}
