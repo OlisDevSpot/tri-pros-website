@@ -5,6 +5,7 @@
 // ids (#meetings #queue #proposals #projects) are the jump targets for the
 // snapshot strip's links.
 
+import { DashboardActionQueue } from '@/features/agent-dashboard/ui/components/dashboard-action-queue'
 import { DashboardMeetingsHub } from '@/features/agent-dashboard/ui/components/dashboard-meetings-hub'
 import { DashboardSnapshotStrip } from '@/features/agent-dashboard/ui/components/dashboard-snapshot-strip'
 
@@ -15,7 +16,9 @@ export function DashboardView() {
       <section id="meetings">
         <DashboardMeetingsHub />
       </section>
-      <section id="queue">{/* Task 7 */}</section>
+      <section id="queue">
+        <DashboardActionQueue />
+      </section>
       <section id="proposals">{/* Task 8 */}</section>
       <section id="projects">{/* Task 9 */}</section>
     </div>

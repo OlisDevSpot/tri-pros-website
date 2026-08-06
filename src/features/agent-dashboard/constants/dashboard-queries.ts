@@ -22,7 +22,7 @@ import { meetingWindow } from '../lib/meeting-windows'
 type ProjectsListInput = inferRouterInputs<AppRouter>['projectsRouter']['crud']['list']
 
 /** Top-N caps shared by every dashboard module that lists this entity. */
-export const DASHBOARD_LIMITS = { meetings: 8, proposals: 20, projects: 15 } as const
+export const DASHBOARD_LIMITS = { meetings: 8, proposals: 20, projects: 15, actionQueue: 8 } as const
 
 /** Meetings list input for a Today/Upcoming/Past window, sorted by `scheduledFor`. */
 export function meetingsWindowInput(kind: MeetingWindowKind) {
