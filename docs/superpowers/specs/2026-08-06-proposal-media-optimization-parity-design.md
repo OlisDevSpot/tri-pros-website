@@ -51,13 +51,20 @@ upload/dispatch path — it is already correct.
 
 In scope:
 
-1. A table-parameterized `resetMediaOptimizationStatus(table, id)` setter; the
-   project router migrates to it and the hardcoded project-only reset is deleted.
-2. A proposal `retryOptimization` tRPC procedure + client mutation.
-3. Threading the (already-built) `onRetryOptimization` UI affordance into the
+1. Media-service facade methods `retryOptimization(store, id)` +
+   `optimizeNow(store, id)` — the single surface for optimization recovery. Both
+   routers and the backfill call them; nothing touches the DAL setters or the
+   QStash job directly.
+2. A table-parameterized `resetMediaOptimizationStatus(table, id)` DAL setter
+   (called by the facade), plus deletion of the now-fully-dead legacy
+   `media-files/dal/server/queries.ts`.
+3. Migrate the project `retryOptimization` procedure onto the facade.
+4. A proposal `retryOptimization` tRPC procedure (via the facade) + client mutation.
+5. Threading the (already-built) `onRetryOptimization` UI affordance into the
    proposal media manager.
-4. A one-time, operator-run backfill script that re-optimizes stuck proposal
-   rows via a direct synchronous `optimizeMediaFile()` call (no QStash).
+6. A one-time, operator-run backfill script that re-optimizes stuck proposal
+   rows via the facade (`mediaService.optimizeNow`, synchronous — no QStash).
+7. A recovery-lever note in `services/media/DOCS.md`.
 
 Out of scope (YAGNI):
 
@@ -70,14 +77,18 @@ Out of scope (YAGNI):
 
 ## Architecture
 
-Five units, each with a clear boundary. The render/status UI is entirely reused
-from `OptimizedImage` — no new components.
+Eight units, each with a clear boundary. **The media-service facade
+(`mediaService`) is the single surface for all optimization operations** — both
+routers and the backfill call it, never the DAL setters or the QStash job
+directly. This mirrors the proven pattern already in the facade (`createRecord`
+already owns dispatch-on-create) and keeps the layering tRPC → Service → DAL. The
+render/status UI is entirely reused from `OptimizedImage` — no new components.
 
-### Unit 1 — `resetMediaOptimizationStatus(table, id)` (shared DAL)
+### Unit 1 — DAL: parameterized reset setter + delete the dead legacy file
 
-`src/shared/entities/media-files/dal/server/optimization.ts` already holds the
-table-parameterized setters (`setMediaOptimization{Processing,Complete,Failed}`).
-Add a sibling:
+**Add** a sibling to the table-parameterized setters in
+`src/shared/entities/media-files/dal/server/optimization.ts` (which
+already holds `setMediaOptimization{Processing,Complete,Failed}`):
 
 ```ts
 export async function resetMediaOptimizationStatus(table: AnyMediaTable, id: number): Promise<void> {
@@ -85,24 +96,92 @@ export async function resetMediaOptimizationStatus(table: AnyMediaTable, id: num
 }
 ```
 
-Then:
+**Delete** the entire legacy file `src/shared/entities/media-files/dal/server/queries.ts`.
+A project-wide sweep (2026-08-06) proved it is dead once the project router
+migrates to the facade (Unit 3): its only external consumer is the project
+router's `resetOptimizationStatus` import. Every other export
+(`getMediaFileById`, the non-parameterized `setOptimizationProcessing/Complete/Failed`,
+the `MediaFile` type re-export) already has **zero** consumers repo-wide,
+superseded by the table-parameterized setters in `optimization.ts` that
+`optimize-media.ts` actually imports. Deleting the whole file (not just the reset
+function) is the honest dead-code conclusion — leaving the orphaned siblings
+would itself violate the delete-dead-code rule.
 
-- **Migrate** the project router: `projects.router/media.router.ts` currently
-  imports `resetOptimizationStatus` from `media-files/dal/server/queries.ts`
-  (hardcoded to `mediaFiles`). Switch it to
-  `resetMediaOptimizationStatus(mediaFiles, input.mediaFileId)`.
-- **Delete** the now-dead `resetOptimizationStatus` from
-  `media-files/dal/server/queries.ts` (`:50-55`) and its `export`. Dead-code
-  deletion — no `@deprecated` shim, because both call sites are in this repo and
-  are updated in the same change.
-
-Boundary: one setter, owner-agnostic, keyed on the passed Drizzle table. Same
+Boundary: one owner-agnostic setter, keyed on the passed Drizzle table. Same
 contained-`any` pattern already documented at the top of `optimization.ts`.
 
-### Unit 2 — Proposal `retryOptimization` procedure
+**Blast radius (verified by project-wide sweep, 2026-08-06).** The contract
+change — reset moves behind the facade, and the legacy `queries.ts` is deleted —
+touches exactly these sites, all **rewritten/deleted** (zero tallied, no
+dual-shape tolerance):
 
-`src/trpc/routers/proposals.router/media.router.ts`. Mirrors the project
-procedure, using the proposal router's local authz + `id` conventions:
+| Site | Disposition |
+| --- | --- |
+| `media-files/dal/server/queries.ts` (whole file: `getMediaFileById`, 3 legacy setters, `resetOptimizationStatus`, `MediaFile` re-export) | deleted — verified zero remaining consumers |
+| `projects.router/media.router.ts:8` (`resetOptimizationStatus` import) | deleted — no longer needed (facade owns reset) |
+| `projects.router/media.router.ts:14` (`optimizeMediaJob` import) | deleted — sole use was the retry dispatch, now behind the facade |
+| `projects.router/media.router.ts:44-50` (retry body) | rewritten → `mediaService.retryOptimization(projectMediaStore, input.mediaFileId)` |
+
+Sweep evidence: the only import from `media-files/dal/server/queries` anywhere is
+the project router line 8; the three legacy setters and `getMediaFileById` return
+only their own definitions. `optimizeMediaJob` in the project router is used only
+at line 48. No scripts, tests, or docs reference any of it.
+
+### Unit 2 — Media-service facade: `retryOptimization` + `optimizeNow`
+
+`src/shared/services/media/media.service.ts`. Add two methods to the existing
+`mediaService` object. Both take a `MediaStore` (which already carries
+`ownerKind` + `table`) so they are owner-agnostic and reused by every media
+owner — the extensible pattern the user directed:
+
+```ts
+// async retry — resets status then queues optimization (interactive Retry button)
+async retryOptimization(store: MediaStore, mediaId: number) {
+  await resetMediaOptimizationStatus(store.table, mediaId)
+  void optimizeMediaJob.dispatch({ ownerKind: store.ownerKind, mediaId })
+},
+
+// synchronous, in-process optimize — no QStash (backfill scripts / dev)
+async optimizeNow(store: MediaStore, mediaId: number) {
+  return optimizeMediaFile({ ownerKind: store.ownerKind, mediaId })
+},
+```
+
+New imports in `media.service.ts`: `resetMediaOptimizationStatus` (from
+`@/shared/entities/media-files/dal/server/optimization`) and `optimizeMediaFile`
+(from `./optimize-media`). `optimizeMediaJob` and `MediaStore` are already
+imported. No import cycle: `optimize-media.ts` does not import `media.service.ts`.
+
+Boundary: the facade is the only surface callers touch. `retryOptimization`
+composes reset + dispatch; `optimizeNow` wraps the synchronous orchestrator.
+Three optimization entrypoints now live coherently on one object: `createRecord`
+(auto async on upload), `retryOptimization` (manual async), `optimizeNow`
+(manual sync).
+
+### Unit 3 — Project router migrates to the facade
+
+`src/trpc/routers/projects.router/media.router.ts`. Rewrite the existing
+`retryOptimization` procedure body to call the facade, and drop the now-unused
+`resetOptimizationStatus` (Unit 1, deleted) and `optimizeMediaJob` imports:
+
+```ts
+retryOptimization: agentProcedure
+  .input(z.object({ mediaFileId: z.number() }))
+  .mutation(async ({ input }) => {
+    await mediaService.retryOptimization(projectMediaStore, input.mediaFileId)
+    return { success: true }
+  }),
+```
+
+Behavior is identical to today (reset → dispatch); only the layering changes
+(now via the facade). `mediaService` and `projectMediaStore` are already imported
+in this file.
+
+### Unit 4 — Proposal `retryOptimization` procedure (via the facade)
+
+`src/trpc/routers/proposals.router/media.router.ts`. Add the procedure, using the
+proposal router's local authz + `id` conventions, delegating to the same facade
+method:
 
 ```ts
 retryOptimization: entity.authedProcedure
@@ -110,22 +189,19 @@ retryOptimization: entity.authedProcedure
   .mutation(async ({ ctx, input }) => {
     assertCanUpdate(ctx)
     await assertProposalMediaInScope(ctx, input.id)
-    await resetMediaOptimizationStatus(proposalMediaFiles, input.id)
-    void optimizeMediaJob.dispatch({ ownerKind: 'proposal', mediaId: input.id })
+    await mediaService.retryOptimization(proposalMediaStore, input.id)
     return { success: true }
   }),
 ```
 
-New imports in that file: `resetMediaOptimizationStatus` (from
-`media-files/dal/server/optimization`) and `optimizeMediaJob` (from
-`providers/upstash/jobs/optimize-media`). `proposalMediaFiles` is already
-imported.
+No new DAL or job imports in the router — the facade owns that. `mediaService`,
+`proposalMediaStore`, `assertProposalMediaInScope`, and `assertCanUpdate` are all
+already imported/defined in this file.
 
-Boundary: authorize → reset → dispatch. Same shape as project
-`retryOptimization` (`projects.router/media.router.ts:44-50`); the only
-differences are the authz guards and `ownerKind: 'proposal'`.
+Boundary: authorize → delegate to facade. The only differences from the project
+procedure are the authz guards and the store passed in.
 
-### Unit 3 — Client mutation
+### Unit 5 — Client mutation
 
 `src/features/proposal-flow/dal/client/mutations/use-proposal-media.ts`. Add:
 
@@ -136,7 +212,7 @@ const retryOptimization = useMutation(trpc.proposalsRouter.media.retryOptimizati
 and include `retryOptimization` in the returned object. `invalidate` already
 exists and points at the proposal media `list` query key.
 
-### Unit 4 — UI thread (one line)
+### Unit 6 — UI thread (one line)
 
 `src/features/proposal-flow/ui/components/form/proposal-media-manager.tsx`. In
 `renderThumbnail`, the image branch already renders
@@ -156,42 +232,62 @@ exists and points at the proposal media `list` query key.
 `isFailed` — **only when `onRetryOptimization` is present**. Passing the prop is
 the entire UI change; no new markup.
 
-### Unit 5 — Backfill script
+### Unit 7 — Backfill script
 
 `scripts/backfill-proposal-media-optimization.ts`. One-time, operator-run,
 idempotent, re-runnable.
 
-- `import './lib/load-env'` (per repo scripts convention — never `dotenv/config`).
-- Select stuck rows: `proposal_media_files` where `mimeType` is `image/%` or
-  `application/pdf`, `optimizationStatus <> 'optimized'`, and `pathKey`/`bucket`
-  are non-null.
+- **DB access via the `@/shared/db` singleton** — NOT a hand-rolled `drizzle(pg)`
+  connection. Template: `scripts/backfill-wave2-children.ts`. This matters for
+  correctness: `optimizeNow` → `optimizeMediaFile` reads/writes through
+  `@/shared/db`, which self-resolves `DRIZZLE_TARGET` (and self-loads
+  `.env.local` via `server-env`). If the stuck-row SELECT used a second
+  hand-picked connection, the SELECT and the optimize step could target
+  *different* databases whenever the hand-picked URL and `DRIZZLE_TARGET`
+  disagree. Using the singleton for the SELECT guarantees one shared target. No
+  `import './lib/load-env'` — it is redundant (and not the convention) for
+  `@/shared/db`-based scripts.
+- Select stuck rows through the singleton: `proposal_media_files` where
+  `mimeType` is `image/%` or `application/pdf`, `optimizationStatus <> 'optimized'`,
+  and `pathKey`/`bucket` are non-null.
 - `--dry-run`: print the count grouped by `optimizationStatus` (this is the
   diagnostic that tells us whether a real backlog exists) and exit without
   mutating.
-- Live run: for each row, `await optimizeMediaFile({ ownerKind: 'proposal', mediaId: row.id })`
+- Live run: for each row, `await mediaService.optimizeNow(proposalMediaStore, row.id)`
   inside a try/catch; tally `{ optimized, failed }`; print a summary. The
   orchestrator sets `processing` → `optimized`/`failed` itself and skips rows
   already `optimized`, so re-runs are safe.
-- `DRIZZLE_TARGET`-guarded: defaults to dev; prod requires explicit
-  `DRIZZLE_TARGET=prod` (per `feedback-runtime-db-env`). Reads/writes R2 via the
-  same `r2Client` the orchestrator uses.
+- `DRIZZLE_TARGET`-guarded via the singleton: defaults to dev; prod requires
+  explicit `DRIZZLE_TARGET=prod` (per `feedback-runtime-db-env`). `NODE_ENV` is
+  never hand-set.
 
-Boundary: pure operator tool. It calls the existing orchestrator; it contains no
-sharp/optimization logic of its own.
+Boundary: pure operator tool. It calls the facade (`optimizeNow`); it contains no
+sharp/optimization/dispatch logic of its own.
+
+### Unit 8 — DOCS: recovery-lever note
+
+`src/shared/services/media/DOCS.md`. The `#optimize-dispatch-chain` section
+documents create→dispatch but has no entry for the recovery lever. Add a short
+note documenting the facade's recovery surface: `retryOptimization(store, id)`
+(reset → dispatch) and `optimizeNow(store, id)` (synchronous), and that all
+optimization entrypoints route through `mediaService`. This also back-fills the
+previously-undocumented project retry. Per the Sub-plan 2 ledger ruling, media
+DOCS edits ship in the same change, not as a follow-up.
 
 ## Data Flow
 
 **Interactive retry** (prod / `pnpm dev:mobile`):
 `OptimizedImage` Retry → `onRetryOptimization(id)` → `retryOptimization.mutate({ id })`
-→ procedure: scope assert → `resetMediaOptimizationStatus(proposalMediaFiles, id)`
-(status → `pending`; UI immediately shows "Optimizing…") →
-`optimizeMediaJob.dispatch({ ownerKind: 'proposal', mediaId: id })` → QStash
-callback → `optimizeMediaFile` writes `-xs/-sm/-md/-lg.webp` + status `optimized`
-→ `invalidate()` refetches → `srcSet` renders.
+→ procedure: scope assert → `mediaService.retryOptimization(proposalMediaStore, id)`
+→ facade: `resetMediaOptimizationStatus(store.table, id)` (status → `pending`; UI
+immediately shows "Optimizing…") + `optimizeMediaJob.dispatch({ ownerKind, mediaId })`
+→ QStash callback → `optimizeMediaFile` writes `-xs/-sm/-md/-lg.webp` + status
+`optimized` → `invalidate()` refetches → `srcSet` renders.
 
 **Backfill** (one-time, from operator machine against prod DB/R2):
-script → select stuck rows → per row `optimizeMediaFile()` inline → variants +
-status → summary. No QStash involved.
+script → SELECT stuck rows via `@/shared/db` → per row
+`mediaService.optimizeNow(proposalMediaStore, row.id)` → facade →
+`optimizeMediaFile()` inline → variants + status → summary. No QStash involved.
 
 ## Error Handling
 
@@ -227,22 +323,36 @@ Repo has no unit-test runner; the gate is `pnpm tsc` + `pnpm lint` (per
 ## Files
 
 - `src/shared/entities/media-files/dal/server/optimization.ts` — add `resetMediaOptimizationStatus`.
-- `src/shared/entities/media-files/dal/server/queries.ts` — delete hardcoded `resetOptimizationStatus`.
-- `src/trpc/routers/projects.router/media.router.ts` — migrate to the parameterized reset.
-- `src/trpc/routers/proposals.router/media.router.ts` — add `retryOptimization`.
+- `src/shared/entities/media-files/dal/server/queries.ts` — **delete the whole file** (verified dead once the project router moves to the facade).
+- `src/shared/services/media/media.service.ts` — add facade methods `retryOptimization` + `optimizeNow`.
+- `src/trpc/routers/projects.router/media.router.ts` — migrate `retryOptimization` to the facade; drop `resetOptimizationStatus` + `optimizeMediaJob` imports.
+- `src/trpc/routers/proposals.router/media.router.ts` — add `retryOptimization` (delegates to the facade).
 - `src/features/proposal-flow/dal/client/mutations/use-proposal-media.ts` — add client mutation.
 - `src/features/proposal-flow/ui/components/form/proposal-media-manager.tsx` — thread `onRetryOptimization`.
-- `scripts/backfill-proposal-media-optimization.ts` — new backfill script.
+- `scripts/backfill-proposal-media-optimization.ts` — new backfill script (`@/shared/db` singleton + `mediaService.optimizeNow`).
+- `src/shared/services/media/DOCS.md` — document the recovery lever (`#optimize-dispatch-chain`).
 
 ## Global Constraints
 
+- **All optimization operations route through the `mediaService` facade** — no
+  router or script calls the DAL setters or `optimizeMediaJob` directly. The
+  facade is the single, extensible surface (user direction; matches
+  `createRecord`'s existing dispatch ownership).
 - Route all writes through the DAL/service layer; no raw `db.update` for
   optimization status outside the parameterized setters (ADR-0003).
 - Never set `updatedAt` by hand — `.$onUpdate()` handles it
   (`feedback-no-manual-updated-at`).
-- Scripts: `import './lib/load-env'`; `DRIZZLE_TARGET=prod` is the only prod-DB
-  lever; `NODE_ENV` is never hand-set (`feedback-runtime-db-env`).
+- Backfill script: use the `@/shared/db` singleton (template
+  `scripts/backfill-wave2-children.ts`), NOT a hand-rolled connection and NOT
+  `import './lib/load-env'` — the singleton self-resolves `DRIZZLE_TARGET` and
+  self-loads env, and sharing it with the optimizer guarantees one DB target.
+  `DRIZZLE_TARGET=prod` is the only prod-DB lever; `NODE_ENV` is never hand-set
+  (`feedback-runtime-db-env`, `environment.md#environment-axes`).
 - Delete dead code rather than leaving defensive back-compat; `@deprecated` only
-  when a caller is outside our control (ubiquitous-language: blast radius).
-- Do not modify the upload/dispatch path or `optimization-target.ts` /
-  `VARIANT_REGISTRY` — they are correct.
+  when a caller is outside our control (ubiquitous-language: blast radius). The
+  whole legacy `media-files/dal/server/queries.ts` goes — not just the one
+  function — because the sweep proved every export is orphaned.
+- Media DOCS (`services/media/DOCS.md`) update ships in this change, not as a
+  follow-up (Sub-plan 2 ledger ruling).
+- Do not modify the upload/`createRecord`/dispatch-on-create path or
+  `optimization-target.ts` / `VARIANT_REGISTRY` — they are correct.
