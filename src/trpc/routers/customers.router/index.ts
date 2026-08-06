@@ -71,8 +71,9 @@ export const customersRouter = createEntityRouter(customerServerSpec, (entity) =
 
     // ── Business queries + entity-specific mutations ────────────────────
     // Hand-coded: list (paginated table), search (phone-gated text search),
-    // addNote (writes customer_notes table — different entity), createFromIntake
-    // (rate-limited public + multi-step tx). Single-row CRUD mutations live on
+    // createFromIntake (rate-limited public + multi-step tx). Note writes are
+    // NOT here — customer_notes is its own entity, see customerNotesRouter
+    // (crud.create) — see issue #280. Single-row CRUD mutations live on
     // `crud.*` — agents get there via crud.update (field-CASL-gated), super-
     // admins reach the full surface.
     business: createCustomerBusinessRouter(entity),

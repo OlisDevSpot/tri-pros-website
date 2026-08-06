@@ -29,6 +29,11 @@ export interface CustomerProfileProposalView {
   source: string
 }
 
+export type CustomerNoteWithAuthor = CustomerNote & {
+  authorName: string | null
+  authorImage: string | null
+}
+
 export interface ProfileFieldConfig {
   id: string
   label: string
@@ -56,7 +61,7 @@ export interface CustomerProfileData {
   customer: CustomerFullView
   meetings: CustomerProfileMeeting[]
   allProposals: CustomerProfileProposal[]
-  notes: CustomerNote[]
+  notes: CustomerNoteWithAuthor[]
   proposalViews: CustomerProfileProposalView[]
   projects: CustomerProfileProject[]
 }

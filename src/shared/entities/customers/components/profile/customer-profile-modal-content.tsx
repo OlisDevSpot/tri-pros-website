@@ -3,6 +3,7 @@
 import type { HeroView } from './hero-view-toggle'
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 
+import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-customer-edit-form'
 import { CustomerMeetingsList } from '../lists/customer-meetings-list'
@@ -23,10 +24,21 @@ interface Props {
 
 export function CustomerProfileModalContent({ data, defaultTab, heroAddress, heroView, highlightMeetingId, onMutationSuccess }: Props) {
   const editForm = useCustomerEditForm(data.customer)
+  const [tab, setTab] = useState<'overview' | 'meetings' | 'projects'>(defaultTab ?? 'overview')
+  const [activeHighlightId, setActiveHighlightId] = useState<string | undefined>(highlightMeetingId)
+
+  function handleOpenMeeting(meetingId: string) {
+    setActiveHighlightId(meetingId)
+    setTab('meetings')
+  }
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
-      <Tabs className="flex min-h-0 flex-1 flex-col gap-0" defaultValue={defaultTab ?? 'overview'}>
+      <Tabs
+        className="flex min-h-0 flex-1 flex-col gap-0"
+        value={tab}
+        onValueChange={v => setTab(v as typeof tab)}
+      >
         {/* Hero band: map backdrop + content overlay. Parent is a flex column
             so the content layer can use flex-1 to fill the band's height;
             justify-end anchors the content to the bottom with consistent
@@ -70,14 +82,14 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
           <CustomerProfileOverview
             data={data}
             editForm={editForm}
-            onMutationSuccess={onMutationSuccess}
+            onOpenMeeting={handleOpenMeeting}
           />
         </TabsContent>
         <TabsContent className="mt-0 min-h-0 overflow-y-auto p-4 sm:p-6" value="meetings">
           <CustomerMeetingsList
             customerId={data.customer.id}
             customerName={data.customer.name}
-            highlightMeetingId={highlightMeetingId}
+            highlightMeetingId={activeHighlightId ?? highlightMeetingId}
             meetings={data.meetings}
             onMutationSuccess={onMutationSuccess}
           />
@@ -85,7 +97,7 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
         <TabsContent className="mt-0 min-h-0 overflow-y-auto p-4 sm:p-6" value="projects">
           <CustomerProjectsList
             data={data}
-            highlightMeetingId={highlightMeetingId}
+            highlightMeetingId={activeHighlightId ?? highlightMeetingId}
             onMutationSuccess={onMutationSuccess}
           />
         </TabsContent>

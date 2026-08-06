@@ -3,6 +3,7 @@ import { baseProcedure, createTRPCRouter } from '../init'
 import { agentSettingsRouter } from './agent-settings.router'
 import { aiRouter } from './ai.router'
 import { applicationsRouter } from './applications.router'
+import { customerNotesRouter } from './customer-notes.router'
 import { customerPipelinesRouter } from './customer-pipelines.router'
 import { customersRouter } from './customers.router'
 import { dashboardRouter } from './dashboard.router'
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   agentSettingsRouter,
   aiRouter,
   applicationsRouter,
+  customerNotesRouter,
   customersRouter,
   dashboardRouter,
   funnelsRouter,

@@ -28,8 +28,10 @@ src/trpc/
 
   routers/                   all tRPC routers (registered in app.ts)
     proposals.router/        MIGRATED to entity server system (canonical)
-    customers.router/        partial — business sub-router exists
-    meetings.router.ts       NOT MIGRATED (single-file, uses agentProcedure directly)
+    customers.router/        MIGRATED — full CRUD via createCrudRouter + business sub-router
+    meetings.router/         MIGRATED to entity server system
+    customer-notes.router/   MIGRATED to entity server system
+    applications.router/     MIGRATED to entity server system
     projects.router/         NOT MIGRATED (uses agentProcedure directly)
     lead-sources.router.ts   NOT MIGRATED
     ... other routers ...
@@ -118,7 +120,7 @@ The factory receives an `EntityToolkit`:
 
 ```ts
 const isOmni = ctx.ability.can('manage', 'all')
-const scope = isOmni ? null : spec.visibility(ctx.session.user.id)
+const scope = isOmni ? null : spec.visibility({ userId: ctx.session.user.id, ability: ctx.ability })
 return next({ ctx: { ...ctx, scope } })
 ```
 
@@ -135,7 +137,7 @@ This replaces the `isOmni`-or-predicate dance that previously had to be inlined 
 `shareableMiddleware(spec)` resolves dual-credential access:
 
 - **Token present** (e.g., `?token=tpr-xxx`): validates the token column on the entity table, sets `ctx.scope = eq(tokenColumn, token)`, `ctx.ability = null`. **Token IS the authorization** — CASL is null.
-- **Session present, no token**: requires session, builds ability, resolves scope from `spec.visibility(userId)`.
+- **Session present, no token**: requires session, builds ability, resolves scope from `spec.visibility({ userId, ability })`.
 - **Neither**: throws UNAUTHORIZED.
 
 Activated by `spec.shareable: { tokenColumn: '...' }` in the entity spec. The middleware peeks at `getRawInput()` for the `token` field before Zod validation — branching has to happen before schema enforcement.
@@ -240,7 +242,7 @@ Services / jobs that consume the same DAL inspect `DalReturn` directly — they 
 
 `registerEntity(spec)` is called by `createEntityRouter` on module load. The registry is a `Partial<Record<EntityName, EntityServerSpec>>`. Duplicate registrations throw immediately at module-load time.
 
-Phase 1a ships the registry empty — only entities migrated to the system populate it. Today: proposals. As Customer/Meeting/Project migrate, they'll register too.
+Phase 1a shipped the registry empty — only entities migrated to the system populate it. Broad adoption followed: Customer, Meeting, Proposal, Application, and CustomerNote all register today (see migration status table below). Project and Lead Source remain unmigrated and don't register.
 
 **Why**: forcing function. The registry can't have two specs for the same `entityName`; if two files try to register the same name, the second import throws — caught at startup, not at first request.
 **Reference impl**: `src/trpc/lib/entity-registry.ts`
@@ -305,17 +307,23 @@ proposals.router/
 **Reference impl**: `src/trpc/routers/proposals.router/`, `src/trpc/routers/notion.router/`
 **Enforced by**: convention
 
-## Migration status (as of 2026-05-19)
+## Migration status (as of 2026-08-05)
+
+Adoption is broad now, not limited to the original canonical example — most agent-facing entities run through `EntityServerSpec` + `createEntityRouter`:
 
 | Entity | Status | Notes |
 |---|---|---|
 | Proposal | ✅ Migrated (PR #207) | Canonical example — full CRUD + business + delivery + contracts |
-| Customer | 🟡 Partial | `business.router.ts` exists; CRUD not yet routed through `createCrudRouter` |
-| Meeting | ❌ Not migrated | Single-file router with `agentProcedure`; inlines `db` calls |
-| Project | ❌ Not migrated | Multi-sub-router but uses `agentProcedure` directly |
+| Customer | ✅ Migrated | Full CRUD via `createCrudRouter` + business sub-router |
+| Meeting | ✅ Migrated | `createEntityRouter` + `createCrudRouter` |
+| Application | ✅ Migrated | `entities/applications/` |
+| Customer Note | ✅ Migrated | `entities/customer-notes/` — author-or-admin hooks, see `../shared/entities/customers/DOCS.md#note-authorship` |
+| Voip (calls, campaigns, DIDs, contacts, messages, link-tokens, contact-attributes) | ✅ Migrated | `entities/voip-*/` |
+| App Settings | ✅ Migrated | `entities/app-settings/` |
+| Project | ❌ Not migrated | Multi-sub-router but uses `agentProcedure` directly; DAL lives in `features/project-management/` |
 | Lead Source | ❌ Not migrated | Single-file router |
 
-The compliance sweep (companion todo to this docs migration) will produce GitHub issues for each remaining migration. ADR-0002 sets the migration order: Proposal → Customer → Meeting → Project.
+Project and Lead Source remain the known gaps — migrate them as they're touched (ADR-0002's original order was Proposal → Customer → Meeting → Project; Project is the one step not yet taken).
 
 ## Anti-patterns
 

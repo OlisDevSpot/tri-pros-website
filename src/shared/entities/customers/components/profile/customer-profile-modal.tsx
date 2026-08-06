@@ -64,6 +64,7 @@ export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingI
 
         {profileQuery.data && (
           <CustomerProfileModalContent
+            key={profileQuery.data.customer.id}
             data={profileQuery.data}
             defaultTab={defaultTab}
             heroAddress={heroAddress}

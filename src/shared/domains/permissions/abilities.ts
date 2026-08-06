@@ -28,6 +28,7 @@ import { AbilityBuilder, createMongoAbility } from '@casl/ability'
 import { ACTIVITY } from '@/shared/entities/activities/lib/constants'
 import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { APPLICATION } from '@/shared/entities/applications/lib/constants'
+import { CUSTOMER_NOTE } from '@/shared/entities/customer-notes/lib/constants'
 import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
@@ -44,6 +45,7 @@ export const ENTITY_NAMES = [
   CUSTOMER,
   CUSTOMER_PROFILE,
   CUSTOMER_LEAD_ATTRIBUTION,
+  CUSTOMER_NOTE,
   MEETING,
   PROPOSAL,
   PROJECT,
@@ -88,7 +90,10 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       break
 
     // ── agent ─────────────────────────────────────────────────────────────
-    // Explicit per-resource permissions. No delete on anything.
+    // Explicit per-resource permissions. Delete is narrow: Activity and
+    // CustomerNote grant the verb here, but per-row ownership (author-or-
+    // admin for notes) is enforced in the DAL, not by CASL — see the
+    // CustomerNote block below. Everything else has no delete grant.
     // Cannot create customers (that's office/super-admin responsibility).
     case 'agent':
       can('access', 'Dashboard')
@@ -107,6 +112,14 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       // 1:1 attribution child (Addendum B) — SYSTEM-written at capture, immutable
       // afterward. Agents can read for context; no update grant.
       can('read', 'CustomerLeadAttribution')
+
+      // Notes: any agent can read/create; update/delete are author-or-admin,
+      // enforced in customerNoteServerSpec hooks (assertNoteAuthorOrAdmin) —
+      // CASL can't express "own record" on plain-string subjects (see note above).
+      can('read', 'CustomerNote')
+      can('create', 'CustomerNote')
+      can('update', 'CustomerNote')
+      can('delete', 'CustomerNote')
 
       can('read', 'Meeting')
       can('create', 'Meeting')

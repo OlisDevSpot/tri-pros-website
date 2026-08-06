@@ -1,5 +1,13 @@
 # Entity Action System
 
+## Status
+
+**Superseded by as-built (2026-08-05).** The registry / `EntitySpec` / `entityType`-prop design decided below was **not built**. What actually shipped is a lighter toolkit-by-convention that keeps the shared `<EntityActionMenu>` render surface but drops the compile-time registry: per entity, a `constants/actions.ts` (plain `EntityAction` metadata objects — label, icon, CASL verb), a `hooks/use-<entity>-actions.ts` (mutation wrappers over the entity's generic CRUD router), and a `hooks/use-<entity>-action-configs.ts` (binds the mutation handlers + a `useConfirm` dialog, returns `{ actions, DeleteConfirmDialog }`), rendered via `<EntityActionMenu entity actions mode />` — an `entity` object + a pre-built `actions` array, not an `entityType` string resolved against a registry. Exemplars: `src/shared/entities/meetings/` and `src/shared/entities/customer-notes/` (see `customer-notes/hooks/use-customer-note-action-configs.ts` and `constants/note-actions.ts`).
+
+The rest of this ADR is kept **as originally written** below — it documents the design that was decided and the reasoning at the time, not the as-shipped shape. Read it as historical context for *why* a shared `<EntityActionMenu>` exists at all; do not follow it as an implementation guide. Anyone extending the action system should match the shipped toolkit-by-convention pattern (constants + two hooks + `<EntityActionMenu entity actions mode />`), not attempt to build the registry/`EntitySpec` machinery below.
+
+---
+
 Every business **Entity** (Customer, Meeting, Proposal, Project, User, future entities) exposes its action menu through a single shared `<EntityActionMenu>` component backed by a compile-time-typed **Entity Registry** mapping entity-type to a strict **Entity Spec**. We chose this over the prior pattern of one hand-written `useXActionConfigs` hook per entity because the four existing hooks (66–168 LoC each) had already drifted into three different implementation patterns despite a shared domain promise that they were "the single source of truth for an entity's available actions" — and convention alone wasn't holding the line.
 
 ## Context

@@ -49,11 +49,18 @@ If your entity needs its own CASL rules, add rules per role in `defineAbilitiesF
 `src/shared/entities/<entity>/lib/visibility.ts`:
 
 ```ts
+import type { SQL } from 'drizzle-orm'
+import type { VisibilityScope } from '@/shared/dal/server/types'
+
 import { and, eq, or, exists } from 'drizzle-orm'
 import { proposals, meetings } from '@/shared/db/schema'
 
-export const proposalVisibility = (userId: string) =>
-  or(
+// Signature is fixed by `EntityServerSpec.visibility: (scope: VisibilityScope) => SQL`
+// — a single destructured object, not positional args. `ability` is there for
+// capability-based branching (e.g. a dispatcher-only leads-pool clause); most
+// predicates only need `userId`.
+export function proposalVisibility({ userId }: VisibilityScope): SQL {
+  return or(
     eq(proposals.ownerId, userId),
     exists(
       db.select()
@@ -64,6 +71,7 @@ export const proposalVisibility = (userId: string) =>
         )),
     ),
   )
+}
 ```
 
 ---
@@ -198,14 +206,16 @@ export const appRouter = createTRPCRouter({
 ## Step 8: Use it
 
 ```ts
+// Client path segment is the registered router's variable name (from
+// app.ts), not the bare entity name — `proposalsRouter`, not `proposals`.
 // Agent caller — session has CASL read permission
-trpc.proposals.crud.getById.useQuery({ id })
-trpc.proposals.crud.list.useQuery({ pagination, search })
-trpc.proposals.crud.update.useMutation()
-trpc.proposals.business.duplicateWithSnapshot.useMutation()
+trpc.proposalsRouter.crud.getById.useQuery({ id })
+trpc.proposalsRouter.crud.list.useQuery({ pagination, search })
+trpc.proposalsRouter.crud.update.useMutation()
+trpc.proposalsRouter.business.duplicateWithSnapshot.useMutation()
 
 // Homeowner caller — shareable entity, no session
-trpc.proposals.crud.getById.useQuery({ id, token: shareToken })
+trpc.proposalsRouter.crud.getById.useQuery({ id, token: shareToken })
 
 // Same procedure, either credential. The proposal page calls this one
 // call site regardless of who the visitor is.

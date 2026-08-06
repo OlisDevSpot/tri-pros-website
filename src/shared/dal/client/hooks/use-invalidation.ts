@@ -93,6 +93,7 @@ export function useInvalidation() {
   }
 
   return {
+    cross,
     invalidateCustomer,
     invalidateMeeting,
     invalidateProposal,

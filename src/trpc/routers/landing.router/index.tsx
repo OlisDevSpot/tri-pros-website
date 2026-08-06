@@ -94,8 +94,9 @@ export const landingRouter = createTRPCRouter({
  *
  * Customer insert goes through `customerCrud.create` (DAL factory). The slug
  * lookup and the note insert use direct drizzle — these are LEGACY patterns
- * that match `business.router.ts` (`createFromIntake`, `addNote`) and will
- * migrate to a lead-sources DAL + a customer-notes DAL when those exist.
+ * that match `business.router.ts` (`createFromIntake`) and predate the
+ * customer-notes entity (see issue #280); they will migrate to a
+ * lead-sources DAL + `customerNoteCrud.create` in a future pass.
  *
  * Failure here is non-blocking at the caller (Promise.allSettled). No
  * transaction — explicitly deferred to a future refactor.
@@ -127,8 +128,8 @@ async function ingestWebsiteLead(params: {
     throw new Error(`customerCrud.create failed: ${JSON.stringify(createResult.error)}`)
   }
 
-  // LEGACY: direct note insert. Matches existing addNote / createFromIntake.
-  // Move to a customer-notes DAL when one exists.
+  // LEGACY: direct note insert, bypassing customerNoteCrud.create. Matches
+  // existing createFromIntake. Move to customerNoteCrud in a future pass.
   const noteContent = formType === 'general'
     ? buildGeneralInquiryNote(formData as GeneralInquiryFormSchema)
     : buildScheduleConsultationNote(formData as ScheduleConsultationFormSchema)
