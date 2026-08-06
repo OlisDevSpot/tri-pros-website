@@ -1,6 +1,8 @@
 'use client'
 
+import type { inferRouterOutputs } from '@trpc/server'
 import type { MediaGroup, MediaItem } from '@/shared/components/media/types'
+import type { AppRouter } from '@/trpc/routers/app'
 import { useQuery } from '@tanstack/react-query'
 import { FileTextIcon } from 'lucide-react'
 import { useMemo } from 'react'
@@ -15,18 +17,8 @@ interface Props {
   proposalId: string
 }
 
-interface ProposalMediaRow {
-  id: number
-  name: string
-  mimeType: string
-  visibility: string
-  url: string | null
-  blurDataUrl: string | null
-  optimizationStatus: string
-  sortOrder: number
-  duration: number | null
-  pageCount: number | null
-}
+type RouterOutputs = inferRouterOutputs<AppRouter>
+type ProposalMediaRow = RouterOutputs['proposalsRouter']['media']['list'][number]
 
 function toItems(rows: ProposalMediaRow[]): MediaItem[] {
   return rows.map(r => ({
