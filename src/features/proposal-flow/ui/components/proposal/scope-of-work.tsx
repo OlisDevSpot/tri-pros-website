@@ -3,6 +3,7 @@ import { motion } from 'motion/react'
 
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
 import { CopySowButton } from '@/features/proposal-flow/ui/components/proposal/copy-sow-button'
+import { ProposalMediaGallery } from '@/features/proposal-flow/ui/components/proposal/proposal-media-gallery'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/components/ui/accordion'
@@ -31,7 +32,9 @@ export function ScopeOfWork() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      className="space-y-4"
     >
+      <ProposalMediaGallery media={proposal.data.media ?? []} />
       <Card>
         <CardHeader className="text-center md:text-start">
           <CardTitle>
