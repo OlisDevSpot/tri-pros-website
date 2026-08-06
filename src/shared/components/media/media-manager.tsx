@@ -23,6 +23,7 @@ export function MediaManager({
   onRename,
   renderThumbnail,
   renderControls,
+  renderPreview,
   renderDetails,
   emptyLabel = 'No files yet',
 }: MediaManagerProps) {
@@ -86,6 +87,7 @@ export function MediaManager({
                       item={item}
                       renderThumbnail={renderThumbnail}
                       renderControls={renderControls}
+                      renderPreview={renderPreview}
                       renderDetails={renderDetails}
                       onRename={onRename}
                       onDelete={onDelete}

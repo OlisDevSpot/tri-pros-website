@@ -32,6 +32,8 @@ export interface MediaManagerProps {
   renderThumbnail: (item: MediaItem) => ReactNode
   /** Owner-specific per-item controls overlaid on the card (proposal: a visibility Switch). */
   renderControls?: (item: MediaItem) => ReactNode
+  /** Owner-specific large preview for the detail dialog (project: public-bucket image variant with retry UI; proposal: presigned img/video/pdf). Defaults to a plain <img>. */
+  renderPreview?: (item: MediaItem) => ReactNode
   /** Owner-specific extra rows in the detail dialog. */
   renderDetails?: (item: MediaItem) => ReactNode
   emptyLabel?: string

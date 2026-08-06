@@ -16,6 +16,8 @@ interface MediaCardProps {
   renderThumbnail: (item: MediaItem) => ReactNode
   /** Overlaid top-right controls, owner-specific (project: hero star + phase menu; proposal: visibility switch). */
   renderControls?: (item: MediaItem) => ReactNode
+  /** Large preview for the detail dialog, owner-specific (project: public-bucket image variant with retry UI; proposal: presigned img/video/pdf). Defaults to a plain <img>. */
+  renderPreview?: (item: MediaItem) => ReactNode
   /** Extra rows in the detail dialog. */
   renderDetails?: (item: MediaItem) => ReactNode
   /** Debounced (800ms) name input calls this. */
@@ -35,6 +37,7 @@ export function MediaCard({
   item,
   renderThumbnail,
   renderControls,
+  renderPreview,
   renderDetails,
   onRename,
   onDelete,
@@ -168,7 +171,7 @@ export function MediaCard({
         </div>
       </div>
 
-      <PhotoDetailDialog item={item} open={detailOpen} onOpenChange={setDetailOpen} renderDetails={renderDetails} />
+      <PhotoDetailDialog item={item} open={detailOpen} onOpenChange={setDetailOpen} renderPreview={renderPreview} renderDetails={renderDetails} />
     </>
   )
 }

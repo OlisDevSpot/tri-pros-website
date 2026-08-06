@@ -13,9 +13,9 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { arrayMove, rectSortingStrategy, SortableContext, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { arrayMove, rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import { useState } from 'react'
+import { MediaSortableItem } from './media-sortable-item'
 
 const AUTO_SCROLL_CONFIG = {
   activator: AutoScrollActivator.Pointer,
@@ -120,7 +120,7 @@ export function MediaReorderGrid({ items, onReorder, renderItem, selectedIds }: 
       <SortableContext items={items.map(i => i.id)} strategy={rectSortingStrategy}>
         <div className="grid gap-3 overflow-x-clip" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
           {items.map(item => (
-            <SortableItem
+            <MediaSortableItem
               key={item.id}
               item={item}
               renderItem={renderItem}
@@ -130,28 +130,5 @@ export function MediaReorderGrid({ items, onReorder, renderItem, selectedIds }: 
         </div>
       </SortableContext>
     </DndContext>
-  )
-}
-
-/**
- * Internal per-item useSortable wrapper (per the D1 brief) — owns dnd-kit wiring so
- * `renderItem` receives ready-to-spread `dragHandleProps` without callers touching dnd-kit.
- */
-function SortableItem({ item, renderItem, isGroupDragged }: {
-  item: MediaItem
-  renderItem: (item: MediaItem, dnd: MediaReorderGridRenderArgs) => ReactNode
-  isGroupDragged: boolean
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  return (
-    <div ref={setNodeRef} style={style}>
-      {renderItem(item, { dragHandleProps: { ...attributes, ...listeners }, isDragging, isGroupDragged })}
-    </div>
   )
 }
