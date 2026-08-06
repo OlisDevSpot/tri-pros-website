@@ -90,7 +90,10 @@ export function defineAbilitiesFor(user: PermissionUser | null): AppAbility {
       break
 
     // ── agent ─────────────────────────────────────────────────────────────
-    // Explicit per-resource permissions. No delete on anything.
+    // Explicit per-resource permissions. Delete is narrow: Activity and
+    // CustomerNote grant the verb here, but per-row ownership (author-or-
+    // admin for notes) is enforced in the DAL, not by CASL — see the
+    // CustomerNote block below. Everything else has no delete grant.
     // Cannot create customers (that's office/super-admin responsibility).
     case 'agent':
       can('access', 'Dashboard')
