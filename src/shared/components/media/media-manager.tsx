@@ -25,6 +25,7 @@ export function MediaManager({
   renderControls,
   renderPreview,
   renderDetails,
+  renderMenuItems,
   emptyLabel = 'No files yet',
 }: MediaManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -89,6 +90,7 @@ export function MediaManager({
                       renderControls={renderControls}
                       renderPreview={renderPreview}
                       renderDetails={renderDetails}
+                      renderMenuItems={renderMenuItems}
                       onRename={onRename}
                       onDelete={onDelete}
                       dragHandleProps={dnd.dragHandleProps}

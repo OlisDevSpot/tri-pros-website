@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * @deprecated Superseded by `shared/components/media/photo-detail-dialog.tsx`. Kept temporarily
+ * (unused) until the project-photos parity check passes; then delete per
+ * docs/superpowers/plans/2026-08-05-proposal-media-CLEANUP.md. Do not build on this.
+ */
+
 import type { MediaFile } from '@/shared/db/schema'
 import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog'

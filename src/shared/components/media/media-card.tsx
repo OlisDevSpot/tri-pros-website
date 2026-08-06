@@ -20,6 +20,8 @@ interface MediaCardProps {
   renderPreview?: (item: MediaItem) => ReactNode
   /** Extra rows in the detail dialog. */
   renderDetails?: (item: MediaItem) => ReactNode
+  /** Owner-specific menu items injected between "View Details" and "Delete" (project: the Move-to-phase submenu). Owner-agnostic ReactNode slot. */
+  renderMenuItems?: (item: MediaItem) => ReactNode
   /** Debounced (800ms) name input calls this. */
   onRename: (id: number, name: string) => void
   onDelete: (id: number) => void
@@ -39,6 +41,7 @@ export function MediaCard({
   renderControls,
   renderPreview,
   renderDetails,
+  renderMenuItems,
   onRename,
   onDelete,
   isDeletePending = false,
@@ -146,6 +149,7 @@ export function MediaCard({
                   <FileTextIcon className="mr-2 h-3.5 w-3.5" />
                   View Details
                 </DropdownMenuItem>
+                {renderMenuItems?.(item)}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"

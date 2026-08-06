@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * @deprecated Superseded by `shared/components/media/media-upload-button.tsx`. Kept temporarily
+ * (unused) until the project-photos parity check passes; then delete per
+ * docs/superpowers/plans/2026-08-05-proposal-media-CLEANUP.md. Do not build on this.
+ */
+
 import { HardDrive, Loader2, Plus, UploadIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'

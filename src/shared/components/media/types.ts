@@ -36,5 +36,7 @@ export interface MediaManagerProps {
   renderPreview?: (item: MediaItem) => ReactNode
   /** Owner-specific extra rows in the detail dialog. */
   renderDetails?: (item: MediaItem) => ReactNode
+  /** Owner-specific menu items injected into each card's more-menu between "View Details" and "Delete" (project: Move-to-phase submenu). */
+  renderMenuItems?: (item: MediaItem) => ReactNode
   emptyLabel?: string
 }

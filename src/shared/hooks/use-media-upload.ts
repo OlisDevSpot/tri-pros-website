@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * @deprecated Superseded by the generalized `shared/components/media/use-media-upload.ts`. Kept
+ * temporarily (unused) until the project-photos parity check passes; then delete per
+ * docs/superpowers/plans/2026-08-05-proposal-media-CLEANUP.md. Do not build on this.
+ */
+
 import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { InsertMediaFilesSchema } from '@/shared/db/schema'
 import { useMutation } from '@tanstack/react-query'

@@ -1,51 +1,36 @@
 'use client'
 
-/**
- * @deprecated Superseded by `features/project-management/ui/components/form/project-media-manager.tsx`
- * composing `shared/components/media/*`. Kept temporarily (unused) until the project-photos
- * parity check passes; then delete per docs/superpowers/plans/2026-08-05-proposal-media-CLEANUP.md.
- * Do not build on this.
- */
-
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core'
+import type { MediaItem } from '@/shared/components/media/types'
 import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { MediaFile } from '@/shared/db/schema'
-import {
-  AutoScrollActivator,
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import { arrayMove, rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRightIcon, Trash2, X } from 'lucide-react'
+import { ArrowRightIcon, Star, Trash2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { toast } from 'sonner'
+import { MediaCard } from '@/shared/components/media/media-card'
+import { MediaReorderGrid } from '@/shared/components/media/media-reorder-grid'
+import { MediaUploadButton } from '@/shared/components/media/media-upload-button'
+import { useMediaUpload } from '@/shared/components/media/use-media-upload'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useConfirm } from '@/shared/hooks/use-confirm'
-import { useMediaUpload } from '@/shared/hooks/use-media-upload'
 import { useGooglePicker } from '@/shared/services/providers/google-drive/hooks/use-google-picker'
 import { useTRPC } from '@/trpc/helpers'
-import { SortablePhotoCard } from './sortable-photo-card'
-import { UploadSourcePopover } from './upload-source-popover'
-
-const AUTO_SCROLL_CONFIG = {
-  activator: AutoScrollActivator.Pointer,
-  acceleration: 100,
-  interval: 5,
-  threshold: { x: 0.1, y: 0.25 },
-}
 
 interface Props {
   projectId: string
@@ -53,15 +38,12 @@ interface Props {
   onUpdate: () => void
 }
 
-export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props) {
+export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const { invalidateProject } = useInvalidation()
   const editQueryOptions = trpc.projectsRouter.crud.getForEdit.queryOptions({ id: projectId })
-  const { upload, isUploading } = useMediaUpload()
-  const retryOptimization = useMutation(trpc.projectsRouter.media.retryOptimization.mutationOptions({
-    onSuccess: () => onUpdate(),
-  }))
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const currentAccessTokenRef = useRef<string | null>(null)
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
@@ -74,12 +56,36 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
   })
   const [activePhase, setActivePhase] = useState<MediaPhase>('uncategorized')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set())
-  const [draggingId, setDraggingId] = useState<number | null>(null)
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
-    useSensor(KeyboardSensor),
+  const getUploadUrlMut = useMutation(trpc.projectsRouter.media.getUploadUrl.mutationOptions())
+  const createMut = useMutation(trpc.projectsRouter.media.create.mutationOptions())
+  const { upload, isUploading } = useMediaUpload({
+    getUploadUrl: file => getUploadUrlMut.mutateAsync({
+      projectId,
+      phase: activePhase,
+      filename: file.name,
+      mimeType: file.type,
+    }),
+    createRecord: ({ file, pathKey, publicUrl }) => createMut.mutateAsync({
+      projectId,
+      phase: activePhase,
+      pathKey,
+      url: publicUrl!,
+      mimeType: file.type,
+      name: file.name.replace(/\.[^/.]+$/, ''),
+      fileExtension: file.name.includes('.') ? `.${file.name.split('.').pop()}` : '',
+    }),
+  })
+
+  const retryOptimization = useMutation(trpc.projectsRouter.media.retryOptimization.mutationOptions({
+    onSuccess: () => onUpdate(),
+  }))
+
+  const renameMutation = useMutation(
+    trpc.projectsRouter.media.rename.mutationOptions({
+      onSuccess: () => onUpdate(),
+      onError: () => toast.error('Failed to rename file'),
+    }),
   )
 
   const deleteMutation = useMutation(
@@ -205,10 +211,22 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     },
   })
 
+  const fileById = new Map(mediaFiles.map(f => [f.id, f]))
+
   const mediaByPhase = (phase: string): MediaFile[] =>
     mediaFiles
       .filter(f => f.phase === phase && !f.mimeType.startsWith('video/'))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+
+  const toMediaItem = (f: MediaFile): MediaItem => ({
+    id: f.id,
+    name: f.name,
+    mimeType: f.mimeType,
+    url: f.url,
+    blurDataUrl: f.blurDataUrl,
+    optimizationStatus: f.optimizationStatus,
+    sortOrder: f.sortOrder,
+  })
 
   function handleUploadClick(phase: MediaPhase) {
     setActivePhase(phase)
@@ -238,20 +256,8 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     // Upload all files in parallel — each triggers onUpdate independently so images appear as they finish
     await Promise.allSettled(
       fileList.map(async (file) => {
-        const ext = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
         try {
-          await upload({
-            file,
-            projectId,
-            phase: activePhase,
-            meta: {
-              name: file.name.replace(/\.[^/.]+$/, ''),
-              mimeType: file.type,
-              fileExtension: ext,
-              phase: activePhase,
-              projectId,
-            },
-          })
+          await upload(file)
           onUpdate()
         }
         catch {
@@ -324,66 +330,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
     })
   }
 
-  function handleDragStart(event: DragStartEvent) {
-    setDraggingId(event.active.id as number)
-  }
-
-  function handleDragEnd(event: DragEndEvent, phase: string) {
-    setDraggingId(null)
-
-    const { active, over } = event
-    if (!over || active.id === over.id) {
-      return
-    }
-
-    const phaseFiles = mediaByPhase(phase)
-    const activeId = active.id as number
-    const overId = over.id as number
-
-    const oldIndex = phaseFiles.findIndex(f => f.id === activeId)
-    const newIndex = phaseFiles.findIndex(f => f.id === overId)
-
-    if (oldIndex === -1 || newIndex === -1) {
-      return
-    }
-
-    // Check if this is a group drag (dragged item is selected + others are selected too)
-    const isMultiDrag = selectedIds.has(activeId) && selectedIds.size > 1
-
-    if (!isMultiDrag) {
-      // Simple single-item reorder
-      const reordered = arrayMove(phaseFiles, oldIndex, newIndex)
-      const updates = reordered.map((f, i) => ({ id: f.id, sortOrder: i }))
-      reorderMutation.mutate({ updates })
-      return
-    }
-
-    // Multi-drag: move all selected items to the drop target position
-    const movingIds = new Set(
-      [...selectedIds].filter(id => phaseFiles.some(f => f.id === id)),
-    )
-    const stationary = phaseFiles.filter(f => !movingIds.has(f.id))
-    const moving = phaseFiles.filter(f => movingIds.has(f.id))
-
-    // Find where to insert in the stationary list
-    const insertIdx = stationary.findIndex(f => f.id === overId)
-    const insertAt = insertIdx === -1 ? stationary.length : insertIdx + 1
-
-    const reordered = [
-      ...stationary.slice(0, insertAt),
-      ...moving,
-      ...stationary.slice(insertAt),
-    ]
-    const updates = reordered.map((f, i) => ({ id: f.id, sortOrder: i }))
-    reorderMutation.mutate({ updates })
-  }
-
-  function handleDragCancel() {
-    setDraggingId(null)
-  }
-
   const selectionActive = selectedIds.size > 0
-  const isGroupDrag = draggingId !== null && selectedIds.has(draggingId) && selectedIds.size > 1
 
   return (
     <div className="space-y-4">
@@ -490,6 +437,7 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
 
         {mediaPhases.map((phase) => {
           const phaseFiles = mediaByPhase(phase)
+          const phaseItems = phaseFiles.map(toMediaItem)
 
           return (
             <TabsContent key={phase} value={phase} className="space-y-3">
@@ -506,11 +454,12 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
                   </Button>
                 )}
                 <div className="ml-auto">
-                  <UploadSourcePopover
+                  <MediaUploadButton
                     onLocalUpload={() => handleUploadClick(phase)}
-                    onGoogleDriveUpload={() => handleGoogleDriveClick(phase)}
+                    onExtraUpload={() => handleGoogleDriveClick(phase)}
+                    extraUploadLabel="From Google Drive"
                     isUploading={isUploading}
-                    isPickerLoading={isPickerLoading}
+                    isExtraUploadLoading={isPickerLoading}
                   />
                 </div>
               </div>
@@ -526,39 +475,115 @@ export function SortableMediaManager({ projectId, mediaFiles, onUpdate }: Props)
                     </div>
                   )
                 : (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragStart={handleDragStart}
-                      onDragEnd={e => handleDragEnd(e, phase)}
-                      onDragCancel={handleDragCancel}
-                      autoScroll={AUTO_SCROLL_CONFIG}
-                    >
-                      <SortableContext
-                        items={phaseFiles.map(f => f.id)}
-                        strategy={rectSortingStrategy}
-                      >
-                        <div className="grid gap-3 overflow-x-clip" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))' }}>
-                          {phaseFiles.map(file => (
-                            <SortablePhotoCard
-                              key={file.id}
-                              file={file}
-                              onDelete={handleDelete}
-                              onToggleHero={handleToggleHero}
-                              onMovePhase={handleMovePhase}
-                              onNameUpdated={onUpdate}
+                    <MediaReorderGrid
+                      items={phaseItems}
+                      selectedIds={selectedIds}
+                      onReorder={updates => reorderMutation.mutate({ updates })}
+                      renderItem={(item, dnd) => (
+                        <MediaCard
+                          item={item}
+                          isSelected={selectedIds.has(item.id)}
+                          onSelectToggle={handleSelectToggle}
+                          selectionActive={selectionActive}
+                          dragHandleProps={dnd.dragHandleProps}
+                          isDragging={dnd.isDragging}
+                          isGroupDragged={dnd.isGroupDragged}
+                          onRename={(id, name) => renameMutation.mutate({ id, name })}
+                          onDelete={handleDelete}
+                          isDeletePending={deleteMutation.isPending}
+                          renderThumbnail={mediaItem => (
+                            <OptimizedImage
+                              file={fileById.get(mediaItem.id)!}
+                              alt={mediaItem.name}
+                              fill
+                              sizes="(max-width: 640px) 50vw, 25vw"
                               onRetryOptimization={id => retryOptimization.mutate({ mediaFileId: id })}
-                              isDeletePending={deleteMutation.isPending}
-                              isHeroPending={toggleHeroMutation.isPending}
-                              isSelected={selectedIds.has(file.id)}
-                              onSelectToggle={handleSelectToggle}
-                              selectionActive={selectionActive}
-                              isGroupDragged={isGroupDrag && selectedIds.has(file.id) && file.id !== draggingId}
                             />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
+                          )}
+                          renderPreview={mediaItem => (
+                            <OptimizedImage
+                              file={fileById.get(mediaItem.id)!}
+                              alt={mediaItem.name}
+                              fill
+                              className="object-contain bg-muted"
+                              sizes="500px"
+                            />
+                          )}
+                          renderControls={(mediaItem) => {
+                            const f = fileById.get(mediaItem.id)!
+                            return (
+                              <>
+                                {f.isHeroImage && (
+                                  <Badge className="bg-yellow-500/90 text-yellow-950 text-[10px] py-0 px-1.5">
+                                    Hero
+                                  </Badge>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="icon"
+                                  className={
+                                    f.isHeroImage
+                                      ? 'h-6 w-6 bg-yellow-500 hover:bg-yellow-600 text-yellow-950'
+                                      : 'h-6 w-6 bg-primary hover:bg-primary/80 text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100'
+                                  }
+                                  onClick={() => handleToggleHero(f.id, f.isHeroImage)}
+                                  disabled={toggleHeroMutation.isPending}
+                                >
+                                  <Star className={f.isHeroImage ? 'h-3 w-3 fill-current' : 'h-3 w-3'} />
+                                </Button>
+                              </>
+                            )
+                          }}
+                          renderMenuItems={(mediaItem) => {
+                            const f = fileById.get(mediaItem.id)!
+                            const otherPhases = mediaPhases.filter(p => p !== f.phase)
+                            return (
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <ArrowRightIcon className="mr-2 h-3.5 w-3.5" />
+                                  Move to
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  {otherPhases.map(p => (
+                                    <DropdownMenuItem
+                                      key={p}
+                                      className="capitalize"
+                                      onClick={() => handleMovePhase(f.id, p)}
+                                    >
+                                      {p}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                            )
+                          }}
+                          renderDetails={(mediaItem) => {
+                            const f = fileById.get(mediaItem.id)!
+                            return (
+                              <>
+                                <dt className="text-muted-foreground">Extension</dt>
+                                <dd className="text-foreground">{f.fileExtension}</dd>
+
+                                <dt className="text-muted-foreground">Phase</dt>
+                                <dd className="capitalize text-foreground">{f.phase}</dd>
+
+                                <dt className="text-muted-foreground">Hero Image</dt>
+                                <dd className="text-foreground">{f.isHeroImage ? 'Yes' : 'No'}</dd>
+
+                                <dt className="text-muted-foreground">Path Key</dt>
+                                <dd className="truncate text-foreground text-xs" title={f.pathKey ?? undefined}>{f.pathKey ?? '—'}</dd>
+
+                                <dt className="text-muted-foreground">Created</dt>
+                                <dd className="text-foreground">
+                                  {f.createdAt ? new Date(f.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                </dd>
+                              </>
+                            )
+                          }}
+                        />
+                      )}
+                    />
                   )}
             </TabsContent>
           )
