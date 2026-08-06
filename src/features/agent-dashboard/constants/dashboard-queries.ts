@@ -37,7 +37,7 @@ export function meetingsWindowInput(kind: MeetingWindowKind) {
 export function awaitingProposalsInput() {
   return {
     pagination: { limit: DASHBOARD_LIMITS.proposals, offset: 0 },
-    sort: { sortBy: 'sentAt', sortDir: 'desc' },
+    sort: { sortBy: 'contractSentAt', sortDir: 'desc' },
     filters: { awaitingSignature: true },
   } satisfies ProposalListInput
 }

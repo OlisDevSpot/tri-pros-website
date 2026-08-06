@@ -240,6 +240,7 @@ export async function listProposals(
     const orderBy = buildOrderBy(input.sort, {
       createdAt: proposals.createdAt,
       sentAt: proposals.sentAt,
+      contractSentAt: proposals.contractSentAt,
       status: proposals.status,
       label: proposals.label,
       customerName: customers.name,
