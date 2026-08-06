@@ -8,7 +8,7 @@ When in doubt: **container extends edge-to-edge (background fills); content is p
 
 ### viewport-fit-cover-plus-black-translucent
 
-`src/app/layout.tsx` exports a `viewport` config with:
+`src/app/(frontend)/layout.tsx` exports a `viewport` config with:
 
 ```ts
 export const viewport: Viewport = {
@@ -24,7 +24,7 @@ export const viewport: Viewport = {
 `viewportFit: 'cover'` lets the document paint behind the notch + home indicator. Combined with `black-translucent` status-bar style in the PWA manifest, iOS pushes the document up under the status bar.
 
 **Why**: PWAs need the canvas to bleed under the status bar so brand backgrounds extend edge-to-edge.
-**Reference impl**: `src/app/layout.tsx`
+**Reference impl**: `src/app/(frontend)/layout.tsx`
 **Enforced by**: convention (Next.js merges this with the manifest)
 
 ### html-height-fix-for-webkit-191872
@@ -138,7 +138,7 @@ The shell layouts above NEVER set `overflow-y-auto`. Individual pages own their 
 The `<html>` element has `style={{ backgroundColor: '#09090b' }}` inline so the canvas color is correct on the very first paint before CSS variables resolve.
 
 **Why**: a flash of white before stylesheet load is visible on PWA cold-launch; inline style paints immediately.
-**Reference impl**: `src/app/layout.tsx`
+**Reference impl**: `src/app/(frontend)/layout.tsx`
 **Enforced by**: convention
 
 ### h-dvh-svh-not-needed
