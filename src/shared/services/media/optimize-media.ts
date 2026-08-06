@@ -6,6 +6,7 @@ import {
   setMediaOptimizationFailed,
   setMediaOptimizationProcessing,
 } from '@/shared/entities/media-files/dal/server/optimization'
+import { VARIANT_REGISTRY } from '@/shared/entities/media-files/lib/image-variants'
 import { optimizeFile } from '@/shared/lib/file-optimization/optimize-file'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { getOptimizationTarget } from './optimization-target'
@@ -41,7 +42,7 @@ export async function optimizeMediaFile(
   try {
     const bucket = file.bucket as R2BucketName
     const originalBuffer = await r2Client.getObject(bucket, file.pathKey)
-    const result = await optimizeFile(originalBuffer, file.mimeType)
+    const result = await optimizeFile(originalBuffer, file.mimeType, VARIANT_REGISTRY[ownerKind])
 
     if (result.variants.length > 0) {
       const basePath = file.pathKey.replace(/\.[^.]+$/, '')

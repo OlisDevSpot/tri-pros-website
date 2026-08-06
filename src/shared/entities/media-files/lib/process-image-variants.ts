@@ -1,6 +1,7 @@
 import type { Buffer } from 'node:buffer'
 
 import sharp from 'sharp'
+import { VARIANT_OPTIONS } from './image-variants'
 
 export interface ImageVariant {
   suffix: string
@@ -22,20 +23,6 @@ export interface VariantDecision {
   targetWidth: number
   action: 'generated' | 'skipped'
   reason?: string
-}
-
-/** Variant definitions: suffix → target width */
-const VARIANT_DEFS = [
-  { suffix: 'sm', width: 640 },
-  { suffix: 'md', width: 1280 },
-  { suffix: 'lg', width: 1920 },
-] as const
-
-/** Max output sizes per variant — re-encode at lower quality if exceeded */
-const SIZE_LIMITS: Record<string, number> = {
-  sm: 80 * 1024, // 80 KB
-  md: 200 * 1024, // 200 KB
-  lg: 350 * 1024, // 350 KB
 }
 
 /**
@@ -100,7 +87,10 @@ async function resizeWithBudget(
  *
  * Runs variants sequentially to reduce peak memory usage on serverless functions.
  */
-export async function processImageVariants(originalBuffer: Buffer): Promise<ProcessImageResult> {
+export async function processImageVariants(
+  originalBuffer: Buffer,
+  suffixes: readonly string[] = VARIANT_OPTIONS.map(v => v.suffix),
+): Promise<ProcessImageResult> {
   const metadata = await sharp(originalBuffer).metadata()
   // For images with EXIF Orientation 5..8 the stored width/height are swapped
   // from the visual dimensions. Threshold checks must compare against the
@@ -111,10 +101,11 @@ export async function processImageVariants(originalBuffer: Buffer): Promise<Proc
 
   const decisions: VariantDecision[] = []
   const variants: ImageVariant[] = []
+  const defs = VARIANT_OPTIONS.filter(v => suffixes.includes(v.suffix))
 
   // Tiny image — skip all variants, just generate blur
   if (originalSize <= TINY_IMAGE_THRESHOLD) {
-    for (const def of VARIANT_DEFS) {
+    for (const def of defs) {
       decisions.push({
         suffix: def.suffix,
         targetWidth: def.width,
@@ -124,7 +115,7 @@ export async function processImageVariants(originalBuffer: Buffer): Promise<Proc
     }
   }
   else {
-    for (const def of VARIANT_DEFS) {
+    for (const def of defs) {
       // Skip if original isn't wide enough to meaningfully downscale
       if (originalWidth < def.width * MIN_DOWNSCALE_FACTOR) {
         decisions.push({
@@ -137,7 +128,7 @@ export async function processImageVariants(originalBuffer: Buffer): Promise<Proc
       }
 
       // Skip if original is already smaller than this variant's size budget
-      const sizeLimit = SIZE_LIMITS[def.suffix]
+      const sizeLimit = def.maxBytes
       if (sizeLimit && originalSize <= sizeLimit) {
         decisions.push({
           suffix: def.suffix,

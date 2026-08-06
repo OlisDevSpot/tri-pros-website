@@ -20,13 +20,17 @@ function skipped(kind: FileOptimizationResult['kind']): FileOptimizationResult {
  *   video → skipped in Plan 1 (PLAN 1b: Cloudflare Stream transcode + poster)
  *   other → skipped
  */
-export async function optimizeFile(buffer: Buffer, mimeType: string): Promise<FileOptimizationResult> {
+export async function optimizeFile(
+  buffer: Buffer,
+  mimeType: string,
+  variantSuffixes?: readonly string[],
+): Promise<FileOptimizationResult> {
   const kind = classifyFileKind(mimeType)
 
   switch (kind) {
     case 'image': {
-      const { variants, blurDataUrl, variantSuffixes } = await processImageVariants(buffer)
-      return { kind, variants, variantSuffixes, blurDataUrl, pageCount: null, skipped: false }
+      const { variants, blurDataUrl, variantSuffixes: produced } = await processImageVariants(buffer, variantSuffixes)
+      return { kind, variants, variantSuffixes: produced, blurDataUrl, pageCount: null, skipped: false }
     }
     case 'pdf': {
       const pageCount = await readPdfPageCount(buffer)
