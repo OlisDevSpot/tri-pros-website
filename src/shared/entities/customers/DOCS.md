@@ -214,6 +214,18 @@ Customers carry `latitude`, `longitude`, `geocodedAt`. Address-edit flows trigge
 **Reference impl**: `customerServerSpec.hooks.update.before` at `src/shared/entities/customers/lib/server-spec.ts` — nullifies cached coords whenever the update payload contains any of `address`/`city`/`state`/`zip` AND no explicit `latitude`/`longitude` (the geocode write-back path).
 **Enforced by**: spec hook — fires for every `customerCrud.update` caller (routers, services, jobs). Previously enforced by convention in `business.updateCustomerContact`, which is now deleted; the hook is now the only enforcement point.
 
+### note-authorship
+
+A customer note may be edited or deleted only by its **author** or an **admin** (super-admin / `manage:all`). Notes live on `customer_notes` — a sibling top-level entity on the Entity Server System (`entities/customer-notes/`), not a column on `customers` — documented here because notes are a customer-child business concept, same as the other rules in this file.
+
+Enforced **server-side** by `assertNoteAuthorOrAdmin` (`entities/customer-notes/lib/assert-note-author.ts`), invoked from `customerNoteServerSpec.hooks.update.before` / `hooks.delete.before` (`entities/customer-notes/lib/server-spec.ts`): admins (`ctx.ability.can('manage', 'all')`) pass unconditionally; everyone else must be the note's `authorId`, or the hook throws `forbidden`. Mirrored **client-side** by `canManage` in `useCustomerNoteActionConfigs` (`entities/customer-notes/hooks/use-customer-note-action-configs.ts`), which the timeline row uses to decide whether to mount the edit/delete action menu at all for a given note — the server hook is the real enforcement boundary; the client gate only avoids showing controls that would 403.
+
+Separately: the customer profile's **activity timeline** (Overview tab) is **derived just-in-time**, not persisted. `buildTimelineEvents` (`lib/build-timeline-events.ts`) recomputes the event list on every render from the live meetings/proposals/notes already fetched for the profile — there is no `timeline_events` table or snapshot to keep in sync. Follows the codebase's default derived-value rule (`docs/codebase-conventions/derived-values.md`): compute from a single canonical helper unless persistence earns its keep via the snapshot or cache-column exceptions, neither of which applies here.
+
+**Why**: authorship is the natural ownership boundary for a note (only the person who wrote it should be able to change what it says), with an admin override for moderation/cleanup. The timeline stays JIT because it's a read-only composition of data that's already fetched for the profile — persisting a duplicate would just be another cache to invalidate.
+**Reference impl**: `entities/customer-notes/lib/assert-note-author.ts` (`assertNoteAuthorOrAdmin`); `entities/customer-notes/lib/server-spec.ts` (`update.before` / `delete.before` hooks); `entities/customer-notes/hooks/use-customer-note-action-configs.ts` (`canManage`); `lib/build-timeline-events.ts` (`buildTimelineEvents`)
+**Enforced by**: DAL hooks (server, authoritative) + `canManage` (client, UX-only mirror)
+
 ## Anti-patterns
 
 - **Reading `customers.pipeline` raw in a UI query.** Use `derivedPipelineSql()` for the 5-bucket classification.
