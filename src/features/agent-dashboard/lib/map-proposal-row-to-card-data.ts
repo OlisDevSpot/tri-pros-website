@@ -15,7 +15,7 @@ export function mapProposalRowToCardData(row: ProposalListRow): ProposalOverview
   const sow = row.projectJSON.data.sow
 
   const sowSummary = sow
-    .filter(section => Boolean(section.trade?.label))
+    .filter(section => Boolean(section.trade.label))
     .map(section => ({
       trade: section.trade.label,
       scopes: section.scopes.map(scope => scope.label).filter(Boolean),

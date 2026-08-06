@@ -41,6 +41,7 @@ export function DashboardProjects() {
         : (
             <EntityList
               title="Projects"
+              hideHeader
               items={data?.rows ?? []}
               getItemKey={row => row.id}
               renderItem={row => <DashboardProjectCard row={row} />}

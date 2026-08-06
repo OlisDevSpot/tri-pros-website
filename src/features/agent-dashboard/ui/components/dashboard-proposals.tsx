@@ -39,6 +39,7 @@ export function DashboardProposals() {
         : (
             <EntityList
               title="Proposals"
+              hideHeader
               items={data?.rows ?? []}
               getItemKey={row => row.id}
               renderItem={row => <DashboardProposalCard row={row} />}

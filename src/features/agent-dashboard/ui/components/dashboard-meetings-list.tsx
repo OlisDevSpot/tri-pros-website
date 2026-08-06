@@ -34,6 +34,7 @@ export function DashboardMeetingsList({ kind }: DashboardMeetingsListProps) {
   return (
     <EntityList
       title={kind === 'upcoming' ? 'Upcoming' : 'Past'}
+      hideHeader
       items={data?.rows ?? []}
       getItemKey={row => row.id}
       renderItem={row => <DashboardMeetingCard row={row} showScheduledDate />}
