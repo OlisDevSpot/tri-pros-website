@@ -22,11 +22,13 @@ import { cn } from '@/shared/lib/utils'
 import { FundingFields } from './funding-fields'
 import { GeneralFields } from './general-fields'
 import { ProjectFields } from './project-fields'
+import { ProposalMediaManager } from './proposal-media-manager'
 
-const FORM_TABS = ['general', 'sow', 'funding'] as const
+const FORM_TABS = ['general', 'sow', 'funding', 'files'] as const
 type FormTab = (typeof FORM_TABS)[number]
 
 const TAB_LABELS: Record<FormTab, string> = {
+  files: 'Files',
   funding: 'Funding',
   general: 'General',
   sow: 'Scope of Work',
@@ -42,6 +44,7 @@ interface Props {
   isLoading: boolean
   initialValues?: OverrideProposalValues
   viewHref?: string
+  proposalId?: string
 }
 
 function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialValues'] = {}): ProposalFormSchema {
@@ -57,7 +60,7 @@ function deepMergeDefaults(base: ProposalFormSchema, override: Props['initialVal
   }
 }
 
-export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewHref }: Props) {
+export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewHref, proposalId }: Props) {
   const form = useFormContext<ProposalFormSchema>()
   const [nuqsTab, setNuqsTab] = useQueryState(
     'formTab',
@@ -290,6 +293,11 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                 {tab === 'general' && <GeneralFields />}
                 {tab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
                 {tab === 'funding' && <FundingFields pricingMode={pricingMode} />}
+                {tab === 'files' && (
+                  proposalId
+                    ? <ProposalMediaManager proposalId={proposalId} />
+                    : <p className="text-muted-foreground text-sm">Save the proposal first to attach files.</p>
+                )}
               </motion.div>
             )
           })}

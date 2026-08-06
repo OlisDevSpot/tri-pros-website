@@ -236,6 +236,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
             onSubmit={onSubmit}
             onSave={onSave}
             viewHref={viewHref}
+            proposalId={proposalId}
           />
         </Form>
       </div>
