@@ -10,7 +10,7 @@ import { projects } from './projects'
 
 export const mediaFiles = pgTable('media_files', {
   id: unsafeId,
-  ...baseMediaColumns,
+  ...baseMediaColumns(),
   url: varchar('url', { length: 255 }).notNull(),
   tags: jsonb('tags').$type<Tag[]>(),
   isHeroImage: boolean('is_hero_image').notNull().default(false),

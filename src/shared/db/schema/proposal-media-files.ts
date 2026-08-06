@@ -14,7 +14,7 @@ export type ProposalMediaVisibility = (typeof proposalMediaVisibilities)[number]
 export const proposalMediaFiles = pgTable('proposal_media_files', {
   id: unsafeId,
   proposalId: uuid('proposal_id').notNull().references(() => proposals.id, { onDelete: 'cascade' }),
-  ...baseMediaColumns,
+  ...baseMediaColumns(),
   visibility: text('visibility', { enum: proposalMediaVisibilities }).notNull().default('internal'),
   pageCount: integer('page_count'),
   thumbnailPathKey: text('thumbnail_path_key'),
