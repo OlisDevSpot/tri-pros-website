@@ -4,15 +4,14 @@ import type { MeetingListRow } from '@/shared/entities/meetings/dal/server/queri
 
 import { useQuery } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { FileTextIcon } from 'lucide-react'
 import Link from 'next/link'
 
 import { meetingsWindowInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { ROOTS } from '@/shared/config/roots'
-import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
-import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { useTRPC } from '@/trpc/helpers'
+
+import { DashboardMeetingCard } from './dashboard-meeting-card'
 
 /**
  * Today's meetings as a compact left time rail — the dashboard's focal
@@ -34,12 +33,15 @@ export function DashboardTodayTimeline() {
 
   if (rows.length === 0) {
     return (
-      <p className="py-6 text-sm text-muted-foreground">
-        {'No meetings today — '}
-        <Link href={ROOTS.dashboard.schedule()} className="font-medium text-primary hover:underline">
-          book one
+      <div className="flex flex-col items-start gap-0.5 py-2">
+        <p className="text-sm text-muted-foreground">No meetings today</p>
+        <Link
+          href={ROOTS.dashboard.schedule()}
+          className="-mx-2 inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium text-primary transition-colors duration-200 hover:bg-accent/50"
+        >
+          Book one →
         </Link>
-      </p>
+      </div>
     )
   }
 
@@ -68,33 +70,7 @@ function TodayTimelineRow({ row }: { row: MeetingListRow }) {
       </div>
 
       <div className="flex-1 pb-3 pt-1">
-        <MeetingOverviewCard
-          meeting={row}
-          customerId={row.customerId ?? ''}
-          className="rounded-lg border border-border bg-card p-2.5"
-        >
-          <MeetingOverviewCard.Header className="min-w-0 gap-1.5">
-            <MeetingOverviewCard.Fields fields={[{ field: 'outcome', variant: 'dot' }]} className="flex-none" />
-            <MeetingOverviewCard.CustomerName className="min-w-0 flex-1 truncate font-medium" />
-            <MeetingOverviewCard.Actions mode="compact" className="shrink-0" />
-          </MeetingOverviewCard.Header>
-
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <MeetingOverviewCard.Fields fields={[{ field: 'type' }]} className="flex-none" />
-            {row.proposalCount > 0 && (
-              <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                <FileTextIcon className="size-3" />
-                {row.proposalCount}
-              </span>
-            )}
-            <ParticipantsSlot
-              meetingId={row.id}
-              variant="compact"
-              initialParticipants={row.participants}
-              className="ml-auto"
-            />
-          </div>
-        </MeetingOverviewCard>
+        <DashboardMeetingCard row={row} />
       </div>
     </li>
   )

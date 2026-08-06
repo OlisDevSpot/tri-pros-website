@@ -1,17 +1,15 @@
 'use client'
 
 import type { MeetingWindowKind } from '@/features/agent-dashboard/lib/meeting-windows'
-import type { MeetingListRow } from '@/shared/entities/meetings/dal/server/queries'
 
 import { useQuery } from '@tanstack/react-query'
-import { FileTextIcon } from 'lucide-react'
 
 import { meetingsWindowInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
 import { Skeleton } from '@/shared/components/ui/skeleton'
-import { MeetingOverviewCard } from '@/shared/entities/meetings/components/overview-card'
-import { ParticipantsSlot } from '@/shared/entities/meetings/components/participants-slot'
 import { useTRPC } from '@/trpc/helpers'
+
+import { DashboardMeetingCard } from './dashboard-meeting-card'
 
 interface DashboardMeetingsListProps {
   /** 'today' is handled by `DashboardTodayTimeline` — this component only covers the two plain-list windows. */
@@ -38,50 +36,14 @@ export function DashboardMeetingsList({ kind }: DashboardMeetingsListProps) {
       title={kind === 'upcoming' ? 'Upcoming' : 'Past'}
       items={data?.rows ?? []}
       getItemKey={row => row.id}
-      renderItem={row => <MeetingListItem row={row} />}
+      renderItem={row => <DashboardMeetingCard row={row} showScheduledDate />}
       emptyState={{ message: kind === 'upcoming' ? 'No upcoming meetings' : 'No past meetings' }}
       variant="flush"
     />
   )
 }
 
-/** One dense roster row — same card internals as the Today rail row, minus the rail. */
-function MeetingListItem({ row }: { row: MeetingListRow }) {
-  return (
-    <MeetingOverviewCard
-      meeting={row}
-      customerId={row.customerId ?? ''}
-      className="rounded-lg border border-border bg-card p-2.5"
-    >
-      <MeetingOverviewCard.Header className="min-w-0 gap-1.5">
-        <MeetingOverviewCard.Fields fields={[{ field: 'outcome', variant: 'dot' }]} className="flex-none" />
-        <MeetingOverviewCard.CustomerName className="min-w-0 flex-1 truncate font-medium" />
-        <MeetingOverviewCard.Actions mode="compact" className="shrink-0" />
-      </MeetingOverviewCard.Header>
-
-      <div className="mt-1.5 flex flex-wrap items-center gap-2">
-        <MeetingOverviewCard.Fields
-          fields={[{ field: 'scheduledDate', format: 'full' }, { field: 'type' }]}
-          className="flex-none"
-        />
-        {row.proposalCount > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-            <FileTextIcon className="size-3" />
-            {row.proposalCount}
-          </span>
-        )}
-        <ParticipantsSlot
-          meetingId={row.id}
-          variant="compact"
-          initialParticipants={row.participants}
-          className="ml-auto"
-        />
-      </div>
-    </MeetingOverviewCard>
-  )
-}
-
-/** 3 dense card-shaped rows, matching `MeetingListItem`'s resting height. */
+/** 3 dense card-shaped rows, matching `DashboardMeetingCard`'s resting height. */
 function MeetingsListSkeleton() {
   return (
     <div className="flex flex-col gap-2">
