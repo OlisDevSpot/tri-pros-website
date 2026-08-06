@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 /**
@@ -48,6 +48,14 @@ const DEVICES = [
 ] as const
 
 mkdirSync(OUT_DIR, { recursive: true })
+
+// Clear stale splash PNGs before regenerating — otherwise removing a device
+// from the matrix leaves an orphaned file that no longer matches metadata.
+for (const existing of readdirSync(OUT_DIR)) {
+  if (existing.startsWith('apple-splash-') && existing.endsWith('.png')) {
+    rmSync(resolve(OUT_DIR, existing))
+  }
+}
 
 for (const device of DEVICES) {
   const { cssW, cssH, dpr, pxW, pxH } = device
