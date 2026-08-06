@@ -1,11 +1,12 @@
 import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import { FileText } from 'lucide-react'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
 
 /**
  * Homeowner-facing media gallery shown above the SOW. Images + videos render
  * inline; PDFs render as download links. Renders null when there's no media.
- * `media` is already homeowner-visibility-only + presigned (from getFullView).
+ * `media` is already homeowner-visibility-only + public-derived (from getFullView).
  */
 export function ProposalMediaGallery({ media }: { media: ProposalMediaView[] }) {
   const visual = media.filter(m => m.mimeType.startsWith('image/') || m.mimeType.startsWith('video/'))
@@ -27,7 +28,7 @@ export function ProposalMediaGallery({ media }: { media: ProposalMediaView[] }) 
                 {item.mimeType.startsWith('video/')
                   ? (
                       <video
-                        src={item.url ?? undefined}
+                        src={item.url}
                         className="h-full w-full object-cover"
                         controls
                         playsInline
@@ -35,11 +36,11 @@ export function ProposalMediaGallery({ media }: { media: ProposalMediaView[] }) 
                       />
                     )
                   : (
-                      <img
-                        src={item.url ?? undefined}
+                      <OptimizedImage
+                        file={item}
                         alt={item.name}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
+                        fill
+                        sizes="(max-width: 768px) 45vw, 220px"
                       />
                     )}
               </div>

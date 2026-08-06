@@ -8,6 +8,7 @@ import { FileTextIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import { MediaManager } from '@/shared/components/media/media-manager'
 import { useMediaUpload } from '@/shared/components/media/use-media-upload'
+import { OptimizedImage } from '@/shared/components/optimized-image'
 import { Switch } from '@/shared/components/ui/switch'
 import { useConfirm } from '@/shared/hooks/use-confirm'
 import { useTRPC } from '@/trpc/helpers'
@@ -82,8 +83,9 @@ export function ProposalMediaManager({ proposalId }: Props) {
         }}
         onRename={(id, name) => media.rename.mutate({ id, name })}
         renderThumbnail={(item) => {
-          if (item.mimeType.startsWith('image/')) {
-            return <img src={item.url} alt={item.name} className="h-full w-full object-cover" />
+          const row = viewById.get(item.id)
+          if (item.mimeType.startsWith('image/') && row) {
+            return <OptimizedImage file={row} alt={item.name} sizes="(max-width: 768px) 45vw, 220px" />
           }
           if (item.mimeType.startsWith('video/')) {
             return <video src={item.url} className="h-full w-full object-cover" muted playsInline />
