@@ -1,0 +1,54 @@
+'use client'
+
+import Link from 'next/link'
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
+import { ROOTS } from '@/shared/config/roots'
+
+import { DashboardMeetingsList } from './dashboard-meetings-list'
+import { DashboardTodayTimeline } from './dashboard-today-timeline'
+
+/**
+ * Meetings module — the dashboard's focal moment. Today / Upcoming / Past
+ * tabs (default Today); Today renders the compact day-timeline, Upcoming/Past
+ * render plain dense lists (see ./dashboard-today-timeline.tsx and
+ * ./dashboard-meetings-list.tsx).
+ *
+ * Tabs lazy-mount for free: Radix's `TabsContent` only renders a tab's
+ * children once it becomes selected (no `forceMount` here), so Upcoming/Past
+ * never fire their `meetingsRouter.reads.list` query until the rep opens that
+ * tab. Only Today is prefetched server-side (see `dashboard/page.tsx`).
+ */
+export function DashboardMeetingsHub() {
+  return (
+    <div className="rounded-lg border border-border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="font-sans text-lg font-semibold text-foreground">Meetings</h2>
+        <Link
+          href={ROOTS.dashboard.meetings.root()}
+          className="shrink-0 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:text-primary"
+        >
+          See all →
+        </Link>
+      </div>
+
+      <Tabs defaultValue="today">
+        <TabsList>
+          <TabsTrigger value="today">Today</TabsTrigger>
+          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+          <TabsTrigger value="past">Past</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="today" className="mt-3">
+          <DashboardTodayTimeline />
+        </TabsContent>
+        <TabsContent value="upcoming" className="mt-3">
+          <DashboardMeetingsList kind="upcoming" />
+        </TabsContent>
+        <TabsContent value="past" className="mt-3">
+          <DashboardMeetingsList kind="past" />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
