@@ -13,20 +13,22 @@ import { DashboardSnapshotStrip } from '@/features/agent-dashboard/ui/components
 
 export function DashboardView() {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-24 pt-4">
-      <DashboardSnapshotStrip />
-      <section id="meetings">
-        <DashboardMeetingsHub />
-      </section>
-      <section id="queue">
-        <DashboardActionQueue />
-      </section>
-      <section id="proposals">
-        <DashboardProposals />
-      </section>
-      <section id="projects">
-        <DashboardProjects />
-      </section>
+    <div className="h-full overflow-x-hidden overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 pb-24 pt-4">
+        <DashboardSnapshotStrip />
+        <section id="meetings">
+          <DashboardMeetingsHub />
+        </section>
+        <section id="queue">
+          <DashboardActionQueue />
+        </section>
+        <section id="proposals">
+          <DashboardProposals />
+        </section>
+        <section id="projects">
+          <DashboardProjects />
+        </section>
+      </div>
     </div>
   )
 }
