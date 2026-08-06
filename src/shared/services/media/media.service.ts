@@ -28,7 +28,10 @@ export const mediaService = {
     const [row] = await db.select().from(store.table).where(eq(store.table.id, id))
     if (!row)
       return
-    await r2Client.deleteMediaWithVariants(row.bucket, row.pathKey)
+    // Only R2-backed rows have an object to delete. A Stream row (Plan 1b) or a
+    // malformed row has null coordinates — skip R2 cleanup, still remove the DB row.
+    if (row.bucket && row.pathKey)
+      await r2Client.deleteMediaWithVariants(row.bucket, row.pathKey)
     await db.delete(store.table).where(eq(store.table.id, id))
   },
 
