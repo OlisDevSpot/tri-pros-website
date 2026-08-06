@@ -39,7 +39,7 @@ export function DashboardProjectCard({ row, className }: DashboardProjectCardPro
       <DeleteConfirmDialog />
       <div
         className={cn(
-          'flex flex-wrap items-center gap-2 rounded-lg border border-l-4 border-border border-l-green-500/60 bg-card p-2.5 dark:border-l-green-400/40',
+          'flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2.5',
           className,
         )}
       >
