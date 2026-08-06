@@ -10,7 +10,7 @@ import { useTRPC } from '@/trpc/helpers'
  * meetings today · awaiting signature · follow-ups due. Counts are read
  * from the same query inputs the modules below use (dedupes against the
  * server prefetch in `dashboard/page.tsx`), so this never fires its own
- * count query. See ./DOCS.md or the spec at
+ * count query. See the spec at
  * docs/superpowers/specs/2026-08-06-adaptive-agent-dashboard-design.md#11.
  */
 export function DashboardSnapshotStrip() {
@@ -45,7 +45,13 @@ export function DashboardSnapshotStrip() {
           <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
             {chip.label}
           </span>
-          <span className="font-sans text-2xl font-bold tabular-nums text-foreground">
+          <span
+            className={
+              chip.count === undefined
+                ? 'font-sans text-2xl font-bold tabular-nums text-muted-foreground'
+                : 'font-sans text-2xl font-bold tabular-nums text-foreground'
+            }
+          >
             {chip.count ?? '—'}
           </span>
         </a>

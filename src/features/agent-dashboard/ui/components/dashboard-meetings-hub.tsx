@@ -33,10 +33,10 @@ export function DashboardMeetingsHub() {
       </div>
 
       <Tabs defaultValue="today">
-        <TabsList>
-          <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-          <TabsTrigger value="past">Past</TabsTrigger>
+        <TabsList className="h-auto">
+          <TabsTrigger value="today" className="min-h-11">Today</TabsTrigger>
+          <TabsTrigger value="upcoming" className="min-h-11">Upcoming</TabsTrigger>
+          <TabsTrigger value="past" className="min-h-11">Past</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today" className="mt-3">
