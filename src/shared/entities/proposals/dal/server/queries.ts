@@ -12,7 +12,7 @@ import type { Row } from '@/shared/db/types'
 import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
 
-import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNull, lte, max, or, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
@@ -74,6 +74,7 @@ export const proposalListFiltersSchema = {
   price: numberRangeSchema.optional(),
   customerId: z.string().uuid().optional(),
   meetingId: z.string().uuid().optional(),
+  awaitingSignature: z.boolean().optional(),
 }
 
 export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
@@ -224,6 +225,14 @@ export async function listProposals(
       ),
       customerId: v => eq(customers.id, v),
       meetingId: v => eq(proposals.meetingId, v),
+      awaitingSignature: (v: boolean) =>
+        v
+          ? and(
+              isNotNull(proposals.contractSentAt),
+              isNull(proposals.contractSignedAt),
+              isNull(proposals.contractDeclinedAt),
+            )
+          : undefined,
     })
 
     const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
