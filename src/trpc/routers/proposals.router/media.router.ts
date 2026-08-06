@@ -57,7 +57,7 @@ export function createProposalMediaRouter(entity: EntityToolkit<typeof proposalS
         assertCanUpdate(ctx)
         await assertProposalInScope(ctx, input.proposalId)
         const rows = await mediaService.list(proposalMediaStore, input.proposalId) as ProposalMediaFile[]
-        return Promise.all(rows.map(toProposalMediaView))
+        return rows.map(toProposalMediaView)
       }),
 
     setVisibility: entity.authedProcedure

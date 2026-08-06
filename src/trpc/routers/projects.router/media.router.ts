@@ -6,7 +6,7 @@ import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
 import { insertMediaFilesSchema, mediaFiles, meetings, proposalMediaFiles, proposals } from '@/shared/db/schema'
 import { resetOptimizationStatus } from '@/shared/entities/media-files/dal/server/queries'
-import { resolveProposalMediaUrl } from '@/shared/entities/proposal-media-files/lib/resolve-media-url'
+import { deriveOriginalMediaUrl, getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { mediaService } from '@/shared/services/media/media.service'
 import { projectMediaStore } from '@/shared/services/media/stores'
 import { r2Client } from '@/shared/services/providers/r2/client'
@@ -134,6 +134,7 @@ export const mediaRouter = createTRPCRouter({
           name: proposalMediaFiles.name,
           mimeType: proposalMediaFiles.mimeType,
           pathKey: proposalMediaFiles.pathKey,
+          bucket: proposalMediaFiles.bucket,
           optimizationStatus: proposalMediaFiles.optimizationStatus,
           optimizationVariants: proposalMediaFiles.optimizationVariants,
         })
@@ -142,15 +143,22 @@ export const mediaRouter = createTRPCRouter({
         .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
         .where(and(eq(meetings.projectId, input.projectId), like(proposalMediaFiles.mimeType, 'image/%')))
 
-      // Presign each (private bucket) for the picker preview.
-      const withUrl = await Promise.all(rows.map(async r => ({
+      // Public bucket — derive the best display URL (variant or original) for
+      // the picker preview. No presigning.
+      const withUrl = rows.map(r => ({
         id: r.id,
         proposalId: r.proposalId,
         proposalLabel: r.proposalLabel,
         name: r.name,
         mimeType: r.mimeType,
-        url: await resolveProposalMediaUrl(r),
-      })))
+        url: getOptimizedSrc({
+          url: deriveOriginalMediaUrl(r.pathKey, r.bucket),
+          pathKey: r.pathKey,
+          bucket: r.bucket,
+          optimizationStatus: r.optimizationStatus,
+          optimizationVariants: r.optimizationVariants,
+        }),
+      }))
 
       // Group by proposal for the dialog.
       const byProposal = new Map<string, { proposalId: string, proposalLabel: string, items: typeof withUrl }>()

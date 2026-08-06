@@ -27,6 +27,6 @@ export const proposalMediaStore: MediaStore = {
   ownerKind: 'proposal',
   table: proposalMediaFiles,
   ownerColumn: proposalMediaFiles.proposalId,
-  bucket: R2_BUCKETS.homeownerFiles,
+  bucket: R2_BUCKETS.media,
   buildPathKey: (ownerId, fileId, ext) => `proposals/${ownerId}/${fileId}${ext}`,
 }

@@ -3,32 +3,43 @@ import type { ProposalMediaFile, ProposalMediaVisibility } from '@/shared/db/sch
 import { and, asc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
 import { proposalMediaFiles } from '@/shared/db/schema/proposal-media-files'
-import { resolveProposalMediaUrl } from '../../lib/resolve-media-url'
+import { deriveOriginalMediaUrl } from '@/shared/lib/get-optimized-urls'
 
-/** Homeowner-facing projection of a proposal media file — presigned url, no R2 internals. */
+/**
+ * Homeowner-facing projection of a proposal media file. Public canonical bucket
+ * (`tpr-media`): `url` is the JIT-derived original-object URL and `pathKey`/
+ * `bucket`/`optimizationVariants` let the client derive responsive src/srcSet
+ * via `get-optimized-urls`. No presigning; no `url` column on the table.
+ */
 export interface ProposalMediaView {
   id: number
   name: string
   mimeType: string
   visibility: ProposalMediaVisibility
-  url: string | null
-  blurDataUrl: string | null
+  url: string
+  pathKey: string | null
+  bucket: string | null
   optimizationStatus: string
+  optimizationVariants: string[] | null
+  blurDataUrl: string | null
   sortOrder: number
   duration: number | null
   pageCount: number | null
 }
 
-/** Map a raw row to the presigned view (async — presigns the R2 url). */
-export async function toProposalMediaView(row: ProposalMediaFile): Promise<ProposalMediaView> {
+/** Map a raw row to the public view (sync — the URL is derived, not presigned). */
+export function toProposalMediaView(row: ProposalMediaFile): ProposalMediaView {
   return {
     id: row.id,
     name: row.name,
     mimeType: row.mimeType,
     visibility: row.visibility,
-    url: await resolveProposalMediaUrl(row),
-    blurDataUrl: row.blurDataUrl,
+    url: deriveOriginalMediaUrl(row.pathKey, row.bucket),
+    pathKey: row.pathKey,
+    bucket: row.bucket,
     optimizationStatus: row.optimizationStatus,
+    optimizationVariants: row.optimizationVariants,
+    blurDataUrl: row.blurDataUrl,
     sortOrder: row.sortOrder,
     duration: row.duration,
     pageCount: row.pageCount,

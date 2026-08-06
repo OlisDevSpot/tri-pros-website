@@ -150,10 +150,10 @@ export async function getFullView(
       data: { ...row.fundingJSON.data, incentives: incentiveRowsToDomain(incentives) },
     }
 
-    // Homeowner-visible media, presigned at this read choke point so the
-    // customer-facing gallery renders with zero per-site fetching.
+    // Homeowner-visible media, derived at this read choke point (public bucket)
+    // so the customer-facing gallery renders with zero per-site fetching.
     const mediaRows = await listHomeownerProposalMedia(row.id)
-    const media = await Promise.all(mediaRows.map(toProposalMediaView))
+    const media = mediaRows.map(toProposalMediaView)
 
     return { ...row, fundingJSON: hydratedFunding, customer, incentives, media } as ProposalWithCustomer
   })
