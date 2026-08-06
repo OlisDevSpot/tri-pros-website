@@ -179,7 +179,7 @@ export const mediaRouter = createTRPCRouter({
         .from(proposalMediaFiles)
         .innerJoin(proposals, eq(proposals.id, proposalMediaFiles.proposalId))
         .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
-        .where(and(eq(meetings.projectId, input.projectId), inArray(proposalMediaFiles.id, input.proposalMediaFileIds)))
+        .where(and(eq(meetings.projectId, input.projectId), inArray(proposalMediaFiles.id, input.proposalMediaFileIds), like(proposalMediaFiles.mimeType, 'image/%')))
 
       let imported = 0
       for (const src of sources) {

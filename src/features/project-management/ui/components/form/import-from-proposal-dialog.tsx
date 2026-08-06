@@ -75,7 +75,11 @@ function ProposalGroup({ proposalLabel, items, selected, onToggle, onToggleAll }
                 <img src={item.url} alt={item.name} className="h-full w-full object-cover" />
               )}
               <div className="absolute top-1 left-1">
-                <Checkbox checked={isSelected} onCheckedChange={() => onToggle(item.id)} className="bg-background/90" />
+                {/* Decorative only — the outer tile button is the single toggle source.
+                    A nested interactive Checkbox would render <button role="checkbox">
+                    inside this <button>, and a click would fire both handlers (toggle
+                    on then off, a no-op). */}
+                <Checkbox checked={isSelected} className="pointer-events-none bg-background/90" tabIndex={-1} />
               </div>
             </button>
           )
