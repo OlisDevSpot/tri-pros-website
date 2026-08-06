@@ -204,3 +204,46 @@ after that.
 Dispatcher dashboard · FAB / Cmd+K palette · personal KPI/analytics surface · live
 "now" meeting detection · super-admin team roll-up & per-agent breakdown · offline
 mode. Each is a candidate follow-up spec; none blocks v1.
+
+---
+
+## 11. UI Shaping Brief (impeccable `shape` output)
+
+The visual/interaction direction produced by the `shape` pass, within the existing
+**Command Desk** world (DESIGN.md untouched). Mode: **Operate** — scanability and
+speed over expression; brand lives in precise details.
+
+**World:** Command Desk — cool-paper neutrals, **Cobalt Command** as the only accent
+(≤10%, "act here"), Syne titles / Nunito body / Space Mono eyebrows, tinted depth,
+frosted-glass for any floating menu. Fixed stage/outcome color semantics
+(red/yellow/green/purple/blue) — never restyled.
+
+**Structural thesis:** single vertical scroll (Approach A):
+`snapshot strip → Meetings hub → Action queue → Proposals roster → Open projects`.
+
+**Focal moment — the Today day-timeline.** Today's meetings render as a **compact
+left time rail** with `MeetingOverviewCard`s attached — the "shape of my day" in the
+first viewport. Upcoming/Past are tabs on the same hub, rendered as plain dense
+lists; the timeline treatment is **Today-only**.
+
+**Density:** compact, see-more — tight rows, secondary detail (trade, outcome,
+proposal count) visible without tapping, tap-targets still ≥44px.
+
+**Strip:** slim top ribbon of 3 counts (meetings today · awaiting signature ·
+follow-ups due), each a jump-link; **scrolls away** with content (not sticky).
+
+**States & ranges:** per module — skeleton (card-shaped, not spinner),
+empty-with-next-step ("No meetings today — book one"), capped top-N + "See all →".
+Typical ranges: Today 0–8 meetings; queue 0–30 (grouped by tier, urgent only);
+proposals 0–20; projects 0–15. Omni (super-admin): same layout, higher counts, owner
+avatars on cards.
+
+**Interaction & layout:** mobile single column; desktop widens to a comfortable
+max-width (optional two-column on wide screens is a later enhancement, not v1). Motion
+restrained and purposeful — press states, tab crossfade, count-jump smooth-scroll; no
+decorative animation. Each row launches its record without losing scroll. Safe-area
+insets respected.
+
+**Builders must NOT invent:** card internals (use the compound slots), accent usage
+(Cobalt only), or new status colors. No charts, FAB/Cmd+K, live "now" detection, or
+dispatcher view in v1.
