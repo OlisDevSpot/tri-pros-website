@@ -1,6 +1,22 @@
+import { VARIANT_REGISTRY, VARIANT_WIDTH } from '@/shared/entities/media-files/lib/image-variants'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
 const DEFAULT_R2_DOMAIN = R2_PUBLIC_DOMAINS['tpr-media'] ?? ''
+
+/**
+ * The public URL of a media object's ORIGINAL (un-suffixed) R2 key — the
+ * fallback `src` for non-optimized rows and the value proposal read
+ * projections carry as `url` (proposal media has no `url` column; it is
+ * JIT-derived). Derives the CDN domain from the row's own bucket, so a
+ * not-yet-backfilled row still resolves to the media domain. Returns '' when
+ * the row has no R2 object (e.g. a 'stream'-provider row).
+ */
+export function deriveOriginalMediaUrl(pathKey: string | null, bucket: string | null): string {
+  if (!pathKey)
+    return ''
+  const domain = (bucket && R2_PUBLIC_DOMAINS[bucket as keyof typeof R2_PUBLIC_DOMAINS]) || DEFAULT_R2_DOMAIN
+  return `${domain}/${pathKey}`
+}
 
 interface MediaFileInput {
   url: string
@@ -10,20 +26,11 @@ interface MediaFileInput {
   optimizationVariants?: string[] | null
 }
 
-const VARIANT_WIDTHS: Record<string, number> = {
-  sm: 640,
-  md: 1280,
-  lg: 1920,
-}
-
-/** Legacy records optimized before variant tracking was added — assume all 3 exist */
-const ALL_VARIANTS = ['sm', 'md', 'lg']
-
 function resolveVariants(file: MediaFileInput): string[] {
-  // null/undefined = legacy record, all 3 variants exist on R2
-  // [] = explicitly no variants (blur-only / tiny image)
+  // null/undefined = a row that predates variant tracking → assume the frozen
+  // fallback set. [] = explicitly no variants (blur-only / tiny image).
   if (file.optimizationVariants == null) {
-    return ALL_VARIANTS
+    return [...VARIANT_REGISTRY.fallback]
   }
   return file.optimizationVariants
 }
@@ -82,15 +89,15 @@ export function getOptimizedSrcSet(file: MediaFileInput): string | undefined {
   const domain = R2_PUBLIC_DOMAINS[file.bucket as keyof typeof R2_PUBLIC_DOMAINS] ?? DEFAULT_R2_DOMAIN
 
   const entries = variants
-    .filter(s => VARIANT_WIDTHS[s])
-    .map(s => `${domain}/${base}-${s}.webp ${VARIANT_WIDTHS[s]}w`)
+    .filter(s => VARIANT_WIDTH[s])
+    .map(s => `${domain}/${base}-${s}.webp ${VARIANT_WIDTH[s]}w`)
 
   // If lg variant is missing, add the original as a high-res fallback.
   // Advertise at the next step above the largest existing variant so
   // the browser uses it for larger viewports without over-fetching on
   // retina displays (declaring 2560w caused retina to always skip sm).
   if (!variants.includes('lg')) {
-    const largestVariantWidth = Math.max(...variants.map(s => VARIANT_WIDTHS[s] ?? 0))
+    const largestVariantWidth = Math.max(...variants.map(s => VARIANT_WIDTH[s] ?? 0))
     const fallbackWidth = variants.includes('md') ? 1920 : largestVariantWidth > 0 ? 1280 : 1920
     entries.push(`${file.url} ${fallbackWidth}w`)
   }
