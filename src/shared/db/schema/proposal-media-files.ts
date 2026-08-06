@@ -10,7 +10,7 @@ import { proposals } from './proposals'
 export const proposalMediaVisibilities = ['internal', 'homeowner'] as const
 export type ProposalMediaVisibility = (typeof proposalMediaVisibilities)[number]
 
-/** Proposal-owned files; private bucket, presigned-only access (no `url` column); lock-exempt. */
+/** Proposal-owned files; public canonical bucket (tpr-media), JIT-derived URL (no `url` column); lock-exempt. */
 export const proposalMediaFiles = pgTable('proposal_media_files', {
   id: unsafeId,
   proposalId: uuid('proposal_id').notNull().references(() => proposals.id, { onDelete: 'cascade' }),
