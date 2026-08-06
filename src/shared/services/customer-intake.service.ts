@@ -5,8 +5,9 @@ import type { IntakeCore } from '@/shared/services/providers/gohighlevel/lib/nor
 
 import { dalError, dalSuccess } from '@/shared/dal/server/types'
 import { buildFunnelLeadNote } from '@/shared/domains/funnels/lib/build-funnel-lead-note'
+import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
 import { customerCrud } from '@/shared/entities/customers/dal/server/crud'
-import { addCustomerNote, upsertFunnelEnrichment, upsertLeadAttribution } from '@/shared/entities/customers/dal/server/mutations'
+import { upsertFunnelEnrichment, upsertLeadAttribution } from '@/shared/entities/customers/dal/server/mutations'
 import { getCustomerAttribution } from '@/shared/entities/customers/dal/server/queries'
 import { getLeadSourceBySlug } from '@/shared/entities/lead-sources/dal/server/queries'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
@@ -16,7 +17,7 @@ import { enrollLeadJob } from '@/shared/services/providers/upstash/jobs/enroll-l
 // customerIntakeService — channel-agnostic lead ingestion (DRY across the Bina
 // webhook + the public intake form). PURE ORCHESTRATION: zero raw db.*, zero
 // provider parsing. Composes customerCrud.create (canonical entity create) +
-// addCustomerNote + meetingCrud.create.
+// customerNoteCrud.create + meetingCrud.create.
 //
 // Standardizes both channels on customerCrud.create (the legacy
 // createCustomerFromWebhook is retired — see queries.ts migration note).
@@ -108,11 +109,12 @@ function createCustomerIntakeService() {
       }
 
       // ── 2. Optional note (best-effort — never rolls back the customer) ──────
+      // ctx is SYSTEM_CONTEXT (public intake, no session) — the create.before
+      // hook probes with SYSTEM_CONTEXT and leaves authorId null.
       if (input.note) {
-        const noteResult = await addCustomerNote({
+        const noteResult = await customerNoteCrud.create(ctx, {
           customerId: customer.id,
           content: input.note,
-          authorId: null,
         })
         if (!noteResult.success) {
           console.error('[customerIntake] note insert failed (customer kept)', noteResult.error)
@@ -123,10 +125,9 @@ function createCustomerIntakeService() {
       // Fires once here so progressive enrichFunnelLead calls never duplicate it.
       const funnelNote = buildFunnelLeadNote(input.leadMeta)
       if (funnelNote) {
-        const noteResult = await addCustomerNote({
+        const noteResult = await customerNoteCrud.create(ctx, {
           customerId: customer.id,
           content: funnelNote,
-          authorId: null,
         })
         if (!noteResult.success) {
           console.error('[customerIntake] funnel intake note failed (lead kept)', noteResult.error)

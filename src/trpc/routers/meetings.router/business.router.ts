@@ -9,7 +9,7 @@ import { meetingOutcomes, outcomeRequiresReason } from '@/shared/constants/enums
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { meetings } from '@/shared/db/schema'
-import { addCustomerNote } from '@/shared/entities/customers/dal/server/mutations'
+import { customerNoteCrud } from '@/shared/entities/customer-notes/dal/server/crud'
 import { MEETING_OUTCOME_LABELS } from '@/shared/entities/meetings/constants/status-colors'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
 
@@ -21,7 +21,8 @@ export function createMeetingBusinessRouter(entity: EntityToolkit<PgTable>) {
      * Sets a meeting outcome that requires a documented reason, and appends the
      * reason as a customer note in one call. Routes the outcome write through
      * meetingCrud.update so the entity hooks fire (pipeline derivation +
-     * GCal/Ably). The note goes through addCustomerNote (single note write path).
+     * GCal/Ably). The note goes through customerNoteCrud.create (the
+     * customer-notes entity's generic create — see issue #280).
      *
      * Only accepts reason-requiring outcomes; positive/unset/neutral outcomes
      * use the generic crud.update path instead.
@@ -65,10 +66,9 @@ export function createMeetingBusinessRouter(entity: EntityToolkit<PgTable>) {
             day: '2-digit',
             timeZone: 'America/Los_Angeles',
           })
-          const note = await addCustomerNote({
+          const note = await customerNoteCrud.create(ctx, {
             customerId: row.customerId,
             content: `${meetingDate} meeting results:\nOutcome set to ${label}\n${input.reason}`,
-            authorId: ctx.session.user.id,
           })
           if (!note.success) {
             throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Outcome saved but note failed.' })

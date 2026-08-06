@@ -3,7 +3,6 @@
 // see docs/codebase-conventions/dal-conventions.md
 
 import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
-import type { CustomerNote } from '@/shared/db/schema/customer-notes'
 import type { CustomerProfilePatch, CustomerProfileRow } from '@/shared/db/schema/customer-profiles'
 import type { EnrichmentRecord, LeadMeta } from '@/shared/entities/customers/schemas'
 
@@ -14,32 +13,9 @@ import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
 import { customerLeadAttribution, leadAttributionCaptureSchema } from '@/shared/db/schema/customer-lead-attribution'
-import { customerNotes } from '@/shared/db/schema/customer-notes'
 import { customerProfilePatchSchema, customerProfiles } from '@/shared/db/schema/customer-profiles'
 import { customers } from '@/shared/db/schema/customers'
 import { splitLeadMeta } from '../../lib/split-lead-meta'
-
-/**
- * Append a note to a customer. `authorId` null = system/webhook-originated note
- * (Bina ingest); an agent id when authored from the UI. The single write path
- * for customer notes — the intake service, the Bina ingest, and the agent
- * `addNote` procedure all route through here (no inline `db.insert`).
- */
-export async function addCustomerNote(
-  input: { customerId: string, content: string, authorId?: string | null },
-): Promise<DalReturn<CustomerNote>> {
-  return dalDbOperation(async () => {
-    const [note] = await db
-      .insert(customerNotes)
-      .values({
-        customerId: input.customerId,
-        content: input.content,
-        authorId: input.authorId ?? null,
-      })
-      .returning()
-    return note!
-  })
-}
 
 /**
  * Lazy upsert into the `customer_profiles` 1:1 child table (Addendum B,
