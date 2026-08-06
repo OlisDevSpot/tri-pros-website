@@ -14,6 +14,7 @@ import { createEntityRouter } from '../../lib/create-entity-router'
 import { dalToTrpc } from '../../lib/dal-to-trpc'
 import { createContractsRouter } from './contracts.router'
 import { createDeliveryRouter } from './delivery.router'
+import { createProposalMediaRouter } from './media.router'
 
 export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) => {
   return createTRPCRouter({
@@ -97,5 +98,6 @@ export const proposalsRouter = createEntityRouter(proposalServerSpec, (entity) =
     // ── Service-layer sub-routers ─────────────────────────────────────────
     delivery: createDeliveryRouter(entity),
     contracts: createContractsRouter(entity),
+    media: createProposalMediaRouter(entity),
   })
 })
