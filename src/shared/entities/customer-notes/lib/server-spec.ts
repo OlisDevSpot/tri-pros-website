@@ -1,5 +1,7 @@
 import type { EntityServerSpec } from '@/shared/dal/server/types'
 
+import { z } from 'zod'
+
 import { buildUserContext, dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { SYSTEM_CONTEXT, ThrowableDalError } from '@/shared/dal/server/types'
 import {
@@ -13,12 +15,18 @@ import { assertNoteAuthorOrAdmin } from './assert-note-author'
 import { CUSTOMER_NOTE } from './constants'
 import { customerNoteVisibility } from './visibility'
 
+// `createInsertSchema` derives bounds from the Drizzle column (text — no
+// length limit), so `content` needs an explicit bound here. Restores the
+// `.min(1).max(2000)` the deleted `addNote` procedure enforced — otherwise a
+// direct API caller could write empty or arbitrarily long note content.
+const boundedContent = z.string().min(1).max(2000)
+const insertCustomerNoteSchemaBounded = insertCustomerNoteSchema.extend({ content: boundedContent })
 // Only `content` is mutable; customerId/authorId are immutable after create.
-const updateCustomerNoteSchema = insertCustomerNoteSchema.pick({ content: true })
+const updateCustomerNoteSchema = insertCustomerNoteSchemaBounded.pick({ content: true })
 
 /** Concrete schemas for `createCrudRouter` type inference (spec carries type-erased copies). */
 export const customerNoteSchemas = {
-  insert: insertCustomerNoteSchema,
+  insert: insertCustomerNoteSchemaBounded,
   update: updateCustomerNoteSchema,
 }
 
@@ -28,7 +36,7 @@ export const customerNoteServerSpec = {
   visibility: customerNoteVisibility,
   table: customerNotes,
   schemas: {
-    insert: insertCustomerNoteSchema,
+    insert: insertCustomerNoteSchemaBounded,
     update: updateCustomerNoteSchema,
     select: selectCustomerNoteSchema,
   },
