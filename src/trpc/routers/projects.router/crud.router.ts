@@ -8,6 +8,7 @@ import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/qu
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { projects, x_projectScopes } from '@/shared/db/schema'
+import { projectParticipationScope } from '@/shared/entities/projects/lib/visibility'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
@@ -27,7 +28,10 @@ export const crudRouter = createTRPCRouter({
       completedAt: dateRangeSchema.optional(),
       createdAt: dateRangeSchema.optional(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+      const scopeWhere = isOmni ? undefined : projectParticipationScope(ctx.session.user.id)
+
       const searchTerm = input.search?.trim()
       const searchWhere = searchTerm
         ? or(
@@ -49,7 +53,7 @@ export const crudRouter = createTRPCRouter({
         ),
       })
 
-      const where = and(searchWhere, filterWhere)
+      const where = and(scopeWhere, searchWhere, filterWhere)
 
       const orderBy = buildOrderBy(input.sort, {
         title: projects.title,
