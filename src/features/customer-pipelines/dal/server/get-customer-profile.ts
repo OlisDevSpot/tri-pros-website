@@ -6,6 +6,7 @@ import { TRPCError } from '@trpc/server'
 import { and, asc, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
 import { db } from '@/shared/db'
+import { user } from '@/shared/db/schema/auth'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
 import { customerNotes } from '@/shared/db/schema/customer-notes'
@@ -168,8 +169,18 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
   }))
 
   const noteRows = await db
-    .select()
+    .select({
+      id: customerNotes.id,
+      customerId: customerNotes.customerId,
+      content: customerNotes.content,
+      authorId: customerNotes.authorId,
+      createdAt: customerNotes.createdAt,
+      updatedAt: customerNotes.updatedAt,
+      authorName: user.name,
+      authorImage: user.image,
+    })
     .from(customerNotes)
+    .leftJoin(user, eq(user.id, customerNotes.authorId))
     .where(eq(customerNotes.customerId, customerId))
     .orderBy(desc(customerNotes.createdAt))
 
