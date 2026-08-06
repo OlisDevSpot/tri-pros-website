@@ -10,7 +10,7 @@ import { ROOTS } from '@/shared/config/roots'
 import { projectsData } from '@/shared/db/seeds/data/projects'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
-const PORTFOLIO_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.portfolioProjects] ?? ''
+const PORTFOLIO_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.media] ?? ''
 
 export function RelatedProjects() {
   const proposal = useCurrentProposal()

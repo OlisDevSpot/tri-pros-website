@@ -12,7 +12,7 @@ import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { OUTPUT_BASE_DIR } from './constants'
 
-const BUCKET = R2_BUCKETS.portfolioProjects
+const BUCKET = R2_BUCKETS.media
 const R2_PUBLIC_BASE = R2_PUBLIC_DOMAINS[BUCKET] ?? ''
 const IMPORTED_DIR = path.join(OUTPUT_BASE_DIR, 'imported')
 

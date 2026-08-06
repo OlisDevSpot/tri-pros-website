@@ -11,7 +11,7 @@ import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/ty
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
-const PORTFOLIO_BUCKET = R2_BUCKETS.portfolioProjects
+const PORTFOLIO_BUCKET = R2_BUCKETS.media
 
 export const googleDriveRouter = createTRPCRouter({
   getAccessToken: agentProcedure

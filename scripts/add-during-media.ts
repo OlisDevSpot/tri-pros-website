@@ -20,7 +20,7 @@ import { mediaFiles, projects } from '@/shared/db/schema'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 
-const BUCKET = R2_BUCKETS.portfolioProjects
+const BUCKET = R2_BUCKETS.media
 const PUBLIC_BASE = R2_PUBLIC_DOMAINS[BUCKET] ?? ''
 
 async function main() {

@@ -19,7 +19,7 @@ export const projectMediaStore: MediaStore = {
   ownerKind: 'project',
   table: mediaFiles,
   ownerColumn: mediaFiles.projectId,
-  bucket: R2_BUCKETS.portfolioProjects,
+  bucket: R2_BUCKETS.media,
   buildPathKey: (ownerId, fileId, ext, extra) => `projects/${ownerId}/${extra?.phase ?? 'uncategorized'}/${fileId}${ext}`,
 }
 

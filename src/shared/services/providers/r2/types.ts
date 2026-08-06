@@ -9,17 +9,19 @@
  */
 
 export const R2_BUCKETS = {
-  portfolioProjects: 'tpr-portfolio-projects',
+  media: 'tpr-media',
   companyDocs: 'tpr-company-docs',
   homeownerFiles: 'tpr-homeowner-files',
 } as const
 
 export type R2BucketName = (typeof R2_BUCKETS)[keyof typeof R2_BUCKETS]
 
-// Partial — not all buckets have a public domain (homeownerFiles is private)
-// portfolio-projects serves via the production CDN domain; pub-*.r2.dev is
-// Cloudflare's rate-limited dev endpoint and must not carry production traffic (#160)
+// Not all buckets have a public domain. `tpr-media` is the canonical PUBLIC
+// media bucket (project + proposal assets) served via the production CDN.
+// `homeownerFiles` stays PRIVATE (call recordings) → no public domain.
+// pub-*.r2.dev is Cloudflare's rate-limited dev endpoint and must not carry
+// production traffic (#160).
 export const R2_PUBLIC_DOMAINS: Partial<Record<R2BucketName, string>> = {
-  'tpr-portfolio-projects': 'https://media.triprosremodeling.com',
+  'tpr-media': 'https://media.triprosremodeling.com',
   'tpr-company-docs': 'https://pub-e9f58acecb564416a1d1880ba1a88a7f.r2.dev',
 }

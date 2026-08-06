@@ -3,7 +3,7 @@
  * r2.dev dev endpoint to the production CDN domain (#160).
  *
  * `media_files.url` (and `thumbnail_url`) persist the absolute public URL at
- * upload time. After swapping `R2_PUBLIC_DOMAINS['tpr-portfolio-projects']`
+ * upload time. After swapping `R2_PUBLIC_DOMAINS['tpr-media']`
  * to https://media.triprosremodeling.com, variant URLs (-sm/-md/-lg.webp)
  * auto-follow because they're computed at render time — but the persisted
  * original URLs still point at the rate-limited pub-*.r2.dev host and are
@@ -36,10 +36,10 @@ const DRY_RUN = process.argv.includes('--dry-run')
 // The retired dev endpoint this backfill migrates away from. Hardcoded on
 // purpose: it no longer exists anywhere in live code after #160.
 const OLD_DOMAIN = 'https://pub-06be62a0a47b42cbb944ba281f4df793.r2.dev'
-const NEW_DOMAIN = R2_PUBLIC_DOMAINS[R2_BUCKETS.portfolioProjects]
+const NEW_DOMAIN = R2_PUBLIC_DOMAINS[R2_BUCKETS.media]
 
 if (!NEW_DOMAIN || NEW_DOMAIN.includes('r2.dev')) {
-  console.error(`Refusing to run: R2_PUBLIC_DOMAINS['${R2_BUCKETS.portfolioProjects}'] is "${NEW_DOMAIN}" — expected the production CDN domain.`)
+  console.error(`Refusing to run: R2_PUBLIC_DOMAINS['${R2_BUCKETS.media}'] is "${NEW_DOMAIN}" — expected the production CDN domain.`)
   // eslint-disable-next-line node/prefer-global/process
   process.exit(1)
 }
