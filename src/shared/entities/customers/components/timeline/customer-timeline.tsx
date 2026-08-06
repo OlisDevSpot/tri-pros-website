@@ -1,32 +1,42 @@
 'use client'
 
+import type { TimelineFilterId } from '@/shared/entities/customers/constants/timeline-view'
 import type { CustomerProfileData } from '@/shared/entities/customers/types'
 
 import { ChevronsDownUpIcon, ChevronsUpDownIcon } from 'lucide-react'
 import { useState } from 'react'
 
+import { EmptyState } from '@/shared/components/states/empty-state'
 import { Button } from '@/shared/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/components/ui/tooltip'
+import { TIMELINE_PAGE_CAP } from '@/shared/entities/customers/constants/timeline-view'
+import { bucketTimelineEvents } from '@/shared/entities/customers/lib/bucket-timeline-events'
 import { buildTimelineEvents } from '@/shared/entities/customers/lib/build-timeline-events'
+import { countTimelineEventsByFilter } from '@/shared/entities/customers/lib/count-timeline-events-by-filter'
+import { filterTimelineEvents } from '@/shared/entities/customers/lib/filter-timeline-events'
 import { QuickNoteInput } from './quick-note-input'
 import { TimelineEventItem } from './timeline-event-item'
+import { TimelineFilterChips } from './timeline-filter-chips'
 
 interface Props {
   data: CustomerProfileData
   onMutationSuccess: () => void
+  onOpenMeeting: (meetingId: string) => void
 }
 
-// NOTE: this container is a compile-compatibility stub for the new per-event
-// TimelineEventItem contract (Task 7) — expand-all/collapse-all here is a
-// simple "toggle every currently-rendered id" shim, and `onOpenMeeting` is a
-// no-op until navigation is wired. The real rebuild (filter chips, date
-// buckets, show-earlier, a real onOpenMeeting threaded from the profile
-// modal) lands in Tasks 8/9/11 — see
-// docs/superpowers/plans/2026-08-05-customer-activity-center-and-notes-entity.md.
-export function CustomerTimeline({ data, onMutationSuccess }: Props) {
+export function CustomerTimeline({ data, onMutationSuccess, onOpenMeeting }: Props) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
-  const events = buildTimelineEvents(data)
-  const allExpanded = events.length > 0 && events.every(event => expandedIds.has(event.id))
+  const [activeFilter, setActiveFilter] = useState<TimelineFilterId>('all')
+  const [showAll, setShowAll] = useState(false)
+
+  const all = buildTimelineEvents(data)
+  const counts = countTimelineEventsByFilter(all)
+  const filtered = filterTimelineEvents(all, activeFilter)
+  const visible = showAll ? filtered : filtered.slice(0, TIMELINE_PAGE_CAP)
+  const groups = bucketTimelineEvents(visible)
+
+  const allExpanded = visible.length > 0 && visible.every(event => expandedIds.has(event.id))
+  const hasEarlierActivity = filtered.length > TIMELINE_PAGE_CAP && !showAll
 
   function toggleEvent(id: string) {
     setExpandedIds((prev) => {
@@ -42,11 +52,7 @@ export function CustomerTimeline({ data, onMutationSuccess }: Props) {
   }
 
   function toggleAll() {
-    setExpandedIds(allExpanded ? new Set() : new Set(events.map(event => event.id)))
-  }
-
-  function handleOpenMeeting() {
-    // Click-through navigation lands in Task 11 (controlled Tabs + highlight).
+    setExpandedIds(allExpanded ? new Set() : new Set(visible.map(event => event.id)))
   }
 
   return (
@@ -76,23 +82,49 @@ export function CustomerTimeline({ data, onMutationSuccess }: Props) {
 
       <QuickNoteInput customerId={data.customer.id} onSuccess={onMutationSuccess} />
 
-      {events.length === 0
+      {all.length === 0
         ? (
-            <p className="py-2 text-center text-xs text-muted-foreground">No activity yet</p>
+            <EmptyState
+              description="Notes and activity from meetings and proposals will show up here — add the first note above."
+              title="No activity yet"
+            />
           )
         : (
-            <div className="relative border-l border-border pl-3">
-              {events.map(event => (
-                <TimelineEventItem
-                  customerId={data.customer.id}
-                  event={event}
-                  isExpanded={expandedIds.has(event.id)}
-                  key={event.id}
-                  onOpenMeeting={handleOpenMeeting}
-                  onToggle={toggleEvent}
-                />
-              ))}
-            </div>
+            <>
+              <TimelineFilterChips counts={counts} onChange={setActiveFilter} value={activeFilter} />
+
+              <div className="space-y-4">
+                {groups.map(group => (
+                  <div key={group.label}>
+                    <p className="mb-1.5 text-xs font-medium text-muted-foreground">{group.label}</p>
+                    <ol className="relative border-l border-border pl-3">
+                      {group.events.map(event => (
+                        <li key={event.id}>
+                          <TimelineEventItem
+                            customerId={data.customer.id}
+                            event={event}
+                            isExpanded={expandedIds.has(event.id)}
+                            onOpenMeeting={onOpenMeeting}
+                            onToggle={toggleEvent}
+                          />
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </div>
+
+              {hasEarlierActivity && (
+                <Button
+                  className="w-full text-xs text-muted-foreground"
+                  onClick={() => setShowAll(true)}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Show earlier activity
+                </Button>
+              )}
+            </>
           )}
     </div>
   )

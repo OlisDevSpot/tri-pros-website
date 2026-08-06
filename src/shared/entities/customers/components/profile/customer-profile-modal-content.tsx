@@ -70,7 +70,9 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
           <CustomerProfileOverview
             data={data}
             editForm={editForm}
+            // NOTE(Task 11): replace with controlled-tab + highlight handler
             onMutationSuccess={onMutationSuccess}
+            onOpenMeeting={() => {}}
           />
         </TabsContent>
         <TabsContent className="mt-0 min-h-0 overflow-y-auto p-4 sm:p-6" value="meetings">
