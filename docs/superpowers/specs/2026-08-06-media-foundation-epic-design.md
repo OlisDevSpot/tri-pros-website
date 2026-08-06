@@ -21,6 +21,7 @@
 - **Company data** comes from `src/shared/constants/company/` — never hardcode.
 - **Uploads are always presigned PUT** to R2's S3 endpoint (never public writes); only the *read* path is public.
 - **`tpr-company-docs` is out of scope** — it is a distinct asset class (contractor/finance docs, own lifecycle) and stays its own bucket. `tpr-media` is the canonical **media** bucket (project + proposal images/video/PDF) only.
+- **`tpr-homeowner-files` stays a private bucket** — it also stores sales **call recordings** (`recordings/*`, written by `intake.router.getRecordingUploadUrl`, played back via presigned URL by `customer-pipelines.router.getRecordingUrl`). Those must never be publicized. Only *proposal media* leaves this bucket (in Sub-plan 2); recordings remain private here. A later cosmetic rename of this bucket (e.g. `tpr-private`) is a non-goal.
 - **Trust-but-verify:** before asserting any documented business rule, confirm against code; ping on staleness.
 
 ---
@@ -80,32 +81,34 @@ Sub-plan 4: Shared multi-select/bulk UX ──(independent)───┘   Sub-pl
 
 ### Sub-plan 1 — Canonical bucket consolidation + migration (FOUNDATION)
 
-**Outcome:** All media served from `tpr-media`; old buckets decommissioned; zero URL breakage.
+**Outcome:** Portfolio/project media served from the new canonical `tpr-media`; the old `tpr-portfolio-projects` bucket decommissioned; **zero URL breakage**. Proposal media is deliberately untouched here — it stays private/presigned on `tpr-homeowner-files` and moves in Sub-plan 2.
 
 Scope:
-- **Constants sweep.** `R2_BUCKETS` → `{ media: 'tpr-media', companyDocs: 'tpr-company-docs' }` (remove `portfolioProjects`, `homeownerFiles`). `R2_PUBLIC_DOMAINS` → `{ 'tpr-media': 'https://media.triprosremodeling.com', 'tpr-company-docs': '…r2.dev' }`. Project-wide discovery + replace every reference to the old constants/bucket strings (stores, E2 import `copyObject`, `deleteMediaWithVariants`, `resolve-media-url`, `get-optimized-urls`, tests, scripts). Verify with a post-change grep for all four names.
-- **Stores.** `projectMediaStore.bucket` and `proposalMediaStore.bucket` → `R2_BUCKETS.media`. `buildPathKey` unchanged.
-- **Migration script** (`scripts/…`, uses `./lib/load-env`, dev-first, resumable/idempotent, `--dry-run`): server-side `CopyObject` every object (originals **and** existing variant siblings, **same keys**) from `tpr-portfolio-projects/*` and `tpr-homeowner-files/proposals/*` → `tpr-media/*`. Batched, logs progress, safe to re-run as a delta sync.
-- **DB backfill script:** set `media_files.bucket` and `proposal_media_files.bucket` to `'tpr-media'`. Stored `media_files.url` values already point at `media.triprosremodeling.com/<key>` and stay valid (domain unchanged). Dev first; prod via explicit `DRIZZLE_TARGET=prod`.
-- **Cloudflare (user-run, we provide exact steps + scripts):** create `tpr-media`; copy the portfolio bucket's CORS policy onto it; after copy + code deploy + DB backfill, **move the `media.triprosremodeling.com` custom domain** from `tpr-portfolio-projects` → `tpr-media`.
-- **Decommission (after safety window):** delete old objects; remove `tpr-portfolio-projects` + `tpr-homeowner-files`.
+- **Constants sweep.** In `R2_BUCKETS`, rename the key `portfolioProjects` → `media` with value `'tpr-media'`; **keep** `homeownerFiles: 'tpr-homeowner-files'` (recordings + proposal media, until Sub-plan 2) and `companyDocs`. In `R2_PUBLIC_DOMAINS`, rename the `'tpr-portfolio-projects'` key → `'tpr-media'`. Replace every `R2_BUCKETS.portfolioProjects` reference and the hardcoded `'tpr-portfolio-projects'` string across the repo (`stores.ts` projectMediaStore, `get-optimized-urls.ts`, `google-drive.router.ts`, `related-projects.tsx`, `scripts/{add-during-media, portfolio-scraper/import-project, backfill-media-url-domain}.ts`). Do **not** touch `ROOTS.landing.portfolioProjects()` (an unrelated route helper) or any `R2_BUCKETS.homeownerFiles` usage. Post-change grep must show `portfolioProjects`/`tpr-portfolio-projects` surviving only in the route helper.
+- **Stores.** `projectMediaStore.bucket` → `R2_BUCKETS.media`. `proposalMediaStore.bucket` stays `R2_BUCKETS.homeownerFiles` (moves in Sub-plan 2). `buildPathKey` unchanged.
+- **Migration script** (`scripts/…`, uses `./lib/load-env`, resumable/idempotent, `--dry-run`): enumerate every key in `tpr-portfolio-projects` (paginated `ListObjectsV2`) and server-side `CopyObject` each (originals + all variant siblings, **same keys**) → `tpr-media`. Batched with bounded concurrency, logs progress, safe to re-run as a delta sync. Reconcile object counts old-vs-new before proceeding.
+- **DB backfill script** (mirrors `backfill-media-url-domain.ts`: `./lib/load-env`, `DRIZZLE_TARGET` guard, `--dry-run`): `UPDATE media_files SET bucket = 'tpr-media' WHERE bucket = 'tpr-portfolio-projects'`. Stored `media_files.url` values already point at `media.triprosremodeling.com/<key>` and stay valid (domain unchanged); only the `bucket` column moves. Dev first; prod via explicit `DRIZZLE_TARGET=prod`.
+- **Cloudflare (USER-run — we provide exact `wrangler`/dashboard steps):** create `tpr-media`; copy `tpr-portfolio-projects`'s CORS policy onto it; after copy + code deploy + DB backfill, **move the `media.triprosremodeling.com` custom domain** from `tpr-portfolio-projects` → `tpr-media`.
+- **Decommission (after a safety window):** delete objects from `tpr-portfolio-projects` and remove that bucket. `tpr-homeowner-files` is **not** decommissioned (recordings + not-yet-migrated proposal media).
 
-**Cutover sequence (near-seamless — both buckets hold objects during transition; only true gap is a seconds-long domain rebind):**
+**Cutover sequence (near-seamless — both buckets hold the objects during transition; the only true gap is a seconds-long domain rebind):**
 1. Create `tpr-media` + CORS.
-2. Copy-first: full `CopyObject` migration (re-runnable delta sync). `tpr-media` becomes a superset.
-3. **Short off-hours window:** final delta re-copy → deploy code (constants/stores) + DB backfill (dev then prod) → move custom domain to `tpr-media` → verify portfolio + proposal images load and a fresh upload round-trips.
-4. Safety window, then decommission old buckets.
+2. Copy-first: full `CopyObject` of `tpr-portfolio-projects` → `tpr-media` (re-runnable delta sync). `tpr-media` becomes a superset.
+3. **Short off-hours window:** final delta re-copy → deploy the code (constants + `projectMediaStore`) → DB backfill (`media_files.bucket`, dev then prod) → move the custom domain to `tpr-media` → verify portfolio images load and a fresh project upload round-trips to `tpr-media`.
+4. Safety window, then decommission `tpr-portfolio-projects`.
 
 **Gates / risks:**
-- Domain can bind only one bucket → the rebind is atomic; keep code-deploy → domain-move back-to-back inside the window to avoid a "new upload lands in `tpr-media` but domain still serves old bucket" gap.
-- **Rollback:** old buckets retain all objects until decommission; revert the domain to `tpr-portfolio-projects` + revert the `bucket` backfill to restore the prior state.
-- Verify migration completeness (object counts per prefix match) before backfill; verify grep-clean rename before deploy.
+- The domain binds one bucket → the rebind is atomic; keep code-deploy → domain-move back-to-back inside the window so a new project upload (now targeting `tpr-media`) is never served by a domain still pointing at the old bucket.
+- **Rollback:** `tpr-portfolio-projects` retains every object until decommission; revert = point the domain back at `tpr-portfolio-projects` + revert the `bucket` backfill.
+- Because the CDN domain is unchanged and `get-optimized-urls` falls back to the `tpr-media` domain for any un-backfilled row, render URLs never break mid-backfill.
+- Verify migration completeness (object-count reconciliation) before backfill; verify the grep-clean rename before deploy.
 
 ### Sub-plan 2 — Proposal media goes public (render layer)
 
-**Outcome:** Proposal media renders exactly like portfolio — fast, responsive, cacheable.
+**Outcome:** Proposal media lives in `tpr-media` and renders exactly like portfolio — fast, responsive, cacheable. `tpr-homeowner-files` is left holding only call recordings.
 
 Scope:
+- **Move proposal storage to `tpr-media` (ships together with the read flip below — they cannot be split, or a new proposal upload would land in `tpr-media` while reads still presign `tpr-homeowner-files`).** `proposalMediaStore.bucket` → `R2_BUCKETS.media`. Migration script: `CopyObject` every `proposals/*` object (+ variant siblings, same keys) from `tpr-homeowner-files` → `tpr-media`; DB backfill `UPDATE proposal_media_files SET bucket = 'tpr-media' WHERE bucket = 'tpr-homeowner-files'` (dev then prod). After verification, delete `proposals/*` from `tpr-homeowner-files` (its `recordings/*` remain; the bucket stays). The E2 `importFromProposal` becomes a same-bucket copy.
 - **Delete presigned reads.** Remove `resolveProposalMediaUrl` presigning; proposal reads (`list`, `getFullView.media`, `listImportableProposalMedia`, `toProposalMediaView`) return `pathKey` + `bucket` + `optimizationVariants` so the client derives `src`/`srcSet` via `getOptimizedSrc`/`getOptimizedSrcSet`. Confirm during planning whether `proposal_media_files` needs any read-shape change (it has no `url` column by design — derive).
 - **`xs` variant.** Add `xs: 320` to `VARIANT_WIDTHS` and the sharp variant set in the optimize pipeline. Ensure `OptimizedImage`/`getOptimizedSrcSet` include `xs` when present and fall back gracefully when absent.
 - **Port render surfaces:** `proposal-media-manager.tsx` and `proposal-media-gallery.tsx` (homeowner) → `OptimizedImage` + `srcSet` + `sizes` + aspect-ratio boxes + lazy + blur placeholder (mirroring `project-media-manager`).
@@ -136,7 +139,7 @@ Scope:
 
 ## Cross-cutting: Data Model & Code Change Summary
 
-- **No new tables/columns.** No `url` column for proposals (derive), no `width`/`height`. Only value changes: `media_files.bucket` / `proposal_media_files.bucket` → `'tpr-media'` (backfill).
+- **No new tables/columns.** No `url` column for proposals (derive), no `width`/`height`. Only value changes: `media_files.bucket` → `'tpr-media'` (Sub-plan 1 backfill) and `proposal_media_files.bucket` → `'tpr-media'` (Sub-plan 2 backfill). `tpr-homeowner-files` persists as a private bucket for `recordings/*`.
 - **Constants:** `R2_BUCKETS`, `R2_PUBLIC_DOMAINS` (Sub-plan 1).
 - **Optimize:** `VARIANT_WIDTHS` gains `xs` (Sub-plan 2).
 - **Read path:** `resolveProposalMediaUrl` removed; derivation via `get-optimized-urls` (Sub-plan 2).
@@ -168,7 +171,7 @@ Scope:
 ## Non-goals
 
 - Plan 1B (video transcode / PDF raster).
-- Folding `tpr-company-docs` into `tpr-media`.
+- Folding `tpr-company-docs` into `tpr-media`; publicizing or renaming `tpr-homeowner-files` (it stays private for call recordings).
 - Cloudflare Worker / multi-bucket routing / multiple media subdomains.
 - `width`/`height` columns; stored `url` for proposals.
 - Any change to upload auth (stays presigned PUT).
