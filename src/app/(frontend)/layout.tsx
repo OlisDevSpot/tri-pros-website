@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import process from 'node:process'
 import { Dancing_Script, Nunito, Playfair_Display, Space_Mono, Syne } from 'next/font/google'
 import { Providers } from '@/shared/components/providers'
+import { ServiceWorkerRegistrar } from '@/shared/components/pwa/service-worker-registrar'
 import { PwaSplashScreen } from '@/shared/components/splash-screen/pwa-splash-screen'
 import './globals.css'
 
@@ -210,6 +211,7 @@ export default function RootLayout({
         className={`${syne.variable} ${playfair.variable} ${dancingScript.variable} ${spaceMono.variable} ${nunito.className} antialiased`}
       >
         <Providers>
+          <ServiceWorkerRegistrar />
           <PwaSplashScreen />
           {children}
         </Providers>
