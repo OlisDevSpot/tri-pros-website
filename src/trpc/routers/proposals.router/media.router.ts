@@ -72,8 +72,7 @@ export function createProposalMediaRouter(entity: EntityToolkit<typeof proposalS
       .input(z.object({ updates: z.array(z.object({ id: z.number(), sortOrder: z.number().int() })) }))
       .mutation(async ({ ctx, input }) => {
         assertCanUpdate(ctx)
-        if (input.updates[0])
-          await assertProposalMediaInScope(ctx, input.updates[0].id)
+        await Promise.all(input.updates.map(u => assertProposalMediaInScope(ctx, u.id)))
         await mediaService.reorder(proposalMediaStore, input.updates)
       }),
 
