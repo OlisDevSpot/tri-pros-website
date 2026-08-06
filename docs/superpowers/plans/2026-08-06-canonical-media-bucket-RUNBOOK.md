@@ -40,9 +40,10 @@ pnpm tsx scripts/migrate-r2-bucket.ts              # copy all objects
 ```
 Confirm the final line shows `dest now has N objects (source had N)` with matching counts.
 
-## 4. Attach the custom domain to tpr-media in the Cloudflare dashboard as a
-**second** domain first is NOT possible (a hostname binds one bucket). Proceed to
-the atomic swap below.
+## 4. Note: the domain swap is atomic (no pre-attach)
+You cannot pre-attach `media.triprosremodeling.com` to `tpr-media` as a **second**
+binding ahead of time — a hostname binds exactly one bucket. So the domain move is
+a single atomic remove-then-add, done in the window at step 7 below.
 
 ## 5. — WINDOW START (pause uploads) — final delta re-copy
 ```bash
