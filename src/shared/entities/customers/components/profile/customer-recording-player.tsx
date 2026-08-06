@@ -1,10 +1,11 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Loader2Icon, PauseIcon, PlayIcon, Volume2Icon } from 'lucide-react'
+import { AudioLinesIcon, PauseIcon, PlayIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { Button } from '@/shared/components/ui/button'
+import { Skeleton } from '@/shared/components/ui/skeleton'
 import { Slider } from '@/shared/components/ui/slider'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -25,9 +26,33 @@ export function CustomerRecordingPlayer({ customerId }: Props) {
   )
 
   if (recordingQuery.isPending) {
-    return null
+    return (
+      <div className="rounded-lg border bg-card p-3 shadow-sm">
+        <RecordingLabel />
+        <div className="mt-2 flex items-center gap-3">
+          <Skeleton className="size-9 shrink-0 rounded-md" />
+          <Skeleton className="h-2 flex-1 rounded-full" />
+          <Skeleton className="h-3 w-14 shrink-0" />
+        </div>
+      </div>
+    )
   }
 
+  // Load failure is distinct from "no recording exists" — surface it so the
+  // agent knows a recording is there but didn't load, rather than silently
+  // showing nothing.
+  if (recordingQuery.isError) {
+    return (
+      <div className="rounded-lg border bg-card p-3 shadow-sm">
+        <RecordingLabel />
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          Couldn't load the recording. Refresh to try again.
+        </p>
+      </div>
+    )
+  }
+
+  // Genuinely no recording on file — stay quiet rather than add noise.
   if (!recordingQuery.data?.url) {
     return null
   }
@@ -81,11 +106,8 @@ export function CustomerRecordingPlayer({ customerId }: Props) {
   }
 
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <Volume2Icon className="size-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Lead Recording</span>
-      </div>
+    <div className="rounded-lg border bg-card p-3 shadow-sm">
+      <RecordingLabel />
 
       <audio
         ref={audioRef}
@@ -96,19 +118,16 @@ export function CustomerRecordingPlayer({ customerId }: Props) {
         onEnded={handleEnded}
       />
 
-      <div className="flex items-center gap-3">
+      <div className="mt-2 flex items-center gap-3">
         <Button
-          variant="outline"
           size="icon"
-          className="size-8 shrink-0"
+          className="size-9 shrink-0"
           onClick={togglePlay}
-          disabled={recordingQuery.isPending}
+          aria-label={isPlaying ? 'Pause recording' : 'Play recording'}
         >
-          {recordingQuery.isPending
-            ? <Loader2Icon className="size-4 animate-spin" />
-            : isPlaying
-              ? <PauseIcon className="size-4" />
-              : <PlayIcon className="size-4" />}
+          {isPlaying
+            ? <PauseIcon className="size-4" />
+            : <PlayIcon className="size-4" />}
         </Button>
 
         <Slider
@@ -119,12 +138,21 @@ export function CustomerRecordingPlayer({ customerId }: Props) {
           className="flex-1"
         />
 
-        <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
           {formatTime(currentTime)}
           {' / '}
           {formatTime(duration)}
         </span>
       </div>
+    </div>
+  )
+}
+
+function RecordingLabel() {
+  return (
+    <div className="flex items-center gap-2">
+      <AudioLinesIcon className="size-4 text-primary" />
+      <span className="text-sm font-medium">Lead Recording</span>
     </div>
   )
 }

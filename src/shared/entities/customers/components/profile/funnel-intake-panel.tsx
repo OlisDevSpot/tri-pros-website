@@ -1,7 +1,10 @@
 import type { CustomerEnrichmentRow } from '@/shared/db/schema/customer-enrichment'
 import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lead-attribution'
+import type { ProfileFieldConfig } from '@/shared/entities/customers/types'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { ClipboardListIcon } from 'lucide-react'
+
+import { ProfileCard } from './profile-card'
 
 interface Props {
   attribution: CustomerLeadAttributionRow | null
@@ -10,26 +13,20 @@ interface Props {
 
 export function FunnelIntakePanel({ attribution, enrichment }: Props) {
   // Enrichment rows are already `{label,value,order}`-shaped and DB-ordered
-  // (queried `ORDER BY "order" ASC`), so they render directly — no normalization.
+  // (queried `ORDER BY "order" ASC`), so they map straight onto the shared
+  // ProfileCard's field/data contract — one consistent card for every section.
   if (attribution?.kind !== 'funnel' || enrichment.length === 0) {
     return null
   }
 
+  const fields: ProfileFieldConfig[] = enrichment.map(row => ({
+    id: row.stepId,
+    label: row.label,
+    type: 'text',
+  }))
+  const data = Object.fromEntries(enrichment.map(row => [row.stepId, row.value]))
+
   return (
-    <Card>
-      <CardHeader className="py-3 px-4">
-        <CardTitle className="text-sm">Funnel Intake</CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-3">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-          {enrichment.map(row => (
-            <div key={row.stepId}>
-              <p className="text-xs text-muted-foreground">{row.label}</p>
-              <p className="text-sm font-medium">{row.value}</p>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <ProfileCard title="Funnel Intake" icon={ClipboardListIcon} fields={fields} data={data} />
   )
 }
