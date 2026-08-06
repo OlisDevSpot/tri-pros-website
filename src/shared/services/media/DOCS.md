@@ -47,7 +47,7 @@ Two stores exist today:
 
 | Store | Owner table | Bucket | Path shape |
 |---|---|---|---|
-| `projectMediaStore` | `media_files` | `tpr-portfolio-projects` (public) | `projects/{projectId}/{phase}/{fileId}{ext}` |
+| `projectMediaStore` | `media_files` | `tpr-media` (public) | `projects/{projectId}/{phase}/{fileId}{ext}` |
 | `proposalMediaStore` | `proposal_media_files` | `tpr-homeowner-files` (private) | `proposals/{proposalId}/{fileId}{ext}` |
 
 **Why**: the owner-specific facts (which table, which bucket, what the R2 key looks like — project

@@ -7,6 +7,16 @@ so no upload lands in a bucket the domain isn't serving yet.
 Prereqs: `wrangler` authenticated to the Tri Pros Cloudflare account; the zone id
 for `triprosremodeling.com`; R2 creds present in `.env`.
 
+> **⚠️ CRITICAL ORDERING — the code is already merged on `main`.** `projectMediaStore`
+> now targets `tpr-media`, so any production deploy of `main` makes new project-photo
+> uploads presign a PUT to `tpr-media`. **Steps 1–2 (create bucket + CORS) MUST be done
+> before `main` reaches production**, or new uploads fail with `NoSuchBucket` / blocked
+> CORS preflight. If `main` auto-deploys on Vercel, do steps 1–2 **now**, before the next
+> deploy. Existing media reads are unaffected until the domain move (step 7); the exposure
+> is upload-only, but it is a live-feature outage. Schedule the domain move (step 7) tight
+> behind the deploy (step 6) to minimize the window where a fresh upload lands in `tpr-media`
+> while the domain still serves the old bucket.
+
 ## 1. Create the canonical bucket
 ```bash
 wrangler r2 bucket create tpr-media
@@ -38,7 +48,11 @@ wrangler r2 bucket cors set tpr-media --file cors.json
 pnpm tsx scripts/migrate-r2-bucket.ts --dry-run    # sanity: object count
 pnpm tsx scripts/migrate-r2-bucket.ts              # copy all objects
 ```
-Confirm the final line shows `dest now has N objects (source had N)` with matching counts.
+Confirm the final line shows `dest now has N objects (source had M)` with **dest ≥ source**
+(not strict equality). The copy is idempotent and copy-only — it never prunes, so if any
+object was deleted from the source between runs, the dest keeps the orphan and its count runs
+ahead. That's harmless (orphans sit in the soon-decommissioned bucket). A dest count *below*
+source, however, means the copy is incomplete — investigate before proceeding.
 
 ## 4. Note: the domain swap is atomic (no pre-attach)
 You cannot pre-attach `media.triprosremodeling.com` to `tpr-media` as a **second**
