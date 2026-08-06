@@ -7,6 +7,7 @@
 
 import { DashboardActionQueue } from '@/features/agent-dashboard/ui/components/dashboard-action-queue'
 import { DashboardMeetingsHub } from '@/features/agent-dashboard/ui/components/dashboard-meetings-hub'
+import { DashboardProposals } from '@/features/agent-dashboard/ui/components/dashboard-proposals'
 import { DashboardSnapshotStrip } from '@/features/agent-dashboard/ui/components/dashboard-snapshot-strip'
 
 export function DashboardView() {
@@ -19,7 +20,9 @@ export function DashboardView() {
       <section id="queue">
         <DashboardActionQueue />
       </section>
-      <section id="proposals">{/* Task 8 */}</section>
+      <section id="proposals">
+        <DashboardProposals />
+      </section>
       <section id="projects">{/* Task 9 */}</section>
     </div>
   )
