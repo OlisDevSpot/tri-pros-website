@@ -1,12 +1,15 @@
+import type { R2BucketName } from '@/shared/services/providers/r2/types'
 import { TRPCError } from '@trpc/server'
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray, like } from 'drizzle-orm'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
-import { insertMediaFilesSchema, mediaFiles } from '@/shared/db/schema'
+import { insertMediaFilesSchema, mediaFiles, meetings, proposalMediaFiles, proposals } from '@/shared/db/schema'
 import { resetOptimizationStatus } from '@/shared/entities/media-files/dal/server/queries'
+import { resolveProposalMediaUrl } from '@/shared/entities/proposal-media-files/lib/resolve-media-url'
 import { mediaService } from '@/shared/services/media/media.service'
 import { projectMediaStore } from '@/shared/services/media/stores'
+import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { agentProcedure, createTRPCRouter } from '../../init'
@@ -118,5 +121,91 @@ export const mediaRouter = createTRPCRouter({
         .update(mediaFiles)
         .set({ isHeroImage: input.isHeroImage })
         .where(eq(mediaFiles.id, input.id))
+    }),
+
+  listImportableProposalMedia: agentProcedure
+    .input(z.object({ projectId: z.string().uuid() }))
+    .query(async ({ input }) => {
+      const rows = await db
+        .select({
+          id: proposalMediaFiles.id,
+          proposalId: proposalMediaFiles.proposalId,
+          proposalLabel: proposals.label,
+          name: proposalMediaFiles.name,
+          mimeType: proposalMediaFiles.mimeType,
+          pathKey: proposalMediaFiles.pathKey,
+          optimizationStatus: proposalMediaFiles.optimizationStatus,
+          optimizationVariants: proposalMediaFiles.optimizationVariants,
+        })
+        .from(proposalMediaFiles)
+        .innerJoin(proposals, eq(proposals.id, proposalMediaFiles.proposalId))
+        .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
+        .where(and(eq(meetings.projectId, input.projectId), like(proposalMediaFiles.mimeType, 'image/%')))
+
+      // Presign each (private bucket) for the picker preview.
+      const withUrl = await Promise.all(rows.map(async r => ({
+        id: r.id,
+        proposalId: r.proposalId,
+        proposalLabel: r.proposalLabel,
+        name: r.name,
+        mimeType: r.mimeType,
+        url: await resolveProposalMediaUrl(r),
+      })))
+
+      // Group by proposal for the dialog.
+      const byProposal = new Map<string, { proposalId: string, proposalLabel: string, items: typeof withUrl }>()
+      for (const item of withUrl) {
+        const g = byProposal.get(item.proposalId) ?? { proposalId: item.proposalId, proposalLabel: item.proposalLabel, items: [] }
+        g.items.push(item)
+        byProposal.set(item.proposalId, g)
+      }
+      return [...byProposal.values()]
+    }),
+
+  importFromProposal: agentProcedure
+    .input(z.object({ projectId: z.string().uuid(), proposalMediaFileIds: z.array(z.number()).min(1) }))
+    .mutation(async ({ input }) => {
+      // Authorization: only copy media that actually belongs to a proposal on
+      // THIS project's meetings (prevents importing arbitrary proposal media by id).
+      const sources = await db
+        .select({
+          id: proposalMediaFiles.id,
+          name: proposalMediaFiles.name,
+          mimeType: proposalMediaFiles.mimeType,
+          fileExtension: proposalMediaFiles.fileExtension,
+          pathKey: proposalMediaFiles.pathKey,
+          bucket: proposalMediaFiles.bucket,
+        })
+        .from(proposalMediaFiles)
+        .innerJoin(proposals, eq(proposals.id, proposalMediaFiles.proposalId))
+        .innerJoin(meetings, eq(meetings.id, proposals.meetingId))
+        .where(and(eq(meetings.projectId, input.projectId), inArray(proposalMediaFiles.id, input.proposalMediaFileIds)))
+
+      let imported = 0
+      for (const src of sources) {
+        if (!src.pathKey || !src.bucket)
+          continue
+        const ext = src.fileExtension || (src.pathKey.includes('.') ? `.${src.pathKey.split('.').pop()}` : '')
+        const destKey = `projects/${input.projectId}/uncategorized/${crypto.randomUUID()}${ext}`
+        await r2Client.copyObject({
+          sourceBucket: src.bucket as R2BucketName,
+          sourceKey: src.pathKey,
+          destBucket: projectMediaStore.bucket,
+          destKey,
+        })
+        const publicUrl = `${R2_PUBLIC_DOMAINS[projectMediaStore.bucket] ?? ''}/${destKey}`
+        await mediaService.createRecord(projectMediaStore, {
+          projectId: input.projectId,
+          name: src.name,
+          mimeType: src.mimeType,
+          fileExtension: ext,
+          pathKey: destKey,
+          bucket: projectMediaStore.bucket,
+          url: publicUrl,
+          phase: 'uncategorized',
+        })
+        imported++
+      }
+      return { imported }
     }),
 })

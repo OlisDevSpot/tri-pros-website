@@ -32,6 +32,7 @@ import { useConfirm } from '@/shared/hooks/use-confirm'
 import { cn } from '@/shared/lib/utils'
 import { useGooglePicker } from '@/shared/services/providers/google-drive/hooks/use-google-picker'
 import { useTRPC } from '@/trpc/helpers'
+import { ImportFromProposalDialog } from './import-from-proposal-dialog'
 
 interface Props {
   projectId: string
@@ -343,6 +344,7 @@ export function ProjectMediaManager({ projectId, mediaFiles, onUpdate }: Props) 
           {' '}
           file(s) attached. Drag to reorder within each phase.
         </p>
+        <ImportFromProposalDialog projectId={projectId} onImported={onUpdate} />
       </div>
 
       {/* Bulk action toast — fixed near top of viewport via portal */}
