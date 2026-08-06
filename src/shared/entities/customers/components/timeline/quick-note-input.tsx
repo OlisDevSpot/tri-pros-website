@@ -1,12 +1,14 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import type { EditNoteValues } from '@/shared/entities/customer-notes/schemas/edit-note-schema'
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 
 import { Button } from '@/shared/components/ui/button'
 import { Textarea } from '@/shared/components/ui/textarea'
-import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
-import { useTRPC } from '@/trpc/helpers'
+import { useCustomerNoteActions } from '@/shared/entities/customer-notes/hooks/use-customer-note-actions'
+import { editNoteSchema } from '@/shared/entities/customer-notes/schemas/edit-note-schema'
 
 interface Props {
   customerId: string
@@ -14,55 +16,51 @@ interface Props {
 }
 
 export function QuickNoteInput({ customerId, onSuccess }: Props) {
-  const [content, setContent] = useState('')
-  const trpc = useTRPC()
-  const { invalidateCustomer } = useInvalidation()
+  const form = useForm<EditNoteValues>({
+    resolver: zodResolver(editNoteSchema),
+    defaultValues: { content: '' },
+  })
 
-  const addNoteMutation = useMutation(
-    trpc.customerNotesRouter.crud.create.mutationOptions({
-      onSuccess: () => {
-        setContent('')
-        invalidateCustomer()
-        onSuccess()
+  const { createNote } = useCustomerNoteActions(customerId)
+
+  function handleAddNote(values: EditNoteValues) {
+    createNote.mutate(
+      { customerId, content: values.content },
+      {
+        onSuccess: () => {
+          form.reset()
+          onSuccess()
+        },
       },
-    }),
-  )
-
-  function handleSubmit() {
-    const trimmed = content.trim()
-    if (!trimmed) {
-      return
-    }
-    addNoteMutation.mutate({ customerId, content: trimmed })
+    )
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      handleSubmit()
+      form.handleSubmit(handleAddNote)()
     }
   }
 
   return (
-    <div className="space-y-2">
+    <form className="space-y-2" onSubmit={form.handleSubmit(handleAddNote)}>
       <Textarea
         className="min-h-[64px] resize-none text-sm"
-        disabled={addNoteMutation.isPending}
-        onChange={e => setContent(e.target.value)}
+        disabled={createNote.isPending}
         onKeyDown={handleKeyDown}
         placeholder="Add a note..."
         rows={2}
-        value={content}
+        {...form.register('content')}
       />
-      <div className="flex justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <span className="text-xs text-muted-foreground">⌘⏎ to add</span>
         <Button
-          disabled={addNoteMutation.isPending || !content.trim()}
-          onClick={handleSubmit}
+          disabled={createNote.isPending || !form.watch('content')?.trim()}
           size="sm"
-          variant="outline"
+          type="submit"
         >
-          {addNoteMutation.isPending ? 'Adding...' : 'Add'}
+          {createNote.isPending ? 'Adding...' : 'Add note'}
         </Button>
       </div>
-    </div>
+    </form>
   )
 }
