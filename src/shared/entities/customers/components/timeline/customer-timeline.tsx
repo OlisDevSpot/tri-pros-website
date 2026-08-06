@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { EmptyState } from '@/shared/components/states/empty-state'
 import { Button } from '@/shared/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/components/ui/tooltip'
-import { TIMELINE_PAGE_CAP } from '@/shared/entities/customers/constants/timeline-view'
+import { TIMELINE_FILTERS, TIMELINE_PAGE_CAP } from '@/shared/entities/customers/constants/timeline-view'
 import { bucketTimelineEvents } from '@/shared/entities/customers/lib/bucket-timeline-events'
 import { buildTimelineEvents } from '@/shared/entities/customers/lib/build-timeline-events'
 import { countTimelineEventsByFilter } from '@/shared/entities/customers/lib/count-timeline-events-by-filter'
@@ -37,6 +37,7 @@ export function CustomerTimeline({ data, onMutationSuccess, onOpenMeeting }: Pro
 
   const allExpanded = visible.length > 0 && visible.every(event => expandedIds.has(event.id))
   const hasEarlierActivity = filtered.length > TIMELINE_PAGE_CAP && !showAll
+  const activeFilterLabel = TIMELINE_FILTERS.find(filter => filter.id === activeFilter)?.label ?? 'All'
 
   function toggleEvent(id: string) {
     setExpandedIds((prev) => {
@@ -93,37 +94,47 @@ export function CustomerTimeline({ data, onMutationSuccess, onOpenMeeting }: Pro
             <>
               <TimelineFilterChips counts={counts} onChange={setActiveFilter} value={activeFilter} />
 
-              <div className="space-y-4">
-                {groups.map(group => (
-                  <div key={group.label}>
-                    <p className="mb-1.5 text-xs font-medium text-muted-foreground">{group.label}</p>
-                    <ol className="relative border-l border-border pl-3">
-                      {group.events.map(event => (
-                        <li key={event.id}>
-                          <TimelineEventItem
-                            customerId={data.customer.id}
-                            event={event}
-                            isExpanded={expandedIds.has(event.id)}
-                            onOpenMeeting={onOpenMeeting}
-                            onToggle={toggleEvent}
-                          />
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                ))}
-              </div>
+              {filtered.length === 0
+                ? (
+                    <p className="py-6 text-center text-xs text-muted-foreground">
+                      {`No ${activeFilterLabel.toLowerCase()} activity yet`}
+                    </p>
+                  )
+                : (
+                    <>
+                      <div className="space-y-4">
+                        {groups.map(group => (
+                          <div key={group.label}>
+                            <p className="mb-1.5 text-xs font-medium text-muted-foreground">{group.label}</p>
+                            <ol className="relative border-l border-border pl-3">
+                              {group.events.map(event => (
+                                <li key={event.id}>
+                                  <TimelineEventItem
+                                    customerId={data.customer.id}
+                                    event={event}
+                                    isExpanded={expandedIds.has(event.id)}
+                                    onOpenMeeting={onOpenMeeting}
+                                    onToggle={toggleEvent}
+                                  />
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        ))}
+                      </div>
 
-              {hasEarlierActivity && (
-                <Button
-                  className="w-full text-xs text-muted-foreground"
-                  onClick={() => setShowAll(true)}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Show earlier activity
-                </Button>
-              )}
+                      {hasEarlierActivity && (
+                        <Button
+                          className="w-full text-xs text-muted-foreground"
+                          onClick={() => setShowAll(true)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          Show earlier activity
+                        </Button>
+                      )}
+                    </>
+                  )}
             </>
           )}
     </div>
