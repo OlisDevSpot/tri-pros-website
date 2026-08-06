@@ -9,6 +9,7 @@ import type { ProposalIncentiveRow } from '@/shared/db/schema/proposal-incentive
 import type { ProposalView } from '@/shared/db/schema/proposal-views'
 import type { Proposal } from '@/shared/db/schema/proposals'
 import type { Row } from '@/shared/db/types'
+import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
 
 import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNull, lte, max, or, sql } from 'drizzle-orm'
@@ -28,6 +29,7 @@ import { meetings } from '@/shared/db/schema/meetings'
 import { proposalIncentives } from '@/shared/db/schema/proposal-incentives'
 import { proposalViews } from '@/shared/db/schema/proposal-views'
 import { proposals } from '@/shared/db/schema/proposals'
+import { listHomeownerProposalMedia, toProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import { incentiveRowsToDomain } from '@/shared/entities/proposals/lib/incentive-rows'
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -49,6 +51,7 @@ export type ProposalWithCustomer = Proposal & {
   meetingProjectId: string | null
   projectFirstContractSentAt: string | null
   incentives: ProposalIncentiveRow[]
+  media: ProposalMediaView[]
 }
 
 /** Enriched row returned by `listProposals` — base columns + view stats + meeting/customer context. */
@@ -147,7 +150,12 @@ export async function getFullView(
       data: { ...row.fundingJSON.data, incentives: incentiveRowsToDomain(incentives) },
     }
 
-    return { ...row, fundingJSON: hydratedFunding, customer, incentives } as ProposalWithCustomer
+    // Homeowner-visible media, presigned at this read choke point so the
+    // customer-facing gallery renders with zero per-site fetching.
+    const mediaRows = await listHomeownerProposalMedia(row.id)
+    const media = await Promise.all(mediaRows.map(toProposalMediaView))
+
+    return { ...row, fundingJSON: hydratedFunding, customer, incentives, media } as ProposalWithCustomer
   })
 }
 
