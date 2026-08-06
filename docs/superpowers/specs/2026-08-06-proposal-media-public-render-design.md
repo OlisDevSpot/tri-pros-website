@@ -58,32 +58,36 @@ These three cannot be split — splitting strands an upload or breaks reads:
 
 Reads work the instant objects exist in `tpr-media` (the domain-fallback guarantee above), even before the bucket-column backfill lands — the backfill is for correctness/honesty, not to keep reads alive.
 
-### §2. Parameterized optimizer + `xs` as a first-class variant
+### §2. Variant registry (two config objects) + `xs`
 
-The **write side** gains an explicit variant-selection API so the choice is declarative and lives in one place, not sprinkled across constants.
+The variant system is rooted in **two config objects** in a new dependency-free leaf, `src/shared/entities/media-files/lib/image-variants.ts`, that feed everything downstream. This exists as its own leaf because the read side (`get-optimized-urls.ts`) is bundled into `'use client'` components and therefore cannot import the write side (`process-image-variants.ts`, which pulls in `sharp`) — the shared leaf is what lets one definition serve both without leaking `sharp` into the client bundle. (That client/server split is the original reason the widths were duplicated; this closes it.)
 
-- **Canonical catalog** in `process-image-variants.ts` — `xs` is a normal member, no special-casing:
-  | suffix | width | size budget |
-  |---|---|---|
-  | `xs` | 320 | ~40 KB |
-  | `sm` | 640 | 80 KB |
-  | `md` | 1280 | 200 KB |
-  | `lg` | 1920 | 350 KB |
-- `processImageVariants(buffer, selectedSuffixes)` accepts **which** variants to generate (iterates only the selected catalog entries; existing `TINY_IMAGE_THRESHOLD` / `MIN_DOWNSCALE_FACTOR` / size-budget logic unchanged). This is the new optimizer API surface.
-- Thread the selection: `optimizeFile(buffer, mimeType, { variants })` → `processImageVariants(buffer, variants)`.
-- **Owner seam owns the default.** `OptimizationTarget` (`optimization-target.ts`) gains a `variants: VariantSuffix[]` field, exactly parallel to how `table`/`getFile` live there:
-  - `project` → `['sm','md','lg']` (**unchanged** — portfolio bytes are identical to today)
-  - `proposal` → `['xs','sm','md','lg']`
-  `optimizeMediaFile` passes `target.variants` into `optimizeFile`.
-- **Scripts choose their own set** by calling `optimizeFile(buffer, mime, { variants: [...] })` directly — this is the flexibility that enables a future proposals-scoped re-optimize without touching the portfolio path.
+1. **`VARIANT_OPTIONS` (master array)** — every variant the system can produce; the ONLY place a width/budget is declared:
+   | suffix | width | maxBytes |
+   |---|---|---|
+   | `xs` | 320 | 40 KB |
+   | `sm` | 640 | 80 KB |
+   | `md` | 1280 | 200 KB |
+   | `lg` | 1920 | 350 KB |
+   Typed `as const satisfies readonly VariantOption[]`, yielding `type VariantSuffix = (typeof VARIANT_OPTIONS)[number]['suffix']`.
 
-**Read side** (`get-optimized-urls.ts`):
-- Add `xs: 320` to `VARIANT_WIDTHS` (a pure width lookup — always safe).
-- **Rename `ALL_VARIANTS` → `LEGACY_UNTRACKED_VARIANTS`** (value unchanged `['sm','md','lg']`) with a comment: *"the variant set that rows optimized before `optimizationVariants` tracking are known to have — NOT the catalog; new rows drive rendering off their own recorded list."* This eliminates the "why is `xs` missing here?" footgun by naming, not omission. `xs` is deliberately absent because those historical rows genuinely have no `xs` object on R2.
+2. **`VARIANT_REGISTRY` (use-case → subset)** — `as const satisfies Record<string, readonly VariantSuffix[]>`, so the compiler rejects a suffix not in the master (the two can't drift):
+   - `project: ['sm','md','lg']` — **unchanged**, portfolio bytes identical to today.
+   - `proposal: ['xs','sm','md','lg']`.
+   - `fallback: ['sm','md','lg']` — assumed for a row whose `optimizationVariants` was never recorded (predates tracking). **Frozen**; must stay a subset of what those old objects physically have on R2 — never add `xs` here or legacy images 404 on a missing `-xs.webp`.
 
-**Decision — capability only, no re-run (user-approved):** new proposal uploads get `xs`; existing proposal images fall back to `sm` (640w into a small tile — a minor perf delta, not a bug). We do **not** build or run a standalone re-optimize script in this sub-plan (YAGNI — it is trivially addable later on the new `optimizeFile({variants})` surface). If a re-optimize is ever wanted, it scopes by the `proposals/` key **prefix** within `tpr-media` and never touches `projects/*`.
+   Plus a derived `VARIANT_WIDTH` (suffix→width) so nothing re-declares a width.
 
-**Blast-radius note:** `process-image-variants.ts` + `get-optimized-urls.ts` are **shared** by project media. The catalog/`VARIANT_WIDTHS` edits are additive; the `project` owner keeps `['sm','md','lg']`, so newly-optimized project images are unchanged. The parity gate (§9) includes a portfolio regression check regardless.
+**Downstream is all lookups (one line each):**
+- Write dispatch (`optimize-media.ts`): `optimizeFile(buffer, mime, VARIANT_REGISTRY[ownerKind])` — the registry *is* the owner→variants map, so `optimization-target.ts` needs no variants field.
+- Write sharp (`process-image-variants.ts`): `processImageVariants(buffer, suffixes)` filters `VARIANT_OPTIONS` by the passed suffixes; budget = `option.maxBytes`. Deletes `VARIANT_DEFS` + `SIZE_LIMITS`.
+- Read (`get-optimized-urls.ts`): widths from `VARIANT_WIDTH`; the null case = `file.optimizationVariants ?? VARIANT_REGISTRY.fallback`. Deletes the duplicated `VARIANT_WIDTHS` and `ALL_VARIANTS`.
+
+Adding `xs` = one master line + `proposal`'s registry entry. Adding a future use-case (e.g. an email thumbnail needing only `xs`) = one registry line. Nothing else changes.
+
+**Decision — capability only, no re-run (user-approved):** new proposal uploads get `xs`; existing proposal images fall back to `sm` (640w into a small tile — a minor perf delta, not a bug). We do **not** build or run a standalone re-optimize script in this sub-plan (YAGNI — trivially addable later via `optimizeFile(buffer, mime, [...])`).
+
+**Blast-radius note:** `image-variants.ts` / `process-image-variants.ts` / `get-optimized-urls.ts` are **shared** by project media. Changes are additive and the `project` registry entry is unchanged, so newly-optimized project images are byte-identical. The parity gate (§9) includes a portfolio regression check regardless.
 
 ### §3. Read-path flip (derive, don't presign)
 
@@ -119,9 +123,10 @@ Two scripts mirroring Sub-plan 1's (`import './lib/load-env'`, `--dry-run`, idem
 5. Verify a fresh proposal upload round-trips to `tpr-media`.
 6. Safety window, then delete `proposals/*` from `tpr-homeowner-files` (recordings + bucket stay).
 
-### §6. Guardrails
+### §6. Guardrail
 
-- `X-Robots-Tag: noindex` + `Referrer-Policy: strict-origin-when-cross-origin` on the **token-gated homeowner proposal route** (confirm the exact path pattern during planning) via a source-matched block in `next.config.ts` `headers()`, alongside the existing `/sw.js` block. Not applied blanket to all app pages.
+- `noindex` on the homeowner proposal page via a per-route `export const metadata = { robots: { index: false, follow: false } }` on `src/app/(frontend)/proposal-flow/proposal/[proposalId]/page.tsx` — **not** `next.config.ts`. The page is reachable by anyone holding the unguessable share link and renders property photos + pricing; `noindex` is the standard mitigation for the capability-URL model's main leak vector (a crawled link).
+- **`Referrer-Policy` dropped** — modern browsers already default to `strict-origin-when-cross-origin`; an explicit header adds no meaningful protection and isn't worth a config touch.
 - No full media-URL logging in any analytics/error path touching proposal media.
 - **Designed-in, deferred:** CDN-level `noindex` on media responses (CF-level) and the optional re-key path segment — keys are already unguessable; build only if a concrete revocation need appears.
 
@@ -165,13 +170,13 @@ Two scripts mirroring Sub-plan 1's (`import './lib/load-env'`, `--dry-run`, idem
 
 Independently testable, roughly in dependency order:
 
-- **T1 — Parameterized optimizer + `xs` catalog (write side).** Catalog + `processImageVariants(buffer, selected)`; `optimizeFile(…, {variants})`; `OptimizationTarget.variants` (project `[sm,md,lg]`, proposal `[xs,sm,md,lg]`); `optimizeMediaFile` threads it. `tsc`/`lint`.
-- **T2 — `xs` read side.** `VARIANT_WIDTHS += xs`; rename `ALL_VARIANTS → LEGACY_UNTRACKED_VARIANTS` + comment. `tsc`/`lint`.
+- **T1 — Variant registry + write-side wiring.** New leaf `image-variants.ts` (`VARIANT_OPTIONS` master + `VARIANT_REGISTRY` + derived `VARIANT_WIDTH`); `processImageVariants(buffer, suffixes)`; `optimizeFile(…, variantSuffixes?)`; `optimize-media.ts` passes `VARIANT_REGISTRY[ownerKind]`. Deletes `VARIANT_DEFS`/`SIZE_LIMITS`. `optimization-target.ts` untouched. `tsc`/`lint`.
+- **T2 — read side consumes the registry.** `get-optimized-urls.ts` imports `VARIANT_WIDTH` + `VARIANT_REGISTRY.fallback`; deletes local `VARIANT_WIDTHS` + `ALL_VARIANTS`; adds `deriveOriginalMediaUrl`. `tsc`/`lint`.
 - **T3 — Read-path flip.** Sync `toProposalMediaView` + reshaped `ProposalMediaView` (JIT `url`); `listImportableProposalMedia` swap; delete `resolve-media-url.ts`; drop all 4 `await`s. `tsc`/`lint`.
 - **T4 — `proposalMediaStore.bucket` → `R2_BUCKETS.media`.** (Ships with T3/T5 as the atomic deploy.) `tsc`/`lint`.
 - **T5 — Render surface port** (both surfaces → `OptimizedImage` + `sizes`). `tsc`/`lint`.
 - **T6 — Migration scripts** (blob copy + DB backfill), dry-run-verified against dev.
-- **T7 — Guardrails** (`next.config.ts` headers on the proposal route).
+- **T7 — Guardrail** (`noindex` via route metadata on the homeowner proposal page; no `next.config.ts`).
 - **T8 — Docs + memory** (§8), same PR.
 
 Live cutover (run the scripts, prod backfill, delta re-copy, decommission `proposals/*`) is **USER-run** from a short runbook produced with the plan, mirroring Sub-plan 1.
@@ -186,8 +191,8 @@ Live cutover (run the scripts, prod backfill, delta re-copy, decommission `propo
 | Upload during the window strands a blob in the old bucket | Copy-first + delta re-copy after deploy (§5). |
 | Picker/mapper hands `getOptimizedSrc` a null `url` fallback | Synthesize per-row `url` from the row's bucket in **both** the mapper and the picker (§3, B1/B2). |
 | `xs` leaks onto portfolio unexpectedly | `project` owner keeps `[sm,md,lg]`; portfolio regression check in the parity gate (§9). |
-| `xs` advertised on legacy rows that lack it | `LEGACY_UNTRACKED_VARIANTS` deliberately excludes `xs`; per-row `optimizationVariants` drives all tracked rows (§2). |
-| Public exposure of homeowner photos | Unguessable UUID keys + `noindex`/`Referrer-Policy` + no URL logging (§6). |
+| `xs` advertised on legacy rows that lack it | `VARIANT_REGISTRY.fallback` deliberately excludes `xs`; per-row `optimizationVariants` drives all tracked rows (§2). |
+| Public exposure of homeowner photos | Unguessable UUID keys + `noindex` (route metadata) + no URL logging (§6). |
 | Stale DOCS after the flip | All doc/comment sites in §8 edited **same PR** (they match code today; deferral creates staleness). |
 
 ## Non-goals
