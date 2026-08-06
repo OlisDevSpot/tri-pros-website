@@ -146,7 +146,7 @@ Migration order from ADR-0002: Proposal → Customer → Meeting → **Project**
 
 ## See also
 
-- `../proposals/DOCS.md#conversion-trigger` — proposal approval mints the project
+- `../proposals/DOCS.md#conversion-trigger` — approval is a precondition, but project creation (this router's `create` mutation) is a separate agent action, not an automatic effect of approval
 - `../proposals/DOCS.md#one-approved-initial-sale-per-meeting` — DB constraint that anchors `#one-project-per-birthing-meeting`
 - `../meetings/DOCS.md#meeting-pipeline-storage-vs-derived` — `meeting.projectId IS NOT NULL` derives "projects" pipeline
 - `../customers/DOCS.md#signed-customer-eq-has-project` — "signed" = has ≥1 project

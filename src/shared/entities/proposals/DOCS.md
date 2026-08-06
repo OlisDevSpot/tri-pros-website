@@ -1,13 +1,13 @@
 # Proposals — Business Rules
 
-A **Proposal** is a quoted scope-of-work delivered to a customer for review and optional e-signature. Customer (1) → Meeting (many) → Proposal (many). Approval is the only legal trigger for Project creation.
+A **Proposal** is a quoted scope-of-work delivered to a customer for review and optional e-signature. Customer (1) → Meeting (many) → Proposal (many). Approval is a precondition for Project creation (a project can't exist without a contract), but is not itself the trigger — see `#conversion-trigger`.
 
 This directory holds: schemas (`schemas/`), types (`types.ts`), enum constants and action configs (`constants/`), computed-value helpers + server spec (`lib/`), CRUD + business DAL (`dal/server/`), action-config hooks (`hooks/`), and reusable components (`components/`). The server spec at `lib/server-spec.ts` is consumed by `src/trpc/routers/proposals.router/`.
 
 ## Lifecycle
 
 ```
-   draft  ──►  sent  ──►  approved  ──►  (project created automatically)
+   draft  ──►  sent  ──►  approved  ──►  (project created — separate agent action)
                 │
                 ├── contractSentAt        (Zoho envelope out)
                 ├── contractViewedAt      (Zoho webhook: viewed)
@@ -89,11 +89,19 @@ DB unique index `proposals_one_approved_initial_sale_per_meeting_idx` enforces: 
 
 ### conversion-trigger
 
-When `status` transitions to `approved`, a Project is created automatically and the meeting's outcome is set to `converted_to_project`. The `converted_to_project` outcome is **derived, never selectable** in the meeting outcome dropdown — it appears but is disabled.
+**Corrected 2026-08-05 (Task E3) — verified against current code; the previous text here was stale.** `status` transitioning to `approved` does **not** by itself create a Project, and there is no `proposals.router/business.router.ts` (that file doesn't exist — proposals has no `business.router.ts`).
 
-**Why**: a project represents a signed contract. Without an approved proposal there's no contract. Manual selection would create projects without contractual basis.
-**Reference impl**: approve handler in `src/trpc/routers/proposals.router/business.router.ts`; see also `../projects/DOCS.md` and `../meetings/DOCS.md`
-**Enforced by**: convention + disabled UI option
+What the code actually does:
+
+- **Auto-approval is real.** `contractService.applyContractEvent` (`src/shared/services/contracts.service.ts`) is invoked from the Zoho Sign webhook path. When the event is `completed` (`shouldAutoApproveOnContractEvent`, `lib/contract-events.ts`) it sets `proposal.status = 'approved'` + stamps `approvedAt` via `proposalCrud.update` — see `#completed-auto-approves`.
+- **`applyContractEvent` inserts no project.** After the status write, its only other side effect is: if the proposal `kind === 'additional-work'`, it calls `deriveOutcomeOnAdditionalWorkApproved` (`src/shared/entities/meetings/dal/server/mutations.ts`), which flips the meeting's outcome to `additional_work` — **not** `converted_to_project` — and only when the current outcome is still overwritable. For `initial-sale` proposals (the kind that would actually mint a project), `applyContractEvent` does nothing further at all.
+- **Project creation is a separate, agent-driven mutation**: `businessRouter.create` in `src/trpc/routers/projects.router/business.router.ts`. It requires only that the target meeting has **at least one proposal** (any status — approval is not checked in code, though in practice the agent invokes it after a contract is signed). It inserts the `projects` row, then — in the same handler, step 5 — calls `meetingCrud.update` to set `{ projectId, meetingOutcome: 'converted_to_project' }` on the meeting. This is the only place `converted_to_project` is set from a *creation* flow.
+- **A second manual path exists**: `customerPipelinesRouter.assignToProject` (`src/trpc/routers/customer-pipelines.router.ts`) lets an agent link a meeting to an *already-existing* project, and sets the same `{ projectId, meetingOutcome: 'converted_to_project' }` pair.
+- **The outcome is also directly selectable**, not merely "disabled but visible": `getOutcomeDisabledChecker` (`src/shared/domains/pipelines/lib/get-disabled-outcomes.ts`) only disables `converted_to_project` in the closing-step dropdown while the meeting has **no** approved proposal (`hasApprovedProposal`) — once one exists, the option is enabled, and selecting it calls the plain `useOutcomeChange` → `updateOutcome` path (`src/shared/entities/meetings/hooks/use-outcome-change.tsx`), which writes the enum directly and does **not** create a project. So the enum value and the actual project record can diverge if an agent picks it from the dropdown instead of creating/linking a project. (`additional_work` is the only meeting outcome that is genuinely "derived, never selectable" per that same checker.)
+
+**Why**: a project still represents a signed contract in intent — approval is a precondition an agent is expected to honor before minting one — but the codebase does not enforce that as an atomic transaction. Project creation was deliberately kept as an explicit, reviewable agent action (it also extracts SOW scope IDs and needs the agent's confirmation of title/description), not an automatic webhook side effect.
+**Reference impl**: `src/shared/services/contracts.service.ts:applyContractEvent` (approval, no project insert); `src/trpc/routers/projects.router/business.router.ts:businessRouter.create` (actual project creation + `converted_to_project` write); `src/trpc/routers/customer-pipelines.router.ts:assignToProject` (link-existing-project path); `src/shared/domains/pipelines/lib/get-disabled-outcomes.ts` (dropdown enablement); `src/shared/entities/meetings/hooks/use-outcome-change.tsx` (manual-select write path)
+**Enforced by**: convention only — no DB trigger or transaction ties `proposals.status = 'approved'` to a `projects` insert or to `meetings.meeting_outcome`
 
 ### jsonb-merge-on-update
 
@@ -245,7 +253,7 @@ Each contract event has a fixed idempotency policy:
 
 A `completed` contract event auto-promotes proposal status to `approved` and stamps `approvedAt` (matching the manual approval flow). `declined` does **not** flip status — agent intervention is expected.
 
-**Why**: customer-initiated declines are rare and usually recoverable in conversation; auto-flipping creates stale "declined" rows the agent can't easily resurrect. Approval is the trigger for project creation (see `#conversion-trigger`), so auto-approve closes the loop on signing.
+**Why**: customer-initiated declines are rare and usually recoverable in conversation; auto-flipping creates stale "declined" rows the agent can't easily resurrect. Approval is a precondition an agent checks before minting a project (see `#conversion-trigger` — project creation itself is a separate, manual step), so auto-approve just closes the loop on signing without creating extra agent busywork.
 **Reference impl**: `lib/contract-events.ts:shouldAutoApproveOnContractEvent`
 **Enforced by**: contracts service consumes this flag
 
@@ -347,6 +355,20 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 **Reference impl**: `dal/server/duplicate.ts:duplicateProposalWithIncentives`; wired in `src/trpc/routers/proposals.router/index.ts`
 **Enforced by**: router-level handler override (bypasses the generic DAL duplicate, not spec-declarative)
 
+### proposal-media
+
+Proposals can carry attached files (photos, videos, PDFs) in `proposal_media_files`, owned via the reusable `mediaService`/`MediaStore` seam (see `src/shared/services/media/DOCS.md`) with `proposalMediaStore`.
+
+- **Two-visibility model**: `proposal_media_files.visibility ∈ { internal, homeowner }`, default `internal`. Only `homeowner`-visibility files are ever surfaced on the customer-facing proposal (the SOW gallery, via `getFullView.media`); `internal` files are agent-only and never leave the authed/token-scoped agent routes. Toggling visibility (`proposalsRouter.media.setVisibility`) never moves bytes — it flips the DB flag only.
+- **Private + presigned-only**: proposal media lives in the private `tpr-homeowner-files` R2 bucket (`R2_BUCKETS.homeownerFiles`). There is **no `url` column** on `proposal_media_files` (contrast with `media_files`/project media, which is public-CDN and does store a `url`) — every read resolves a short-lived presigned URL via `resolveProposalMediaUrl` (`entities/proposal-media-files/lib/resolve-media-url.ts`), which prefers the optimized `lg` WebP variant when `optimizationStatus === 'optimized'` and falls back to the original `pathKey`. Returns `null` for a Stream-provider row (Plan 1b; no R2 object).
+- **Lock-exempt**: proposal media is managed independently of the proposal lock ladder (`#proposal-lock-ladder`) — `visibility` and `pathKey`/`bucket` etc. are not in `frozenProposalLockedFields`, and `proposals.router/media.router.ts`'s mutations don't run through the `update.before` lock gate at all (it's a separate router). The Files tab stays fully editable (upload/rename/reorder/delete/visibility) on a locked (sent/signed/approved) proposal.
+- **`getFullView` enrichment**: `getFullView` (`dal/server/queries.ts`) attaches homeowner-visible media to the proposal read as `media: ProposalMediaView[]`, fetched via `listHomeownerProposalMedia` and presigned per-row via `toProposalMediaView` at this one choke point — consumers (the homeowner gallery, the PDF export) never resolve URLs themselves.
+- **Copy-to-project (manual, agent-driven)**: `projectsRouter.media.importFromProposal` lets an agent import a proposal's **image** files into a linked project's public gallery. The picker (`listImportableProposalMedia`) groups importable files by source proposal with a `Select all` affordance — the agent explicitly chooses which files, not homeowner-visibility-filtered or auto-selected. On import, each file is R2-copied private→public (`r2Client.copyObject`, source `tpr-homeowner-files` → dest `tpr-portfolio-projects`) and inserted as a project `media_files` row (`phase: 'uncategorized'`, agent re-organizes later) via `mediaService.createRecord(projectMediaStore, …)`, which dispatches the normal image-optimization job. The server enforces **image-only** (`mimeType LIKE 'image/%'`) and that the source proposal belongs to a meeting linked to **this** project (`meetings.projectId = input.projectId`) — arbitrary proposal media can't be imported by id. The source proposal's files are left unchanged (copy, not move).
+
+**Why**: the two-visibility split lets agents attach working photos (measurements, site conditions) without exposing them to the homeowner, while still supporting a homeowner-facing gallery from the same table. Private-bucket + presigned-only mirrors the `#pdf-export-token-gated` posture — anything a homeowner can reach must be time-boxed, never a permanent public URL, since a proposal's share token has no expiry. Lock-exemption exists because media isn't user-authored *contract* content (unlike `formMetaJSON`/`projectJSON`/`fundingJSON`) — attaching a photo after a contract is out for signature doesn't change what's being signed.
+**Reference impl**: schema `src/shared/db/schema/proposal-media-files.ts`; router `src/trpc/routers/proposals.router/media.router.ts`; URL resolution `src/shared/entities/proposal-media-files/lib/resolve-media-url.ts`; DAL `src/shared/entities/proposal-media-files/dal/server/{queries,authz}.ts`; `getFullView` enrichment `dal/server/queries.ts`; copy-to-project `src/trpc/routers/projects.router/media.router.ts` (`listImportableProposalMedia`, `importFromProposal`)
+**Enforced by**: DB default (`visibility` default `internal`); no `url` column on the table (structurally forces presigned access); router separation (no lock-gate wiring on `media.router.ts`); `importFromProposal`'s join-based scope check
+
 ## Anti-patterns
 
 - **Inferring contract state from proposal-lifecycle signals.** `proposal.status === 'sent'` says nothing about envelope state. If your code reads like `if (isSent && !contractStatus) → assume sync in flight`, stop — that's exactly the bug ADR-0004 retires. Treat proposal and contract lifecycles as independent (`#proposal-contract-independence`).
@@ -356,11 +378,13 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - **Setting `kind` from client input.** Server-derived; omitted from insert/update schemas.
 - **Hand-writing a `||` merge against `formMetaJSON` / `projectJSON` / `fundingJSON`.** The `jsonbMergeColumns` mechanism these were once registered in (Retired Wave 1) was deleted entirely in Wave 2 — every writer sends the whole document; a `||` merge would resurrect deliberately-cleared fields the same way the old mechanism did. See `#jsonb-merge-on-update`.
 - **Adding a CASL check on the share-token path.** Token IS authorization; CASL is `null`.
-- **Setting `converted_to_project` meeting outcome manually.** Derived from proposal approval.
+- **Assuming proposal approval creates a project or sets `converted_to_project`.** It does neither — see `#conversion-trigger`. Project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` are the only writers of that outcome.
 - **Computing project start date by adding 3 calendar days to signing.** Use `cslbEarliestStartDate(signingDate, isSenior)` — Sundays don't count.
 - **Re-deriving `kind` when `meeting.projectId` changes.** Frozen at insert.
 - **Trusting `proposal.token` as a secret.** It's a URL-safe ID, not a password — anyone with the URL has access. Don't append authority beyond proposal read/update.
 - **Adding cost lines, margin data, or an "agent mode" to the proposal PDF** — anyone with the share token can fetch it.
+- **Adding a `url` column to `proposal_media_files` or caching a presigned URL.** Access is always resolved fresh via `resolveProposalMediaUrl` — see `#proposal-media`.
+- **Gating `proposal.router/media.router.ts` mutations on the proposal lock ladder.** Media is intentionally lock-exempt — see `#proposal-media`.
 
 ## See also
 
@@ -368,13 +392,15 @@ Duplicating a proposal: status resets to `draft`, ownership reassigns to the cur
 - ADR-0004 — Proposal/Contract Independence + Synchronous Draft Creation
 - [`../../trpc/DOCS.md`](../../trpc/DOCS.md) — tRPC procedures, `shareableMiddleware`, `createCrudRouter` (when written)
 - [`../customers/DOCS.md`](../customers/DOCS.md) — phone-visibility threshold gates on the `sent`-or-later proposal lifecycle (when written)
-- [`../meetings/DOCS.md`](../meetings/DOCS.md) — meeting outcome `converted_to_project` is set by proposal approval (when written)
-- [`../projects/DOCS.md`](../projects/DOCS.md) — project creation triggered by approval; one project per birthing meeting (when written)
+- [`../meetings/DOCS.md`](../meetings/DOCS.md) — meeting outcome `converted_to_project` is set by project creation/linking, not proposal approval (see `#conversion-trigger`)
+- [`../projects/DOCS.md`](../projects/DOCS.md) — project creation is a separate agent action gated by (not automated from) approval; one project per birthing meeting (when written)
 - `docs/proposal/creation-guide.md` — sales-side proposal authoring playbook
 - `docs/proposal/scope-presentation.md` — SOW UX
 - `docs/proposal/financing-presentation.md` — financing UX
 - `docs/codebase-conventions/dal-conventions.md` — `DalReturn<T>` + `ScopedContext` pattern used in this entity's DAL
 - `docs/codebase-conventions/jsonb-columns.md#never-shallow-merge-nested` — JSONB merge-safety mechanics (mechanism deleted Wave 2); `formMetaJSON`/`projectJSON`/`fundingJSON` are whole-document writers, always plain-replaced (see `#jsonb-merge-on-update`)
 - ADR-0005 — JSONB vs column vs child table (the storage-shape decision behind `#final-tcp-derived`)
+- [`../../services/media/DOCS.md`](../../services/media/DOCS.md) — the `mediaService`/`MediaStore` seam `#proposal-media` builds on
+- `src/shared/lib/file-optimization/DOCS.md` — the pure optimizer core dispatched by media creation
 
-**Last updated**: 2026-07-18
+**Last updated**: 2026-08-05 (Task E3 — `#conversion-trigger` correction + `#proposal-media`)

@@ -111,7 +111,7 @@ The `meetings.pipeline` column stores 3 values (`fresh | rehash | dead`). A meet
 - **Selectable** (`selectableMeetingOutcomes`) — `not_set | not_good | pns | npns | ftd | no_show | lost_to_competitor | follow_up_needed`. These appear in the outcome dropdown.
 - **Derived** (`derivedMeetingOutcomes`) — `proposal_created | proposal_sent | converted_to_project`. These appear in the dropdown but are **disabled** — set automatically by upstream events.
 
-**Why**: derived outcomes encode pipeline progression and must not be hand-set. `converted_to_project` is set by proposal approval (see `../proposals/DOCS.md#conversion-trigger`); `proposal_sent` is set by sending a proposal (see `#outcome-flips-on-proposal-sent`).
+**Why**: derived outcomes encode pipeline progression and must not be hand-set. `converted_to_project` is set when a project is created or linked (`projects.router/business.router.ts` `create`, or `customerPipelinesRouter.assignToProject`) — proposal approval only unlocks the dropdown option, it does not itself write the outcome (see `../proposals/DOCS.md#conversion-trigger`); `proposal_sent` is set by sending a proposal (see `#outcome-flips-on-proposal-sent`).
 **Reference impl**: `src/shared/constants/enums/meetings.ts`
 **Enforced by**: convention + disabled UI options in outcome picker
 
@@ -183,7 +183,7 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 ## Anti-patterns
 
 - **Adding `'projects'` to `meetings.pipeline` enum.** Use `projectId IS NOT NULL` — see `#meeting-pipeline-storage-vs-derived`.
-- **Setting `meetingOutcome = 'converted_to_project'` manually.** Derived from proposal approval — see `../proposals/DOCS.md#conversion-trigger`.
+- **Selecting `meetingOutcome = 'converted_to_project'` from the outcome dropdown without actually creating/linking a project.** The dropdown option is enabled once the meeting has an approved proposal, and selecting it writes the enum directly (`useOutcomeChange` → plain `updateOutcome`) — it does NOT create a project. This desyncs the outcome from reality; always drive the outcome via project creation (`projects.router/business.router.ts` `create`) or `customerPipelinesRouter.assignToProject` instead. See `../proposals/DOCS.md#conversion-trigger`.
 - **Unconditionally setting `meetingOutcome = 'proposal_sent'` when sending a proposal.** Use `deriveOutcomeOnProposalSent` — see `#outcome-flips-on-proposal-sent`.
 - **Storing computed deal values** (`finalTcp`, `monthlyPayment`, `depositPercent`) on the meeting. Always derive.
 - **Joining `meetingParticipants` directly into a meetings list query without `getOwnerCoOwnerForMeetings`.** The raw join cross-products when duplicates exist; the batch helper deduplicates safely.
@@ -196,7 +196,7 @@ Meeting `flowStateJSON.dealStructure` carries the agent's in-meeting pricing scr
 ## See also
 
 - `../customers/DOCS.md#visibility-via-meeting-participation` — meeting participation is the visibility bridge
-- `../proposals/DOCS.md#conversion-trigger` — proposal approval sets meeting outcome
+- `../proposals/DOCS.md#conversion-trigger` — approval is a precondition for project creation, not the trigger itself; project creation/linking sets `converted_to_project`
 - `../proposals/DOCS.md#sow-snapshot-from-meeting-on-create` — proposal-side of trade-selections snapshot
 - `../projects/DOCS.md` (when written) — projectId link semantics
 - `memory/project-gcal-sync-architecture.md` — GCal sync architecture (planned)

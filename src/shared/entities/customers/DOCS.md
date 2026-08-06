@@ -56,7 +56,7 @@ active otherwise  → 'leads'      (pre-meeting)
 
 A customer is "signed" when they have at least one project. Projects are the business symbol of a converted customer — this rule is the single definition; every router, job, and aggregate counts signed customers the same way.
 
-**Why**: a project = signed contract = revenue commitment. `proposal.status = 'approved'` is the trigger that creates the project (see `../proposals/DOCS.md#conversion-trigger`); after that, "signed" means "has the project."
+**Why**: a project = signed contract = revenue commitment. An approved proposal is the precondition an agent checks before creating the project — creation itself is a separate agent action, not an automatic effect of approval (see `../proposals/DOCS.md#conversion-trigger`); after a project exists, "signed" means "has the project."
 **Reference impl**: `lib/signed-customer-sql.ts:isSignedCustomerSql`
 **Enforced by**: convention (single helper; all consumers go through it)
 
