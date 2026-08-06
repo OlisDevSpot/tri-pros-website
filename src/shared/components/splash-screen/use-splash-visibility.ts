@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 
 const SPLASH_SESSION_KEY = 'app-splash-shown'
-const SPLASH_VISIBLE_MS = 2000
+const SPLASH_VISIBLE_MS = 1100
 
 export function useSplashVisibility(shouldShow: boolean) {
   const [visible, setVisible] = useState(false)
