@@ -2,7 +2,7 @@ import type { R2BucketName } from './types'
 
 import { Buffer } from 'node:buffer'
 
-import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 import { lazyProxy } from '@/shared/config/lazy-proxy'
@@ -80,6 +80,26 @@ export const r2Client = {
 
     const bytes = await response.Body.transformToByteArray()
     return Buffer.from(bytes)
+  },
+
+  /** List every object key in a bucket (optionally under a prefix), paginated. */
+  listAllKeys: async (bucket: R2BucketName, prefix?: string): Promise<string[]> => {
+    const keys: string[] = []
+    let continuationToken: string | undefined
+    do {
+      const res = await s3.send(new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }))
+      for (const obj of res.Contents ?? []) {
+        if (obj.Key) {
+          keys.push(obj.Key)
+        }
+      }
+      continuationToken = res.IsTruncated ? res.NextContinuationToken : undefined
+    } while (continuationToken)
+    return keys
   },
 
   /** Delete a single object at `bucket/pathKey`. */
