@@ -16,9 +16,38 @@ interface Props {
   onMutationSuccess: () => void
 }
 
+// NOTE: this container is a compile-compatibility stub for the new per-event
+// TimelineEventItem contract (Task 7) — expand-all/collapse-all here is a
+// simple "toggle every currently-rendered id" shim, and `onOpenMeeting` is a
+// no-op until navigation is wired. The real rebuild (filter chips, date
+// buckets, show-earlier, a real onOpenMeeting threaded from the profile
+// modal) lands in Tasks 8/9/11 — see
+// docs/superpowers/plans/2026-08-05-customer-activity-center-and-notes-entity.md.
 export function CustomerTimeline({ data, onMutationSuccess }: Props) {
-  const [expanded, setExpanded] = useState(false)
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set())
   const events = buildTimelineEvents(data)
+  const allExpanded = events.length > 0 && events.every(event => expandedIds.has(event.id))
+
+  function toggleEvent(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      }
+      else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  function toggleAll() {
+    setExpandedIds(allExpanded ? new Set() : new Set(events.map(event => event.id)))
+  }
+
+  function handleOpenMeeting() {
+    // Click-through navigation lands in Task 11 (controlled Tabs + highlight).
+  }
 
   return (
     <div className="space-y-3">
@@ -29,17 +58,17 @@ export function CustomerTimeline({ data, onMutationSuccess }: Props) {
             <TooltipTrigger asChild>
               <Button
                 className="size-7"
-                onClick={() => setExpanded(prev => !prev)}
+                onClick={toggleAll}
                 size="icon"
                 variant="ghost"
               >
-                {expanded
+                {allExpanded
                   ? <ChevronsDownUpIcon className="size-4" />
                   : <ChevronsUpDownIcon className="size-4" />}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left">
-              <p>{expanded ? 'Collapse' : 'Expand'}</p>
+              <p>{allExpanded ? 'Collapse' : 'Expand'}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -54,7 +83,14 @@ export function CustomerTimeline({ data, onMutationSuccess }: Props) {
         : (
             <div className="relative border-l border-border pl-3">
               {events.map(event => (
-                <TimelineEventItem event={event} expanded={expanded} key={event.id} />
+                <TimelineEventItem
+                  customerId={data.customer.id}
+                  event={event}
+                  isExpanded={expandedIds.has(event.id)}
+                  key={event.id}
+                  onOpenMeeting={handleOpenMeeting}
+                  onToggle={toggleEvent}
+                />
               ))}
             </div>
           )}
