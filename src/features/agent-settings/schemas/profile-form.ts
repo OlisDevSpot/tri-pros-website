@@ -14,7 +14,10 @@ export type IdentityFormValues = z.infer<typeof identityFormSchema>
 export const brandFormSchema = z.object({
   quote: z.string().optional(),
   bio: z.string().optional(),
-  yearsOfExperience: z.number().optional(),
+  // nullish, not optional: an emptied field must send `null` (explicit clear),
+  // not `undefined` (which the DAL skips as "untouched"). Mirrors the server
+  // input (agent-settings.router.ts) and NumberField's empty→null contract.
+  yearsOfExperience: z.number().nullish(),
   tradeSpecialties: z.array(z.string()).optional(),
   languagesSpoken: z.array(z.string()).optional(),
   certifications: z.array(z.string()).optional(),

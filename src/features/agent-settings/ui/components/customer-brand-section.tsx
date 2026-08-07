@@ -16,6 +16,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { NumberField } from '@/shared/components/ui/number-field'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
@@ -100,15 +101,7 @@ export function CustomerBrandSection({ profile }: CustomerBrandSectionProps) {
                 <FormItem>
                   <FormLabel>Years of Experience</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      max={50}
-                      placeholder="10"
-                      {...field}
-                      value={field.value ?? ''}
-                      onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                    />
+                    <NumberField {...field} max={50} min={0} placeholder="10" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -7,6 +7,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
+import { NumberField } from '@/shared/components/ui/number-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Switch } from '@/shared/components/ui/switch'
 import { Textarea } from '@/shared/components/ui/textarea'
@@ -131,12 +132,17 @@ export function ContextPanelField({ config, value, onChange }: ContextPanelField
     [config.id, onChange],
   )
 
+  // NumberField hands us a resolved `number | null` (null = cleared); debounce
+  // the commit the same 300ms as the text/textarea fields so autosave doesn't
+  // fire mid-type. Emitting null is the fix: the old parseInt path turned an
+  // emptied field into NaN and dropped it, so a clear never round-tripped.
+  const numberTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleNumberCommit = useCallback(
-    (val: string) => {
-      const parsed = Number.parseInt(val, 10)
-      if (!Number.isNaN(parsed)) {
-        onChange(config.id, parsed)
+    (next: number | null) => {
+      if (numberTimer.current) {
+        clearTimeout(numberTimer.current)
       }
+      numberTimer.current = setTimeout(() => onChange(config.id, next), 300)
     },
     [config.id, onChange],
   )
@@ -206,13 +212,13 @@ export function ContextPanelField({ config, value, onChange }: ContextPanelField
                 )
               : config.type === 'number'
                 ? (
-                    <DebouncedInput
-                      initialValue={typeof value === 'number' ? String(value) : ''}
+                    <NumberField
+                      className="h-9 text-sm"
                       max={config.max}
                       min={config.min}
+                      onChange={handleNumberCommit}
                       placeholder={config.placeholder}
-                      type="number"
-                      onCommit={handleNumberCommit}
+                      value={typeof value === 'number' ? value : null}
                     />
                   )
                 : (
