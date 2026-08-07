@@ -22,9 +22,8 @@ interface DashboardMeetingCardProps {
 /**
  * Shared dense `MeetingOverviewCard` composition — customer name, outcome
  * dot, compact actions, type (+ optionally date), proposal-count badge, and
- * compact participants. Used by both `DashboardTodayTimeline` (wrapped in
- * the left time-rail) and `DashboardMeetingsList` (wrapped in `EntityList`)
- * so the two dashboard meeting surfaces can't drift apart.
+ * compact participants. Used by `DashboardDayAgenda` (wrapped in its
+ * time-rail) for the meetings-calendar module.
  *
  * `proposalCount` renders as a standalone badge (matching
  * `MeetingOverviewCard`'s own `ProposalCountField` markup) rather than going
