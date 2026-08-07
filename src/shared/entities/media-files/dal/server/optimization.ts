@@ -39,3 +39,7 @@ export async function setMediaOptimizationComplete(
 export async function setMediaOptimizationFailed(table: AnyMediaTable, id: number): Promise<void> {
   await db.update(table).set({ optimizationStatus: 'failed' }).where(eq(table.id, id))
 }
+
+export async function resetMediaOptimizationStatus(table: AnyMediaTable, id: number): Promise<void> {
+  await db.update(table).set({ optimizationStatus: 'pending' }).where(eq(table.id, id))
+}

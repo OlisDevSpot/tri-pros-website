@@ -2,8 +2,10 @@
 import type { MediaStore } from './stores'
 import { asc, eq } from 'drizzle-orm'
 import { db } from '@/shared/db'
+import { resetMediaOptimizationStatus } from '@/shared/entities/media-files/dal/server/optimization'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
+import { optimizeMediaFile } from './optimize-media'
 
 function extOf(filename: string): string {
   const dot = filename.lastIndexOf('.')
@@ -50,5 +52,16 @@ export const mediaService = {
 
   async list(store: MediaStore, ownerId: string) {
     return db.select().from(store.table).where(eq(store.ownerColumn, ownerId)).orderBy(asc(store.table.sortOrder))
+  },
+
+  // async retry — resets status then queues optimization (interactive Retry button)
+  async retryOptimization(store: MediaStore, mediaId: number) {
+    await resetMediaOptimizationStatus(store.table, mediaId)
+    void optimizeMediaJob.dispatch({ ownerKind: store.ownerKind, mediaId })
+  },
+
+  // synchronous, in-process optimize — no QStash (backfill scripts / dev)
+  async optimizeNow(store: MediaStore, mediaId: number) {
+    return optimizeMediaFile({ ownerKind: store.ownerKind, mediaId })
   },
 }
