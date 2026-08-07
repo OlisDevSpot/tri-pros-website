@@ -15,6 +15,7 @@ export function useProposalMedia(proposalId: string) {
   const reorder = useMutation(trpc.proposalsRouter.media.reorder.mutationOptions({ onSuccess: invalidate }))
   const rename = useMutation(trpc.proposalsRouter.media.rename.mutationOptions({ onSuccess: invalidate }))
   const remove = useMutation(trpc.proposalsRouter.media.delete.mutationOptions({ onSuccess: invalidate }))
+  const retryOptimization = useMutation(trpc.proposalsRouter.media.retryOptimization.mutationOptions({ onSuccess: invalidate }))
 
-  return { getUploadUrl, create, setVisibility, reorder, rename, remove, invalidate, listKey }
+  return { getUploadUrl, create, setVisibility, reorder, rename, remove, retryOptimization, invalidate, listKey }
 }

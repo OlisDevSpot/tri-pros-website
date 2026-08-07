@@ -91,5 +91,14 @@ export function createProposalMediaRouter(entity: EntityToolkit<typeof proposalS
         await assertProposalMediaInScope(ctx, input.id)
         await mediaService.removeRecord(proposalMediaStore, input.id)
       }),
+
+    retryOptimization: entity.authedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        assertCanUpdate(ctx)
+        await assertProposalMediaInScope(ctx, input.id)
+        await mediaService.retryOptimization(proposalMediaStore, input.id)
+        return { success: true }
+      }),
   })
 }

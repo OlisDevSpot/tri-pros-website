@@ -85,7 +85,14 @@ export function ProposalMediaManager({ proposalId }: Props) {
         renderThumbnail={(item) => {
           const row = viewById.get(item.id)
           if (item.mimeType.startsWith('image/') && row) {
-            return <OptimizedImage file={row} alt={item.name} sizes="(max-width: 768px) 45vw, 220px" />
+            return (
+              <OptimizedImage
+                file={row}
+                alt={item.name}
+                sizes="(max-width: 768px) 45vw, 220px"
+                onRetryOptimization={id => media.retryOptimization.mutate({ id })}
+              />
+            )
           }
           if (item.mimeType.startsWith('video/')) {
             return <video src={item.url} className="h-full w-full object-cover" muted playsInline />
