@@ -74,6 +74,17 @@ Out of scope (YAGNI):
   symmetric with project media.
 - No re-optimization of the project/portfolio back catalog — unrelated to this
   sub-plan.
+- **No fix of the standing `media.service.ts` DAL violation.** The existing
+  `createRecord` / `removeRecord` / `reorder` / `rename` / `list` methods import
+  `db` and issue `db.insert/select/delete/update/transaction` directly —
+  a pre-existing breach of `services-never-import-db`
+  ([service-architecture.md#services-never-import-db](../../codebase-conventions/service-architecture.md)).
+  This sub-plan deliberately does **not** touch those methods (user decision
+  2026-08-06: keep 2.1 minimal). The db-extraction — moving those five
+  operations into table-parameterized `media-files` DAL functions (matching the
+  `optimization.ts` shape) so `mediaService` becomes a pure orchestrator — is
+  tracked as its own follow-up. Implementers and reviewers of 2.1 must **not**
+  refactor the sibling methods here; flag it as out-of-scope, not a defect.
 
 ## Architecture
 
@@ -338,8 +349,14 @@ Repo has no unit-test runner; the gate is `pnpm tsc` + `pnpm lint` (per
   router or script calls the DAL setters or `optimizeMediaJob` directly. The
   facade is the single, extensible surface (user direction; matches
   `createRecord`'s existing dispatch ownership).
-- Route all writes through the DAL/service layer; no raw `db.update` for
-  optimization status outside the parameterized setters (ADR-0003).
+- **The new facade methods import zero `db`.** `retryOptimization` and
+  `optimizeNow` compose only DAL (`resetMediaOptimizationStatus`), the
+  orchestrator (`optimizeMediaFile`), and the job (`optimizeMediaJob`) — they add
+  no `db.*` call to `media.service.ts`. All status writes flow through the
+  parameterized DAL setters in `optimization.ts` (ADR-0003,
+  `services-never-import-db`). The service continuing to import `db` for its
+  pre-existing sibling methods is a known, separately-tracked violation (see
+  "Out of scope") — this sub-plan neither extends nor fixes it.
 - Never set `updatedAt` by hand — `.$onUpdate()` handles it
   (`feedback-no-manual-updated-at`).
 - Backfill script: use the `@/shared/db` singleton (template
