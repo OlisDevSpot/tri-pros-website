@@ -1,18 +1,17 @@
-# Dashboard Data Correctness — Proposals + Meetings (Plan 2 of the dashboard epic)
+# Dashboard Data Correctness — Proposals (Plan 2 of the dashboard epic)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development.
 > Steps use checkbox (`- [ ]`) syntax. Part of `2026-08-06-agent-dashboard-epic.md`.
-> Runs **after** Plan 1 (UI). Projects correctness is Plan 3 (needs the status-derivation
-> refactor). No schema change in this plan.
+> Runs **after** Plan 1 + Plan 1b. Projects correctness is Plan 3 (needs the status-derivation
+> refactor). The **meetings** correctness (exclude cancelled/no-show) moved into **Plan 1b**
+> (folded into the new month query). No schema change in this plan.
 
-**Goal:** Make the dashboard's Awaiting-signature and Meetings data mean what the user
-operates on: "awaiting signature" = the union of *sent proposals* and *contracts out for
-signature*, shown with an honest badge; Today/Upcoming meetings exclude cancelled/no-show.
+**Goal:** Make the dashboard's Awaiting-signature data mean what the user operates on:
+"awaiting signature" = the union of *sent proposals* and *contracts out for signature*, shown
+with an honest badge (not a bare, sometimes-contradictory proposal-status badge).
 
-**Architecture:** Two DAL/query-input changes plus one dashboard-card display fix. The
-`awaitingSignature` proposal filter predicate is broadened to a union; a `LIVE_MEETING_OUTCOMES`
-complement drives the existing meetings `outcome[]` filter for the non-past windows; the
-dashboard proposal card renders a contract-aware badge instead of the bare proposal status.
+**Architecture:** One DAL predicate change (broaden `awaitingSignature` to a union) plus one
+dashboard-card display fix (contract-aware badge). No meetings work here — that landed in 1b.
 
 **Tech Stack:** Drizzle (Postgres/Neon), tRPC, Zod, TanStack Query, React.
 
@@ -20,16 +19,13 @@ dashboard proposal card renders a contract-aware badge instead of the bare propo
 
 - **No `pnpm build`.** Verify with `pnpm tsc` + `pnpm lint` + live browser smoke (no test runner).
 - **Backend layering:** filter predicates live in the entity DAL (`…/dal/server/queries.ts`),
-  not in components or routers. Reuse existing filter surface; do not add ad-hoc queries.
-  (ADR-0003; [[feedback-backend-three-layer-convention]].)
+  not in components or routers. Reuse existing filter surface; do not add ad-hoc queries. (ADR-0003.)
 - **Proposal/contract independence is real** (ADR-0004): `status` (draft/sent/approved/declined)
   and the contract e-sign fields (`contractSentAt/contractSignedAt/contractDeclinedAt`) are
   separate axes. "Awaiting signature" spans both.
-- **Meeting outcome sentiment classifier** (`MEETING_OUTCOME_SENTIMENT`) is canonical — do
-  not re-encode. This plan only *excludes* two literal outcomes, it does not classify.
 - **Dashboard query keys unchanged** — `awaitingProposalsInput()` still passes
-  `awaitingSignature: true`; `meetingsWindowInput(kind)` keeps its shape. Only predicates/
-  filter contents change, so the snapshot chips + module lists stay in sync automatically.
+  `awaitingSignature: true`; only the predicate content changes, so the snapshot chip + module
+  list stay in sync automatically.
 
 ---
 
@@ -127,66 +123,12 @@ dashboard proposal card renders a contract-aware badge instead of the bare propo
 
 ---
 
-### Task 3: Exclude cancelled/no-show from Today + Upcoming meetings
-
-**Files:**
-- Modify: `src/shared/constants/enums/meetings.ts` (add the live-outcome constant)
-- Modify: `src/features/agent-dashboard/constants/dashboard-queries.ts` (`meetingsWindowInput`)
-
-**Interfaces:**
-- Consumes: the meetings list `outcome[]` filter (existing `inArray` predicate — no DAL
-  change). Produces: `LIVE_MEETING_OUTCOMES` and a windowed outcome filter.
-
-- [ ] **Step 1: Add `LIVE_MEETING_OUTCOMES` to `enums/meetings.ts`** (beside
-  `DECIDED_OUTCOMES`):
-  ```ts
-  /** Outcomes that keep a meeting "live" — everything except the two that mean it never happened. */
-  export const LIVE_MEETING_OUTCOMES: MeetingOutcome[] =
-    meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show')
-  ```
-
-- [ ] **Step 2: Apply it for the non-past windows in `meetingsWindowInput`.** Today and
-  Upcoming filter `outcome: LIVE_MEETING_OUTCOMES`; Past passes no `outcome` filter (keeps
-  everything for history):
-  ```ts
-  export function meetingsWindowInput(kind: MeetingWindowKind) {
-    return {
-      pagination: { limit: DASHBOARD_LIMITS.meetings, offset: 0 },
-      sort: { sortBy: 'scheduledFor', sortDir: kind === 'past' ? 'desc' : 'asc' },
-      filters: {
-        scheduledFor: meetingWindow(kind),
-        ...(kind === 'past' ? {} : { outcome: LIVE_MEETING_OUTCOMES }),
-      },
-    } satisfies MeetingListInput
-  }
-  ```
-  Import `LIVE_MEETING_OUTCOMES` from `@/shared/constants/enums`. The `satisfies
-  MeetingListInput` check confirms `outcome` is a valid filter key.
-
-- [ ] **Step 3: Verify.** `pnpm tsc` + `pnpm lint` pass.
-
-- [ ] **Step 4: Browser smoke.** Seed/verify a cancelled and a no-show meeting for today:
-  neither appears in Today or Upcoming; both still appear in Past. The "Meetings today"
-  snapshot chip count matches the filtered Today list.
-
-- [ ] **Step 5: Commit.**
-  ```bash
-  git add src/shared/constants/enums/meetings.ts \
-    src/features/agent-dashboard/constants/dashboard-queries.ts
-  git commit -m "fix(dashboard): exclude cancelled/no-show from Today + Upcoming meetings"
-  ```
-
----
-
 ## Self-Review
 
 - **Coverage:** awaiting-signature union filter (T1) · honest badge so no draft/declined
-  confusion (T2) · Today/Upcoming exclude cancelled+no_show, Past keeps all (T3). All three
-  requirement answers mapped; projects correctness is Plan 3.
-- **Placeholders:** none — exact predicates, the `LIVE_MEETING_OUTCOMES` definition, and the
-  badge tones are spelled out.
-- **Type consistency:** `deriveAwaitingState`'s return `tone` union matches the Tailwind
-  classes in T2-Step2; `outcome: LIVE_MEETING_OUTCOMES` is validated by `satisfies
-  MeetingListInput`; `awaitingProposalsInput()` / `meetingsWindowInput()` signatures are
-  unchanged so Plan 1's snapshot + modules keep working.
+  confusion (T2). Meetings correctness moved to Plan 1b; projects correctness is Plan 3.
+- **Placeholders:** none — exact predicate and badge tones spelled out.
+- **Type consistency:** `deriveAwaitingState`'s `tone` union matches the Tailwind classes in
+  T2-Step2; `awaitingProposalsInput()` signature is unchanged so Plan 1's snapshot + module
+  keep working.
 - **No schema change** — safe to ship before Plan 3's migration.
