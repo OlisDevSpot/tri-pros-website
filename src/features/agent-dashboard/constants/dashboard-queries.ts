@@ -14,7 +14,8 @@ import type { MeetingListInput } from '@/shared/entities/meetings/dal/server/que
 import type { ProposalListInput } from '@/shared/entities/proposals/dal/server/queries'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { meetingWindow } from '../lib/meeting-windows'
+import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
+import { meetingMonthWindow, meetingWindow } from '../lib/meeting-windows'
 
 // `projects.crud.list`'s input isn't exported as a named schema/type (it's
 // inlined in the router's `.input(...)`), so it's pulled off the router type
@@ -29,7 +30,16 @@ export function meetingsWindowInput(kind: MeetingWindowKind) {
   return {
     pagination: { limit: DASHBOARD_LIMITS.meetings, offset: 0 },
     sort: { sortBy: 'scheduledFor', sortDir: kind === 'past' ? 'desc' : 'asc' },
-    filters: { scheduledFor: meetingWindow(kind) },
+    filters: { scheduledFor: meetingWindow(kind), outcome: LIVE_MEETING_OUTCOMES },
+  } satisfies MeetingListInput
+}
+
+/** All meetings in the LA calendar month of `anchorCalendarDay`, live outcomes only, chronological. */
+export function meetingsMonthInput(anchorCalendarDay: string) {
+  return {
+    pagination: { limit: 200, offset: 0 },
+    sort: { sortBy: 'scheduledFor', sortDir: 'asc' },
+    filters: { scheduledFor: meetingMonthWindow(anchorCalendarDay), outcome: LIVE_MEETING_OUTCOMES },
   } satisfies MeetingListInput
 }
 

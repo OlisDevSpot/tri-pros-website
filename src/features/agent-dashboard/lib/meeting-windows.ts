@@ -66,6 +66,28 @@ function addCalendarDays(calendarDay: string, days: number): string {
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10)
 }
 
+/** LA business "today" as a YYYY-MM-DD calendar day (timezone-consistent server↔client). */
+export function businessToday(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: BUSINESS_TIMEZONE })
+}
+
+/** First day of the calendar month containing `anchorCalendarDay` (YYYY-MM-DD). */
+function firstOfMonth(anchorCalendarDay: string): string {
+  const [year, month] = anchorCalendarDay.split('-').map(Number)
+  return `${year}-${String(month).padStart(2, '0')}-01`
+}
+
+/** LA-pinned ISO bounds [startOfMonth, startOfNextMonth) for the meetings scheduledFor filter. */
+export function meetingMonthWindow(anchorCalendarDay: string): { from: string, to: string } {
+  const start = firstOfMonth(anchorCalendarDay)
+  const [y, m] = start.split('-').map(Number)
+  const nextStart = `${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}-01`
+  return {
+    from: startOfDayInTimeZone(start, BUSINESS_TIMEZONE).toISOString(),
+    to: startOfDayInTimeZone(nextStart, BUSINESS_TIMEZONE).toISOString(),
+  }
+}
+
 /** ISO bounds for the meetings `scheduledFor` dateRange filter, `BUSINESS_TIMEZONE`-day based. */
 export function meetingWindow(kind: MeetingWindowKind): { from?: string, to?: string } {
   const now = new Date()
