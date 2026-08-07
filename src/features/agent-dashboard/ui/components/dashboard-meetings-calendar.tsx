@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 import { meetingsMonthInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { businessDayKey, businessToday } from '@/features/agent-dashboard/lib/meeting-windows'
+import { Button } from '@/shared/components/ui/button'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
@@ -35,21 +36,40 @@ export function DashboardMeetingsCalendar() {
 
   const rows = data?.rows ?? []
   const daysWithMeetings = new Set(rows.map(row => businessDayKey(new Date(row.scheduledFor))))
+  const todayKey = businessToday()
   const selectedDayKey = businessDayKey(selectedDay)
   const selectedDayRows = rows.filter(row => businessDayKey(new Date(row.scheduledFor)) === selectedDayKey)
+  const isViewingToday = selectedDayKey === todayKey && anchor.slice(0, 7) === todayKey.slice(0, 7)
 
   return (
     <div className="flex flex-col gap-4 md:flex-row">
-      <Calendar
-        mode="single"
-        selected={selectedDay}
-        onSelect={day => day && setSelectedDay(day)}
-        month={month}
-        onMonthChange={setMonth}
-        modifiers={{ hasMeeting: date => daysWithMeetings.has(businessDayKey(date)) }}
-        components={{ DayButton: CalendarMeetingDayButton }}
-        className="md:w-fit shrink-0"
-      />
+      <div className="flex flex-col gap-2 md:w-fit md:shrink-0">
+        <Calendar
+          mode="single"
+          selected={selectedDay}
+          onSelect={day => day && setSelectedDay(day)}
+          month={month}
+          onMonthChange={setMonth}
+          modifiers={{ hasMeeting: date => daysWithMeetings.has(businessDayKey(date)) }}
+          components={{ DayButton: CalendarMeetingDayButton }}
+          className="w-full p-0 md:w-fit md:p-3"
+          classNames={{ root: 'w-full md:w-fit' }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isViewingToday}
+          onClick={() => {
+            const today = new Date(`${todayKey}T12:00:00`)
+            setSelectedDay(today)
+            setMonth(today)
+          }}
+          className="w-full font-medium md:w-auto md:self-end"
+        >
+          Today
+        </Button>
+      </div>
       <div className="min-w-0 flex-1">
         {isLoading
           ? <DashboardMeetingsCalendarSkeleton />

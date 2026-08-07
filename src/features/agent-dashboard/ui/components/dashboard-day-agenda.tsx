@@ -48,22 +48,22 @@ export function DashboardDayAgenda({ rows, selectedDay }: DashboardDayAgendaProp
   )
 }
 
-/** One rail row: time label + hairline/dot + the meeting card. */
+/** One rail row: time badge + hairline/dot + the meeting card, all optically centered to the card. */
 function DayAgendaRow({ row }: { row: MeetingListRow }) {
   return (
-    <li className="flex gap-3">
-      <div className="flex w-12 shrink-0 justify-end pt-2">
-        <span className="font-mono text-[0.72rem] tabular-nums text-muted-foreground">
+    <li className="flex items-stretch gap-3">
+      <div className="flex w-18 shrink-0 items-center justify-end">
+        <span className="whitespace-nowrap rounded-md border border-primary/20 bg-primary/5 px-1.5 py-1 font-mono text-[0.72rem] tabular-nums text-foreground">
           {format(new Date(row.scheduledFor), 'h:mm a')}
         </span>
       </div>
 
       <div className="relative shrink-0">
         <div className="h-full w-px bg-border" />
-        <span className="absolute left-1/2 top-2.5 size-1.5 -translate-x-1/2 rounded-full bg-primary" />
+        <span className="absolute left-1/2 top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary" />
       </div>
 
-      <div className="flex-1 pb-3 pt-1">
+      <div className="min-w-0 flex-1 py-2">
         <DashboardMeetingCard row={row} />
       </div>
     </li>

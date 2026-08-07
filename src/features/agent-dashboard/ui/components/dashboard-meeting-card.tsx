@@ -36,7 +36,10 @@ export function DashboardMeetingCard({ row, showScheduledDate = false, className
     <MeetingOverviewCard
       meeting={row}
       customerId={row.customerId ?? ''}
-      className={cn('rounded-lg border border-border bg-card p-2.5', className)}
+      className={cn(
+        'cursor-pointer rounded-lg border border-border bg-card p-2.5 transition-colors duration-200 hover:border-primary/30 hover:bg-accent/30',
+        className,
+      )}
     >
       <MeetingOverviewCard.Header className="min-w-0 gap-1.5">
         <MeetingOverviewCard.Fields fields={[{ field: 'outcome', variant: 'dot' }]} className="flex-none" />
