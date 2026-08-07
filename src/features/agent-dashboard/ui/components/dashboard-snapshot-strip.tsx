@@ -2,12 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 
-import { awaitingProposalsInput, meetingsWindowInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { activeProjectsInput, awaitingProposalsInput, meetingsWindowInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { useTRPC } from '@/trpc/helpers'
 
 /**
  * Slim, non-sticky ribbon of 3 jump-links at the top of the dashboard:
- * meetings today · awaiting signature · follow-ups due. Counts are read
+ * meetings today · awaiting signature · open projects. Counts are read
  * from the same query inputs the modules below use (dedupes against the
  * server prefetch in `dashboard/page.tsx`), so this never fires its own
  * count query. See the spec at
@@ -18,18 +18,16 @@ export function DashboardSnapshotStrip() {
 
   const meetingsToday = useQuery(trpc.meetingsRouter.reads.list.queryOptions(meetingsWindowInput('today')))
   const awaitingSignature = useQuery(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
-  const actionQueue = useQuery(trpc.dashboardRouter.getActionQueue.queryOptions())
-
-  const followUpsDue = actionQueue.data?.filter(item => item.tier === 'FOLLOW_UP_DUE').length
+  const activeProjects = useQuery(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
 
   const chips = [
     { href: '#meetings', label: 'Meetings today', count: meetingsToday.data?.total },
     { href: '#proposals', label: 'Awaiting signature', count: awaitingSignature.data?.total },
-    { href: '#queue', label: 'Follow-ups due', count: followUpsDue },
+    { href: '#projects', label: 'Open projects', count: activeProjects.data?.total },
   ]
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-3">
       {chips.map(chip => (
         <a
           key={chip.href}
@@ -42,14 +40,14 @@ export function DashboardSnapshotStrip() {
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
           "
         >
-          <span className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+          <span className="font-mono text-[0.72rem] uppercase tracking-[0.2em] text-muted-foreground">
             {chip.label}
           </span>
           <span
             className={
               chip.count === undefined
                 ? 'font-sans text-2xl font-bold tabular-nums text-muted-foreground'
-                : 'font-sans text-2xl font-bold tabular-nums text-foreground'
+                : 'font-sans text-2xl font-bold tabular-nums text-primary'
             }
           >
             {chip.count ?? '—'}
