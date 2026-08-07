@@ -35,9 +35,9 @@ export function DashboardMeetingsHub() {
     >
       <Tabs defaultValue="today">
         <TabsList className="h-auto">
-          <TabsTrigger value="today" className="min-h-11">Today</TabsTrigger>
-          <TabsTrigger value="upcoming" className="min-h-11">Upcoming</TabsTrigger>
-          <TabsTrigger value="past" className="min-h-11">Past</TabsTrigger>
+          <TabsTrigger value="today" className="min-h-11 data-[state=active]:text-primary">Today</TabsTrigger>
+          <TabsTrigger value="upcoming" className="min-h-11 data-[state=active]:text-primary">Upcoming</TabsTrigger>
+          <TabsTrigger value="past" className="min-h-11 data-[state=active]:text-primary">Past</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today" className="mt-3">

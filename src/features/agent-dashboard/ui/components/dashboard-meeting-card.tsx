@@ -53,7 +53,7 @@ export function DashboardMeetingCard({ row, showScheduledDate = false, className
           className="flex-none"
         />
         {row.proposalCount > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
             <FileTextIcon className="size-3" />
             {row.proposalCount}
           </span>

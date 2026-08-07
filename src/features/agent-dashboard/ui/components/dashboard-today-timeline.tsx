@@ -59,7 +59,7 @@ function TodayTimelineRow({ row }: { row: MeetingListRow }) {
   return (
     <li className="flex gap-3">
       <div className="flex w-12 shrink-0 justify-end pt-2">
-        <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
+        <span className="font-mono text-[0.72rem] tabular-nums text-muted-foreground">
           {format(new Date(row.scheduledFor), 'h:mm a')}
         </span>
       </div>
