@@ -66,9 +66,14 @@ function addCalendarDays(calendarDay: string, days: number): string {
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10)
 }
 
+/** The LA business calendar day (YYYY-MM-DD) for an instant — the single day-key derivation. */
+export function businessDayKey(date: Date): string {
+  return date.toLocaleDateString('en-CA', { timeZone: BUSINESS_TIMEZONE })
+}
+
 /** LA business "today" as a YYYY-MM-DD calendar day (timezone-consistent server↔client). */
 export function businessToday(): string {
-  return new Date().toLocaleDateString('en-CA', { timeZone: BUSINESS_TIMEZONE })
+  return businessDayKey(new Date())
 }
 
 /** First day of the calendar month containing `anchorCalendarDay` (YYYY-MM-DD). */

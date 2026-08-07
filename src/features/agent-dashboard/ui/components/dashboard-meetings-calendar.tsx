@@ -5,26 +5,13 @@ import { format } from 'date-fns'
 import { useState } from 'react'
 
 import { meetingsMonthInput } from '@/features/agent-dashboard/constants/dashboard-queries'
-import { businessToday } from '@/features/agent-dashboard/lib/meeting-windows'
+import { businessDayKey, businessToday } from '@/features/agent-dashboard/lib/meeting-windows'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { useTRPC } from '@/trpc/helpers'
 
 import { CalendarMeetingDayButton } from './calendar-meeting-day-button'
 import { DashboardDayAgenda } from './dashboard-day-agenda'
-
-/**
- * `YYYY-MM-DD` calendar-day key for `date` in the business timezone
- * (America/Los_Angeles) — the SAME derivation used both for grouping
- * meeting rows (`daysWithMeetings` / `selectedDayRows`) and for the
- * calendar's per-cell `hasMeeting` modifier, so the two can never disagree
- * about which day an instant falls on. A raw local `.toDateString()` /
- * `.getDate()` here would reintroduce the server/client timezone mismatch
- * this whole feature guards against (see ../lib/meeting-windows.ts).
- */
-function laDayKey(date: Date): string {
-  return date.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
-}
 
 /**
  * Meetings calendar — a month `<Calendar>` (left) whose cells carry a
@@ -47,9 +34,9 @@ export function DashboardMeetingsCalendar() {
   )
 
   const rows = data?.rows ?? []
-  const daysWithMeetings = new Set(rows.map(row => laDayKey(new Date(row.scheduledFor))))
-  const selectedDayKey = laDayKey(selectedDay)
-  const selectedDayRows = rows.filter(row => laDayKey(new Date(row.scheduledFor)) === selectedDayKey)
+  const daysWithMeetings = new Set(rows.map(row => businessDayKey(new Date(row.scheduledFor))))
+  const selectedDayKey = businessDayKey(selectedDay)
+  const selectedDayRows = rows.filter(row => businessDayKey(new Date(row.scheduledFor)) === selectedDayKey)
 
   return (
     <div className="flex flex-col gap-4 md:flex-row">
@@ -59,7 +46,7 @@ export function DashboardMeetingsCalendar() {
         onSelect={day => day && setSelectedDay(day)}
         month={month}
         onMonthChange={setMonth}
-        modifiers={{ hasMeeting: date => daysWithMeetings.has(laDayKey(date)) }}
+        modifiers={{ hasMeeting: date => daysWithMeetings.has(businessDayKey(date)) }}
         components={{ DayButton: CalendarMeetingDayButton }}
         className="md:w-fit shrink-0"
       />
