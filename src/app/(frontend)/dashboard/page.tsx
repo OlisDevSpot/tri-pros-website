@@ -15,7 +15,6 @@ export default async function DashboardPage() {
   // are lazily fetched by their tabs later (Task 6).
   if (authState.status === 'authenticated') {
     prefetch(trpc.meetingsRouter.reads.list.queryOptions(meetingsWindowInput('today')))
-    prefetch(trpc.dashboardRouter.getActionQueue.queryOptions())
     prefetch(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
     prefetch(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
   }
