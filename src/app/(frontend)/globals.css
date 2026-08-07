@@ -7,14 +7,12 @@
 .funnel-light {
   color-scheme: light;
 
-  /* Fixed installed-PWA launch canvas — the dark near-black used by the splash
-     overlay, so the cold start paints the SAME color as the splash (no white,
-     no pre-paint→splash color cut). Deliberately NOT the dashboard .dark
-     --background (a lighter slate); the splash opacity-crossfades into that.
-     Theme-independent on purpose (never overridden by .dark/.theme-marketing);
-     a literal is required because the pre-hydration <html> paint can't read a
-     theme-scoped token. */
-  --launch-canvas: #09090b;
+  /* Fixed installed-PWA launch canvas — matches the dashboard .dark
+     --background (below) so the cold-start reveal pre-paint → splash →
+     dashboard has no color seam. Theme-independent on purpose (never
+     overridden by .dark/.theme-marketing); a literal is required because the
+     pre-hydration <html> paint can't read a theme-scoped token. */
+  --launch-canvas: oklch(0.2433 0.0247 263.9506);
   --background: oklch(0.9846 0.0017 247.8389);
   --foreground: oklch(0.2781 0.0296 256.848);
   --card: oklch(1 0 0);
