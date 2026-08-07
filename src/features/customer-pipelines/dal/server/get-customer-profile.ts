@@ -65,6 +65,10 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
     .where(eq(customerEnrichment.customerId, customerId))
     .orderBy(asc(customerEnrichment.order))
   const customer = { ...customerRow, attribution, enrichment }
+  // Whether a lead recording exists is a synchronous fact from data we already
+  // load — surface it so the UI can decide to render the player BEFORE the
+  // separate presigned-URL fetch, instead of flashing a skeleton then removing it.
+  const hasRecording = Boolean(attribution?.captureJSON?.mp3RecordingKey)
 
   const meetingRows = await db
     .select({
@@ -238,6 +242,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
 
   return {
     customer,
+    hasRecording,
     meetings: meetingsWithProposals,
     allProposals,
     notes: noteRows,

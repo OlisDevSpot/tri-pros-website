@@ -9,6 +9,7 @@ import { ErrorState } from '@/shared/components/states/error-state'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { useTRPC } from '@/trpc/helpers'
+import { CustomerHeroActions } from './customer-hero-actions'
 import { CustomerProfileModalContent } from './customer-profile-modal-content'
 import { HeroViewToggle } from './hero-view-toggle'
 
@@ -40,13 +41,28 @@ export function CustomerProfileModal({ customerId, defaultTab, highlightMeetingI
     ? [customer.address, customer.city, customer.state, customer.zip].filter(Boolean).join(', ') || null
     : null
 
+  // Common-action cluster + view toggle share the Modal's header row. The
+  // actions need the loaded profile (customer + meetings), so they appear once
+  // the query resolves; the toggle stays gated on there being an address to map.
+  const headerActions = profileQuery.data
+    ? (
+        <div className="flex items-center gap-2">
+          {heroAddress && <HeroViewToggle onChange={setHeroView} value={heroView} />}
+          <CustomerHeroActions
+            customer={profileQuery.data.customer}
+            meetings={profileQuery.data.meetings}
+            onMutationSuccess={handleMutationSuccess}
+            variant="desktop"
+          />
+        </div>
+      )
+    : undefined
+
   return (
     <Modal
       className="sm:max-w-[min(72rem,calc(100vw-2rem))] sm:h-[85vh] overflow-hidden flex flex-col"
       close={close}
-      // The toggle lives in the Modal's own header row, so it shares the flex
-      // container (and items-center alignment) with the close button.
-      headerActions={heroAddress ? <HeroViewToggle onChange={setHeroView} value={heroView} /> : undefined}
+      headerActions={headerActions}
       isOpen={isOpen}
       title={title}
     >

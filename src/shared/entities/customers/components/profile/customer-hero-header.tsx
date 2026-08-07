@@ -70,7 +70,7 @@ export function CustomerHeroHeader({ customer, editForm }: Props) {
                 />
               )
             : (
-                <h2 className="truncate text-2xl font-semibold leading-tight tracking-tight text-white sm:text-[1.7rem]">
+                <h2 className="truncate text-2xl font-semibold leading-tight tracking-tight text-white sm:text-3xl">
                   {customer.name}
                 </h2>
               )}

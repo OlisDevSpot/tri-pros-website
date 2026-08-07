@@ -9,6 +9,7 @@ import { useCustomerEditForm } from '@/shared/entities/customers/hooks/use-custo
 import { CustomerMeetingsList } from '../lists/customer-meetings-list'
 import { CustomerProjectsList } from '../lists/customer-projects-list'
 import { CustomerAddressHero } from './customer-address-hero'
+import { CustomerHeroActions } from './customer-hero-actions'
 import { CustomerHeroHeader } from './customer-hero-header'
 import { CustomerProfileKeyInsights } from './customer-profile-key-insights'
 import { CustomerProfileOverview } from './customer-profile-overview'
@@ -46,6 +47,30 @@ export function CustomerProfileModalContent({ data, defaultTab, heroAddress, her
             collects above the content — no dead space below the tabs. */}
         <div className="dark relative isolate flex flex-col overflow-hidden shadow-lg sm:min-h-72">
           <CustomerAddressHero address={heroAddress} key={heroAddress} view={heroView} />
+
+          {/* Mobile-only action trigger, pinned top-left of the hero — mirrors
+              the base modal's close-button chrome exactly so the two read as a
+              symmetric pair: same top anchor (safe-area-aware), same -mt-1/-8px
+              corner offsets, just flipped to the left edge.
+              NOTE: `top` is an inline style, not a Tailwind `top-[max(env(…))]`
+              arbitrary class. That class does NOT compile to a rule here (verified
+              in-browser: it resolves to `top:0`, dropping the chip 16px too high
+              and clipping it above the frame). base-modal only gets away with the
+              same expression because it ships it as a pre-generated variant class.
+              Inline style bypasses the JIT and is guaranteed to apply.
+              Desktop renders its icon cluster in the modal header row instead —
+              see CustomerHeroActions variants. */}
+          <div
+            className="absolute left-4 z-30 -ml-2 -mt-1 sm:hidden"
+            style={{ top: 'max(env(safe-area-inset-top), 1rem)' }}
+          >
+            <CustomerHeroActions
+              customer={data.customer}
+              meetings={data.meetings}
+              onMutationSuccess={onMutationSuccess}
+              variant="mobile"
+            />
+          </div>
 
           {/* Content fills the hero band and stacks from the bottom.
               - px/pb are the "base" padding, matched on all three sides

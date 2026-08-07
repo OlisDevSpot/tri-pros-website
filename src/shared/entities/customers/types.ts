@@ -59,6 +59,7 @@ export type CustomerFormValues = {
 
 export interface CustomerProfileData {
   customer: CustomerFullView
+  hasRecording: boolean
   meetings: CustomerProfileMeeting[]
   allProposals: CustomerProfileProposal[]
   notes: CustomerNoteWithAuthor[]

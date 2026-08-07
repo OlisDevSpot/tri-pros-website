@@ -19,7 +19,7 @@ export function CustomerProfileOverview({ data, editForm, onOpenMeeting }: Props
   // (where the agent logs the call) leads, qualification detail supports.
   return (
     <div className="flex flex-col gap-4 md:min-h-0 md:flex-1">
-      <CustomerRecordingPlayer customerId={data.customer.id} />
+      {data.hasRecording && <CustomerRecordingPlayer customerId={data.customer.id} />}
       <div className="flex flex-col gap-4 md:min-h-0 md:flex-1 md:flex-row">
         <div className="md:min-h-0 md:w-3/5 md:overflow-y-auto md:pr-1 md:[scrollbar-gutter:stable]">
           <CustomerTimeline data={data} onOpenMeeting={onOpenMeeting} />
