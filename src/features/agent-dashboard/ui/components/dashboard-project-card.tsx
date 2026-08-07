@@ -47,8 +47,8 @@ export function DashboardProjectCard({ row, className }: DashboardProjectCardPro
         <div className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-foreground">{row.title}</span>
           {row.address && (
-            <span className="mt-0.5 flex items-center gap-1 text-[10px] text-muted-foreground">
-              <MapPinIcon className="size-2.5 shrink-0" />
+            <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPinIcon className="size-3 shrink-0" />
               <span className="truncate">{row.address}</span>
             </span>
           )}
