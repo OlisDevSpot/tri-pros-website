@@ -89,6 +89,7 @@ export function ProposalMediaManager({ proposalId }: Props) {
               <OptimizedImage
                 file={row}
                 alt={item.name}
+                fill
                 sizes="(max-width: 768px) 45vw, 220px"
                 onRetryOptimization={id => media.retryOptimization.mutate({ id })}
               />
