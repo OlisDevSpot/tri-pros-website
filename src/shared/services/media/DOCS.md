@@ -110,9 +110,10 @@ construction — it never imports a specific table.
 
 ### Optimization recovery lever {#optimize-recovery-lever}
 
-All optimization operations route through the `mediaService` facade — there are
-three coherent entrypoints on one object, and no router or script touches the
-DAL setters or `optimizeMediaJob` directly:
+All optimization operations for **project and proposal media** route through the
+`mediaService` facade — three coherent entrypoints on one object; the project/proposal
+media routers and the backfill script never touch the DAL setters or `optimizeMediaJob`
+directly:
 
 - `createRecord(store, values)` — auto-dispatches the optimize job for a new
   image/pdf upload (async, via QStash).
@@ -127,6 +128,8 @@ DAL setters or `optimizeMediaJob` directly:
 The async paths (`createRecord`, `retryOptimization`) rely on a QStash-reachable
 callback URL; in plain `pnpm dev` (no tunnel) the callback targets `localhost`
 and the row stays `pending`. `optimizeNow` is the dev/operator-safe path.
+
+> **Known exception:** `projects.router/google-drive.router.ts` still inserts + dispatches optimization directly rather than via `createRecord` — a pre-existing bypass tracked as a follow-up, not covered by the guarantee above.
 
 ### shared-ui-is-dependency-injected
 
