@@ -15,9 +15,8 @@
 
 import type { AppAbility } from '../types'
 import type { BetterAuthSession } from '@/shared/domains/auth/server'
-import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { auth } from '@/shared/domains/auth/server'
+import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
 import { defineAbilitiesFor } from '../abilities'
 
 export type DashboardAuthState
@@ -25,8 +24,7 @@ export type DashboardAuthState
     | { status: 'authenticated', session: BetterAuthSession, ability: AppAbility }
 
 export async function protectDashboardPage(): Promise<DashboardAuthState> {
-  const reqHeaders = await headers()
-  const session = await auth.api.getSession({ headers: reqHeaders })
+  const session = await getCachedSession()
 
   // State 1: No session — could be a logged-out agent. Don't redirect,
   // let the UI show a sign-in prompt.
