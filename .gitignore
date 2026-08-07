@@ -69,3 +69,7 @@ public/funnels/*/ads/videos/
 # Remotion ad-video package — LOCAL ONLY, never committed or deployed (ruling 2026-07-15).
 # It produces Meta ad artifacts, not app code; it lives in-repo purely for agent context.
 /video/
+
+# impeccable skill local cache (config/design snapshot/hook cache) — tool scratch, not source.
+# DESIGN.md / PRODUCT.md (its committed source docs) live at repo root and ARE tracked.
+/.impeccable/
