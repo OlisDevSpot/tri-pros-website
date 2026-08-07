@@ -400,7 +400,7 @@ Expected: clean.
 
 - [ ] **Step 3: Verify the dry-run executes and reports (against dev)**
 
-Run: `pnpm tsx scripts/backfill-proposal-media-optimization.ts --dry-run`
+Run: `pnpm backfill:proposal-media:dev --dry-run`
 Expected: prints `DRY RUN`, the dev DB target/host, a `stuck rows: <n>` line, and a per-status breakdown, then exits 0 **without mutating**. This is the diagnostic that reveals whether a real backlog exists. (Zero stuck rows is a valid, passing result — it exits 0 with `stuck rows: 0`.)
 
 - [ ] **Step 4: Commit**
@@ -412,7 +412,7 @@ git commit -m "feat(scripts): backfill re-optimizes stuck proposal media via fac
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```
 
-> **Operator note (NOT part of the implementation gate):** the live backfill is run by the operator, not the implementer. Live run against dev: `pnpm tsx scripts/backfill-proposal-media-optimization.ts`. Against prod (only when explicitly intended): `DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-proposal-media-optimization.ts`. The implementer stops at the passing `--dry-run`.
+> **Operator note (NOT part of the implementation gate):** the live backfill is run by the operator, not the implementer. Live run against dev: `pnpm backfill:proposal-media:dev`. Against prod (only when explicitly intended): `pnpm backfill:proposal-media` (the prod script already carries `DRIZZLE_TARGET=prod`, no manual env prefix needed). The implementer stops at the passing `--dry-run`.
 
 ---
 

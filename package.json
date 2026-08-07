@@ -31,6 +31,8 @@
     "backfill:trades:dev": "tsx scripts/backfill-interested-trades-raw.ts",
     "backfill:phones": "DRIZZLE_TARGET=prod tsx scripts/normalize-customer-phones.ts",
     "backfill:phones:dev": "tsx scripts/normalize-customer-phones.ts",
+    "backfill:proposal-media": "DRIZZLE_TARGET=prod NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/backfill-proposal-media-optimization.ts",
+    "backfill:proposal-media:dev": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/backfill-proposal-media-optimization.ts",
     "seed:bina-contacts": "DRIZZLE_TARGET=prod tsx scripts/seed-bina-contacts.ts",
     "seed:bina-contacts:dev": "tsx scripts/seed-bina-contacts.ts",
     "verify:ct-note": "tsx scripts/verify-ct-note.ts",
