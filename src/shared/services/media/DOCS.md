@@ -108,6 +108,26 @@ construction — it never imports a specific table.
 **Reference impl**: `optimize-media.ts`, `optimization-target.ts`, `services/providers/upstash/jobs/optimize-media.ts`
 **Enforced by**: convention
 
+### Optimization recovery lever {#optimize-recovery-lever}
+
+All optimization operations route through the `mediaService` facade — there are
+three coherent entrypoints on one object, and no router or script touches the
+DAL setters or `optimizeMediaJob` directly:
+
+- `createRecord(store, values)` — auto-dispatches the optimize job for a new
+  image/pdf upload (async, via QStash).
+- `retryOptimization(store, mediaId)` — resets the row to `pending` (via the
+  `resetMediaOptimizationStatus` DAL setter) and re-dispatches the job. Backs the
+  interactive **Retry** button on both project and proposal media managers.
+- `optimizeNow(store, mediaId)` — runs `optimizeMediaFile` **synchronously**,
+  in-process, with no QStash callback. Used by the operator backfill
+  (`scripts/backfill-proposal-media-optimization.ts`) and dev, where a QStash
+  callback to `localhost` cannot be delivered.
+
+The async paths (`createRecord`, `retryOptimization`) rely on a QStash-reachable
+callback URL; in plain `pnpm dev` (no tunnel) the callback targets `localhost`
+and the row stays `pending`. `optimizeNow` is the dev/operator-safe path.
+
 ### shared-ui-is-dependency-injected
 
 `src/shared/components/media/*` (`MediaManager` + `MediaCard`, `MediaReorderGrid`,
