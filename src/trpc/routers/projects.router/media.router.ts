@@ -5,13 +5,11 @@ import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
 import { insertMediaFilesSchema, mediaFiles, meetings, proposalMediaFiles, proposals } from '@/shared/db/schema'
-import { resetOptimizationStatus } from '@/shared/entities/media-files/dal/server/queries'
 import { deriveOriginalMediaUrl, getOptimizedSrc } from '@/shared/lib/get-optimized-urls'
 import { mediaService } from '@/shared/services/media/media.service'
 import { projectMediaStore } from '@/shared/services/media/stores'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
-import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const mediaRouter = createTRPCRouter({
@@ -44,8 +42,7 @@ export const mediaRouter = createTRPCRouter({
   retryOptimization: agentProcedure
     .input(z.object({ mediaFileId: z.number() }))
     .mutation(async ({ input }) => {
-      await resetOptimizationStatus(input.mediaFileId)
-      void optimizeMediaJob.dispatch({ ownerKind: 'project', mediaId: input.mediaFileId })
+      await mediaService.retryOptimization(projectMediaStore, input.mediaFileId)
       return { success: true }
     }),
 
