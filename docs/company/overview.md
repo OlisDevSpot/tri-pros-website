@@ -58,7 +58,7 @@ Lead Gen (telemarketing + social)
   → Appointment Set
     → In-Home Meeting (agent visits)
       → Proposal Created & Sent
-        → Signed Contract (via DocuSign)
+        → Signed Contract (via Zoho Sign)
           → Project Delivered
 ```
 
