@@ -12,5 +12,5 @@ export function PwaSplashScreen() {
   }, [])
 
   const visible = useSplashVisibility(isStandalone)
-  return <SplashOverlay visible={visible} motionKey="pwa-splash" />
+  return <SplashOverlay visible={visible} motionKey="pwa-splash" backgroundColor="var(--launch-canvas)" />
 }
