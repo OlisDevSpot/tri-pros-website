@@ -129,7 +129,10 @@ The async paths (`createRecord`, `retryOptimization`) rely on a QStash-reachable
 callback URL; in plain `pnpm dev` (no tunnel) the callback targets `localhost`
 and the row stays `pending`. `optimizeNow` is the dev/operator-safe path.
 
-> **Known exception:** `projects.router/google-drive.router.ts` still inserts + dispatches optimization directly rather than via `createRecord` — a pre-existing bypass tracked as a follow-up, not covered by the guarantee above.
+Every project-media ingress goes through `createRecord` — including the
+Google-Drive import path (`projects.router/google-drive.router.ts`), which
+downloads the Drive object, uploads it to R2, then persists + dispatches via
+`mediaService.createRecord(projectMediaStore, …)` like any other upload.
 
 ### shared-ui-is-dependency-injected
 

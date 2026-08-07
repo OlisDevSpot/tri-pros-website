@@ -4,14 +4,13 @@ import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { db } from '@/shared/db'
-import { account, mediaFiles } from '@/shared/db/schema'
+import { account } from '@/shared/db/schema'
+import { mediaService } from '@/shared/services/media/media.service'
+import { projectMediaStore } from '@/shared/services/media/stores'
 import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
 import { r2Client } from '@/shared/services/providers/r2/client'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
-import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
+import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
 import { agentProcedure, createTRPCRouter } from '../../init'
-
-const PORTFOLIO_BUCKET = R2_BUCKETS.media
 
 export const googleDriveRouter = createTRPCRouter({
   getAccessToken: agentProcedure
@@ -101,30 +100,23 @@ export const googleDriveRouter = createTRPCRouter({
 
       const ext = input.name.includes('.') ? `.${input.name.split('.').pop()}` : ''
       const fileUuid = crypto.randomUUID()
-      const pathKey = `projects/${input.projectId}/${input.phase}/${fileUuid}${ext}`
-      const publicUrl = `${R2_PUBLIC_DOMAINS[PORTFOLIO_BUCKET] ?? ''}/${pathKey}`
+      const pathKey = projectMediaStore.buildPathKey(input.projectId, fileUuid, ext, { phase: input.phase })
+      const publicUrl = `${R2_PUBLIC_DOMAINS[projectMediaStore.bucket] ?? ''}/${pathKey}`
 
       const buffer = Buffer.from(await driveResponse.arrayBuffer())
-      await r2Client.putObject(PORTFOLIO_BUCKET, pathKey, buffer, input.mimeType)
+      await r2Client.putObject(projectMediaStore.bucket, pathKey, buffer, input.mimeType)
 
-      const [created] = await db
-        .insert(mediaFiles)
-        .values({
-          name: input.name.replace(/\.[^/.]+$/, ''),
-          url: publicUrl,
-          pathKey,
-          bucket: PORTFOLIO_BUCKET,
-          mimeType: input.mimeType,
-          fileExtension: ext,
-          phase: input.phase,
-          projectId: input.projectId,
-        })
-        .returning()
-
-      if (input.mimeType.startsWith('image/')) {
-        void optimizeMediaJob.dispatch({ ownerKind: 'project', mediaId: created.id })
-      }
-
-      return created
+      // Persist + dispatch optimization through the media facade — same path as a
+      // regular project-media upload (see projects.router/media.router.ts create).
+      return mediaService.createRecord(projectMediaStore, {
+        name: input.name.replace(/\.[^/.]+$/, ''),
+        url: publicUrl,
+        pathKey,
+        bucket: projectMediaStore.bucket,
+        mimeType: input.mimeType,
+        fileExtension: ext,
+        phase: input.phase,
+        projectId: input.projectId,
+      })
     }),
 })
