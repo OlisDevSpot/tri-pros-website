@@ -30,7 +30,7 @@ const SHELL_URL = '/app-shell.html'
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) =>
-      cache.add(new Request(SHELL_URL, { cache: 'reload' })).catch(() => {}),
+      cache.add(new Request(SHELL_URL, { cache: 'reload' })),
     ),
   )
 })

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-const SPLASH_SESSION_KEY = 'pwa-splash-shown'
+const SPLASH_SESSION_KEY = 'app-splash-shown'
 // Minimum on-screen time so the splash never flickers; max cap so a slow
 // launch can never trap the user behind it. Dismissal fires at the later of
 // (first paint after hydration) and MIN, or at MAX, whichever comes first.
