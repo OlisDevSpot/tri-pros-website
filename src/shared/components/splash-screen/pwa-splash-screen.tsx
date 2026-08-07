@@ -1,16 +1,24 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { SplashOverlay } from '@/shared/components/splash-screen/splash-overlay'
-import { useSplashVisibility } from '@/shared/components/splash-screen/use-splash-visibility'
+import { PwaSplashOverlay } from '@/shared/components/splash-screen/pwa-splash-overlay'
+import { useSplashDismissed } from '@/shared/components/splash-screen/use-splash-dismissed'
 
 export function PwaSplashScreen() {
-  const [isStandalone, setIsStandalone] = useState(false)
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-    setIsStandalone(window.matchMedia('(display-mode: standalone)').matches)
-  }, [])
+  const dismissed = useSplashDismissed()
+  const [removed, setRemoved] = useState(false)
 
-  const visible = useSplashVisibility(isStandalone)
-  return <SplashOverlay visible={visible} motionKey="pwa-splash" />
+  useEffect(() => {
+    if (!dismissed) {
+      return
+    }
+    // Unmount after the 300ms opacity fade (see .pwa-splash-overlay CSS).
+    const t = window.setTimeout(() => setRemoved(true), 350)
+    return () => window.clearTimeout(t)
+  }, [dismissed])
+
+  if (removed) {
+    return null
+  }
+  return <PwaSplashOverlay hidden={dismissed} />
 }

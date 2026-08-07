@@ -675,6 +675,38 @@
   }
 }
 
+/* Installed-PWA launch: dark canvas from the first frame so the app-shell
+   → dashboard handoff never flashes white. Scoped to standalone so browser
+   theme resolution (and its FOUC-free behavior) is untouched. */
+@media (display-mode: standalone) {
+  html {
+    background-color: #09090b;
+  }
+}
+
+/* Splash overlay: present in the initial HTML, but only shown in standalone
+   (so it covers from frame 1 on PWA launch and never appears in a browser). */
+.pwa-splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background-color: #09090b;
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+@media (display-mode: standalone) {
+  .pwa-splash-overlay {
+    display: flex;
+  }
+}
+.pwa-splash-overlay[data-hidden='true'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ── Dashboard sidebar nav hover ───────────────────────────────── */
 /* Soft tint on hover — no border, no shadow, just a gentle wash  */
 /* that hints at interactivity without mimicking the active state. */
