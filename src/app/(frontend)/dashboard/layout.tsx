@@ -10,11 +10,6 @@ import { PwaInstallPrompt } from '@/shared/components/pwa-install-prompt'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
 import { getCachedSession } from '@/shared/domains/auth/lib/get-cached-session'
 
-// Colocate the dashboard's server render with the Neon DB (aws-us-west-2).
-// Vercel's default region is iad1 (us-east-1); every session/query round-trip
-// would otherwise cross the country. pdx1 = Vercel's us-west-2 (Oregon).
-export const preferredRegion = 'pdx1'
-
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [session, cookieStore] = await Promise.all([getCachedSession(), cookies()])
 
