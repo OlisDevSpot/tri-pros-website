@@ -6,13 +6,6 @@
 :root,
 .funnel-light {
   color-scheme: light;
-
-  /* Fixed installed-PWA launch canvas — matches the dashboard .dark
-     --background (below) so the cold-start reveal pre-paint → splash →
-     dashboard has no color seam. Theme-independent on purpose (never
-     overridden by .dark/.theme-marketing); a literal is required because the
-     pre-hydration <html> paint can't read a theme-scoped token. */
-  --launch-canvas: oklch(0.2433 0.0247 263.9506);
   --background: oklch(0.9846 0.0017 247.8389);
   --foreground: oklch(0.2781 0.0296 256.848);
   --card: oklch(1 0 0);
@@ -676,15 +669,6 @@
 /* Sonner sets --mobile-offset-top / --offset-top as inline styles, */
 /* so !important is required to push toasts below the status bar. */
 @media (display-mode: standalone) {
-  /* Installed-PWA cold start: paint the dark launch canvas immediately so the
-     pre-hydration window is slate (not white) and matches the splash + the
-     dashboard's .dark --background. Standalone-only, so light marketing/funnel
-     pages (browser) keep their FOUC-free light canvas. next-themes still adds
-     .dark client-side; this only covers the pre-hydration paint. */
-  html {
-    background-color: var(--launch-canvas);
-  }
-
   [data-sonner-toaster][data-y-position='top'] {
     --mobile-offset-top: calc(16px + env(safe-area-inset-top)) !important;
     --offset-top: calc(24px + env(safe-area-inset-top)) !important;
