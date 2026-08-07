@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 
 import { awaitingProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { DashboardModule } from '@/features/agent-dashboard/ui/components/dashboard-module'
 import { DashboardProposalCard } from '@/features/agent-dashboard/ui/components/dashboard-proposal-card'
 import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
 import { Skeleton } from '@/shared/components/ui/skeleton'
@@ -23,17 +24,17 @@ export function DashboardProposals() {
   const { data, isLoading } = useQuery(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="font-sans text-lg font-semibold text-foreground">Awaiting signature</h2>
+    <DashboardModule
+      title="Awaiting signature"
+      action={(
         <Link
           href={ROOTS.dashboard.proposals.root()}
           className="-mr-2 -my-2 inline-flex min-h-11 shrink-0 items-center rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors duration-200 hover:bg-accent/50 hover:text-primary"
         >
           See all →
         </Link>
-      </div>
-
+      )}
+    >
       {isLoading
         ? <DashboardProposalsSkeleton />
         : (
@@ -48,7 +49,7 @@ export function DashboardProposals() {
               variant="flush"
             />
           )}
-    </div>
+    </DashboardModule>
   )
 }
 
