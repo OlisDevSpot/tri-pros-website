@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Tri Pros Remodeling',
     short_name: 'TPR',
-    start_url: '/dashboard?source=pwa',
+    start_url: '/dashboard',
     // Scope MUST be "/" for declarative web push deep links to open the
     // standalone PWA. Without this, scope defaults to the directory of
     // start_url (/dashboard/), and pushes with `navigate: "/customers/123"`
