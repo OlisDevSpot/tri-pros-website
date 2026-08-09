@@ -3,6 +3,7 @@
 import type { ProposalListRow } from '@/shared/entities/proposals/dal/server/queries'
 
 import { mapProposalRowToCardData } from '@/features/agent-dashboard/lib/map-proposal-row-to-card-data'
+import { DashboardProposalCustomerLink } from '@/features/agent-dashboard/ui/components/dashboard-proposal-customer-link'
 import { ProposalOverviewCard } from '@/shared/entities/proposals/components/overview-card'
 import { cn } from '@/shared/lib/utils'
 
@@ -16,10 +17,10 @@ interface DashboardProposalCardProps {
 /**
  * Dense `ProposalOverviewCard` composition for the dashboard's proposal
  * rosters — the row leads with the label + compact actions up top (no status
- * badge; the section header names the state), trade/time-since/value/
- * view-count on a second line. Matches `DashboardMeetingCard`'s row
- * treatment (`rounded-lg border bg-card p-2.5`) so the dashboard's list
- * modules read as one visual family.
+ * badge; the section header names the state); the second line leads with the
+ * clickable customer, then trade/time-since/value/view-count. Matches
+ * `DashboardMeetingCard`'s row treatment (`rounded-lg border bg-card p-2.5`)
+ * so the dashboard's list modules read as one visual family.
  */
 export function DashboardProposalCard({ row, timeSince = 'contractSentAt', className }: DashboardProposalCardProps) {
   const proposal = mapProposalRowToCardData(row, timeSince)
@@ -34,7 +35,8 @@ export function DashboardProposalCard({ row, timeSince = 'contractSentAt', class
         <ProposalOverviewCard.Actions mode="compact" className="shrink-0" />
       </ProposalOverviewCard.Header>
 
-      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <DashboardProposalCustomerLink customerId={row.customerId} customerName={row.customerName} meetingId={row.meetingId} />
         <ProposalOverviewCard.Trade />
         <ProposalOverviewCard.CreatedAt format="relative" />
         <ProposalOverviewCard.Value className="text-sm" />
