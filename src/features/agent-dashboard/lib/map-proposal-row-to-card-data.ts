@@ -11,7 +11,10 @@ import type { ProposalListRow } from '@/shared/entities/proposals/dal/server/que
  * since the row already ships the full `projectJSON`. `value` is the same
  * `finalTcpCents / 100` rollup used everywhere else.
  */
-export function mapProposalRowToCardData(row: ProposalListRow): ProposalOverviewCardData {
+export function mapProposalRowToCardData(
+  row: ProposalListRow,
+  timeSince: 'contractSentAt' | 'sentAt' = 'contractSentAt',
+): ProposalOverviewCardData {
   const sow = row.projectJSON.data.sow
 
   const sowSummary = sow
@@ -26,14 +29,12 @@ export function mapProposalRowToCardData(row: ProposalListRow): ProposalOverview
     token: row.token,
     status: row.status,
     label: row.label,
-    // `contractSentAt`, not `sentAt` — this roster is filtered by
-    // `awaitingSignature` (contract out, unsigned/undeclined; see
-    // `awaitingProposalsInput`), so "time since sent" here means since the
-    // *contract* went out. The proposal and contract lifecycles are
-    // independent (see entities/proposals/DOCS.md#proposal-contract-independence),
-    // so `sentAt` (proposal review link shared) can predate `contractSentAt`
-    // by days or weeks and would understate urgency if used instead.
-    createdAt: row.contractSentAt ?? row.createdAt,
+    // The card's "time since" is section-specific: the Out-for-signature roster
+    // measures since the *contract envelope* went out (`contractSentAt`), while
+    // the Sent — awaiting response roster measures since the *proposal* was sent
+    // (`sentAt`). The two lifecycles are independent
+    // (see entities/proposals/DOCS.md#proposal-contract-independence).
+    createdAt: (timeSince === 'sentAt' ? row.sentAt : row.contractSentAt) ?? row.createdAt,
     sentAt: row.sentAt,
     trade: sow[0]?.trade.label ?? null,
     value: (row.finalTcpCents ?? 0) / 100,
