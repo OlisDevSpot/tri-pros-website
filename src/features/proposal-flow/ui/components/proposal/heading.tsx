@@ -10,6 +10,7 @@ import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { companyInfo } from '@/shared/constants/company'
 import { useAbility } from '@/shared/domains/permissions/hooks'
+import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { useModalStore } from '@/shared/hooks/use-modal-store'
 import { formatStringAsDate } from '@/shared/lib/formatters'
 
@@ -46,7 +47,11 @@ export function Heading() {
     setModal({
       accessor: 'InternalFinancials',
       Component: InternalFinancialsModal,
-      props: { proposalData: proposal.data },
+      props: {
+        funding: toFundingInputs(proposal.data),
+        sow: proposal.data.projectJSON.data.sow,
+        priceDisplayMode: proposal.data.priceDisplayMode,
+      },
     })
     openModal()
   }

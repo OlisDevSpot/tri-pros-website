@@ -15,6 +15,7 @@ import { Input } from '@/shared/components/ui/input'
 import { Label } from '@/shared/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
+import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { getLoanValues } from '@/shared/lib/loan-calculations'
 import { cn } from '@/shared/lib/utils'
 
@@ -82,6 +83,8 @@ export function Funding({ onPickFinancingOption }: Props) {
     return null
   }
 
+  const funding = toFundingInputs(proposalData)
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -95,7 +98,11 @@ export function Funding({ onPickFinancingOption }: Props) {
           <CardDescription>Home improvement, at your own terms</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
-          <PricingBreakdown proposalData={proposalData} />
+          <PricingBreakdown
+            funding={funding}
+            sow={proposalData.projectJSON.data.sow}
+            priceDisplayMode={proposalData.priceDisplayMode}
+          />
           <Tabs defaultValue="cash" className="space-y-8">
             <TabsList className="mx-auto md:mx-0">
               <TabsTrigger value="cash">Cash / cash + finance</TabsTrigger>

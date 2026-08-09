@@ -1,6 +1,8 @@
 'use client'
 
-import type { InsertProposalSchema } from '@/shared/db/schema'
+import type { PriceDisplayMode } from '@/shared/constants/enums'
+import type { FundingData } from '@/shared/entities/proposals/schemas'
+import type { SOW } from '@/shared/entities/proposals/types'
 import { ChevronsUpDownIcon, LockIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/shared/components/ui/button'
@@ -12,15 +14,16 @@ import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
-  proposalData: InsertProposalSchema
+  funding: FundingData
+  sow: SOW[]
+  priceDisplayMode: PriceDisplayMode
 }
 
-export function InternalCalculationBlock({ proposalData }: Props) {
+export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Props) {
   const [expanded, setExpanded] = useState(false)
-  const { pricingMode } = proposalData.formMetaJSON
-  const sow = proposalData.projectJSON.data.sow
+  const pricingMode = priceDisplayMode
   const financials = computeProposalFinancials({
-    funding: proposalData.fundingJSON.data,
+    funding,
     sow,
     pricingMode,
   })

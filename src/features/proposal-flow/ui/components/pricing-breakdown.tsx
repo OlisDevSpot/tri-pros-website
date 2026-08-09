@@ -1,6 +1,8 @@
 'use client'
 
-import type { InsertProposalSchema } from '@/shared/db/schema'
+import type { PriceDisplayMode } from '@/shared/constants/enums'
+import type { FundingData } from '@/shared/entities/proposals/schemas'
+import type { SOW } from '@/shared/entities/proposals/types'
 import { CheckIcon } from 'lucide-react'
 import { ExpandableLineItems } from '@/shared/components/expandable-line-items'
 import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
@@ -9,14 +11,16 @@ import { cn } from '@/shared/lib/utils'
 import { ExpirationBadge } from './expiration-badge'
 
 interface Props {
-  proposalData: InsertProposalSchema
+  funding: FundingData
+  sow: SOW[]
+  priceDisplayMode: PriceDisplayMode
 }
 
-export function PricingBreakdown({ proposalData }: Props) {
+export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
   const breakdown = buildPricingBreakdown({
-    funding: proposalData.fundingJSON.data,
-    sow: proposalData.projectJSON.data.sow,
-    pricingMode: proposalData.formMetaJSON.pricingMode,
+    funding,
+    sow,
+    pricingMode: priceDisplayMode,
   })
 
   const isBreakdown = breakdown.pricingMode === 'breakdown'

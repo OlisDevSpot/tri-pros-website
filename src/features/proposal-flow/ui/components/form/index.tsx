@@ -8,7 +8,6 @@ import { parseAsStringLiteral, useQueryState } from 'nuqs'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { toast } from 'sonner'
-import { formValuesToProposal } from '@/features/proposal-flow/lib/converters'
 import { baseDefaultValues } from '@/features/proposal-flow/schemas/form-schema'
 import { InternalFinancialsModal } from '@/features/proposal-flow/ui/components/internal-financials-modal'
 import { Button } from '@/shared/components/ui/button'
@@ -76,10 +75,15 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
   const { open: openModal, setModal } = useModalStore()
 
   function handleInternalFinancials() {
+    const v = form.getValues()
     setModal({
       accessor: 'InternalFinancials',
       Component: InternalFinancialsModal,
-      props: { proposalData: formValuesToProposal(form.getValues()) },
+      props: {
+        funding: v.funding.data,
+        sow: v.project.data.sow,
+        priceDisplayMode: v.meta.pricingMode,
+      },
     })
     openModal()
   }
