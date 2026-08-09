@@ -30,3 +30,6 @@ export type ViewSource = (typeof viewSources)[number]
 
 export const contractEvents = ['viewed', 'completed', 'declined'] as const
 export type ContractEvent = (typeof contractEvents)[number]
+
+export const priceDisplayModes = ['total', 'breakdown'] as const
+export type PriceDisplayMode = (typeof priceDisplayModes)[number]

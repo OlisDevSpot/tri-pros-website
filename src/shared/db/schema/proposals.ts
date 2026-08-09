@@ -6,7 +6,7 @@ import { bigint, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } f
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
 import z from 'zod'
 
-import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
+import { envelopeDocumentIds, priceDisplayModes, proposalKinds, proposalStatuses } from '@/shared/constants/enums'
 import { fundingSectionSchema, projectSectionSchema } from '@/shared/entities/proposals/schemas'
 import { createdAt, id, label, updatedAt } from '../lib/schema-helpers'
 import { user } from './auth'
@@ -39,6 +39,22 @@ export const proposals = pgTable('proposals', {
   formMetaJSON: jsonb('form_meta_JSON').$type<FormMetaSection>().notNull(),
   projectJSON: jsonb('project_JSON').$type<ProjectSection>().notNull(),
   fundingJSON: jsonb('funding_JSON').$type<FundingSection>().notNull(),
+
+  // ── Wave 3 (epic #256): fundingJSON/formMetaJSON scalars promoted to
+  // columns. Money is integer cents; nullable only for the additive/backfill
+  // window (Zod requires values on write). fundingJSON/formMetaJSON freeze at
+  // the W3 cutover — see the deprecation ledger "Waves 3 & 4" section.
+  startingTcpCents: bigint('starting_tcp_cents', { mode: 'number' }),
+  depositAmountCents: bigint('deposit_amount_cents', { mode: 'number' }),
+  cashInDealCents: bigint('cash_in_deal_cents', { mode: 'number' }),
+  // Dies post-waves (pricing-editor ruling: misc = just another SOW section).
+  miscPriceCents: bigint('misc_price_cents', { mode: 'number' }),
+  // Named for the ratified end-state vocabulary (pricingMode → priceDisplayMode,
+  // 2026-07-24 ruling). Until the pricing editor lands it still gates authoring
+  // behavior (breakdown-mode validation + client-side startingTcp sync).
+  priceDisplayMode: text('price_display_mode', { enum: priceDisplayModes }).notNull().default('total'),
+  // see ../entities/proposals/DOCS.md#agreement-context-as-coherent-unit
+  envelopeDocumentIds: text('envelope_document_ids').array(),
 
   // Stage-2 rollup cache (Addendum A.2): recomputed by the SINGLE choke point
   // recomputeProposalFinancials after every financial mutation. Idempotent +
@@ -100,6 +116,11 @@ export type Proposal = z.infer<typeof selectProposalSchema>
 export const insertProposalSchema = createInsertSchema(proposals, {
   projectJSON: projectSectionSchema,
   fundingJSON: fundingSectionSchema,
+  startingTcpCents: z.number().int().min(0).nullish(),
+  depositAmountCents: z.number().int().min(0).nullish(),
+  cashInDealCents: z.number().int().min(0).nullish(),
+  miscPriceCents: z.number().int().min(0).nullish(),
+  envelopeDocumentIds: z.array(z.enum(envelopeDocumentIds)).nullish(),
 }).omit({
   id: true,
   updatedAt: true,
