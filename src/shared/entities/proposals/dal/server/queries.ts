@@ -75,6 +75,7 @@ export const proposalListFiltersSchema = {
   customerId: z.string().uuid().optional(),
   meetingId: z.string().uuid().optional(),
   awaitingSignature: z.boolean().optional(),
+  sentNoContract: z.boolean().optional(),
 }
 
 export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
@@ -231,6 +232,17 @@ export async function listProposals(
               isNotNull(proposals.contractSentAt),
               isNull(proposals.contractSignedAt),
               isNull(proposals.contractDeclinedAt),
+            )
+          : undefined,
+      // Proposal sent (status='sent') with no contract envelope yet — the
+      // `proposal_sent` pipeline stage; user-facing "Sent — awaiting response".
+      // Distinct from `awaitingSignature` (contract out): the two partition the
+      // active proposals with no overlap.
+      sentNoContract: (v: boolean) =>
+        v
+          ? and(
+              eq(proposals.status, 'sent'),
+              isNull(proposals.contractSentAt),
             )
           : undefined,
     })
