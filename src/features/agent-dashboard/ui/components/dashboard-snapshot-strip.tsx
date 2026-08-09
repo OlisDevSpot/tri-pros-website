@@ -7,7 +7,7 @@ import { useTRPC } from '@/trpc/helpers'
 
 /**
  * Slim, non-sticky ribbon of 3 jump-links at the top of the dashboard:
- * meetings today · awaiting signature · open projects. Counts are read
+ * meetings today · out for signature · open projects. Counts are read
  * from the same query inputs the modules below use (dedupes against the
  * server prefetch in `dashboard/page.tsx`), so this never fires its own
  * count query. See the spec at
