@@ -14,11 +14,11 @@ what each module shows. See [[feedback-data-defaults-from-lifecycle]].
 
 | Module | Correct default | Notes |
 |---|---|---|
-| **Awaiting signature** | **Union:** proposal `status = 'sent'` **OR** contract out (`contractSentAt` set AND `contractSignedAt`/`contractDeclinedAt` null) | Card must display the state that qualified the row, not a bare proposal-status badge. |
+| **Proposals** | **Two non-overlapping sections** (superseded the union — see `2026-08-08-dashboard-proposals-sections.md`): **Out for signature** = contract out (`contractSentAt` set AND `contractSignedAt`/`contractDeclinedAt` null) · **Sent — awaiting response** = `status = 'sent'` AND `contractSentAt` null | The section header names the state, so rows carry **no** per-row status badge. |
 | **Open projects** | Derived project status `= active`, where status is **derived from `pipelineStage`**, not the `status` column | `status` column to be **eliminated**; null pipelineStage ⇒ sample ⇒ treat as closed. |
 | **Meetings** | Month calendar + day agenda (Plan 1b), meetings-only, excluding `cancelled` + `no_show` | Tabs replaced by a calendar; live-outcome filter folded into the month query. |
 | **Needs attention (Action Queue)** | **Removed from the dashboard UI for now** — stub with wrong math/filters | Rebuild tracked in **#282**; `ActionCenterSheet` stays reachable from nav but stubbed. |
-| **Snapshot strip** | Meetings today · Awaiting signature · Open projects | Drops the action-queue-derived "Follow-ups due" chip; no `getActionQueue` dependency. |
+| **Snapshot strip** | Meetings today · Out for signature · Open projects | Drops the action-queue-derived "Follow-ups due" chip; no `getActionQueue` dependency. The proposals chip counts the Out-for-signature section (contract out). |
 
 ## Plans (execute in order)
 
