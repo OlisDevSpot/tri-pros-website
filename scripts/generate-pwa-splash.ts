@@ -1,16 +1,21 @@
-import { mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 /**
- * Generates plain dark iOS startup images (Apple "splash screens") to kill the
- * white native launch surface on cold PWA launch. Each PNG is a solid
- * `#09090b` rectangle at one Apple portrait device's exact pixel dimensions —
- * no logo, no compositing. iOS matches startup images by exact device pixel
- * size (via the `media` query on each <link rel="apple-touch-startup-image">
- * entry) and falls back to white if none match, so we need one PNG per device.
+ * Generates iOS startup images (Apple "splash screens") for the installed PWA:
+ * the TPR logo centered on a solid `#09090b` canvas, one PNG per Apple portrait
+ * device at its exact pixel dimensions. iOS matches startup images by exact
+ * device pixel size (via the `media` query on each
+ * <link rel="apple-touch-startup-image">) and falls back to WHITE if none
+ * match, so we need one PNG per device.
  *
- * The app's real SVG splash animation (PwaSplashScreen) takes over once React
- * hydrates — these images only need to bridge the gap before that.
+ * This is the actual launch brand moment on iOS — a static logo, shown by the
+ * OS before the web view paints. The in-app `PwaLaunchScreen` cover continues
+ * the same logo-on-#09090b in the web view and fades out once ready, so the
+ * native → web hand-off is seamless (iOS itself can't fade the startup image).
+ *
+ * NOTE: iOS caches these at "Add to Home Screen" time — an already-installed
+ * app must be removed and re-added to pick up new images.
  *
  * Superseded `pwa-asset-generator`, which is broken in this environment.
  *
@@ -21,7 +26,14 @@ import sharp from 'sharp'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const OUT_DIR = resolve(ROOT, 'public/pwa/splash')
+const LOGO_PATH = resolve(ROOT, 'public/company/logo/logo-dark.svg')
 const BG_COLOR = '#09090b'
+// Logo width as a fraction of the device width — matches the .pwa-launch-logo
+// sizing (45vw) so the native startup image and the web cover show the mark at
+// the same size and position.
+const LOGO_WIDTH_RATIO = 0.45
+
+const logoSvg = readFileSync(LOGO_PATH)
 
 // Apple portrait device matrix: css width/height @ device pixel ratio.
 // pxW/pxH are declared explicitly (not derived) so a typo is caught by the
@@ -68,17 +80,23 @@ for (const device of DEVICES) {
 
   const filename = `apple-splash-${pxW}-${pxH}.png`
 
+  // Rasterize the logo to this device's target width, then center-composite it
+  // onto the dark canvas.
+  const logo = await sharp(logoSvg)
+    .resize({ width: Math.round(pxW * LOGO_WIDTH_RATIO) })
+    .png()
+    .toBuffer()
+
   await sharp({
     create: {
       width: pxW,
       height: pxH,
-      channels: 3,
+      channels: 4,
       background: BG_COLOR,
     },
   })
-    // Solid single-color image: an indexed palette compresses to a few
-    // hundred bytes vs. tens of KB for a naive truecolor PNG.
-    .png({ compressionLevel: 9, palette: true, colors: 2 })
+    .composite([{ input: logo, gravity: 'center' }])
+    .png({ compressionLevel: 9 })
     .toFile(resolve(OUT_DIR, filename))
 
   console.log(`Generated ${filename} (${pxW}x${pxH})`)
