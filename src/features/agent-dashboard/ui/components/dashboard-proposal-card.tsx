@@ -8,18 +8,21 @@ import { cn } from '@/shared/lib/utils'
 
 interface DashboardProposalCardProps {
   row: ProposalListRow
+  /** Which timestamp the row's "time since" reflects: the contract went out (default) or the proposal was sent. */
+  timeSince?: 'contractSentAt' | 'sentAt'
   className?: string
 }
 
 /**
- * Dense `ProposalOverviewCard` composition for the dashboard's
- * awaiting-signature roster — status icon + label + badge + compact actions
- * up top, trade/time-since-sent/value/view-count on a second line. Matches
- * `DashboardMeetingCard`'s row treatment (`rounded-lg border bg-card p-2.5`)
- * so the dashboard's list modules read as one visual family.
+ * Dense `ProposalOverviewCard` composition for the dashboard's proposal
+ * rosters — the row leads with the label + compact actions up top (no status
+ * badge; the section header names the state), trade/time-since/value/
+ * view-count on a second line. Matches `DashboardMeetingCard`'s row
+ * treatment (`rounded-lg border bg-card p-2.5`) so the dashboard's list
+ * modules read as one visual family.
  */
-export function DashboardProposalCard({ row, className }: DashboardProposalCardProps) {
-  const proposal = mapProposalRowToCardData(row)
+export function DashboardProposalCard({ row, timeSince = 'contractSentAt', className }: DashboardProposalCardProps) {
+  const proposal = mapProposalRowToCardData(row, timeSince)
 
   return (
     <ProposalOverviewCard
@@ -27,9 +30,7 @@ export function DashboardProposalCard({ row, className }: DashboardProposalCardP
       className={cn('rounded-lg border border-border bg-card p-2.5', className)}
     >
       <ProposalOverviewCard.Header className="min-w-0 gap-1.5">
-        <ProposalOverviewCard.StatusIcon size="md" />
         <ProposalOverviewCard.Label className="min-w-0 flex-1 truncate font-medium" />
-        <ProposalOverviewCard.StatusBadge className="shrink-0" />
         <ProposalOverviewCard.Actions mode="compact" className="shrink-0" />
       </ProposalOverviewCard.Header>
 
