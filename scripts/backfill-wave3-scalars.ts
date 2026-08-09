@@ -55,25 +55,31 @@ async function main() {
       priceDisplayMode: formMeta.data.pricingMode,
       envelopeDocumentIds: formMeta.data.envelopeDocumentIds ?? null,
     }
-    if (!dryRun) {
-      await db.update(proposals).set(target).where(eq(proposals.id, row.id))
-      written++
+    try {
+      if (!dryRun) {
+        await db.update(proposals).set(target).where(eq(proposals.id, row.id))
+        written++
+      }
+      // Parity: read back and field-diff against the blob-derived target.
+      const [back] = await db.select({
+        startingTcpCents: proposals.startingTcpCents,
+        depositAmountCents: proposals.depositAmountCents,
+        cashInDealCents: proposals.cashInDealCents,
+        miscPriceCents: proposals.miscPriceCents,
+        priceDisplayMode: proposals.priceDisplayMode,
+        envelopeDocumentIds: proposals.envelopeDocumentIds,
+      }).from(proposals).where(eq(proposals.id, row.id))
+      const source = dryRun ? row : back
+      for (const key of Object.keys(target) as (keyof typeof target)[]) {
+        const a = JSON.stringify(source?.[key] ?? null)
+        const b = JSON.stringify(target[key])
+        if (!dryRun && a !== b) failures.push(`${row.id}: parity ${key} column=${a} blob=${b}`)
+        if (dryRun && a !== b) console.log(`[dry-run] ${row.id}: would set ${key} ${a} → ${b}`)
+      }
     }
-    // Parity: read back and field-diff against the blob-derived target.
-    const [back] = await db.select({
-      startingTcpCents: proposals.startingTcpCents,
-      depositAmountCents: proposals.depositAmountCents,
-      cashInDealCents: proposals.cashInDealCents,
-      miscPriceCents: proposals.miscPriceCents,
-      priceDisplayMode: proposals.priceDisplayMode,
-      envelopeDocumentIds: proposals.envelopeDocumentIds,
-    }).from(proposals).where(eq(proposals.id, row.id))
-    const source = dryRun ? row : back
-    for (const key of Object.keys(target) as (keyof typeof target)[]) {
-      const a = JSON.stringify(source?.[key] ?? null)
-      const b = JSON.stringify(target[key])
-      if (!dryRun && a !== b) failures.push(`${row.id}: parity ${key} column=${a} blob=${b}`)
-      if (dryRun && a !== b) console.log(`[dry-run] ${row.id}: would set ${key} ${a} → ${b}`)
+    catch (err) {
+      failures.push(`${row.id}: exception ${err instanceof Error ? err.message : err}`)
+      console.error(`✗ proposals ${row.id}:`, err instanceof Error ? err.message : err)
     }
   }
   console.log(`${rows.length} proposals scanned, ${written} written, ${failures.length} failures`)
