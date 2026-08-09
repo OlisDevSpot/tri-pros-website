@@ -23,7 +23,7 @@ import { meetingMonthWindow, meetingWindow } from '../lib/meeting-windows'
 type ProjectsListInput = inferRouterInputs<AppRouter>['projectsRouter']['crud']['list']
 
 /** Top-N caps shared by every dashboard module that lists this entity. */
-export const DASHBOARD_LIMITS = { meetings: 8, proposals: 20, projects: 15, actionQueue: 8 } as const
+export const DASHBOARD_LIMITS = { meetings: 8, proposals: 20, proposalsPerSection: 5, projects: 15, actionQueue: 8 } as const
 
 /** Meetings list input for a Today/Upcoming/Past window, sorted by `scheduledFor`. */
 export function meetingsWindowInput(kind: MeetingWindowKind) {
@@ -46,9 +46,18 @@ export function meetingsMonthInput(anchorCalendarDay: string) {
 /** Proposals awaiting the homeowner's signature (contract sent, unsigned/undeclined). */
 export function awaitingProposalsInput() {
   return {
-    pagination: { limit: DASHBOARD_LIMITS.proposals, offset: 0 },
+    pagination: { limit: DASHBOARD_LIMITS.proposalsPerSection, offset: 0 },
     sort: { sortBy: 'contractSentAt', sortDir: 'desc' },
     filters: { awaitingSignature: true },
+  } satisfies ProposalListInput
+}
+
+/** Proposals sent, awaiting the customer's response — `status='sent'` with no contract envelope yet (the `proposal_sent` stage). */
+export function sentProposalsInput() {
+  return {
+    pagination: { limit: DASHBOARD_LIMITS.proposalsPerSection, offset: 0 },
+    sort: { sortBy: 'sentAt', sortDir: 'desc' },
+    filters: { sentNoContract: true },
   } satisfies ProposalListInput
 }
 
