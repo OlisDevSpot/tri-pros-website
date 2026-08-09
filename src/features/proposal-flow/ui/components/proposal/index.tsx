@@ -102,7 +102,7 @@ export function Proposal() {
                     token={token ?? undefined}
                     isAgent={viewMode === 'agent'}
                     customerAge={customer?.customerAge ?? null}
-                    envelopeDocumentIds={proposalData.formMetaJSON?.envelopeDocumentIds ?? null}
+                    envelopeDocumentIds={proposalData.envelopeDocumentIds ?? null}
                     proposalKind={proposalData.kind}
                     customerName={customer?.name ?? null}
                     customerEmail={customerEmail}

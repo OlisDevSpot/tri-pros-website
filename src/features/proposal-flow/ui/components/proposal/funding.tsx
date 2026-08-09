@@ -32,21 +32,23 @@ export function Funding({ onPickFinancingOption }: Props) {
   const saveCashInDeal = useSetCashInDeal()
   const financeOptions = useGetFinanceOptions()
 
+  const fundingInputs = useMemo(() => (proposal.data ? toFundingInputs(proposal.data) : null), [proposal.data])
+
   useEffect(() => {
-    if (proposal.data && cashInDeal === null) {
-      const tcp = computeFinalTcp({ funding: proposal.data.fundingJSON.data, sow: proposal.data.projectJSON.data.sow })
+    if (proposal.data && fundingInputs && cashInDeal === null) {
+      const tcp = computeFinalTcp({ funding: fundingInputs, sow: proposal.data.projectJSON.data.sow })
       // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
-      setCashInDeal(proposal.data.fundingJSON.data.cashInDeal ?? tcp)
+      setCashInDeal(fundingInputs.cashInDeal ?? tcp)
     }
-  }, [proposal.data, cashInDeal])
+  }, [proposal.data, fundingInputs, cashInDeal])
 
   const amountFinanced = useMemo(() => {
-    if (!proposal.data || cashInDeal === null) {
+    if (!proposal.data || !fundingInputs || cashInDeal === null) {
       return 0
     }
 
-    return computeFinalTcp({ funding: proposal.data.fundingJSON.data, sow: proposal.data.projectJSON.data.sow }) - cashInDeal
-  }, [cashInDeal, proposal.data])
+    return computeFinalTcp({ funding: fundingInputs, sow: proposal.data.projectJSON.data.sow }) - cashInDeal
+  }, [cashInDeal, proposal.data, fundingInputs])
 
   function pickFinancingOption(option: FinanceOption) {
     if (!proposal.data) {
@@ -135,11 +137,11 @@ export function Funding({ onPickFinancingOption }: Props) {
                           }}
                           disabled={saveCashInDeal.isPending}
                         />
-                        {cashInDeal !== proposalData.fundingJSON.data.cashInDeal && (
+                        {cashInDeal !== funding.cashInDeal && (
                           <Button
                             size="sm"
                             onClick={() => {
-                              // Narrow write — never reconstruct the fundingJSON
+                              // Narrow write — never reconstruct the funding
                               // blob client-side (jsonb deprecation ledger).
                               saveCashInDeal.mutate({
                                 token,

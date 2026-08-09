@@ -26,7 +26,7 @@ export function ScopeOfWork() {
   }
 
   const { sow } = proposal.data.projectJSON.data
-  const pricingMode = proposal.data.formMetaJSON.pricingMode
+  const pricingMode = proposal.data.priceDisplayMode
 
   return (
     <motion.div

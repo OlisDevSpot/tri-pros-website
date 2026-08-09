@@ -8,6 +8,7 @@ import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-p
 import { SpinnerLoader2 } from '@/shared/components/loaders/spinner-loader-2'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
+import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { isTruthy } from '@/shared/types'
 
 export function ProjectOverview() {
@@ -19,7 +20,7 @@ export function ProjectOverview() {
     }
 
     const projectFields = proposal.data.projectJSON.data
-    const fundingFields = proposal.data.fundingJSON.data
+    const fundingFields = toFundingInputs(proposal.data)
     const customer = proposal.data.customer
 
     const proposalCtx: ProposalOverviewContext = {
@@ -33,7 +34,7 @@ export function ProjectOverview() {
       ...projectFields,
       ...fundingFields,
       scopes: proposal.data.projectJSON.data.sow.map(sowSection => sowSection.scopes.map(scope => scope.label)).flat().join(', '),
-      exclusiveOffers: proposal.data.fundingJSON.data.incentives.filter(inc => inc.type === 'exclusive-offer').map(inc => inc.offer).join(', '),
+      exclusiveOffers: fundingFields.incentives.filter(inc => inc.type === 'exclusive-offer').map(inc => inc.offer).join(', '),
     }
 
     return proposalFields.map(section => ({
