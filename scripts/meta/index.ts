@@ -6,6 +6,7 @@ const command = process.argv[2]
 const commands: Record<string, { file: string, description: string }> = {
   'verify': { file: 'scripts/meta/setup/verify-credentials.ts', description: 'Smoke test all credentials' },
   'performance': { file: 'scripts/meta/reports/pull-performance.ts', description: 'Pull campaign stats (optional: date preset)' },
+  'insights': { file: 'scripts/meta/reports/pull-ad-insights.ts', description: 'Ad-level CPL/CTR/frequency for A/B optimization (optional: date preset, default last_28d)' },
   'manage-ad': { file: 'scripts/meta/ads/manage-ad.ts', description: 'Interactively pause or activate an ad' },
   'create-campaign': { file: 'scripts/meta/campaigns/create-campaign.ts', description: 'Wizard: create campaign → ad set → ad' },
   'sync': { file: 'scripts/meta/sync/run.ts', description: 'Campaign-as-code: diff specs vs Meta (dry-run default; --apply executes)' },

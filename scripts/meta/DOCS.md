@@ -82,8 +82,9 @@ flag or config.
   `campaign_id` (immutable) and `status` (never sent).
 - **No deletes, ever.** Objects removed from a spec become orphans — reported in the
   plan output, never deleted or paused by the engine.
-- **Budget ceiling.** `assertBudgetCeiling` (run before any API call) sums
-  `dailyBudgetCents` across all specs and throws if the total exceeds `16_600`
+- **Budget ceiling.** `assertBudgetCeiling` (run before any API call) sums each
+  campaign's CBO `dailyBudgetCents` (Advantage Campaign Budget lives on the
+  campaign, not the ad sets) and throws if the account-wide total exceeds `16_600`
   ($166/day ≈ $5K/mo). To raise the ceiling, edit the constant in
   `campaign-specs/lib/guardrails.ts` and get a second pair of eyes on the diff.
 - **Audit trail.** Every `--apply` appends a JSON line to

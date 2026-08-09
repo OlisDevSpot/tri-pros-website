@@ -12,13 +12,14 @@ export function sha256Hex(input: Buffer | string): string {
 export type AdAssetShas = Record<string, string>
 
 export function campaignFp(spec: CampaignSpec): string {
-  return sha256Hex(JSON.stringify({ name: spec.name, objective: spec.objective }))
+  // dailyBudgetCents is CBO (campaign-level) — hashing it means a budget change
+  // triggers update-campaign on next sync.
+  return sha256Hex(JSON.stringify({ name: spec.name, objective: spec.objective, dailyBudgetCents: spec.dailyBudgetCents }))
 }
 
 export function adSetFp(adSet: AdSetSpec): string {
   return sha256Hex(JSON.stringify({
     name: adSet.name,
-    dailyBudgetCents: adSet.dailyBudgetCents,
     ageMin: adSet.ageMin,
     ageMax: adSet.ageMax,
     optimizationEvent: adSet.optimizationEvent,

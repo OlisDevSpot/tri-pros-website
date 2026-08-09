@@ -5,10 +5,9 @@ import type { CampaignSpec } from './types.js'
 export const MAX_TOTAL_DAILY_BUDGET_CENTS = 16_600
 
 export function assertBudgetCeiling(specs: CampaignSpec[]): void {
-  const totalCents = specs.reduce(
-    (sum, spec) => sum + spec.adSets.reduce((s, a) => s + a.dailyBudgetCents, 0),
-    0,
-  )
+  // Budget is CBO (campaign-level): each campaign's dailyBudgetCents is the total
+  // daily spend across all its ad sets. Sum campaigns for the account-wide total.
+  const totalCents = specs.reduce((sum, spec) => sum + spec.dailyBudgetCents, 0)
   if (totalCents > MAX_TOTAL_DAILY_BUDGET_CENTS) {
     throw new Error(
       `Budget ceiling exceeded: specs total $${(totalCents / 100).toFixed(2)}/day, `

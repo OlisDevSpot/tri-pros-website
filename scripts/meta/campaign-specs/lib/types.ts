@@ -71,7 +71,6 @@ export const adSetSpecSchema = z.object({
   funnelSlug: z.enum(['kitchens', 'bathrooms']),
   /** Funnel origin with trailing slash, e.g. https://kitchens.triprosremodeling.com/ */
   landingBaseUrl: z.string().url(),
-  dailyBudgetCents: z.number().int().positive(),
   ageMin: z.number().int().min(18).max(65),
   /** Meta rejects age_max > 65; 65 means "65+" (unbounded upper bucket). */
   ageMax: z.number().int().min(18).max(65),
@@ -85,6 +84,13 @@ export const campaignSpecSchema = z.object({
   key: specKey,
   name: z.string().min(1),
   objective: z.literal('OUTCOME_LEADS'),
+  /**
+   * CBO (Advantage Campaign Budget): the offer's total daily spend, in cents.
+   * Under CBO the budget — and bid strategy — live on the CAMPAIGN; ad sets
+   * carry neither. campaign = offer, one budget per offer. Meta rejects setting
+   * an ad-set budget while this is present ("only an ad set OR a campaign budget").
+   */
+  dailyBudgetCents: z.number().int().positive(),
   /** campaign = offer; one ad set per product. */
   adSets: z.array(adSetSpecSchema).min(1),
 })

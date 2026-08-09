@@ -30,7 +30,7 @@ export async function fetchAccountState(): Promise<AccountState> {
   return { campaigns: campaigns.data, adSets: adSets.data, ads: ads.data }
 }
 
-export async function createCampaign(name: string): Promise<string> {
+export async function createCampaign(name: string, dailyBudgetCents: number): Promise<string> {
   const res = await metaFetch<{ id: string }>(`/${metaEnv.adAccountId}/campaigns`, {
     method: 'POST',
     body: {
@@ -38,20 +38,29 @@ export async function createCampaign(name: string): Promise<string> {
       objective: 'OUTCOME_LEADS',
       status: 'PAUSED',
       special_ad_categories: [], // remodeling services ≠ Meta "housing" special category (housing = sale/rental/insurance opportunities)
-      is_adset_budget_sharing_enabled: false, // budget lives on the ad set — explicit CBO opt-out
+      // CBO (Advantage Campaign Budget): budget + bid strategy live on the
+      // campaign; ad sets carry neither. campaign = offer, one budget per offer.
+      daily_budget: dailyBudgetCents,
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+      is_adset_budget_sharing_enabled: false, // no per-ad-set min/max spend limits within the campaign budget
     },
   })
   return res.id
 }
 
-export async function updateCampaignName(id: string, name: string): Promise<void> {
-  await metaFetch(`/${id}`, { method: 'POST', body: { name } })
+export interface CampaignUpdateInput {
+  name: string
+  dailyBudgetCents: number
+}
+
+/** Updates the campaign name + CBO daily budget. Never touches status. */
+export async function updateCampaign(id: string, input: CampaignUpdateInput): Promise<void> {
+  await metaFetch(`/${id}`, { method: 'POST', body: { name: input.name, daily_budget: input.dailyBudgetCents } })
 }
 
 export interface AdSetCreateInput {
   name: string
   campaignId: string
-  dailyBudgetCents: number
   ageMin: number
   ageMax: number
   optimizationEvent: 'LEAD' | 'SCHEDULE'
@@ -68,10 +77,10 @@ function adSetBody(input: AdSetCreateInput) {
   return {
     name: input.name,
     campaign_id: input.campaignId,
-    daily_budget: input.dailyBudgetCents,
+    // No daily_budget / bid_strategy here — under CBO both live on the campaign.
+    // Sending either on an ad set errors ("only an ad set OR a campaign budget").
     billing_event: 'IMPRESSIONS',
     optimization_goal: 'OFFSITE_CONVERSIONS', // optimize on pixel/CAPI conversions, not form fills
-    bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
     promoted_object: { pixel_id: metaEnv.pixelId, custom_event_type: input.optimizationEvent },
     // 7-day click only — no view-through: cleans lead-gen reporting AND changes
     // what delivery optimizes toward (Meta optimizes for conversions countable

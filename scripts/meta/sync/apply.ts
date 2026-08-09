@@ -16,7 +16,7 @@ import {
   createVideoAdCreative,
   setAdCreative,
   updateAdSet,
-  updateCampaignName,
+  updateCampaign,
   uploadAdImage,
   uploadAdVideo,
 } from '../lib/marketing-api.js'
@@ -138,7 +138,7 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
     const spec = specByKey(specs, op.campaignKey)
 
     if (op.op === 'create-campaign') {
-      const id = await createCampaign(spec.name)
+      const id = await createCampaign(spec.name, spec.dailyBudgetCents)
       lock.campaigns[spec.key] = { id, fp: campaignFp(spec) }
       writeLock(lock)
       printSuccess(`campaign created (PAUSED): ${spec.name} → ${id}`)
@@ -147,10 +147,10 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
     }
 
     if (op.op === 'update-campaign') {
-      await updateCampaignName(op.id, spec.name)
+      await updateCampaign(op.id, { name: spec.name, dailyBudgetCents: spec.dailyBudgetCents })
       lock.campaigns[spec.key] = { id: op.id, fp: campaignFp(spec) }
       writeLock(lock)
-      printSuccess(`campaign updated: ${spec.name}`)
+      printSuccess(`campaign updated: ${spec.name} ($${(spec.dailyBudgetCents / 100).toFixed(2)}/day)`)
       audit({ op: op.op, key: spec.key, id: op.id })
       continue
     }
@@ -160,7 +160,6 @@ export async function applyPlan(plan: PlanOp[], specs: CampaignSpec[], lock: Met
     const adSetInput = {
       name: adSet.name,
       campaignId: lock.campaigns[spec.key]?.id ?? '',
-      dailyBudgetCents: adSet.dailyBudgetCents,
       ageMin: adSet.ageMin,
       ageMax: adSet.ageMax,
       optimizationEvent: adSet.optimizationEvent,
