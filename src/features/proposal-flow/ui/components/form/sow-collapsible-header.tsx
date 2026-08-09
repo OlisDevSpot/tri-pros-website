@@ -1,4 +1,5 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { ChevronDownIcon, CopyIcon, MoreHorizontalIcon, TrashIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Badge } from '@/shared/components/ui/badge'
@@ -13,7 +14,7 @@ interface Props {
   onDelete: (e: React.MouseEvent) => void
   onDuplicate: (e: React.MouseEvent) => void
   onTitleChange: (title: string) => void
-  pricingMode: 'total' | 'breakdown'
+  priceDisplayMode: PriceDisplayMode
   sow: ProposalFormSchema['project']['data']['sow'][0]
 }
 
@@ -22,7 +23,7 @@ export function SOWCollapsibleHeader({
   onDelete,
   onDuplicate,
   onTitleChange,
-  pricingMode,
+  priceDisplayMode,
   sow,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false)
@@ -32,7 +33,7 @@ export function SOWCollapsibleHeader({
   const hasTrade = sow.trade.label.trim().length > 0
   const scopeCount = sow.scopes.length
   const sectionPrice = sow.financials.sectionPrice
-  const showPrice = pricingMode === 'breakdown' && sectionPrice != null && sectionPrice > 0
+  const showPrice = priceDisplayMode === 'breakdown' && sectionPrice != null && sectionPrice > 0
   const hasBadges = hasTrade || scopeCount > 0 || showPrice
 
   function handleTitleClick(e: React.MouseEvent) {

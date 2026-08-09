@@ -1,4 +1,5 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
+import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { PlusIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
@@ -15,10 +16,10 @@ import { SOWSection } from './sow-field'
 const TRANSITION = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] } as const
 
 interface Props {
-  pricingMode: 'total' | 'breakdown'
+  priceDisplayMode: PriceDisplayMode
 }
 
-export function ProjectFields({ pricingMode }: Props) {
+export function ProjectFields({ priceDisplayMode }: Props) {
   const form = useFormContext<ProposalFormSchema>()
 
   const { fields, append, insert, remove } = useFieldArray({
@@ -122,7 +123,7 @@ export function ProjectFields({ pricingMode }: Props) {
                           onTitleChange={(title) => {
                             form.setValue(`project.data.sow.${index}.title`, title)
                           }}
-                          pricingMode={pricingMode}
+                          priceDisplayMode={priceDisplayMode}
                           sow={sowValues[index] ?? fieldOfArray}
                         />
                       </div>
@@ -138,7 +139,7 @@ export function ProjectFields({ pricingMode }: Props) {
                         >
                           <SOWSection
                             index={index}
-                            pricingMode={pricingMode}
+                            priceDisplayMode={priceDisplayMode}
                             sowSnapshot={fieldOfArray}
                           />
                         </motion.div>

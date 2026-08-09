@@ -1,5 +1,6 @@
 'use client'
 
+import type { PriceDisplayMode } from '@/shared/constants/enums'
 import type { SowFinancials } from '@/shared/entities/proposals/schemas'
 import { ExpandableLineItems } from '@/shared/components/expandable-line-items'
 import { Separator } from '@/shared/components/ui/separator'
@@ -10,7 +11,7 @@ import { cn } from '@/shared/lib/utils'
 
 interface Props {
   financials: SowFinancials
-  pricingMode: 'total' | 'breakdown'
+  priceDisplayMode: PriceDisplayMode
   /** Compact mode: shows only Net Price + Job Costs */
   compact?: boolean
 }
@@ -22,9 +23,9 @@ interface Props {
  * In total mode (no sectionPrice), only cost + incentives are shown.
  * Line items toggle open/closed via clickable summary rows.
  */
-export function SectionFinancialsSummary({ financials, pricingMode, compact }: Props) {
+export function SectionFinancialsSummary({ financials, priceDisplayMode, compact }: Props) {
   const section = computeSectionFinancials({ title: '', financials })
-  const isBreakdown = pricingMode === 'breakdown'
+  const isBreakdown = priceDisplayMode === 'breakdown'
 
   const hasAnyData = section.hasCostLines || section.hasIncentives
   const showOutputs = isBreakdown && section.price != null && section.hasCostLines

@@ -25,7 +25,7 @@ const sow: ProjectSection['data']['sow'] = [
 ]
 
 const financials = computeProposalFinancials({
-  pricingMode: 'breakdown',
+  priceDisplayMode: 'breakdown',
   sow,
   funding: {
     cashInDeal: 0,

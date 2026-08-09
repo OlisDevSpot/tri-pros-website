@@ -1,3 +1,4 @@
+import type { PriceDisplayMode } from '@/shared/constants/enums'
 import type { FundingSection, ProjectSection } from '@/shared/entities/proposals/types'
 import { computeFinalTcp, computeTotalSectionIncentives } from './compute-price-side'
 
@@ -25,7 +26,7 @@ export interface BreakdownGlobalLine {
 }
 
 export interface PricingBreakdownModel {
-  pricingMode: 'total' | 'breakdown'
+  priceDisplayMode: PriceDisplayMode
   /** Breakdown mode: priced sections with incentives resolved. Empty in total mode. */
   sections: BreakdownSectionLine[]
   /** Breakdown-mode misc price; null when absent or 0. */
@@ -46,17 +47,17 @@ export interface PricingBreakdownModel {
 export interface PricingBreakdownInput {
   funding: FundingSection['data']
   sow: ProjectSection['data']['sow']
-  pricingMode: 'total' | 'breakdown'
+  priceDisplayMode: PriceDisplayMode
 }
 
 /** Computed ONCE; rendered by the React component, the PDF builder, and the summary route. */
 export function buildPricingBreakdown({
   funding,
   sow,
-  pricingMode,
+  priceDisplayMode,
 }: PricingBreakdownInput): PricingBreakdownModel {
   const sections: BreakdownSectionLine[]
-    = pricingMode === 'breakdown'
+    = priceDisplayMode === 'breakdown'
       ? sow
           .map((section, i) => ({ section, title: section.title || `Section ${i + 1}`, key: `${i}-${section.title || 'section'}` }))
           .filter(({ section }) => (section.financials.sectionPrice ?? 0) > 0)
@@ -103,7 +104,7 @@ export function buildPricingBreakdown({
 
   const subtotal = funding.startingTcp
   return {
-    pricingMode,
+    priceDisplayMode,
     sections,
     miscPrice: (funding.miscPrice ?? 0) > 0 ? funding.miscPrice! : null,
     subtotal,

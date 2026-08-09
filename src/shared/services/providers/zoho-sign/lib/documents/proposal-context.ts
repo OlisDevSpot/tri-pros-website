@@ -2,6 +2,7 @@ import type { ProposalContext } from './types'
 import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
 import { isSeniorByAge } from '@/shared/entities/customers/lib/customer-predicates'
 import { computeFinalTcp } from '@/shared/entities/proposals/lib/financials'
+import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { sowToPlaintext } from '@/shared/lib/tiptap-to-text'
 import { isLongSow } from '../is-long-sow'
 
@@ -29,8 +30,7 @@ export function buildProposalContext(
     kind: proposal.kind,
     isSenior: isSeniorByAge(ageForSeniorCheck),
     isLongSow: isLongSow(sowText),
-    // relies on getFullView incentive hydration (Wave 2 bridge)
-    finalTcp: computeFinalTcp({ funding: proposal.fundingJSON.data, sow: proposal.projectJSON.data.sow ?? [] }),
+    finalTcp: computeFinalTcp({ funding: toFundingInputs(proposal), sow: proposal.projectJSON.data.sow ?? [] }),
     sowText,
     originalContractDate,
   }

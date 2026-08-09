@@ -21,11 +21,10 @@ interface Props {
 
 export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Props) {
   const [expanded, setExpanded] = useState(false)
-  const pricingMode = priceDisplayMode
   const financials = computeProposalFinancials({
     funding,
     sow,
-    pricingMode,
+    priceDisplayMode,
   })
 
   return (
@@ -60,7 +59,7 @@ export function InternalCalculationBlock({ funding, sow, priceDisplayMode }: Pro
             </p>
             <SectionFinancialsSummary
               financials={section.financials}
-              pricingMode={pricingMode}
+              priceDisplayMode={priceDisplayMode}
               compact={!expanded}
             />
           </div>

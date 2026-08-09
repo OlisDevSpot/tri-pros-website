@@ -1,5 +1,6 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
+import type { PriceDisplayMode } from '@/shared/constants/enums'
 import type { ScopeOrAddon } from '@/shared/services/providers/notion/lib/scopes/schema'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
@@ -31,13 +32,13 @@ function isInteractive(target: EventTarget) {
 
 interface Props {
   index: number
-  pricingMode: 'total' | 'breakdown'
+  priceDisplayMode: PriceDisplayMode
   sowSnapshot: ProposalFormSchema['project']['data']['sow'][0]
 }
 
 export function SOWSection({
   index,
-  pricingMode,
+  priceDisplayMode,
   sowSnapshot,
 }: Props) {
   const trpc = useTRPC()
@@ -318,7 +319,7 @@ export function SOWSection({
                     }
                   }}
                 >
-                  <SOWFinancialsFields index={index} pricingMode={pricingMode} />
+                  <SOWFinancialsFields index={index} pricingMode={priceDisplayMode} />
                 </motion.div>
               )}
             </AnimatePresence>

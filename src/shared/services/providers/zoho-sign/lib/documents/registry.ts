@@ -28,7 +28,7 @@ const customerCityStateZipSrc: FieldSource = (ctx) => {
 const customerAgeSrc: FieldSource = ctx => String(ctx.proposal.customer?.customerAge ?? '')
 
 const tcpSrc: FieldSource = ctx => String(ctx.finalTcp)
-const depositSrc: FieldSource = ctx => String(ctx.proposal.fundingJSON.data.depositAmount)
+const depositSrc: FieldSource = ctx => String((ctx.proposal.depositAmountCents ?? 0) / 100)
 
 // Zoho per-template date format quirk: AWD's start-date / completion-date /
 // original-contract-date are CustomDate fields with `MMM dd yyyy` validation;

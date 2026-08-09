@@ -36,7 +36,7 @@ interface AssembleResult {
  * rethrowing so the QStash retry isn't stuck with a half-built envelope.
  */
 export async function assembleEnvelope(ctx: ProposalContext): Promise<AssembleResult> {
-  const savedSelection = new Set(ctx.proposal.formMetaJSON.envelopeDocumentIds ?? [])
+  const savedSelection = new Set(ctx.proposal.envelopeDocumentIds ?? [])
   const evaluation = evaluateDocuments(ctx)
   const optionalSet = new Set(evaluation.optional)
 

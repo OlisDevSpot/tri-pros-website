@@ -22,10 +22,8 @@ function makeFakeContext(recipientEmail: string): ProposalContext {
     id: 'fake-proposal-phase-4-smoke-test',
     label: 'Phase 4 smoke test',
     kind: 'additional-work',
-    formMetaJSON: {
-      pricingMode: 'total',
-      envelopeDocumentIds: ['awd'],
-    },
+    priceDisplayMode: 'total',
+    envelopeDocumentIds: ['awd'],
     projectJSON: {
       data: {
         sow: [{
@@ -81,7 +79,7 @@ async function main() {
   const ctx = makeFakeContext(recipientEmail)
   console.log('=== assembleEnvelope smoke test ===')
   console.log(`kind: ${ctx.kind}`)
-  console.log(`docs: ${ctx.proposal.formMetaJSON.envelopeDocumentIds?.join(', ')}`)
+  console.log(`docs: ${ctx.proposal.envelopeDocumentIds?.join(', ')}`)
   console.log(`recipient: ${recipientEmail}`)
   console.log()
 

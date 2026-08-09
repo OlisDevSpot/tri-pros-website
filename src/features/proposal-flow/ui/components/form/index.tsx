@@ -295,7 +295,7 @@ export function ProposalForm({ isLoading, onSubmit, onSave, initialValues, viewH
                 className={isActive ? '' : 'hidden'}
               >
                 {tab === 'general' && <GeneralFields />}
-                {tab === 'sow' && <ProjectFields pricingMode={pricingMode} />}
+                {tab === 'sow' && <ProjectFields priceDisplayMode={pricingMode} />}
                 {tab === 'funding' && <FundingFields pricingMode={pricingMode} />}
                 {tab === 'files' && (
                   proposalId

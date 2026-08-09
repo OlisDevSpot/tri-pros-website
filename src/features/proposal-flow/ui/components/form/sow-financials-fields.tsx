@@ -370,7 +370,7 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
             )}
       </div>
 
-      <SectionFinancialsSummary financials={watchedFinancials} pricingMode={pricingMode} />
+      <SectionFinancialsSummary financials={watchedFinancials} priceDisplayMode={pricingMode} />
     </div>
   )
 }

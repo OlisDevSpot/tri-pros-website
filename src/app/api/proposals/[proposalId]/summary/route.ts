@@ -1,6 +1,7 @@
 import { SYSTEM_CONTEXT } from '@/shared/dal/server/types'
 import { getFullView } from '@/shared/entities/proposals/dal/server/queries'
 import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
+import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { formatAsDollars } from '@/shared/lib/formatters'
 
 function stripHtml(html: string): string {
@@ -35,8 +36,8 @@ export async function GET(
 
   const customer = proposal.customer
   const proj = proposal.projectJSON.data
-  const fund = proposal.fundingJSON.data
-  const pricingMode = proposal.formMetaJSON.pricingMode
+  const fund = toFundingInputs(proposal)
+  const priceDisplayMode = proposal.priceDisplayMode
 
   const lines: string[] = []
 
@@ -81,7 +82,7 @@ export async function GET(
     if (section.scopes.length > 0) {
       lines.push(`**Scopes:** ${section.scopes.map(s => s.label).join(', ')}`)
     }
-    if (pricingMode === 'breakdown' && section.financials.sectionPrice) {
+    if (priceDisplayMode === 'breakdown' && section.financials.sectionPrice) {
       lines.push(`**Section Price:** ${formatAsDollars(section.financials.sectionPrice)}`)
     }
     if (section.html) {
@@ -91,9 +92,8 @@ export async function GET(
   }
 
   lines.push('## Pricing')
-  // relies on getFullView incentive hydration (Wave 2 bridge)
-  const breakdown = buildPricingBreakdown({ funding: fund, sow: proj.sow, pricingMode })
-  if (breakdown.pricingMode === 'breakdown') {
+  const breakdown = buildPricingBreakdown({ funding: fund, sow: proj.sow, priceDisplayMode })
+  if (breakdown.priceDisplayMode === 'breakdown') {
     for (const section of breakdown.sections) {
       lines.push(`- ${section.title}: ${formatAsDollars(section.price)}`)
     }

@@ -65,7 +65,7 @@ A proposal can be read AND updated by an unauthenticated client via `?token=<sha
 
 ### pdf-export-token-gated
 
-`GET /api/proposals/[proposalId]/pdf?token=` renders the full proposal PDF on demand via `pdfService.generateProposalPdf` (pdfmake). Auth mirrors the summary route: exact `proposal.token` match, no CASL — the token is the authorization (see [shareable-via-token](#shareable-via-token)). The document is ALWAYS the homeowner view: pricing respects `pricingMode`, the final price is derived via `computeFinalTcp`, and the generator never reads `sow[].financials.costLines`. There is no agent variant.
+`GET /api/proposals/[proposalId]/pdf?token=` renders the full proposal PDF on demand via `pdfService.generateProposalPdf` (pdfmake). Auth mirrors the summary route: exact `proposal.token` match, no CASL — the token is the authorization (see [shareable-via-token](#shareable-via-token)). The document is ALWAYS the homeowner view: pricing respects `priceDisplayMode`, the final price is derived via `computeFinalTcp`, and the generator never reads `sow[].financials.costLines`. There is no agent variant.
 
 **Why**: anyone with the share token can fetch it — the document must be homeowner-distributable by construction.
 **Reference impl**: `src/shared/lib/pdf/proposal-doc-definition.ts` + `src/app/api/proposals/[proposalId]/pdf/route.ts`

@@ -20,10 +20,10 @@ export function PricingBreakdown({ funding, sow, priceDisplayMode }: Props) {
   const breakdown = buildPricingBreakdown({
     funding,
     sow,
-    pricingMode: priceDisplayMode,
+    priceDisplayMode,
   })
 
-  const isBreakdown = breakdown.pricingMode === 'breakdown'
+  const isBreakdown = breakdown.priceDisplayMode === 'breakdown'
   // In breakdown mode, section incentives render inline under their section's
   // price row. In total mode, they go in the global block.
   const globalLines = isBreakdown

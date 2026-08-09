@@ -1,11 +1,14 @@
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces'
 import type { TiptapNode } from './tiptap-to-pdfmake'
+import type { PriceDisplayMode } from '@/shared/constants/enums'
 import type { ProposalWithCustomer } from '@/shared/entities/proposals/dal/server/queries'
+import type { FundingData } from '@/shared/entities/proposals/schemas'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { companyInfo, licenses } from '@/shared/constants/company'
 import { buildPricingBreakdown } from '@/shared/entities/proposals/lib/financials'
+import { toFundingInputs } from '@/shared/entities/proposals/lib/funding-columns'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { formatPhone } from '@/shared/lib/phone'
 import { tiptapToPdfmake } from './tiptap-to-pdfmake'
@@ -22,14 +25,14 @@ import { tiptapToPdfmake } from './tiptap-to-pdfmake'
  */
 export async function buildProposalDocDefinition(proposal: ProposalWithCustomer): Promise<TDocumentDefinitions> {
   const project = proposal.projectJSON.data
-  const funding = proposal.fundingJSON.data
-  const pricingMode = proposal.formMetaJSON.pricingMode
+  const funding = toFundingInputs(proposal)
+  const priceDisplayMode = proposal.priceDisplayMode
   const logoDataUrl = await loadLogoDataUrl()
 
   const content: Content[] = [
     ...buildCoverPage(proposal, logoDataUrl),
-    ...buildScopeOfWork(project.sow, pricingMode),
-    ...buildInvestment(project.sow, funding, pricingMode),
+    ...buildScopeOfWork(project.sow, priceDisplayMode),
+    ...buildInvestment(project.sow, funding, priceDisplayMode),
     ...(project.agreementNotes
       ? [
           { text: 'Agreement Notes', style: 'sectionTitle' } satisfies Content,
@@ -152,11 +155,11 @@ function buildCoverOrnament(verticalGap: number): Content {
 
 function buildScopeOfWork(
   sow: ProposalWithCustomer['projectJSON']['data']['sow'],
-  pricingMode: 'total' | 'breakdown',
+  priceDisplayMode: PriceDisplayMode,
 ): Content[] {
   const parts: Content[] = []
   sow.forEach((section, i) => {
-    parts.push(...buildSowSection(section, i, pricingMode))
+    parts.push(...buildSowSection(section, i, priceDisplayMode))
   })
   return parts
 }
@@ -173,7 +176,7 @@ function buildScopeOfWork(
 function buildSowSection(
   section: ProposalWithCustomer['projectJSON']['data']['sow'][number],
   index: number,
-  pricingMode: 'total' | 'breakdown',
+  priceDisplayMode: PriceDisplayMode,
 ): Content[] {
   const metaLine = [
     `Trade: ${section.trade.label}`,
@@ -184,7 +187,7 @@ function buildSowSection(
     { text: `${index + 1}. ${section.title || 'Untitled scope'}`, style: 'itemTitle', margin: [0, 0, 0, 2] },
     { text: metaLine, style: 'meta', margin: [0, 0, 0, 6] },
   ]
-  if (pricingMode === 'breakdown' && section.financials.sectionPrice) {
+  if (priceDisplayMode === 'breakdown' && section.financials.sectionPrice) {
     inner.push({ text: `Section price: ${formatAsDollars(section.financials.sectionPrice)}`, style: 'sectionPrice' })
   }
 
@@ -244,14 +247,13 @@ function splitLeadingProse(blocks: TiptapNode[]): { lead: TiptapNode[], rest: Ti
 
 function buildInvestment(
   sow: ProposalWithCustomer['projectJSON']['data']['sow'],
-  funding: ProposalWithCustomer['fundingJSON']['data'],
-  pricingMode: 'total' | 'breakdown',
+  funding: FundingData,
+  priceDisplayMode: PriceDisplayMode,
 ): Content[] {
-  // relies on getFullView incentive hydration (Wave 2 bridge)
-  const breakdown = buildPricingBreakdown({ funding, sow, pricingMode })
+  const breakdown = buildPricingBreakdown({ funding, sow, priceDisplayMode })
 
   const rows: TableCell[][] = []
-  if (breakdown.pricingMode === 'breakdown') {
+  if (breakdown.priceDisplayMode === 'breakdown') {
     for (const section of breakdown.sections) {
       rows.push([{ text: section.title }, { text: formatAsDollars(section.price), alignment: 'right' }])
     }
