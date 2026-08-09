@@ -674,46 +674,14 @@
     --offset-top: calc(24px + env(safe-area-inset-top)) !important;
   }
 
-  /* Installed-PWA launch: keep the pre-paint canvas dark so any frame before
-     the cover paints is #09090b, not white (backs up the native startup image
-     + the .pwa-launch cover). Standalone-only, so browser/marketing light
-     pages are untouched. */
+  /* Installed-PWA launch: keep the web-view's first paint dark so any device
+     the native startup-image matrix doesn't match falls back to #09090b rather
+     than white. Standalone-only, so browser/marketing light pages are
+     untouched. The native startup image is the real launch brand; this is just
+     a same-color safety net for unmatched devices. */
   html {
     background-color: #09090b;
   }
-
-  /* Show the launch cover only in the installed PWA. */
-  .pwa-launch {
-    display: flex;
-  }
-}
-
-/* Installed-PWA launch cover — a static logo on #09090b that continues from the
-   native iOS startup image and fades out once the app is ready (the native
-   image can't fade itself). Present in the initial HTML but hidden outside
-   standalone, so it paints from frame 1 in the PWA and never shows in a
-   browser. See PwaLaunchScreen. */
-.pwa-launch {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  background-color: #09090b;
-  opacity: 1;
-  transition: opacity 300ms ease-out;
-}
-
-.pwa-launch[data-ready='true'] {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.pwa-launch-logo {
-  width: 45vw;
-  max-width: 320px;
-  height: auto;
 }
 
 /* ── Dashboard sidebar nav hover ───────────────────────────────── */

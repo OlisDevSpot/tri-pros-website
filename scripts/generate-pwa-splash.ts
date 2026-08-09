@@ -10,12 +10,14 @@ import { fileURLToPath } from 'node:url'
  * match, so we need one PNG per device.
  *
  * This is the actual launch brand moment on iOS — a static logo, shown by the
- * OS before the web view paints. The in-app `PwaLaunchScreen` cover continues
- * the same logo-on-#09090b in the web view and fades out once ready, so the
- * native → web hand-off is seamless (iOS itself can't fade the startup image).
+ * OS before the web view paints. There is no in-app cover; the native startup
+ * image is the entire launch brand, and the app fades in over it on hydration.
  *
- * NOTE: iOS caches these at "Add to Home Screen" time — an already-installed
- * app must be removed and re-added to pick up new images.
+ * NOTE: iOS caches these at "Add to Home Screen" time AND keys its cache on the
+ * file URL — an unchanged filename can serve a stale image even after a
+ * reinstall. Bump SPLASH_VERSION whenever the image content changes so the new
+ * PNGs get fresh URLs iOS is forced to re-fetch. The metadata `startupImage`
+ * URLs in src/app/(frontend)/layout.tsx must use the same version.
  *
  * Superseded `pwa-asset-generator`, which is broken in this environment.
  *
@@ -28,6 +30,10 @@ const ROOT = resolve(__dirname, '..')
 const OUT_DIR = resolve(ROOT, 'public/pwa/splash')
 const LOGO_PATH = resolve(ROOT, 'public/company/logo/logo-dark.svg')
 const BG_COLOR = '#09090b'
+// iOS caches startup images by URL and won't re-fetch an unchanged filename,
+// even across reinstalls. Bump this whenever the image content changes (logo,
+// color) so the new PNGs land. Keep in sync with the URLs in layout.tsx.
+const SPLASH_VERSION = 'v2'
 // Logo width as a fraction of the device width — matches the .pwa-launch-logo
 // sizing (45vw) so the native startup image and the web cover show the mark at
 // the same size and position.
@@ -78,7 +84,7 @@ for (const device of DEVICES) {
     )
   }
 
-  const filename = `apple-splash-${pxW}-${pxH}.png`
+  const filename = `apple-splash-${pxW}-${pxH}-${SPLASH_VERSION}.png`
 
   // Rasterize the logo to this device's target width, then center-composite it
   // onto the dark canvas.
