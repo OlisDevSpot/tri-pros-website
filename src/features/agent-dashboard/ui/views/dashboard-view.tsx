@@ -13,11 +13,11 @@ import { DashboardMeetingsHub } from '@/features/agent-dashboard/ui/components/d
 import { DashboardProjects } from '@/features/agent-dashboard/ui/components/dashboard-projects'
 import { DashboardProposals } from '@/features/agent-dashboard/ui/components/dashboard-proposals'
 
-export function DashboardView() {
+export function DashboardView({ name }: { name?: string | null }) {
   return (
     <div className="h-full overflow-x-hidden overflow-y-auto">
       <div className="flex w-full flex-col gap-6 pb-16">
-        <DashboardHero />
+        <DashboardHero name={name} />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <section id="meetings" className="lg:col-span-8">
             <DashboardMeetingsHub />

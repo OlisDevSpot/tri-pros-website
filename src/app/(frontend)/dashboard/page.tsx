@@ -21,9 +21,11 @@ export default async function DashboardPage() {
     prefetch(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
   }
 
+  const name = authState.status === 'authenticated' ? authState.session.user.name : null
+
   return (
     <HydrateClient>
-      <DashboardView />
+      <DashboardView name={name} />
     </HydrateClient>
   )
 }
