@@ -304,6 +304,14 @@ export function DashboardProposalSection({ title, input, timeSince, emptyMessage
       {isLoading
         ? <DashboardProposalSectionSkeleton />
         : (
+            // EntityList renders the list body + empty state only. Its built-in
+            // header is bypassed (`hideHeader`) on purpose: it is hardcoded
+            // `text-[10px]` sans `Title (n)` (entity-list.tsx:88), which violates
+            // the dashboard type floor (no `text-[10px]`) and cannot express the
+            // spec's Space-Mono eyebrow + right-aligned count — so this section
+            // renders its own header above. `title` is a required EntityList prop
+            // but inert here. We deliberately do NOT extend the shared EntityList
+            // with dashboard eyebrow chrome (feature styling stays out of shared/).
             <EntityList
               title={title}
               hideHeader
@@ -497,3 +505,27 @@ git commit -m "docs(plans): supersede Plan 2 union with two-section proposals pl
   adds the browser smoke (matches Plans 1/1b).
 - **Scope guards honored:** `awaitingSignature` untouched; no schema migration;
   snapshot count logic unchanged (label only); no client-side contract re-encoding.
+
+## Reuse review (extend-don't-invent audit)
+
+A convention audit checked every new unit for thin ad-hoc surface that should
+have extended existing code. Outcome: Tasks 1–4 and 6 are clean **extensions**
+(DAL filter map, `DASHBOARD_LIMITS`, the mapper, the card, the page prefetch);
+Task 2's per-concern builder and Task 5's component/hook/skeleton are
+**justified-new** (one-builder-per-concern is the established pattern; no existing
+"query-bound labeled section" primitive exists — `DashboardModule` is card chrome,
+`EntityList` is list chrome, this composes both). One decision was ratified:
+
+- **Task 5 bypasses `EntityList`'s built-in header on purpose.** `EntityList`
+  already owns a `title`/`count` header, but it is `text-[10px]` sans (banned by
+  the dashboard type floor) and can't express the Space-Mono eyebrow — and
+  extending the *shared* primitive with dashboard chrome is wrong. The section
+  renders its own eyebrow header; the inline comment in Task 5 documents this so a
+  future reader doesn't "fix" it into the `entity-frontend.md` redundant-header
+  anti-pattern.
+- **Rule-of-three watch (do NOT build now):** `DashboardProjects`, the old
+  `DashboardProposals`, and `DashboardProposalSection` now share the
+  `DashboardModule?` + `useQuery` + skeleton + `EntityList(hideHeader, flush)`
+  shape. If a 4th appears, extract a `DashboardListModule<T>`; forcing it now
+  would drag `dashboard-projects.tsx` into this plan's scope. Recorded as a
+  candidate only.
