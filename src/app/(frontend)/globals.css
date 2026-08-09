@@ -673,15 +673,6 @@
     --mobile-offset-top: calc(16px + env(safe-area-inset-top)) !important;
     --offset-top: calc(24px + env(safe-area-inset-top)) !important;
   }
-
-  /* Installed-PWA launch: keep the web-view's first paint dark so any device
-     the native startup-image matrix doesn't match falls back to #09090b rather
-     than white. Standalone-only, so browser/marketing light pages are
-     untouched. The native startup image is the real launch brand; this is just
-     a same-color safety net for unmatched devices. */
-  html {
-    background-color: #09090b;
-  }
 }
 
 /* ── Dashboard sidebar nav hover ───────────────────────────────── */
