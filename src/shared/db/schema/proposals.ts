@@ -54,7 +54,7 @@ export const proposals = pgTable('proposals', {
   // behavior (breakdown-mode validation + client-side startingTcp sync).
   priceDisplayMode: text('price_display_mode', { enum: priceDisplayModes }).notNull().default('total'),
   // see ../entities/proposals/DOCS.md#agreement-context-as-coherent-unit
-  envelopeDocumentIds: text('envelope_document_ids').array(),
+  envelopeDocumentIds: text('envelope_document_ids', { enum: envelopeDocumentIds }).array(),
 
   // Stage-2 rollup cache (Addendum A.2): recomputed by the SINGLE choke point
   // recomputeProposalFinancials after every financial mutation. Idempotent +
