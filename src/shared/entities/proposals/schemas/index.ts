@@ -82,13 +82,20 @@ const projectDataSchema = z.object({
 // `computeFinalTcp({ funding, sow })` in `entities/proposals/lib/financials`.
 // Persisted derived values invite drift between inputs and the cached number;
 // always compute on demand from `startingTcp` − global discounts − section incentives.
-const fundingDataSchema = z.object({
+/** Canonical funding domain shape (flat dollars): assembled from the W3 cents
+ *  columns + incentive rows by getFullView, AND the live RHF funding form
+ *  state — one shape for the financials façade. The legacy blob envelope
+ *  (`fundingSectionSchema`) derives from this, not vice versa.
+ *  Tally marker: re-examine the assembled-view-model seam post-waves (ledger). */
+export const fundingDataSchema = z.object({
   cashInDeal: z.number(),
   depositAmount: z.number(),
   incentives: z.array(incentiveSchema),
   miscPrice: z.number().optional(),
   startingTcp: z.number(),
 })
+
+export type FundingData = z.infer<typeof fundingDataSchema>
 
 const sectionMetaSchema = z.object({
   enabled: z.boolean(),
