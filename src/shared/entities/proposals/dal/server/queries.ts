@@ -252,6 +252,12 @@ export async function listProposals(
     const orderBy = buildOrderBy(input.sort, {
       createdAt: proposals.createdAt,
       sentAt: proposals.sentAt,
+      // Recency of the proposal-sent event, coalesced to createdAt so rows with
+      // a null sentAt (sent before sentAt was captured) sort by their creation
+      // date instead of floating to the top under Postgres' DESC NULLS FIRST.
+      // Matches the "time since" the Sent — awaiting response card displays
+      // (`sentAt ?? createdAt`), so the roster reads strictly newest-first.
+      sentRecency: sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`,
       contractSentAt: proposals.contractSentAt,
       status: proposals.status,
       label: proposals.label,

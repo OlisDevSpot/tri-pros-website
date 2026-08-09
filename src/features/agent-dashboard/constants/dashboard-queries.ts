@@ -52,11 +52,11 @@ export function awaitingProposalsInput() {
   } satisfies ProposalListInput
 }
 
-/** Proposals sent, awaiting the customer's response — `status='sent'` with no contract envelope yet (the `proposal_sent` stage). */
+/** Proposals sent, awaiting the customer's response — `status='sent'` with no contract envelope yet (the `proposal_sent` stage). Newest-first by send recency (coalesced to createdAt), matching the card's displayed "time since". */
 export function sentProposalsInput() {
   return {
     pagination: { limit: DASHBOARD_LIMITS.proposalsPerSection, offset: 0 },
-    sort: { sortBy: 'sentAt', sortDir: 'desc' },
+    sort: { sortBy: 'sentRecency', sortDir: 'desc' },
     filters: { sentNoContract: true },
   } satisfies ProposalListInput
 }
