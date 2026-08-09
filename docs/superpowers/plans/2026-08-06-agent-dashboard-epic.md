@@ -38,10 +38,13 @@ page). **Folds in the meetings half of the data-correctness work** — the new m
 the snapshot's today query) exclude `cancelled`/`no_show` via `LIVE_MEETING_OUTCOMES`.
 
 ### Plan 2 — Dashboard data correctness: proposals (meetings folded into 1b)
-`2026-08-06-agent-dashboard-data-correctness.md` — redefines `awaitingSignature` to the union
-predicate (proposal sent OR contract out) and fixes the card's displayed badge. **The meetings
-task (exclude cancelled/no-show) moved into Plan 1b**, so Plan 2 is now proposals-only. No
-schema change.
+`2026-08-08-dashboard-proposals-sections.md` — **supersedes** the original
+`2026-08-06-agent-dashboard-data-correctness.md` (its "union" premise was wrong — the
+`awaitingSignature` DAL filter is already contract-only). Replaces the single
+Awaiting-signature module with two truthful sections — **Out for signature** (contract sent,
+unsigned/undeclined) and **Sent — awaiting response** (proposal sent, no contract yet) — rather
+than merging them into one union list. **The meetings task (exclude cancelled/no-show) moved
+into Plan 1b**, so Plan 2 is proposals-only. No schema change.
 
 ### Plan 3 — Project status derivation + `status` column removal · **issue #283**
 Codebase-wide refactor (its own concern, not just the dashboard), tracked as **#283**:

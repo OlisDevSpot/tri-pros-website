@@ -1,3 +1,8 @@
+> **SUPERSEDED (2026-08-08).** The "union" premise here was wrong — the
+> `awaitingSignature` DAL filter is already contract-only. Replaced by
+> `docs/superpowers/plans/2026-08-08-dashboard-proposals-sections.md` (two
+> truthful sections). Kept for history; do not implement.
+
 # Dashboard Data Correctness — Proposals (Plan 2 of the dashboard epic)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development.
