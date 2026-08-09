@@ -1,31 +1,24 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 
-import { awaitingProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { awaitingProposalsInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { DashboardModule } from '@/features/agent-dashboard/ui/components/dashboard-module'
-import { DashboardProposalCard } from '@/features/agent-dashboard/ui/components/dashboard-proposal-card'
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
-import { Skeleton } from '@/shared/components/ui/skeleton'
+import { DashboardProposalSection } from '@/features/agent-dashboard/ui/components/dashboard-proposal-section'
 import { ROOTS } from '@/shared/config/roots'
-import { useTRPC } from '@/trpc/helpers'
 
 /**
- * Proposals awaiting the homeowner's signature — contract sent, not yet
- * signed or declined (`awaitingProposalsInput`'s `awaitingSignature` filter,
- * capped at `DASHBOARD_LIMITS.proposals`). Uses the exact same query key the
- * dashboard route already prefetches server-side (Task 4:
- * `trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput())`),
- * so this mount hydrates instantly instead of refiring the query.
+ * Proposals module — two truthful, non-overlapping sections: "Out for signature"
+ * (contract envelope out for signature) and "Sent — awaiting response" (proposal
+ * sent, no contract yet). Each section header names the state, so the rows carry
+ * no status badge. Each section reuses the exact query keys the dashboard route
+ * prefetches (`awaitingProposalsInput` / `sentProposalsInput`), so both hydrate
+ * instantly. See docs/superpowers/specs/2026-08-08-dashboard-proposals-sections-design.md.
  */
 export function DashboardProposals() {
-  const trpc = useTRPC()
-  const { data, isLoading } = useQuery(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
-
   return (
     <DashboardModule
-      title="Awaiting signature"
+      title="Proposals"
       action={(
         <Link
           href={ROOTS.dashboard.proposals.root()}
@@ -35,31 +28,20 @@ export function DashboardProposals() {
         </Link>
       )}
     >
-      {isLoading
-        ? <DashboardProposalsSkeleton />
-        : (
-            <EntityList
-              title="Proposals"
-              hideHeader
-              items={data?.rows ?? []}
-              getItemKey={row => row.id}
-              renderItem={row => <DashboardProposalCard row={row} />}
-              emptyState={{ message: 'No proposals awaiting signature' }}
-              itemsClassName="space-y-2"
-              variant="flush"
-            />
-          )}
+      <div className="flex flex-col gap-4">
+        <DashboardProposalSection
+          title="Out for signature"
+          input={awaitingProposalsInput()}
+          timeSince="contractSentAt"
+          emptyMessage="None out for signature"
+        />
+        <DashboardProposalSection
+          title="Sent — awaiting response"
+          input={sentProposalsInput()}
+          timeSince="sentAt"
+          emptyMessage="Nothing sent awaiting a response"
+        />
+      </div>
     </DashboardModule>
-  )
-}
-
-/** `DASHBOARD_LIMITS.proposals`-capped roster; 3 dense card-shaped rows while loading. */
-function DashboardProposalsSkeleton() {
-  return (
-    <div className="flex flex-col gap-2">
-      {[0, 1, 2].map(i => (
-        <Skeleton key={i} className="h-16 w-full rounded-lg" />
-      ))}
-    </div>
   )
 }

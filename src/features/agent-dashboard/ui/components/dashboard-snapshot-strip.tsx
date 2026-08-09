@@ -22,7 +22,7 @@ export function DashboardSnapshotStrip() {
 
   const chips = [
     { href: '#meetings', label: 'Meetings today', count: meetingsToday.data?.total },
-    { href: '#proposals', label: 'Awaiting signature', count: awaitingSignature.data?.total },
+    { href: '#proposals', label: 'Out for signature', count: awaitingSignature.data?.total },
     { href: '#projects', label: 'Open projects', count: activeProjects.data?.total },
   ]
 
