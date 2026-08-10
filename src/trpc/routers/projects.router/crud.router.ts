@@ -1,13 +1,14 @@
-import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or } from 'drizzle-orm'
+import { and, count, desc, eq, getTableColumns, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { getProjectForEdit } from '@/features/project-management/dal/server/get-project-for-edit'
 import { createProject, deleteProject, getAllProjects, updateProject } from '@/features/project-management/dal/server/manage-project'
-import { projectStatuses, projectVisibilities } from '@/shared/constants/enums'
+import { projectStatusBuckets, projectVisibilities, stagesForBuckets } from '@/shared/constants/enums'
 import { buildFilterWhere } from '@/shared/dal/server/lib/query/filters'
 import { dateRangeSchema, paginatedQueryInput } from '@/shared/dal/server/lib/query/schemas'
 import { buildOrderBy } from '@/shared/dal/server/lib/query/sort'
 import { db } from '@/shared/db'
 import { projects, x_projectScopes } from '@/shared/db/schema'
+import { hasAssociatedMeeting, projectParticipationScope } from '@/shared/entities/projects/lib/visibility'
 import { projectFormSchema } from '@/shared/entities/projects/schemas'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
@@ -22,12 +23,21 @@ export const crudRouter = createTRPCRouter({
   // detail sheet can resolve trade names without a per-row fetch.
   list: agentProcedure
     .input(paginatedQueryInput({
-      status: z.array(z.enum(projectStatuses)).optional(),
+      // Status is derived from `pipelineStage`, never stored — callers filter by
+      // the coarse bucket (active/completed/on_hold/cancelled) and the handler
+      // expands it to the matching stages via `stagesForBuckets`.
+      statusBucket: z.array(z.enum(projectStatusBuckets)).optional(),
+      // Exclude pure-portfolio projects (no meetings) — showcase-only entries
+      // that never ran the lifecycle. Real projects have ≥1 birthing meeting.
+      excludePortfolio: z.boolean().optional(),
       visibility: z.enum(projectVisibilities).optional(),
       completedAt: dateRangeSchema.optional(),
       createdAt: dateRangeSchema.optional(),
     }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const isOmni = ctx.ability.can('manage', 'all')
+      const scopeWhere = isOmni ? undefined : projectParticipationScope(ctx.session.user.id)
+
       const searchTerm = input.search?.trim()
       const searchWhere = searchTerm
         ? or(
@@ -37,7 +47,12 @@ export const crudRouter = createTRPCRouter({
         : undefined
 
       const filterWhere = buildFilterWhere(input.filters, {
-        status: v => (v.length > 0 ? inArray(projects.status, v) : undefined),
+        // Expand the requested buckets to their stages. coalesce null→'closed'
+        // so a stray unset-stage project groups with Completed, matching
+        // deriveProjectStatusBucket's null fallback. (Pure-portfolio nulls are
+        // separately dropped by excludePortfolio.)
+        statusBucket: v => (v.length > 0 ? inArray(sql`coalesce(${projects.pipelineStage}, 'closed')`, stagesForBuckets(v)) : undefined),
+        excludePortfolio: v => (v ? hasAssociatedMeeting() : undefined),
         visibility: v => eq(projects.isPublic, v === 'public'),
         completedAt: v => and(
           v.from ? gte(projects.completedAt, v.from) : undefined,
@@ -49,12 +64,11 @@ export const crudRouter = createTRPCRouter({
         ),
       })
 
-      const where = and(searchWhere, filterWhere)
+      const where = and(scopeWhere, searchWhere, filterWhere)
 
       const orderBy = buildOrderBy(input.sort, {
         title: projects.title,
         city: projects.city,
-        status: projects.status,
         isPublic: projects.isPublic,
         completedAt: projects.completedAt,
         createdAt: projects.createdAt,

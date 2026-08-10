@@ -1,13 +1,14 @@
-import type { ProjectStatus, ProjectVisibility } from '@/shared/constants/enums'
+import type { ProjectStatusBucket, ProjectVisibility } from '@/shared/constants/enums'
 import type { FilterDefinition } from '@/shared/dal/client/lib/types'
 
 import { DEFAULT_TIME_PRESETS } from '@/shared/components/data-table/constants/time-filter-presets'
-import { projectStatuses, projectVisibilities } from '@/shared/constants/enums'
+import { projectStatusBuckets, projectVisibilities } from '@/shared/constants/enums'
 
-const STATUS_LABELS: Record<ProjectStatus, string> = {
+const STATUS_LABELS: Record<ProjectStatusBucket, string> = {
   active: 'Active',
   completed: 'Completed',
   on_hold: 'On Hold',
+  cancelled: 'Cancelled',
 }
 
 const VISIBILITY_LABELS: Record<ProjectVisibility, string> = {
@@ -21,10 +22,10 @@ const VISIBILITY_LABELS: Record<ProjectVisibility, string> = {
  */
 export const PROJECT_FILTER_CONFIG = [
   {
-    id: 'status',
+    id: 'statusBucket',
     type: 'multi-select',
     label: 'Status',
-    options: projectStatuses.map(s => ({ label: STATUS_LABELS[s], value: s })),
+    options: projectStatusBuckets.map(s => ({ label: STATUS_LABELS[s], value: s })),
   },
   {
     id: 'visibility',

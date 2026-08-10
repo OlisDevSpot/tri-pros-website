@@ -27,6 +27,13 @@ interface EntityListProps<T> {
   headerAction?: ReactNode
   /** Override the count shown next to title. Defaults to `items.length`. */
   count?: number
+  /**
+   * Suppress the built-in `Title (count)` header row. Use when the parent
+   * container already renders an equivalent heading (e.g. a card header with
+   * a "See all" link, or a tabs list whose trigger label already names this
+   * roster) — avoids a redundant sub-header.
+   */
+  hideHeader?: boolean
   /** Loading state — shows a one-line placeholder instead of items or empty state. */
   isLoading?: boolean
   /** Rendered when `items` is empty and not loading. */
@@ -64,6 +71,7 @@ export function EntityList<T>({
   getItemKey,
   headerAction,
   count,
+  hideHeader = false,
   isLoading = false,
   emptyState,
   itemsClassName,
@@ -76,13 +84,15 @@ export function EntityList<T>({
 
   return (
     <div className={cn('space-y-1', chromeClasses, className)}>
-      <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground mb-1.5">
-        {Icon && <Icon className="size-3" aria-hidden="true" />}
-        <span>{`${title} (${resolvedCount})`}</span>
-        {headerAction && (
-          <span className="ml-auto inline-flex items-center">{headerAction}</span>
-        )}
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground mb-1.5">
+          {Icon && <Icon className="size-3" aria-hidden="true" />}
+          <span>{`${title} (${resolvedCount})`}</span>
+          {headerAction && (
+            <span className="ml-auto inline-flex items-center">{headerAction}</span>
+          )}
+        </div>
+      )}
 
       {isLoading && (
         <p className="text-xs text-muted-foreground">Loading…</p>

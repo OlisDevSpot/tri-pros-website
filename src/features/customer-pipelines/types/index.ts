@@ -1,7 +1,7 @@
 import type { CustomerPipelineStage } from '../constants/active-pipeline-stages'
 import type { DeadPipelineStage } from '../constants/dead-pipeline-stages'
 import type { RehashPipelineStage } from '../constants/rehash-pipeline-stages'
-import type { ProjectStatus } from '@/shared/constants/enums/pipelines'
+import type { ProjectStatusBucket } from '@/shared/constants/enums/pipelines'
 import type { LeadsPipelineStage } from '@/shared/domains/pipelines/constants/leads-pipeline'
 import type { ProjectsPipelineStage } from '@/shared/domains/pipelines/constants/projects-pipeline'
 
@@ -44,7 +44,7 @@ export interface PipelineItemProject {
   id: string
   title: string
   address: string | null
-  status: ProjectStatus
+  status: ProjectStatusBucket
   pipelineStage: string | null
   startedAt: string | null
   totalValue: number
