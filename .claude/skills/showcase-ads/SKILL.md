@@ -166,8 +166,59 @@ rules above (`watermarkSrc` non-null just enables it; the art is always the
 stacked-panel badge) — logo end card with CTA pill (end-card CTA inside
 y 420–1248 too).
 
-**The fixed narrative skeleton** (sequence only — presentation comes from the
-variation menus, see below): cold open on an AFTER beauty frame with the logo
+### Concept menu — pick the ANGLE before anything else (create mode)
+
+Creative diversity has TWO layers. The seven variation axes vary *presentation*
+(hook style, transitions, pacing, music). The **concept** varies the *angle and
+the narrative skeleton itself* — and sameness of angle is the deeper fatigue
+risk: five reels that are all before→after morphs compete with each other no
+matter how their hooks differ. So the FIRST create-mode decision is **which
+concept**, and it must differ from the immediately previous reel's concept —
+recorded in the ledger alongside the axes (see `variation-axes.md`).
+
+House constants hold across ALL concepts (brand/logo/safe-rects/caption
+system/VO rotation/offer coherence/truthfulness/one-motion-per-moment). Only the
+narrative skeleton changes per concept.
+
+| # | Concept | Hook | Skeleton | Status |
+|---|---|---|---|---|
+| 1 | **Material-hero** | sensory macro (tactile scroll-stop on texture + light) | defined below | ✅ |
+| 2 | **Five-kitchens scarcity montage** | disqualifying "here's a rare one" | Scout spine (`video/scripts/build-scout.mjs`) — shows 5 real kitchens, offer-forward VO | ✅ proven |
+| 3 | **Before→after money-shot morph** | inverted after-first reveal | the transform skeleton below | ✅ |
+| 4 | **Homeowner-POV disqualifier** | "is your kitchen one of the 5?" | stub — design on first build | ⬜ |
+| 5 | **Build-story / process** | "watch how a Showcase kitchen comes together" | stub | ⬜ |
+| 6 | **Lifestyle payoff** | family living in the finished kitchen | stub | ⬜ |
+
+**Concept #1 — Material-hero skeleton** (quartzite/countertop sensory; has NO
+before→after beat, so the morph recipes + transform pacing table do NOT apply):
+
+1. **Cold open — SENSORY MACRO** on the hero surface: slow push/orbit on
+   quartzite veining, raking light across a honed/polished finish, a hand
+   trailing the edge (no faces). Logo intro glides in; hook title over a
+   `hookScrim`. The concept lives or dies on the first ~1.5s of tactile beauty —
+   hold it long (≥90f, cinematic).
+2. **Widen-to-reveal** the full kitchen the surface lives in — chain-of-custody:
+   seed the wide from the macro's final frame so the room matches the slab.
+3. **2–3 finished-kitchen walkthrough glides** (real, distinct projects — the
+   "this is the standard every Showcase kitchen is held to" proof), each a
+   seedance glide per the walkthrough recipe, brisker pacing, cuts snapped to
+   the music grid.
+4. **Offer beat** over a framed checkmarks card (AAA-grade · built-to-be-
+   photographed · homeowners only) + the brand line ("And at Tri Pros
+   Remodeling…").
+5. **End card + CTA.**
+
+VO spine = the Scout copy discipline (WHO→WHAT→DEAL→CATCH→QUALIFY→APPLY);
+pictures carry the material beauty, every SPOKEN word carries the OFFER — never
+narrate the countertop. Chain-of-custody is CRITICAL here: macro → wide → each
+walkthrough must read as one continuous material world (seed each clip from the
+prior clip's final frame; name the visible surfaces/fixtures in the prompt).
+
+**The transform-concept narrative skeleton** (concept #3 — the DEFAULT for
+before→after-capable trades; non-transform concepts use their own skeleton from
+the menu above, and the morph-specific recipes below apply ONLY to this
+concept): sequence only — presentation comes from the
+variation menus, see below. Cold open on an AFTER beauty frame with the logo
 intro → hard snap to the BEFORE (shutter + flash) → transform morph #1
 (tail-trimmed at build completion) → after-walkthrough glide of the finished
 space (see the walkthrough recipe above — mandatory) → framed crew/during
@@ -389,6 +440,32 @@ one weak clip → re-roll just that generation, same filename; copy/timing →
 props JSON only; layout/brand → composition components. The updated props
 file IS the saved recipe (`video/` is gitignored — nothing there is committed);
 renders are disposable.
+
+## The "postable" gate (scored — MANDATORY before publish)
+
+No reel is offered for activation until it clears this gate. Score the FINAL
+render (view the beat stills — don't guess) on five dimensions; **publish only
+if total ≥ 32/40 AND every critical floor is met.** Below bar = reroll the
+failing dimension, not ship-and-hope. Record the score in the ledger row beside
+the concept + axes; a reroll re-scores from scratch (never average with its
+predecessor).
+
+Truthfulness / AI-disclosure is NOT scored here — it is a separate, mandatory
+**manual owner check** (genuine same-room before/after pairs; "AI Info" toggled
+on activation in Ads Manager). See Canonical rules. A truth failure blocks
+publish regardless of score.
+
+| # | Dimension | Weight | Critical | Floor | "5/5" looks like |
+|---|---|---|---|---|---|
+| 1 | **Thumbstop / hook** | ×2 | ✅ | 4/5 | scroll-stops in <2s — after-first reveal, motion, or (material-hero) a tactile macro |
+| 2 | **Visual fidelity** | ×2 | ✅ | 4/5 | zero AI artifacts, chain-of-custody continuity (no invented fixtures), sharp/well-exposed |
+| 3 | **Offer coherence** | ×2 | ✅ | 4/5 | VO is one logical thread (WHO→WHAT→DEAL→CATCH→QUALIFY→APPLY), names Tri Pros, never narrates the visuals |
+| 4 | **Legibility** | ×1 | | 3/5 | captions word-synced, all persistent elements inside safe rects, logo treatment correct |
+| 5 | **Brand + polish** | ×1 | | 3/5 | color, music mix, pacing snapped to the beat grid, clean end-card CTA |
+
+Weighted max = **40** (2+2+2+1+1 units × 5). **Hard minimum = 32/40 (80%) AND
+all three critical dimensions ≥ 4/5.** A high total does NOT rescue a critical
+floor miss — a weak hook or an AI artifact blocks publish on its own.
 
 ## Publish (after explicit approval — hold stands)
 

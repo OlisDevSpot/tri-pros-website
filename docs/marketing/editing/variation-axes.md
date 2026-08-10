@@ -72,6 +72,15 @@ on ANY of axes 1–5. (Menus have ≥3 values each, so this is always
 satisfiable.) Axes 6–7 vary at discretion but are always recorded in
 `video/props/variation-ledger.md`.
 
+**Axis 0 — Concept (angle).** Above these seven presentation axes sits the
+**concept** (the narrative angle + skeleton — material-hero, five-kitchens
+montage, transform morph, …; full menu in `SKILL.md` → "Concept menu"). It is
+the FIRST creative decision and follows the same must-differ-from-previous rule:
+a new reel picks a concept ≠ the immediately previous reel's. Record the concept
+(and the postable-gate score) in the ledger row alongside the axes. Sameness of
+angle is the deeper creative-fatigue risk — vary it first, then vary the seven
+axes within it.
+
 ## Axis 1 — Hook treatment → `hookStyle`
 
 Schema: `hookStyle: 'wordStagger' | 'punch' | 'freeze' | 'typewriter'` (default
