@@ -12,7 +12,7 @@ import type { Row } from '@/shared/db/types'
 import type { ProposalMediaView } from '@/shared/entities/proposal-media-files/dal/server/queries'
 import type { ProposalLockSignals } from '@/shared/entities/proposals/lib/proposal-lock'
 
-import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNull, lte, max, or, sql } from 'drizzle-orm'
+import { and, asc, count, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lte, max, or, sql } from 'drizzle-orm'
 import z from 'zod'
 
 import { proposalKinds, proposalStatuses } from '@/shared/constants/enums'
@@ -74,6 +74,8 @@ export const proposalListFiltersSchema = {
   price: numberRangeSchema.optional(),
   customerId: z.string().uuid().optional(),
   meetingId: z.string().uuid().optional(),
+  awaitingSignature: z.boolean().optional(),
+  sentNoContract: z.boolean().optional(),
 }
 
 export const proposalListInputSchema = paginatedQueryInput(proposalListFiltersSchema)
@@ -224,6 +226,25 @@ export async function listProposals(
       ),
       customerId: v => eq(customers.id, v),
       meetingId: v => eq(proposals.meetingId, v),
+      awaitingSignature: (v: boolean) =>
+        v
+          ? and(
+              isNotNull(proposals.contractSentAt),
+              isNull(proposals.contractSignedAt),
+              isNull(proposals.contractDeclinedAt),
+            )
+          : undefined,
+      // Proposal sent (status='sent') with no contract envelope yet — the
+      // `proposal_sent` pipeline stage; user-facing "Sent — awaiting response".
+      // Distinct from `awaitingSignature` (contract out): the two partition the
+      // active proposals with no overlap.
+      sentNoContract: (v: boolean) =>
+        v
+          ? and(
+              eq(proposals.status, 'sent'),
+              isNull(proposals.contractSentAt),
+            )
+          : undefined,
     })
 
     const where = and(ctx.scope ?? undefined, searchWhere, filterWhere)
@@ -231,6 +252,13 @@ export async function listProposals(
     const orderBy = buildOrderBy(input.sort, {
       createdAt: proposals.createdAt,
       sentAt: proposals.sentAt,
+      // Recency of the proposal-sent event, coalesced to createdAt so rows with
+      // a null sentAt (sent before sentAt was captured) sort by their creation
+      // date instead of floating to the top under Postgres' DESC NULLS FIRST.
+      // Matches the "time since" the Sent — awaiting response card displays
+      // (`sentAt ?? createdAt`), so the roster reads strictly newest-first.
+      sentRecency: sql`coalesce(${proposals.sentAt}, ${proposals.createdAt})`,
+      contractSentAt: proposals.contractSentAt,
       status: proposals.status,
       label: proposals.label,
       customerName: customers.name,

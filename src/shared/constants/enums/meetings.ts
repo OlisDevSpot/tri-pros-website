@@ -116,6 +116,10 @@ export const ATTENTION_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(outco
 /** Outcomes that represent a decided/terminal state (anything but not_set). */
 export const DECIDED_OUTCOMES: MeetingOutcome[] = meetingOutcomes.filter(o => o !== 'not_set')
 
+/** Outcomes that keep a meeting "live" — everything except the two that mean it never happened. */
+export const LIVE_MEETING_OUTCOMES: MeetingOutcome[]
+  = meetingOutcomes.filter(o => o !== 'cancelled' && o !== 'no_show')
+
 // Energy-efficient trade classification (for program qualification)
 export const energyEfficientTradeAccessors = ['insulation', 'hvac', 'windows', 'solar'] as const
 export type EnergyEfficientTrade = (typeof energyEfficientTradeAccessors)[number]

@@ -56,7 +56,6 @@ export const businessRouter = createTRPCRouter({
           zip: customer.zip,
           description: input.description,
           projectDuration: input.projectDuration,
-          status: 'active',
           pipelineStage: 'signed',
           isPublic: false,
         })

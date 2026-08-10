@@ -8,7 +8,6 @@ import { user } from './auth'
 import { customers } from './customers'
 import { mediaFiles } from './media-files'
 import { meetings } from './meetings'
-import { projectStatusEnum } from './meta'
 import { x_projectScopes } from './x-project-scopes'
 
 export const projects = pgTable('projects', {
@@ -37,7 +36,6 @@ export const projects = pgTable('projects', {
   beforeAfterPairsJSON: jsonb('before_after_pairs_json').$type<BeforeAfterPairs>(),
   customerId: uuid('customer_id').references(() => customers.id, { onDelete: 'cascade' }),
   ownerId: text('owner_id').references(() => user.id, { onDelete: 'cascade' }),
-  status: projectStatusEnum('status').notNull().default('active'),
   qbSubCustomerId: text('qb_sub_customer_id'),
   pipelineStage: text('pipeline_stage'),
   startedAt: timestamp('started_at', { mode: 'string', withTimezone: true }),

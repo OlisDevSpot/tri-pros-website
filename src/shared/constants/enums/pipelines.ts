@@ -34,10 +34,6 @@ export const freshProposalStages = [
 ] as const
 export type FreshProposalStage = (typeof freshProposalStages)[number]
 
-/** Project lifecycle statuses */
-export const projectStatuses = ['active', 'completed', 'on_hold'] as const
-export type ProjectStatus = (typeof projectStatuses)[number]
-
 /** Public-facing visibility of a portfolio project (maps to projects.isPublic). */
 export const projectVisibilities = ['public', 'draft'] as const
 export type ProjectVisibility = (typeof projectVisibilities)[number]
@@ -57,3 +53,65 @@ export const projectPipelineStages = [
   'on_hold',
 ] as const
 export type ProjectPipelineStage = (typeof projectPipelineStages)[number]
+
+/**
+ * Coarse, user-facing status of a project — a handful of mutually-exclusive
+ * buckets the dashboard and lists group by. Derived from `pipelineStage`, never
+ * stored (see `PROJECT_STAGE_BUCKET`).
+ */
+export const projectStatusBuckets = ['active', 'completed', 'on_hold', 'cancelled'] as const
+export type ProjectStatusBucket = (typeof projectStatusBuckets)[number]
+
+/**
+ * THE canonical project-status classifier: a project's coarse status is derived
+ * from its `pipelineStage` through this map — do not re-encode the stage→bucket
+ * relationship anywhere else. Buckets are JIT-derived on read
+ * (`deriveProjectStatusBucket`); the `projects.status` column was REMOVED (#283)
+ * — status is derived-only now. Typed `Record<ProjectPipelineStage, …>` so
+ * omitting a stage is a compile error.
+ *
+ * - active    — live work: signed through full payment, not yet closed
+ * - completed — closed out (terminal, won) — also the fallback for a null/unset
+ *               stage (pure-portfolio projects have no lifecycle stage; see
+ *               `isPurePortfolioProject`)
+ * - on_hold   — paused mid-flight
+ * - cancelled — aborted (terminal, lost)
+ */
+export const PROJECT_STAGE_BUCKET: Record<ProjectPipelineStage, ProjectStatusBucket> = {
+  signed: 'active',
+  opened: 'active',
+  pending_inspection: 'active',
+  install_complete: 'active',
+  pending_final_inspection: 'active',
+  passed_final: 'active',
+  got_partial_payment: 'active',
+  got_full_payment: 'active',
+  closed: 'completed',
+  cancelled: 'cancelled',
+  on_hold: 'on_hold',
+}
+
+/**
+ * A project's status bucket from its `pipelineStage`. A null/unknown stage falls
+ * back to 'completed': a project with no lifecycle stage is a pure-portfolio
+ * showcase entry (never ran the signed→closed sequence), which reads as a
+ * finished piece of work. Note pure-portfolio projects are separately excluded
+ * from operational lists/analytics via `isPurePortfolioProject` (no meetings);
+ * this fallback only governs how a stray null renders if one slips through.
+ */
+export function deriveProjectStatusBucket(stage: ProjectPipelineStage | string | null | undefined): ProjectStatusBucket {
+  if (!stage) {
+    return 'completed'
+  }
+  return PROJECT_STAGE_BUCKET[stage as ProjectPipelineStage] ?? 'completed'
+}
+
+/**
+ * The pipeline stages belonging to the given status bucket(s) — spread straight
+ * into an `inArray(projects.pipelineStage, …)` predicate to group/filter by
+ * derived status. The inverse of `PROJECT_STAGE_BUCKET`. Callers pass bucket
+ * keys (the user-facing status axis); the raw stage list stays server-internal.
+ */
+export function stagesForBuckets(buckets: readonly ProjectStatusBucket[]): ProjectPipelineStage[] {
+  return projectPipelineStages.filter(s => buckets.includes(PROJECT_STAGE_BUCKET[s]))
+}

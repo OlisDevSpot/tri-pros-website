@@ -5,7 +5,7 @@ import { getCustomerPipelineItems } from '@/features/customer-pipelines/dal/serv
 import { getCustomerProfile } from '@/features/customer-pipelines/dal/server/get-customer-profile'
 import { moveCustomerPipelineItem } from '@/features/customer-pipelines/dal/server/move-customer-pipeline-item'
 import { moveCustomerToPipeline } from '@/features/customer-pipelines/dal/server/move-customer-to-pipeline'
-import { meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
+import { deriveProjectStatusBucket, meetingPipelines, pipelines } from '@/shared/constants/enums/pipelines'
 import { buildUserContext } from '@/shared/dal/server/lib/helpers'
 import { db } from '@/shared/db'
 import { customerLeadAttribution } from '@/shared/db/schema/customer-lead-attribution'
@@ -102,11 +102,13 @@ export const customerPipelinesRouter = createTRPCRouter({
       if (!meeting?.customerId) {
         return { projects: [], proposals: [] }
       }
-      const customerProjects = await db
-        .select({ id: projects.id, title: projects.title, status: projects.status, pipelineStage: projects.pipelineStage, createdAt: projects.createdAt })
+      const customerProjectRows = await db
+        .select({ id: projects.id, title: projects.title, pipelineStage: projects.pipelineStage, createdAt: projects.createdAt })
         .from(projects)
         .where(eq(projects.customerId, meeting.customerId))
         .orderBy(desc(projects.createdAt))
+      // status is derived from pipelineStage (the column was removed)
+      const customerProjects = customerProjectRows.map(p => ({ ...p, status: deriveProjectStatusBucket(p.pipelineStage) }))
       const meetingProposals = await db
         .select({ id: proposals.id, label: proposals.label, status: proposals.status, createdAt: proposals.createdAt })
         .from(proposals)
