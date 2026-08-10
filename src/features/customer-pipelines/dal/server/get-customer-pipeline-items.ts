@@ -6,6 +6,7 @@ import { and, count, desc, eq, inArray, isNotNull, isNull, max, sql } from 'driz
 
 import { computeCustomerStage } from '@/features/customer-pipelines/lib/compute-customer-stage'
 import { DECIDED_OUTCOMES } from '@/shared/constants/enums/meetings'
+import { deriveProjectStatusBucket } from '@/shared/constants/enums/pipelines'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customers } from '@/shared/db/schema/customers'
@@ -344,7 +345,6 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
       projectId: projects.id,
       projectTitle: projects.title,
       projectAddress: projects.address,
-      projectStatus: projects.status,
       projectPipelineStage: projects.pipelineStage,
       projectStartedAt: projects.startedAt,
       projectCreatedAt: projects.createdAt,
@@ -500,7 +500,7 @@ async function getProjectsPipelineItems(userId: string, isOmni: boolean, canSeeU
         id: row.projectId,
         title: row.projectTitle,
         address: row.projectAddress,
-        status: row.projectStatus,
+        status: deriveProjectStatusBucket(row.projectPipelineStage),
         pipelineStage: row.projectPipelineStage,
         startedAt: row.projectStartedAt ?? earliestApprovedByCustomer.get(customerId) ?? null,
         totalValue,

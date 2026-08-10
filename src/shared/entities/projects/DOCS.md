@@ -32,11 +32,11 @@ derived bucket: └───────────── active ────�
                 on_hold  ←  on_hold stage      cancelled  ←  cancelled stage
 ```
 
-The stage is the lifecycle; it does NOT sit "within" a status. The
-`projects.status` column (`projectStatuses`: `active | completed | on_hold`) is
-DEPRECATED for grouping — it defaults to `active`, never advances, and can't
-express `cancelled`, so it lies. Read a project's coarse state via
-`deriveProjectStatusBucket(pipelineStage)`, never the `status` column.
+The stage is the lifecycle; it does NOT sit "within" a status. The old
+`projects.status` column (`active | completed | on_hold`) was **removed** (#283):
+it defaulted to `active`, never advanced, and couldn't express `cancelled`, so it
+lied. A project's coarse state is now **derived** from `pipelineStage` via
+`deriveProjectStatusBucket`, never stored.
 
 ## Rules
 
@@ -99,9 +99,9 @@ got_partial_payment → got_full_payment → closed (+ cancelled / on_hold side-
 
 A project's coarse **status bucket** (`active | completed | on_hold | cancelled`) is derived from its `pipelineStage` through `PROJECT_STAGE_BUCKET` — the single canonical classifier. Derive on read via `deriveProjectStatusBucket(stage)`; NULL/unknown → `completed` (an unset stage means a pure-portfolio showcase entry — a finished piece of work — see `#pure-portfolio-projects-are-not-real-projects`). Buckets group by pre-derived stage arrays (`ACTIVE_PROJECT_STAGES`, `ON_HOLD_PROJECT_STAGES`, …) spread into `inArray(projects.pipelineStage, …)` predicates — the dashboard Projects module's Active / On hold sections do exactly this.
 
-Do **not** re-encode the stage→bucket relationship anywhere else, and do **not** read the `projects.status` column for grouping — it's deprecated (defaults to `active`, never advances, can't express `cancelled`). Mirrors the meetings classifier (`MEETING_OUTCOME_SENTIMENT`).
+Do **not** re-encode the stage→bucket relationship anywhere else. The `projects.status` column was **removed** (#283) — status is derived-only, never stored. Query-side grouping goes through the `statusBucket` filter on `crud.list` (expands buckets → stages via `stagesForBuckets`); display-side goes through `deriveProjectStatusBucket`. Mirrors the meetings classifier (`MEETING_OUTCOME_SENTIMENT`).
 
-**Why**: `status` was set once at creation and never maintained, so nearly every project reads `active` regardless of its true state. `pipelineStage` is the axis agents actually move, so it's the truthful source; deriving keeps one source of truth and avoids a status-sync mechanism (JIT derivation — see ADR-0005).
+**Why**: `status` was set once at creation and never maintained, so nearly every project read `active` regardless of its true state. `pipelineStage` is the axis agents actually move, so it's the truthful source; deriving keeps one source of truth and avoids a status-sync mechanism (JIT derivation — see ADR-0005).
 **Reference impl**: `PROJECT_STAGE_BUCKET` + `deriveProjectStatusBucket` in `src/shared/constants/enums/pipelines.ts`; consumed by `src/features/agent-dashboard/constants/dashboard-queries.ts` (`activeProjectsInput` / `onHoldProjectsInput`)
 **Enforced by**: convention; the `Record<ProjectPipelineStage, …>` type makes the map exhaustive (omitting a stage fails `pnpm tsc`)
 

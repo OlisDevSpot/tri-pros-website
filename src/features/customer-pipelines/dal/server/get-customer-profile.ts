@@ -5,6 +5,7 @@ import type { CustomerLeadAttributionRow } from '@/shared/db/schema/customer-lea
 import { TRPCError } from '@trpc/server'
 import { and, asc, count, desc, eq, getTableColumns, sql } from 'drizzle-orm'
 
+import { deriveProjectStatusBucket } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import { user } from '@/shared/db/schema/auth'
 import { customerEnrichment } from '@/shared/db/schema/customer-enrichment'
@@ -208,7 +209,6 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
       id: projects.id,
       title: projects.title,
       address: projects.address,
-      status: projects.status,
       pipelineStage: projects.pipelineStage,
       createdAt: projects.createdAt,
     })
@@ -230,7 +230,7 @@ export async function getCustomerProfile(customerId: string, viewer: CustomerPro
     id: p.id,
     title: p.title,
     address: p.address,
-    status: p.status,
+    status: deriveProjectStatusBucket(p.pipelineStage),
     pipelineStage: p.pipelineStage,
     createdAt: p.createdAt,
     meetings: meetingsByProjectId.get(p.id) ?? [],

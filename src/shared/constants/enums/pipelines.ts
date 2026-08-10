@@ -34,10 +34,6 @@ export const freshProposalStages = [
 ] as const
 export type FreshProposalStage = (typeof freshProposalStages)[number]
 
-/** Project lifecycle statuses */
-export const projectStatuses = ['active', 'completed', 'on_hold'] as const
-export type ProjectStatus = (typeof projectStatuses)[number]
-
 /** Public-facing visibility of a portfolio project (maps to projects.isPublic). */
 export const projectVisibilities = ['public', 'draft'] as const
 export type ProjectVisibility = (typeof projectVisibilities)[number]
@@ -70,9 +66,9 @@ export type ProjectStatusBucket = (typeof projectStatusBuckets)[number]
  * THE canonical project-status classifier: a project's coarse status is derived
  * from its `pipelineStage` through this map — do not re-encode the stage→bucket
  * relationship anywhere else. Buckets are JIT-derived on read
- * (`deriveProjectStatusBucket`); the `projects.status` column is DEPRECATED for
- * grouping (it defaults to 'active' and never advances, so it lies). Typed
- * `Record<ProjectPipelineStage, …>` so omitting a stage is a compile error.
+ * (`deriveProjectStatusBucket`); the `projects.status` column was REMOVED (#283)
+ * — status is derived-only now. Typed `Record<ProjectPipelineStage, …>` so
+ * omitting a stage is a compile error.
  *
  * - active    — live work: signed through full payment, not yet closed
  * - completed — closed out (terminal, won) — also the fallback for a null/unset
@@ -110,8 +106,12 @@ export function deriveProjectStatusBucket(stage: ProjectPipelineStage | string |
   return PROJECT_STAGE_BUCKET[stage as ProjectPipelineStage] ?? 'completed'
 }
 
-/** Stage subsets per bucket — spread straight into `inArray(projects.pipelineStage, …)` predicates. */
-export const ACTIVE_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'active')
-export const COMPLETED_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'completed')
-export const ON_HOLD_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'on_hold')
-export const CANCELLED_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'cancelled')
+/**
+ * The pipeline stages belonging to the given status bucket(s) — spread straight
+ * into an `inArray(projects.pipelineStage, …)` predicate to group/filter by
+ * derived status. The inverse of `PROJECT_STAGE_BUCKET`. Callers pass bucket
+ * keys (the user-facing status axis); the raw stage list stays server-internal.
+ */
+export function stagesForBuckets(buckets: readonly ProjectStatusBucket[]): ProjectPipelineStage[] {
+  return projectPipelineStages.filter(s => buckets.includes(PROJECT_STAGE_BUCKET[s]))
+}

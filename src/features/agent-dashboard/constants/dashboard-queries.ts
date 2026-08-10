@@ -14,7 +14,7 @@ import type { MeetingListInput } from '@/shared/entities/meetings/dal/server/que
 import type { ProposalListInput } from '@/shared/entities/proposals/dal/server/queries'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { ACTIVE_PROJECT_STAGES, LIVE_MEETING_OUTCOMES, ON_HOLD_PROJECT_STAGES } from '@/shared/constants/enums'
+import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
 import { meetingMonthWindow, meetingWindow } from '../lib/meeting-windows'
 
 // `projects.crud.list`'s input isn't exported as a named schema/type (it's
@@ -64,24 +64,24 @@ export function sentProposalsInput() {
 
 /**
  * Active projects — live work (signed through full payment), newest first.
- * Grouped by the derived status bucket (`ACTIVE_PROJECT_STAGES` off
- * `PROJECT_STAGE_BUCKET`), NOT the vestigial `status` column which is ~always
- * 'active'. `excludePortfolio` drops showcase-only projects (no meetings), which
+ * Grouped by the derived status bucket (`statusBucket: ['active']`, expanded to
+ * stages server-side via `PROJECT_STAGE_BUCKET`), NOT the removed `status`
+ * column. `excludePortfolio` drops showcase-only projects (no meetings), which
  * carry no lifecycle stage. See src/shared/constants/enums/pipelines.ts.
  */
 export function activeProjectsInput() {
   return {
     pagination: { limit: DASHBOARD_LIMITS.projectsPerSection, offset: 0 },
     sort: { sortBy: 'createdAt', sortDir: 'desc' },
-    filters: { pipelineStage: ACTIVE_PROJECT_STAGES, excludePortfolio: true },
+    filters: { statusBucket: ['active'], excludePortfolio: true },
   } satisfies ProjectsListInput
 }
 
-/** Projects paused mid-flight (`on_hold` stage), newest first. Real projects only. */
+/** Projects paused mid-flight (`on_hold`), newest first. Real projects only. */
 export function onHoldProjectsInput() {
   return {
     pagination: { limit: DASHBOARD_LIMITS.projectsPerSection, offset: 0 },
     sort: { sortBy: 'createdAt', sortDir: 'desc' },
-    filters: { pipelineStage: ON_HOLD_PROJECT_STAGES, excludePortfolio: true },
+    filters: { statusBucket: ['on_hold'], excludePortfolio: true },
   } satisfies ProjectsListInput
 }

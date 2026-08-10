@@ -7,7 +7,6 @@ import {
   meetingParticipantRoles,
   meetingPipelines,
   meetingTypes,
-  projectStatuses,
   projectTypes,
   userRoles,
   viewSources,
@@ -42,7 +41,6 @@ export const meetingTypeEnum = pgEnum('meeting_type', meetingTypes)
 
 // PIPELINES
 export const meetingPipelineEnum = pgEnum('meeting_pipeline', meetingPipelines)
-export const projectStatusEnum = pgEnum('project_status', projectStatuses)
 
 // VOIP IN-HOUSE (Twilio — agent ↔ already-known-customer comms)
 // 4 enums per 2026-05-30 grill. See docs/plans/voip-in-house/phase-1-mvp.md GRILL RESULTS.
