@@ -1,7 +1,7 @@
 # Epic — Agent Dashboard Operational Home
 
 **Branch:** `feat/281` (worktree `.worktrees/issue-281`) · **Issue:** #281
-**Status:** Plan 1 (UI) shaped & planned; Plans 2–3 planned; #282 spun out.
+**Status (2026-08-10):** Plans 1, 1b, 2 **SHIPPED** (committed, unpushed). Plan 3 / #283 **SHIPPED in code** — status derived from `pipelineStage`, `status` column removed from schema; **the `DROP COLUMN` + `DROP TYPE` prod/dev push is user-gated and PENDING**. #282 (Action Queue) not started. Nothing pushed; no PR.
 
 The `/dashboard` agent home was built (#281) with correct plumbing but a poor visual
 surface **and** wrong data defaults. This epic sequences the remaining work into small,
@@ -15,7 +15,7 @@ what each module shows. See [[feedback-data-defaults-from-lifecycle]].
 | Module | Correct default | Notes |
 |---|---|---|
 | **Proposals** | **Two non-overlapping sections** (superseded the union — see `2026-08-08-dashboard-proposals-sections.md`): **Out for signature** = contract out (`contractSentAt` set AND `contractSignedAt`/`contractDeclinedAt` null) · **Sent — awaiting response** = `status = 'sent'` AND `contractSentAt` null | The section header names the state, so rows carry **no** per-row status badge. |
-| **Open projects** | Derived project status `= active`, where status is **derived from `pipelineStage`**, not the `status` column | `status` column to be **eliminated**; null pipelineStage ⇒ sample ⇒ treat as closed. |
+| **Projects** | **Two sections** (Active + On hold), status **derived from `pipelineStage`** via `PROJECT_STAGE_BUCKET`. Buckets: `active | completed | on_hold | cancelled`; **null ⇒ completed**. Pure-portfolio projects (no meetings) excluded. | `status` column **removed** from schema (#283; push pending). Records page still shows portfolio. |
 | **Meetings** | Month calendar + day agenda (Plan 1b), meetings-only, excluding `cancelled` + `no_show` | Tabs replaced by a calendar; live-outcome filter folded into the month query. |
 | **Needs attention (Action Queue)** | **Removed from the dashboard UI for now** — stub with wrong math/filters | Rebuild tracked in **#282**; `ActionCenterSheet` stays reachable from nav but stubbed. |
 | **Snapshot strip** | Meetings today · Out for signature · Open projects | Drops the action-queue-derived "Follow-ups due" chip; no `getActionQueue` dependency. The proposals chip counts the Out-for-signature section (contract out). |
@@ -46,13 +46,15 @@ unsigned/undeclined) and **Sent — awaiting response** (proposal sent, no contr
 than merging them into one union list. **The meetings task (exclude cancelled/no-show) moved
 into Plan 1b**, so Plan 2 is proposals-only. No schema change.
 
-### Plan 3 — Project status derivation + `status` column removal · **issue #283**
-Codebase-wide refactor (its own concern, not just the dashboard), tracked as **#283**:
-an entity-lib helper deriving `active/closed/cancelled/on_hold` from `pipelineStage`
-(null ⇒ closed), repoint every `projects.status` call site to it, switch the dashboard
-"Open projects" filter to derived-active, then drop the `status` column (schema migration;
-**prod push is explicit/user-gated**). Ships correct projects data + cleanup. Full
-bite-sized plan to be written when we reach it.
+### Plan 3 — Project status derivation + `status` column removal · **issue #283** — SHIPPED (code)
+Codebase-wide refactor, tracked as **#283**. As shipped (2026-08-10):
+- `PROJECT_STAGE_BUCKET` classifier + `deriveProjectStatusBucket` in `constants/enums/pipelines.ts` — buckets **`active | completed | on_hold | cancelled`** (final taxonomy: `got_full_payment` stays **active**; only `closed` ⇒ completed; **null ⇒ completed**). Mirrors `MEETING_OUTCOME_SENTIMENT`.
+- Every `projects.status` reader repointed to the derived helper (customer-profile DAL, pipeline-items DAL, customer-pipelines router, dashboard, records filter).
+- `crud.list` grouping consolidated to one derived **`statusBucket`** filter (`stagesForBuckets`); dashboard is now **two sections** (Active + On hold, `excludePortfolio`).
+- **New this pass (not in original plan):** pure-portfolio projects (no meetings) are excluded from operational lists/analytics via `isPurePortfolioProject` / `hasAssociatedMeeting` + the `excludePortfolio` filter. The records page is the **only** surface that still shows them.
+- `status` column + `project_status` pgEnum **removed from the schema**.
+
+**PENDING — user-gated DB push** (dev + prod): `pnpm db:push` emits exactly `ALTER TABLE "projects" DROP COLUMN "status";` + `DROP TYPE "public"."project_status";` — no other column touched, no data loss beyond the removed column. The app runs correctly before the push (the extra column is ignored on read; inserts use its default).
 
 ## Spun-out issues
 
