@@ -21,11 +21,12 @@ interface DashboardProjectCardProps {
  * `ProjectEntityCard` (which requires `CustomerProfileProject`, the richer
  * shape the customer-profile DAL assembles with a per-project meetings join).
  * Fetching that per dashboard row would mean N+1 joins for data this roster
- * doesn't show. Instead this mirrors `ProjectEntityCard`'s own status/
- * pipelineStage badge treatment (border-l accent + green status badge +
- * secondary pipelineStage badge — the only "color mapping" this entity
- * actually has; there's no separate stage-color-map module for projects) and
- * reuses the same `useProjectActionConfigs` + `EntityActionMenu` action
+ * doesn't show. The dashboard Projects module groups rows into sections by the
+ * derived status bucket (Active / On hold), so the section header already names
+ * the coarse status — this card therefore drops the old always-'active' green
+ * `status` badge (it was misleading: `status` is deprecated and ~never
+ * advances) and shows only the specific `pipelineStage`, the informative axis.
+ * Reuses the same `useProjectActionConfigs` + `EntityActionMenu` action
  * plumbing every other project surface (table, `ProjectEntityCard`) uses, so
  * actions can't drift between surfaces. Matches `DashboardMeetingCard`/
  * `DashboardProposalCard`'s row treatment (`rounded-lg border bg-card p-2.5`)
@@ -53,12 +54,6 @@ export function DashboardProjectCard({ row, className }: DashboardProjectCardPro
             </span>
           )}
         </div>
-        <Badge
-          variant="outline"
-          className="shrink-0 border-green-500/30 bg-green-500/10 text-xs text-green-700 dark:border-green-500/20 dark:text-green-300"
-        >
-          {row.status}
-        </Badge>
         {row.pipelineStage && (
           <Badge variant="secondary" className="shrink-0 text-xs">
             {row.pipelineStage.replace(/_/g, ' ')}

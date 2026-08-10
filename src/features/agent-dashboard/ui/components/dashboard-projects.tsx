@@ -1,33 +1,25 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 
-import { activeProjectsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { activeProjectsInput, onHoldProjectsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { DashboardModule } from '@/features/agent-dashboard/ui/components/dashboard-module'
-import { DashboardProjectCard } from '@/features/agent-dashboard/ui/components/dashboard-project-card'
-import { EntityList } from '@/shared/components/entity-list/ui/entity-list'
-import { Skeleton } from '@/shared/components/ui/skeleton'
+import { DashboardProjectSection } from '@/features/agent-dashboard/ui/components/dashboard-project-section'
 import { ROOTS } from '@/shared/config/roots'
-import { useTRPC } from '@/trpc/helpers'
 
 /**
- * Open (active) projects — `activeProjectsInput`'s `status: ['active']`
- * filter (the real "open" value among `projectStatuses`, vs `completed`/
- * `on_hold`), capped at `DASHBOARD_LIMITS.projects`. Already
- * participation-scoped server-side (Task 2: agents see projects tied to a
- * meeting they participate in, omni sees all) and shares the exact query key
- * the dashboard route prefetches server-side (Task 4:
- * `trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput())`), so
- * this mount hydrates instantly instead of refiring the query.
+ * Projects module — two truthful, non-overlapping sections grouped by the
+ * status bucket derived from `pipelineStage` (NOT the vestigial `status`
+ * column, which is ~always 'active'): "Active" (live work, signed → full
+ * payment) and "On hold" (paused). Each section reuses the exact query keys the
+ * dashboard route prefetches (`activeProjectsInput` / `onHoldProjectsInput`),
+ * so both hydrate instantly. Completed/cancelled projects are terminal —
+ * reachable via "See all →".
  */
 export function DashboardProjects() {
-  const trpc = useTRPC()
-  const { data, isLoading } = useQuery(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
-
   return (
     <DashboardModule
-      title="Open projects"
+      title="Projects"
       action={(
         <Link
           href={ROOTS.dashboard.projects.root()}
@@ -37,31 +29,18 @@ export function DashboardProjects() {
         </Link>
       )}
     >
-      {isLoading
-        ? <DashboardProjectsSkeleton />
-        : (
-            <EntityList
-              title="Projects"
-              hideHeader
-              items={data?.rows ?? []}
-              getItemKey={row => row.id}
-              renderItem={row => <DashboardProjectCard row={row} />}
-              emptyState={{ message: 'No open projects' }}
-              itemsClassName="space-y-2"
-              variant="flush"
-            />
-          )}
+      <div className="flex flex-col gap-4">
+        <DashboardProjectSection
+          title="Active"
+          input={activeProjectsInput()}
+          emptyMessage="No active projects"
+        />
+        <DashboardProjectSection
+          title="On hold"
+          input={onHoldProjectsInput()}
+          emptyMessage="Nothing on hold"
+        />
+      </div>
     </DashboardModule>
-  )
-}
-
-/** `DASHBOARD_LIMITS.projects`-capped roster; 2 dense card-shaped rows while loading. */
-function DashboardProjectsSkeleton() {
-  return (
-    <div className="flex flex-col gap-2">
-      {[0, 1].map(i => (
-        <Skeleton key={i} className="h-16 w-full rounded-lg" />
-      ))}
-    </div>
   )
 }

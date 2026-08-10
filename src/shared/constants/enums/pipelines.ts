@@ -57,3 +57,61 @@ export const projectPipelineStages = [
   'on_hold',
 ] as const
 export type ProjectPipelineStage = (typeof projectPipelineStages)[number]
+
+/**
+ * Coarse, user-facing status of a project — a handful of mutually-exclusive
+ * buckets the dashboard and lists group by. Derived from `pipelineStage`, never
+ * stored (see `PROJECT_STAGE_BUCKET`).
+ */
+export const projectStatusBuckets = ['active', 'completed', 'on_hold', 'cancelled'] as const
+export type ProjectStatusBucket = (typeof projectStatusBuckets)[number]
+
+/**
+ * THE canonical project-status classifier: a project's coarse status is derived
+ * from its `pipelineStage` through this map — do not re-encode the stage→bucket
+ * relationship anywhere else. Buckets are JIT-derived on read
+ * (`deriveProjectStatusBucket`); the `projects.status` column is DEPRECATED for
+ * grouping (it defaults to 'active' and never advances, so it lies). Typed
+ * `Record<ProjectPipelineStage, …>` so omitting a stage is a compile error.
+ *
+ * - active    — live work: signed through full payment, not yet closed
+ * - completed — closed out (terminal, won) — also the fallback for a null/unset
+ *               stage (pure-portfolio projects have no lifecycle stage; see
+ *               `isPurePortfolioProject`)
+ * - on_hold   — paused mid-flight
+ * - cancelled — aborted (terminal, lost)
+ */
+export const PROJECT_STAGE_BUCKET: Record<ProjectPipelineStage, ProjectStatusBucket> = {
+  signed: 'active',
+  opened: 'active',
+  pending_inspection: 'active',
+  install_complete: 'active',
+  pending_final_inspection: 'active',
+  passed_final: 'active',
+  got_partial_payment: 'active',
+  got_full_payment: 'active',
+  closed: 'completed',
+  cancelled: 'cancelled',
+  on_hold: 'on_hold',
+}
+
+/**
+ * A project's status bucket from its `pipelineStage`. A null/unknown stage falls
+ * back to 'completed': a project with no lifecycle stage is a pure-portfolio
+ * showcase entry (never ran the signed→closed sequence), which reads as a
+ * finished piece of work. Note pure-portfolio projects are separately excluded
+ * from operational lists/analytics via `isPurePortfolioProject` (no meetings);
+ * this fallback only governs how a stray null renders if one slips through.
+ */
+export function deriveProjectStatusBucket(stage: ProjectPipelineStage | string | null | undefined): ProjectStatusBucket {
+  if (!stage) {
+    return 'completed'
+  }
+  return PROJECT_STAGE_BUCKET[stage as ProjectPipelineStage] ?? 'completed'
+}
+
+/** Stage subsets per bucket — spread straight into `inArray(projects.pipelineStage, …)` predicates. */
+export const ACTIVE_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'active')
+export const COMPLETED_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'completed')
+export const ON_HOLD_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'on_hold')
+export const CANCELLED_PROJECT_STAGES = projectPipelineStages.filter(s => PROJECT_STAGE_BUCKET[s] === 'cancelled')

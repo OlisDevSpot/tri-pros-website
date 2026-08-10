@@ -19,22 +19,24 @@ Customer ──► Meeting ──► Proposal ──► Project ──► x_proj
 
 ## Lifecycle
 
+`pipelineStage` is the real operational axis; the coarse **status bucket** is
+*derived* from it, never stored (see `#status-derived-from-pipeline-stage`).
+
 ```
-   ┌──────────┐
-   │  active  │  pipelineStage: signed → opened → pending_inspection → install_complete
-   └────┬─────┘                  → pending_final_inspection → passed_final → got_partial_payment
-        │                        → got_full_payment → closed
-        │
-   ┌────▼─────┐
-   │ on_hold  │  paused for any reason
-   └────┬─────┘
-        │
-   ┌────▼──────┐
-   │ completed │  terminal — fully done, ready for portfolio
-   └───────────┘
+pipelineStage:  signed → opened → pending_inspection → install_complete →
+                pending_final_inspection → passed_final →
+                got_partial_payment → got_full_payment → closed
+                                                (+ on_hold / cancelled side-states)
+
+derived bucket: └───────────── active ─────────────┘   completed (closed)
+                on_hold  ←  on_hold stage      cancelled  ←  cancelled stage
 ```
 
-The pipeline stage (`projectPipelineStages` enum) advances through 11 sub-stages within the `active` status. Status (`projectStatuses`: `active | completed | on_hold`) tracks the coarse lifecycle.
+The stage is the lifecycle; it does NOT sit "within" a status. The
+`projects.status` column (`projectStatuses`: `active | completed | on_hold`) is
+DEPRECATED for grouping — it defaults to `active`, never advances, and can't
+express `cancelled`, so it lies. Read a project's coarse state via
+`deriveProjectStatusBucket(pipelineStage)`, never the `status` column.
 
 ## Rules
 
@@ -80,7 +82,7 @@ At project creation, the address fields (`address`, `city`, `state`, `zip`) are 
 
 ### pipeline-stage-on-project-not-meeting
 
-A project's `pipelineStage` (text column, default `signed`) tracks the post-signing operational sequence. This is **distinct** from `meetings.pipeline` (the sales kanban bucket) and `customers.pipelineStage` (lead-funnel stage).
+A project's `pipelineStage` (text column, **nullable, no DB default**) tracks the post-signing operational sequence. App code sets `signed` at creation (`business.router.ts:create`); a raw insert would leave it NULL, so readers must treat NULL as unset (→ `active`, per `deriveProjectStatusBucket`). This is **distinct** from `meetings.pipeline` (the sales kanban bucket) and `customers.pipelineStage` (lead-funnel stage).
 
 Project pipeline stages (`projectPipelineStages` enum):
 ```
@@ -92,6 +94,26 @@ got_partial_payment → got_full_payment → closed (+ cancelled / on_hold side-
 **Why**: project operations have their own lifecycle that the sales pipeline doesn't capture (inspections, payments, closing). Mixing them into `meetings.pipeline` would conflate sales and project management.
 **Reference impl**: `projectPipelineStages` enum in `src/shared/constants/enums/pipelines.ts`
 **Enforced by**: convention (text column, not pgEnum; agents move via the project-pipeline kanban)
+
+### status-derived-from-pipeline-stage
+
+A project's coarse **status bucket** (`active | completed | on_hold | cancelled`) is derived from its `pipelineStage` through `PROJECT_STAGE_BUCKET` — the single canonical classifier. Derive on read via `deriveProjectStatusBucket(stage)`; NULL/unknown → `completed` (an unset stage means a pure-portfolio showcase entry — a finished piece of work — see `#pure-portfolio-projects-are-not-real-projects`). Buckets group by pre-derived stage arrays (`ACTIVE_PROJECT_STAGES`, `ON_HOLD_PROJECT_STAGES`, …) spread into `inArray(projects.pipelineStage, …)` predicates — the dashboard Projects module's Active / On hold sections do exactly this.
+
+Do **not** re-encode the stage→bucket relationship anywhere else, and do **not** read the `projects.status` column for grouping — it's deprecated (defaults to `active`, never advances, can't express `cancelled`). Mirrors the meetings classifier (`MEETING_OUTCOME_SENTIMENT`).
+
+**Why**: `status` was set once at creation and never maintained, so nearly every project reads `active` regardless of its true state. `pipelineStage` is the axis agents actually move, so it's the truthful source; deriving keeps one source of truth and avoids a status-sync mechanism (JIT derivation — see ADR-0005).
+**Reference impl**: `PROJECT_STAGE_BUCKET` + `deriveProjectStatusBucket` in `src/shared/constants/enums/pipelines.ts`; consumed by `src/features/agent-dashboard/constants/dashboard-queries.ts` (`activeProjectsInput` / `onHoldProjectsInput`)
+**Enforced by**: convention; the `Record<ProjectPipelineStage, …>` type makes the map exhaustive (omitting a stage fails `pnpm tsc`)
+
+### pure-portfolio-projects-are-not-real-projects
+
+A **pure-portfolio project** has **no meetings** linked to it (`meetings.projectId`). Because a real project is only ever minted from an approved proposal on a birthing meeting (`#projects-created-from-approved-proposals-only`), zero meetings means the row was created purely to showcase work on the marketing portfolio — it never ran the signed→closed lifecycle (its `pipelineStage` is NULL). These must be **completely disregarded** in operational lists, analytics, filtering, and aggregations.
+
+The predicate is meeting-existence, NOT a null-stage check — meeting existence is the semantic definition; the null stage is a symptom. Row-level: `isPurePortfolioProject(project)` (`lib/portfolio.ts`) for shapes carrying their meetings. Query-level: `hasAssociatedMeeting()` (`lib/visibility.ts`, an `exists` predicate) + the `excludePortfolio: true` filter on `crud.list` — the dashboard Active / On hold sections set it. This matters especially for omni users, whose visibility scope is otherwise unbounded (non-omni users are already meeting-scoped via `projectParticipationScope`, which implies ≥1 meeting).
+
+**Why**: ~80% of project rows are portfolio-only showcases; counting them as operational projects makes every dashboard/metric read wrong (e.g. an inflated "active" count). Meeting-existence cleanly separates the two populations.
+**Reference impl**: `isPurePortfolioProject` (`src/shared/entities/projects/lib/portfolio.ts`), `hasAssociatedMeeting` (`src/shared/entities/projects/lib/visibility.ts`), `excludePortfolio` filter in `src/trpc/routers/projects.router/crud.router.ts`
+**Enforced by**: convention (callers opt in via `excludePortfolio`; analytics surfaces must apply the same predicate)
 
 ### isPublic-gates-portfolio-visibility
 

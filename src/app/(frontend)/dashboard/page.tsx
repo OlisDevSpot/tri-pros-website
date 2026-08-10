@@ -1,4 +1,4 @@
-import { activeProjectsInput, awaitingProposalsInput, meetingsMonthInput, meetingsWindowInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
+import { activeProjectsInput, awaitingProposalsInput, meetingsMonthInput, meetingsWindowInput, onHoldProjectsInput, sentProposalsInput } from '@/features/agent-dashboard/constants/dashboard-queries'
 import { businessToday } from '@/features/agent-dashboard/lib/meeting-windows'
 import { DashboardView } from '@/features/agent-dashboard/ui/views/dashboard-view'
 import { protectDashboardPage } from '@/shared/domains/permissions/lib/protect-dashboard-page'
@@ -20,6 +20,7 @@ export default async function DashboardPage() {
     prefetch(trpc.proposalsRouter.business.list.queryOptions(awaitingProposalsInput()))
     prefetch(trpc.proposalsRouter.business.list.queryOptions(sentProposalsInput()))
     prefetch(trpc.projectsRouter.crud.list.queryOptions(activeProjectsInput()))
+    prefetch(trpc.projectsRouter.crud.list.queryOptions(onHoldProjectsInput()))
   }
 
   const name = authState.status === 'authenticated' ? authState.session.user.name : null

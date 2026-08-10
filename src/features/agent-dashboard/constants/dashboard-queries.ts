@@ -14,16 +14,17 @@ import type { MeetingListInput } from '@/shared/entities/meetings/dal/server/que
 import type { ProposalListInput } from '@/shared/entities/proposals/dal/server/queries'
 import type { AppRouter } from '@/trpc/routers/app'
 
-import { LIVE_MEETING_OUTCOMES } from '@/shared/constants/enums'
+import { ACTIVE_PROJECT_STAGES, LIVE_MEETING_OUTCOMES, ON_HOLD_PROJECT_STAGES } from '@/shared/constants/enums'
 import { meetingMonthWindow, meetingWindow } from '../lib/meeting-windows'
 
 // `projects.crud.list`'s input isn't exported as a named schema/type (it's
 // inlined in the router's `.input(...)`), so it's pulled off the router type
-// itself — same pattern as `use-participant-mutations.tsx`.
-type ProjectsListInput = inferRouterInputs<AppRouter>['projectsRouter']['crud']['list']
+// itself — same pattern as `use-participant-mutations.tsx`. Exported so the
+// dashboard's `DashboardProjectSection` can type its `input` prop against it.
+export type ProjectsListInput = inferRouterInputs<AppRouter>['projectsRouter']['crud']['list']
 
 /** Top-N caps shared by every dashboard module that lists this entity. */
-export const DASHBOARD_LIMITS = { meetings: 8, proposals: 20, proposalsPerSection: 5, projects: 15, actionQueue: 8 } as const
+export const DASHBOARD_LIMITS = { meetings: 8, proposals: 20, proposalsPerSection: 5, projects: 15, projectsPerSection: 5, actionQueue: 8 } as const
 
 /** Meetings list input for a Today/Upcoming/Past window, sorted by `scheduledFor`. */
 export function meetingsWindowInput(kind: MeetingWindowKind) {
@@ -61,11 +62,26 @@ export function sentProposalsInput() {
   } satisfies ProposalListInput
 }
 
-/** Open (active) projects, newest first. */
+/**
+ * Active projects — live work (signed through full payment), newest first.
+ * Grouped by the derived status bucket (`ACTIVE_PROJECT_STAGES` off
+ * `PROJECT_STAGE_BUCKET`), NOT the vestigial `status` column which is ~always
+ * 'active'. `excludePortfolio` drops showcase-only projects (no meetings), which
+ * carry no lifecycle stage. See src/shared/constants/enums/pipelines.ts.
+ */
 export function activeProjectsInput() {
   return {
-    pagination: { limit: DASHBOARD_LIMITS.projects, offset: 0 },
+    pagination: { limit: DASHBOARD_LIMITS.projectsPerSection, offset: 0 },
     sort: { sortBy: 'createdAt', sortDir: 'desc' },
-    filters: { status: ['active'] },
+    filters: { pipelineStage: ACTIVE_PROJECT_STAGES, excludePortfolio: true },
+  } satisfies ProjectsListInput
+}
+
+/** Projects paused mid-flight (`on_hold` stage), newest first. Real projects only. */
+export function onHoldProjectsInput() {
+  return {
+    pagination: { limit: DASHBOARD_LIMITS.projectsPerSection, offset: 0 },
+    sort: { sortBy: 'createdAt', sortDir: 'desc' },
+    filters: { pipelineStage: ON_HOLD_PROJECT_STAGES, excludePortfolio: true },
   } satisfies ProjectsListInput
 }
