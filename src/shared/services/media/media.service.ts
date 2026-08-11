@@ -1,7 +1,14 @@
 // src/shared/services/media/media.service.ts
+//
+// Media orchestrator. Owns the R2 object lifecycle (presign, delete) and the
+// optimize dispatch, and RINGS each media child's scoped CRUD DAL (via
+// `store.crud`) + the shared scoped `list`/`reorder` ops — it never touches `db`
+// itself. Mutations return `DalReturn` so tRPC routers unwrap with `dalToTrpc`
+// and services/jobs inspect the union directly. see docs/codebase-conventions/service-architecture.md
 import type { MediaStore } from './stores'
-import { asc, eq } from 'drizzle-orm'
-import { db } from '@/shared/db'
+import type { DalReturn, ScopedContext } from '@/shared/dal/server/types'
+import { dalSuccess } from '@/shared/dal/server/types'
+import { listMediaByOwner, reorderMedia } from '@/shared/entities/media-files/dal/server/media-ops'
 import { resetMediaOptimizationStatus } from '@/shared/entities/media-files/dal/server/optimization'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { optimizeMediaJob } from '@/shared/services/providers/upstash/jobs/optimize-media'
@@ -12,6 +19,11 @@ function extOf(filename: string): string {
   return dot >= 0 ? filename.slice(dot).toLowerCase() : ''
 }
 
+/** Images and PDFs get a derived-variant optimization pass; everything else is stored as-is. */
+function isOptimizable(mimeType: unknown): boolean {
+  return typeof mimeType === 'string' && (mimeType.startsWith('image/') || mimeType === 'application/pdf')
+}
+
 export const mediaService = {
   async buildUploadTarget(store: MediaStore, input: { ownerId: string, filename: string, mimeType: string, extra?: Record<string, string> }) {
     const pathKey = store.buildPathKey(input.ownerId, crypto.randomUUID(), extOf(input.filename), input.extra)
@@ -19,39 +31,44 @@ export const mediaService = {
     return { uploadUrl, pathKey, bucket: store.bucket }
   },
 
-  async createRecord<T extends Record<string, unknown>>(store: MediaStore, values: T) {
-    const [created] = await db.insert(store.table).values(values as any).returning() as any[]
-    if (typeof created.mimeType === 'string' && (created.mimeType.startsWith('image/') || created.mimeType === 'application/pdf'))
-      void optimizeMediaJob.dispatch({ ownerKind: store.ownerKind, mediaId: created.id })
-    return created
+  /** Persist via the scoped CRUD DAL, then queue optimization for image/pdf rows. */
+  async createRecord<T extends Record<string, unknown>>(store: MediaStore, ctx: ScopedContext, values: T): Promise<DalReturn<any>> {
+    const result = await store.crud.create(ctx, values as any)
+    if (result.success && isOptimizable((result.data as any).mimeType)) {
+      void optimizeMediaJob.dispatch({ ownerKind: store.ownerKind, mediaId: (result.data as any).id })
+    }
+    return result
   },
 
-  async removeRecord(store: MediaStore, id: number) {
-    const [row] = await db.select().from(store.table).where(eq(store.table.id, id))
-    if (!row)
-      return
+  /** R2 cleanup then scoped delete. Deleting a missing/invisible row is an idempotent no-op. */
+  async removeRecord(store: MediaStore, ctx: ScopedContext, id: number): Promise<DalReturn<void>> {
+    const found = await store.crud.getById(ctx, { id })
+    if (!found.success) {
+      return found
+    }
+    const row = found.data as any
+    if (!row) {
+      return dalSuccess(undefined)
+    }
     // Only R2-backed rows have an object to delete. A Stream row (Plan 1b) or a
     // malformed row has null coordinates — skip R2 cleanup, still remove the DB row.
-    if (row.bucket && row.pathKey)
+    if (row.bucket && row.pathKey) {
       await r2Client.deleteMediaWithVariants(row.bucket, row.pathKey)
-    await db.delete(store.table).where(eq(store.table.id, id))
+    }
+    return store.crud.delete(ctx, { id })
   },
 
-  async reorder(store: MediaStore, updates: { id: number, sortOrder: number }[]) {
-    if (updates.length === 0)
-      return
-    await db.transaction(async (tx) => {
-      for (const { id, sortOrder } of updates)
-        await tx.update(store.table).set({ sortOrder }).where(eq(store.table.id, id))
-    })
+  /** One scoped transaction — no per-row authz probe (the reorder N+1 kill). */
+  async reorder(store: MediaStore, ctx: ScopedContext, updates: { id: number, sortOrder: number }[]): Promise<DalReturn<void>> {
+    return reorderMedia(store.table, ctx, updates)
   },
 
-  async rename(store: MediaStore, id: number, name: string) {
-    await db.update(store.table).set({ name }).where(eq(store.table.id, id))
+  async rename(store: MediaStore, ctx: ScopedContext, id: number, name: string): Promise<DalReturn<any>> {
+    return store.crud.update(ctx, { id, data: { name } as any })
   },
 
-  async list(store: MediaStore, ownerId: string) {
-    return db.select().from(store.table).where(eq(store.ownerColumn, ownerId)).orderBy(asc(store.table.sortOrder))
+  async list(store: MediaStore, ctx: ScopedContext, ownerId: string): Promise<DalReturn<Record<string, unknown>[]>> {
+    return listMediaByOwner(store.table, store.ownerColumn, ctx, ownerId)
   },
 
   // async retry — resets status then queues optimization (interactive Retry button)

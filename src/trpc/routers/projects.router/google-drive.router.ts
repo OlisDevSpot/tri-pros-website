@@ -10,6 +10,7 @@ import { projectMediaStore } from '@/shared/services/media/stores'
 import { googleDriveClient } from '@/shared/services/providers/google-drive/client'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const googleDriveRouter = createTRPCRouter({
@@ -108,7 +109,7 @@ export const googleDriveRouter = createTRPCRouter({
 
       // Persist + dispatch optimization through the media facade — same path as a
       // regular project-media upload (see projects.router/media.router.ts create).
-      return mediaService.createRecord(projectMediaStore, {
+      return dalToTrpc(await mediaService.createRecord(projectMediaStore, ctx, {
         name: input.name.replace(/\.[^/.]+$/, ''),
         url: publicUrl,
         pathKey,
@@ -117,6 +118,6 @@ export const googleDriveRouter = createTRPCRouter({
         fileExtension: ext,
         phase: input.phase,
         projectId: input.projectId,
-      })
+      }))
     }),
 })

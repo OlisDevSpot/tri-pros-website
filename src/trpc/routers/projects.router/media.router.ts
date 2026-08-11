@@ -10,6 +10,7 @@ import { mediaService } from '@/shared/services/media/media.service'
 import { projectMediaStore } from '@/shared/services/media/stores'
 import { r2Client } from '@/shared/services/providers/r2/client'
 import { R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
+import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
 import { agentProcedure, createTRPCRouter } from '../../init'
 
 export const mediaRouter = createTRPCRouter({
@@ -35,8 +36,8 @@ export const mediaRouter = createTRPCRouter({
     .input(insertMediaFilesSchema.omit({ bucket: true }).extend({
       bucket: z.string().optional(),
     }))
-    .mutation(async ({ input }) =>
-      mediaService.createRecord(projectMediaStore, { ...input, bucket: input.bucket ?? projectMediaStore.bucket }),
+    .mutation(async ({ ctx, input }) =>
+      dalToTrpc(await mediaService.createRecord(projectMediaStore, ctx, { ...input, bucket: input.bucket ?? projectMediaStore.bucket })),
     ),
 
   retryOptimization: agentProcedure
@@ -48,16 +49,16 @@ export const mediaRouter = createTRPCRouter({
 
   delete: agentProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      await mediaService.removeRecord(projectMediaStore, input.id)
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await mediaService.removeRecord(projectMediaStore, ctx, input.id))
     }),
 
   reorder: agentProcedure
     .input(z.object({
       updates: z.array(z.object({ id: z.number(), sortOrder: z.number().int() })),
     }))
-    .mutation(async ({ input }) => {
-      await mediaService.reorder(projectMediaStore, input.updates)
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await mediaService.reorder(projectMediaStore, ctx, input.updates))
     }),
 
   movePhase: agentProcedure
@@ -78,9 +79,9 @@ export const mediaRouter = createTRPCRouter({
 
   bulkDelete: agentProcedure
     .input(z.object({ ids: z.array(z.number()).min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       for (const id of input.ids)
-        await mediaService.removeRecord(projectMediaStore, id)
+        dalToTrpc(await mediaService.removeRecord(projectMediaStore, ctx, id))
     }),
 
   rename: agentProcedure
@@ -88,8 +89,8 @@ export const mediaRouter = createTRPCRouter({
       id: z.number(),
       name: z.string().min(1).max(80),
     }))
-    .mutation(async ({ input }) => {
-      await mediaService.rename(projectMediaStore, input.id, input.name)
+    .mutation(async ({ ctx, input }) => {
+      dalToTrpc(await mediaService.rename(projectMediaStore, ctx, input.id, input.name))
     }),
 
   toggleHero: agentProcedure
@@ -169,7 +170,7 @@ export const mediaRouter = createTRPCRouter({
 
   importFromProposal: agentProcedure
     .input(z.object({ projectId: z.string().uuid(), proposalMediaFileIds: z.array(z.number()).min(1) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Authorization: only copy media that actually belongs to a proposal on
       // THIS project's meetings (prevents importing arbitrary proposal media by id).
       const sources = await db
@@ -199,7 +200,7 @@ export const mediaRouter = createTRPCRouter({
           destKey,
         })
         const publicUrl = `${R2_PUBLIC_DOMAINS[projectMediaStore.bucket] ?? ''}/${destKey}`
-        await mediaService.createRecord(projectMediaStore, {
+        dalToTrpc(await mediaService.createRecord(projectMediaStore, ctx, {
           projectId: input.projectId,
           name: src.name,
           mimeType: src.mimeType,
@@ -208,7 +209,7 @@ export const mediaRouter = createTRPCRouter({
           bucket: projectMediaStore.bucket,
           url: publicUrl,
           phase: 'uncategorized',
-        })
+        }))
         imported++
       }
       return { imported }
