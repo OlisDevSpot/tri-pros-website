@@ -39,14 +39,14 @@ per-column investigation. Before ANY `DROP COLUMN` of a data-filled column:
 
 | | Item | Where | Why dead |
 |---|---|---|---|
-| [ ] | `customerProfileJSONDeprecated` property + `customer_profile_json` column | `src/shared/db/schema/customers.ts:30` (+ `.omit()` entry :101) | W1 froze; data lives in `customer_profiles` |
-| [ ] | `propertyProfileJSONDeprecated` + `property_profile_json` | `customers.ts:35` (+ :102) | same |
-| [ ] | `financialProfileJSONDeprecated` + `financial_profile_json` | `customers.ts:40` (+ :103) | same |
-| [ ] | `agentProfileJSONDeprecated` + `agent_profile_json` | `src/shared/db/schema/auth.ts:33` | W1 froze; data lives in `user` columns |
-| [ ] | `voipConfigJSONDeprecated` + `voip_config_json` | `src/shared/db/schema/lead-sources.ts:20` (+ `.omit()` :54) | W1 froze; data lives in `lead_sources` columns |
-| [ ] | `customerProfileSchema` / `propertyProfileSchema` / `financialProfileSchema` + `CustomerProfile`/`PropertyProfile`/`FinancialProfile` types | `entities/customers/schemas/index.ts:31-65` (+ type imports `customers.ts:1`) | Only consumers: the deprecated columns' `$type<>` + backfill-wave1 script. Spec §4.6: dropped-blob schemas deleted, not orphaned |
-| [ ] | `agentProfileSchema` (users) + `voipConfigSchema` (lead-sources) blob schemas | users / lead-sources entity schemas | same — die with their frozen columns |
-| [ ] | `scripts/backfill-wave1-columns.ts` (incl. `LEGACY_ENUM_MAP`, `normalizeLegacyKeys`) | `scripts/` | Sole remaining reader of the 5 frozen columns; delete in the same commit that drops them |
+| [x] deleted (`6d5b705c`) | `customerProfileJSONDeprecated` property + `customer_profile_json` column | `src/shared/db/schema/customers.ts:30` (+ `.omit()` entry :101) | W1 froze; data lives in `customer_profiles` |
+| [x] deleted (`6d5b705c`) | `propertyProfileJSONDeprecated` + `property_profile_json` | `customers.ts:35` (+ :102) | same |
+| [x] deleted (`6d5b705c`) | `financialProfileJSONDeprecated` + `financial_profile_json` | `customers.ts:40` (+ :103) | same |
+| [x] deleted (`6d5b705c`) | `agentProfileJSONDeprecated` + `agent_profile_json` | `src/shared/db/schema/auth.ts:33` | W1 froze; data lives in `user` columns |
+| [x] deleted (`6d5b705c`) | `voipConfigJSONDeprecated` + `voip_config_json` | `src/shared/db/schema/lead-sources.ts:20` (+ `.omit()` :54) | W1 froze; data lives in `lead_sources` columns |
+| [x] deleted (`6d5b705c`) | `customerProfileSchema` / `propertyProfileSchema` / `financialProfileSchema` + `CustomerProfile`/`PropertyProfile`/`FinancialProfile` types | `entities/customers/schemas/index.ts:31-65` (+ type imports `customers.ts:1`) | Only consumers: the deprecated columns' `$type<>` + backfill-wave1 script. Spec §4.6: dropped-blob schemas deleted, not orphaned |
+| [x] deleted (`6d5b705c`) | `agentProfileSchema` (users) + `voipConfigSchema` (lead-sources) blob schemas | users / lead-sources entity schemas | same — die with their frozen columns |
+| [x] deleted (`6d5b705c`) | `scripts/backfill-wave1-columns.ts` (incl. `LEGACY_ENUM_MAP`, `normalizeLegacyKeys`) | `scripts/` | Sole remaining reader of the 5 frozen columns; delete in the same commit that drops them |
 
 ## Wave 2 — deleted DURING implementation (verify all gone at plan Task 11)
 
@@ -65,13 +65,14 @@ per-column investigation. Before ANY `DROP COLUMN` of a data-filled column:
 
 Reconciled at Task 11: all four rows confirmed still present exactly as described (not
 yet due — kill trigger is the release after prod cutover, which hasn't happened).
+Deleted in Task 11's commit (`6d5b705c`).
 
 | | Item | Where | Notes |
 |---|---|---|---|
-| [ ] | `leadMetaJSONDeprecated` property + `lead_meta_json` column | `customers.ts:50` | Frozen at Task 5; one-release rollback window, then drop column + property + `.omit()` entry |
-| [ ] | `scripts/backfill-wave2-children.ts` | `scripts/` | ⚠️ **Cutover-window-only tool.** Its proposals section reads blob incentives — once writers flip, a full re-run would overwrite live rows with stale blob data (post-deploy verify uses `--skip-proposals`). Delete in the same commit that drops `lead_meta_json`. Note (2026-07-18, façade final review): its `showPricingBreakdown` normalization shim (~lines 166-176) is now inert — the field died with the façade work (Zod strips it); harmless, dies with the script |
-| [ ] | `LEGACY_ENRICHMENT_LABELS` (`entities/customers/constants/funnel-intake-fields.ts`) | last consumer = backfill-wave2 script | dies with the script (verify no other importer first) |
-| [ ] | Legacy one-off scripts still referencing the frozen blob: `scripts/seed-bina-contacts.ts`, `scripts/backfill-interested-trades-raw.ts` | `scripts/` | Superseded by attribution child; delete with the column drop (they only compile against the deprecated property) |
+| [x] deleted (`6d5b705c`) | `leadMetaJSONDeprecated` property + `lead_meta_json` column | `customers.ts:50` | Frozen at Task 5; one-release rollback window, then drop column + property + `.omit()` entry |
+| [x] deleted (`6d5b705c`) | `scripts/backfill-wave2-children.ts` | `scripts/` | ⚠️ **Cutover-window-only tool.** Its proposals section reads blob incentives — once writers flip, a full re-run would overwrite live rows with stale blob data (post-deploy verify uses `--skip-proposals`). Delete in the same commit that drops `lead_meta_json`. Note (2026-07-18, façade final review): its `showPricingBreakdown` normalization shim (~lines 166-176) is now inert — the field died with the façade work (Zod strips it); harmless, dies with the script |
+| [x] deleted (`6d5b705c`) | `LEGACY_ENRICHMENT_LABELS` (`entities/customers/constants/funnel-intake-fields.ts`) | last consumer = backfill-wave2 script | dies with the script (verify no other importer first) — the whole file was only this constant, so the file itself was deleted |
+| [x] deleted (`6d5b705c`) | Legacy one-off scripts still referencing the frozen blob: `scripts/seed-bina-contacts.ts`, `scripts/backfill-interested-trades-raw.ts` | `scripts/` | Superseded by attribution child; delete with the column drop (they only compile against the deprecated property) |
 
 ## Wave 2 — bridges that die in W3 (do NOT delete before the SOW wave)
 
@@ -106,6 +107,12 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 > batched drops ride the (new) Wave 3 push. Epic #256 body carries the same structure.
 
 ### Rides the Wave 3 (scalar) prod push
+
+> **Task 11 status (`6d5b705c`)**: the code side of the rename + batched drop manifest is
+> shipped — schema literal renamed, verify-long/short-path raw SQL updated, `.omit()`/schema
+> deletions done, package.json entries removed. Dev-branch DDL applied + `db:push:dev` verified
+> clean. The PROD DDL itself has NOT run yet — it ships via the Task 12 runbook immediately
+> before deploy, per the deploy-choreography note on Task 11.
 
 - **Column rename `signing_request_id` → `contract_envelope_id`** (naming ratified 2026-07-18:
   `contractEnvelope` is canonical; drizzle property already `contractEnvelopeId` mapping the old
@@ -187,7 +194,7 @@ temporary legacy-shape bridge — see `entities/customers/dal/server/queries.ts:
 |---|---|---|---|---|
 | [x] tightened (`3b84fac2`) | Raw-SQL read of frozen `customer_profile_json` | `scripts/verify-short-path.ts:39` (`AND c.customer_profile_json ? 'age'`) | Undocumented second reader of a frozen W1 blob — falsifies the "read only by backfill-wave1" invariant this ledger and the column JSDoc assert; reads stale/absent data since `age` was promoted | Change predicate to `AND c.age IS NOT NULL` |
 | [x] tightened (`3b84fac2`) | Dead `isSourceEnabled` imports frozen `VoipCampaignsPolicy` | `shared/services/voip/campaigns/lib/eligibility.ts:11,27` | Zero callers; the sole live-code importer of the frozen blob type. Will break unexpectedly when `voipConfigSchema` is deleted per the W1 rows above; a revival would re-admit the nested blob shape | Delete the function + import (enrollment already reads the flat `voipCampaignsEnabled` column) |
-| [ ] | `snapshot-prod-to-dev.ts:105` names `agentProfileJSONDeprecated` in `skipColumns` | `scripts/snapshot-prod-to-dev.ts:105` | Benign operational exclusion; dangles when the column drops | Remove the entry in the same commit that drops `agent_profile_json` |
+| [x] tightened (`6d5b705c`) | `snapshot-prod-to-dev.ts:105` names `agentProfileJSONDeprecated` in `skipColumns` | `scripts/snapshot-prod-to-dev.ts:105` | Benign operational exclusion; dangles when the column drops | Remove the entry in the same commit that drops `agent_profile_json` |
 
 ### Contract-narrowing — over-broad inputs / blob-typed params (opportunistic)
 
