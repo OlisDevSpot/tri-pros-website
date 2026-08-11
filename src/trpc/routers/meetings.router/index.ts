@@ -1,24 +1,16 @@
-import z from 'zod'
-
-import { meetingSchemas, meetingServerSpec } from '@/shared/entities/meetings/lib/server-spec'
+// Meetings router — pure composition. Every leaf is its own file. No
+// createEntityRouter: crud builds its procedures inline from the spec (S6a).
+// see ../../DOCS.md#entity-router-via-factory (rewritten in S7)
 
 import { createTRPCRouter } from '../../init'
-import { createCrudRouter } from '../../lib/create-crud-router'
-import { createEntityRouter } from '../../lib/create-entity-router'
-import { createMeetingBusinessRouter } from './business.router'
-import { createParticipantsRouter } from './participants.router'
-import { createMeetingReadsRouter } from './reads.router'
+import { businessRouter } from './business.router'
+import { crudRouter } from './crud.router'
+import { participantsRouter } from './participants.router'
+import { readsRouter } from './reads.router'
 
-export const meetingsRouter = createEntityRouter(meetingServerSpec, (entity) => {
-  return createTRPCRouter({
-    crud: createCrudRouter({
-      spec: meetingServerSpec,
-      schemas: { ...meetingSchemas, id: z.string().uuid() },
-      authedProcedure: entity.authedProcedure,
-      shareableProcedure: entity.shareableProcedure,
-    }),
-    reads: createMeetingReadsRouter(entity),
-    participants: createParticipantsRouter(entity),
-    business: createMeetingBusinessRouter(entity),
-  })
+export const meetingsRouter = createTRPCRouter({
+  crud: crudRouter,
+  reads: readsRouter,
+  participants: participantsRouter,
+  business: businessRouter,
 })
