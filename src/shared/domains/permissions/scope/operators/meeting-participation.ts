@@ -41,24 +41,24 @@ defineScopeOperator({
     switch (via) {
       case 'self': // Meeting subject: participants directly on the outer meeting row.
         return exists(
-          db.select({ x: sql`1` }).from(meetingParticipants)
+          db.select({ id: meetingParticipants.id }).from(meetingParticipants)
             .where(and(eq(meetingParticipants.meetingId, ctx.pk), eq(meetingParticipants.userId, userId))),
         )
       case 'customerId': // Customer subject: meetings.customer_id = customers.id.
         return exists(
-          db.select({ x: sql`1` }).from(meetings)
+          db.select({ id: meetingParticipants.id }).from(meetings)
             .innerJoin(meetingParticipants, eq(meetingParticipants.meetingId, meetings.id))
             .where(and(eq(meetings.customerId, ctx.pk), eq(meetingParticipants.userId, userId))),
         )
       case 'projectId': // Project subject: meetings.project_id = projects.id.
         return exists(
-          db.select({ x: sql`1` }).from(meetings)
+          db.select({ id: meetingParticipants.id }).from(meetings)
             .innerJoin(meetingParticipants, eq(meetingParticipants.meetingId, meetings.id))
             .where(and(eq(meetings.projectId, ctx.pk), eq(meetingParticipants.userId, userId))),
         )
       case 'meetingId': // Proposal subject: correlate on the subject's OWN fk column.
         return exists(
-          db.select({ x: sql`1` }).from(meetingParticipants)
+          db.select({ id: meetingParticipants.id }).from(meetingParticipants)
             .where(and(eq(meetingParticipants.meetingId, proposals.meetingId), eq(meetingParticipants.userId, userId))),
         )
       default:
