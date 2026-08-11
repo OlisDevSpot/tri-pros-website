@@ -57,6 +57,8 @@ export async function canAccess(
   action: AppAction = 'read',
 ): Promise<boolean> {
   const ctx = { table: spec.table, pk: pkColumn(spec), actor }
+  // NOTE: the child branch resolves READ visibility regardless of `action`
+  // (resolveScope is read-only today); thread `action` through the bridge in Phase 4.
   const scope = spec.parent
     ? resolveScope(spec, actor)
     : compileScope(actor, action, spec.caslSubject, ctx)

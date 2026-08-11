@@ -22,6 +22,12 @@ export function interpret(node: ScopeNode, ctx: OperatorCtx): SQL | null {
 }
 
 function interpretCompound(node: CompoundNode, ctx: OperatorCtx): SQL | null {
+  // Only AND/OR are supported. Anything else (e.g. a ucast `not` compound from a
+  // `cannot`-with-conditions rule) must fail LOUD, never fall through to an
+  // implicit AND — a silently mis-compiled negation is a false-ALLOW leak.
+  // Full `not`/negation support lands in Phase 1 with the CASL parser wiring.
+  if (node.operator !== 'and' && node.operator !== 'or')
+    throw new Error(`[scope] unsupported compound operator '${node.operator}'`)
   const parts = node.value
     .map(child => interpret(child, ctx))
     .filter((p): p is SQL => p != null)
