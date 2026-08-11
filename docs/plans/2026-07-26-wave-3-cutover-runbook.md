@@ -125,7 +125,10 @@ Steps (branch already additive + backfilled — do not re-push or re-backfill):
    real prod row history.
 4. Run the DDL block from §3b Step 2 directly against the branch — via `psql`
    or the Neon SQL console, exactly as the real ceremony will (never via
-   `drizzle-kit push`).
+   `drizzle-kit push`). If §3a-fix (the two `DROP NOT NULL`s) has not yet run
+   against real prod, the branch inherits the `NOT NULL` — run the §3a-fix
+   statements against the branch first, or step 5's `No changes detected`
+   expectation will fail on the nullability diff.
 5. `DRIZZLE_TARGET=prod pnpm drizzle-kit push` against the branch, **now that
    the DDL has already applied the schema by hand** — expect **`No changes
    detected`**. Anything else means the manual DDL and the current Drizzle
@@ -159,6 +162,39 @@ pnpm db:push:prod                                   # additive: 6 ADD COLUMN + 2
 DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts --dry-run
 DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts
 ```
+
+> ⚠️ **CORRECTION (2026-08-11, read-only prod inspection):** the record above is
+> wrong about the `2 DROP NOT NULL` — `information_schema` shows prod's
+> `funding_JSON` and `form_meta_JSON` are **still `NOT NULL`** (no default),
+> while dev is correctly nullable. The additive push evidently applied only the
+> `ADD COLUMN`s. **This is a live hazard, not a ceremony detail**: any code at
+> or past the writer flip (≥ `a9f5539b`) omits both blobs on INSERT — proposal
+> *creation* hits a `23502` NOT-NULL violation the moment such code serves a
+> create. Run §3a-fix below **immediately**, independent of the rest of the
+> ceremony.
+
+### 3a-fix. DROP NOT NULL completion — run NOW (safe under any deployed code)
+
+Neon SQL console, prod. Making a column nullable is compatible with both
+pre-flip code (which still writes the blobs) and post-flip code (which omits
+them) — there is no ordering hazard and no error window:
+
+```sql
+ALTER TABLE proposals ALTER COLUMN "funding_JSON" DROP NOT NULL;
+ALTER TABLE proposals ALTER COLUMN "form_meta_JSON" DROP NOT NULL;
+```
+
+Verify:
+
+```sql
+SELECT column_name, is_nullable FROM information_schema.columns
+WHERE table_name = 'proposals' AND column_name IN ('funding_JSON', 'form_meta_JSON');
+-- both must show YES
+```
+
+Then check Vercel logs for recent `23502` / `violates not-null constraint`
+errors on proposal creation — if any user hit this window, their create failed
+loudly (no silent corruption; the INSERT was rejected whole).
 
 **Why this had to run before the code that serves prod traffic** (finding C
 from the Task 7 review, carried forward): `applyEnvelopeContext` writes the new
