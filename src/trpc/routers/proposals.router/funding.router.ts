@@ -1,7 +1,7 @@
 // ─── Funding Router ─────────────────────────────────────────────────────────
-// Narrow blob-scalar writes on the proposal. Each funding scalar gets its own
-// narrow mutation instead of a client-side whole-blob reconstruction (seam
-// register ruling 2026-07-16). W3 turns these into plain column writes.
+// Narrow per-scalar column writes on the proposal (e.g. setCashInDeal → cash_in_deal_cents).
+// Each funding scalar gets its own narrow mutation instead of a client-side whole-blob
+// reconstruction (seam register ruling 2026-07-16).
 //
 // Plain leaf: imports pre-scoped procedures from ./procedures.
 

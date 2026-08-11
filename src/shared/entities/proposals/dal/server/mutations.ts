@@ -10,7 +10,6 @@ import { ThrowableDalError } from '@/shared/dal/server/types'
 import { db } from '@/shared/db'
 import { proposals } from '@/shared/db/schema/proposals'
 import { isProposalFrozen } from '@/shared/entities/proposals/lib/proposal-lock'
-import { scrubBlobIncentives } from '@/shared/entities/proposals/lib/scrub-blob-incentives'
 
 // ── recomputeProposalFinancials ──────────────────────────────────────────
 
@@ -49,12 +48,9 @@ export async function recomputeProposalFinancials(
 // ── setCashInDeal ────────────────────────────────────────────────────────
 
 /**
- * Narrow write for the funding form's cash-down field. Reads the RAW blob
- * (never the getFullView row-hydrated shape) and rewrites only
- * `data.cashInDeal`, replacing the old client-side whole-blob
- * reconstruction that re-persisted hydrated incentives (seam register,
- * jsonb deprecation ledger). W3 turns this into a plain column write.
- * Same lock gate as every content write. see ../../DOCS.md#proposal-lock-ladder
+ * Narrow column write for the funding form's cash-down field (`cash_in_deal_cents`).
+ * Dollars→cents via Math.round(x * 100) at this seam. Same lock gate as every content write.
+ * see ../../DOCS.md#proposal-lock-ladder
  */
 export async function setCashInDeal(
   ctx: ScopedContext,
@@ -69,7 +65,6 @@ export async function setCashInDeal(
         contractSentAt: proposals.contractSentAt,
         contractSignedAt: proposals.contractSignedAt,
         contractDeclinedAt: proposals.contractDeclinedAt,
-        fundingJSON: proposals.fundingJSON,
       })
       .from(proposals)
       .where(and(eq(proposals.id, input.proposalId), ctx.scope ?? undefined))
@@ -79,24 +74,10 @@ export async function setCashInDeal(
     if (isProposalFrozen(proposal)) {
       throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
     }
-    // Post-W3-flip rows carry a NULL blob — this writer becomes a column write
-    // in Task 8. Until then, fail loudly rather than resurrect a dead envelope.
-    // The reason is a BARE TOKEN on purpose: `dalToTrpc` forwards it verbatim
-    // into the TRPCError message, and this procedure is shareable — the string
-    // reaches the homeowner share page. Developer detail goes to the log only.
-    if (!proposal.fundingJSON) {
-      console.error(
-        `[proposals] setCashInDeal on proposal ${input.proposalId}: fundingJSON is NULL — this writer still targets the frozen blob and flips to cash_in_deal_cents in W3 Task 8`,
-      )
-      throw new ThrowableDalError({ type: 'precondition-failed', reason: 'funding_unavailable' })
-    }
 
-    const fundingJSON = scrubBlobIncentives({
-      ...proposal.fundingJSON,
-      data: { ...proposal.fundingJSON.data, cashInDeal: input.cashInDeal },
-    }, `setCashInDeal on proposal ${input.proposalId}`)
-
-    await db.update(proposals).set({ fundingJSON }).where(eq(proposals.id, input.proposalId))
+    await db.update(proposals)
+      .set({ cashInDealCents: Math.round(input.cashInDeal * 100) })
+      .where(eq(proposals.id, input.proposalId))
     return { id: proposal.id, cashInDeal: input.cashInDeal }
   })
 }
