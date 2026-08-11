@@ -39,9 +39,6 @@ function makeFakeContext(recipientEmail: string): ProposalContext {
         validThroughTimeframe: '60 days',
       },
     },
-    fundingJSON: {
-      data: { depositAmount: 500, startingTcp: 7500, incentives: [], cashInDeal: 7000 },
-    },
     customer: {
       id: 'fake-customer',
       name: 'Phase 4 Test Customer',
