@@ -2,11 +2,24 @@
 // Each slot wires: CASL action gate + Zod input + DAL handler + dalToTrpc bridge.
 // spec.shareable controls whether getById/update use shareable vs authed procedure.
 
-import type { PgTable } from 'drizzle-orm/pg-core'
+// tRPC does not publicly re-export its procedure-builder type outside the
+// `unstable-core-do-not-import` subpath. `AnyProcedureBuilder` (the obvious
+// alias) pins the builder's 8th generic (`TCaller`) to `any`; because that's
+// a concrete `any` rather than a deferred type parameter once accessed
+// through a constrained generic, `.query()`/`.mutation()`'s
+// `TCaller extends true ? ... : ...` return type distributes into an
+// unassignable union. `ProcedureBuilder` (the underlying generic interface,
+// also exported from this subpath) lets us pin `TCaller` to `false` instead —
+// the only value real router procedures use (`true` is the standalone-caller
+// variant) — which keeps `.input().query()/.mutation()` resolving to a single
+// concrete `AnyProcedure`, exactly like `typeof agentProcedure` already does.
+import type { ProcedureBuilder } from '@trpc/server/unstable-core-do-not-import'
 
+import type { PgTable } from 'drizzle-orm/pg-core'
 import type { Insert } from '@/shared/db/types'
 import type { AppAction, AppSubject } from '@/shared/domains/permissions/types'
 import type { agentProcedure, baseProcedure } from '@/trpc/init'
+
 import type { CrudHandlers, EntityServerSpec, SlotName } from '@/trpc/types'
 
 import { TRPCError } from '@trpc/server'
@@ -15,6 +28,15 @@ import z from 'zod'
 import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { createTRPCRouter } from '@/trpc/init'
 import { dalToTrpc } from '@/trpc/lib/dal-to-trpc'
+
+/**
+ * "A procedure builder of any middleware depth" — needed so this factory
+ * accepts both the cast `typeof agentProcedure` (toolkit callers) and the
+ * inline-scoped `agentProcedure.use(...)` builders from an entity's
+ * procedures.ts, with no cast. See the import comment above for why this
+ * isn't just tRPC's own `AnyProcedureBuilder`.
+ */
+type AnyRouterProcedureBuilder = ProcedureBuilder<any, any, any, any, any, any, any, false>
 
 // Action mapping per slot — fixed (not entity-configurable).
 const SLOT_ACTIONS: Record<SlotName, AppAction> = {
@@ -30,6 +52,8 @@ export interface CreateCrudRouterConfig<
   TId extends string | number,
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
+  TAuthed extends AnyRouterProcedureBuilder = typeof agentProcedure,
+  TShareable extends AnyRouterProcedureBuilder = typeof baseProcedure,
 > {
   /** Entity spec — runtime config (table, visibility, casl, shareable). */
   spec: EntityServerSpec<TTable, TId>
@@ -40,10 +64,10 @@ export interface CreateCrudRouterConfig<
    * `update`: Entity's update schema (concrete, not type-erased)
    */
   schemas: { id: z.ZodType<TId>, insert: TInsert, update: TUpdate }
-  /** Pre-scoped agent procedure (agentProcedure + scope middleware). */
-  authedProcedure: typeof agentProcedure
-  /** Pre-scoped shareable procedure (baseProcedure + shareable middleware). */
-  shareableProcedure: typeof baseProcedure
+  /** Pre-scoped agent procedure — any middleware-depth builder (was `typeof agentProcedure`). */
+  authedProcedure: TAuthed
+  /** Pre-scoped shareable procedure — any middleware-depth builder (was `typeof baseProcedure`). */
+  shareableProcedure: TShareable
   /**
    * Override individual CRUD handlers. Merged with createCrudDal defaults.
    * ⚠️ Overrides BYPASS spec.hooks entirely — the override replaces the
@@ -59,7 +83,9 @@ export function createCrudRouter<
   TId extends string | number,
   TInsert extends z.ZodObject<z.ZodRawShape>,
   TUpdate extends z.ZodObject<z.ZodRawShape>,
->(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate>) {
+  TAuthed extends AnyRouterProcedureBuilder = typeof agentProcedure,
+  TShareable extends AnyRouterProcedureBuilder = typeof baseProcedure,
+>(config: CreateCrudRouterConfig<TTable, TId, TInsert, TUpdate, TAuthed, TShareable>) {
   // Merge default DAL handlers with any caller-provided overrides.
   const defaults = createCrudDal(config.spec)
   // Cast: spread merge of defaults + Partial overrides loses the full interface
