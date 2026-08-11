@@ -7,7 +7,7 @@ import { buildMongoQueryMatcher } from '@casl/ability'
 import { registeredOperatorNames } from './operators'
 
 import './operators/meeting-participation' // registers participatesViaMeeting, hasNoMeeting
-// Task 2 adds: import './operators/derived-pipeline' // registers inDerivedPipeline
+import './operators/derived-pipeline' // registers inDerivedPipeline
 
 /**
  * A CASL conditionsMatcher that teaches `rulesToAST` our document operators.

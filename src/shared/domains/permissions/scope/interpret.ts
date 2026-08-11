@@ -10,6 +10,7 @@ import { isCompound } from './ast'
 import { getScopeOperator } from './operators'
 
 import './operators/meeting-participation' // registers the domain operators
+import './operators/derived-pipeline' // registers inDerivedPipeline
 
 /**
  * Hand-walk the ucast AST → Drizzle SQL (spec §4). Standard field/compound
