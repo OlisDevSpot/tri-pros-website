@@ -30,8 +30,10 @@ import { APP_SETTING } from '@/shared/entities/app-settings/lib/constants'
 import { APPLICATION } from '@/shared/entities/applications/lib/constants'
 import { CUSTOMER_NOTE } from '@/shared/entities/customer-notes/lib/constants'
 import { CUSTOMER, CUSTOMER_LEAD_ATTRIBUTION, CUSTOMER_PROFILE } from '@/shared/entities/customers/lib/constants'
+import { MEDIA_FILE } from '@/shared/entities/media-files/lib/constants'
 import { MEETING } from '@/shared/entities/meetings/lib/constants'
 import { PROJECT } from '@/shared/entities/projects/lib/constants'
+import { PROPOSAL_MEDIA_FILE } from '@/shared/entities/proposal-media-files/lib/constants'
 import { PROPOSAL } from '@/shared/entities/proposals/lib/constants'
 import { VOIP_CALL } from '@/shared/entities/voip-calls/lib/constants'
 import { VOIP_CAMPAIGN_CONTACT } from '@/shared/entities/voip-campaign-contacts/lib/constants'
@@ -48,7 +50,9 @@ export const ENTITY_NAMES = [
   CUSTOMER_NOTE,
   MEETING,
   PROPOSAL,
+  PROPOSAL_MEDIA_FILE,
   PROJECT,
+  MEDIA_FILE,
   ACTIVITY,
   VOIP_CALL,
   VOIP_DID,
