@@ -8,6 +8,15 @@ agent runs any command in the "Prod ceremony" section autonomously. Verification
 throughout this program is `pnpm tsc` + `pnpm lint` only — no full production
 build is run as part of this ceremony.
 
+> ⚠️ **SUPERSEDED IN PART (2026-08-11, git-ancestry check):** this section's
+> claim that prod is "already past the writer flip" is **false** — `a9f5539b`
+> was never pushed; `origin/main` = `8c0ce467` (pre-Wave-3). Prod still writes
+> the blobs. Consequences: the backfill must be RE-RUN live immediately before
+> the DDL (not "never again" — that rule only activates after the deploy), and
+> the deploy ships the writer flip and drop ceremony together. Execution order
+> is now owned by `docs/plans/2026-08-11-wave-3-ceremony-walkthrough.md` (v2);
+> this doc remains canonical for rationale, targeting, and Appendix A.
+
 ## Where things stand (2026-08-11)
 
 - Tasks 1–11 of the implementation plan are complete on `main`. Scalars live

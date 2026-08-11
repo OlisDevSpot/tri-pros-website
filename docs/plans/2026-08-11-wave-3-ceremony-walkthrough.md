@@ -1,110 +1,109 @@
-# Wave 3 Ceremony — Execution-Day Walkthrough (2026-08-11)
+# Wave 3 Ceremony — Execution-Day Walkthrough (2026-08-11, v2)
 
 > **What this is:** the paste-ready, top-to-bottom execution script for the Wave 3
-> prod cutover, in the style of the W1/W2 runbooks. It distills the canonical
-> runbook (`docs/plans/2026-07-26-wave-3-cutover-runbook.md`) down to what is
-> **still live as of 2026-08-11, post-§3a-fix**. Rationale, hazard analysis, and
-> the full parity-SQL appendix live in the canonical doc — this file is the one
-> you scroll while executing. Every command is run **by Oliver, by hand**.
+> prod cutover, in the style of the W1/W2 runbooks. Every command is run **by
+> Oliver, by hand**. Rationale and the parity-SQL appendix live in the canonical
+> runbook (`docs/plans/2026-07-26-wave-3-cutover-runbook.md`).
+>
+> **v2 correction (2026-08-11):** v1 and the canonical runbook assumed prod was
+> already deployed past the writer flip (`a9f5539b`). **Git ancestry proves it is
+> not**: `origin/main` sits at `8c0ce467` — the entire Wave 3 (and the S6b tRPC
+> commits) is unpushed. Prod runs pre-Wave-3 code; **the blobs are still the
+> written source of truth on prod**. This *simplifies* the ceremony back to the
+> classic W1/W2 shape — backfill → DDL → deploy, one sitting — and it flips the
+> drift semantics: the backfill **must** be re-run live right before the DDL
+> (blob→column sync), and only becomes forbidden *after* the deploy.
 
-## Current state (verified by read-only inspection, 2026-08-11)
+## Current state (verified 2026-08-11: read-only DB inspection + git ancestry)
 
 | | Dev DB | Prod DB |
 |---|---|---|
-| 6 scalar columns (`*_cents`, `price_display_mode`, `envelope_document_ids`) | ✅ | ✅ |
-| Backfill (0 NULLs in money columns) | ✅ 60/60 | ✅ 100/100 |
+| 6 scalar columns present | ✅ | ✅ |
+| Scalar backfill | ✅ complete | ⚠️ ran 2026-08-11, but **stale for rows edited since** (pre-flip prod code still writes blobs) — re-run in Step 3 |
 | Blobs `funding_JSON`/`form_meta_JSON` nullable | ✅ | ✅ (§3a-fix, 2026-08-11) |
 | Rename `signing_request_id` → `contract_envelope_id` | ✅ | ⬜ **this ceremony** |
 | 6 W1/W2 blob columns dropped | ✅ | ⬜ **this ceremony** |
-| App deployed past drop-ceremony commit `6d5b705c` | n/a | ⬜ **this ceremony** |
+| Writer-flip + drop-ceremony code deployed | n/a | ⬜ **this ceremony** (`git push` deploys all of it at once) |
 
-**What this ceremony is, in one sentence:** 7 DDL statements in the Neon prod
-SQL console, followed immediately by `git push` (which deploys `main`). No
-backfills, no data movement — all data migration is complete and verified.
+**The ceremony in one sentence:** re-run the backfill (blob→column sync), run
+7 DDL statements in the Neon prod console, `git push` immediately — one sitting.
 
-**Code preconditions (already true, re-confirm in Step 1):** prod's deployed
-commit is ≥ `a9f5539b` (writer flip live) and < `6d5b705c` (drop-ceremony code
-not yet deployed). `main` is unpushed and holds everything through the runbook
-corrections.
+**What the push deploys:** everything on local `main` past `8c0ce467` — all 20
+Wave-3 commits **plus your S6b tRPC-standardization commits** (`84d60b88` etc.).
+Be deliberate: this deploy is not Wave-3-only. Your uncommitted WIP stays local.
+
+**Commit-pin check (already done via git, no dashboard needed):**
+`a9f5539b` ∉ `origin/main`, `6d5b705c` ∉ `origin/main` → prod is pre-flip;
+backfill-before-flip ordering is satisfied by construction, since the flip
+deploys in this ceremony's own push.
 
 ---
 
 ## Step 0 — Shell + targeting sanity
 
-Work from the **main checkout** (not a worktree — worktree `.env.local` files
-can hijack `DATABASE_URL` resolution; see canonical runbook §2 "Targeting
-mechanism").
+Work from the **main checkout** (worktree `.env.local` files can hijack
+`DATABASE_URL` resolution — canonical runbook §2).
 
 - [ ] `cd /home/olis-solutions/olis-v3/nextjs/tri-pros-website`
 - [ ] `ls .env.local` → should not exist (or must not define `DATABASE_URL`)
-- [ ] Every `DRIZZLE_TARGET=prod` command below prints a `DB target:` /
-      `DB host:` banner — **read it every time before trusting output**.
-      Prod host: `ep-flat-wind-afvc0zla-pooler.c-2.us-west-2.aws.neon.tech`.
+- [ ] Every `DRIZZLE_TARGET=prod` command prints a `DB target:` / `DB host:`
+      banner — **read it every time**. Prod host:
+      `ep-flat-wind-afvc0zla-pooler.c-2.us-west-2.aws.neon.tech`.
 
 ## Step 1 — Pre-flight
 
-- [ ] Verification gate (already run clean 2026-08-11; cheap to re-run):
-
-  ```bash
-  pnpm tsc && pnpm lint
-  ```
-
-  Expect: `tsc` 0 errors; `lint` no NEW errors vs baseline (known pre-existing:
-  `src/trpc/server.ts:6` trailing spaces).
-
-- [ ] **Vercel commit pin** (dashboard → deployments): the LIVE deployment's
-      commit must be ≥ `a9f5539b` and < `6d5b705c`. If it's earlier than
-      `a9f5539b` → **STOP**, the §3a ordering assumption is broken; ping Claude.
-
-- [ ] **Tripwire log grep** (Vercel logs): search recent prod logs for
-      `scrub-blob-incentives` → expect zero hits. While there, also search
-      `23502` / `violates not-null constraint` → any hit = a proposal-create
-      that failed during the pre-§3a-fix window (failed loudly, no corruption —
-      just know who to follow up with).
+- [ ] `pnpm tsc && pnpm lint` — expect: tsc 0 errors; lint no NEW errors
+      (known baseline: `src/trpc/server.ts:6` trailing spaces).
+- [ ] Confirm nothing unexpected rides the push: `git log --oneline
+      origin/main..HEAD` — should be the Wave-3 chain + runbook docs + your S6b
+      commits, nothing surprising.
+- [ ] Glance at Vercel: latest production deployment corresponds to
+      `origin/main` (`8c0ce467`) and is healthy — i.e., pushing main is the
+      only deploy lever in play.
 
 ## Step 2 — Neon rehearsal (recommended, ~15 min)
 
-A disposable branch of real prod data proves the exact DDL + aftermath. The
-additive push and backfill are NOT rehearsed — they already ran for real.
+A disposable branch of real prod data proves the full sequence — including the
+live backfill re-run, which is part of the real ceremony this time.
 
 - [ ] 1. Neon console → create a branch off **production**, current state.
-- [ ] 2. `export DATABASE_URL='<rehearsal branch connection string>'` — eyeball
-      it: it must NOT be the real prod URL.
-- [ ] 3. Drift check against the branch:
+- [ ] 2. `export DATABASE_URL='<rehearsal branch connection string>'` —
+      eyeball it: NOT the real prod URL.
+- [ ] 3. Drift check (banner must show the **branch** host):
 
   ```bash
   DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts --dry-run
   ```
 
-  Read the `DB host:` banner — must be the **branch** host. Expect: zero drift
-  on rows untouched since 2026-08-11; drift ONLY on rows edited since (that's
-  the live writer-flip code working — expected, not a problem).
+  Expect: drift only on proposals edited since the 2026-08-11 backfill —
+  fresh **blob**, stale **column** (prod writers are pre-flip). That drift is
+  exactly what the next step erases.
 
-- [ ] 4. Parity proof against the branch: paste **Appendix A** from the
-      canonical runbook (all 4 blocks) into the branch's SQL console. Every
-      count must be **0** (the enrichment sanity probe may be > 0 — that one is
-      annotated).
-- [ ] 5. Paste the DDL block (Step 3.3 below, all 7 statements) into the
-      branch's SQL console. All must succeed.
-- [ ] 6. Push-parity proof:
+- [ ] 4. Live backfill on the branch:
+
+  ```bash
+  DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts
+  ```
+
+  Then `--dry-run` again → expect **zero drift**.
+
+- [ ] 5. Parity proof: paste **Appendix A** (canonical runbook) into the
+      branch's SQL console → every count **0** (the enrichment sanity probe is
+      annotated as possibly > 0).
+- [ ] 6. Paste the 7-statement DDL block (Step 3.4 below) into the branch's
+      SQL console. All must succeed.
+- [ ] 7. Push-parity proof:
 
   ```bash
   DRIZZLE_TARGET=prod pnpm drizzle-kit push
   ```
 
-  Against the branch, post-DDL. Expect: **`No changes detected`**. Anything
-  else = the manual DDL and the Drizzle schema disagree → **STOP**, investigate
-  before the real ceremony.
+  Expect **`No changes detected`**. Anything else → **STOP**, the manual DDL
+  and the Drizzle schema disagree.
 
-- [ ] 7. Recompute sanity:
-
-  ```bash
-  DRIZZLE_TARGET=prod pnpm tsx scripts/recompute-final-tcp.ts --dry-run
-  ```
-
-  Expect: zero drift.
-
-- [ ] 8. Spot-check in the branch SQL console:
+- [ ] 8. `DRIZZLE_TARGET=prod pnpm tsx scripts/recompute-final-tcp.ts --dry-run`
+      → expect zero drift.
+- [ ] 9. Spot-check:
 
   ```sql
   SELECT contract_envelope_id FROM proposals LIMIT 1;  -- rename took
@@ -114,36 +113,52 @@ additive push and backfill are NOT rehearsed — they already ran for real.
   -- expect zero rows
   ```
 
-- [ ] 9. Delete the rehearsal branch (Neon console).
-- [ ] 10. **`unset DATABASE_URL`** — critical; a lingering export silently
-      redirects the next `DRIZZLE_TARGET=prod` command.
+- [ ] 10. Delete the rehearsal branch (Neon console).
+- [ ] 11. **`unset DATABASE_URL`** — a lingering export silently redirects the
+      next `DRIZZLE_TARGET=prod` command.
 
 **Only a clean rehearsal authorizes Step 3.**
 
 ## Step 3 — Prod ceremony (one sitting, low-traffic window)
 
-Everything below happens back-to-back. Between 3.3 (DDL) and 3.4 (deploy
-live), full-row reads on `proposals`, `customers`, `"user"`, and `lead_sources`
-will 500 with Postgres `42703` — **expected, self-resolves when the deploy is
-live, not a rollback signal**. Keep the gap as short as physically possible.
+Sequence: backfill sync → parity proof → DDL → push. Run 3.2 → 3.5
+back-to-back; every minute between the backfill (3.2) and the deploy going
+live (3.5) is a window where a prod blob edit would land *after* the sync —
+at current volume that risk is near zero, and 4.1's dry-run detects it if it
+happens.
 
-- [ ] **3.1 Parity proof on real prod** — paste Appendix A (canonical runbook)
-      into the Neon **prod** SQL console. Every count **0**. Any non-zero →
-      **STOP**, ping Claude with the output.
+Between the DDL (3.4) and the new deploy going live, full-row reads on
+`proposals`, `customers`, `"user"`, and `lead_sources` will 500 with Postgres
+`42703` — **expected, self-resolves when the deploy is live, not a rollback
+signal**. Keep the gap short.
 
-- [ ] **3.2 Final drift dry-run:**
+- [ ] **3.1 Drift preview** (banner must show real prod host):
 
   ```bash
   DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts --dry-run
   ```
 
-  Banner must show the real prod host. Same reading as the rehearsal: drift
-  only on since-edited rows = healthy. Drift on untouched rows = **STOP**.
-  ⚠️ Never run this script live (non-`--dry-run`) against prod again — ever.
-  It would overwrite fresh column data with stale frozen-blob data.
+  Drift on rows edited since 2026-08-11 is expected (blob fresh, column
+  stale). Note how many rows it reports — 3.2 should write exactly those.
 
-- [ ] **3.3 The DDL** — Neon **prod** SQL console. Never via `drizzle-kit push`
-      (the rename would render as DROP+ADD and destroy the column's data):
+- [ ] **3.2 Live backfill re-run** — the blob→column sync. Correct and safe
+      **because prod code is pre-flip** (blobs are still the written truth):
+
+  ```bash
+  DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts
+  ```
+
+  Then `--dry-run` once more → **zero drift**. ⚠️ This is the LAST legitimate
+  live run ever. The moment 3.5's deploy is live, writers flip to the columns
+  and a live re-run would overwrite fresh column data with stale blob data —
+  from then on, `--dry-run` only, permanently.
+
+- [ ] **3.3 Parity proof on real prod** — paste Appendix A (canonical runbook)
+      into the Neon **prod** SQL console. Every count **0**. Any non-zero →
+      **STOP**, ping Claude with the output.
+
+- [ ] **3.4 The DDL** — Neon **prod** SQL console. Never via `drizzle-kit
+      push` (the rename would render as DROP+ADD and destroy the column data):
 
   ```sql
   ALTER TABLE proposals RENAME COLUMN signing_request_id TO contract_envelope_id;
@@ -155,29 +170,34 @@ live, not a rollback signal**. Keep the gap as short as physically possible.
   ALTER TABLE lead_sources DROP COLUMN voip_config_json;
   ```
 
-  Note the moment you run it (PITR restore-window bookkeeping — Neon
-  point-in-time recovery is the last-resort backstop).
+  Note the timestamp (Neon PITR restore-window bookkeeping — last-resort
+  backstop).
 
-- [ ] **3.4 Deploy — immediately:**
+- [ ] **3.5 Deploy — immediately:**
 
   ```bash
   git push
   ```
 
-  `main` is the deploy trigger. Watch the Vercel build; the `42703` window
-  closes the instant the new deployment is live.
+  Watch the Vercel build; the `42703` window closes the instant the new
+  deployment is live.
 
 ## Step 4 — Post-deploy verification
 
-- [ ] Drift + recompute checks (both `--dry-run`, both expect the same healthy
-      signatures as before):
+- [ ] **4.1** Drift + recompute checks:
 
   ```bash
   DRIZZLE_TARGET=prod pnpm tsx scripts/backfill-wave3-scalars.ts --dry-run
   DRIZZLE_TARGET=prod pnpm tsx scripts/recompute-final-tcp.ts --dry-run
   ```
 
-- [ ] **Smoke drive** in prod (real or disposable test data):
+  Recompute: zero drift. Backfill dry-run: zero drift on untouched rows;
+  drift appearing on rows edited **after** the deploy is the new normal
+  (column fresh, blob frozen) — proof the cutover works. Drift on a row NOT
+  edited post-deploy = a write raced the 3.2→3.5 window → ping Claude with
+  the row id for a targeted one-row fix (do NOT re-run the backfill live).
+
+- [ ] **4.2 Smoke drive** in prod (real or disposable test data):
   1. Create a proposal from a meeting.
   2. Edit + save in both price-display modes (total / breakdown).
   3. Generate the PDF.
@@ -190,33 +210,32 @@ live, not a rollback signal**. Keep the gap as short as physically possible.
 
   Any failure = live-prod incident: stop, escalate, don't continue the list.
 
-- [ ] Optional final belt-and-suspenders: re-run the untracked comparison
-      script — dev and prod should now be structurally identical on every
-      watched column:
+- [ ] **4.3** Also smoke the S6b surface riding the same deploy (customers /
+      meetings / applications routers) — one list-and-open per entity is
+      enough to catch a wiring break.
 
-  ```bash
-  pnpm tsx scripts/tmp-db-state-compare.ts
-  ```
+- [ ] **4.4** Optional: `pnpm tsx scripts/tmp-db-state-compare.ts` — dev and
+      prod should now be structurally identical on every watched column.
 
 ## Step 5 — Aftercare
 
-- [ ] `git stash drop stash@{0}` (`task11-review-temp-stash`) once satisfied
-      your editor state is intact.
-- [ ] Human-run T6 open item: `pnpm tsx scripts/verify-assemble-envelope.ts
-      <email>` + delete the Zoho draft it creates.
-- [ ] Delete `scripts/tmp-db-state-compare.ts` (untracked, read-only) whenever.
+- [ ] `git stash drop stash@{0}` (`task11-review-temp-stash`) once satisfied.
+- [ ] T6 open item: `pnpm tsx scripts/verify-assemble-envelope.ts <email>` +
+      delete the Zoho draft it creates.
+- [ ] Delete `scripts/tmp-db-state-compare.ts` (untracked) whenever.
 - [ ] Tell Claude to delete the SDD workspace
       (`.superpowers/sdd/2026-07-26-wave-3-scalar-decomposition/`).
-- [ ] Comment on #279 / #256 that the Wave-3 prod cutover is complete (the W1
-      precedent comment format on #256 works well).
-- [ ] `scripts/backfill-wave3-scalars.ts` stays (drift-check tool, `--dry-run`
-      only). `fundingJSONDeprecated` / `formMetaJSONDeprecated` and their
-      frozen columns stay — Wave 4 (SOW normalization) drops them; kill
-      triggers are registered in the deprecation ledger.
+- [ ] Completion comment on #279 / #256 (W1's comment on #256 is the format
+      precedent).
+- [ ] Stays alive on purpose: `scripts/backfill-wave3-scalars.ts` (drift-check
+      tool, `--dry-run` only from now on) and the frozen
+      `funding_JSON`/`form_meta_JSON` columns (Wave 4 drops them; kill
+      triggers registered in the deprecation ledger).
 
 ---
 
 *Canonical companion: `docs/plans/2026-07-26-wave-3-cutover-runbook.md`
-(rationale, targeting mechanism, Appendix A parity SQL). Prior-wave precedent:
-`docs/superpowers/plans/2026-07-13-wave-1-cutover-runbook.md`,
+(rationale, targeting mechanism, Appendix A parity SQL — note its "deployed
+past the writer flip" claims are superseded by this file's v2 correction).
+Prior-wave precedent: `docs/superpowers/plans/2026-07-13-wave-1-cutover-runbook.md`,
 `docs/superpowers/plans/2026-07-15-wave-2-cutover-runbook.md`.*
