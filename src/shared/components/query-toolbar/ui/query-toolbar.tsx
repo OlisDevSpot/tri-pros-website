@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
 import type { FilterDefinition, FilterValue, PaginatedQueryResult } from '@/shared/dal/client/lib/types'
 
-import { Columns3Icon, SlidersHorizontal, XIcon } from 'lucide-react'
+import { Columns3Icon, RefreshCw, SlidersHorizontal, XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 
@@ -336,6 +336,38 @@ function ColumnsBody({ toggleableColumns, hiddenCount, onToggle, onReset }: Colu
         ))}
       </ul>
     </div>
+  )
+}
+
+// ── RefreshButton ────────────────────────────────────────────────────────────
+
+/**
+ * Manual refresh affordance. Mirrors `<FilterTrigger>` / `<ColumnsTrigger>`
+ * sizing (44×44 on `<lg`, `h-9 w-9` icon button at `lg+`) so it reads as part
+ * of the same control cluster. Spins the icon while any fetch is in flight and
+ * disables itself mid-fetch to avoid hammering. Calls `pagination.refresh()`
+ * (procedure-level invalidation — see the records-table-refresh design §4/§5).
+ */
+function RefreshButton() {
+  const { refresh, isFetching } = useQueryToolbarContext()
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => void refresh()}
+      disabled={isFetching}
+      aria-label="Refresh"
+      className="h-11 w-11 lg:h-9 lg:w-9 px-0 shrink-0 touch-manipulation"
+    >
+      <RefreshCw
+        className={cn(
+          'size-4 opacity-80 motion-safe:transition-transform',
+          isFetching && 'motion-safe:animate-spin motion-reduce:opacity-50',
+        )}
+        aria-hidden
+      />
+      <span className="sr-only">Refresh</span>
+    </Button>
   )
 }
 
@@ -789,6 +821,7 @@ function Standard({ searchPlaceholder, visibility }: StandardProps) {
         <Search placeholder={searchPlaceholder} />
         <FilterTrigger />
         {visibility && <ColumnsTrigger visibility={visibility} />}
+        <RefreshButton />
         <PageSize />
       </Bar>
       <ChipRail />
@@ -804,6 +837,7 @@ export const QueryToolbar = Object.assign(Root, {
   Search,
   FilterTrigger,
   ColumnsTrigger,
+  RefreshButton,
   PageSize,
   ChipRail,
   LiveStatus,
