@@ -8,21 +8,28 @@ import { useEffect, useRef, useState } from 'react'
 export const PULL_TO_REFRESH_THRESHOLD = 64
 const MAX_PULL = 96
 const RESISTANCE = 0.5
+/** Retract/settle transition duration (ms) applied on release only. */
+const RETRACT_MS = 220
 
 interface PullToRefreshState {
-  pullDistance: number
   isRefreshing: boolean
-  isThresholdReached: boolean
 }
 
 /**
- * Standard pull-down-to-refresh, TOUCH ONLY. Binds non-passive touch listeners
- * to `scrollRef`. Engages only when the container is scrolled to the very top,
- * the drag is downward and predominantly vertical, and the gesture did not
- * start on a column-resize handle (`[data-resize-handle]`). Past
- * `PULL_TO_REFRESH_THRESHOLD`, release calls `onRefresh()` and holds the
- * spinner until the returned promise settles. No-op when `onRefresh` is
- * undefined (non-paginated DataTable uses).
+ * Standard pull-down-to-refresh, TOUCH ONLY.
+ *
+ * Performance: the per-frame pull distance is written to a CSS variable
+ * (`--dt-pull`, plus `--dt-pull-ms` for the release transition) on the scroll
+ * container via direct DOM writes, RAF-coalesced to one write per frame. It
+ * does NOT call setState during the drag, so the (heavy) DataTable is never
+ * re-rendered while pulling. React state is used only for `isRefreshing` —
+ * toggled once when a refresh starts and once when it settles. The spacer row
+ * reads `--dt-pull` for its height and the spinner's opacity, so the visual is
+ * entirely CSS-driven.
+ *
+ * Engages only when the container is at the very top, the drag is downward and
+ * predominantly vertical, and the gesture did not start on a column-resize
+ * handle (`[data-resize-handle]`). No-op when `onRefresh` is undefined.
  *
  * See `docs/superpowers/specs/2026-08-11-records-table-refresh-design.md` §6.1.
  */
@@ -30,14 +37,14 @@ export function usePullToRefresh(
   scrollRef: RefObject<HTMLElement | null>,
   onRefresh: (() => Promise<unknown> | void) | undefined,
 ): PullToRefreshState {
-  const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Gesture bookkeeping in refs — no re-render during move tracking.
+  // Gesture bookkeeping in refs — zero re-renders during move tracking.
   const startY = useRef(0)
   const startX = useRef(0)
   const engaged = useRef(false)
   const pull = useRef(0)
+  const rafId = useRef<number | null>(null)
   const onRefreshRef = useRef(onRefresh)
   onRefreshRef.current = onRefresh
   const refreshingRef = useRef(false)
@@ -49,9 +56,9 @@ export function usePullToRefresh(
       return
     }
 
-    function setPull(next: number) {
-      pull.current = next
-      setPullDistance(next)
+    function setPullVar(px: number, transitionMs = 0) {
+      el!.style.setProperty('--dt-pull', String(px))
+      el!.style.setProperty('--dt-pull-ms', `${transitionMs}ms`)
     }
 
     function handleTouchStart(e: TouchEvent) {
@@ -83,11 +90,19 @@ export function usePullToRefresh(
       // Downward + predominantly vertical only; otherwise yield to native pan.
       if (dy <= 0 || Math.abs(dy) <= Math.abs(dx)) {
         engaged.current = false
-        setPull(0)
+        pull.current = 0
+        setPullVar(0)
         return
       }
       e.preventDefault() // we own the pull — suppress native rubber-band/scroll
-      setPull(Math.min(dy * RESISTANCE, MAX_PULL))
+      pull.current = Math.min(dy * RESISTANCE, MAX_PULL)
+      // Coalesce to one DOM write per frame — no React render on the hot path.
+      if (rafId.current == null) {
+        rafId.current = requestAnimationFrame(() => {
+          rafId.current = null
+          setPullVar(pull.current)
+        })
+      }
     }
 
     function handleTouchEnd() {
@@ -95,16 +110,22 @@ export function usePullToRefresh(
         return
       }
       engaged.current = false
+      if (rafId.current != null) {
+        cancelAnimationFrame(rafId.current)
+        rafId.current = null
+      }
       if (pull.current >= PULL_TO_REFRESH_THRESHOLD && onRefreshRef.current) {
+        setPullVar(PULL_TO_REFRESH_THRESHOLD, RETRACT_MS)
         setIsRefreshing(true)
-        setPull(PULL_TO_REFRESH_THRESHOLD)
         void Promise.resolve(onRefreshRef.current()).finally(() => {
           setIsRefreshing(false)
-          setPull(0)
+          setPullVar(0, RETRACT_MS)
+          pull.current = 0
         })
       }
       else {
-        setPull(0)
+        setPullVar(0, RETRACT_MS)
+        pull.current = 0
       }
     }
 
@@ -113,16 +134,18 @@ export function usePullToRefresh(
     el.addEventListener('touchend', handleTouchEnd)
     el.addEventListener('touchcancel', handleTouchEnd)
     return () => {
+      if (rafId.current != null) {
+        cancelAnimationFrame(rafId.current)
+        rafId.current = null
+      }
       el.removeEventListener('touchstart', handleTouchStart)
       el.removeEventListener('touchmove', handleTouchMove)
       el.removeEventListener('touchend', handleTouchEnd)
       el.removeEventListener('touchcancel', handleTouchEnd)
+      el.style.removeProperty('--dt-pull')
+      el.style.removeProperty('--dt-pull-ms')
     }
   }, [scrollRef, onRefresh])
 
-  return {
-    pullDistance,
-    isRefreshing,
-    isThresholdReached: pullDistance >= PULL_TO_REFRESH_THRESHOLD,
-  }
+  return { isRefreshing }
 }
