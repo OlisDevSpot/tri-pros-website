@@ -142,6 +142,17 @@ useQuery({ ...trpc.x.y.queryOptions(input), placeholderData: keepPreviousData })
 
 **Why**: keeps prior data visible during the new fetch (`isPlaceholderData === true`). Without it, the UI unmounts to a skeleton on every key change.
 
+## Refresh (manual refetch)
+
+`usePaginatedQuery` exposes `refresh(): Promise<void>` — procedure-level invalidation self-derived from the query key (`queryKey[0]` = the tRPC procedure path; relies on the no-`keyPrefix` invariant asserted in `trpc/lib/prefetch.ts`). It invalidates **all** cached pages of that table's procedure (incl. the prefetched next page) and resolves when the refetches settle.
+
+Two shared affordances consume it — both wired once at the shared layer, so every records table gets them:
+
+- **Toolbar button** — `<QueryToolbar.RefreshButton />`, included in `QueryToolbar.Standard`. Reads `refresh`+`isFetching` from toolbar context; spins while fetching, disabled mid-fetch. Add it explicitly in atomic-slot toolbars (after Filters/Columns, before `PageSize`).
+- **Pull-to-refresh** — standard pull-down, **touch only**, auto-wired: `toDataTablePagination` forwards `refresh` as `serverPagination.onRefresh`, and `DataTable` drives it via `usePullToRefresh` (`data-table/hooks/`). Any container using the adapter gets it for free.
+
+**Why**: data goes stale after a foreign edit; manual refresh recovers without a full reload. Canonical design: `docs/superpowers/specs/2026-08-11-records-table-refresh-design.md`.
+
 ## Legacy filter scaffolding (deprecated)
 
 These are marked `@deprecated` and used only by the Activities table:

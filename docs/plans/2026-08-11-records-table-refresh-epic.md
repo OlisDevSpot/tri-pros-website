@@ -1,6 +1,6 @@
 # Records-Table Refresh Epic
 
-> **Status:** Design approved (2026-08-11). Phase 1–3 planned. Not yet implemented.
+> **Status:** ✅ Implemented 2026-08-11 (Phases 1–3 shipped on `main`). Live/on-device verification pending user inspection. Phase-2 backlog (below) remains for future work.
 > **Canonical design:** `docs/superpowers/specs/2026-08-11-records-table-refresh-design.md`. This tracker does NOT restate the design — read the spec for the *why*, the module interfaces, and the locked decisions (D1–D5). This doc is the **roadmap + status**: which phase is where, what blocks what, and where each phase's executable plan lives.
 > **Related:** `docs/codebase-conventions/query-toolkit.md`, `memory/pattern-pagination-toolkit.md`.
 
@@ -34,7 +34,7 @@ Legend: `AFK` = mergeable without live user decisions · `HITL` = needs a user r
   - **Plan:** `docs/superpowers/plans/2026-08-11-records-refresh-phase-2-toolbar-button.md`
   - **AC:** button present on all 8 tables at both breakpoints; spins/disables on fetch; no layout shift in the cluster; tsc+lint green.
 
-- [ ] **Phase 3 · AFK · blocked-by: Phase 1 — Pull-to-refresh (`usePullToRefresh` + `DataTable` indicator).**
+- [x] **Phase 3 · AFK · blocked-by: Phase 1 — Pull-to-refresh (`usePullToRefresh` + `DataTable` indicator).** ✅ Done 2026-08-11. `usePullToRefresh` hook + transform-driven indicator in `DataTable`; `onRefresh` threaded via `DataTableServerPagination` + `toDataTablePagination` (auto-wired for every adapter table); `data-resize-handle` added to both resize handles for the gesture guard. tsc+lint green. (On-device touch verification pending user inspection — no touch surface in session.)
   New generic `usePullToRefresh(scrollRef, onRefresh)` gesture hook (pull-down, touch-only, `scrollTop===0`, direction-gated, resize-handle-guarded — spec §6.1); a pull indicator in `DataTable`; `onRefresh` threaded through `toDataTablePagination` + `DataTableServerPagination` so every adapter-using table gets it automatically. Add `data-resize-handle` to the resize handles for the gesture guard.
   - **Plan:** `docs/superpowers/plans/2026-08-11-records-refresh-phase-3-pull-to-refresh.md`
   - **AC:** pull-down at top refreshes on a real/emulated touch device; horizontal pan + column resize unaffected; below-threshold release is a no-op; reduced-motion honored; tsc+lint green.
